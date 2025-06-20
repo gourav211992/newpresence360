@@ -79,7 +79,7 @@ class ErpSaleReturnController extends Controller
         $typeName = SaleModuleHelper::getAndReturnReturnTypeName($orderType);
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        $create_button = (isset($servicesBooks)  && count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         $autoCompleteFilters = self::getBasicFilters();
         request() -> merge(['type' => $orderType]);
         if ($request -> ajax()) {

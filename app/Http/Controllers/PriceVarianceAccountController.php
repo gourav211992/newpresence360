@@ -30,15 +30,6 @@ class PriceVarianceAccountController extends Controller
             ->pluck('company_id')
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
-        $categories = Category::withDefaultGroupCompanyOrg()
-        ->where('status', 'active')
-        ->get();  
-    
-        $subCategories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active') 
-            ->whereNotNull('parent_id') 
-            ->get();
-    
         $ledgerGroups = Group::all();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()
         ->where('status', '1') 
@@ -51,50 +42,8 @@ class PriceVarianceAccountController extends Controller
         ->where('status', 'active') 
         ->get(); 
         
-        if ($request->ajax()) {
-            $priceVarianceAccounts = PriceVarianceAccount::with([
-                'organization', 'group', 'company', 'ledgerGroup',
-                'ledger', 'category', 'subCategory', 'item'
-            ])
-            ->orderBy('group_id')
-            ->orderBy('company_id') 
-            ->orderBy('organization_id')
-            ->orderBy('id', 'desc');
-
-            return DataTables::of($priceVarianceAccounts)
-                ->addIndexColumn()
-                ->addColumn('status', function ($row) {
-                    return '<span class="badge rounded-pill ' . 
-                        ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') . 
-                        ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
-                })
-                ->addColumn('action', function ($row) {
-                    $editUrl = route('price-variance-accounts.edit', $row->id);
-                    $deleteUrl = route('price-variance-accounts.destroy', $row->id);
-                    return '<div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="' . $editUrl . '">
-                                       <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
-                                    </a>
-                                    <form action="' . $deleteUrl . '" method="POST" class="dropdown-item">
-                                        ' . csrf_field() . method_field('DELETE') . '
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i data-feather="trash" class="me-50"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>';
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
-        }
-
         return view('procurement.price-variance-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'priceVarianceAccounts', 'erpBooks','orgIds'
+            'companies', 'ledgerGroups', 'ledgers', 'items', 'priceVarianceAccounts', 'erpBooks','orgIds'
         ));
     }
 

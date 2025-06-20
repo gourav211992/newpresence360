@@ -28,6 +28,10 @@
                             href="{{ route('bank.statements.export', ['id' => $bank->id, 'type' => request()->type, 'batch_uid' => request()->batch_uid]) }}">
                             <i data-feather="share"></i> Export
                         </a>
+                        <a class="btn btn-success btn-sm mb-50 mb-sm-0"
+                            href="{{ route('bank.statements.match-entries', ['id' => $bank->id]) }}{{ request()->has('date') ? '?date=' . request()->get('date') : '' }}"><i
+                                data-feather="check-circle"></i> Match
+                            Statement</a>
                     </div>
                 </div>
             </div>

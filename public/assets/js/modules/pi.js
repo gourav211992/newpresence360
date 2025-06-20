@@ -297,3 +297,15 @@ $(document).on('keyup change', 'input[name^="components"][name$="[qty]"]', funct
     var $row = $(this).closest('tr');
     updateIndentQty($row);
 });
+
+document.querySelectorAll('#orderTypeSelect').forEach((radio) => {
+    radio.addEventListener('change', function () {
+        document.getElementById('procurement_type').value = this.value;
+    });
+});
+
+$(document).on('change', '#procurement_type', function () {
+    let selectedValue = this.value;
+    $("#procurement_type").val(selectedValue);
+    
+});

@@ -48,7 +48,6 @@
                                             <th>Phone</th>
                                             <th>Email</th>
                                             <th>Category</th>
-                                            <th>Sub Category</th>
                                             <th>Gst Status</th>
                                             <th>Created At</th>
                                             <th>Created By</th>
@@ -75,21 +74,13 @@
 
                             <div class="mb-1">
                                     <label class="form-label">Category</label>
-                                    <select id="filter-category" name="category_id" class="form-select">
+                                    <select id="filter-category" name="subcategory_id" class="form-select">
                                         <option value="">Select Category</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
-
-                                <div class="mb-1">
-                                    <label class="form-label">SubCategory</label>
-                                    <select id="filter-subcategory" name="subcategory_id" class="form-select" data-selected-id="">
-                                        <option value="">Select SubCategory</option>
-                                    </select>
-                                </div>
-
                                 <!-- Vendor Type -->
                                 <div class="mb-1">
                                     <label class="form-label">Vendor Type</label>
@@ -149,8 +140,7 @@ $(document).ready(function() {
             type: 'GET',
             data: function(d) {
                 d.vendor_type = $('#filter-vendor-type').val();
-                d.category_id = $('#filter-category').val(); 
-                d.subcategory_id = $('#filter-subcategory').val(); 
+                d.subcategory_id = $('#filter-category').val(); 
                 d.gst_status = $('#filter-gst-status').val();
                 d.status = $('#filter-status').val();
             }
@@ -165,7 +155,6 @@ $(document).ready(function() {
             { data: 'vendor_type', name: 'vendor_type', render: renderData },
             { data: 'phone', name: 'phone', render: renderData },
             { data: 'email', name: 'email', render: renderData },
-            { data: 'category.name', name: 'category.name', render: renderData }, 
             { data: 'subcategory.name', name: 'subcategory.name', render: renderData }, 
             {data: 'gst_status', name: 'gst_status', render: renderData,orderable: false},
             { data: 'created_at', name: 'created_at', render: function(data) {

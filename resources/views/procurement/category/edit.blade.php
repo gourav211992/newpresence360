@@ -71,19 +71,28 @@
                                                     @enderror
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1"id="hsn-section">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">HSN/SAC<span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="text" name="hsn_name" id="hsn-autocomplete_1" class="form-control hsn-autocomplete" data-id="1" placeholder="Select HSN/SAC" autocomplete="off" value="{{ $category->hsn ? $category->hsn->code : '' }}"/>
-                                                    <input type="hidden" class="hsn-id" name="hsn_id" value="{{ $category->hsn_id ?? '' }}"/>
-                                                </div>
-                                            </div>
-                                            
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Category Name <span class="text-danger">*</span></label>
+                                                    <label class="form-label">Parent Group Name</label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <select name="parent_id" id="parent_id" class="form-select mw-100 select2">
+                                                        <option value="">Select Group</option>
+                                                        @foreach($categories as $parentCategory)
+                                                            <option value="{{ $parentCategory->id }}"
+                                                                @if(isset($category->parent_id) && $category->parent_id == $parentCategory->id)
+                                                                    selected
+                                                                @endif>
+                                                                {{ $parentCategory->full_name}}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Group Name <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
                                                     <input type="text" name="name" class="form-control" placeholder="Enter Name" value="{{$category->name}}" />
@@ -95,10 +104,29 @@
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Category Initials<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Group Initials<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <input type="text" name ="cat_initials" id="cat_initials_display" value="{{$category->cat_initials}}" class="form-control" />
+                                                    <input type="text" name ="cat_initials" id="cat_initials_display" value="{{ $category->cat_initials ?? ($category->sub_cat_initials ?? '') }}" class="form-control" />
+                                                </div>
+                                            </div>
+
+                                            <div class="row align-items-center mb-1"id="hsn-section">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">HSN/SAC</label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="text" name="hsn_name" id="hsn-autocomplete_1" class="form-control hsn-autocomplete" data-id="1" placeholder="Select HSN/SAC" autocomplete="off" value="{{ $category->hsn ? $category->hsn->code : '' }}"/>
+                                                    <input type="hidden" class="hsn-id" name="hsn_id" value="{{ $category->hsn_id ?? '' }}"/>
+                                                </div>
+                                            </div>
+                                            <div id="inspection-checklist" class="row align-items-center mb-1">
+                                                <div class="col-md-3">
+                                                    <label class="form-label">Inspection Checklist</label>
+                                                </div>
+                                                <div class="col-md-5">
+                                                    <input type="text" name="inspection_checklist_name" id="inspection_checklist_id" class="form-control inspection-autocomplete" placeholder="Search Inspection Checklist" value="{{ $category->inspectionChecklist ? $category->inspectionChecklist->name : '' }}" />
+                                                    <input type="hidden" name="inspection_checklist_id" class="inspection_checklist_id" value="{{ $category->inspection_checklist_id ?? '' }}" />
                                                 </div>
                                             </div>
 
@@ -126,43 +154,6 @@
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <div class="table-responsive-md">
-                                                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>S.NO</th>
-                                                            <th>Sub Category Name <span class="text-danger">*</span></th>
-                                                            <th>Sub Category Initials<span class="text-danger">*</span></th>
-                                                            <th>Action</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="sub-category-box">
-                                                        @forelse ($category->subCategories as $key => $subCategory)
-                                                            <tr data-id="{{ $subCategory->id }}">
-                                                                <td>{{ $key + 1 }}</td>
-                                                                <input type="hidden" name="subcategories[{{ $key }}][id]" value="{{ $subCategory->id }}">
-                                                                <td><input type="text" name="subcategories[{{ $key }}][name]" class="form-control mw-100" value="{{ $subCategory->name }}" /></td>
-                                                                <td><input type="text" name="subcategories[{{ $key }}][sub_cat_initials]" class="form-control sub_cat_initials_display" value="{{ $subCategory->sub_cat_initials }}"  /></td> 
-                                                                <td>
-                                                                    <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a>
-                                                                    <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
-                                                                </td>
-                                                            </tr>
-                                                        @empty
-                                                        <tr  id="template-row">
-                                                            <td></td>
-                                                            <td><input type="text" name="subcategories[0][name]" class="form-control mw-100" /></td>
-                                                            <td><input type="text" class="form-control sub_cat_initials_display"name=subcategories[0][sub_cat_initials] /></td> 
-                                                            <td>
-                                                                <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a>
-                                                                <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
-                                                          </td>
-                                                        </tr>
-                                                        @endforelse
-                                                    </tbody>
-                                                </table>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -178,143 +169,106 @@
 
 @section('scripts')
 <script>
-$(document).ready(function() {
-    var $tableBody = $('#sub-category-box');
-    function applyCapsLock() {
-        $('input[type="text"], input[type="number"]').each(function() {
-            $(this).val($(this).val().toUpperCase());
-        });
-        $('input[type="text"], input[type="number"]').on('input', function() {
-            var value = $(this).val().toUpperCase();  
-            $(this).val(value); 
-        });
-    }
-    function updateRowIndices() {
-        var $rows = $('#sub-category-box tr');
-        $tableBody.find('tr').each(function(index) {
-            var $row = $(this);
-            $row.find('td').eq(0).text(index + 1); 
-            $row.find('input[name]').each(function() {
-                var name = $(this).attr('name');
-                $(this).attr('name', name.replace(/\[\d+\]/, '[' + index + ']')); 
-            });
-            if ($rows.length === 1) {
-                $(this).find('.delete-row').hide(); 
-                $(this).find('.add-address').show(); 
-            } else {
-                $(this).find('.delete-row').show(); 
-                $(this).find('.add-address').toggle(index === 0); 
-            }
-            feather.replace(); 
-        });
-    }
-    function generateInitials(name) {
-        var words = name.split(' ');
-        return words.length === 1 ? words[0].substring(0, 2).toUpperCase() : (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
-    }
-    $('input[name="name"]').on('input', function() {
-        var initials = generateInitials($(this).val());
-        $('#cat_initials_display').val(initials);
-    });
-    $tableBody.on('input', 'input[name^="subcategories"][name$="[name]"]', function() {
-        var initials = generateInitials($(this).val());
-        $(this).closest('tr').find('input[name^="subcategories"][name$="[sub_cat_initials]"]').val(initials);
-    });
-
-    $('input[name="cat_initials"], input[name^="subcategories"][name$="[sub_cat_initials]"]').on('input', function() {
-        $(this).val($(this).val().toUpperCase());
-    });
-    $tableBody.on('click', '.add-address', function(e) {
-        e.preventDefault();
-        var $currentRow = $(this).closest('tr');
-        var $newRow = $currentRow.clone(); 
-        $newRow.find('input').val(''); 
-        $newRow.find('[name]').each(function() {
-            var name = $(this).attr('name');
-            $(this).attr('name', name.replace(/\[\d+\]/, '[' + $tableBody.children().length + ']'));
-            $(this).removeClass('is-invalid');
-        });
-        $newRow.attr('data-id', '');
-        $newRow.find('.add-address').remove(); 
-        $newRow.find('td:last-child').html('<a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>'); // Add only delete button
-        $newRow.find('.ajax-validation-error-span').remove();
-        $tableBody.append($newRow); 
-        updateRowIndices();
-        feather.replace(); 
-        applyCapsLock();
-    });
-    $tableBody.on('click', '.delete-row', function(e) {
-        e.preventDefault();
-        var $row = $(this).closest('tr');
-        var subCategoryId = $row.data('id');
-        if (subCategoryId) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: 'Are you sure you want to delete this record?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'No, keep it'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/categories/subcategory/' + subCategoryId, 
-                        type: 'DELETE',
-                        data: {
-                            _token: '{{ csrf_token() }}' 
-                        },
-                        success: function(response) {
-                            if (response.status) {
-                                $row.remove();
-                                Swal.fire('Deleted!', response.message, 'success');
-                                updateRowIndices();
-                            } else {
-                                Swal.fire('Error!', response.message, 'error');
-                            }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error!', xhr.responseJSON.message, 'error');
-                        }
-
-                    });
+    $(document).ready(function() {
+        var lastLevel = @json($isLastLevel);
+        var hsnValue = @json($category->hsn ? $category->hsn->code : ''); 
+        var hsnId = @json($category->hsn_id ?? ''); 
+        var initialVal = $('#cat_initials_display').val().trim();
+        var nameVal = $('input[name="name"]').val().trim();
+        function handleHSNSectionVisibility() {
+            if ($('#category-type').val() === 'Product') {
+                $('#hsn-section').show();
+                $('#inspection-checklist').show();
+                if (lastLevel == 1) {
+                    $('#hsn-autocomplete_1').prop('disabled', false);
+                    $('.inspection-autocomplete').prop('disabled', false);
+                } else{
+                    $('#hsn-autocomplete_1').prop('disabled', true);
+                    $('.inspection-autocomplete').prop('disabled', true);
                 }
-            });
-        } else {
-            $row.remove();
-            updateRowIndices();
+                            
+            } else {
+                $('#hsn-section').hide();
+                $('#inspection-checklist').hide();
+                $('#hsn-autocomplete_1').val('');  
+                $('.hsn-id').val(''); 
+                $('.inspection-autocomplete').val(''); 
+                $('.inspection_checklist_id').val(''); 
+            }
         }
-    });
-    if ($tableBody.children().length === 0) {
-        var initialRow = `<tr>
-            <td>1</td>
-            <td><input type="text" name="subcategories[0][name]" /></td>
-            <td><input type="text" name="subcategories[0][sub_cat_initials]" /></td>
-            <td>
-                <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a>
-                <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
-            </td>
-        </tr>`;
-        $tableBody.append(initialRow);
-    }
-    
-    updateRowIndices();
-    applyCapsLock();
-});
-</script>
-<script>
-    function handleHSNSectionVisibility() {
-        if ($('#category-type').val() === 'Product') {
-            $('#hsn-section').show();
-        } else {
-            $('#hsn-section').hide();
-            $('#hsn-autocomplete_1').val('');  
-            $('.hsn-id').val('');  
+        // Function to fetch HSN based on parent
+        function fetchHsn(parentId) {
+            var categoryType = $('#category-type').val();
+            if (categoryType === 'Product' && parentId) {
+                $.ajax({
+                    url: '{{ route("categories.getHsnByParent") }}',
+                    method: 'GET',
+                    data: { parent_id: parentId },
+                    success: function(response) {
+                        if (response.hsn && response.hsn_id) {
+                            $('#hsn-autocomplete_1').val(response.hsn);
+                            $('.hsn-id').val(response.hsn_id);
+                        } else {
+                            $('#hsn-autocomplete_1').val('');
+                            $('.hsn-id').val('');
+                        }
+                    }
+                });
+            } else {
+                $('#hsn-autocomplete_1').val('');
+                $('.hsn-id').val('');
+            }
         }
-    }
 
-    $('#category-type').on('change', function() {
-        handleHSNSectionVisibility(); 
+        $('#parent_id').on('change', function() {
+        var parentId = $(this).val();
+            fetchHsn(parentId);
+        });
+
+        $('#category-type').on('change', function() {
+            handleHSNSectionVisibility();
+            $('#parent_id').trigger('change');
+        });
+       
+        function applyCapsLock() {
+            $('input[type="text"], input[type="number"]').each(function() {
+                $(this).val($(this).val().toUpperCase());
+            });
+            $('input[type="text"], input[type="number"]').on('input', function() {
+                var value = $(this).val().toUpperCase();  
+                $(this).val(value); 
+            });
+        }
+        function generateInitials(itemName) {
+            const cleanedItemName = itemName.replace(/[^a-zA-Z0-9\s]/g, '');
+            const words = cleanedItemName.split(/\s+/).filter(word => word.length > 0);
+            let initials = '';
+            if (words.length === 1) {
+                initials = words[0].substring(0, 2).toUpperCase();
+            } else {
+                initials = words[0][0].toUpperCase() + words[1][0].toUpperCase();
+            }
+
+            return initials;
+        }
+
+        $('input[name="name"]').on('input', function() {
+            const categoryName = $(this).val();
+            const initials = generateInitials(categoryName);
+            $('#cat_initials_display').val(initials);
+        });
+        if (!hsnValue && !hsnId) {
+            var selectedParentId = $('#parent_id').val();
+            if (selectedParentId) {
+                fetchHsn(selectedParentId);
+            }
+        }
+        if (!initialVal || initialVal === '') {
+            var generatedInitials = generateInitials(nameVal);
+            $('#cat_initials_display').val(generatedInitials);
+        }
+        applyCapsLock();
+        handleHSNSectionVisibility();
     });
-    handleHSNSectionVisibility();
 </script>
 @endsection

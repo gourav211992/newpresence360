@@ -63,7 +63,7 @@ class Organization extends Model
     }
     public function items()
     {
-        return $this->hasMany(Item::class);
+        return $this->hasMany(Item::class, 'organization_id');
     }
     public function customers()
     {

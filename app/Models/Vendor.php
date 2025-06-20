@@ -33,6 +33,7 @@ class Vendor extends Model
         'currency_id',
         'payment_terms_id',
         'related_party',
+        'contra_ledger_id',
         'reld_vendor_id',
         'email',
         'phone',
@@ -178,6 +179,11 @@ class Vendor extends Model
         return $this->belongsTo(Ledger::class);
     }
 
+    public function contraLedger()
+    {
+        return $this->belongsTo(Ledger::class);
+    }
+
     public function getPanAttachmentUrlAttribute()
     {
         return $this->generateFileUrl($this->pan_attachment);
@@ -238,6 +244,11 @@ class Vendor extends Model
         return $this -> hasMany(VendorLocation::class, 'vendor_id');
     }
 
+    public function parentdVendor()
+    {
+        return $this->belongsTo(Vendor::class, 'reld_vendor_id');
+    }
+
     public function syncLocations(array $storeIds)
     {
         VendorLocation::where('vendor_id', $this -> id) -> whereNotIn('store_id', $storeIds) -> delete();
@@ -268,4 +279,18 @@ class Vendor extends Model
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
+
+    public function scopeSearchByKeywords($query, $term): mixed
+    {
+        $keywords = preg_split('/\s+/', trim($term));
+        return $query->where(function($q) use ($keywords) {
+            foreach ($keywords as $word) {
+                $q->where(function($subQ) use ($word) {
+                    $subQ->where('company_name', 'LIKE', "%{$word}%")
+                        ->orWhere('vendor_code', 'LIKE', "%{$word}%");
+                });
+            }
+        });
+    }
+
 }

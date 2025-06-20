@@ -413,16 +413,14 @@
         var ledgerInput = $row.find('[name$="[ledger_name]"]');
         var ledgerIdInput = $row.find('[name$="[ledger_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
-        var subCategorySelect = $row.find('[name$="[sub_category_id]"]');
         var bookSelect = $row.find('[name$="[book_id][]"]');
         categoryInput.val('');
         categoryIdInput.val('');
         ledgerInput.val('');
         ledgerIdInput.val('');
         itemSelect.empty().append('<option value="">Select Item</option>');
-        subCategorySelect.empty().append('<option value="">Select Subcategory</option>');
         bookSelect.empty().append('<option value="">Select Book</option>');
-        $.get(`/stock-accounts/data-by-organization/${organizationId}`, function (data) {
+        $.get(`/stock-accounts/data-by-organization/${organizationId}`,{organizationId:organizationId}, function (data) {
             categoryInput.autocomplete({
                 source: function (request, response) {
                     if (data.categories.length === 0) {
@@ -501,7 +499,7 @@
         if (!organizationId) {
             return;
         }
-        $.get(`/stock-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm }, function (data) {
+        $.get(`/stock-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm,organizationId:organizationId }, function (data) {
             var results = data.ledgers && data.ledgers.length > 0 ? 
                 $.map(data.ledgers, function (ledger) {
                     return {

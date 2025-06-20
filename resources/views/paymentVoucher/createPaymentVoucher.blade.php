@@ -345,7 +345,7 @@
                                                     <div class="col-md-5">
                                                         <select id="locations" class="form-select"
                                                             name="location" required>
-                                                            <option disabled value="" selected>Select Location</option>
+                                                            <option value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -362,6 +362,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                            <option value="">Select</option>
                                                             {{-- options will be appended dynamically --}}
                                                         </select>
                                                     </div>
@@ -504,7 +505,7 @@
                                                                         </td>
 
                                                                         <td>
-                                                                            <input type="number" readonly
+                                                                            <input type="text" readonly
                                                                                 class="form-control mw-100 text-end amount_exc excAmount{{ $no }}"
                                                                                 name="amount_exc[]"
                                                                                 value="{{ $voucher['amount'] }}"
@@ -575,7 +576,7 @@
                                                                         </div>
                                                                     </td>
                                                                     <td>
-                                                                        <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                                                                        <input type="text" class="form-control mw-100 bankInput reference_no" 
                                                                             name="reference_no[]" data-row="1" id="reference_no1" />
                                                                         <span class="text-danger bankInput" id="reference_error1" style="font-size:12px"></span>
                                                                     </td>
@@ -583,7 +584,7 @@
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]" id="excAmount1" required />
                                                                     </td>
-                                                                    <td><input type="number" value="0" readonly
+                                                                    <td><input type="text" value="0" readonly
                                                                             class="form-control mw-100 text-end amount_exc excAmount1"
                                                                             name="amount_exc[]" required /></td>
                                                                     <td></td>
@@ -772,7 +773,8 @@
                 // Prevent modal close or further processing
                 return false;
             }
-            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
+            // $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text());
+            $('#excAmount' + $('#currentRow').val()).val($('.settleTotal').text().replace(/,/g, ''));
             $('#excAmount' + $('#currentRow').val()).trigger('keyup');
             $('#invoice').modal('toggle');
 
@@ -897,8 +899,8 @@
                                         <td>${val['date']}</td>
                                         <td class="fw-bolder text-dark">${val['series']?.book_code?.toUpperCase() ?? '-'}</td>
                                         <td>${val['voucher_no'] ?? '-'}</td>
-                                        <td class="text-end">${val['erp_location']?.store_name ?? '-'}</td>
-                                        <td class="text-end">${item.cost_center?.name ?? '-'}</td>
+                                        <td class="">${val['erp_location']?.store_name ?? '-'}</td>
+                                        <td class="">${item.cost_center?.name ?? '-'}</td>
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="balanceInput text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
@@ -1014,9 +1016,9 @@
             let settleSum = 0;
             $('.vouchers:checked').map(function() {
                 const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
-                settleSum = parseFloat(settleSum) + value;
+                settleSum += value;
             }).get();
-            $('.settleTotal').text(parseFloat(settleSum).toFixed(2));
+            $('.settleTotal').text(formatIndianNumber(settleSum));
         }
 
 
@@ -1124,6 +1126,42 @@
             });
             calculateSettle();
         }
+        // Now define this BELOW or inside DOM ready:
+        function evaluateCostCenterVisibility() {
+            const rows = $('.invoiceDrop');
+            const rowCount = rows.length;
+            let hasNonInvoiceSelected = false;
+            let allInvoice = true;
+
+            rows.each(function () {
+                const value = $(this).val();
+                if (value !== 'Invoice') {
+                    hasNonInvoiceSelected = true;
+                    allInvoice = false;
+                    return false;
+                }
+            });
+            console.log(hasNonInvoiceSelected)
+
+            const $costCenterRow = $('#costCenterRow');
+            const $costCenterDropdown = $('#cost_center_id');
+
+            if (rowCount === 1 && allInvoice) {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            } else if (hasNonInvoiceSelected) {
+                const isHidden = $('#costCenterRow').is(':hidden');
+                const isEmpty = $('#cost_center_id').val() == null;
+
+                if (isHidden && isEmpty) {
+                    let selectedLocationId = $('#locations').val();
+                    renderCostCentersForLocation(selectedLocationId); // <- now this will be available
+                }
+            } else {
+                $costCenterRow.hide();
+                $costCenterDropdown.val('');
+            }
+        }
 
         $(document).on('change', '.invoiceDrop', function() {
             if ($(this).val() == "Invoice") {
@@ -1135,6 +1173,8 @@
                 $('#excAmount' + $(this).attr('data-id')).attr('readonly', false);
                 $('#party_vouchers' + $(this).attr('data-id')).val('[]');
             }
+            calculateTotal();
+            evaluateCostCenterVisibility();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1175,6 +1215,19 @@
         });
 
         $(function() {
+            function updateTotalColspan() {
+                const isBank = $("#Bank").is(":checked");
+                $(".totalsubheadpodetail td:first-child").attr("colspan", isBank ? "7" : "6");
+            }
+
+            // Initial update
+            updateTotalColspan();
+
+            // Update when payment type changes
+            $("input[name='payment_type']").change(function() {
+                updateTotalColspan();
+            });
+
             function initializeAutocomplete() {
                 $(".ledgerselect").autocomplete({
                     source: function(request, response) {
@@ -1327,6 +1380,7 @@
                 let row = $(this).closest('tr');
                 row.remove();
                 updateLevelNumbers();
+                evaluateCostCenterVisibility();
                 calculateTotal();
             });
 
@@ -1372,12 +1426,12 @@
                             </div>
                         </td>
                         <td>
-                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                            <input type="text" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-                        <td><input type="number" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
@@ -1524,6 +1578,7 @@
         }
         $(document).ready(function() {
             bind();
+            evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
@@ -1554,6 +1609,11 @@
                 $('#orgCurrencyName').text(orgCurrencyName);
             }
             getExchangeRate();
+            // $('.invoiceDrop').each(function () {
+            //     if ($(this).val() === 'Invoice') {
+            //         $(this).trigger('change');
+            //     }
+            // });
         });
 
         function resetCurrencies() {
@@ -1796,19 +1856,22 @@
         //
         $('#locations').on('change', function() {
             let selectedLocationIds = $(this).val();
+            renderCostCentersForLocation(selectedLocationIds);
+            evaluateCostCenterVisibility(); // <- Add this line
+        });
 
+        function renderCostCentersForLocation(selectedLocationId) {
             const costCenterSet = locationCostCentersMap.filter(center => {
                 if (!center.location) return false;
-                const locationArray = Array.isArray(center.location) ?
-                    center.location.flatMap(loc => loc.split(',')) :
-                    [];
-                return locationArray.includes(String(selectedLocationIds));
+                const locationArray = Array.isArray(center.location)
+                    ? center.location.flatMap(loc => loc.split(','))
+                    : [];
+                return locationArray.includes(String(selectedLocationId));
             });
 
-            // Get the div
-            let $costCenterRow = $('#costCenterRow');
-            let $dropdown = $('.costCenter');
-            // Show or hide the row based on availability
+            const $costCenterRow = $('#costCenterRow');
+            const $dropdown = $('.costCenter');
+
             if (costCenterSet.length > 0) {
                 $costCenterRow.show();
                 $dropdown.empty();
@@ -1819,7 +1882,7 @@
                 $costCenterRow.hide();
                 $dropdown.empty();
             }
-        });
+        }
         let timer;
 
        $(document).on('input', '.reference_no', function() {

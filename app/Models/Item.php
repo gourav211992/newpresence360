@@ -30,7 +30,16 @@ class Item extends Model
         'storage_uom_count',
         'storage_weight',
         'storage_volume',
+        'is_serial_no', 
+        'is_batch_no', 
+        'is_expiry',   
         'is_inspection',
+        'inspection_checklist_id',
+        'is_traded_item',
+        'is_asset',
+        'asset_category_id',
+        'expected_life',
+        'maintenance_schedule',
         'cost_price',
         'cost_price_currency_id',
         'sell_price',
@@ -145,16 +154,16 @@ class Item extends Model
     {
         return $this->hasMany(AlternateItem::class);
     }
+    // Item.php
     public function group()
     {
-        return $this->belongsTo(Group::class);
+        return $this->belongsTo(OrganizationGroup::class, 'group_id');
     }
 
     public function company()
     {
-        return $this->belongsTo(Company::class);
+        return $this->belongsTo(OrganizationCompany::class, 'company_id');
     }
-
     public function organization()
     {
         return $this->belongsTo(Organization::class);
@@ -182,6 +191,11 @@ class Item extends Model
     public function auth_user()
     {
         return $this->belongsTo(AuthUser::class, 'created_by', 'id');
+    }
+
+    public function inspectionChecklist()
+    {
+        return $this->belongsTo(InspectionChecklist::class, 'inspection_checklist_id');
     }
 
     public function item_attributes_array(array $arr = [])
@@ -221,7 +235,7 @@ class Item extends Model
         return collect($processedData);
     }
 
-    public function scopeSearchByKeywords($query, $term)
+    public function scopeSearchByKeywords($query, $term): mixed
     { 
         $keywords = preg_split('/\s+/', trim($term));
         return $query->where(function ($q) use ($keywords) {

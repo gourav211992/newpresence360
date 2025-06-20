@@ -70,7 +70,7 @@
                                                                 </label>
                                                             </div>
                                                             <div class="col-md-9">
-                                                                <input type="text" name="company_name" class="form-control" placeholder="Enter Vendor Name" />
+                                                                <input type="text" name="company_name" class="form-control vendor-name-autocomplete" placeholder="Enter Vendor Name" />
                                                             </div>
                                                     </div>
 
@@ -147,22 +147,13 @@
 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
-                                                            <label class="form-label">Category</label>
+                                                            <label class="form-label">Group</label>
                                                         </div>
                                                         <div class="col-md-4 ">
-                                                            <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search category">
-                                                            <input type="hidden" name="category_id" class="category-id">
+                                                            <input type="text" name="subcategory_name" class="form-control category-autocomplete" placeholder="Type to search group">
+                                                            <input type="hidden" name="subcategory_id" class="category-id">
                                                             <input type="hidden" name="category_type" class="category-type" value="Vendor">
                                                             <input type="hidden" name="cat_initials" class="cat_initials-id" value="">
-                                                        </div>
-                                                        <div class="col-md-2">
-                                                            <label class="form-label">Sub Category</label>
-                                                        </div>
-                                                        <div class="col-md-3">
-                                                            <input type="text" name="subcategory_name" class="form-control subcategory-autocomplete" placeholder="Type to search sub-category">
-                                                            <input type="hidden" name="subcategory_id" class="subcategory-id">
-                                                            <input type="hidden" name="category_type" class="category-type" value="Vendor">
-                                                            <input type="hidden" name="sub_cat_initials" class="sub_cat_initials-id" value="">
                                                         </div>
                                                     </div>
                                                     <p class="mb-0" style="color: red;"><b>Note*:</b> File must be 2MB max | Formats: pdf, jpg, jpeg, png</p>
@@ -281,6 +272,15 @@
 												 <div class="tab-content pb-1 px-1">
                                                      <!--Start Vendor Details -->
                                                      <div class="tab-pane active" id="payment">
+                                                            <div class="row align-items-center mb-1" id="reldVendorDropdown">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Parent Vendor</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="reld_vendor_name" class="form-control parent-vendor-autocomplete" placeholder="Type to search vendors">
+                                                                     <input type="hidden" name="reld_vendor_id" class="reld_vendor_id">
+                                                                </div>
+                                                            </div>
                                                             <!-- Related Party -->
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
@@ -294,6 +294,16 @@
                                                                 </div>
                                                             </div>
 
+                                                            <div class="row align-items-center mb-1" id="contraLedger" style="display: none;">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Contra Ledger</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" name="contra_ledger_name" class="form-control contra-ledger-autocomplete" placeholder="Type to search contra ledger">
+                                                                     <input type="hidden" name="contra_ledger_id" class="contra_ledger_id">
+                                                                </div>
+                                                            </div>
+
                                                           <!-- Group Organizations -->
                                                             <div class="row align-items-center mb-1" id="groupOrganizationsDropdown" style="display: none;">
                                                                 <div class="col-md-2">
@@ -304,20 +314,6 @@
                                                                         <option value="">Select</option>
                                                                         @foreach ($groupOrganizations as $organization)
                                                                             <option value="{{ $organization->id }}">{{ $organization->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-
-                                                            <div class="row align-items-center mb-1" id="reldVendorDropdown">
-                                                                <div class="col-md-2">
-                                                                    <label class="form-label">Parent Vendor</label>
-                                                                </div>
-                                                                <div class="col-md-3">
-                                                                    <select class="form-select select2" name="reld_vendor_id" id="reld_vendor_id">
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($relatedVendors as $relatedVendor)
-                                                                            <option value="{{ $relatedVendor->id }}">{{ $relatedVendor->company_name }}</option>
                                                                         @endforeach
                                                                     </select>
                                                                 </div>
@@ -533,7 +529,7 @@
                                                                             <th style="width:150px;">City<span class="text-danger">*</span></th>
                                                                             <th>Pin Code<span class="text-danger">*</span></th>
                                                                             <th>Address<span class="text-danger">*</span></th>
-                                                                            <th>Type</th>
+                                                                            <!-- <th>Type</th> -->
                                                                             <th>Action</th>
                                                                         </tr>
                                                                     </thead>
@@ -558,7 +554,7 @@
                                                                             </td>
 
                                                                             <td><input type="text" class="form-control mw-100" name="addresses[0][address]"></td> 
-                                                                            <td>
+                                                                            <!-- <td>
                                                                                 <div class="demo-inline-spacing">
                                                                                     <div class="form-check form-check-primary mt-25">
                                                                                         <input type="radio" id="isDefaultPurchase0" name="addresses[0][is_billing]" value="1" class="form-check-input">
@@ -569,7 +565,7 @@
                                                                                         <label class="form-check-label fw-bolder" for="isDefaultSelling0">Shipping</label>
                                                                                     </div>
                                                                                 </div>
-                                                                            </td>
+                                                                            </td> -->
                                                                             <td>
                                                                                 <a href="#" class="text-primary add-address"><i data-feather="plus-square" class="me-50"></i></a>
                                                                                 <a href="#" class="text-danger delete-address"><i data-feather="trash-2" class="me-50"></i></a>
@@ -1485,7 +1481,6 @@
             }
             initializeAutocomplete($newRow);
             updateRowIndexes();
-            handleRadioSelection();
             applyCapsLock();
         });
 
@@ -1513,21 +1508,7 @@
                 }  
             });
         }
-
-        function handleRadioSelection() {
-            $('#address-table-body').on('change', 'input[type="radio"][name*="[is_billing]"]', function() {
-                $('#address-table-body input[type="radio"][name*="[is_billing]"]').not(this).prop('checked', false);
-                $(this).val('1');
-            });
-
-            $('#address-table-body').on('change', 'input[type="radio"][name*="[is_shipping]"]', function() {
-                $('#address-table-body input[type="radio"][name*="[is_shipping]"]').not(this).prop('checked', false);
-                $(this).val('1');
-            });
-        }
-
         updateRowIndexes();
-        handleRadioSelection();
         applyCapsLock();
     });
 </script>
@@ -1726,7 +1707,7 @@ $(document).ready(function() {
         const companyNameInput = $('input[name="company_name"]'); 
         const vendorTypeInput = $('input[name="vendor_type"]');
         const catInitialsInput = $('input[name="cat_initials"]');
-        const subCatInitialsInput = $('input[name="sub_cat_initials"]');
+        const subCatInitialsInput = $('input[name="cat_initials"]');
         const vendorInitialInput = $('input[name="vendor_initial"]');
         const vendorCodeInput = $('input[name="vendor_code"]'); 
         if (vendorCodeType === 'Manual') {
@@ -1756,9 +1737,8 @@ $(document).ready(function() {
             const companyName = companyNameInput.val().trim();
             const vendorInitials = vendorInitialInput.val().trim() || getVendorInitials(companyName); 
             vendorInitialInput.val(vendorInitials); 
-
-            const categoryInitials = catInitialsInput.val().trim();
-            const subCategoryInitials = subCatInitialsInput.val().trim();
+            const categoryInitials = (catInitialsInput.val() || '').trim();
+            const subCategoryInitials = (subCatInitialsInput.val() || '').trim();
             const selectedVendorType = vendorTypeInput.filter(':checked').val();  
             let vendorTypeCode = '';
             if (selectedVendorType === 'Regular') {
@@ -1807,8 +1787,10 @@ $(document).ready(function() {
         $('#Related').change(function() {
             if ($(this).is(':checked')) {
                 $('#groupOrganizationsDropdown').show();
+                $('#contraLedger').show();
             } else {
                 $('#groupOrganizationsDropdown').hide();
+                $('#contraLedger').hide();
             }
         });
     });

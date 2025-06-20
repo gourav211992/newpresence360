@@ -29,6 +29,7 @@ use App\Models\ErpSaleOrder;
 use App\Models\ErpShelf;
 use App\Models\ErpSoItem;
 use App\Models\ErpStore;
+use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\ExpenseMaster;
 use App\Models\Hsn;
@@ -65,8 +66,10 @@ use App\Models\Overhead;
 use App\Models\PiItem;
 use App\Models\ErpSubStoreParent;
 use App\Models\ItemAttribute;
+use App\Models\InspectionChecklist;
 use App\Models\Attribute;
 use Auth;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Http\Request;
 
 class AutocompleteController extends Controller
@@ -85,48 +88,46 @@ class AutocompleteController extends Controller
 
         try {
             if ($type === 'category') {
+                
                 $query = Category::where('status', ConstantHelper::ACTIVE)
-                ->withDefaultGroupCompanyOrg()
-                ->whereNull('parent_id');
+                    ->withDefaultGroupCompanyOrg()
+                    ->doesntHave('subCategories'); 
+            
                 if ($request->has('category_type')) {
                     $query->where('type', $request->input('category_type'));
                 }
-
+            
                 $results = $query->when($term, function ($q) use ($term) {
                     return $q->where('name', 'LIKE', "%$term%");
                 })
-                ->with('hsn')
-                ->get(['id', 'name', 'cat_initials', 'hsn_id']);
+                ->with('hsn','parent', 'inspectionChecklist')
+                ->get(['id', 'name', 'cat_initials','sub_cat_initials','hsn_id', 'inspection_checklist_id','parent_id']);
+            
                 $results = $results->map(function ($category) {
-                    if ($category->hsn) {
-                        $category->hsn_code = $category->hsn->code;
-                    } else {
-                        $category->hsn_code = null;
-                    }
+                    $category->hsn_code = $category->hsn ? $category->hsn->code : null;
+                    $category->inspection_name = $category->inspectionChecklist ? $category->inspectionChecklist->name : null;
                     return $category;
                 });
-
+            
                 if ($results->isEmpty()) {
                     $fallbackQuery = Category::where('status', ConstantHelper::ACTIVE)
-                    ->withDefaultGroupCompanyOrg()
-                    ->whereNull('parent_id');
-
-                if ($request->has('category_type')) {
-                    $fallbackQuery->where('type', $request->input('category_type'));
-                }
-
-                $results = $fallbackQuery->limit(10)
-                ->with('hsn')
-                ->get(['id', 'name', 'cat_initials', 'hsn_id']);
-                $results = $results->map(function ($category) {
-                    if ($category->hsn) {
-                        $category->hsn_code = $category->hsn->code;
-                    } else {
-                        $category->hsn_code = null;
+                        ->withDefaultGroupCompanyOrg()
+                        ->doesntHave('subCategories');
+            
+                    if ($request->has('category_type')) {
+                        $fallbackQuery->where('type', $request->input('category_type'));
                     }
-                    return $category;
-                });
-              }
+            
+                    $results = $fallbackQuery->limit(10)
+                        ->with('hsn','parent','inspectionChecklist')
+                        ->get(['id', 'name', 'cat_initials', 'hsn_id', 'inspection_checklist_id','parent_id']);
+            
+                    $results = $results->map(function ($category) {
+                        $category->hsn_code = $category->hsn ? $category->hsn->code : null;
+                        $category->inspection_name = $category->inspectionChecklist ? $category->inspectionChecklist->name : null;
+                        return $category;
+                    });
+                }
             } elseif ($type === 'subcategory') {
                 $query = Category::where('status', ConstantHelper::ACTIVE)
                    ->withDefaultGroupCompanyOrg()
@@ -176,6 +177,120 @@ class AutocompleteController extends Controller
                         ->get(['id', 'code','description']);
                 }
             }
+            elseif ($type === 'checklist') {
+                $results = InspectionChecklist::where('status', ConstantHelper::ACTIVE)
+                    ->withDefaultGroupCompanyOrg()
+                    ->where(function ($query) use ($term) {
+                        $query->where('name', 'LIKE', "%$term%");
+                    }) 
+                    ->get(['id', 'name']);
+            
+                 if ($results->isEmpty()) {
+                    $results = InspectionChecklist::where('status', ConstantHelper::ACTIVE)
+                    ->withDefaultGroupCompanyOrg()
+                    ->limit(10)->get(['id', 'name']);
+                }
+            }
+            elseif ($type === 'vendor') {
+                $excludeVendorId = $request->has('vendor_id') ? $request->input('vendor_id') : null;
+                $query = Vendor::where('status', ConstantHelper::ACTIVE)
+                    ->withDefaultGroupCompanyOrg();
+                if ($term) {
+                    $query->searchByKeywords($term); 
+                }
+                if ($excludeVendorId) {
+                    $query->where('id', '!=', $excludeVendorId);
+                }
+                $results = $query->get(['id', 'company_name', 'vendor_code']);
+            
+                if ($results->isEmpty()) {
+                    $fallbackQuery = Vendor::where('status', ConstantHelper::ACTIVE)
+                        ->withDefaultGroupCompanyOrg();
+                    if ($excludeVendorId) {
+                        $fallbackQuery->where('id', '!=', $excludeVendorId);
+                    }
+                    $results = $fallbackQuery->limit(10)->get(['id', 'company_name', 'vendor_code']);
+                }
+            }            
+            elseif ($type === 'customer') {
+                $excludeCustomerId = $request->has('customer_id') ? $request->input('customer_id') : null;
+                $query = Customer::where('status', ConstantHelper::ACTIVE)
+                    ->withDefaultGroupCompanyOrg();
+            
+                if ($term) {
+                    $query->searchByKeywords($term); 
+                }
+                if ($excludeCustomerId) {
+                    $query->where('id', '!=', $excludeCustomerId);
+                }
+            
+                $results = $query->get(['id', 'company_name', 'customer_code']);
+            
+                if ($results->isEmpty()) {
+                    $fallbackQuery = Customer::where('status', ConstantHelper::ACTIVE)
+                        ->withDefaultGroupCompanyOrg();
+            
+                    if ($excludeCustomerId) {
+                        $fallbackQuery->where('id', '!=', $excludeCustomerId);
+                    }
+            
+                    $results = $fallbackQuery->limit(10)->get(['id', 'company_name', 'customer_code']);
+                }
+            }
+            elseif ($type === 'item-name') {
+                $query = Item::query()
+                     ->withDefaultGroupCompanyOrg()
+                    ->where('status', ConstantHelper::ACTIVE);
+                    
+                if ($term) {
+                    $query->searchByKeywords($term); 
+                }
+                $results = $query->get(['id', 'item_code', 'item_name']);
+                if ($results->isEmpty()) {
+                    $results = Item::query()
+                        ->withDefaultGroupCompanyOrg()
+                        ->where('status', ConstantHelper::ACTIVE)
+                        ->limit(10)
+                        ->get(['id', 'item_code', 'item_name']);
+                }
+            }
+            
+            elseif ($type === 'customer-name') {
+                $query = Customer::query()
+                    ->withDefaultGroupCompanyOrg()
+                    ->where('status', ConstantHelper::ACTIVE);
+                    
+                if ($term) {
+                    $query->searchByKeywords($term); 
+                }
+                $results = $query->get(['id', 'customer_code', 'company_name']);
+
+                if ($results->isEmpty()) {
+                    $results = Customer::query()
+                        ->withDefaultGroupCompanyOrg()
+                        ->where('status', ConstantHelper::ACTIVE)
+                        ->limit(10)
+                        ->get(['id', 'customer_code', 'company_name']);
+                }
+            }
+            elseif ($type === 'vendor-name') {
+                $query = Vendor::query()
+                    ->withDefaultGroupCompanyOrg()
+                    ->where('status', ConstantHelper::ACTIVE);
+                    
+                if ($term) {
+                    $query->searchByKeywords($term); 
+                }
+                
+                $results = $query->get(['id', 'vendor_code', 'company_name']);
+                if ($results->isEmpty()) {
+                    $results = Vendor::query()
+                        ->withDefaultGroupCompanyOrg()
+                        ->where('status', ConstantHelper::ACTIVE)
+                        ->limit(10)
+                        ->get(['id', 'vendor_code', 'company_name']);
+                }
+            }
             elseif ($type === 'sub_type') {
                 $results = SubType::where('status', ConstantHelper::ACTIVE)
                 ->where(function ($query) use ($term) {
@@ -188,7 +303,55 @@ class AutocompleteController extends Controller
                         ->limit(10)
                         ->get(['id', 'name']);
                 }
-            } elseif ($type === 'header_item') {
+            } elseif ($type === 'contraLedger') {
+                $query = Ledger::withDefaultGroupCompanyOrg()
+                                 ->where('status', 1);
+            
+                $group = Group::where('name', 'Branch / Divisions')->first();
+                if ($group) {
+                    $childGroupIds = $group->getAllChildIds();
+                    $groupIds = array_merge([$group->id], $childGroupIds);
+                    $stringGroupIds = array_map('strval', $groupIds);
+            
+                   $query->where(function($q2) use ($stringGroupIds) {
+                        foreach ($stringGroupIds as $id) {
+                            $q2->orWhereJsonContains('ledger_group_id', $id);
+                        }
+                    });
+                } else {
+                    $results = collect(); 
+                    return $results; 
+                }
+            
+                $results = $query->where(function($query) use ($term) {
+                                     $query->where('code', 'LIKE', "%{$term}%")
+                                           ->orWhere('name', 'LIKE', "%{$term}%");
+                                  })
+                                 ->get(['id', 'code', 'name']);
+            
+                if ($results->isEmpty()) {
+                    $results = Ledger::withDefaultGroupCompanyOrg()
+                                     ->where('status', 1);
+            
+                     $group = Group::where('name', 'Branch / Divisions')->first();
+                     if ($group) {
+                        $childGroupIds = $group->getAllChildIds();
+                        $groupIds = array_merge([$group->id], $childGroupIds);
+                        $stringGroupIds = array_map('strval', $groupIds);
+            
+                         $query->where(function($q2) use ($stringGroupIds) {
+                            foreach ($stringGroupIds as $id) {
+                                $q2->orWhereJsonContains('ledger_group_id', $id);
+                            }
+                        });
+                    }
+            
+                    $results =   $results->limit(10)
+                                         ->get(['id', 'code', 'name']);
+                }
+            }
+                  
+            elseif ($type === 'header_item') {
                 $type = ['WIP/Semi Finished', 'Finished Goods'];
                 $results = Item::withDefaultGroupCompanyOrg()
                     ->whereHas('subTypes', function ($query) use ($type) {
@@ -855,7 +1018,7 @@ class AutocompleteController extends Controller
             } else if ($type === 'customer' || $type === 'customer_list') {
                 $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
                 -> when($term, function ($termQuery) use($term) { 
-                    $termQuery -> where('company_name', 'LIKE', '%'.$term.'%');
+                    $termQuery -> where('company_name', 'LIKE', '%'.$term.'%') -> orWhere('customer_code', 'LIKE', '%'.$term.'%');
                 })->where('status', ConstantHelper::ACTIVE)
                 ->limit(10)
                 ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
@@ -1774,6 +1937,33 @@ class AutocompleteController extends Controller
                     ->where('status', ConstantHelper::ACTIVE)
                     ->where('value', 'like', '%' . $term . '%')
                     ->get(['id', 'value']);
+            } elseif ($type === 'stock_orgs') {
+                $orgIds = $authUser -> access_rights_org -> pluck('organization_id') -> toArray();
+                array_push($orgIds, $authUser -> organization_id);
+                $results = Organization::select('id', 'name') -> whereIn('id', $orgIds) 
+                    -> where('status', ConstantHelper::ACTIVE)
+                    -> when($term, function ($termQuery) use($term) {
+                        $termQuery -> where('name','LIKE', '%'.$term.'%');
+                    }) -> limit(10) -> get();
+            } elseif ($type === 'stock_locations') {
+                $selectedOrg = $request -> organization_id ?? null;
+                $results = ErpStore::select('id', 'store_name') -> withDefaultGroupCompanyOrg()
+                ->when(($authUser->authenticable_type == "employee"), function ($locationQuery) use($authUser) { // Location with same country and state
+                    $locationQuery->whereHas('employees', function ($employeeQuery) use ($authUser) {
+                        $employeeQuery->where('employee_id', $authUser->id);
+                    });
+                }) -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('store_name', 'LIKE', '%'.$term.'%');
+                }) -> where('organization_id', $selectedOrg) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
+            } elseif ($type === 'stock_sub_locations') {
+                $selectedLocation = $request -> location_id ?? null;
+                $results = ErpSubStore::select('id', 'name') -> when(true, function ($locationQuery) use($selectedLocation) {
+                    $locationQuery -> whereHas('parents', function ($parentQuery) use($selectedLocation) {
+                        $parentQuery -> where('store_id', $selectedLocation);
+                    });
+                }) -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('name', 'LIKE', '%'.$term.'%');
+                }) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
             } else {
                 return response()->json(['error' => 'Invalid type specified'], 400);
             }

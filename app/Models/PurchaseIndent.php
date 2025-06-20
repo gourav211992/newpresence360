@@ -48,7 +48,8 @@ class PurchaseIndent extends Model
         'group_currency_id',
         'group_currency_code',
         'group_currency_exg_rate',
-        'so_tracking_required'
+        'so_tracking_required',
+        'procurement_type'
     ];
 
     protected $appends = [

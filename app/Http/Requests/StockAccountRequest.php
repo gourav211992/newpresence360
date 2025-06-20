@@ -111,7 +111,7 @@ class StockAccountRequest extends FormRequest
             'stock_accounts.*.ledger_id.required' => 'The ledger field is required.',
             'stock_accounts.*.ledger_id.exists' => 'The selected ledger does not exist.',
             'stock_accounts.*.category_id.exists' => 'The selected category does not exist.',
-            'stock_accounts.*.sub_category_id.exists' => 'The selected sub-category does not exist.',
+            'stock_accounts.*.sub_category_id.exists' => 'The selected item group does not exist.',
             'stock_accounts.*.item_id.exists' => 'The selected item does not exist.',
             'stock_accounts.*.item_id.*.exists' => 'One of the selected items does not exist.',
             'stock_accounts.*.book_id.exists' => 'The selected book does not exist.',

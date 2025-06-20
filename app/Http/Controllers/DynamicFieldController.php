@@ -99,7 +99,8 @@ class DynamicFieldController extends Controller
                         $fieldDetail = $dynamicField->details()->create([
                             'name' => $detail['name'],
                             'description' => $detail['description'],
-                            'data_type' => $detail['data_type']
+                            'data_type' => $detail['data_type'],
+                            'mandatory' => $detail['mandatory']
                         ]);
                         
                         if (isset($detail['value']) && !empty($detail['value'])) {
@@ -192,6 +193,7 @@ class DynamicFieldController extends Controller
                                 'name' => $detail['name'],
                                 'description' => $detail['description'],
                                 'data_type' => $detail['data_type'],
+                                'mandatory' => $detail['mandatory']
                             ]);
                             $newDetailIds[] = $detailId;
 
@@ -218,6 +220,7 @@ class DynamicFieldController extends Controller
                             'name' => $detail['name'],
                             'description' => $detail['description'],
                             'data_type' => $detail['data_type'],
+                            'mandatory' => $detail['mandatory']
                         ]);
                         $newDetailIds[] = $newDetail->id;
 

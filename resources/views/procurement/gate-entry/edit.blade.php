@@ -1047,6 +1047,8 @@
     <script type="text/javascript">
         var actionUrlTax = '{{ route('gate-entry.tax.calculation') }}';
     </script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{ asset('assets/js/modules/gate-entry.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
@@ -2811,42 +2813,45 @@
             // dataAttributes.
         });
 
-
         /*Open Po model*/
+        let poOrderTable;
         $(document).on('click', '.poSelect', (e) => {
             $("#poModal").modal('show');
             currentProcessType='po';
             openPurchaseRequest();
-            getPurchaseOrders();
+            const tableSelector = '#poModal .po-order-detail';
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    poOrderTable = $(tableSelector).DataTable();
+                    poOrderTable.ajax.reload();
+                } else {
+                    getPurchaseOrders();
+                }
+            }
         });
-        $(document).on('click', '.joSelect', (e) => {
-            $("#joModal").modal('show');
-            currentProcessType='jo';
-            openJobRequest();
-            getJobOrders();
-        });
-
-        /*searchPiBtn*/
-        $(document).on('click', '.searchPoBtn', (e) => {
-            getPurchaseOrders();
-        });
-
-        $(document).on('click', '.searchJoBtn', (e) => {
-            getJobOrders();
-        });
-
-        function openPurchaseRequest() {
-            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
-                "company_name");
-            initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+        
+        function getSelectedPoTypes()
+        {
+            let moduleTypes = [];
+            $('.po_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
         }
 
-        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+        function openPurchaseRequest()
+        {
+            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
+        }
+
+        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        {
             let modalType = '#poModal';
             if (currentProcessType == 'jo')
                 modalType = '#joModal';
+
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -2856,8 +2861,9 @@
                         data: {
                             q: request.term,
                             type: typeVal,
-                            vendor_id: $("#vendor_id_qt_val").val(),
-                            header_book_id: $("#book_id").val(),
+                            vendor_id : $("#vendor_id_qt_val").val(),
+                            header_book_id : $("#book_id").val(),
+                            store_id : $("#store_id_po").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -2873,160 +2879,107 @@
                         }
                     });
                 },
-                appendTo: modalType,
+                appendTo : modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
                     return false;
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + selectorSibling).val("");
+                        $('#poModal .po-order-detail').DataTable().ajax.reload();
                     }
                 }
             }).focus(function() {
                 if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
                     $(this).autocomplete("search", "");
                 }
-            });
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
+                }
+            })
         }
 
-        function openJobRequest() {
-            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code",
-                "company_name");
-            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
+        function renderData(data) {
+            return data ? data : ''; 
         }
 
-        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
-        //     $("#" + selector).autocomplete({
-        //         source: function(request, response) {
-        //             $.ajax({
-        //                 url: '/search',
-        //                 method: 'GET',
-        //                 dataType: 'json',
-        //                 data: {
-        //                     q: request.term,
-        //                     type: typeVal,
-        //                     vendor_id: $("#vendor_id_qt_val").val(),
-        //                     header_book_id: $("#book_id").val(),
-        //                 },
-        //                 success: function(data) {
-        //                     response($.map(data, function(item) {
-        //                         return {
-        //                             id: item.id,
-        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-        //                             code: item[labelKey1] || '',
-        //                         };
-        //                     }));
-        //                 },
-        //                 error: function(xhr) {
-        //                     console.error('Error fetching customer data:', xhr.responseText);
-        //                 }
-        //             });
-        //         },
-        //         appendTo: '#joModal',
-        //         minLength: 0,
-        //         select: function(event, ui) {
-        //             var $input = $(this);
-        //             $input.val(ui.item.label);
-        //             $("#" + selectorSibling).val(ui.item.id);
-        //             return false;
-        //         },
-        //         change: function(event, ui) {
-        //             if (!ui.item) {
-        //                 $(this).val("");
-        //                 $("#" + selectorSibling).val("");
-        //             }
-        //         }
-        //     }).focus(function() {
-        //         if (this.value === "") {
-        //             $(this).autocomplete("search", "");
-        //         }
-        //     });
-        // }
-
-        window.onload = function () {
-            let selectedPoIds = [];
-
-            @if ($mrn->reference_type == 'po')
-                selectedPoIds.push(...@json((array) $mrn->purchase_order_id));
-            @elseif ($mrn->reference_type == 'jo')
-                selectedPoIds.push(...@json((array) $mrn->job_order_id));
-            @endif
-
-            localStorage.setItem('selectedPoIds', JSON.stringify(selectedPoIds));
-        };
-        function getPurchaseOrders() {
+        function getDynamicParams() {
             let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-
             selectedPoIds = JSON.parse(selectedPoIds);
             selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
-
-            let document_date = $("[name='document_date']").val() || '';
-            let header_book_id = $("#book_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let type = 'edit';
-            let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("gate-entry.get.po", ["type" => "edit"]) }}';
-            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_po_ids=${selectedPoIds}
-            &document_date=${document_date}
-            &item_search=${item_search}`;
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #poDataTable").empty().append(data.data.pis);
-                    $('.select2').select2({
-                        dropdownParent: $(
-                            '#poModal') // Ensure dropdown is rendered inside the modal
-                    });
-                });
-            });
+            return {
+                document_date: $("[name='document_date']").val() || '',
+                header_book_id: $("#book_id").val() || '',
+                series_id: $("#book_id_qt_val").val() || '',
+                document_number: $("#document_id_qt_val").val() || '',
+                item_id: $("#item_id_qt_val").val() || '',
+                vendor_id: $("#vendor_id_qt_val").val(),
+                store_id: $("#store_id").val() || '',
+                so_id: $("#po_so_qt_val").val() || '',
+                item_search: $("#item_name_search").val(),
+                selected_pO_ids: encodeURIComponent(selectedPoIds)
+            };
         }
 
-        function getJobOrders() {
-            let selectedJoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-            selectedJoIds = JSON.parse(selectedJoIds);
-            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
-
-            let document_date = $("[name='document_date']").val() || '';
-            let header_book_id = $("#book_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("gate-entry.get.jo", ["type" => "edit"]) }}';
-            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_jo_ids=${selectedJoIds}
-            &document_date=${document_date}
-            &item_search=${item_search}`;
-
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #joDataTable").empty().append(data.data.pis);
-                    $('.select2').select2({
-                        dropdownParent: $(
-                            '#joModal') // Ensure dropdown is rendered inside the modal
-                    });
-                });
-            });
+        function getPurchaseOrders() 
+        {
+            const ajaxUrl = '{{ route("gate-entry.get.po", ["type" => "edit"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'po_doc', name: 'po_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'po_date', name: 'po_date', render: renderData, orderable: false, searchable: false },
+                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#poModal .po-order-detail', 
+                ajaxUrl,
+                columns
+            );
         }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#poModal .po-order-detail').DataTable().ajax.reload();
+        });
 
         /*Checkbox for po/si item list*/
         $(document).on('change', '.po-order-detail > thead .form-check-input', (e) => {
@@ -3348,6 +3301,106 @@
                 });
             });
         });
+
+        $(document).on('click', '.joSelect', (e) => {
+            $("#joModal").modal('show');
+            currentProcessType='jo';
+            openJobRequest();
+            getJobOrders();
+        });
+
+        $(document).on('click', '.searchJoBtn', (e) => {
+            getJobOrders();
+        });
+
+        function openJobRequest() {
+            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code",
+                "company_name");
+            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
+            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
+        }
+
+        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
+        //     $("#" + selector).autocomplete({
+        //         source: function(request, response) {
+        //             $.ajax({
+        //                 url: '/search',
+        //                 method: 'GET',
+        //                 dataType: 'json',
+        //                 data: {
+        //                     q: request.term,
+        //                     type: typeVal,
+        //                     vendor_id: $("#vendor_id_qt_val").val(),
+        //                     header_book_id: $("#book_id").val(),
+        //                 },
+        //                 success: function(data) {
+        //                     response($.map(data, function(item) {
+        //                         return {
+        //                             id: item.id,
+        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+        //                             code: item[labelKey1] || '',
+        //                         };
+        //                     }));
+        //                 },
+        //                 error: function(xhr) {
+        //                     console.error('Error fetching customer data:', xhr.responseText);
+        //                 }
+        //             });
+        //         },
+        //         appendTo: '#joModal',
+        //         minLength: 0,
+        //         select: function(event, ui) {
+        //             var $input = $(this);
+        //             $input.val(ui.item.label);
+        //             $("#" + selectorSibling).val(ui.item.id);
+        //             return false;
+        //         },
+        //         change: function(event, ui) {
+        //             if (!ui.item) {
+        //                 $(this).val("");
+        //                 $("#" + selectorSibling).val("");
+        //             }
+        //         }
+        //     }).focus(function() {
+        //         if (this.value === "") {
+        //             $(this).autocomplete("search", "");
+        //         }
+        //     });
+        // }
+
+        function getJobOrders() {
+            let selectedJoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+            selectedJoIds = JSON.parse(selectedJoIds);
+            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
+
+            let document_date = $("[name='document_date']").val() || '';
+            let header_book_id = $("#book_id").val() || '';
+            let series_id = $("#book_id_qt_val").val() || '';
+            let document_number = $("#document_no_input_qt").val() || '';
+            let item_id = $("#item_id_qt_val").val() || '';
+            let vendor_id = $("#vendor_id_qt_val").val() || '';
+            let item_search = $("#item_name_search").val();
+            let actionUrl = '{{ route("gate-entry.get.jo", ["type" => "edit"]) }}';
+            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
+            &document_number=${encodeURIComponent(document_number)}
+            &item_id=${encodeURIComponent(item_id)}
+            &vendor_id=${encodeURIComponent(vendor_id)}
+            &header_book_id=${encodeURIComponent(header_book_id)}
+            &selected_jo_ids=${selectedJoIds}
+            &document_date=${document_date}
+            &item_search=${item_search}`;
+
+            fetch(fullUrl).then(response => {
+                return response.json().then(data => {
+                    $(".po-order-detail #joDataTable").empty().append(data.data.pis);
+                    $('.select2').select2({
+                        dropdownParent: $(
+                            '#joModal') // Ensure dropdown is rendered inside the modal
+                    });
+                });
+            });
+        }
 
         $(document).on('click', '.joProcess', (e) => {
             let result = getSelectedPoIDS();

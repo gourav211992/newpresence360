@@ -288,7 +288,7 @@ function disableHeader()
         orderButton.disabled = true;
     }
     let plistButton = document.getElementById('pack_list_button');
-    if (plisButton) {
+    if (plistButton) {
         plistButton.disabled = true;
     }
     // let orderButton = document.getElementById('select_mfg_button');
@@ -350,7 +350,7 @@ function enableHeader()
         orderButton.disabled = false;
     }
     let plistButton = document.getElementById('pack_list_button');
-    if (plisButton) {
+    if (plistButton) {
         plistButton.disabled = false;
     }
 }
@@ -1437,6 +1437,10 @@ function onItemClick(itemRowId)
         //assign land plot details
         let parcelName = document.getElementById('land_lease_land_parcel_' + itemRowId)?.value;
         let plotsName = document.getElementById('land_lease_land_plots_' + itemRowId)?.value;
+        
+        if (parcelName && plotsName) {
+            qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
+        }
 
     }
         let qtDocumentNo = document.getElementById('qt_document_no_'+ itemRowId);
@@ -1450,10 +1454,6 @@ function onItemClick(itemRowId)
     if (qtDocumentNo && qtBookCode && qtDocumentDate) {
         qtDetailsRow.style.display = "table-row";
         qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
-
-        if (parcelName && plotsName) {
-            qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
-        }
     } else {
         qtDetailsRow.style.display = "none";
         qtDetails.innerHTML = ``;
@@ -1605,6 +1605,7 @@ setAttributesUI();
 });
 var currentSelectedItemIndex = null ;
 function setAttributesUI(paramIndex = null) {
+    console.log('setAttributesUI called with paramIndex:', paramIndex);
     let currentItemIndex = null;
     if (paramIndex != null || paramIndex != undefined) {
         currentItemIndex = paramIndex;

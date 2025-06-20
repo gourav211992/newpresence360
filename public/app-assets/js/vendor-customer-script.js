@@ -37,50 +37,50 @@ $(document).ready(function() {
     updateCurrencyShortName();
 });
 //Category Onchnage
-$(document).ready(function() {
-    function loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect) {
-        if (categoryId) {
-            $.ajax({
-                url: '/categories/subcategories/' + categoryId,
-                method: 'GET',
-                success: function(response) {
-                    subcategorySelect.empty();
-                    subcategorySelect.append('<option value="">Sub-Category</option>');
-                    $.each(response, function(index, subcategory) {
-                        subcategorySelect.append(
-                            '<option value="' + subcategory.id + '"' + 
-                            (subcategory.id == selectedSubcategoryId ? ' selected' : '') + '>' + 
-                            subcategory.name + '</option>'
-                        );
-                    });
-                },
-                error: function() {
-                    alert('An error occurred while fetching subcategories.');
-                }
-            });
-        } else {
-            subcategorySelect.empty();
-            subcategorySelect.append('<option value="">Sub-Category</option>');
-        }
-    }
-    $(document).on('change', 'select.category-chnage', function() {
-        var categorySelect = $(this);
-        var categoryId = categorySelect.val();
-        var subcategorySelect = $('select[name="subcategory_id"]');
-        var selectedSubcategoryId = subcategorySelect.data('selected-id');
-        loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
-    });
-    function initializeSubcategories() {
-        var categorySelect = $('select[name="category_id"]');
-        var initialCategoryId = categorySelect.val();
-        var subcategorySelect = $('select[name="subcategory_id"]');
-        var selectedSubcategoryId = subcategorySelect.data('selected-id');
-        console.log(selectedSubcategoryId);
-        loadSubcategories(initialCategoryId, selectedSubcategoryId, subcategorySelect);
-    }
+// $(document).ready(function() {
+//     function loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect) {
+//         if (categoryId) {
+//             $.ajax({
+//                 url: '/categories/subcategories/' + categoryId,
+//                 method: 'GET',
+//                 success: function(response) {
+//                     subcategorySelect.empty();
+//                     subcategorySelect.append('<option value="">Sub-Category</option>');
+//                     $.each(response, function(index, subcategory) {
+//                         subcategorySelect.append(
+//                             '<option value="' + subcategory.id + '"' + 
+//                             (subcategory.id == selectedSubcategoryId ? ' selected' : '') + '>' + 
+//                             subcategory.name + '</option>'
+//                         );
+//                     });
+//                 },
+//                 error: function() {
+//                     alert('An error occurred while fetching subcategories.');
+//                 }
+//             });
+//         } else {
+//             subcategorySelect.empty();
+//             subcategorySelect.append('<option value="">Sub-Category</option>');
+//         }
+//     }
+//     $(document).on('change', 'select.category-chnage', function() {
+//         var categorySelect = $(this);
+//         var categoryId = categorySelect.val();
+//         var subcategorySelect = $('select[name="subcategory_id"]');
+//         var selectedSubcategoryId = subcategorySelect.data('selected-id');
+//         loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
+//     });
+//     function initializeSubcategories() {
+//         var categorySelect = $('select[name="category_id"]');
+//         var initialCategoryId = categorySelect.val();
+//         var subcategorySelect = $('select[name="subcategory_id"]');
+//         var selectedSubcategoryId = subcategorySelect.data('selected-id');
+//         console.log(selectedSubcategoryId);
+//         loadSubcategories(initialCategoryId, selectedSubcategoryId, subcategorySelect);
+//     }
 
-    initializeSubcategories();
-});
+//     initializeSubcategories();
+// });
 
 
 

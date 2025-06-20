@@ -38,7 +38,9 @@
                                         <thead>
                                             <tr>
                                                 <th>S.No</th>
+                                                <th>Parent Category</th>
                                                 <th>Category Name</th>
+                                                <th>Last Level</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                             </tr>
@@ -71,7 +73,15 @@
                 ajax: "{{ route('categories.index') }}",
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
+                    {
+                        data: 'parent_category',
+                        name: 'parent_category',
+                        render: function(data, type, row) {
+                            return data ? data : 'Main Category'; 
+                        }
+                    },
                     { data: 'name', render: renderData },
+                    { data: 'last_level', render: renderData },
                     { data: 'status', orderable: false },
                     { data: 'action', orderable: false, searchable: false }
                 ],
@@ -87,35 +97,35 @@
                                 text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
                                 className: 'dropdown-item',
                                 title: 'Category Master',
-                                exportOptions: { columns: [0, 1, 2] }
+                                exportOptions: { columns: [0, 1, 2,4] }
                             },
                             {
                                 extend: 'csv',
                                 text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
                                 className: 'dropdown-item',
                                 title: 'Category Master',
-                                exportOptions: {columns: [0, 1, 2]}
+                                exportOptions: {columns: [0, 1, 2,4]}
                             },
                             {
                                 extend: 'excel',
                                 text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
                                 className: 'dropdown-item',
                                 title: 'Category Master',
-                                exportOptions: {columns: [0, 1, 2]}
+                                exportOptions: {columns: [0, 1, 2,4]}
                             },
                             {
                                 extend: 'pdf',
                                 text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
                                 className: 'dropdown-item',
                                 title: 'Category Master',
-                                exportOptions: { columns: [0, 1, 2] }
+                                exportOptions: { columns: [0, 1, 2,4] }
                             },
                             {
                                 extend: 'copy',
                                 text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
                                 className: 'dropdown-item',
                                 title: 'Category Master',
-                                exportOptions: { columns: [0, 1, 2]}
+                                exportOptions: { columns: [0, 1, 2,4]}
                             }
                         ],
                         init: function(api, node, config) {

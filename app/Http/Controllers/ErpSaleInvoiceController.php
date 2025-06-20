@@ -243,7 +243,7 @@ class ErpSaleInvoiceController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        $create_button = (count($servicesBooks['services']) > 0 && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
+        $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         return view('salesInvoice.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => $create_button,'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::SI_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,]);
     }
@@ -1753,12 +1753,15 @@ class ErpSaleInvoiceController extends Controller
                 })
                 ->addColumn('sale_order', function ($item) {
                     return [
-                        'book_code'       => $item?->sale_order?->book_code,
+                        'book_code' => $item?->sale_order?->book_code,
                         'document_number' => $item?->sale_order?->document_number,
                         'document_date'   => isset($item->sale_order) && method_exists($item?->sale_order, 'getFormattedDate') 
                             ? $item->sale_order->getFormattedDate("document_date") 
                             : '',
                         'customer_code'   => $item?->sale_order?->customer?->customer_code,
+                        'so_item_ids' => $item?->items && $item->items->isNotEmpty()
+                            ? $item->items->pluck('so_item_id')->toArray()
+                            : ($item?->so_item_id ? [$item->so_item_id] : [$item->id]),
                     ];
                 })
                 ->addColumn('items_ui', function ($item) {
@@ -1812,7 +1815,7 @@ class ErpSaleInvoiceController extends Controller
                     return 0;
                 })
                 ->rawColumns(['items_ui'])
-                ->make(true);
+                ->make( true);
 
 
         } catch(Exception $ex) {
@@ -1893,10 +1896,12 @@ class ErpSaleInvoiceController extends Controller
                 $modelName = null;
             }
             if (isset($modelName)) {
+                $decoded = is_array($request->items_id[0]) ? $request->items_id[0] : json_decode($request->items_id[0], true); // decode as associative array
+                $currentIds = is_array($decoded) ? $decoded : [$decoded]; 
                 $headers = $modelName::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
                     $sQuery -> with(['currency', 'payment_terms']);
-                }) -> with('items', function ($itemQuery) use($request) {
-                    $itemQuery -> whereIn('id', $request -> items_id) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
+                }) -> with('items', function ($itemQuery) use($currentIds) {
+                    $itemQuery -> whereIn('id', $currentIds) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
                     }]);
                 }) -> whereIn('id', $request -> order_id) -> get();
@@ -2078,10 +2083,11 @@ class ErpSaleInvoiceController extends Controller
                         }
                     }
                 } else if ($request -> doc_type === PackingListConstants::SERVICE_ALIAS) {
-                    $soItems =$request -> items_id;
+                    $soItems = $request -> items_id;
                     $actualSoItemIds = [];
                     foreach ($soItems as $key => $value) {
-                        $currentIds = json_decode($value);
+                        $decoded = json_decode($value, true); // decode as associative array
+                        $currentIds = is_array($decoded) ? $decoded : [$decoded];
                         foreach ($currentIds as $soItemId) {
                             array_push($actualSoItemIds, $soItemId);
                         }
@@ -2103,6 +2109,7 @@ class ErpSaleInvoiceController extends Controller
                             $plistItem = PackingListItem::find($orderItem -> plist_item_id);
                             if (isset($plistItem)) {
                                 $orderItem -> order_qty = $plistItem -> qty;
+                                $orderItem -> balance_qty = $plistItem -> qty;   
                                 $orderItem -> package = $plistItem -> detail ?-> packing_number;
                                 $orderItem -> package_id = $plistItem -> detail ?-> id;
                             }
@@ -2118,7 +2125,7 @@ class ErpSaleInvoiceController extends Controller
         } catch(Exception $ex) {
             return response() -> json([
                 'message' => 'Some internal error occurred',
-                'error' => $ex -> getMessage()
+                'error' => $ex -> getMessage().''.$ex ->getLine() . ''.$ex ->getFile().')'
             ]);
         }
     }

@@ -160,6 +160,10 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PoItem::class, 'purchase_order_id');
     }
+    public function items()
+    {
+        return $this->hasMany(PoItem::class, 'purchase_order_id');
+    }
 
     public function po_items_attribute()
     {
@@ -279,6 +283,10 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PurchaseOrderTed::class,'purchase_order_id')->where('ted_level', 'H')->where('ted_type','Discount');
     }
+    public function discount_ted()
+    {
+        return $this->hasMany(PurchaseOrderTed::class,'purchase_order_id')->where('ted_level', 'H')->where('ted_type','Discount');
+    }
 
     public function itemDiscount()
     {
@@ -298,6 +306,10 @@ class PurchaseOrder extends Model
     }
 
     public function headerExpenses()
+    {
+        return $this->hasMany(PurchaseOrderTed::class,'purchase_order_id')->where('ted_type','Expense')->where('ted_level','H');
+    }
+    public function expense_ted()
     {
         return $this->hasMany(PurchaseOrderTed::class,'purchase_order_id')->where('ted_type','Expense')->where('ted_level','H');
     }

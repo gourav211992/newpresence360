@@ -62,11 +62,9 @@
                                                             <th>S.No</th>
                                                             <th>Company<span class="text-danger">*</span></th>
                                                             <th>Organization<span class="text-danger">*</span></th>
-                                                            <th>Customer Category</th>
-                                                            <th>Customer Subcategory</th>
+                                                            <th>Customer Group</th>
                                                             <th>Customers</th>
-                                                            <th>Item Category</th>
-                                                            <th>Item Subcategory</th>
+                                                            <th>Item Group</th>
                                                             <th>Items</th>
                                                             <th>Books</th>
                                                             <th>Ledger<span class="text-danger">*</span></th>
@@ -97,13 +95,7 @@
                                                                 </td>
                                                                 <td>
                                                                     <div class="setup-td-width">
-                                                                        <input type="text" class="form-control autocomplete  mw-100 customer_category_name" name="sales_accounts[0][customer_category_name]" placeholder="Enter Customer Category">
-                                                                        <input type="hidden" name="sales_accounts[0][customer_category_id]" />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div class="setup-td-width">
-                                                                        <input type="text" class="form-control autocomplete  mw-100 customer_sub_category_name" name="sales_accounts[0][customer_sub_category_name]" placeholder="Enter Customer Sub Category ">
+                                                                        <input type="text" class="form-control autocomplete  mw-100 customer_sub_category_name" name="sales_accounts[0][customer_sub_category_name]" placeholder="Enter Customer Group">
                                                                         <input type="hidden" name="sales_accounts[0][customer_sub_category_id]" />
                                                                     </div>
                                                                 </td>
@@ -116,15 +108,9 @@
                                                                 </td>
                                                                 <td>
                                                                     <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete item_category_name" name="sales_accounts[0][item_category_name]" placeholder="Enter Item Category">
-                                                                        <input type="hidden" name="sales_accounts[0][item_category_id]" />
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div class="setup-td-width">
-                                                                        <input type="text" class="form-control  mw-100 autocomplete item_sub_category_name" name="sales_accounts[0][item_sub_category_name]" placeholder="Enter Item Sub Category ">
+                                                                        <input type="text" class="form-control  mw-100 autocomplete item_sub_category_name" name="sales_accounts[0][item_sub_category_name]" placeholder="Enter Item Group">
                                                                         <input type="hidden" name="sales_accounts[0][item_sub_category_id]" />
-                                                                    </div> 
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     <div class="setup-td-width">
@@ -192,29 +178,22 @@
                                                                     </td>
                                                                     <td>
                                                                         <div class="setup-td-width">
-                                                                            <input type="text" class="form-control  mw-100 autocomplete customer-category-name" name="sales_accounts[{{ $index }}][customer_category_name]" value="{{ $item->customerCategory->name ?? '' }}" placeholder=" Enter Customer Category">
-                                                                            <input type="hidden" name="sales_accounts[{{ $index }}][customer_category_id]" value="{{ $item->customer_category_id ?? '' }}" />
-                                                                        </div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="setup-td-width">
-                                                                            <input type="text" class="form-control  mw-100 autocomplete customer-subcategory-name" name="sales_accounts[{{ $index }}][customer_sub_category_name]" value="{{ $item->customerSubCategory->name ?? '' }}" placeholder="Enter Customer Sub Category">
+                                                                            <input type="text" class="form-control  mw-100 autocomplete customer-subcategory-name" name="sales_accounts[{{ $index }}][customer_sub_category_name]" value="{{ $item->customerSubCategory->name ?? '' }}" placeholder=" Enter Customer Group">
                                                                             <input type="hidden" name="sales_accounts[{{ $index }}][customer_sub_category_id]" value="{{ $item->customer_sub_category_id ?? '' }}" />
                                                                         </div>
                                                                     </td>
-                                                                    
                                                                     <td>
                                                                         <div class="setup-td-width">
                                                                             <select class="form-select select2 customer-select" name="sales_accounts[{{ $index }}][customer_id][]" multiple>
                                                                                     @php 
-                                                                                        $categoryId = $item->customer_category_id ?? null;
                                                                                         $subCategoryId = $item->customer_sub_category_id ?? null;
                                                                                         $organizationId = $item->organization_id ?? null;
+                                                                                        $groupId = $item->group_id ?? null;
                                                                                         $customerIds = is_array($item->customer_id) ? $item->customer_id : json_decode($item->customer_id, true) ?? [];
                                                                                     @endphp
 
                                                                                     {{-- Check if there's a sub-category with customers, and also check the organization filter --}}
-                                                                                    @if($subCategoryId && $item->customerSubCategory && $item->customerSubCategory->customersSub && $item->customerSubCategory->customersSub->count() > 0)
+                                                                                    @if($subCategoryId && $item->customerSubCategory && $item->customerSubCategory->customersSub && $item->customerSubCategory->customersSub->where('status', '!=', 'draft'))
                                                                                         @foreach($item->customerSubCategory->customersSub->where('status', '!=', 'draft') as $customerOption)
                                                                                             @if(!$organizationId || $customerOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
                                                                                                 <option value="{{ $customerOption->id }}" data-customer-code="{{ $customerOption->customer_code }}" {{ in_array($customerOption->id, $customerIds) ? 'selected' : '' }}>
@@ -222,17 +201,6 @@
                                                                                                 </option>
                                                                                             @endif
                                                                                         @endforeach
-
-                                                                                    {{-- If no sub-category, check for the main category and apply the organization filter --}}
-                                                                                    @elseif($categoryId && $item->customerCategory && $item->customerCategory->customers && $item->customerCategory->customers->where('status', '!=', 'draft')->count() > 0)
-                                                                                        @foreach($item->customerCategory->customers->where('status', '!=', 'draft') as $customerOption)
-                                                                                            @if(!$organizationId || $customerOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                                <option value="{{ $customerOption->id }}" data-customer-code="{{ $customerOption->customer_code }}" {{ in_array($customerOption->id, $customerIds) ? 'selected' : '' }}>
-                                                                                                    {{ $customerOption->company_name }} ({{ $customerOption->customer_code }})
-                                                                                                </option>
-                                                                                            @endif
-                                                                                        @endforeach
-
                                                                                     {{-- If no category, check for the organization itself, and apply the organization filter --}}
                                                                                     @elseif($organizationId && $item->organization && $item->organization->customers && $item->organization->customers->where('status', '!=', 'draft')->count() > 0)
                                                                                         @foreach($item->organization->customers->where('status', '!=', 'draft') as $customerOption)
@@ -243,15 +211,14 @@
                                                                                             @endif
                                                                                         @endforeach
 
-                                                                                     @elseif($item->organization && $item->organization->customers->isEmpty()) 
-                                                                                        @foreach($customers->where('status', '!=', 'draft') as $customerOption) 
-                                                                                            @if(!$organizationId || $customerOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                                <option value="{{ $customerOption->id }}" data-customer-code="{{ $customerOption->customer_code }}" {{ in_array($customerOption->id, $customerIds) ? 'selected' : '' }}>
-                                                                                                    {{ $customerOption->company_name }} ({{ $customerOption->customer_code }})
-                                                                                                </option>
-                                                                                            @endif
-                                                                                        @endforeach
-                                                                                        
+                                                                                        @elseif( $groupId && $item->group && $item->group->customers->where('status', '!=', 'draft')) 
+                                                                                            @foreach($item->group->customers->where('status', '!=', 'draft') as $customerOption) 
+                                                                                                @if( !$groupId || $customerOption->group_id == $groupId)  {{-- Check for organization filter --}}
+                                                                                                    <option value="{{ $customerOption->id }}" data-customer-code="{{ $customerOption->customer_code }}" {{ in_array($customerOption->id, $customerIds) ? 'selected' : '' }}>
+                                                                                                        {{ $customerOption->company_name }} ({{ $customerOption->customer_code }})
+                                                                                                    </option>
+                                                                                                @endif
+                                                                                            @endforeach
                                                                                     {{-- If no customers available anywhere --}}
                                                                                     @else
                                                                                         <option value="">No Customers Available</option>
@@ -262,13 +229,7 @@
 
                                                                     <td>
                                                                         <div class="setup-td-width">
-                                                                            <input type="text" class="form-control  mw-100 autocomplete item-category-name" name="sales_accounts[{{ $index }}][item_category_name]" value="{{ $item->itemCategory->name ?? '' }}" placeholder="Enter Item Category">
-                                                                            <input type="hidden" name="sales_accounts[{{ $index }}][item_category_id]" value="{{ $item->item_category_id ?? '' }}" />
-                                                                        </div>
-                                                                    </td>
-                                                                    <td>
-                                                                        <div class="setup-td-width">
-                                                                            <input type="text" class="form-control  mw-100 autocomplete item-subcategory-name" name="sales_accounts[{{ $index }}][item_sub_category_name]" value="{{ $item->itemSubCategory->name ?? '' }}" placeholder=" Enter Item Sub Category">
+                                                                            <input type="text" class="form-control  mw-100 autocomplete item-subcategory-name" name="sales_accounts[{{ $index }}][item_sub_category_name]" value="{{ $item->itemSubCategory->name ?? '' }}" placeholder="Enter Item Group">
                                                                             <input type="hidden" name="sales_accounts[{{ $index }}][item_sub_category_id]" value="{{ $item->item_sub_category_id ?? '' }}" />
                                                                         </div>
                                                                     </td>
@@ -276,14 +237,14 @@
                                                                         <div class="setup-td-width">
                                                                             <select class="form-select select2 item-select" name="sales_accounts[{{ $index }}][item_id][]" multiple>
                                                                                     @php
-                                                                                        $categoryId = $item->item_category_id ?? null;
                                                                                         $subCategoryId = $item->item_sub_category_id ?? null;
                                                                                         $organizationId = $item->organization_id ?? null; 
+                                                                                        $groupId = $item->group_id ?? null;
                                                                                         $itemIds = is_array($item->item_id) ? $item->item_id : json_decode($item->item_id, true) ?? [];
                                                                                     @endphp
 
                                                                                     {{-- Check if there's a sub-category with items, and also check the organization filter --}}
-                                                                                    @if($subCategoryId && $item->itemSubCategory && $item->itemSubCategory->itemSub->count() > 0)
+                                                                                    @if($subCategoryId && $item->itemSubCategory && $item->itemSubCategory->itemSub->where('status', '!=', 'draft'))
                                                                                         @foreach($item->itemSubCategory->itemSub->where('status', '!=', 'draft') as $itemOption)  {{-- Including drafts --}}
                                                                                             @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
                                                                                                 <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
@@ -291,19 +252,8 @@
                                                                                                 </option>
                                                                                             @endif
                                                                                         @endforeach
-
-                                                                                    {{-- If no sub-category, check for the main category and apply the organization filter --}}
-                                                                                    @elseif($categoryId && $item->itemCategory && $item->itemCategory->items->count() > 0)
-                                                                                        @foreach($item->itemCategory->items->where('status', '!=', 'draft') as $itemOption)  {{-- Including drafts --}}
-                                                                                            @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                                <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
-                                                                                                    {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
-                                                                                                </option>
-                                                                                            @endif
-                                                                                        @endforeach
-
                                                                                     {{-- If no category, check for the organization itself and apply the organization filter --}}
-                                                                                    @elseif($organizationId && $item->organization && $item->organization->items->count() > 0)
+                                                                                    @elseif($organizationId && $item->organization && $item->organization->items->where('status', '!=', 'draft')->count() > 0)
                                                                                         @foreach($item->organization->items->where('status', '!=', 'draft') as $itemOption)  {{-- Including drafts --}}
                                                                                             @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
                                                                                                 <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
@@ -313,14 +263,14 @@
                                                                                         @endforeach
 
 
-                                                                                    @elseif($item->organization && $item->organization->items->isEmpty()) 
-                                                                                        @foreach($items->where('status', '!=', 'draft') as $itemOption) 
-                                                                                            @if(!$organizationId || $itemOption->organization_id == $organizationId)  {{-- Check for organization filter --}}
-                                                                                                <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
-                                                                                                    {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
-                                                                                                </option>
-                                                                                            @endif
-                                                                                        @endforeach
+                                                                                        @elseif( $groupId && $item->group && $item->group->items->where('status', '!=', 'draft')) 
+                                                                                            @foreach($item->group->items->where('status', '!=', 'draft') as $itemOption) 
+                                                                                                @if( !$groupId || $itemOption->group_id == $groupId)  {{-- Check for organization filter --}}
+                                                                                                    <option value="{{ $itemOption->id }}" data-item-code="{{ $itemOption->item_code }}" {{ in_array($itemOption->id, $itemIds) ? 'selected' : '' }}>
+                                                                                                        {{ $itemOption->item_name }} ({{ $itemOption->item_code }})
+                                                                                                    </option>
+                                                                                                @endif
+                                                                                            @endforeach
 
                                                                                     {{-- If no items available anywhere --}}
                                                                                     @else
@@ -515,14 +465,8 @@
             
             <td class="customer-category-field">
                 <div class="setup-td-width">
-                    <input type="text" class="form-control  mw-100 autocomplete customer-category-name" name="sales_accounts[${rowCount}][customer_category_name]" placeholder="Enter Customer Category">
-                    <input type="hidden" name="sales_accounts[${rowCount}][customer_category_id]" />
-                </div>
-            </td>
-            <td>
-                <div class="setup-td-width">
-                        <input type="text" class="form-control  mw-100 autocomplete customer-subcategory-name" name="sales_accounts[${rowCount}][customer_sub_category_name]" placeholder="Enter Customer Sub Category ">
-                        <input type="hidden" name="sales_accounts[${rowCount}][customer_sub_category_id]" />
+                    <input type="text" class="form-control  mw-100 autocomplete customer-subcategory-name" name="sales_accounts[${rowCount}][customer_sub_category_name]" placeholder="Enter Customer Group">
+                    <input type="hidden" name="sales_accounts[${rowCount}][customer_sub_category_id]" />
                 </div>
             </td>
             <td>
@@ -534,14 +478,8 @@
             </td>
             <td>
                 <div class="setup-td-width">
-                        <input type="text" class="form-control  mw-100 autocomplete item-category-name" name="sales_accounts[${rowCount}][item_category_name]" placeholder="Enter Item Category">
-                        <input type="hidden" name="sales_accounts[${rowCount}][item_category_id]" />
-                </div>
-            </td>
-            <td>
-                <div class="setup-td-width">
-                    <input type="text" class="form-control  mw-100 autocomplete item-subcategory-name" name="sales_accounts[${rowCount}][item_sub_category_name]" placeholder="Enter Item Sub Category">
-                    <input type="hidden" name="sales_accounts[${rowCount}][item_sub_category_id]" />
+                        <input type="text" class="form-control  mw-100 autocomplete item-subcategory-name" name="sales_accounts[${rowCount}][item_sub_category_name]" placeholder="Enter Item Group">
+                        <input type="hidden" name="sales_accounts[${rowCount}][item_sub_category_id]" />
                 </div>
             </td>
             <td>
@@ -646,10 +584,10 @@
     $(document).on('change', '[name$="[organization_id]"]', function () {
         var organizationId = $(this).val();
         var $row = $(this).closest('tr');
-        var customerCategoryInput = $row.find('[name$="[customer_category_name]"]');
-        var customerCategoryIdInput = $row.find('[name$="[customer_category_id]"]');
-        var itemCategoryInput = $row.find('[name$="[item_category_name]"]');
-        var itemCategoryIdInput = $row.find('[name$="[item_category_id]"]');
+        var customerCategoryInput = $row.find('[name$="[customer_sub_category_name]"]');
+        var customerCategoryIdInput = $row.find('[name$="[customer_sub_category_id]"]');
+        var itemCategoryInput = $row.find('[name$="[item_sub_category_name]"]');
+        var itemCategoryIdInput = $row.find('[name$="[item_sub_category_id]"]');
         var ledgerInput = $row.find('[name$="[ledger_name]"]');
         var ledgerIdInput = $row.find('[name$="[ledger_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
@@ -664,7 +602,7 @@
         itemSelect.empty().append('<option value="">Select Item</option>').trigger('change');
         customerSelect.empty().append('<option value="">Select Customer</option>').trigger('change');
         bookSelect.empty().append('<option value="">Select Book</option>').trigger('change');
-        $.get(`/sales-accounts/data-by-organization/${organizationId}`, function(data) {
+        $.get(`/sales-accounts/data-by-organization/${organizationId}`,{organizationId:organizationId}, function(data) {
             if (data) {
                 customerCategoryInput.autocomplete({
                     source: function (request, response) {
@@ -672,7 +610,7 @@
                             response([{ label: "No records found", value: "" }]);
                         } else {
                             response($.map(data.customerCategories, function (category) {
-                                return { label: category.name, value: category.id };
+                                return { label: category.full_name, value: category.id };
                             }));
                         }
                     },
@@ -691,7 +629,7 @@
                             response([{ label: "No records found", value: "" }]);
                         } else {
                             response($.map(data.itemCategories, function (category) {
-                                return { label: category.name, value: category.id };
+                                return { label: category.full_name, value: category.id };
                             }));
                         }
                     },
@@ -761,25 +699,21 @@
         });
     });
 
-    $(document).on('focus input', '[name$="[customer_category_name]"]', function () {
+    $(document).on('focus input', '[name$="[customer_sub_category_name]"]', function () {
         var $input = $(this);
         var $row = $input.closest('tr');
-        var customerCategoryIdInput = $row.find('[name$="[customer_category_id]"]');
-        var customerSubCategoryInput = $row.find('[name$="[customer_sub_category_name]"]');  
-        var customerSubCategoryIdInput = $row.find('[name$="[customer_sub_category_id]"]');  
+        var customerCategoryIdInput = $row.find('[name$="[customer_sub_category_id]"]');
         var customerIdInput = $row.find('[name$="[customer_id][]"]'); 
         var organizationId = $row.find('[name$="[organization_id]"]').val();
         var searchTerm = $input.val();
         customerCategoryIdInput.val(''); 
-        customerSubCategoryInput.val('');  
-        customerSubCategoryIdInput.val(''); 
         customerIdInput.val([]).trigger('change');
         $input.next('.no-records').remove();
         if (!organizationId) return;
-        $.get(`/sales-accounts/categories-by-organization/${organizationId}`, { search: searchTerm }, function (data) {
+        $.get(`/sales-accounts/categories-by-organization/${organizationId}`, { search: searchTerm,organizationId:organizationId }, function (data) {
             var results = data.customer_categories && data.customer_categories.length > 0 ? 
                 $.map(data.customer_categories, function (category) {
-                    return { label: category.name, value: category.id };
+                    return { label: category.full_name,name: category.name,value: category.id };
                 }) : 
                 [{ label: "No records found", value: "" }];
 
@@ -791,7 +725,7 @@
                 minLength: 0,  
                 select: function(event, ui) {
                     if (ui.item.value === "") return false; 
-                    $input.val(ui.item.label);  
+                    $input.val(ui.item.name);  
                     customerCategoryIdInput.val(ui.item.value);  
                     customerCategoryIdInput.trigger('change'); 
                     return false;  
@@ -805,7 +739,7 @@
                 minLength: 0,  
                 select: function(event, ui) {
                     if (ui.item.value === "") return false;  
-                    $input.val(ui.item.label); 
+                    $input.val(ui.item.name); 
                     customerCategoryIdInput.val(ui.item.value); 
                     customerCategoryIdInput.trigger('change');  
                     return false;  
@@ -816,38 +750,14 @@
     });
 
 
-     $(document).on('change', '[name$="[customer_category_id]"]', function () {
+     $(document).on('change', '[name$="[customer_sub_category_id]"]', function () {
         var customerCategoryId = $(this).val();
         var $row = $(this).closest('tr');
-        var subCategoryInput = $row.find('[name$="[customer_sub_category_name]"]');
-        var subCategoryIdInput = $row.find('[name$="[customer_sub_category_id]"]');
         var customerSelect = $row.find('[name$="[customer_id][]"]');
-        subCategoryInput.val('');
-        subCategoryIdInput.val('');
         customerSelect.empty().append('<option value="">Select Customer</option>');
-
+        var organizationId = $row.find('[name$="[organization_id]"]').val();
         if (customerCategoryId) {
-            $.get(`/sales-accounts/customer-subcategories-by-category`, { category_id: customerCategoryId }, function (data) {
-                if (data.subCategories && data.subCategories.length > 0) {
-                    subCategoryInput.autocomplete({
-                        source: function (request, response) {
-                            var results = $.map(data.subCategories, function (subCategory) {
-                                return { label: subCategory.name, value: subCategory.id };
-                            });
-                            response(results);
-                        },
-                        minLength: 2,
-                        select: function (event, ui) {
-                            if (ui.item.value === "") return false;
-                            subCategoryInput.val(ui.item.label);
-                            subCategoryIdInput.val(ui.item.value);
-                            subCategoryInput.trigger('change');
-                            return false;
-                        }
-                    });
-                } else {
-                    subCategoryInput.autocomplete("disable");
-                }
+            $.get(`/sales-accounts/customer-subcategories-by-category`, { category_id: customerCategoryId,organizationId:organizationId }, function (data) {
                 customerSelect.empty().append('<option value="">Select Customer</option>');
                 if (data.customers) {
                     data.customers.forEach(function (customer) {
@@ -863,114 +773,29 @@
                 Swal.fire('Error!', 'An error occurred while loading customer subcategories and customers.', 'error');
             });
         } else {
-            subCategoryInput.val('');
-            subCategoryIdInput.val('');
             customerSelect.empty().append('<option value="">Select Customer</option>');
             customerSelect.select2();
         }
      });
 
-     $(document).on('focus input', '[name$="[customer_sub_category_name]"]', function () {
+    $(document).on('focus input', '[name$="[item_sub_category_name]"]', function () {
         var $input = $(this);
         var $row = $input.closest('tr');
-        var customerCategoryIdInput = $row.find('[name$="[customer_category_id]"]');
-        var customerSubCategoryIdInput = $row.find('[name$="[customer_sub_category_id]"]');
-        var customerIdInput = $row.find('[name$="[customer_id][]"]'); 
-        var customerCategoryId = customerCategoryIdInput.val(); 
-        var searchTerm = $input.val();
-        customerSubCategoryIdInput.val(''); 
-        customerIdInput.val([]).trigger('change');
-        $input.next('.no-records').remove();
-        if (!customerCategoryId) return;
-
-        $.get(`/sales-accounts/subcategories-by-category/${customerCategoryId}`, { category_id: customerCategoryId }, function (data) {
-            if (data.subCategories && data.subCategories.length > 0) {
-                $input.autocomplete({
-                    source: function (request, response) {
-                        var results = $.map(data.subCategories, function (subCategory) {
-                            return {
-                                label: subCategory.name, 
-                                value: subCategory.id   
-                            };
-                        });
-                        response(results);  
-                    },
-                    minLength: 0, 
-                    select: function (event, ui) {
-                        if (ui.item.value === "") return false; 
-                        $input.val(ui.item.label); 
-                        customerSubCategoryIdInput.val(ui.item.value); 
-                        customerSubCategoryIdInput.trigger('change');  
-                        return false; 
-                    }
-                }).autocomplete("search", searchTerm);  
-            } else {
-                $input.autocomplete("disable");
-            }
-        }).fail(function () {
-            $input.autocomplete({
-                source: function (request, response) {
-                    response([{ label: "No records found", value: "" }]); 
-                },
-                minLength: 0, 
-                select: function (event, ui) {
-                    if (ui.item.value === "") return false; 
-                    $input.val(ui.item.label);
-                    customerSubCategoryIdInput.val(ui.item.value); 
-                    customerSubCategoryIdInput.trigger('change'); 
-                    return false; 
-                }
-            });
-            Swal.fire('Error!', 'An error occurred while fetching customer subcategories.', 'error');
-        });
-     });
-
-
-    $(document).on('change', '[name$="[customer_sub_category_id]"]', function () {
-        var customerSubCategoryId = $(this).val();
-        var $row = $(this).closest('tr');
-        var customerSelect = $row.find('[name$="[customer_id][]"]');
-        customerSelect.empty().append('<option value="">Select Customer</option>');
-
-        if (customerSubCategoryId) {
-            $.get(`/sales-accounts/customer-by-subcategory`, { sub_category_id: customerSubCategoryId }, function (data) {
-                if (data.customers) {
-                    data.customers.forEach(function (customer) {
-                        customerSelect.append(`<option value="${customer.id}" data-customer-code="${customer.customer_code}">${customer.company_name} (${customer.customer_code})</option>`);
-                    });
-                }
-                customerSelect.select2({
-                    templateSelection: function (selectedOption) {
-                        return $(selectedOption.element).data('customer-code');
-                    }
-                });
-            }).fail(function () {
-                Swal.fire('Error!', 'An error occurred while loading customer data for the selected subcategory.', 'error');
-            });
-        }
-    });
-
-    $(document).on('focus input', '[name$="[item_category_name]"]', function () {
-        var $input = $(this);
-        var $row = $input.closest('tr');
-        var itemCategoryIdInput = $row.find('[name$="[item_category_id]"]');
-        var subCategoryInput = $row.find('[name$="[item_sub_category_name]"]');
-        var subCategoryIdInput = $row.find('[name$="[item_sub_category_id]"]');
+        var itemCategoryIdInput = $row.find('[name$="[item_sub_category_id]"]');
         var itemIdInput = $row.find('[name$="[item_id][]"]');
         var organizationId = $row.find('[name$="[organization_id]"]').val();
         var searchTerm = $input.val();
         itemCategoryIdInput.val(''); 
-        subCategoryInput.val('');
-        subCategoryIdInput.val('');
         itemIdInput.val([]).trigger('change'); 
         if (!organizationId) return;
-        $.get(`/sales-accounts/categories-by-organization/${organizationId}`, function (data) {
+        $.get(`/sales-accounts/categories-by-organization/${organizationId}`,{organizationId:organizationId}, function (data) {
             if (data.item_categories && data.item_categories.length > 0) {
                 $input.autocomplete({
                     source: function (request, response) {
                         var results = $.map(data.item_categories, function (category) {
                             return {
-                                label: category.name,  
+                                label: category.full_name, 
+                                name: category.name,  
                                 value: category.id   
                             };
                         });
@@ -979,7 +804,7 @@
                     minLength: 0, 
                     select: function (event, ui) {
                         if (ui.item.value === "") return false; 
-                        $input.val(ui.item.label);  
+                        $input.val(ui.item.name);  
                         itemCategoryIdInput.val(ui.item.value);  
                         itemCategoryIdInput.trigger('change');  
                         return false; 
@@ -996,7 +821,7 @@
                 minLength: 0, 
                 select: function (event, ui) {
                     if (ui.item.value === "") return false;  
-                    $input.val(ui.item.label); 
+                    $input.val(ui.item.name); 
                     itemCategoryIdInput.val(ui.item.value);  
                     itemCategoryIdInput.trigger('change'); 
                     return false; 
@@ -1007,37 +832,14 @@
      });
 
 
-    $(document).on('change', '[name$="[item_category_id]"]', function () {
+    $(document).on('change', '[name$="[item_sub_category_id]"]', function () {
         var itemCategoryId = $(this).val();
         var $row = $(this).closest('tr');
-        var subCategoryInput = $row.find('[name$="[item_sub_category_name]"]');
-        var subCategoryIdInput = $row.find('[name$="[item_sub_category_id]"]');
         var itemSelect = $row.find('[name$="[item_id][]"]');
-        subCategoryInput.val('');
-        subCategoryIdInput.val('');
         itemSelect.empty().append('<option value="">Select Item</option>');
+        var organizationId = $row.find('[name$="[organization_id]"]').val();
         if (itemCategoryId) {
-            $.get(`/sales-accounts/item-subcategories-by-category`, { category_id: itemCategoryId }, function (data) {
-                if (data.subCategories && data.subCategories.length > 0) {
-                    subCategoryInput.autocomplete({
-                        source: function (request, response) {
-                            var results = $.map(data.subCategories, function (subCategory) {
-                                return { label: subCategory.name, value: subCategory.id };
-                            });
-                            response(results);
-                        },
-                        minLength: 2,
-                        select: function (event, ui) {
-                            if (ui.item.value === "") return false;
-                            subCategoryInput.val(ui.item.label);
-                            subCategoryIdInput.val(ui.item.value);
-                            subCategoryInput.trigger('change');
-                            return false;
-                        }
-                    });
-                } else {
-                    subCategoryInput.autocomplete("disable");
-                }
+            $.get(`/sales-accounts/item-subcategories-by-category`, { category_id: itemCategoryId,organizationId:organizationId }, function (data) {
                 itemSelect.empty().append('<option value="">Select Item</option>');
                 if (data.items) {
                     data.items.forEach(function (item) {
@@ -1053,90 +855,8 @@
                 Swal.fire('Error!', 'An error occurred while loading item subcategories and items.', 'error');
             });
         } else {
-            subCategoryInput.val('');
-            subCategoryIdInput.val('');
             itemSelect.empty().append('<option value="">Select Item</option>');
             itemSelect.select2();
-        }
-    });
-
-    $(document).on('focus input', '[name$="[item_sub_category_name]"]', function () {
-        var $input = $(this);
-        var $row = $input.closest('tr');
-        var itemCategoryIdInput = $row.find('[name$="[item_category_id]"]');
-        var itemSubCategoryIdInput = $row.find('[name$="[item_sub_category_id]"]');
-        var itemIdInput = $row.find('[name$="[item_id][]"]'); 
-        var itemCategoryId = itemCategoryIdInput.val(); 
-        var searchTerm = $input.val();
-        itemSubCategoryIdInput.val(''); 
-        itemIdInput.val([]).trigger('change');
-        if (!itemCategoryId) return;
-
-        $.get(`/sales-accounts/subcategories-by-category/${itemCategoryId}`, { category_id: itemCategoryId }, function (data) {
-            if (data.subCategories && data.subCategories.length > 0) {
-                $input.autocomplete({
-                    source: function (request, response) {
-                        var results = $.map(data.subCategories, function (subCategory) {
-                            return {
-                                label: subCategory.name, 
-                                value: subCategory.id   
-                            };
-                        });
-                        response(results);  
-                    },
-                    minLength: 0,
-                    select: function (event, ui) {
-                        if (ui.item.value === "") return false; 
-                        $input.val(ui.item.label); 
-                        itemSubCategoryIdInput.val(ui.item.value); 
-                        itemSubCategoryIdInput.trigger('change');  
-                        return false; 
-                    }
-                }).autocomplete("search", searchTerm);  
-            } else {
-            
-                $input.autocomplete("disable");
-            }
-        }).fail(function () {
-            $input.autocomplete({
-                source: function (request, response) {
-                    response([{ label: "No records found", value: "" }]);  
-                },
-                minLength: 0, 
-                select: function (event, ui) {
-                    if (ui.item.value === "") return false; 
-                    $input.val(ui.item.label); 
-                    itemSubCategoryIdInput.val(ui.item.value);
-                    itemSubCategoryIdInput.trigger('change'); 
-                    return false; 
-                }
-            });
-
-            Swal.fire('Error!', 'An error occurred while fetching item subcategories.', 'error');
-        });
-    });
-
-    $(document).on('change', '[name$="[item_sub_category_id]"]', function () {
-        var itemSubCategoryId = $(this).val();
-        var $row = $(this).closest('tr');
-        var itemSelect = $row.find('[name$="[item_id][]"]');
-        itemSelect.empty().append('<option value="">Select Item</option>');
-
-        if (itemSubCategoryId) {
-            $.get(`/sales-accounts/items-by-subcategory`, { sub_category_id: itemSubCategoryId }, function (data) {
-                if (data.items) {
-                    data.items.forEach(function (item) {
-                        itemSelect.append(`<option value="${item.id}" data-item-code="${item.item_code}">${item.item_name} (${item.item_code})</option>`);
-                    });
-                }
-                itemSelect.select2({
-                    templateSelection: function (selectedOption) {
-                        return $(selectedOption.element).data('item-code');
-                    }
-                });
-            }).fail(function () {
-                Swal.fire('Error!', 'An error occurred while loading items for the selected subcategory.', 'error');
-            });
         }
     });
 
@@ -1153,7 +873,7 @@
         if (!organizationId) {
             return;
         }
-        $.get(`/sales-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm }, function (data) {
+        $.get(`/sales-accounts/ledgers-by-organization/${organizationId}`, { search: searchTerm,organizationId:organizationId}, function (data) {
             var results = data.ledgers && data.ledgers.length > 0 ? 
                 $.map(data.ledgers, function (ledger) {
                     return {

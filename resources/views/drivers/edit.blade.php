@@ -2,8 +2,8 @@
 
 @section('content')
 <form class="ajax-input-form" method="POST" 
-      action="{{ route('driver.update', $driver->id) }}" 
-      data-redirect="{{ url('/driver') }}" 
+      action="{{ route('logistics.driver.update', $driver->id) }}" 
+      data-redirect="{{ url('/logistics/driver') }}" 
       enctype="multipart/form-data">
     @csrf
     @method('PUT')
@@ -30,10 +30,10 @@
                     </div>
                     <div class="content-header-right text-end col-md-6 col-6 mb-2 mb-sm-0">
                         <div class="form-group breadcrumb-right">
-                            <a href="{{ route('driver.index') }}" class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</a>
+                            <a href="{{ route('logistics.driver.index') }}" class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</a>
                              <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                    data-url="{{ route('driver.destroy', $driver->id) }}" 
-                                    data-redirect="{{ route('driver.index') }}"
+                                    data-url="{{ route('logistics.driver.destroy', $driver->id) }}" 
+                                    data-redirect="{{ route('logistics.driver.index') }}"
                                     data-message="Are you sure you want to delete this driver?">
                                 <i data-feather="trash-2" class="me-50"></i> Delete
                             </button>

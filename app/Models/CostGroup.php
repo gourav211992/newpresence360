@@ -26,8 +26,8 @@ class CostGroup extends Model
         return $this->belongsTo(CostGroup::class, 'parent_cost_group_id');
     }
 
-    public function cost_center()
+    public function costCenters()
     {
-        return $this->hasOne(CostCenter::class, 'cost_group_id');
+        return $this->hasMany(CostCenter::class, 'cost_group_id', 'id');
     }
 }

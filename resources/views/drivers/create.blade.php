@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('driver.store') }}" data-redirect="{{ url('/driver') }}">
+<form class="ajax-input-form" method="POST" action="{{ route('logistics.driver.store') }}" data-redirect="{{ url('/logistics/driver') }}">
     @csrf
     <!-- BEGIN: Content -->
     <div class="app-content content">
@@ -25,7 +25,7 @@
                     </div>
                     <div class="content-header-right text-end col-md-6 col-6 mb-2 mb-sm-0">
                         <div class="form-group breadcrumb-right">
-                            <a href="{{ route('driver.index') }}" class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</a>
+                            <a href="{{ route('logistics.driver.index') }}" class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</a>
                             <button type="submit" class="btn btn-primary btn-sm" id="submit-button"><i data-feather="check-circle"></i> Create</button>
                         </div>
                     </div>

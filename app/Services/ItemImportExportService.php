@@ -613,9 +613,9 @@ class ItemImportExportService
         if ($billingCount === 0) {
             $errors['addresses'] = 'At least one billing address is required.';
         }
-        if ($shippingCount === 0) {
-            $errors['addresses'] = 'At least one shipping address is required.';
-        }
+        // if ($shippingCount === 0) {
+        //     $errors['addresses'] = 'At least one shipping address is required.';
+        // }
     
         // GST Validation
         $gstinNo = $data['compliance']['gstin_no'] ?? null;

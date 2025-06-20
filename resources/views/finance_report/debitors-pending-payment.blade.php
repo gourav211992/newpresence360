@@ -17,7 +17,7 @@
                             <div class="col-md-12 bg-light border-bottom mb-1 po-reportfileterBox">
                                 <div class="row pofilterhead action-button align-items-center">
                                     <div class="col-md-4">
-                                        <h3>Pending Paymnets to Debitors</h3>
+                                        <h3>Pending Payments to Debitors</h3>
                                         <p class="my-25">As on <strong>{{ $date2 }}</strong></p>
                                     </div>
                                     <div
@@ -74,8 +74,15 @@
                                                 </select>
                                             </div>
                                         </div>
+                                        <div class="col-md-2 mb-2">
+													<div class="mb-1 mb-sm-0">
+														<label class="form-label">Ledger Group</label>
+														<select class="form-select select2" id="filter_group" required>
+														</select>
+													</div>
+                                        </div>
 
-                                        <div class="col-md-2">
+                                        {{-- <div class="col-md-2">
                                             <div class="mb-1 mb-sm-0">
                                                 <label class="form-label">Ledger Group</label>
                                                 <select class="form-select select2" id="filter_group">
@@ -96,7 +103,7 @@
 
                                                 </select>
                                             </div>
-                                        </div>
+                                        </div> --}}
 
 
 
@@ -110,6 +117,9 @@
                                                 <label class="mb-1">&nbsp;</label>
                                                 <button class="btn mt-25 btn-dark btn-sm" id="findFilters" type="submit"><i
                                                         data-feather="search"></i> Find</button>
+                                                 <button class="btn mt-25 btn-dark btn-sm" id="clearAll" type="button"><i
+                                                        data-feather="refresh-cw"></i> Clear All</button>
+                                            </div>
                                             </div>
                                         </div>
 
@@ -625,13 +635,15 @@
             e.preventDefault();
             $('#inlineCheckbox1').prop('checked', false);
             $('#filter').modal('hide');
-            getLedgers(buildParams());
+            handleFilterChange();
+            // getLedgers(buildParams());
         });
 
         $('#findFilters').on('click', e => {
             e.preventDefault();
             $('#inlineCheckbox1').prop('checked', false);
-            getLedgers(buildParams());
+            handleFilterChange();
+            // getLedgers(buildParams());
         });
 
         $(document).on('click', '#proceed', function() {
@@ -703,9 +715,36 @@
                 }
             });
         });
+        function hasFilters() {
+            // Check main filters
+            const mainFilters = [
+                $('#fp-range').val(),
+                $('#book_code').val(),
+                $('#filter_ledger').val(),
+                $('#filter_group').val(),
+                $('#document_no').val()
+            ].some(value => value && value !== '');
 
+           
+            return mainFilters;
+        }
+
+        function handleFilterChange() {
+            toggleClearButton();
+            getLedgers(buildParams());
+        }
+
+        function toggleClearButton() {
+        const hasActiveFilters = hasFilters();
+        if (hasActiveFilters) {
+            $('#clearAll').removeClass('d-none');
+        } else {
+            $('#clearAll').addClass('d-none');
+        }
+}
 
         $(document).ready(() => {
+            toggleClearButton(); 
             $(document).on('change', '.vouchers', function() {
                 const key = $(this).val();
                 const isChecked = $(this).is(':checked');
@@ -729,7 +768,10 @@
             });
 
             getLedgers(buildParams());
-
+            // $('#fp-range, #book_code, #filter_ledger, #filter_group, #document_no').on('change', function() {
+            //     handleFilterChange();
+            //     toggleClearButton();
+            // });
             $('#filter-organization').on('change', e => updateLocationsDropdown($(e.target).val() || []));
             $('#location_id').on('change', e => {
                 const loc = $(e.target).val();
@@ -739,5 +781,83 @@
 
             updateLocationsDropdown($('#filter-organization').val() || []);
         });
+        $(document).on('change', '#filter_ledger', function () {
+            groupDropdown = $("#filter_group");
+
+            let ledgerId = $(this).val(); // Get the selected organization ID
+            $.ajax({
+                url: '{{ route('voucher.getLedgerGroups') }}',
+                method: 'GET',
+                data: {
+                    ledger_id: ledgerId,
+                    _token: $('meta[name="csrf-token"]').attr(
+                        'content') // CSRF token
+                },
+                success: function(response) {
+                    $('.preloader').hide();
+                    groupDropdown.empty(); // Clear previous options
+
+                    response.forEach(item => {
+                        groupDropdown.append(
+                            `<option value="${item.id}" data-ledger="${ledgerId}">${item.name}</option>`
+                        );
+                    });
+                    groupDropdown.data('ledger', ledgerId);
+                    //handleRowClick(rowId);
+
+                },
+                error: function(xhr) {
+                    $('.preloader').hide();
+                    let errorMessage =
+                    'Error fetching group items.'; // Default message
+
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMessage = xhr.responseJSON
+                        .error; // Use API error message if available
+                    }
+                    showToast("error", errorMessage);
+
+                    
+                }
+            });
+        });
+        $(document).on('click', '#clearAll', function() {
+            // Reset all filter inputs
+            $('#fp-range').val('');
+            $('#book_code').val('').trigger('change');
+            $('#filter_ledger').val('').trigger('change');
+            $('#filter_group').val('').trigger('change');
+            $('#document_no').val('');
+            
+            // Reset modal filters
+            $('#filter-organization').val('').trigger('change');
+            $('#location_id').val('').trigger('change');
+            $('#cost_center_id').val('').trigger('change');
+            
+            // Uncheck all checkboxes
+            $('#inlineCheckbox1').prop('checked', false);
+            $('.vouchers').prop('checked', false);
+            
+            // Clear voucher selections
+            selectedVoucherIds.clear();
+            Object.keys(voucherMap).forEach(key => {
+                if (voucherMap[key]) {
+                    voucherMap[key].settle_amt = 0;
+                }
+            });
+            
+            // Reset settle inputs
+            $('.settleInput').val('0.00');
+            
+            // Reload data with empty filters
+            handleFilterChange();
+            
+            // Reset totals
+            $('.totalAmount, .totalBalance, .totalSettle').text('0.00');
+            
+            // Hide the clear button after clearing
+            toggleClearButton();
+        });
+
     </script>
 @endsection

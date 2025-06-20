@@ -60,11 +60,6 @@ class StockAccount extends Model
         return $this->belongsTo(Ledger::class, 'ledger_id');
     }
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class, 'category_id');
-    }
-
     public function subCategory()
     {
         return $this->belongsTo(Category::class, 'sub_category_id');

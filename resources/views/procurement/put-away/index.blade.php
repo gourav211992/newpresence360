@@ -11,7 +11,7 @@
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
                             <h2 class="content-header-title float-start mb-0">
-                                {{$servicesBooks['services'][0]->name ?? "Put Away"}}
+                                Put Away
                             </h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
@@ -22,18 +22,6 @@
                                 </ol>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
-                    <div class="form-group breadcrumb-right">
-                        @if(count($servicesBooks['services']) > 0)
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('put-away.create') }}">
-                                <i data-feather="plus-circle"></i> Create
-                            </a>
-                            <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => request() -> type]) }}">
-                                <i data-feather="bar-chart-2"></i>Report
-                            </a>
-                        @endif
                     </div>
                 </div>
             </div>

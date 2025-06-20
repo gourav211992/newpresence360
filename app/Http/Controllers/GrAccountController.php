@@ -1,12 +1,9 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use Yajra\DataTables\Facades\DataTables;
 use App\Models\GrAccount;
 use App\Models\Organization;
 use App\Models\OrganizationCompany;
-use App\Models\Category;
 use App\Models\Group;
 use App\Models\Ledger;
 use App\Models\Item;
@@ -30,15 +27,6 @@ class GrAccountController extends Controller
             ->pluck('company_id')
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
-        $categories = Category::withDefaultGroupCompanyOrg()
-        ->where('status', 'active')
-        ->get();  
-    
-        $subCategories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active') 
-            ->whereNotNull('parent_id') 
-            ->get();
-    
         $ledgerGroups = Group::all();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()
         ->where('status', '1') 
@@ -50,51 +38,8 @@ class GrAccountController extends Controller
         $erpBooks = Book::withDefaultGroupCompanyOrg()
         ->where('status', 'active') 
         ->get(); 
-        
-        if ($request->ajax()) {
-            $grAccounts = GrAccount::with([
-                'organization', 'group', 'company', 'ledgerGroup',
-                'ledger', 'category', 'subCategory', 'item'
-            ])
-            ->orderBy('group_id')
-            ->orderBy('company_id') 
-            ->orderBy('organization_id')
-            ->orderBy('id', 'desc');
-
-            return DataTables::of($grAccounts)
-                ->addIndexColumn()
-                ->addColumn('status', function ($row) {
-                    return '<span class="badge rounded-pill ' . 
-                        ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') . 
-                        ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
-                })
-                ->addColumn('action', function ($row) {
-                    $editUrl = route('gr-accounts.edit', $row->id);
-                    $deleteUrl = route('gr-accounts.destroy', $row->id);
-                    return '<div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="' . $editUrl . '">
-                                       <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
-                                    </a>
-                                    <form action="' . $deleteUrl . '" method="POST" class="dropdown-item">
-                                        ' . csrf_field() . method_field('DELETE') . '
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i data-feather="trash" class="me-50"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>';
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
-        }
-
         return view('procurement.gr-account.index', compact(
-            'companies', 'categories', 'subCategories', 'ledgerGroups', 'ledgers', 'items', 'grAccounts','erpBooks','orgIds'
+            'companies', 'ledgerGroups', 'ledgers', 'items', 'grAccounts','erpBooks','orgIds'
         ));
     }
     public function store(GrAccountRequest $request)

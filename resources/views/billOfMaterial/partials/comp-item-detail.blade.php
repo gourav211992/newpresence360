@@ -1,8 +1,8 @@
-{{-- s<tr class="item_detail_row">
+<tr class="item_detail_row">
    <td class="poprod-decpt">
       <span class="poitemtxt mw-100"><strong>Name</strong>: {{$item->item_name ?? 'NA'}}</span>
    </td>
-</tr> --}}
+</tr>
 <tr class="item_detail_row">
     <td class="poprod-decpt">
         <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>:  {{$item->category->name ?? 'NA'}}</span>

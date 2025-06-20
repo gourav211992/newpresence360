@@ -53,10 +53,15 @@ class PoItem extends Model
     protected $appends = [
         'cgst_value',
         'sgst_value',
-        'igst_value'
+        'igst_value',
+        'inter_org_so_bal_qty'
     ];
 
     public function po()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+    public function header()
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
     }
@@ -163,6 +168,10 @@ class PoItem extends Model
     {
         return $this->hasMany(PurchaseOrderTed::class,'po_item_id')->where('ted_level', 'D')->where('ted_type','Discount');
     }
+    public function discount_ted()
+    {
+        return $this->hasMany(PurchaseOrderTed::class,'po_item_id')->where('ted_level', 'D')->where('ted_type','Discount');
+    }
 
     /*Header Level Discount*/
     public function headerDiscount()
@@ -171,6 +180,10 @@ class PoItem extends Model
     }
 
     public function taxes()
+    {
+        return $this->hasMany(PurchaseOrderTed::class,'po_item_id')->where('ted_type','Tax');
+    }
+    public function tax_ted()
     {
         return $this->hasMany(PurchaseOrderTed::class,'po_item_id')->where('ted_type','Tax');
     }
@@ -301,5 +314,10 @@ class PoItem extends Model
             ];
         }
         return collect($processedData);
+    }
+
+    public function getInterOrgSoBalQtyAttribute()
+    {
+        return ($this->order_qty - $this->inter_org_so_qty);
     }
 }

@@ -6,7 +6,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Requests\CategoryRequest;
 use App\Helpers\ConstantHelper;
-use App\Models\Organization;
+use App\Models\Item;
 use App\Helpers\Helper;
 use Illuminate\Support\Facades\DB;
 use Auth;
@@ -15,16 +15,21 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first(); 
-        $organizationId = $organization?->id ?? null;
-        $companyId = $organization?->company_id ?? null;
         if ($request->ajax()) {
             $categories = Category::WithDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
             ->orderBy('id', 'desc');
             return DataTables::of($categories)
                 ->addIndexColumn()
+                ->addColumn('parent_category', function($row) {
+                    return $row->parent ? $row->parent->name : 'N/A';
+                })
+                ->addColumn('last_level', function($row) {
+                    if ($row->subCategories()->exists()) {
+                        return '-';
+                    } else {
+                        return '<i data-feather="check-circle" style="color: green;"></i>';
+                    }
+                })
                 ->addColumn('status', function ($row) {
                     return '<span class="badge rounded-pill ' . ($row->status == 'active' ? 'badge-light-success' : 'badge-light-danger') . ' badgeborder-radius">
                                 ' . ucfirst($row->status) . '
@@ -45,7 +50,7 @@ class CategoryController extends Controller
                             </div>';
                 })
 
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status','last_level','action'])
                 ->make(true);
         }
 
@@ -57,7 +62,10 @@ class CategoryController extends Controller
     {
         $categoryTypes = ConstantHelper::CATEGORY_TYPES;
         $status = ConstantHelper::STATUS;
-        return view('procurement.category.create', compact('categoryTypes','status'));
+        return view('procurement.category.create', [
+            'categoryTypes' => $categoryTypes,
+            'status' => $status,
+        ]);
     }
 
     public function store(CategoryRequest $request)
@@ -86,35 +94,31 @@ class CategoryController extends Controller
             $validatedData['company_id'] = null;
             $validatedData['organization_id'] = null;
         }
+
+        if (!empty($validatedData['parent_id'])) {
+            $validatedData['sub_cat_initials'] = $validatedData['cat_initials'];
+            $validatedData['cat_initials'] = null;
+        } else {
+            $validatedData['sub_cat_initials'] = null;  
+        }
         DB::beginTransaction(); 
 
         try {
+            
             $category = Category::create([
                 'type' => $validatedData['type'],
+                'parent_id' => $validatedData['parent_id'],
                 'name' => $validatedData['name'],
-                'cat_initials' => $validatedData['cat_initials'],
+                'cat_initials' => $validatedData['cat_initials'], 
+                'sub_cat_initials' => $validatedData['sub_cat_initials'], 
                 'hsn_id' => $validatedData['hsn_id'],
+                'inspection_checklist_id' => $validatedData['inspection_checklist_id'],
                 'status' => $validatedData['status'],
                 'organization_id' => $validatedData['organization_id'], 
                 'group_id' => $validatedData['group_id'],
                 'company_id' => $validatedData['company_id'],
             ]);
-    
-            $subCategories = $validatedData['subcategories'] ?? [];
-            foreach ($subCategories as $subCategory) {
-                if (!empty($subCategory['name'])) {
-                    Category::create([
-                        'type' => $category->type,
-                        'parent_id' => $category->id,
-                        'name' => $subCategory['name'],
-                        'sub_cat_initials' => $subCategory['sub_cat_initials'],
-                        'organization_id' => $validatedData['organization_id'], 
-                        'group_id' => $validatedData['group_id'],
-                        'company_id' => $validatedData['company_id'],
-                    ]);
-                }
-            }
-    
+            
             DB::commit();
 
             return response()->json([
@@ -143,9 +147,35 @@ class CategoryController extends Controller
     public function edit($id)
     {
         $category = Category::with('subCategories')->findOrFail($id); 
-        $categoryTypes = ConstantHelper::CATEGORY_TYPES;
-        $status = ConstantHelper::STATUS;
-        return view('procurement.category.edit', compact('category', 'categoryTypes', 'status'));
+        $categoryType = $category->type; 
+        $allChildCategoryIds = $category->load('subCategories')->getAllNestedSubCategoryIds();
+        $usedCategoryIds = Item::whereNotNull('subcategory_id')->withDefaultGroupCompanyOrg()->pluck('subcategory_id')->toArray();
+        $excludeIds = array_merge([$category->id], $allChildCategoryIds,$usedCategoryIds);
+        $categories = Category::select('id', 'name', 'parent_id')
+            ->with('parent')
+            ->withDefaultGroupCompanyOrg()
+            ->whereNotIn('id', $excludeIds)
+            ->where(function ($query) use ($categoryType) {
+                if ($categoryType === 'Product') {
+                    $query->where('type', 'Product');
+                } elseif ($categoryType === 'Customer') {
+                    $query->where('type', 'Customer');
+                } elseif ($categoryType === 'Vendor') {
+                    $query->where('type', 'Vendor');
+                }
+            })
+            ->get();
+            $isLastLevel = $category->subCategories()->exists() ? 0 : 1;
+            $categoryTypes = ConstantHelper::CATEGORY_TYPES;
+            $status = ConstantHelper::STATUS;
+       
+        return view('procurement.category.edit', [
+            'category' => $category,
+            'categoryTypes' => $categoryTypes,
+            'status' => $status,
+            'categories' => $categories,
+            'isLastLevel'=>$isLastLevel,
+        ]);
     }
     
     public function update(CategoryRequest $request, $id)
@@ -174,55 +204,29 @@ class CategoryController extends Controller
             $validatedData['company_id'] = null;
             $validatedData['organization_id'] = null;
         }
+        if (!empty($validatedData['parent_id'])) {
+            $validatedData['sub_cat_initials'] = $validatedData['cat_initials'];
+            $validatedData['cat_initials'] = null;
+        } else {
+            $validatedData['sub_cat_initials'] = null;  
+        }
         DB::beginTransaction(); 
-
         try {
             $category = Category::findOrFail($id);
-            $category->update([
-                'type' => $validatedData['type'],
-                'name' => $validatedData['name'] ?? '',
-                'hsn_id' => $validatedData['hsn_id'],
-                'cat_initials' => $validatedData['cat_initials'],
-                'status' => $validatedData['status'],
-            ]);
 
-          $subCategories = $validatedData['subcategories'] ?? [];
-            $newCategoryIds = [];
-
-            foreach ($subCategories as $subCategory) {
-                $subCategoryId = $subCategory['id'] ?? null;
-                
-                if ($subCategoryId) {
-                    $sub = Category::find($subCategoryId);
-                    if ($sub) {
-                        $sub->update([
-                            'name' => $subCategory['name'] ?? '',
-                            'sub_cat_initials' => $subCategory['sub_cat_initials'],
-                            'type' => $category->type,
-                            'parent_id' => $category->id,
-                            'organization_id' => $validatedData['organization_id'], 
-                            'group_id' => $validatedData['group_id'],
-                            'company_id' => $validatedData['company_id'],
-                        ]);
-                    }
-                } else {
-                    $sub = Category::create([
-                        'name' => $subCategory['name'] ?? '',
-                        'sub_cat_initials' => $subCategory['sub_cat_initials'],
-                        'type' => $category->type,
-                        'parent_id' => $category->id,
-                        'hsn_id' => $category['hsn_id'],
-                        'organization_id' => $validatedData['organization_id'], 
-                        'group_id' => $validatedData['group_id'],
-                        'company_id' => $validatedData['company_id'],
-                    ]);
-                }
-
-                $newCategoryIds[] = $sub->id;
-            }
-            Category::where('parent_id', $category->id)
-                ->whereNotIn('id', $newCategoryIds)
-                ->delete();
+                $category->update([
+                    'type' => $validatedData['type'],
+                    'parent_id' => $validatedData['parent_id'],
+                    'name' => $validatedData['name'],
+                    'hsn_id' => $validatedData['hsn_id'],
+                    'cat_initials' => $validatedData['cat_initials'],
+                    'sub_cat_initials' => $validatedData['sub_cat_initials'],
+                    'inspection_checklist_id' => $validatedData['inspection_checklist_id'],
+                    'status' => $validatedData['status'],
+                    'organization_id' => $validatedData['organization_id'], 
+                    'group_id' => $validatedData['group_id'],
+                    'company_id' => $validatedData['company_id'],
+                ]);
 
                 DB::commit(); 
 
@@ -240,6 +244,40 @@ class CategoryController extends Controller
                     'error' => $e->getMessage(),
                 ], 500);
             }
+    }
+
+    public function getCategoriesByType(Request $request)
+    {
+        $type = $request->input('type');
+        $usedCategoryIds = Item::whereNotNull('subcategory_id')->withDefaultGroupCompanyOrg()->pluck('subcategory_id')->toArray();
+        $categories = Category::where('type', $type)
+            ->with('parent')
+            ->withDefaultGroupCompanyOrg() 
+            ->where('status', ConstantHelper::ACTIVE)
+            ->whereNotIn('id', $usedCategoryIds) 
+            ->select('id','parent_id','name')
+            ->get();
+          
+        return response()->json($categories);
+    }
+    
+    public function getHsnByParent(Request $request)
+    {
+        $parentId = $request->input('parent_id');
+    
+        $parentCategory = Category::where('id', $parentId)
+            ->with('hsn') 
+            ->withDefaultGroupCompanyOrg()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->first();
+    
+        if ($parentCategory && isset($parentCategory->hsn->code) && isset($parentCategory->hsn->id)) {
+            return response()->json([
+                'hsn' => $parentCategory->hsn->code,
+                'hsn_id' => $parentCategory->hsn->id,
+            ]);
+        }
+        return response()->json(['hsn' => '', 'hsn_id' => '']);
     }
     
     public function deleteSubcategory($id)

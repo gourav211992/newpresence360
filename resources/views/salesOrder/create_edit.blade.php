@@ -192,8 +192,9 @@
                                                                 <label class="form-label">Reference From </label>  
                                                             </div> 
 
-                                                            <div class="col-md-5 action-button"> 
-                                                                <button onclick = "openQuotation();" disabled type = "button" id = "select_qt_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Quotation</button>
+                                                            <div class="col-md-4 action-button"> 
+                                                                <button onclick = "openQuotation('sq');" disabled type = "button" id = "select_qt_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Quotation</button>
+                                                                <button onclick = "openQuotation('po');" disabled type = "button" id = "select_po_button" data-bs-toggle="modal" data-bs-target="#rescdulePo" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Inter-Company PO</button>
                                                             </div>
                                                         </div>
                                                         @endif
@@ -538,6 +539,7 @@
                                                                                            <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('{{$orderItemIndex}}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                                                                                            <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_{{$orderItemIndex}}" style = "display:none;" onclick = "getCustomizableBOM({{$orderItemIndex}}, {{ json_encode(!$orderItem->is_editable) }})"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                                                                        @endif
+                                                                                       <div class="me-50 cursor-pointer" onclick = "setViewDetailedStocks('{{$orderItemIndex}}');"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="Stocks" class="text-primary"><i data-feather="layers"></i></span></div>
                                                                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$orderItemIndex}}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                                                                                    </div>
                                                                                 </td>
@@ -811,7 +813,7 @@
                          
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
-                             <button onclick = "getQuotations();" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                             <button onclick = "getQuotations('sq');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
                          </div>
 
 						 <div class="col-md-12">
@@ -851,12 +853,107 @@
 				</div>
 				<div class="modal-footer text-end">
 					<button type = "button" class="btn btn-outline-secondary btn-sm can_hide" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-					<button type = "button" class="btn btn-primary btn-sm can_hide" onclick = "processQuotation();" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+					<button type = "button" class="btn btn-primary btn-sm can_hide" onclick = "processQuotation('sq');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
 				</div>
 			</div>
 		</div>
 	</div>
     
+    <div class="modal fade text-start" id="rescdulePo" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select PO</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+
+                     <div class="col">
+                            <div class="mb-1">
+                            <label class="form-label">Customer Name</label>
+                                <input type="text" id="customer_code_input_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_po_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series</label>
+                                <input type="text" id="book_code_input_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_po_val"></input>
+                            </div>
+                        </div>
+                         
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Quotation No.</label>
+                                <input type="text" id="document_no_input_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_po_val"></input>
+                            </div>
+                        </div>
+
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name</label>
+                                <input type="text" id="item_name_input_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_po_val"></input>
+                            </div>
+                        </div>
+                         
+                         <div class="col  mb-1">
+                              <label class="form-label">&nbsp;</label><br/>
+                             <button onclick = "getQuotations('po');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                         </div>
+
+						 <div class="col-md-12">
+							<div class="table-responsive" style="overflow-y: auto;max-height: 200px;">
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+									<thead>
+										 <tr>
+											<th>
+												<!-- <div class="form-check form-check-inline me-0">
+													<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
+												</div>  -->
+											</th>  
+											<th>Series</th>
+											<th>Document No.</th>
+											<th>Document Date</th>
+                                            <th>Currency</th>
+                                            <th>Customer Name</th>
+											<th>Item</th>
+											<th>Attributes</th>
+											<th>UOM</th>
+											<th>Quantity</th> 
+											<th>Balance Qty</th> 
+											<th>Rate</th> 
+										  </tr>
+										</thead>
+										<tbody id = "qts_data_table_po">
+                                            
+									   </tbody>
+
+
+								</table>
+							</div>
+						</div>
+
+
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button type = "button" class="btn btn-outline-secondary btn-sm can_hide" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+					<button type = "button" class="btn btn-primary btn-sm can_hide" onclick = "processQuotation('po');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+				</div>
+			</div>
+		</div>
+	</div>
+    
+
     <div class="modal fade" id="discount" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
 			<div class="modal-content">
@@ -1544,6 +1641,8 @@
   </div>
 </div>
 
+<x-inventory.item-stock-details title="Stock Details" />
+
 <div class="modal fade" id="BOM" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style = "min-width:80%;">
 			<div class="modal-content">
@@ -2178,6 +2277,7 @@
                             <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                             <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                         @endif
+                        <div class="me-50 cursor-pointer" onclick = "setViewDetailedStocks('${newIndex}');"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="Stocks" class="text-primary"><i data-feather="layers"></i></span></div>
                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                    </div>
                 </td>
@@ -2254,8 +2354,6 @@
             }  else {
                 const allItemsHeaderDiscount = document.getElementsByClassName('order_discount_hidden_fields');
                 const allItemsHeaderExpense = document.getElementsByClassName('order_expense_hidden_fields');
-                console.log(allItemsHeaderExpense,'huhu');
-                console.log(allItemsHeaderDiscount,'hehe');
                 document.querySelectorAll('.order_discount_hidden_fields, .order_expense_hidden_fields, .order_expenses, .order_discounts').forEach(el => el.remove());
                 $('#order_discount_row').remove();
                 $('#all_items_total_expenses_summary').val('0.00');
@@ -3489,7 +3587,7 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type:'customer'
+                            type:'customer_list'
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -3580,7 +3678,6 @@
                     disabledFields[disabledIndex].disabled = true;
                 } else {
                     disabledFields[disabledIndex].disabled = false;
-
                 }
             }
 
@@ -3595,6 +3692,10 @@
         const selectButton = document.getElementById('select_qt_button');
         if (selectButton && itemsPresent) {
             selectButton.disabled = true;
+        } 
+        const selectPoButton = document.getElementById('select_po_button');
+        if (selectPoButton && itemsPresent) {
+            selectPoButton.disabled = true;
         } 
         const custCodeInput = document.getElementById('customer_code_input');
         if (custCodeInput.value && itemsPresent) {
@@ -3624,6 +3725,10 @@
         const selectButton = document.getElementById('select_qt_button');
         if (selectButton) {
             selectButton.disabled = false;
+        } 
+        const selectPoButton = document.getElementById('select_po_button');
+        if (selectPoButton) {
+            selectPoButton.disabled = false;
         } 
         document.getElementById('customer_code_input').disabled = false;
     }
@@ -3882,6 +3987,12 @@
                             selectionSectionElement.style.display = "";
                         }
                     }
+                    if (selectSingleVal == 'po') {
+                        var selectionSectionElement = document.getElementById('selection_section');
+                        if (selectionSectionElement) {
+                            selectionSectionElement.style.display = "";
+                        }
+                    }
                     if (selectSingleVal == 'd') {
                         document.getElementById('add_item_section').style.display = "";
                         document.getElementById('copy_item_section').style.display = "";
@@ -3952,6 +4063,10 @@
             if (selectButton) {
                 selectButton.disabled = false;
             };
+            const selectPoButton = document.getElementById('select_po_button');
+            if (selectPoButton) {
+                selectPoButton.disabled = false;
+            };
             if (!document.getElementById('customer_code_input').value) {
                 document.getElementById('customer_code_input').disabled = false;
             }
@@ -3959,6 +4074,10 @@
             const selectButton = document.getElementById('select_qt_button');
             if (selectButton) {
                 selectButton.disabled = true;
+            };
+            const selectPoButton = document.getElementById('select_po_button');
+            if (selectPoButton) {
+                selectPoButton.disabled = true;
             };
             document.getElementById('customer_code_input').disabled = true;
 
@@ -4310,10 +4429,8 @@
         let totalTaxes = 0;
         for (let index = 0; index < itemTotalTaxes.length; index++) {
             let tax_detail = itemTotalTaxes[index].getAttribute('tax_details') ? JSON.parse(itemTotalTaxes[index].getAttribute('tax_details')) : null;
-            console.log(tax_detail,itemTotalTaxes[index]);
             if(tax_detail)
             {
-                console.log(tax_detail);
                 for(let i = 0; i < tax_detail.length; i++)
                 {
                     if(tax_detail[i].tax_applicability_type == "collection")
@@ -4489,7 +4606,7 @@
     {
         element.value = (parseFloat(element.value ? element.value  : 0)).toFixed(2)
     }
-    function processQuotation()
+    function processQuotation(docType = "sq")
     {
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
         let docId = [];
@@ -4508,6 +4625,7 @@
                 data: {
                     quotation_id : docId,
                     items_id: soItemsId,
+                    doc_type: docType
                 },
                 success: function(data) {
                     const currentOrders = data.data;
@@ -4515,7 +4633,6 @@
                     currentOrders.forEach(currentOrder => {
                         if (currentOrder) { //Set all data
                         //Disable Header
-                        disableHeader();
                         //Basic Details
                         $("#customer_code_input").val(currentOrder.customer_code);
                         $("#customer_id_input").val(currentOrder.customer_id);
@@ -4543,6 +4660,11 @@
                         $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
                         $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                        const locationElement = document.getElementById('store_id_input');
+                            if (locationElement) {
+                                const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
+                                $("#current_pickup_address").text(displayAddress);
+                            }
 
                         const mainTableItem = document.getElementById('item_header');
 
@@ -4619,6 +4741,7 @@
                                             <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${currentOrderIndexVal}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                                             <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${currentOrderIndexVal}" onclick = "getCustomizableBOM(${currentOrderIndexVal})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                                         @endif
+                                        <div class="me-50 cursor-pointer" onclick = "setViewDetailedStocks('${currentOrderIndexVal}');"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="Stocks" class="text-primary"><i data-feather="layers"></i></span></div>
                                         <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                                    </div>
                                 </td>
@@ -4645,10 +4768,12 @@
                                     addHiddenInput("item_discount_value_" + currentOrderIndexVal + "_" + tedIndex, itemDiscountValue, `item_discount_value[${currentOrderIndexVal}][${tedIndex}]`, 'discount_values_hidden_' + currentOrderIndexVal, 'item_row_' + currentOrderIndexVal);
                                 });
                             //Item Delivery Schedule
-                            item.item_deliveries.forEach((delivery, deliveryIndex) => {
-                                addHiddenInput("item_delivery_schedule_qty_" + currentOrderIndexVal + "_" + deliveryIndex, delivery.qty, `item_delivery_schedule_qty[${currentOrderIndexVal}][${deliveryIndex}]`, 'delivery_schedule_qties_hidden_' + currentOrderIndexVal, "item_row_" + currentOrderIndexVal);
-                                addHiddenInput("item_delivery_schedule_date" + currentOrderIndexVal + "_" + deliveryIndex, delivery.delivery_date, `item_delivery_schedule_date[${currentOrderIndexVal}][${deliveryIndex}]`, 'delivery_schedule_dates_hidden_' + currentOrderIndexVal, "item_row_" + currentOrderIndexVal);
-                            });
+                            if (docType == "sq") {
+                                item.item_deliveries.forEach((delivery, deliveryIndex) => {
+                                    addHiddenInput("item_delivery_schedule_qty_" + currentOrderIndexVal + "_" + deliveryIndex, delivery.qty, `item_delivery_schedule_qty[${currentOrderIndexVal}][${deliveryIndex}]`, 'delivery_schedule_qties_hidden_' + currentOrderIndexVal, "item_row_" + currentOrderIndexVal);
+                                    addHiddenInput("item_delivery_schedule_date" + currentOrderIndexVal + "_" + deliveryIndex, delivery.delivery_date, `item_delivery_schedule_date[${currentOrderIndexVal}][${deliveryIndex}]`, 'delivery_schedule_dates_hidden_' + currentOrderIndexVal, "item_row_" + currentOrderIndexVal);
+                                });
+                            }
                             itemUomsHTML = ``;
                             if (item.item.uom && item.item.uom.id) {
                                 itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
@@ -4687,7 +4812,7 @@
                             addOrderExpense(null, false);
                         });
                         setAllTotalFields();
-                        
+                        disableHeader();
                         changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
 
                     }
@@ -4709,15 +4834,22 @@
             });
         }
     }
-    function getQuotations()
+    function getQuotations(type = 'sq')
     {
         var qtsHTML = ``;
-        const header_book_id = $("#series_id_input").val();
-        const targetTable = document.getElementById('qts_data_table');
-        const customer_id = $("#customer_id_qt_val").val();
-        const book_id = $("#book_id_qt_val").val();
-        const document_id = $("#document_id_qt_val").val();
-        const item_id = $("#item_id_qt_val").val();
+        let header_book_id = $("#series_id_input").val();
+        let targetTable = document.getElementById('qts_data_table');
+        let customer_id = $("#customer_id_qt_val").val();
+        let book_id = $("#book_id_qt_val").val();
+        let document_id = $("#document_id_qt_val").val();
+        let item_id = $("#item_id_qt_val").val();
+        if (type == 'po') {
+            targetTable = document.getElementById('qts_data_table_po');
+            customer_id = $("#customer_id_po_val").val();
+            book_id = $("#book_id_po_val").val();
+            document_id = $("#document_id_po_val").val();
+            item_id = $("#item_id_po_val").val();
+        }
         $.ajax({
             url: "{{route('sale.order.quotation.get.all')}}",
             method: 'GET',
@@ -4727,14 +4859,15 @@
                 book_id : book_id,
                 document_id : document_id,
                 item_id : item_id,
-                header_book_id : header_book_id
+                header_book_id : header_book_id,
+                doc_type : type
             },
             success: function(data) {
                 if (Array.isArray(data.data) && data.data.length > 0) {
                     data.data.forEach((qt, qtIndex) => {
                         var attributesHTML = ``;
                             qt.attributes.forEach(attribute => {
-                                attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.attribute_name} : ${attribute.attribute_value} </span>`;
+                                attributesHTML += `<span class="badge rounded-pill badge-light-primary" > ${attribute.header_attribute?.name} : ${attribute.header_attribute_value?.value} </span>`;
                             });
                         qtsHTML += `
                             <tr>
@@ -4746,13 +4879,13 @@
                                 <td>${qt?.header?.book_code}</td>
                                 <td>${qt?.header?.document_number}</td>
                                 <td>${moment(qt?.header?.document_date).format('D/M/Y')}</td>
-                                <td>${qt?.header?.currency_code}</td>
-                                <td>${qt?.header?.customer?.company_name}</td>
+                                <td>${qt?.customer?.currency?.short_name}</td>
+                                <td>${qt?.customer?.company_name}</td>
                                 <td>${qt?.item_code}</td>
                                 <td>${attributesHTML}</td>
                                 <td>${qt?.uom?.name}</td>
                                 <td>${qt?.order_qty}</td>
-                                <td>${qt?.quotation_balance_qty}</td>
+                                <td>${qt?.inter_org_so_bal_qty}</td>
                                 <td>${qt?.rate}</td>
                             </tr>
                         `
@@ -4816,13 +4949,26 @@
             });
     }
 
-    function openQuotation()
+    let pullType = "sq";
+
+    function openQuotation(type = 'sq')
     {
-        initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
-        initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_sq", "book_code", "");
-        initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document_qt", "document_number", "");
-        initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "sale_module_items", "item_code", "item_name");
-        getQuotations();
+        if (type == 'sq') {
+            pullType = "sq";
+            initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
+            initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_sq", "book_code", "");
+            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document_qt", "document_number", "");
+            initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "sale_module_items", "item_code", "item_name");
+            getQuotations("sq");
+        } else {
+            pullType = "po";
+            initializeAutocompleteQt("customer_code_input_po", "customer_id_po_val", "customer", "customer_code", "company_name");
+            initializeAutocompleteQt("book_code_input_po", "book_id_po_val", "book_sq", "book_code", "");
+            initializeAutocompleteQt("document_no_input_po", "document_id_po_val", "sale_order_document_po", "document_number", "");
+            initializeAutocompleteQt("item_name_input_po", "item_id_po_val", "sale_module_items", "item_code", "item_name");
+            getQuotations("po");
+        }
+        
     }
 
     let current_doc_id = 0;
@@ -5252,7 +5398,6 @@ document.addEventListener('input', function (e) {
                 //     });
                 // }
                 let bomContentDiv = document.getElementById('dynamic_bom_div_' + itemIndex);
-                console.log(bomContentDiv, "BOM DIV");
                 if (!bomContentDiv) {
                     return;
                 }
@@ -5602,6 +5747,7 @@ document.addEventListener('input', function (e) {
                         <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule(${newIndex});">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                         <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                     @endif
+                    <div class="me-50 cursor-pointer" onclick = "setViewDetailedStocks('${newIndex}');"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="Stocks" class="text-primary"><i data-feather="layers"></i></span></div>
                     <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                 </div>
             </td>
@@ -5909,9 +6055,8 @@ $('#attribute').on('hidden.bs.modal', function () {
             }
             let short = false;
             total_atts += 1;
-            console.log(attrArr);
 
-            if(attrArr.short_name.length > 0)
+            if(attrArr && attrArr.short_name && attrArr.short_name.length > 0)
             {
                 short = true;
             }
@@ -6176,6 +6321,7 @@ $('#attribute').on('hidden.bs.modal', function () {
                                 <div class="me-50 cursor-pointer" onclick = "openDeliverySchedule('${newIndex}');">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Delivery Schedule" class="text-primary"><i data-feather="calendar"></i></span></div>
                                 <div class="me-50 cursor-pointer dynamic_bom_div" id = "dynamic_bom_div_${newIndex}" onclick = "getCustomizableBOM(${newIndex})" style = "display:none;"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="BOM" class="text-primary"><i data-feather="table"></i></span></div>
                             @endif
+                            <div class="me-50 cursor-pointer" onclick = "setViewDetailedStocks('${newIndex}');"> <span data-bs-toggle="tooltip" data-bs-placement="top" title="Stocks" class="text-primary"><i data-feather="layers"></i></span></div>
                             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${newIndex}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
                         </div>
                     </td>
@@ -6201,6 +6347,14 @@ $('#attribute').on('hidden.bs.modal', function () {
                             setAttributesUI(newIndex);
                             newIndex += 1;
                         });                    
+    }
+
+    function setViewDetailedStocks(itemIndex)
+    {
+        const itemId = document.getElementById('items_dropdown_' + itemIndex + '_value').value;
+        const locationId = document.getElementById('store_id_input').value;
+        let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemIndex}`).getAttribute('attribute-array'));
+        viewDetailedStocks(itemId, locationId, itemAttributes);
     }
     </script>
 @endsection

@@ -33,6 +33,8 @@
 @section('content')
 <form class="ajax-input-form" data-module="pi" method="POST" action="{{ route('pi.store') }}" data-redirect="/purchase-indent" enctype="multipart/form-data">
     @csrf
+    <input type="hidden" name="procurement_type_param" id="procurement_type_param" value="all">
+    <input type="hidden" name="procurement_type" id="procurement_type" value="rm">
     <input type="hidden" name="show_attribute" value="0" id="show_attribute">
     <input type="hidden" name="so_item_ids" id="so_item_ids">
     <input type="hidden" name="item_ids" id="item_ids">
@@ -440,9 +442,19 @@ function setServiceParameters(parameters) {
         docDateInput.removeAttr('min');
         docDateInput.removeAttr('max');
     }
-
     /*Reference from*/
     let reference_from_service = parameters.reference_from_service;
+    $("#procurement_type_param").val(parameters.procurement_type);
+    if(parameters.procurement_type.includes('all')) {
+        $("#procurement_type").val('rm');
+    }
+    if(parameters.procurement_type.includes('Make to order')) {
+        $("#procurement_type").val('rm');
+    }
+    if(parameters.procurement_type.includes('Buy to order')) {
+        $("#procurement_type").val('fg');
+    }
+
     if(reference_from_service.length) {
         let pi = '{{\App\Helpers\ConstantHelper::SO_SERVICE_ALIAS}}';
         if(reference_from_service.includes(pi)) {
@@ -777,6 +789,18 @@ $(document).on('click', '.submitAttributeBtn', (e) => {
 
 /*So modal*/
 $(document).on('click', '.soSelect', (e) => {
+    let paramValue = $("#procurement_type_param").val();
+    let option = '';
+    if(paramValue.includes('All')) {
+        option+=`<option value="rm">Make to order</option><option value="fg">Buy to order</option>`;
+    }
+    if(paramValue.includes('Make to order')) {
+        option+=`<option value="rm">Make to order</option>`;
+    }
+    if(paramValue.includes('Buy to order')) {
+        option+=`<option value="fg">Buy to order</option>`;
+    }
+    $("#orderTypeSelect").empty().append(option);
     $("#soModal").modal('show');
     openSaleRequest();
     getSoItems();
@@ -1089,6 +1113,8 @@ $(document).on('click', '.soProcess', (e) => {
     } else {
         isAttribute = 0;
     }
+    let procurementType = $("#orderTypeSelect").val() || 'rm';
+    
     ids = JSON.stringify(ids);
 
     let selectedItems = [];
@@ -1100,9 +1126,10 @@ $(document).on('click', '.soProcess', (e) => {
             });
         });
     }
+    let storeId = $("#store_id").val() || '';
     let selectedItemsParam = encodeURIComponent(JSON.stringify(selectedItems));
     let soTracking = $("#so_tracking_required").val();
-    let actionUrl = `{{ route("pi.process.so-item") }}?ids=${ids}&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}&so_tracking_required=${soTracking}`;
+    let actionUrl = `{{ route("pi.process.so-item") }}?ids=${ids}&is_attribute=${isAttribute}&selected_items=${selectedItemsParam}&so_tracking_required=${soTracking}&procurement_type=${procurementType}&store_id=${storeId}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if(data.status == 200) {
@@ -1110,8 +1137,18 @@ $(document).on('click', '.soProcess', (e) => {
                 // initializeAutocomplete2(".comp_item_code");
                 $("#soModal").modal('hide');
                 // $(".soSelect").prop('disabled',true);
-                $("#soSubmitDataTable").empty().append(data.data.pos);
-                $("#soSubmitModal").modal('show');
+                if(data.data.procurement_type != 'fg') {
+                    $("#soSubmitDataTable").empty().append(data.data.pos);
+                    $("#soSubmitModal").modal('show');
+                } else {
+                    $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                    setTimeout(() => {
+                        $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                            let currentIndex = index + 1;
+                            setAttributesUIHelper(currentIndex, "#itemTable");
+                        });
+                    }, 100);
+                }
             } else {
                     Swal.fire({
                         title: 'Error!',

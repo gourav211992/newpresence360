@@ -533,6 +533,7 @@ class ConstantHelper
     const ATTRIBUTE_SERVICE_ALIAS = 'attributes';
     const PRODUCT_SPECIFICATION_ALIAS = 'product-specifications';
     const DYNAMIC_FIELD_ALIAS = 'dynamic-fields';
+    const INSPECTION_CHECKLIST_ALIAS = 'inspection-checklists';
     const PAYMENT_TERM_SERVICE_ALIAS = 'payment-terms';
     const UNIT_SERVICE_ALIAS = 'units';
     const STOCK_ACCOUNT_SERVICE_ALIAS = 'stock-accounts';

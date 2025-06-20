@@ -71,12 +71,8 @@ class CustomerController extends Controller
                 $query->where('customer_type', $request->customer_type);
             }
 
-            if ($categoryId = request('category_id')) {
-                $query->where('category_id', $categoryId);
-            }
-
-            if ($subcategoryId = request('subcategory_id')) {
-                $query->where('subcategory_id', $subcategoryId);
+            if ($categoryId = request(key: 'subcategory_id')) {
+                $query->where('subcategory_id', $categoryId);
             }
 
             if ($request->filled('sales_person')) {
@@ -163,8 +159,9 @@ class CustomerController extends Controller
 
         $salesPersons = Employee::where('organization_id', $organizationId)->pluck('name', 'id');
         $categories = Category::withDefaultGroupCompanyOrg()
+            ->where('type', 'Customer')
+            ->doesntHave('subCategories')
             ->where('status', ConstantHelper::ACTIVE)
-            ->whereNull('parent_id') 
             ->get();
 
         return view('procurement.customer.index', compact('salesPersons', 'categories'));
@@ -229,7 +226,6 @@ class CustomerController extends Controller
         $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
-        $relatedCustomers = Customer::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
         $titles = ConstantHelper::TITLES;
         $status = ConstantHelper::STATUS;
         $options = ConstantHelper::STOP_OPTIONS;
@@ -275,7 +271,6 @@ class CustomerController extends Controller
             'customerCodeType'=>$customerCodeType,
             'organization'=>$organization,
             'groupOrganizations'=>$groupOrganizations,
-            'relatedCustomers'=>$relatedCustomers,
         ]);
     }
 
@@ -425,7 +420,6 @@ class CustomerController extends Controller
         $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
-        $relatedCustomers = Customer::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
         $titles = ConstantHelper::TITLES;
         $notificationData = $customer? $customer->notification : [];
         $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -483,7 +477,6 @@ class CustomerController extends Controller
             'groupOrganizations'=>$groupOrganizations,
             'gstState' => $state,
             'gstCountry' => $country,
-            'relatedCustomers'=>$relatedCustomers,
         ]);
     }
 

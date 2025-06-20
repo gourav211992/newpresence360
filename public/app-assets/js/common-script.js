@@ -159,10 +159,14 @@ $(document).ready(function() {
                                 label: (config.codeField && item[config.codeField] ? item[config.codeField] : '') + (config.nameField && item[config.nameField] ? ' - ' + (item[config.nameField].length > 50 ? item[config.nameField].substring(0, 45) + '...' : item[config.nameField]) : '') || item[config.labelField],
                                 code: item[config.codeField] || '',
                                 name: item[config.nameField] || '',
+                                categoryName: item[config.categoryName] || '',
                                 cat_initials: item.cat_initials || '',
                                 hsn_id: item.hsn_id || '',    
                                 sub_cat_initials: item.sub_cat_initials || '',
-                                hsn_code: item.hsn_code || '',   
+                                hsn_code: item.hsn_code || '', 
+                                full_name: item.full_name || '', 
+                                inspection_checklist_id: item.inspection_checklist_id || '',
+                                inspection_checklist_name: item.inspection_name || '',  
                                 unit_name: item.unit_name || '',  
                                 hsn_name: item.description || '',  
 
@@ -182,21 +186,33 @@ $(document).ready(function() {
             },
             minLength: config.minLength || 0,
             select: function(event, ui) {
-                if (ui.item.code) {
+                if (config.allowSelection === false) {
+                    event.preventDefault(); 
+                    return false;
+                }
+                if (config.categoryName) {
+                    $(this).val(ui.item.categoryName);
+                } else if (ui.item.code) {
                     $(this).val(ui.item.code);
                 } else {
                     $(this).val(ui.item.label);
                 }
-                $(config.hiddenFieldSelector.call(this)).val(ui.item.id);
+                const hiddenFieldSelector = config.hiddenFieldSelector.call(this);
+                if (hiddenFieldSelector && hiddenFieldSelector !== "") { 
+                    $(hiddenFieldSelector).val(ui.item.id);
+                }
                 if (config.onSelect) {
                     config.onSelect(ui.item);
                 }
                 return false;
             },
             change: function(event, ui) {
-                if (!ui.item) {
-                    $(this).val("");
-                    $(config.hiddenFieldSelector.call(this)).val('');
+                if (!ui.item && $(this).val() === "") {
+                    $(this).val("");  
+                    const hiddenFieldSelector = config.hiddenFieldSelector.call(this);
+                    if (hiddenFieldSelector && hiddenFieldSelector !== "") {
+                        $(hiddenFieldSelector).val('');
+                    }
                 }
             }
         }).focus(function() {
@@ -209,7 +225,8 @@ $(document).ready(function() {
     initializeAutocomplete(".category-autocomplete", {
         url: '/search',
         type: 'category',
-        labelField: 'name',
+        labelField: 'full_name',
+        categoryName: 'name',
         hiddenFieldSelector: function() { return '.category-id'; },
         minLength: 0,
         extraParams: function() {
@@ -218,17 +235,29 @@ $(document).ready(function() {
             };
         },
         onSelect: function(selectedItem) {
-        $('.cat_initials-id').val(selectedItem.cat_initials).change(); 
+        if (selectedItem.cat_initials) {
+            $('.cat_initials-id').val(selectedItem.cat_initials).change();
+        } else if (selectedItem.sub_cat_initials) {
+            $('.cat_initials-id').val(selectedItem.sub_cat_initials).change();
+        } else {
+            $('.cat_initials-id').val(''); 
+        }
         $('.subcategory-autocomplete').val(''); 
-        $('.sub_cat_initials-id').val(''); 
+        $('.cat_initials-id').val(''); 
         $('.subcategory-id').val('');
-        console.log(selectedItem);
         if (selectedItem.hsn_id) {
             $('.hsn-id').val(selectedItem.hsn_id); 
             $('.hsn-autocomplete').val(selectedItem.hsn_code);
         } else {
             $('.hsn-id').val(''); 
             $('.hsn-autocomplete').val('');
+        }
+         if (selectedItem.inspection_checklist_id) {
+            $('.inspection_checklist_id').val(selectedItem.inspection_checklist_id);
+            $('.inspection-autocomplete').attr('placeholder', selectedItem.inspection_checklist_name);
+        } else {
+            $('.inspection_checklist_id').val('');
+            $('.inspection-autocomplete').val('');
         }
         }
     });
@@ -259,6 +288,73 @@ $(document).ready(function() {
         hiddenFieldSelector: function() { return '.hsn-id'; },
         minLength: 0,
         additionalFields: ['description']
+    });
+
+    initializeAutocomplete(".item-name-autocomplete", {
+        url: '/search',
+        type: 'item-name',
+        codeField: 'item_code',
+        nameField: 'item_name',
+        minLength: 3,
+        allowSelection: false, 
+    });
+    initializeAutocomplete(".customer-name-autocomplete", {
+        url: '/search',
+        type: 'customer-name',
+        codeField: 'customer_code',
+        nameField: 'company_name',
+        minLength: 3,
+        allowSelection: false, 
+    });
+    initializeAutocomplete(".vendor-name-autocomplete", {
+        url: '/search',
+        type: 'vendor-name',
+        codeField: 'vendor_code',
+        nameField: 'company_name',
+        minLength: 3,
+        allowSelection: false, 
+    });
+
+    initializeAutocomplete(".inspection-autocomplete", {
+        url: '/search',
+        type: 'checklist',
+        labelField: 'name',
+        hiddenFieldSelector: function() { return '.inspection_checklist_id'; },
+        minLength: 0,
+    });
+
+    initializeAutocomplete(".parent-vendor-autocomplete", {
+        url: '/search',
+        type: 'vendor',
+        labelField: 'company_name',
+        hiddenFieldSelector: function() { return '.reld_vendor_id'; },
+        minLength: 0,
+        extraParams: function() {
+            return {
+                vendor_id: $('.vendor_id').val() 
+            };
+        },
+    });
+
+    initializeAutocomplete(".contra-ledger-autocomplete", {
+        url: '/search',
+        type: 'contraLedger',
+        labelField: 'name',
+        hiddenFieldSelector: function() { return '.contra_ledger_id'; },
+        minLength: 0,
+    });
+
+    initializeAutocomplete(".parent-customer-autocomplete", {
+        url: '/search',
+        type: 'customer',
+        labelField: 'company_name',
+        hiddenFieldSelector: function() { return '.reld_customer_id'; },
+        minLength: 0,
+        extraParams: function() {
+            return {
+                customer_id: $('.customer_id').val() 
+            };
+        },
     });
 
     initializeAutocomplete(".ladger-autocomplete", {
@@ -377,54 +473,56 @@ $(document).ready(function() {
     if (initialLedgerId) {
         updateLedgerGroupDropdown(initialLedgerId);
     }
-    $(document).ready(function() {
-        function loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect) {
-            if (categoryId) {
-                $.ajax({
-                    url: '/categories/subcategories/' + categoryId,
-                    method: 'GET',
-                    success: function(response) {
-                        subcategorySelect.empty();
-                        subcategorySelect.append('<option value="">Select Sub-Category</option>');
-                        $.each(response, function(index, subcategory) {
-                            subcategorySelect.append(
-                                '<option value="' + subcategory.id + '"' + 
-                                (subcategory.id == selectedSubcategoryId ? ' selected' : '') + '>' + 
-                                subcategory.name + '</option>'
-                            );
-                        });
-                    },
-                    error: function() {
-                        alert('An error occurred while fetching subcategories.');
-                    }
-                });
-            } else {
-                subcategorySelect.empty();
-                subcategorySelect.append('<option value="">Select Sub-Category</option>');
-            }
-        }
-        $('select[name="category_id"]').change(function() {
-            var categoryId = $(this).val();
-            var subcategorySelect = $('select[name="subcategory_id"]'); 
-            var selectedSubcategoryId = subcategorySelect.data('selected-id');
-            loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
-        });
+    // $(document).ready(function() {
+    //     function loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect) {
+    //         if (categoryId) {
+    //             $.ajax({
+    //                 url: '/categories/subcategories/' + categoryId,
+    //                 method: 'GET',
+    //                 success: function(response) {
+    //                     subcategorySelect.empty();
+    //                     subcategorySelect.append('<option value="">Select Sub-Category</option>');
+    //                     $.each(response, function(index, subcategory) {
+    //                         subcategorySelect.append(
+    //                             '<option value="' + subcategory.id + '"' + 
+    //                             (subcategory.id == selectedSubcategoryId ? ' selected' : '') + '>' + 
+    //                             subcategory.name + '</option>'
+    //                         );
+    //                     });
+    //                 },
+    //                 error: function() {
+    //                     alert('An error occurred while fetching subcategories.');
+    //                 }
+    //             });
+    //         } else {
+    //             subcategorySelect.empty();
+    //             subcategorySelect.append('<option value="">Select Sub-Category</option>');
+    //         }
+    //     }
+    //     $('select[name="category_id"]').change(function() {
+    //         var categoryId = $(this).val();
+    //         var subcategorySelect = $('select[name="subcategory_id"]'); 
+    //         var selectedSubcategoryId = subcategorySelect.data('selected-id');
+    //         loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
+    //     });
     
-        function initializeSubcategories() {
-            var categoryId = $('select[name="category_id"]').val(); 
-            var subcategorySelect = $('select[name="subcategory_id"]'); 
-            var selectedSubcategoryId = subcategorySelect.data('selected-id');
-            loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
-        }
+    //     function initializeSubcategories() {
+    //         var categoryId = $('select[name="category_id"]').val(); 
+    //         var subcategorySelect = $('select[name="subcategory_id"]'); 
+    //         var selectedSubcategoryId = subcategorySelect.data('selected-id');
+    //         loadSubcategories(categoryId, selectedSubcategoryId, subcategorySelect);
+    //     }
  
-        initializeSubcategories();
-    });
+    //     initializeSubcategories();
+    // });
 
 });
 
 function capitalizeFirstLetter(text) {
     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 }
+
+
 
 
 

@@ -467,15 +467,19 @@ function show_validation_error(msg) {
             name = name.replace("]", "");
         }
         if (index === "sub_types" || index === "sub_types[]") {  
-            if ($('form [name="sub_types[]"]:checked').length === 0) {
-                var checkboxGroupContainer = $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing');
+            if ($('form [name="sub_types[]"]:checked').length === 0 && !$('#tradedItemCheckbox').is(':checked') && !$('#assetCheckbox').is(':checked')) {
+                var checkboxGroupContainer = $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing'); 
                 if (checkboxGroupContainer.find('.ajax-validation-error-span').length === 0) {
-                    checkboxGroupContainer.after(
-                        '<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">' + value[0] + '</span>'
-                    );
-                    checkboxGroupContainer.addClass("is-invalid error"); 
+                  checkboxGroupContainer.after(
+                    '<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">Please select at least one subtype.</span>'
+                  );
+                  checkboxGroupContainer.addClass("is-invalid error");
                 }
-            }
+              } else {
+                $('.ajax-validation-error-span').remove();
+                $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing').removeClass("is-invalid error");
+              }
+              
         } else if (name.indexOf("[]") !== -1) {
             $('form [name="' + name + '"]')
                 .last()

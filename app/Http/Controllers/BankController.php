@@ -25,7 +25,7 @@ class BankController extends Controller
     
         if ($request->ajax()) {
             $banks = Bank::withDefaultGroupCompanyOrg()
-                ->get();
+            ->orderBy('id', 'desc');
     
             return DataTables::of($banks)
                 ->addIndexColumn()
@@ -82,13 +82,13 @@ class BankController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
-                $validatedData['organization_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
+                $validatedData['organization_id'] = $organization->id;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
-            $validatedData['organization_id'] = null;
+            $validatedData['company_id'] =$organization->company_id;
+            $validatedData['organization_id'] = $organization->id;
         }
         try {
             $bank = Bank::create($validatedData);
@@ -182,13 +182,13 @@ class BankController extends Controller
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
-                    $validatedData['organization_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
+                    $validatedData['organization_id'] = $organization->id;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
-                $validatedData['organization_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
+                $validatedData['organization_id'] = $organization->id;
             }
             $bank->update($validatedData);
             if ($request->has('bank_details') && is_array($validatedData['bank_details'])) {

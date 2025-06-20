@@ -99,7 +99,7 @@ class PurchaseReturnAccountRequest extends FormRequest
             'purchase_return_accounts.*.ledger_group_id.required' => 'The ledger group field is required.',
             'purchase_return_accounts.*.ledger_id.exists' => 'The selected ledger does not exist.',
             'purchase_return_accounts.*.category_id.exists' => 'The selected category does not exist.',
-            'purchase_return_accounts.*.sub_category_id.exists' => 'The selected sub-category does not exist.',
+            'purchase_return_accounts.*.sub_category_id.exists' => 'The selected item group does not exist.',
             'purchase_return_accounts.*.item_id.exists' => 'The selected item does not exist.',
             'purchase_return_accounts.*.book_id.exists' => 'The selected book does not exist.',
             'purchase_return_accounts.*.company_id.required' => 'The company field is required.',

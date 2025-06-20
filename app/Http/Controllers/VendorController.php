@@ -174,8 +174,9 @@ class VendorController extends Controller
             }
         
             $categories = Category::withDefaultGroupCompanyOrg()
+                ->where('type', 'Vendor')
+                ->doesntHave('subCategories')
                 ->where('status', ConstantHelper::ACTIVE)
-                ->whereNull('parent_id') 
                 ->get();
         
             return view('procurement.vendor.index', compact('categories'));
@@ -225,7 +226,6 @@ class VendorController extends Controller
             $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
             $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
-            $relatedVendors = Vendor::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
             $titles = ConstantHelper::TITLES;
             $status = ConstantHelper::STATUS;
             $options = ConstantHelper::STOP_OPTIONS;
@@ -283,7 +283,6 @@ class VendorController extends Controller
                 'organization'=>$organization,
                 'groupOrganizations'=>$groupOrganizations,
                 'stores' => $stores,
-                'relatedVendors'=>$relatedVendors,
             ]);
         }
 
@@ -478,7 +477,6 @@ class VendorController extends Controller
             $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
             $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
-            $relatedVendors = Vendor::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
             $titles = ConstantHelper::TITLES;
             $notificationData = $vendor? $vendor->notification : [];
             $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -550,7 +548,6 @@ class VendorController extends Controller
                 'groupOrganizations'=>$groupOrganizations,
                 'gstState' => $state,
                 'gstCountry' => $country,
-                'relatedVendors'=>$relatedVendors
             ]);
         }
 

@@ -578,6 +578,7 @@ class InventoryHelper
         $costPerUnit = 0.00;
         $qty = 0.00;
         $holdQty = 0.00;
+        $putawayQty = 0.00;
         $lotNumber = null;
 
         // Receive
@@ -587,16 +588,25 @@ class InventoryHelper
             $stockLedger->book_id = @$documentHeader->book_id;
             if(!$documentItemLocation->inventory_uom_qty || $documentItemLocation->inventory_uom_qty < 1){
                 $qty = 0.00;
+                $putawayQty = 0.00;
                 $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
                 $stockLedger->receipt_qty = $qty;
                 $stockLedger->hold_qty = $holdQty;
+                $stockLedger->putaway_pending_qty = $putawayQty;
                 $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
                 $costPerUnit = $totalItemCost/$holdQty;
             }else {
-                $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
+                if($documentItemLocation->is_warehouse_required == 1){
+                    $qty = 0.00;
+                    $putawayQty = $documentItemLocation->inventory_uom_qty;
+                } else{
+                    $putawayQty = 0.00;
+                    $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
+                }
                 $holdQty = 0.00;
                 $stockLedger->receipt_qty = $qty;
                 $stockLedger->hold_qty = $holdQty;
+                $stockLedger->putaway_pending_qty = $putawayQty;
                 $stockLedger->book_id = @$documentHeader->book_id;
                 $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
                 $costPerUnit = $totalItemCost/$qty;
