@@ -52,6 +52,9 @@
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
                             data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                            <a href="{{ route('finance.fixed-asset.show.import') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
+                            <i data-feather="upload"></i> Import
+                        </a> 
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0"
                             href="{{ route('finance.fixed-asset.registration.create') }}"><i data-feather="plus-circle"></i>
                             Add New</a>

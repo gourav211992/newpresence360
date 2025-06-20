@@ -810,23 +810,17 @@ class VoucherController extends Controller
         $approvalHistory = $history;
         $allowedCVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::CV_ALLOWED_GROUPS,'names');
         $exlucdeJVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::JV_EXCLUDE_GROUPS,'names');
-        $cost_centers = CostCenterOrgLocations::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-        ->with(['costCenter' => function ($query) {
-            $query->where('status', 'active');
-        }])
-        ->get()
-        ->filter(function ($item) {
-            return $item->costCenter !== null;
-        })
-        ->map(function ($item) {
+        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'location' => $item->costCenter->locations,
             ];
-        })
-        ->toArray();
+        })->toArray();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-     $locations = InventoryHelper::getAccessibleLocations();
+        $locations = InventoryHelper::getAccessibleLocations();
        return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
     }
 
