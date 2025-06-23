@@ -126,8 +126,8 @@ class RegistrationController extends Controller
 
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->whereHas('items', function ($q) {
-                $q->whereHas('item.subTypes.subType', function ($q) {
-                    $q->where('name', 'Asset');
+                $q->whereHas('item', function ($q) {
+                    $q->where('is_asset', 1);
                 })->doesntHave('asset');
                 $q->where('basic_value', '>', 0);
             })
@@ -139,9 +139,9 @@ class RegistrationController extends Controller
             'item'
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereHas('item.subTypes.subType', function ($q) {
-            $q->where('name', 'Asset');
-        })->where('basic_value', '>', 0)->doesntHave('asset')->get();
+        })->whereHas('item', function ($q) {
+                    $q->where('is_asset', 1);
+                })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
@@ -488,9 +488,9 @@ class RegistrationController extends Controller
             'taxes'
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereHas('item.subTypes.subType', function ($q) {
-            $q->where('name', 'Asset');
-        })->doesntHave('asset')->where('basic_value', '>', 0);
+        })->whereHas('item', function ($q) {
+                    $q->where('is_asset', 1);
+                })->doesntHave('asset')->where('basic_value', '>', 0);
 
 
         if ($request->grn_no) {

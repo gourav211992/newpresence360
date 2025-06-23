@@ -542,10 +542,12 @@ class CashflowReportController extends Controller
         // $payment_received = json_decode($request->payment_received);
         $data = $request->all();
         $data['organization_id'] = Helper::getAuthenticatedUser()->organization_id;
+        $data['fy']=$request->fy;
         $data['createdBy'] = Helper::getAuthenticatedUser()->name;
         $organization = Organization::find($data['organization_id']);
         $data['currency'] = Currency::find($organization?->currency_id)?->name;
         $data['in_words'] = Helper::numberToWords(abs($data['closing']));
+        $data['organization'] = $organization;
 
         return Excel::download(
             new CashflowExport(

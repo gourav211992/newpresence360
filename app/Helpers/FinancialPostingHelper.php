@@ -6111,11 +6111,15 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
+       $cost = CostCenter::find($document?->cost_center_id);
 
+                    
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
             'ledger_id' => $vocuherdata->ledger_id,
             'ledger_group_id' => $vocuherdata->ledger_group_id,
             'ledger_code' => $BankLedger?->code,
+            'cost_center_id' => $document?->cost_center_id,
+            'cost_name'=>  $cost->name??"-",
             'ledger_name' => $BankLedger?->name,
             'ledger_group_code' => $BankLedgerGroup?->name,
             'debit_amount' => $vocuherdata->amount,
@@ -6147,21 +6151,14 @@ class FinancialPostingHelper
                             ->first();
                              $cost = CostCenter::find($item?->cost_center_id);
 
-                     if (!isset($cost)) {
-                        return array(
-                            'status' => false,
-                            'message' => 'Cost Center not found',
-                            'data' => []
-                        );
-                    }
-
+                    
                         $newEntry = [
                             'ledger_id' => $VendorLedgerId,
                             'ledger_group_id' => $VendorLedgerGroupId,
                             'ledger_code' => $VendorLedger?->code,
                             'ledger_name' => $VendorLedger?->name,
                             'cost_center_id' => $item?->cost_center_id,
-                            'cost_name'>$cost->name,
+                            'cost_name'=>$cost->name??"-",
                             'ledger_group_code' => $VendorLedgerGroup?->name,
                             'credit_amount' => $invoice->amount,
                             'debit_amount' => 0,
@@ -6203,13 +6200,6 @@ class FinancialPostingHelper
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
 
-                     if (!isset($cost)) {
-                        return array(
-                            'status' => false,
-                            'message' => 'Cost Center not found',
-                            'data' => []
-                        );
-                    }
                     
 
                     array_push($postingArray[self::VENDOR_ACCOUNT], [
@@ -6218,7 +6208,7 @@ class FinancialPostingHelper
                         'ledger_code' => $VendorLedger?->code,
                         'ledger_name' => $VendorLedger?->name,
                         'cost_center_id' => $document?->cost_center_id,
-                        'cost_name'=>$cost->name,
+                        'cost_name'=>$cost->name??"-",
                         'ledger_group_code' => $VendorLedgerGroup?->name,
                         'credit_amount' => $vendor->currentAmount,
                         'debit_amount' => 0,
@@ -6679,10 +6669,14 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
+         $cost = CostCenter::find($document?->cost_center_id);
 
+               
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
             'ledger_id' => $vocuherdata->ledger_id,
             'ledger_group_id' => $vocuherdata->ledger_group_id,
+            'cost_center_id' => $document?->cost_center_id,
+            'cost_name'=>$cost->name??"-",
             'ledger_code' => $BankLedger?->code,
             'ledger_name' => $BankLedger?->name,
             'ledger_group_code' => $BankLedgerGroup?->name,
@@ -6713,23 +6707,16 @@ class FinancialPostingHelper
                             ->where('ledger_parent_id', $vendor->ledger_group_id)
                             ->where('credit_amt_org', '>', 0)
                             ->first();
-                        $cost = CostCenter::find($item?->cost_center_id);
+                    
+                    $cost = CostCenter::find($item?->cost_center_id);
 
-                     if (!isset($cost)) {
-                        return array(
-                            'status' => false,
-                            'message' => 'Cost Center not found',
-                            'data' => []
-                        );
-                    }
-
-                        $newEntry = [
+                  $newEntry = [
                             'ledger_id' => $VendorLedgerId,
                             'ledger_group_id' => $VendorLedgerGroupId,
                             'ledger_code' => $VendorLedger?->code,
                             'ledger_name' => $VendorLedger?->name,
                             'cost_center_id' => $item?->cost_center_id,
-                            'cost_name'=>$cost->name,
+                            'cost_name'=>$cost->name??"-",
                             'ledger_group_code' => $VendorLedgerGroup?->name,
                             'credit_amount' => 0,
                             'debit_amount' => $invoice->amount,
@@ -6772,13 +6759,7 @@ class FinancialPostingHelper
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
 
-                     if (!isset($cost)) {
-                        return array(
-                            'status' => false,
-                            'message' => 'Cost Center not found',
-                            'data' => []
-                        );
-                    }
+                    
 
                     array_push($postingArray[self::VENDOR_ACCOUNT], [
                         'ledger_id' => $VendorLedgerId,
@@ -6786,7 +6767,7 @@ class FinancialPostingHelper
                         'ledger_code' => $VendorLedger?->code,
                         'ledger_name' => $VendorLedger?->name,
                         'cost_center_id' => $document?->cost_center_id,
-                        'cost_name'=>$cost->name,
+                        'cost_name'=>$cost->name??"-",
                         'ledger_group_code' => $VendorLedgerGroup?->name,
                         'credit_amount' => 0,
                         'debit_amount' => $vendor->currentAmount,
@@ -7398,6 +7379,7 @@ class FinancialPostingHelper
                     'debit_amt' => $post['debit_amount'],
                     'credit_amt' => $post['credit_amount'],
                     'cost_center_id' => $post['cost_center_id'] ?? null,
+                    'cost_name' => $post['cost_name'] ?? null,
                     'debit_amt_org' => $debitAmtOrg,
                     'credit_amt_org' => $creditAmtOrg,
                     'debit_amt_comp' => $debitAmtComp,

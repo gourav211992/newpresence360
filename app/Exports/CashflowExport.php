@@ -26,6 +26,8 @@ class CashflowExport implements FromView,WithEvents
             'closing_balance' => $this->data['closing'],
             'organization_id' => $this->data['organization_id'],
             'createdBy' => $this->data['createdBy'],
+            'fy' => $this->data['fy'],
+            'organization' => $this->data['organization'],
             'currency' => $this->data['currency'],
             'in_words' => $this->data['in_words'],
         ]);
@@ -45,6 +47,28 @@ class CashflowExport implements FromView,WithEvents
             }
         ];
         
+    }
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            // Bold header row (Row 3 if Org and Date occupy rows 1 and 2)
+            'A3:G3' => [
+                'font' => ['bold' => true],
+                'borders' => ['allBorders' => ['borderStyle' => 'thin']],
+            ],
+
+            // Right align "Total Amount" column (Column F)
+            'F' => [
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_RIGHT
+                ]
+            ],
+
+            // Optional: border for all rows (up to 100)
+            'A1:G100' => [
+                'borders' => ['allBorders' => ['borderStyle' => 'thin']],
+            ],
+        ];
     }
 
     // public function styles(Worksheet $sheet)

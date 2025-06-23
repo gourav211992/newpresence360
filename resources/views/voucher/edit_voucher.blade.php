@@ -560,7 +560,7 @@
                                                                     name="cost_center_id[]"
                                                                     id="cost_center_id{{ $no }}">
                                                                      @if ($item->cost_center_id=="")
-                                                                    <option value=""></option>
+                                                                    <option value="">Select</option>
                                                                      @endif
                                                                     @foreach ($locationCostCenters as $value)
                                                                         <option value="{{ $value['id'] }}"
@@ -1246,6 +1246,9 @@
                 let $dropdown = $(this);
                 $dropdown.empty();
                 // $dropdown.append('<option value="">Select Cost Center</option>');
+                if(costCenterSet.length === 0) {
+                    $dropdown.append('<option value="">Select</option>');
+                }
                 costCenterSet.forEach((center) => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });

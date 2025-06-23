@@ -90,9 +90,11 @@ class CrDrReportController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::RECEIVABLE;
@@ -142,7 +144,7 @@ class CrDrReportController extends Controller
         $customers = collect($customers)->reject(function ($item) {
             return (float) $item->total_outstanding === 0.0;
         });
-        return view('finance_report.debitors', compact('cost_centers', 'companies', 'organizationId', 'locations', 'customers', 'all_groups', 'all_ledgers', 'date', 'date2'));
+        return view('finance_report.debitors', compact('cost_centers', 'companies', 'organizationId', 'locations', 'customers', 'all_groups', 'all_ledgers', 'date', 'date2','cost_groups'));
     }
     public function credit(Request $request)
     {
@@ -192,9 +194,11 @@ class CrDrReportController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
@@ -216,7 +220,7 @@ class CrDrReportController extends Controller
                         }
                     })
                     ->get();
-                if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost);
+                if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
@@ -231,7 +235,7 @@ class CrDrReportController extends Controller
                     })
                     ->get();
 
-                if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost);
+                if (!is_null($ledger_groups)) $vendors = self::get_ledgers_data($ledger_groups, $ages_all, 'credit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
             }
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
@@ -240,7 +244,7 @@ class CrDrReportController extends Controller
         $vendors = collect($vendors)->reject(function ($item) {
             return (float) $item->total_outstanding === 0.0;
         });
-        return view('finance_report.creditors', compact('cost_centers', 'companies', 'organizationId', 'locations', 'vendors', 'all_groups', 'all_ledgers', 'date', 'date2'));
+        return view('finance_report.creditors', compact('cost_centers', 'companies', 'organizationId', 'locations', 'vendors', 'all_groups', 'all_ledgers', 'date', 'date2','cost_groups'));
     }
 
 
