@@ -308,24 +308,14 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
-                if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
-                    $validatedData['organization_id'] = $organization->id;  
-                } else {
-                    $validatedData['organization_id'] = null;
-                }
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
-                // $validatedData['organization_id'] = null;
-            }
-        } else {
-            if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
-                $validatedData['organization_id'] = $organization->id;  
-            } else {
                 $validatedData['organization_id'] = null;
             }
+        } else {
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
-            // $validatedData['organization_id'] = null;
+            $validatedData['organization_id'] = null;
         }
         if ($request->document_status === 'submitted') {
             $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 
@@ -553,18 +543,17 @@ class ItemController extends Controller
     
     public function exportSuccessfulItems()
     {
-        $uploadItems = UploadItemMaster::where('status','Success') 
-        ->get();
-        $items = Item::with(['category','subTypes', 'subcategory', 'hsn', 'uom', 'itemAttributes', 'specifications', 'alternateUOMs'])
-            ->whereIn('item_code', $uploadItems->pluck('item_code'))
-            ->get();
+        $user = Helper::getAuthenticatedUser();
+        $uploadItems = UploadItemMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
+        $items = Item::withDefaultGroupCompanyOrg()->with(['category', 'subTypes', 'subcategory', 'hsn', 'uom', 'itemAttributes', 'specifications', 'alternateUOMs'])->whereIn('item_code', $uploadItems->pluck('item_code'))->get();
         return Excel::download(new ItemsExport($items, $this->itemImportExportService), "successful-items.xlsx");
     }
+    
 
     public function exportFailedItems()
     {
-        $failedItems = UploadItemMaster::where('status', operator: 'Failed')  
-        ->get();
+        $user = Helper::getAuthenticatedUser();
+        $failedItems = UploadItemMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
         return Excel::download(new FailedItemsExport($failedItems), "failed-items.xlsx");
     }
 
@@ -695,24 +684,14 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $policyLevelData['company_id'];
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
-                if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
-                    $validatedData['organization_id'] = $organization->id;  
-                } else {
-                    $validatedData['organization_id'] = null;
-                }
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
-                // $validatedData['organization_id'] = null;
-            }
-        } else {
-            if ($orgGroup  && $orgGroup->name == 'Superme Laminates') {
-                $validatedData['organization_id'] = $organization->id;  
-            } else {
                 $validatedData['organization_id'] = null;
             }
+        } else {
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
-            // $validatedData['organization_id'] = null;
+            $validatedData['organization_id'] = null;
         }
         if ($request->input('document_status') === 'submitted') {
             $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 

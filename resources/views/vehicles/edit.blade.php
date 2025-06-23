@@ -50,76 +50,82 @@
                                                 <div class="col-md-4"> 
                                                     <select name="transporter_id" class="form-select select2">
                                                         <option value="">Select</option>
-                                                        <option value="1" {{ old('transporter_id', $vehicle->transporter_id) == 1 ? 'selected' : '' }}>Transport A</option>
-                                                        <option value="2" {{ old('transporter_id', $vehicle->transporter_id) == 2 ? 'selected' : '' }}>Test</option>
+                                                         @foreach ($groupOrganizations as $org)
+                                                            <option value="{{ $org->id }}" {{ old('transporter_id', $vehicle->transporter_id) == $org->id ? 'selected' : '' }}>{{ $org->name }}</option>
+                                                        @endforeach
+                                                        
                                                     </select>
                                                 </div> 
-                                                <div class="col-md-2"> 
-                                                    <label class="form-label">Lorry No. <span class="text-danger">*</span></label>  
+                                              
+                                            </div>
+
+                                            <div class="row align-items-center mb-1">
+                                                  <div class="col-md-2"> 
+                                                    <label class="form-label">Vehicle No. <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <input type="text" class="form-control" name="lorry_no" value="{{ old('lorry_no', $vehicle->lorry_no) }}" placeholder="UP65AA123" />
                                                 </div> 
-                                            </div>
-
-                                            <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
                                                     <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
-                                                    <select name="vehicle_type" class="form-select select2">
+                                                    <select name="vehicle_type_id" class="form-select select2">
                                                     <option value="">Select</option>
-                                                    @foreach($vehicleTypes as $value => $label)
-                                                        <option value="{{ $value }}"
-                                                            {{ old('vehicle_type', $vehicle->vehicle_type ?? '') === $value ? 'selected' : '' }}>
-                                                            {{ $label }}
-                                                        </option>
+                                                     @foreach($vehicleTypes as  $type)
+                                                                <option value="{{ $type->id }}" {{ old('vehicle_type_id', $vehicle->vehicle_type_id ?? '') === $type->id ? 'selected' : '' }}>
+                                                                    {{ $type->name }}
+                                                                </option>
                                                     @endforeach
+
                                                 </select>
-
-
                                                 </div> 
+                                                
+                                            </div>
+
+                                            <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
                                                     <label class="form-label">Chassis No. <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <input type="text" class="form-control" name="chassis_no" value="{{ old('chassis_no', $vehicle->chassis_no) }}" placeholder="MA12EF34G5678" />
                                                 </div> 
-                                            </div>
 
-                                            <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
                                                     <label class="form-label">Engine No. <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <input type="text" class="form-control" name="engine_no" value="{{ old('engine_no', $vehicle->engine_no) }}" placeholder="ABC1234567" />
                                                 </div> 
-                                                <div class="col-md-2"> 
-                                                    <label class="form-label">RC No. <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-4"> 
-                                                    <input type="text" class="form-control" name="rc_no" value="{{ old('rc_no', $vehicle->rc_no) }}" placeholder="RC NO" />
-                                                </div> 
+                                                 
                                             </div>
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
-                                                    <label class="form-label">RTO No. <span class="text-danger">*</span></label>  
+                                                    <label class="form-label">RC No. </label>  
+                                                </div>  
+                                                <div class="col-md-4"> 
+                                                    <input type="text" class="form-control" name="rc_no" value="{{ old('rc_no', $vehicle->rc_no) }}" placeholder="RC NO" />
+                                                </div>
+
+                                                <div class="col-md-2"> 
+                                                    <label class="form-label">RTO No. </label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <input type="text" class="form-control" name="rto_no" value="{{ old('rto_no', $vehicle->rto_no) }}" placeholder="UP65" />
                                                 </div> 
-                                                <div class="col-md-2"> 
-                                                    <label class="form-label">Vehicle Company <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-4"> 
-                                                    <input type="text" class="form-control" name="company_name" value="{{ old('company_name', $vehicle->company_name) }}" placeholder="COMPANY'S NAME" />
-                                                </div> 
+                                                
                                             </div>
 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
-                                                    <label class="form-label">Model Name <span class="text-danger">*</span></label>  
+                                                    <label class="form-label">Vehicle Company </label>  
+                                                </div>  
+                                                <div class="col-md-4"> 
+                                                    <input type="text" class="form-control" name="company_name" value="{{ old('company_name', $vehicle->company_name) }}" placeholder="COMPANY'S NAME" />
+                                                </div> 
+                                                <div class="col-md-2"> 
+                                                    <label class="form-label">Model Name </label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <input type="text" class="form-control" name="model_name" value="{{ old('model_name', $vehicle->model_name) }}" placeholder="ABC123-XY-z" />
@@ -177,7 +183,7 @@
                                     <div class="tab-pane active" id="other_details">
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Capacity (kg) <span class="text-danger">*</span></label>
+                                                <label class="form-label">Capacity (kg) </label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="number" class="form-control" name="capacity_kg" placeholder="e.g. 5000"
@@ -186,7 +192,7 @@
                                             </div>
                                             <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Driver Name <span class="text-danger">*</span></label>
+                                                <label class="form-label">Driver Name </label>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="driver_id" id="driver_id" class="form-select select2">
@@ -203,7 +209,7 @@
 
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Fuel Type <span class="text-danger">*</span></label>
+                                                <label class="form-label">Fuel Type </label>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="fuel_type" id="fuel_type" class="form-select select2">
@@ -219,7 +225,7 @@
                                             </div>
                                             <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                                                <label class="form-label">Purchase Date ></label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="date" class="form-control" name="purchase_date"
@@ -229,7 +235,7 @@
 
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Ownership <span class="text-danger">*</span></label>
+                                                <label class="form-label">Ownership </label>
                                             </div>
                                             <div class="col-md-3">
                                                 <select name="ownership" id="ownership" class="form-select select2">
@@ -246,7 +252,7 @@
 
                                             <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Vehicle Attachments</label>
+                                                <label class="form-label">Vehicle Photo</label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="file" class="form-control" name="vehicle_attachment" />
@@ -295,7 +301,7 @@
                                                 <div class="tab-pane" id="permit_info">
                                                       <div class="row align-items-center mb-1">
                                                     <div class="col-md-2"> 
-                                                        <label class="form-label">Type <span class="text-danger">*</span></label>  
+                                                        <label class="form-label">Type </label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
                                                        <select name="type" id="type" class="form-select select2">
@@ -308,7 +314,7 @@
                                                     </div> 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Permit Number <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Permit Number </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="text" class="form-control" name="permit_no" value="{{ old('permit_no', $vehicle->permit->permit_no) }}" placeholder="Permit No." />
@@ -316,7 +322,7 @@
                                                          </div> 
                                                           <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Permit date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Permit date </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="permit_date" value="{{ old('permit_date', $vehicle->permit->permit_date) }}" placeholder="YYYY-MM-DD"/>
@@ -325,7 +331,7 @@
 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Permit Expiry date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Permit Expiry date </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="permit_expiry_date" value="{{ old('permit_expiry_date', $vehicle->permit->permit_expiry_date) }}" placeholder="YYYY-MM-DD"/>
@@ -360,7 +366,7 @@
                                                 <div class="tab-pane" id="fitness_info">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2"> 
-                                                        <label class="form-label">Fitness Number <span class="text-danger">*</span></label>  
+                                                        <label class="form-label">Fitness Number </label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
                                                         <input type="text" class="form-control" name="fitness_no" placeholder="Fitness No." 
@@ -369,7 +375,7 @@
                                                     </div>
                                                     <div class="row align-items-center mb-1">
                                                     <div class="col-md-2"> 
-                                                        <label class="form-label">Fitness Date <span class="text-danger">*</span></label>  
+                                                        <label class="form-label">Fitness Date </label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
                                                         <input type="date" class="form-control" name="fitness_date" 
@@ -379,7 +385,7 @@
                                                 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2"> 
-                                                        <label class="form-label">Fitness Expiry Date <span class="text-danger">*</span></label>  
+                                                        <label class="form-label">Fitness Expiry Date </label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
                                                         <input type="date" class="form-control" name="fitness_expiry_date" 
@@ -417,7 +423,7 @@
                                                 <div class="tab-pane" id="insurance_info">
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Policy Number <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Policy Number </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="text" class="form-control" name="policy_no" placeholder="Policy No."
@@ -426,7 +432,7 @@
                                                         </div>  
                                                          <div class="row align-items-center mb-1"> 
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Insurance Date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Insurance Date </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="insurance_date"
@@ -436,7 +442,7 @@
                                                     
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Insurance Expiry Date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Insurance Expiry Date </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="insurance_expiry_date"
@@ -445,7 +451,7 @@
                                                         </div> 
                                                         <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Insurance Company <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Insurance Company </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="text" class="form-control" name="insurance_company" placeholder="Company Name"
@@ -483,7 +489,7 @@
                                                 <div class="tab-pane" id="pollution_info">
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Pollution Number <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Pollution Number </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="text" class="form-control" name="pollution_no" placeholder="PUC No."
@@ -492,7 +498,7 @@
                                                         </div>
                                                          <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Pollution Date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Pollution Date </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="pollution_date"
@@ -502,7 +508,7 @@
                                                     
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Pollution Expiry Date <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Pollution Expiry Date </label>  
                                                         </div>  
                                                         <div class="col-md-4"> 
                                                             <input type="date" class="form-control" name="pollution_expiry_date"
@@ -541,7 +547,7 @@
                                                 <div class="tab-pane" id="road_tax">
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Road Tax From <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Road Tax From </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="road_tax_from"
@@ -550,7 +556,7 @@
                                                          </div> 
                                                         <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Road Tax To <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Road Tax To </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="road_tax_to"
@@ -560,7 +566,7 @@
                                                     
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Road Tax Paid On <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Road Tax Paid On </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="date" class="form-control" name="road_paid_on"

@@ -751,6 +751,10 @@ $(function(){
                     $input.val(customerCode);
                     $("#customer_id").val(customerId);
                     $("#customer_name").val(customerName);
+                    let itemId = $("#head_item_id").val() || '';
+                    if(itemId) {
+                        itemCodeChange(itemId);
+                    }
                     return false;
                 },
                 change: function(event, ui) {

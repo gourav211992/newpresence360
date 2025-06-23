@@ -118,24 +118,35 @@ class ItemImportExportService
         return $category;
     }
 
-    public function getSubCategory($subCategoryName, $category)
+    public function getSubCategory($categoryName)
     {
-        $subCategory = Category::withDefaultGroupCompanyOrg()
-            ->where('name', $subCategoryName)
-            ->where('parent_id', $category->id)
+        $category = Category::withDefaultGroupCompanyOrg()
+            ->where('name', $categoryName)
             ->first();
 
-        if (!$subCategory) {
-            throw new Exception("Subcategory not found under this category: {$subCategoryName}");
+        if (!$category) {
+            throw new Exception("Group not found: {$categoryName}");
         }
 
-        return $subCategory;
+        if ($category->subCategories()->exists()) {
+            $subCategories=$category->subCategories()->get();
+            foreach ($subCategories as $subcat) {
+                if ($subcat->name == $categoryName) {
+                    if ($subcat->subCategories()->exists()) {
+                        throw new Exception("There a child name that exists, please find last level. (" . $categoryName . ") is not a last-level group.");
+                    } else {
+                        return $subcat;
+                    }
+                }
+            }
+            throw new Exception("Group is not the last level");
+
+        } else {
+            return $category;
+        }
     }
-
-
     public function getSalesPersonId($salesPerson)
     {
-    
         $salesPerson = Employee::where('name', $salesPerson)
         ->first();
 
@@ -278,44 +289,34 @@ class ItemImportExportService
     {
         if ($attributes) {
             foreach ($attributes as $attribute) {
-                if (empty($attribute['value'])) {
-                    continue;
-                }  
-                $attributeGroup = $this->getAttributeGroupByName($attribute['name'], $errors); 
+                $attributeGroup = $this->getAttributeGroupByName($attribute['name'], $errors);
+    
                 if ($attributeGroup) {
-                    $attributeValues = explode(',', $attribute['value']);
-                    foreach ($attributeValues as $value) {
-                        $attributeValue = $this->getAttributeByName($value, $attributeGroup, $errors); 
-                        if (!$attributeValue) {
-                            $errors[] = "Attribute value {$value} for group {$attributeGroup->name} is invalid.";
+                    if ($attribute['value']) {
+                        $attributeValues = explode(',', $attribute['value']);
+                        foreach ($attributeValues as $value) {
+                            $this->getAttributeByName($value, $attributeGroup, $errors); // Call, but don't add errors here
                         }
                     }
-                } else {
-                    $errors[] = "Attribute group not found for {$attribute['name']}";
                 }
             }
         }
     }
-
+    
     public function validateItemSpecifications($specifications, &$errors)
     {
         if ($specifications) {
             foreach ($specifications as $specGroup) {
                 if (isset($specGroup['specifications']) && is_array($specGroup['specifications'])) {
                     foreach ($specGroup['specifications'] as $spec) {
-                        $productSpecification = $this->getProductSpecificationByName($spec['name'], $errors);
-                        if (!$productSpecification) {
-                            $errors[] = "Specification {$spec['name']} not found.";
-                        }
-                        $productSpecificationGroup = $this->getProductSpecificationGroupByName($specGroup['group_name'], $errors);
-                        if (!$productSpecificationGroup) {
-                            $errors[] = "Specification group {$specGroup['group_name']} not found.";
-                        }
+                        $this->getProductSpecificationByName($spec['name'], $errors);
+                        $this->getProductSpecificationGroupByName($specGroup['group_name'], $errors);
                     }
                 }
             }
         }
     }
+    
 
     public function validateAlternateUoms($alternateUoms, &$errors)
     {
@@ -590,9 +591,7 @@ class ItemImportExportService
             if (empty($address['address'])) {
                 $errors["addresses.{$index}.address"] = 'Address is required.';
             }
-            if (empty($address['city_id'])) {
-                $errors["addresses.{$index}.city_id"] = 'City is required.';
-            }
+           
             if (empty($address['state_id'])) {
                 $errors["addresses.{$index}.state_id"] = 'State is required.';
             }

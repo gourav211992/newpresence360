@@ -241,13 +241,13 @@
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
                                                                 <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
@@ -294,7 +294,7 @@
                                                                     <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>
+                                                                    <div class="mrnaddedd-prim org_address">{{$deliveryAddress}}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -955,6 +955,7 @@
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
+        let currentProcessType = null;
         let tableRowCount = 0;
         /*Clear local storage*/
         setTimeout(() => {
@@ -1191,8 +1192,8 @@
                     $(".delivery_address").text(data.data.delivery_address);
                     $(".org_address").text(data.data.org_address);
 
-                    $("#hidden_state_id").val(data.data.shipping.state.id);
-                    $("#hidden_country_id").val(data.data.shipping.country.id);
+                    $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                    $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');

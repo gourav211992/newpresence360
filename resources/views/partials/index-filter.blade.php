@@ -62,7 +62,6 @@ filtersComponents.forEach(filterData => {
             });
 
             function initializeAutoCompleteFilter(selector, type, valueKey, labelKey, dependentElements = []) {
-                console.log('autocomplete me entry',selector);
                 $("#" + selector).autocomplete({
                     source: function(request, response) {
                         $.ajax({
@@ -139,7 +138,6 @@ function resetFilters()
 }
 function openFiltersModal() {
     $("#filter").modal('show');
-    console.log('openFiltersModal called');
     flatpickr(`.flatpickr-filter`, {
         mode: "range",
         dateFormat: "d-m-Y",

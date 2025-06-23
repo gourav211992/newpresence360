@@ -157,8 +157,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'customer_code_type' => $customerCodeType ?? null,
                 'customer_type' =>$row['customer_type'] ?? null,
                 'organization_type' => $row['organization_type'] ?? null,
-                'category' => $row['category'] ?? null,
-                'subcategory' => $row['sub_category'] ?? null,
+                'subcategory' => $row['group'] ?? null,
                 'sales_person' => $row['sales_person'] ?? null,
                 'currency' => $row['currency'] ?? null,
                 'payment_term' => $row['payment_term'] ?? null,
@@ -240,24 +239,13 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             $customerCode = $this->service->generateCustomerCode($customerInitials, $customerType);
         }
 
-        if (!empty($uploadedCustomer->category)) {
+        if (!empty($uploadedCustomer->subcategory)) {
             try {
-                $category = $this->service->getCategory($uploadedCustomer->category);
-                if ($category) {
-                    try {
-                        if (!empty($uploadedCustomer->subcategory)) {
-                            $subCategory = $this->service->getSubCategory($uploadedCustomer->subcategory, $category);
-                        } 
-                    } catch (Exception $e) {
-                        $errors[] = "Error fetching sub-category: " . $e->getMessage();
-                    }
-                } else {
-                    $errors[] = "Category not found: " . $uploadedCustomer->category;
-                }
+                $subCategory = $this->service->getSubCategory($uploadedCustomer->subcategory);
             } catch (Exception $e) {
                 $errors[] = "Error fetching category: " . $e->getMessage();
             }
-        } 
+       }
         
         if (!empty($uploadedCustomer->currency)) {
             try {
@@ -319,7 +307,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'customer_initial' => $uploadedCustomer->customer_initial ?? null,
                 'company_name' => $uploadedCustomer->company_name ?? null,
                 'customer_type' => $customerType ?? null,
-                'category_id' => $category->id ?? null,
                 'subcategory_id' => $subCategory->id ?? null,
                 'currency_id' => $currencyId ?? null,
                 'payment_terms_id' => $paymentTermId ?? null,
@@ -487,7 +474,8 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                  
                  'category_id.exists' => 'The category selected is invalid.',
                  
-                 'subcategory_id.exists' => 'The subcategory selected is invalid.',
+                 'subcategory_id.exists' => 'The group selected is invalid.',
+                 'subcategory_id.required' => 'The group field is required.',
                  
                  'currency_id.required' => 'Currency is required and must exist.',
                  'currency_id.exists' => 'The currency selected is invalid.',
@@ -588,13 +576,16 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
     
             if (!empty($gstAddressErrors)) {
                 $errors = array_merge($errors, $gstAddressErrors);
-                  $uploadedCustomer->update([
+            }
+
+            if (!empty($errors)){
+                $uploadedCustomer->update([
                     'status' => 'Failed',
                     'remarks' => implode(', ', $errors),
                 ]);
                 $this->onFailure($uploadedCustomer);
                 return; 
-            }
+             }
 
             $customer->save();
             $customer->compliances()->create([

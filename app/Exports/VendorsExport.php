@@ -30,9 +30,8 @@ class VendorsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     {
         return [
             'Vendor Name',           
-            'Vendor Code',          
-            'Category',             
-            'Sub Category',         
+            'Vendor Code',                    
+            'Group',         
             'Currency',              
             'Payment Term',          
             'Vendor Type',           
@@ -77,8 +76,7 @@ class VendorsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     
         $generalData = [
             $vendor->company_name ?? null,                   
-            $vendor->vendor_code ?? null,                   
-            $vendor->category->name ?? null,                  
+            $vendor->vendor_code ?? null,                            
             $vendor->subcategory->name ?? null,              
             $vendor->currency->short_name ?? null,               
             $vendor->paymentTerms->name ?? null,              

@@ -32,8 +32,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         $headings = [
             'Item Code',
             'Item Name',
-            'Category',
-            'Sub-Category',
+            'Group',
             'HSN/SAC',
             'Type',
             'Sub-Type',
@@ -80,7 +79,6 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         $data = [
             $item->item_code,
             $item->item_name,
-            $item->category->name ?? 'N/A',
             $item->subcategory->name ?? 'N/A',
             $item->hsn->code ?? 'N/A',
             $item->type ?? 'N/A',
@@ -153,7 +151,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 10);
+        $requiredColumns = range(1, 9);
         foreach ($requiredColumns as $col) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
             $styles["{$columnLetter}1"] = [
@@ -182,7 +180,7 @@ class ItemsExport implements FromCollection, WithHeadings, WithMapping,WithStyle
         }
     
         $totalColumns = count($this->headings());
-        for ($col = 11; $col <= $totalColumns; $col++) {
+        for ($col = 10; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [

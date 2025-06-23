@@ -150,6 +150,11 @@
                         <select id="location_id" name="location_id" class="form-select select2">
                         </select>
                     </div>
+                     <div class="mb-1">
+                        <label class="form-label">Cost Group</label>
+                        <select id="cost_group_id" name="cost_group_id" class="form-select select2">
+                        </select>
+                    </div>
                     <div class="mb-1">
                         <label class="form-label">Cost Center</label>
                         <select id="cost_center_id" class="form-select select2"
@@ -197,6 +202,7 @@
 <script>
     const locations = @json($locations);
     const costCenters = @json($cost_centers);
+    const costGroups = @json($cost_groups);
 </script>
 <script>
     $(window).on('load', function() {
@@ -238,65 +244,140 @@
 
         $locationDropdown.trigger('change');
     }
-    function loadCostCenters(locationId) {
-            if (locationId) {
-               const filteredCenters = costCenters.filter(center => {
-                    if (!center.location) return false;
+    function loadCostGroupsByLocation(locationId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.val(@json(request('cost_center_id')) || "");
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location) return false;
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+            return locationArray.includes(String(locationId));
+        });
 
-                    const locationArray = Array.isArray(center.location)
-                        ? center.location.flatMap(loc => loc.split(','))
-                        : [];
+        const costGroupIds = [...new Set(filteredCenters.map(center => center.cost_group_id))];
+        
+        const filteredGroups = costGroups.filter(group => costGroupIds.includes(group.id));
+        console.log(filteredCenters,costGroupIds,filteredGroups);
 
-                    return locationArray.includes(String(locationId));
-                });
-            // console.log(filteredCenters,costCenters,locationId);
+        const $groupDropdown = $('#cost_group_id');
+        $groupDropdown.empty().append('<option value="">Select Cost Group</option>');
 
-            const $costCenter = $('#cost_center_id');
-            $costCenter.empty();
+        filteredGroups.forEach(group => {
+            $groupDropdown.append(`<option value="${group.id}">${group.name}</option>`);
+        });
 
-            if (filteredCenters.length === 0) {
-                // $costCenter.prop('required', false);
-                $('.cost_center').hide();
-            } else {
-                $costCenter.append('<option value="">Select Cost Center</option>');
-                $('.cost_center').show();
+        $('#cost_group_id').trigger('change');
+    }
 
-                const selectetedCostId = "{{ $cost_center_id }}";
+    function loadCostCentersByGroup(locationId, groupId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.empty();
 
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location || center.cost_group_id !== groupId) return false;
 
-                filteredCenters.forEach(center => {
-                    // const isCostSelected = String(center.id) === String(selectetedCostId) ? 'selected' : '';
-                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
-                });
-            }
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
 
-            $costCenter.trigger('change');
+            return locationArray.includes(String(locationId));
+        });
+
+        if (filteredCenters.length === 0) {
+            costCenter.prop('required', false);
+            $('#cost_center_id').hide();
+        } else {
+            costCenter.append('<option value="">Select Cost Center</option>');
+            $('#cost_center_id').show();
+
+            filteredCenters.forEach(center => {
+                costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+            });
         }
+        costCenter.val(@json(request('cost_center_id')) || "");
+        costCenter.trigger('change');
     }
 
     $(document).ready(function() {
     // On change of organization
-        $('#organization_filter').on('change', function () {
-             const selectedOrgId =  $(this).val() || [];
-            updateLocationsDropdown(selectedOrgId);
+    const preselectedOrgId = $('#organization_filter').val();
+    const preselectedLocationId = "{{ $location_id }}";
+    const preselectedGroupId = "{{ $cost_group_id }}";
+    const preselectedCenterId = @json($cost_center_id);
+
+    if (preselectedOrgId) {
+        updateLocationsDropdown(preselectedOrgId);
+    }
+
+    if (preselectedLocationId) {
+        // Load Cost Groups and then continue
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location) return false;
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+            return locationArray.includes(String(preselectedLocationId));
         });
 
-        // On page load, check for preselected orgs
-        console.log('preselectedOrgId',$('#organization_filter').val())
-        const preselectedOrgId = $('#organization_filter').val() || [];
-        if (preselectedOrgId.length > 0) {
-            updateLocationsDropdown(preselectedOrgId);
-        }
-        // On location change, load cost centers
-        $('#location_id').on('change', function () {
-            const locationId = $(this).val();
-          if (!locationId) {
-        $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
-            // $('.cost_center').hide(); // Optional: hide the section if needed
-                return;
-            }
-            loadCostCenters(locationId);
+        const costGroupIds = [...new Set(filteredCenters.map(center => center.cost_group_id))];
+        const filteredGroups = costGroups.filter(group => costGroupIds.includes(group.id));
+
+        const $groupDropdown = $('#cost_group_id');
+        $groupDropdown.empty().append('<option value="">Select Cost Group</option>');
+
+        filteredGroups.forEach(group => {
+            const selected = String(group.id) === String(preselectedGroupId) ? 'selected' : '';
+            $groupDropdown.append(`<option value="${group.id}" ${selected}>${group.name}</option>`);
         });
+
+        // Manually trigger change to load cost centers
+        $groupDropdown.trigger('change');
+
+        // Now load cost centers if group is selected
+        if (preselectedGroupId) {
+            const costCenter = $('#cost_center_id');
+            costCenter.empty();
+
+            const filteredCentersByGroup = costCenters.filter(center => {
+                if (!center.location || center.cost_group_id !== parseInt(preselectedGroupId)) return false;
+
+                const locationArray = Array.isArray(center.location)
+                    ? center.location.flatMap(loc => loc.split(','))
+                    : [];
+
+                return locationArray.includes(String(preselectedLocationId));
+            });
+
+            if (filteredCentersByGroup.length === 0) {
+                costCenter.prop('required', false);
+                costCenter.hide();
+            } else {
+                costCenter.append('<option value="">Select Cost Center</option>');
+                costCenter.show();
+
+                filteredCentersByGroup.forEach(center => {
+                    const selected = String(center.id) === String(preselectedCenterId) ? 'selected' : '';
+                    costCenter.append(`<option value="${center.id}" ${selected}>${center.name}</option>`);
+                });
+            }
+
+            costCenter.trigger('change');
+        }
+    }
+
+    // Also trigger cost group and center change if needed
+    $('#location_id').on('change', function () {
+        loadCostGroupsByLocation($(this).val());
+    });
+
+    $('#cost_group_id').on('change', function () {
+        const locationId = $('#location_id').val();
+        const groupId = parseInt($(this).val());
+        if (locationId && groupId) {
+            loadCostCentersByGroup(locationId, groupId);
+        }
+    });
         $(".open-job-sectab").click(function() {
             $(this).parent().parent().next('tr').show();
             $(this).parent().find('.close-job-sectab').show();
@@ -305,6 +386,17 @@
          $('.add-new-record').on('submit', function () {
             $('.preloader').fadeIn(); // show preloader
         });
+    });
+     $('#cost_group_id').on('change', function () {
+        const locationId = $('#location_id').val();
+        const groupId = parseInt($(this).val());
+
+        if (!locationId || !groupId) {
+            $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            return;
+        }
+
+        loadCostCentersByGroup(locationId, groupId);
     });
     $(function() {
     var dt_basic_table = $('.datatables-basic'),

@@ -120,7 +120,7 @@
                                                     <input type="text" name="category_name" class="form-control category-autocomplete" placeholder="Type to search group" value="{{ $item->subCategory->name ?? '' }}">
                                                     <input type="hidden" name="subcategory_id" class="category-id" value="{{ $item->subcategory_id?? '' }}">
                                                     <input type="hidden" name="category_type" class="category-type" value="Product">
-                                                    <input type="hidden" name="cat_initials" class="cat_initials-id"  value="{{ $item->subCategory->cat_initials ?? '' }}">
+                                                    <input type="hidden" name="cat_initials" class="cat_initials-id" value="{{ $item->subCategory->cat_initials ?? ($item->subCategory->sub_cat_initials ?? '') }}">
                                                 </div>
                                                 <div class="col-md-3">
                                                     <a href="{{route('categories.index')}}" target="_blank" class="voucehrinvocetxt mt-0">Add Group</a>
@@ -147,14 +147,14 @@
                                                            {{-- Traded Item Checkbox --}}
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_traded_item" value="0">
-                                                                <input type="checkbox" class="form-check-input" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
                                                                 <label class="form-check-label" for="tradedItemCheckbox">Traded Item</label>
                                                             </div>
 
                                                             {{-- Asset Checkbox --}}
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
                                                                 <input type="hidden" name="is_asset" value="0">
-                                                                <input type="checkbox" class="form-check-input" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
                                                             </div>
                                                     </div>
@@ -2193,14 +2193,8 @@
             $('#subType6').prop('disabled', assetChecked || rawMaterialChecked || rawTradeChecked);
             $('#subType4').prop('disabled', rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked);
             if (rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked || rawTradeChecked) {
-                checkboxes.not(':checked').prop('disabled', true);
+                checkboxes.not(':checked').not($('input[name="is_traded_item"]')).not($('input[name="is_asset"]')).prop('disabled', true);
             }
-    
-                $('input[name="is_traded_item"]').prop('disabled', false);
-                $('input[name="is_asset"]').prop('disabled', false);
-            //  if (!isEditable){
-            //     checkboxes.prop('disabled', !isEditable);
-            // }
             if (isItemReferenced){
                 checkboxes.prop('disabled', isItemReferenced);
                 $('input[name="is_traded_item"]').prop('disabled', isItemReferenced);
@@ -2341,28 +2335,41 @@
         const itemIdInput = $('input[name="item_id"]');
         const typeRadios = $('input[name="type"]');
         const isEditable = {{ isset($item) && $item->status === 'draft' ? 'true' : 'false' }};
+        var isItemReferenced= @json($isItemReferenced);
         if (itemCodeType === 'Manual' && isEditable) {
             itemCodeInput.prop('readonly', false); 
         } else {
             itemCodeInput.prop('readonly', true); 
         }
         function getSelectedSubTypeSuffix() {
-            let selectedSubTypes = [];
-            subTypeCheckboxes.each(function() {
-                if ($(this).is(':checked')) {
-                    const label = $(this).next().text().trim();
-                    selectedSubTypes.push(label);
-                }
-            });
+                let selectedSubTypes = [];
+                let hasRawMaterial = false;
+                let hasFinishedGoods = false;
+                let hasWIP = false;
+                let hasExpense = false;
+                let hasAsset = $('#assetCheckbox').is(':checked');
+                let hasTradedItem = $('#tradedItemCheckbox').is(':checked');
+                subTypeCheckboxes.each(function() {
+                    if ($(this).is(':checked')) {
+                        const label = $(this).next().text().trim();
+                        selectedSubTypes.push(label);
+                        if (label === 'Raw Material') hasRawMaterial = true;
+                        if (label === 'Finished Goods') hasFinishedGoods = true;
+                        if (label === 'WIP/Semi Finished') hasWIP = true;
+                        if (label === 'Expense') hasExpense = true;
+                    }
+                });
 
-            if (selectedSubTypes.includes('Raw Material')) return 'RM';
-            if (selectedSubTypes.includes('Finished Goods')) return 'FG';
-            if (selectedSubTypes.includes('WIP/Semi Finished')) return 'SF';
-            if (selectedSubTypes.includes('Traded Item')) return 'TR';
-            if (selectedSubTypes.includes('Asset')) return 'AS';
-            if (selectedSubTypes.includes('Expense')) return 'EX';
+                if (hasRawMaterial) return 'RM';
+                if (hasFinishedGoods) return 'FG';
+                if (hasWIP) return 'SF';
+                if (hasExpense) return 'EX';
+                if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS'; // Prioritize Asset if both are checked
+                if (hasAsset && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
+                if (hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'TR';
             return '';
         }
+
         function getItemInitials(itemName) {
             const cleanedItemName = itemName.replace(/[^a-zA-Z0-9\s]/g, '');
             const words = cleanedItemName.split(/\s+/).filter(word => word.length > 0);
@@ -2377,7 +2384,7 @@
             return initials.substring(0, 3);
         }
         function generateItemCode() {
-            if (!isEditable || itemCodeType === 'Manual') {
+            if (isItemReferenced || itemCodeType === 'Manual') {
                 return;
             }
             const itemName = itemNameInput.val().trim();
@@ -2420,7 +2427,7 @@
             generateItemCode();
         });
 
-        if (isEditable && itemCodeType === 'Auto') {
+        if (!isItemReferenced && itemCodeType === 'Auto') {
             generateItemCode();
         }
         itemInitialInput.on('input', function() {

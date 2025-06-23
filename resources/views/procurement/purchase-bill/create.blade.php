@@ -292,8 +292,8 @@
                                                 <div class="col-md-6 text-sm-end">
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                     <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                    <i data-feather="plus"></i> Add New Item</a>
+                                                    <!-- <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                    <i data-feather="plus"></i> Add New Item</a> -->
                                                 </div>
                                             </div>
                                         </div>
@@ -766,9 +766,13 @@
         }
         initializeAutocomplete1("#vendor_name");
 
-        function vendorOnChange(vendorId) {
+        function vendorOnChange(vendorId, type=null, typeId=null) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('purchase-bill.get.address')}}"+'?id='+vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('purchase-bill.get.address')}}"
+            +'?id='+vendorId+
+            '&store_id='+store_id+
+            '&type='+type+
+            '&typeId='+typeId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -789,7 +793,7 @@
                         });
                         return false;
                     }
-                    if(data.status == 200) {
+                    if(data.data.status == 200) {
                         $("#vendor_name").val(data?.data?.vendor?.company_name);
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
@@ -797,14 +801,13 @@
                         let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
                         $('[name="payment_term_id"]').empty().append(termOption);
-                        $("#shipping_id").val(data.data.shipping.id);
-                        $("#billing_id").val(data.data.billing.id);
-                        $(".billing_detail").text(data.data.billing.display_address);
-                        $(".delivery_address").text(data.data.delivery_address);
-                        $(".org_address").text(data.data.org_address);
+                        $("#billing_id").val(data.data.vendor_address.id);
+                        $(".billing_detail").text(data.data.vendor_address.display_address);
+                        $(".delivery_address").text(data.delivery_address.display_address);
+                        $(".org_address").text(data.delivery_address.display_address);
 
-                        $("#hidden_state_id").val(data.data.shipping.state.id);
-                        $("#hidden_country_id").val(data.data.shipping.country.id);
+                        $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                        $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');
@@ -1599,7 +1602,7 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
-                        vendorOnChange(data?.data?.vendor?.id);
+                        vendorOnChange(data?.data?.vendor?.id, 'mrn', data?.data?.mrnData?.id);
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;

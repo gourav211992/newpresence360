@@ -767,63 +767,7 @@
                     $input.val(itemName);
                     $("#vendor_id").val(itemId);
                     $("#vendor_code").val(itemCode);
-                    let document_date = $("[name='document_date']").val();
-                    let actionUrl = "{{route('expense-adv.get.address')}}"+'?id='+itemId+'&document_date='+document_date;
-                    fetch(actionUrl).then(response => {
-                        return response.json().then(data => {
-                            if(data.data?.currency_exchange?.status == false) {
-                                $input.val('');
-                                $("#vendor_id").val('');
-                                $("#vendor_code").val('');
-                                $("#hidden_state_id").val('');
-                                $("#hidden_country_id").val('');
-                                $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                                $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                                $(".shipping_detail").text('-');
-                                $(".billing_detail").text('-');
-                                Swal.fire({
-                                    title: 'Error!',
-                                    text: data.data?.currency_exchange.message,
-                                    icon: 'error',
-                                });
-                                return false;
-                            }
-                            if(data.status == 200) {
-                                let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
-                                let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
-                                $('[name="currency_id"]').empty().append(curOption);
-                                $('[name="payment_term_id"]').empty().append(termOption);
-                                $("#shipping_id").val(data.data.shipping.id);
-                                $("#billing_id").val(data.data.billing.id);
-                                $(".shipping_detail").text(data.data.org_address);
-                                $(".billing_detail").text(data.data.billing.display_address);
-                                $("#shipping_address").val(data.data.org_address);
-                                $("#billing_address").val(data.data.billing.display_address);
-
-                                $("#hidden_state_id").val(data.data.shipping.state.id);
-                                $("#hidden_country_id").val(data.data.shipping.country.id);
-                            }  else {
-                                if(data.data.error_message) {
-                                    $input.val('');
-                                    $("#vendor_id").val('');
-                                    $("#vendor_code").val('');
-                                    $("#hidden_state_id").val('');
-                                    $("#hidden_country_id").val('');
-                                    // $("#vendor_id").trigger('blur');
-                                    $("select[name='currency_id']").empty().append('<option value="">Select</option>');
-                                    $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
-                                    $(".shipping_detail").text('-');
-                                    $(".billing_detail").text('-');
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: data.data.error_message,
-                                        icon: 'error',
-                                    });
-                                    return false;
-                                }
-                            }
-                        });
-                    });
+                    vendorOnChange(itemId);
                     return false;
                 },
                 change: function(event, ui) {
@@ -839,6 +783,74 @@
             });
         }
         initializeAutocomplete1("#vendor_name");
+
+        function vendorOnChange(vendorId, type=null, typeId=null) {
+            let store_id = $("[name='header_store_id']").val() || '';
+            let document_date = $("[name='document_date']").val();
+            let actionUrl = "{{route('expense-adv.get.address')}}"
+            +'?id='+vendorId+
+            '&store_id='+store_id+
+            '&document_date='+document_date+
+            '&type='+type+
+            '&typeId='+typeId;
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.data?.currency_exchange?.status == false) {
+                        $("#vendor_name").val('');
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        // $("#vendor_id").trigger('blur');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                        // $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.data?.currency_exchange.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                    if(data.data.status == 200) {
+                        $("#vendor_name").val(data?.data?.vendor?.company_name);
+                        $("#vendor_id").val(data?.data?.vendor?.id);
+                        $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                        let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
+                        let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
+                        $('[name="currency_id"]').empty().append(curOption);
+                        $('[name="payment_term_id"]').empty().append(termOption);
+                        $("#billing_id").val(data.data.vendor_address.id);
+                        $(".billing_detail").text(data.data.vendor_address.display_address);
+                        $(".delivery_address").text(data.delivery_address.display_address);
+                        $(".org_address").text(data.delivery_address.display_address);
+
+                        $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                        $("#hidden_country_id").val(data.data.vendor_address.country.id);
+                    } else {
+                        if(data.data.error_message) {
+                            $("#vendor_name").val('');
+                            $("#vendor_id").val('');
+                            $("#vendor_code").val('');
+                            $("#hidden_state_id").val('');
+                            $("#hidden_country_id").val('');
+                            // $("#vendor_id").trigger('blur');
+                            $("select[name='currency_id']").empty().append('<option value="">Select</option>');
+                            $("select[name='payment_term_id']").empty().append('<option value="">Select</option>');
+                            // $(".shipping_detail").text('-');
+                            $(".billing_detail").text('-');
+                            Swal.fire({
+                                title: 'Error!',
+                                text: data.data.error_message,
+                                icon: 'error',
+                            });
+                            return false;
+                        }
+                    }
+                });
+            });
+        }
 
         function initializeAutocomplete2(selector, type) {
                     $(selector).autocomplete({
@@ -1607,28 +1619,19 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
+                        let purchaseOrder = data?.data?.purchaseOrder;
+                        vendorOnChange(data?.data?.vendor?.id, 'po', purchaseOrder.id);
+                        $(".header_store_id").prop('disabled', true);
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
 
-                        if(vendor) {
-                            $("#vendor_name").val(vendor.display_name).prop('readonly',true);
-                            $("#vendor_id").val(vendor.id);
-                            $("#vendor_code").val(vendor.vendor_code);
-
-                            let curOption = `<option value="${vendor.currency.id}">${vendor.currency.name}</option>`;
-                            let termOption = `<option value="${vendor.paymentTerm.id}">${vendor.paymentTerm.name}</option>`;
-                            $('[name="currency_id"]').empty().append(curOption).prop('readonly',true);
-                            $('[name="payment_term_id"]').empty().append(termOption).prop('readonly',true);
-                            $("#shipping_id").val(vendor.shipping.id);
-                            $("#billing_id").val(vendor.billing.id);
-                            $(".shipping_detail").text(vendor.org_address);
-                            $(".billing_detail").text(vendor.billing.display_address);
-                            $("#hidden_state_id").val(vendor.shipping.state.id);
-                            $("#hidden_country_id").val(vendor.shipping.country.id);
-                            $(".editAddressBtn").addClass('d-none');
+                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                        } else {
+                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
-                        $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        
                         initializeAutocomplete2(".comp_item_code");
                         $("#poModal").modal('hide');
                         $(".poSelect").prop('disabled',true);

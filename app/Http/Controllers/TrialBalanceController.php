@@ -21,6 +21,7 @@ use Carbon\Carbon;
 use App\Helpers\CurrencyHelper;
 use Illuminate\Support\Facades\DB;
 use App\Helpers\ConstantHelper;
+use App\Models\CostGroup;
 use App\Models\ErpStore;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -73,11 +74,24 @@ class TrialBalanceController extends Controller
                 ->with('children.children') // Ensures eager loading of children & grandchildren
                 ->get();
         }
+         $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
         // Get Reserves & Surplus
-        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id,$r->location_id);
-        $trialData = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost_center_ids,$r->location_id);
+        $trialData = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $cost_center_ids,$r->location_id);
         $grandDebitTotal = 0;
         $grandCreditTotal = 0;
         $grandClosingTotal = 0;
@@ -109,7 +123,7 @@ class TrialBalanceController extends Controller
             $data[] = [$trialGroup->name, '', '', Helper::formatIndianNumber($opening) . $opening_type, Helper::formatIndianNumber($total_debit), Helper::formatIndianNumber($total_credit), Helper::formatIndianNumber($closing) . $closingText];
 
             if ($r->level == 2 || $r->level == 3) {
-                $groupLedgers = Helper::getTrialBalanceGroupLedgers($trialGroup->id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
+                $groupLedgers = Helper::getTrialBalanceGroupLedgers($trialGroup->id, $startDate, $endDate, $organizations, $currency, $cost_center_ids,$r->location_id);
                 $groupLedgersData = $groupLedgers['data'];
                 foreach ($groupLedgersData as $groupLedger) {
                     if ($groupLedgers['type'] == 'group') {
@@ -136,7 +150,7 @@ class TrialBalanceController extends Controller
                         if ($groupLedger->name == "Reserves & Surplus") {
                             $data[] = ['', '', 'Profit & Loss', Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type'], 0, 0, Helper::formatIndianNumber($profitLoss['closingFinal']) . $profitLoss['closing_type']];
                         } else {
-                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency,$r->cost_center_id,$r->location_id);
+                            $subGroupLedgers = Helper::getTrialBalanceGroupLedgers($groupLedger->id, $startDate, $endDate, $organizations, $currency,$cost_center_ids,$r->location_id);
                             $subGroupLedgersData = $subGroupLedgers['data'];
                             foreach ($subGroupLedgersData as $subGroupLedger) {
                                 if ($subGroupLedgers['type'] == 'group') {
@@ -193,6 +207,20 @@ class TrialBalanceController extends Controller
             $org = $r->organization_id;
 
 
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         $organizationName = DB::table('organizations')->where('id', $r->organization_id)->value('name');
         $ledgerName = Ledger::where('id', $r->ledger_id)->where('status', 1)->value('name');
 
@@ -206,7 +234,7 @@ class TrialBalanceController extends Controller
             $carry = 0;
         else
             $carry = 1;
-        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost,$loc);
+        $ledgerData = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost_center_ids,$loc);
         $totalDebit = 0;
         $totalCredit = 0;
         $data = [['', '', '', '', '', '', '']];
@@ -214,8 +242,13 @@ class TrialBalanceController extends Controller
         // Get first opening of ledger
            $openingData = ItemDetail::where('ledger_id', $r->ledger_id)
             ->where('ledger_parent_id', $r->ledger_group)
-            ->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+            ->when(!is_null($cost_center_ids), function ($q) use ($cost_center_ids) {
+                    if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
+                    // $q->where('cost_center_id', $cost);
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
                 $query->withDefaultGroupCompanyOrg();
@@ -376,9 +409,22 @@ class TrialBalanceController extends Controller
         $startDate = date('Y-m-d', strtotime($dates[0]));
         $endDate = date('Y-m-d', strtotime($dates[1]));
         $fy = Helper::getFinancialYear($startDate);
+         $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
-        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost,$loc);
+        $data = Helper::getLedgerData($r->ledger_id, $startDate, $endDate, $r->company_id, $org, $r->ledger_group, $currency, $cost_center_ids,$loc);
         $id = $r->ledger_id;
         $group = $r->ledger_group;
 
@@ -390,8 +436,13 @@ class TrialBalanceController extends Controller
 
         $openingData = ItemDetail::where('ledger_id', $id)
             ->where('ledger_parent_id', $group)
-            ->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+            ->when(!is_null($cost_center_ids), function ($q) use ($cost_center_ids) {
+                    // $q->where('cost_center_id', $cost_center_ids);
+                    if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
                 $query->withDefaultGroupCompanyOrg();
@@ -433,12 +484,14 @@ class TrialBalanceController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
-        return view('ledgers.getLedgerReport', compact('cost_centers', 'companies','locations'));
+        return view('ledgers.getLedgerReport', compact('cost_centers','cost_groups', 'companies','locations'));
     }
 
     public function get_org_ledgers($id)
@@ -475,15 +528,17 @@ class TrialBalanceController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
         $locations = InventoryHelper::getAccessibleLocations();
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
-        return view('trialBalance.view-trial-balance', compact('orgname','cost_centers', 'companies', 'organizationId', 'id', 'date2', 'dateRange','locations'));
+        return view('trialBalance.view-trial-balance', compact('orgname','cost_centers','cost_groups', 'companies', 'organizationId', 'id', 'date2', 'dateRange','locations'));
     }
 
     public function getInitialGroups(Request $r)
@@ -520,11 +575,32 @@ class TrialBalanceController extends Controller
                 ->with('children.children') // Ensures eager loading of children & grandchildren
                 ->get();
         }
+        // dd($r->all());
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         // Get Reserves & Surplus
-        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id,$r->location_id);
+        // dd($cost_center_ids);
+        //         dd([
+        //     'raw' => $cost_center_ids,
+        //     'type' => gettype($cost_center_ids),
+        //     'is_array' => is_array($cost_center_ids),
+        //     'values' => $cost_center_ids
+        // ]);
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost_center_ids,$r->location_id);
 
-        $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
+        $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency,  $cost_center_ids,$r->location_id);
         return response()->json(['currency' => $currency, 'data' => $data, 'type' => 'group', 'startDate' => date('d-M-Y', strtotime($startDate)), 'endDate' => date('d-M-Y', strtotime($endDate)), 'profitLoss' => $profitLoss, 'groups' => $groups]);
     }
 
@@ -552,8 +628,22 @@ class TrialBalanceController extends Controller
         if (count($organizations) == 0) {
             $organizations[] = Helper::getAuthenticatedUser()->organization_id;
         }
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
-        $groupLedgers = Helper::getTrialBalanceGroupLedgers($r->id, $startDate, $endDate, $organizations, $currency,$r->cost_center_id,$r->location_id);
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
+
+        $groupLedgers = Helper::getTrialBalanceGroupLedgers($r->id, $startDate, $endDate, $organizations, $currency,$cost_center_ids,$r->location_id);
 
         return response()->json($groupLedgers);
     }
@@ -582,9 +672,24 @@ class TrialBalanceController extends Controller
             $organizations[] = Helper::getAuthenticatedUser()->organization_id;
         }
 
+        // dd($r);
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         $allData = [];
         foreach ($r->ids as $id) {
-            $groupLedgers = Helper::getTrialBalanceGroupLedgers($id, $startDate, $endDate, $organizations, $currency, $r->cost_center_id,$r->location_id);
+            $groupLedgers = Helper::getTrialBalanceGroupLedgers($id, $startDate, $endDate, $organizations, $currency, $cost_center_ids,$r->location_id);
             $gData['id'] = $id;
             $gData['type'] = $groupLedgers['type'];
             $gData['data'] = $groupLedgers['data'];
@@ -631,19 +736,34 @@ class TrialBalanceController extends Controller
             $startDate = $financialYear['start_date'];
             $endDate = $financialYear['end_date'];
         }
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
+       $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
             $item->withDefaultGroupCompanyOrg()->where('status', 'active');
 
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
 
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
-        $data = Helper::getLedgerData($id, $startDate, $endDate, $r->company_id, Helper::getAuthenticatedUser()->organization_id, $group, $currency, $r->cost_center_id,$r->location_id);
+        $data = Helper::getLedgerData($id, $startDate, $endDate, $r->company_id, Helper::getAuthenticatedUser()->organization_id, $group, $currency, $cost_center_ids,$r->location_id);
 
         $fy = Helper::getFinancialYear($startDate);
         if (in_array($group, Helper::getNonCarryGroups()))
@@ -655,8 +775,13 @@ class TrialBalanceController extends Controller
 
              $openingData = ItemDetail::where('ledger_id', $id)
             ->where('ledger_parent_id', $group)
-            ->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+            ->when(!is_null($cost), function ($q) use ($cost_center_ids) {
+                    if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
+                    // $q->where('cost_center_id', $cost);
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
                 $query->withDefaultGroupCompanyOrg();
@@ -683,6 +808,6 @@ class TrialBalanceController extends Controller
 
 
   
-         return view('trialBalance.trail_ledger', compact('locations','cost_centers', 'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group','organizationId'));
+         return view('trialBalance.trail_ledger', compact('locations','cost_centers','cost_groups' ,'data', 'companies', 'id', 'startDate', 'endDate', 'organization', 'ledger', 'opening', 'group','organizationId'));
     }
 }

@@ -207,11 +207,6 @@ class MrnHeader extends Model
         return $this->belongsTo(Book::class, 'book_id');
     }
 
-    public function paymentTerms()
-    {
-        return $this->belongsTo(PaymentTerm::class);
-    }
-
     public function currency()
     {
         return $this->belongsTo(Currency::class);
@@ -278,6 +273,11 @@ class MrnHeader extends Model
     }
 
     public function paymentTerm()
+    {
+        return $this->belongsTo(PaymentTerm::class,'payment_term_id');
+    }
+
+    public function paymentTerms()
     {
         return $this->belongsTo(PaymentTerm::class,'payment_term_id');
     }

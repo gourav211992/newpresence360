@@ -394,6 +394,9 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
                     /^station_id\d+$/,       
                     /^item_so_qty_\d+$/,       
                     /^item_qty\d+$/,       
+                    /^item_accepted_qty\d+$/,       
+                    /^item_sub_prime_qty\d+$/,       
+                    /^item_rejected_qty\d+$/,       
                     /^item_remarks\d+$/,       
                     /^item_id\\[\\]$/
                     // /^.*_\d+$/                         

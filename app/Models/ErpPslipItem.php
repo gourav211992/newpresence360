@@ -39,6 +39,9 @@ class ErpPslipItem extends Model
         // 'tax_amount',
         // 'total_item_amount',
         'remarks',
+        'accepted_qty',
+        'subprime_qty',
+        'rejected_qty',
     ];
 
     public $referencingRelationships = [

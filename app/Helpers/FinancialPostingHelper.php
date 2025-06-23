@@ -2467,7 +2467,8 @@ class FinancialPostingHelper
     public static function typereturncheck(int $documentId)
     {
         $document = ErpSaleReturn::find($documentId);
-        $invocietofollow = $document?->items[0]?->invoice_item?->header?->invoice_required ?? 0;
+        //Invoice to follow param has been removed - Now it's based on document_type of Invoice : Jagdeep
+        $invocietofollow = in_array($document?->items[0]?->invoice_item?->header?->document_type, [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::SI_SERVICE_ALIAS]) ? 0 : 1;
         $type = $document?->items[0]?->invoice_item?->header?->document_type ?? "";
         if ($type == "si" && !$document->items[0]->invoice_item->dnote_item_id) {
             return self::salesReturnVoucherDetails($documentId, $type);
@@ -4393,7 +4394,7 @@ class FinancialPostingHelper
         }
 
         //Invoice to follow
-        $invoiceToFollow = $document->invoice_required;
+        $invoiceToFollow = $document->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS ? 0 : 1;
         $postingArray = array(
             self::CUSTOMER_ACCOUNT => [],
             self::DISCOUNT_ACCOUNT => [],

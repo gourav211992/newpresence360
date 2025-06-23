@@ -9,6 +9,6 @@ class ErpMultiPointPricingController extends Controller
     
     public function index(){
 
-        return view('multi-point-pricing.fixed.index');
+        return view('multi-point-pricing.index');
     }
 }

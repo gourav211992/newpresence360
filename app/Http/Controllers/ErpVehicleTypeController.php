@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\Unit;
 use App\Models\Organization;
 
 class ErpVehicleTypeController extends Controller
@@ -22,26 +23,11 @@ class ErpVehicleTypeController extends Controller
         $organization = Organization::find($user->organization_id);
         $organizationId = $organization?->id;
         $companyId = $organization?->company_id;
+        $uoms = Unit::where('status', 'active')->get();
 
        $vehicleTypes = ErpVehicleType::where('organization_id', $organizationId)->get();
-       return view('vehicle-types.index', compact('vehicleTypes'));
+       return view('vehicle-types.index', compact('vehicleTypes', 'uoms'));
     }
-
-
-     public function create(){
-
-        return view('vehicle-types.create');
-    }
-   public function edit($id)
-    {
-        $user = Helper::getAuthenticatedUser();
-        $vehicleType = ErpVehicleType::where('id', $id)
-            ->where('organization_id', $user->organization_id)
-            ->firstOrFail();
-
-        return view('vehicle-types.edit', compact('vehicleType'));
-    }
-
 
 
    public function store(VehicleTypeRequest $request)
@@ -60,6 +46,8 @@ class ErpVehicleTypeController extends Controller
                         'group_id'        => $organization->group_id,
                         'company_id'      => $user->company_id ?? null,
                         'name'            => $type['name'],
+                        'capacity'        => $type['capacity'],
+                        'uom_id'          => $type['uom_id'],
                         'description'     => $type['description'] ?? null,
                         'status'          => $type['status'] ?? 'Active',
                     ];

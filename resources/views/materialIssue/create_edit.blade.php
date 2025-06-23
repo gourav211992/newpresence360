@@ -1063,6 +1063,9 @@
             uomCodeInput.addEventListener('input', function() {
                 checkStockData(newIndex);
             });
+            qtyInput.addEventListener('input', function() {
+                checkStockData(newIndex);
+            });
 
         }
 
@@ -1158,6 +1161,7 @@
                     success: function(data) {
                         var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
                         var actualQty = inputQtyBox.value;
+                        console.log(actualQty, "ACTUAL");
                         inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
                         if (inputQtyBox.getAttribute('max-stock')) {
                             var maxStock = parseFloat(inputQtyBox.getAttribute('max-stock') ? inputQtyBox.getAttribute('max-stock') : 0);

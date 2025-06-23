@@ -35,6 +35,11 @@ $currentOrderIndexVal = $index;
 </td>
 <td><input type="text" id="item_so_qty_{{$currentOrderIndexVal}}" name = "item_so_qty[{{$currentOrderIndexVal}}]" class="form-control mw-100 text-end" value = "{{$order?->soItem?->order_qty}}" readonly/></td>
 <td><input type="text" id="item_qty_{{$currentOrderIndexVal}}" name = "item_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "{{$order->pslip_bal_qty}}"/></td>
+<td><input type="text" id="item_accepted_qty_{{$currentOrderIndexVal}}" name = "item_accepted_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "{{$order->pslip_bal_qty}}"/></td>
+@if($mo['mo_type'] != 'WIP')
+<td><input type="text" id="item_sub_prime_qty_{{$currentOrderIndexVal}}" name = "item_sub_prime_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = ""/></td>
+@endif
+<td><input type="text" id="item_rejected_qty_{{$currentOrderIndexVal}}" name = "item_rejected_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
 <td>
     <div class="d-flex">
             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$currentOrderIndexVal}}');">        

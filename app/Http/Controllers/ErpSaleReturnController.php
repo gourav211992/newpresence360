@@ -570,7 +570,8 @@ class ErpSaleReturnController extends Controller
 
                             if (isset($siItem)) {
                                 $siItem->srn_qty -= $srItem->order_qty;
-                                if (!$siItem->header->invoice_required) {
+                                if ($siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS ||
+                                        $siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS) {
                                     $siItem->srn_qty -= $srItem->order_qty;
                                 }
                                 $siItem->save();
@@ -579,7 +580,8 @@ class ErpSaleReturnController extends Controller
                                     $soItem = ErpInvoiceItem::find($siItem->si_item_id);
                                     if (isset($soItem)) {
                                         $soItem->srn_qty -= $srItem->order_qty;
-                                        if (!$soItem->header->invoice_required) {
+                                        if ($siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS ||
+                                                $siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS) {
                                             $soItem->srn_qty -= $srItem->order_qty;
                                         }
                                         $soItem->save();
@@ -866,8 +868,8 @@ class ErpSaleReturnController extends Controller
                     //Tax
                     $itemTax = 0;
                     $itemPrice = ($itemDataValue['item_value'] + $headerDiscount + $itemDataValue['item_discount_amount']) / $itemDataValue['order_qty'];
-                    $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                    $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
+                    $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                    $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
                     $taxDetails = TaxHelper::calculateTax($itemDataValue['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'sale');
                     if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {

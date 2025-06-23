@@ -172,6 +172,11 @@
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
                         Qty
                     </td>
+                    @if($consumption_method)
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
+                        Cons Per Unit
+                    </td>
+                    @endif
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
                         Cost
                     </td>
@@ -224,6 +229,11 @@
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{number_format(@$bomItem->qty,4)}}
                     </td>
+                    @if($consumption_method)
+                    <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
+                        {{number_format(@$bomItem?->norm?->qty_per_unit ?? 0,4)}}
+                    </td>
+                    @endif
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{ $canView ? number_format(floatval($bomItem->item_cost), 4, '.', '') : '' }}
                     </td>
@@ -247,7 +257,7 @@
                 @endphp 
             @endforeach
             <tr>
-                <td colspan="6" style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: 1px solid #000; text-align: center;"></td>
+                <td colspan="{{6+$consumption_method}}" style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: 1px solid #000; text-align: center;"></td>
                 <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                     {{ $canView ? number_format($item_total,2) : '0.00'}}
                 </td>

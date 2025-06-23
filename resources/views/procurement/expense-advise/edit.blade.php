@@ -170,13 +170,13 @@
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
                                                                 <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
@@ -210,12 +210,10 @@
                                                                         </a>
                                                                     </label>
                                                                     <div class="mrnaddedd-prim shipping_detail">
-                                                                        @if($mrn->latestShippingAddress())
-                                                                            {{$mrn->latestShippingAddress()->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->latestShippingAddress()->display_address}}">
+                                                                        @if($mrn->latestBillingAddress())
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                            {{$mrn->shippingAddress?->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->shippingAddress?->display_address}}">
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>

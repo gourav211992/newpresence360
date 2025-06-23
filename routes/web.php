@@ -7,6 +7,7 @@ use App\Http\Controllers\ErpVehicleController;
 use App\Http\Controllers\ErpVehicleTypeController;
 use App\Http\Controllers\ErpFreightChargesController;
 use App\Http\Controllers\ErpMultiPointPricingController;
+use App\Http\Controllers\ErpMultiPointFixedController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
@@ -1302,11 +1303,21 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('add-overhead-item-row', 'addOverheadItemRow')->name('add.overhead.item.row');
             # Only for the production Bom
             Route::get('check-bom-exist', 'checkBomExist')->name('check.bom.exist');
+            Route::get('report', 'bomReport')->name('report');
         });
 
     # Bom Import
     Route::prefix('bill-of-material')
         ->name('bill.of.material.')
+        ->controller(BomImportController::class)
+        ->group(function () {
+            Route::get('import','import')->name('import');
+            Route::post('import-save','importSave')->name('import.save');
+            Route::get('import-error','importError')->name('import.error');
+        });
+        
+    Route::prefix('quotation-bom')
+        ->name('quotation.bom.')
         ->controller(BomImportController::class)
         ->group(function () {
             Route::get('import','import')->name('import');
@@ -2232,12 +2243,18 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::delete('/logistics/freight-charges/delete-multiple', [ErpFreightChargesController::class, 'deleteMultiple'])->name('logistics.freight-charges.delete-multiple');
     Route::get('/logistics/freight-charges/get-cities-by-state', [ErpFreightChargesController::class, 'getCityByState'])->name('logistics.freight-charges.get-cities-by-state');
 
+    //Multi-Point-Pricing 
+    Route::get('/logistics/multi-point-pricing', [ErpMultiPointPricingController::class, 'index'])->name('logistics.multi-point-pricing.index');
+    Route::post('/logistics/multi-point/store', [ErpMultiPointPricingController::class, 'store'])->name('logistics.multi-point.store');
+    Route::delete('/logistics/multi-point/delete-multiple', [ErpMultiPointPricingController::class, 'deleteMultiple'])->name('logistics.multi-point.delete-multiple');
    
 
-    //Multi-Point-Pricing Fixed
-    Route::get('/logistics/multi-point-fixed', [ErpMultiPointPricingController::class, 'index'])->name('logistics.multi-point-fixed.index');
-    Route::post('/logistics/multi-point-fixed/store', [ErpMultiPointPricingController::class, 'store'])->name('logistics.multi-point-fixed.store');
-    Route::delete('/logistics/multi-point-fixed/delete-multiple', [ErpMultiPointPricingController::class, 'deleteMultiple'])->name('logistics.multi-point-fixed.delete-multiple');
+    //Multi-Point Fixed
+    Route::get('/logistics/multi-point-fixed/create', [ErpMultiPointFixedController::class, 'create'])->name('logistics.multi-point-fixed.create');
+    Route::post('/logistics/multi-point-fixed/store', [ErpMultiPointFixedController::class, 'store'])->name('logistics.multi-point-fixed.store');
+    Route::put('/logistics/multi-point-fixed/update/{id}', [ErpMultiPointFixedController::class, 'update'])->name('logistics.multi-point-fixed.update');
+    Route::get('/logistics/multi-point-fixed/edit/{id}', [ErpMultiPointFixedController::class, 'edit'])->name('logistics.multi-point-fixed.edit');
+    Route::delete('/logistics/multi-point-fixed/{id}', [ErpMultiPointFixedController::class, 'destroy'])->name('logistics.multi-point-fixed.destroy');
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
@@ -2250,6 +2267,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
      #get item detail for the consumption
      Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
      Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
+     Route::get('/production-slip/get-substore', [ErpProductionSlipController::class, 'getSubStore'])->name('production.slip.substore');
 
     Route::prefix('stores')->controller(StoreController::class)->group(function () {
         # Get Store Address Ajax

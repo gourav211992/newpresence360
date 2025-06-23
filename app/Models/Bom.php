@@ -153,6 +153,11 @@ class Bom extends Model
         return $this->hasMany(BomOverhead::class, 'bom_id');
     }
 
+    public function bomNormAllItems()
+    {
+        return $this->hasMany(BomNormsCalculation::class, 'bom_id');
+    }
+
     /*For this header overhead*/
     public function bomOverheadItems()
     {

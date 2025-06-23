@@ -230,13 +230,13 @@
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
                                                                 <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
@@ -1233,8 +1233,8 @@
                     $(".delivery_address").text(data.data.delivery_address);
                     $(".org_address").text(data.data.org_address);
 
-                    $("#hidden_state_id").val(data.data.shipping.state.id);
-                    $("#hidden_country_id").val(data.data.shipping.country.id);
+                    $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                    $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');

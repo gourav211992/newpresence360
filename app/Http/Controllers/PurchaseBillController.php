@@ -484,12 +484,12 @@ class PurchaseBillController extends Controller
                     if ($isTax) {
                         $itemTax = 0;
                         $itemPrice = ($pbItem['basic_value'] - $headerDiscount - $pbItem['discount_amount']);
-                        $shippingAddress = $pb->shippingAddress;
+                        $billingAddress = $pb->billingAddress;
 
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
+                        $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
 
-                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
+                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'collection');
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -1524,6 +1524,94 @@ class PurchaseBillController extends Controller
 
     // Get Address
     public function getAddress(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $vendorId = $request?->id ?? null;
+        $type = $request?->type ?? null;
+        $typeId = $request?->typeId ?? null;
+
+        $vendor = Vendor::withDefaultGroupCompanyOrg()
+        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+
+        $moduleTypeId = match ($type) {
+            'mrn' => $typeId,
+            default => $vendorId,
+        };
+        
+        $typeData = match ($type) {
+            'mrn' => MrnHeader::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($typeId),
+            default => Vendor::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($vendorId),
+        };  
+        
+        $currency = $typeData?->currency;
+        $paymentTerm = $typeData?->paymentTerms;
+        
+        $documentDate = $request?->document_date;
+
+        $vendorAddress = match ($type) {
+            'mrn' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
+            default => ErpAddress::where('addressable_id', $moduleTypeId)
+                ->where('addressable_type', Vendor::class)
+                ->latest()
+                ->first(),
+        };
+
+        if (!$vendorAddress) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Address not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($typeData->currency_id)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Currency not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($paymentTerm)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
+        
+        $storeId = $request?->store_id ?? null;
+        $store = ErpStore::find($storeId);
+        $locationAddress = $store?->address;
+
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $orgAddress = $organizationAddress?->display_address;
+        
+        return response()->json(
+            [
+                'data' => [
+                    'status' => 200, 
+                    'vendor' =>$vendor, 
+                    'message' => 'fetched',
+                    'currency' => $currency, 
+                    'org_address' => $orgAddress,
+                    'paymentTerm' => $paymentTerm, 
+                    'vendor_address' => $vendorAddress, 
+                    'currency_exchange' => $currencyData
+                ], 
+                'delivery_address' => $locationAddress, 
+            ]
+        );
+    }
+
+    public function getAddress1(Request $request)
     {
         $vendor = Vendor::withDefaultGroupCompanyOrg()
         ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);

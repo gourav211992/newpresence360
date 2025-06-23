@@ -11,13 +11,15 @@ class ErpVehicleType extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg;
 
-    protected $table = 'erp_logistics_vehicle_types';
+
 
     protected $fillable = [
         'organization_id',
         'group_id',
         'company_id',
         'name',
+        'capacity',
+        'uom_id',
         'description',
         'status',
         'created_at',

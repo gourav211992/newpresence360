@@ -173,13 +173,13 @@
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
                                                                 <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
@@ -209,9 +209,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                        {{$mrn->latestBillingAddress()->display_address}}
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                        {{$mrn->bill_address?->display_address}}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -312,8 +312,8 @@
                                                 <div class="col-md-6 text-sm-end">
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                     <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                    <i data-feather="plus"></i> Add New Item</a>
+                                                    <!-- <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                    <i data-feather="plus"></i> Add New Item</a> -->
                                                 </div>
                                             </div>
                                         </div>
@@ -1044,8 +1044,8 @@
                     $(".delivery_address").text(data.data.delivery_address);
                     $(".org_address").text(data.data.org_address);
 
-                    $("#hidden_state_id").val(data.data.shipping.state.id);
-                    $("#hidden_country_id").val(data.data.shipping.country.id);
+                    $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                    $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');

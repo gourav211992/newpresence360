@@ -457,8 +457,38 @@ class ConstantHelper
         self::SHARING_POLICY_HYBRID => 'Hybrid',
     ];
     //Service Labels
-        const SERVICE_LABEL = [self::SO_SERVICE_ALIAS => "Sales Order", self::SI_SERVICE_ALIAS => "Tax Invoice", self::SQ_SERVICE_ALIAS => "Sales Quotation", self::SR_SERVICE_ALIAS => "Sales Return",self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note", self::BOM_SERVICE_ALIAS => "Bill Of Material" , self::PO_SERVICE_ALIAS => "Purchase Order" , self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , self::PI_SERVICE_ALIAS => "Purchase Indent" , self:: MRN_SERVICE_ALIAS => "MRN" , self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , self::EXPENSE_SERVICE_ALIAS => "Expense" , self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", self::PB_SERVICE_ALIAS => "Purchase Bill", self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", self::JO_SERVICE_ALIAS => "Job Order",self::VOUCHERS => "Vouchers",self::PAYMENTS_SERVICE_ALIAS => 'Payment Voucher',self::RECEIPTS_SERVICE_ALIAS => 'Receipt Voucher',
-        self::PL_SERVICE_ALIAS => "Pick List", self::PSV_SERVICE_ALIAS => "Physical Stock Verification", self::TR_SERVICE_ALIAS => "Transporter Request", self::PWO_SERVICE_ALIAS => "Production Work Order", self::MO_SERVICE_ALIAS => "Manufacturing Order",  self::INSPECTION_SERVICE_ALIAS => "Inspection", self::MATERIAL_ISSUE_SERVICE_NAME => "Material Issue", self::MATERIAL_RETURN_SERVICE_NAME => "Material Return",self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",];
+    const SERVICE_LABEL = [
+        self::SO_SERVICE_ALIAS => "Sales Order",
+        self::SI_SERVICE_ALIAS => "Tax Invoice",
+        self::SQ_SERVICE_ALIAS => "Sales Quotation",
+        self::SR_SERVICE_ALIAS => "Sales Return",
+        self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note",
+        self::BOM_SERVICE_ALIAS => "Bill Of Material", 
+        self::PO_SERVICE_ALIAS => "Purchase Order" , 
+        self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , 
+        self::PI_SERVICE_ALIAS => "Purchase Indent" , 
+        self:: MRN_SERVICE_ALIAS => "MRN" , 
+        self:: GATE_ENTRY_SERVICE_ALIAS => "Gate Entry" , 
+        self::EXPENSE_SERVICE_ALIAS => "Expense" , 
+        self::EXPENSE_ADVISE_SERVICE_ALIAS => 'Expense Advise', 
+        self::PURCHASE_RETURN_SERVICE_ALIAS => "Purchase Return", 
+        self::PB_SERVICE_ALIAS => "Purchase Bill", 
+        self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => "Material Issue", 
+        self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => "Material Return", 
+        self::JO_SERVICE_ALIAS => "Job Order",
+        self::VOUCHERS => "Vouchers",
+        self::PAYMENTS_SERVICE_ALIAS => 'Payment Voucher',
+        self::RECEIPTS_SERVICE_ALIAS => 'Receipt Voucher',
+        self::PL_SERVICE_ALIAS => "Pick List",
+        self::PSV_SERVICE_ALIAS => "Physical Stock Verification",
+        self::TR_SERVICE_ALIAS => "Transporter Request", 
+        self::PWO_SERVICE_ALIAS => "Production Work Order", 
+        self::MO_SERVICE_ALIAS => "Manufacturing Order", 
+        self::INSPECTION_SERVICE_ALIAS => "Inspection", 
+        self::MATERIAL_ISSUE_SERVICE_NAME => "Material Issue", 
+        self::MATERIAL_RETURN_SERVICE_NAME => "Material Return",
+        self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",
+        self::JOURNAL_VOUCHER => "Journal Voucher"];
 
     //Service Alias
     const MO_SERVICE_ALIAS = 'mo'; # Manufacturing Order
@@ -493,7 +523,7 @@ class ConstantHelper
     const TR_SERVICE_ALIAS = 'tr';
     const LEASE_INVOICE_SERVICE_ALIAS = 'lease-invoice';
     const DELIVERY_CHALLAN_SERVICE_ALIAS = "dnote";
-    const DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS = "sinvdnote";
+    const DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS = "si-dnote";
     const EXPENSE_ADVISE_SERVICE_ALIAS = 'expense-advice';
     const PURCHASE_VOUCHER = 'pv';
     const SALES_VOUCHER = 'sv';
@@ -786,7 +816,7 @@ class ConstantHelper
         self::MATERIAL_RETURN_SERVICE_ALIAS_NAME => 'material.return.edit',
         self::BOM_SERVICE_ALIAS => 'bill.of.material.edit',
         self::COMMERCIAL_BOM_SERVICE_ALIAS => 'quotation-bom.edit',
-        self::PWO_SERVICE_ALIAS => 'production-work-order.edit',
+        self::PWO_SERVICE_ALIAS => 'pwo.edit',
         self::MO_SERVICE_ALIAS => 'mo.edit',
         self::PRODUCTION_SLIP_SERVICE_ALIAS => 'production.slip.edit',
         self::SQ_SERVICE_ALIAS => 'sale.quotation.edit',
@@ -800,7 +830,6 @@ class ConstantHelper
         self::PL_SERVICE_ALIAS => 'PL.layout',
         self::FIXED_ASSET_SPLIT=>'finance.fixed-asset.split.show',
         self::FIXED_ASSET_MERGER=>'finance.fixed-asset.merger.show',
-
         self::FIXED_ASSET_REV_IMP=>'finance.fixed-asset.revaluation-impairement.show',
         self::RECEIPT_VOUCHER => 'receipts.edit',
         self::PAYMENT_VOUCHER => 'payments.edit',

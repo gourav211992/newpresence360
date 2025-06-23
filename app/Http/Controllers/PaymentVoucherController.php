@@ -9,6 +9,7 @@ use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Bank;
+use App\Models\CostGroup;
 use App\Models\BankDetail;
 use App\Models\ErpStore;
 use App\Models\ApprovalWorkflow;
@@ -232,6 +233,20 @@ class PaymentVoucherController extends Controller
           $fyear = Helper::getFinancialYear(date('Y-m-d'));
           $accessibleLocations = InventoryHelper::getAccessibleLocations();
           $locationIds = $accessibleLocations->pluck('id')->toArray();
+            $cost_center_ids = null;
+            if (!empty($request->cost_center_id)) {
+                $cost_center_ids = $request->cost_center_id ?? null;
+                // dd($cost_center_ids);
+            } elseif (!empty($request->cost_group_id)) {
+                $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                    ->with('costCenters')
+                    ->where('id', $request->cost_group_id)
+                    ->where('status', 'active')
+                    ->first();
+
+                $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                            // dd($cost_center_ids);
+            }
         // Retrieve vouchers based on organization_id and include series with levels
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
             ->with([
@@ -266,8 +281,15 @@ class PaymentVoucherController extends Controller
         if ($request->ledger_id) {
             $data = $data->where('ledger_id', $request->ledger_id);
         }
-        if ($request->cost_center_id) {
-            $data = $data->where('cost_center_id', $request->cost_center_id);
+        // if ($request->cost_center_id) {
+        //     $data = $data->where('cost_center_id', $request->cost_center_id);
+        // }
+        if (!empty($cost_center_ids)) {
+            if (is_array($cost_center_ids)) {
+                $data = $data->whereIn('cost_center_id', $cost_center_ids);
+            } else {
+                $data = $data->where('cost_center_id', $cost_center_ids);
+            }
         }
         if ($request->location_id) {
             $data = $data->where('location', $request->location_id);
@@ -313,13 +335,14 @@ class PaymentVoucherController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
-
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
-        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked','locations'));
+        return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked','locations','cost_groups'));
     }
 
     /**
@@ -403,6 +426,7 @@ class PaymentVoucherController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> date);
         if (!isset($numberPatternData)) {
             return response()->json([
@@ -410,17 +434,27 @@ class PaymentVoucherController extends Controller
                 'error' => "",
             ], 422);
         }
-
-
-
+        
+        
+        
         $voucherExists = PaymentVoucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
         ->where('book_id',$request -> book_id)->exists();
+        
+        $token = $request->token;
+        $cached = Cache::get($token, ['grouped' => [], 'raw' => []]);
 
-    if ($voucherExists) {
-        return redirect()
+        $selectedRows = $cached['grouped'];
+        $rawItemData = $cached['raw']; 
+        if ($voucherExists) {
+            return redirect()
             ->route($request->document_type . '.create')
-            ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
-    }
+            ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!'])
+              ->with([
+                'selectedRows' => $selectedRows,
+                'rawItemData' => $rawItemData
+            ]);
+        }
+        // dd($request->all(),$numberPatternData);
 // if($request->reference_no!="" && $request->payment_type === "Bank"){
 // $ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
 
@@ -523,6 +557,7 @@ class PaymentVoucherController extends Controller
             $voucher->user_id = $user->auth_user_id;
             $voucher->user_type = $user->authenticable_type;
             $voucher->created_by = Helper::getAuthenticatedUser()->auth_user_id;
+            // dd($voucher);
             $voucher->save();
             // Process voucher details
             foreach ($request->party_id as $index => $party) {
@@ -533,7 +568,11 @@ class PaymentVoucherController extends Controller
                     if ($ref) {
                         return redirect()
                             ->route($request->document_type . '.create')
-                            ->withErrors(['Reference No. Already Exist!'])->withInput();
+                            ->withErrors(['Reference No. Already Exist!'])->withInput()
+                              ->with([
+                                    'selectedRows' => $selectedRows,
+                                    'rawItemData' => $rawItemData
+                                ]);
                     }
                 }
                 $details->payment_voucher_id = $voucher->id;
@@ -560,7 +599,11 @@ class PaymentVoucherController extends Controller
                             $insertRef->save();
                         } else {
                             $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
-                            return redirect()->route($request->document_type . '.create')->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
+                            return redirect()->route($request->document_type . '.create')->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher)
+                              ->with([
+                                'selectedRows' => $selectedRows,
+                                'rawItemData' => $rawItemData
+                            ]);
                         }
                     }
                 }
@@ -587,9 +630,14 @@ class PaymentVoucherController extends Controller
         } catch (Exception $e) {
             // Rollback transaction if any error occurs
             DB::rollback();
+            // dd($e->getMessage());
 
             // Log the error or return a response
-            return redirect()->route($request->document_type . '.create')->withErrors('Error occurred: ' . $e->getMessage());
+            return redirect()->route($request->document_type . '.create')->withErrors('Error occurred: ' . $e->getMessage())
+             ->with([
+                    'selectedRows' => $selectedRows,
+                    'rawItemData' => $rawItemData
+                ]);
         }
     }
 
@@ -738,6 +786,15 @@ class PaymentVoucherController extends Controller
 
             foreach ($request->party_id as $index => $party) {
                 $details = new PaymentVoucherDetails();
+                 if($request->reference_no && $request->reference_no[$index]!="" && $request->payment_type === "Bank"){
+                $ref = PaymentVoucherDetails::where('reference_no', $request->reference_no[$index])->exists();
+
+                    if ($ref) {
+                        return redirect()
+                            ->route($request->document_type . '.create')
+                            ->withErrors(['Reference No. Already Exist!'])->withInput();
+                    }
+                }
                 $details->payment_voucher_id = $voucher->id;
                 $customer = Ledger::find($party);
                 $details->ledger_id = $customer->id;
@@ -745,6 +802,7 @@ class PaymentVoucherController extends Controller
                 $details->partyCode = $customer->code;
                 $details->type = $request->document_type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? "customer" : "vendor";
                 $details->currentAmount = $request->amount[$index];
+                $details->reference_no = $request->reference_no[$index];
                 $details->orgAmount = $request->amount_exc[$index];
                 $details->reference = $request->reference[$index];
                 $details->save();

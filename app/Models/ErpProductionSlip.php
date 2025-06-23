@@ -32,6 +32,8 @@ class ErpProductionSlip extends Model
         'reference_number',
         'store_id',
         'store_code',
+        'fg_sub_store_id',
+        'rg_sub_store_id',
         'document_status',
         'approval_level',
         'remarks',
@@ -113,6 +115,14 @@ class ErpProductionSlip extends Model
     public function sub_store()
     {
         return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+    public function sub_fg_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'fg_sub_store_id');
+    }
+    public function sub_rg_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'rg_sub_store_id');
     }
     public function currency()
     {

@@ -17,6 +17,7 @@ use App\Helpers\InventoryHelper;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\CostCenterOrgLocations;
+use App\Models\CostGroup;
 use App\Models\ErpStore;
 
 class ProfitLossController extends Controller
@@ -31,6 +32,21 @@ class ProfitLossController extends Controller
         if ($r->currency!="") {
             $currency = $r->currency;
         };
+
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
         if ($r->date=="") {
             $financialYear = Helper::getFinancialYear(date('Y-m-d'));
@@ -51,7 +67,7 @@ class ProfitLossController extends Controller
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
         $organizationName=implode(",",DB::table('organizations')->whereIn('id',$organizations)->pluck('name')->toArray());
-        $plData=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss",$r->location_id);
+        $plData=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$cost_center_ids,"profitloss",$r->location_id);
 
         $sales=0;
         $purchase=0;
@@ -85,21 +101,21 @@ class ProfitLossController extends Controller
                 $purchase=$pl->closing + $purchase;
                 $openingAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $openingLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $openingLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Purchase Accounts"){
                 $purchase=$pl->closing + $purchase;
                 $purchaseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $purchaseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $purchaseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Direct Expenses"){
                 $purchase=$pl->closing + $purchase;
                 $directExpenseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $directExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $directExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Indirect Expenses"){
@@ -107,21 +123,21 @@ class ProfitLossController extends Controller
                 $indExpTotal=$pl->closing;
                 $indirectExpenseAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $indirectExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $indirectExpenseLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Sales Accounts"){
                 $sales=$pl->closing + $sales;
                 $saleAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $saleLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $saleLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Direct Income"){
                 $sales=$pl->closing + $sales;
                 $directIncomeAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $directIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $directIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
             if($pl->name == "Indirect Income"){
@@ -129,7 +145,7 @@ class ProfitLossController extends Controller
                 $indIncTotal=$pl->closing;
                 $indirectIncomeAmount=abs($pl->closing);
                 if ($r->level==2) {
-                    $indirectIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+                    $indirectIncomeLedgers=$this->getGroupLedgers($pl->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
                 }
             }
         }
@@ -380,13 +396,15 @@ class ProfitLossController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
         $locations = InventoryHelper::getAccessibleLocations();
-        return view('profitLoss.profitLoss',compact('cost_centers','organizations','organization','companies','organizationId','dateRange','date2','locations'));
+        return view('profitLoss.profitLoss',compact('cost_centers','cost_groups','organizations','organization','companies','organizationId','dateRange','date2','locations'));
     }
 
     public function getPLInitialGroups(Request $r)
@@ -414,8 +432,22 @@ class ProfitLossController extends Controller
         if(count($organizations) == 0){
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
 
-        $data=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$r->cost_center_id,"profitloss",$r->location_id);
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
+
+        $data=Helper::getPlGroupsData($startDate,$endDate,$organizations,$currency,$cost_center_ids,"profitloss",$r->location_id);
         $details=Helper::getPlGroupDetails($data);
 
         return response()->json(['startDate'=>date('d-M-Y',strtotime($startDate)),'endDate'=>date('d-M-Y',strtotime($endDate)),'data'=>$details]);
@@ -447,7 +479,22 @@ class ProfitLossController extends Controller
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
 
-        $data=$this->getGroupLedgers($r->id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
+
+        $data=$this->getGroupLedgers($r->id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
 
         return response()->json(['data'=>$data]);
     }
@@ -477,10 +524,24 @@ class ProfitLossController extends Controller
         if(count($organizations) == 0){
             $organizations[]=Helper::getAuthenticatedUser()->organization_id;
         }
+        $cost_center_ids = null;
+        if (!empty($r->cost_center_id)) {
+            $cost_center_ids = $r->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($r->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $r->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
         $allData=[];
         foreach ($r->ids as $id) {
-            $data=$this->getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$r->cost_center_id,$r->location_id);
+            $data=$this->getGroupLedgers($id,$organizations,$startDate,$endDate,$currency,$cost_center_ids,$r->location_id);
 
             $gData['id']=$id;
             $gData['data']=$data;

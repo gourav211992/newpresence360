@@ -8,6 +8,7 @@ use App\Helpers\TransactionReport\mrnReportHelper;
 use App\Helpers\TransactionReport\pbReportHelper;
 use App\Helpers\TransactionReport\prReportHelper;
 use App\Helpers\TransactionReport\plReportHelper;
+use App\Helpers\TransactionReport\bomReportHelper;
 use App\Helpers\TransactionReport\moReportHelper;
 
 class TransactionReportHelper
@@ -30,6 +31,7 @@ class TransactionReportHelper
         ConstantHelper::PI_SERVICE_ALIAS => 'pi.report',
         ConstantHelper::PL_SERVICE_ALIAS => 'PL.report',
         ConstantHelper::MO_SERVICE_ALIAS => 'mo.report',
+        ConstantHelper::BOM_SERVICE_ALIAS => 'bill.of.material.report',
     ];
     const INDEX_ROUTES = [
         ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.index',
@@ -42,6 +44,7 @@ class TransactionReportHelper
         ConstantHelper::PI_SERVICE_ALIAS => 'pi.index',
         ConstantHelper::PL_SERVICE_ALIAS => 'PL.index',
         ConstantHelper::MO_SERVICE_ALIAS => 'mo.index',
+        ConstantHelper::BOM_SERVICE_ALIAS => 'bom.index',
     ];
     const SO_TABLE_HEADERS = [
         [
@@ -2850,6 +2853,7 @@ class TransactionReportHelper
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_FILTERS,
         ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_FILTERS,
         ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_FILTERS,
+        ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::BOM_FILTERS,
 
     ];
     const TABLE_HEADERS = [
@@ -2869,6 +2873,7 @@ class TransactionReportHelper
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_TABLE_HEADERS,
         ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_TABLE_HEADERS,
         ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_TABLE_HEADERS,
+        ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::BOM_TABLE_HEADERS,
 
     ];
 

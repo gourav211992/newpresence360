@@ -18,6 +18,7 @@ use Yajra\DataTables\DataTables;
 use App\Models\ErpVehicleMedia;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\ErpVehicleType;
 use App\Models\ErpDriver;
 use App\Models\Organization;
 
@@ -30,23 +31,26 @@ class ErpVehicleController extends Controller
         $organizationId = $organization?->id;
         $companyId = $organization?->company_id;
 
-        $vehicleTypes = ConstantHelper::VEHICLE_TYPES;
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
         $drivers = ErpDriver::where('organization_id',$user->organization_id)->get();
 
         if ($request->ajax()) {
-            $vehicles = ErpVehicle::with('driver')
+            $vehicles = ErpVehicle::with('driver', 'vehicleType')
                 ->withDefaultGroupCompanyOrg()
                 ->orderByDesc('id');
 
             // Filters from request
+        
             if ($request->filled('lorry_no')) {
                 $vehicles->where('lorry_no', 'like', '%' . $request->lorry_no . '%');
             }
 
-            if ($request->filled('vehicle_type')) {
-                $vehicles->where('vehicle_type', 'like', '%' . $request->vehicle_type . '%');
+             if ($request->filled('vehicle_type')) {
+                $vehicles->whereHas('vehicleType', function ($q) use ($request) {
+                    $q->where('name', 'like', '%' . $request->vehicle_type . '%');
+                });
             }
 
             if ($request->filled('chassis_no')) {
@@ -110,6 +114,8 @@ class ErpVehicleController extends Controller
                 })
                 ->editColumn('created_at', fn($row) => optional($row->created_at)->format('d-m-Y') ?? 'N/A')
                 ->addColumn('driver_name', fn($row) => $row->driver->name ?? 'N/A')
+                ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? 'N/A')
+
 
                 ->addColumn('action', function ($row) {
                     return '
@@ -138,24 +144,36 @@ class ErpVehicleController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization->group_id;
+        $groupOrganizations = Organization::where('status', 'active')
+        ->where('group_id', $groupId)
+        ->where('id', '!=', $organization->id)
+        ->get();
         $status = ConstantHelper::STATUS;
-        $vehicleTypes = ConstantHelper::VEHICLE_TYPES;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
-        $drivers = ErpDriver::where('organization_id',$user->organization_id)->get();
-        return view('vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes'));
+        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        return view('vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes', 'groupOrganizations'));
     }
 
        public function edit($id)
     {
         $vehicle = ErpVehicle::with('driver','fitness', 'pollution', 'permit', 'insurance', 'roadTax','attachment','vehicleAttachment', 'vehicleVideo')->findOrFail($id);
         $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization->group_id;
+        $groupOrganizations = Organization::where('status', 'active')
+        ->where('group_id', $groupId)
+        ->where('id', '!=', $organization->id)
+        ->get();
         $status = ConstantHelper::STATUS;
-        $vehicleTypes = ConstantHelper::VEHICLE_TYPES;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
-        $drivers = ErpDriver::where('organization_id',$user->organization_id)->get();
-        return view('vehicles.edit', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicle', 'vehicleTypes'));
+        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        return view('vehicles.edit', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicle', 'vehicleTypes', 'groupOrganizations'));
     }
     
 
@@ -169,7 +187,7 @@ class ErpVehicleController extends Controller
 
             $vehicle = ErpVehicle::create(array_merge(
                 $request->only([
-                    'transporter_id', 'lorry_no', 'vehicle_type', 'chassis_no', 'engine_no',
+                    'transporter_id', 'lorry_no', 'vehicle_type_id', 'chassis_no', 'engine_no',
                     'rc_no', 'rto_no', 'company_name', 'model_name', 'capacity_kg',
                     'driver_id', 'fuel_type', 'purchase_date', 'ownership', 'status'
                 ]),
@@ -220,7 +238,7 @@ class ErpVehicleController extends Controller
             $vehicle->update([
                 'transporter_id' => $request->transporter_id,
                 'lorry_no'       => $request->lorry_no,
-                'vehicle_type'   => $request->vehicle_type,
+                'vehicle_type_id'=> $request->vehicle_type_id,
                 'chassis_no'     => $request->chassis_no,
                 'engine_no'      => $request->engine_no,
                 'rc_no'          => $request->rc_no,

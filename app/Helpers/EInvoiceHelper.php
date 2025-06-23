@@ -878,7 +878,7 @@ class EInvoiceHelper
         $serviceAlias = $document ?-> book ?-> service ?-> alias;
         if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
         ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
-        ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$document -> invoice_required)) {
+        ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS)) {
             return true;
         } else {
             return false;

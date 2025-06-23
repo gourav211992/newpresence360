@@ -29,8 +29,7 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
         $headings = [
             'Item Code',
             'Item Name',
-            'Category',
-            'Sub-Category',
+            'Group',
             'HSN/SAC',
             'Type',
             'Sub-Type',
@@ -79,7 +78,6 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
         $data = [
             $item->item_code,
             $item->item_name,
-            $item->category?? 'N/A',
             $item->subcategory?? 'N/A',
             $item->hsn?? 'N/A',
             $item->type ?? 'N/A',
@@ -133,7 +131,7 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
     public function styles(Worksheet $sheet)
     {
         $styles = [];
-        $requiredColumns = range(1, 10); 
+        $requiredColumns = range(1, 11); 
         $totalColumns = count($this->headings());
         $remarksColIndex = $totalColumns; 
         foreach ($requiredColumns as $col) {
@@ -168,7 +166,7 @@ class FailedItemsExport implements FromCollection, WithHeadings, WithMapping,Wit
         
     
         $totalColumns = count($this->headings());
-        for ($col = 11; $col <= $totalColumns; $col++) {
+        for ($col = 12; $col <= $totalColumns; $col++) {
             $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col); 
             $sheet->getStyle("{$columnLetter}1")->applyFromArray([
                 'font' => [

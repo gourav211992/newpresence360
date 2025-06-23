@@ -834,9 +834,8 @@ function checkVendorFilledDetail()
     let vName = $("#vendor_name").val();
     let vCurrency = $("[name='currency_id']").val();
     let vPaymentTerm = $("[name='payment_term_id']").val();
-    let shippingId = $("#shipping_id").val();
     let billingId = $("#billing_id").val();
-    if(vName && vCurrency && vPaymentTerm && shippingId && billingId) {
+    if(vName && vCurrency && vPaymentTerm && billingId) {
         filled = true;
     }
     return filled;

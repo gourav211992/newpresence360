@@ -178,6 +178,11 @@
                                     <select id="location_id" class="form-select select2">
                                     </select>
                                 </div>
+                                 <div class="mb-1">
+                                    <label class="form-label">Cost Group</label>
+                                    <select id="cost_group_id" class="form-select select2" name="cost_center_id" required>
+                                    </select>
+                                </div>
                                 <div class="mb-1">
                                     <label class="form-label">Cost Center</label>
                                     <select id="cost_center_id" class="form-select select2"
@@ -224,10 +229,12 @@
 <script>
     const locations = @json($locations);
     const costCenters = @json($cost_centers);
+    const costGroups = @json($cost_groups);
 </script>
 <script>
     function exportBalanceSheet(level){
-        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val(),level:level};
+        var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),
+        cost_group_id: $('#cost_group_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val(),level:level};
         var selectedValues = $('#organization_id').val() || [];
         var filteredValues = selectedValues.filter(function(value) {
             return value !== null && value.trim() !== '';
@@ -275,38 +282,72 @@
         $locationDropdown.trigger('change');
     }
 
-    function loadCostCenters(locationId) {
-            if (locationId) {
-               const filteredCenters = costCenters.filter(center => {
-                    if (!center.location) return false;
+    function loadCostGroupsByLocation(locationId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.val(@json(request('cost_center_id')) || "");
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location) return false;
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+            return locationArray.includes(String(locationId));
+        });
 
-                    const locationArray = Array.isArray(center.location)
-                        ? center.location.flatMap(loc => loc.split(','))
-                        : [];
+        const costGroupIds = [...new Set(filteredCenters.map(center => center.cost_group_id))];
+        
+        const filteredGroups = costGroups.filter(group => costGroupIds.includes(group.id));
+        console.log(filteredCenters,costGroupIds,filteredGroups);
 
-                    return locationArray.includes(String(locationId));
-                });
-            // console.log(filteredCenters,costCenters,locationId);
+        const $groupDropdown = $('#cost_group_id');
+        $groupDropdown.empty().append('<option value="">Select Cost Group</option>');
 
-            const $costCenter = $('#cost_center_id');
-            $costCenter.empty();
+        filteredGroups.forEach(group => {
+            $groupDropdown.append(`<option value="${group.id}">${group.name}</option>`);
+        });
 
-            if (filteredCenters.length === 0) {
-                $costCenter.prop('required', false);
-                $('.cost_center').hide();
-            } else {
-                $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
-                $('.cost_center').show();
-
-                filteredCenters.forEach(center => {
-                    $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
-                });
-            }
-
-            $costCenter.trigger('change');
-        }
+        $('#cost_group_id').trigger('change');
     }
 
+    $('#cost_group_id').on('change', function () {
+        const locationId = $('#location_id').val();
+        const groupId = parseInt($(this).val());
+
+        if (!locationId || !groupId) {
+            $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            return;
+        }
+
+        loadCostCentersByGroup(locationId, groupId);
+    });
+
+    function loadCostCentersByGroup(locationId, groupId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.empty();
+
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location || center.cost_group_id !== groupId) return false;
+
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+
+            return locationArray.includes(String(locationId));
+        });
+
+        if (filteredCenters.length === 0) {
+            costCenter.prop('required', false);
+            $('#cost_center_id').hide();
+        } else {
+            costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+            $('#cost_center_id').show();
+
+            filteredCenters.forEach(center => {
+                costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+            });
+        }
+        costCenter.val(@json(request('cost_center_id')) || "");
+        costCenter.trigger('change');
+    }
 
     $(document).ready(function () {
         // On change of organization
@@ -328,7 +369,7 @@
             // $('.cost_center').hide(); // Optional: hide the section if needed
                 return;
             }
-            loadCostCenters(locationId);
+            loadCostGroupsByLocation(locationId);
         });
         var reservesSurplusValue=0;
 
@@ -351,11 +392,13 @@
             let params = new URLSearchParams(window.location.search);
                  const date = $('#fp-range').val()?.trim();
                 const costCenterId = $('#cost_center_id').val()?.trim();
+                const costGroupId = $('#cost_group_id').val()?.trim();
                 const locationId = $('#location_id').val()?.trim();
 
                 if (date) params.set('date', date);
                 if (costCenterId) params.set('cost_center_id', costCenterId);
                 if (locationId) params.set('location_id', locationId);
+                if (costGroupId) params.set('cost_group_id', costGroupId);
 
                 let newUrl = window.location.pathname + '?' + params.toString();
                 window.history.pushState({}, '', newUrl);
@@ -381,7 +424,8 @@
         function getInitialGroups() {
            
 
-            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val()};
+            var obj={ date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),
+            cost_group_id: $('#cost_group_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}',filter_organization:$('#filter-organization').val()};
             var selectedValues = $('#organization_id').val() || [];
             var filteredValues = selectedValues.filter(function(value) {
                 return value !== null && value.trim() !== '';
@@ -479,12 +523,16 @@
 
                 const date = $('#fp-range').val()?.trim();
                 const costCenterId = $('#cost_center_id').val()?.trim();
+                const costGroupId = $('#cost_group_id').val()?.trim();
                 const locId = $('#location_id').val()?.trim();
 
                                         if (date) params.push(
                                             `date=${encodeURIComponent(date)}`);
                                         if (costCenterId) params.push(
                                             `cost_center_id=${encodeURIComponent(costCenterId)}`
+                                            );
+                                        if (costGroupId) params.push(
+                                            `cost_group_id=${encodeURIComponent(costGroupId)}`
                                             );
                                         if (locId) params.push(
                                             `location_id=${encodeURIComponent(locId)}`
@@ -521,7 +569,7 @@
                 $('#' + id).closest('tr').after(html);
             } else {
                 if ($('#check' + id).val() == "") {
-                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                    var obj={ id:id,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),cost_group_id: $('#cost_group_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                     var selectedValues = $('#organization_id').val() || [];
                     var filteredValues = selectedValues.filter(function(value) {
                         return value !== null && value.trim() !== '';
@@ -563,6 +611,8 @@
 
                 const date = $('#fp-range').val()?.trim();
                 const costCenterId = $('#cost_center_id').val()?.trim();
+                const costGroupId = $('#cost_group_id').val()
+                                            ?.trim();
                 const locId = $('#location_id').val()?.trim();
 
                                         if (date) params.push(
@@ -570,6 +620,9 @@
                                         if (costCenterId) params.push(
                                             `cost_center_id=${encodeURIComponent(costCenterId)}`
                                             );
+                                        if (costGroupId) params.push(
+                                        `cost_group_id=${encodeURIComponent(costGroupId)}`
+                                        );
                                         if (locId) params.push(
                                             `location_id=${encodeURIComponent(locId)}`
                                             );
@@ -628,7 +681,8 @@
 
             if (trIds.length>0) {
 
-                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
+                var obj={ ids:trIds,date:$('#fp-range').val(),cost_center_id:$('#cost_center_id').val(),
+                cost_group_id: $('#cost_group_id').val(),location_id:$('#location_id').val(),currency:$('#currency').val(),'_token':'{!!csrf_token()!!}'};
                 var selectedValues = $('#organization_id').val() || [];
                 var filteredValues = selectedValues.filter(function(value) {
                     return value !== null && value.trim() !== '';
