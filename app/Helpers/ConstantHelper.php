@@ -463,6 +463,7 @@ class ConstantHelper
         self::SQ_SERVICE_ALIAS => "Sales Quotation",
         self::SR_SERVICE_ALIAS => "Sales Return",
         self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note",
+        self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => "Delivery Note CUM Invoice",
         self::BOM_SERVICE_ALIAS => "Bill Of Material", 
         self::PO_SERVICE_ALIAS => "Purchase Order" , 
         self::SUPPLIER_INVOICE_SERVICE_ALIAS => "Supplier Invoice" , 
@@ -488,7 +489,9 @@ class ConstantHelper
         self::MATERIAL_ISSUE_SERVICE_NAME => "Material Issue", 
         self::MATERIAL_RETURN_SERVICE_NAME => "Material Return",
         self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",
-        self::JOURNAL_VOUCHER => "Journal Voucher"];
+        self::JOURNAL_VOUCHER => "Journal Voucher",
+        self::PRODUCTION_SLIP_SERVICE_ALIAS => "Production Slip",
+        PackingListConstants::SERVICE_ALIAS => "Packing List"];
 
     //Service Alias
     const MO_SERVICE_ALIAS = 'mo'; # Manufacturing Order

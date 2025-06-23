@@ -26,6 +26,7 @@
                 <input type="hidden" name="status" id="status">
                 <input type="hidden" name="doc_number_type" id="doc_number_type">
                 <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+                <input type="hidden" name="token" value="{{ request('token') }}">
                 <input type="hidden" name="doc_prefix" id="doc_prefix">
                 <input type="hidden" name="doc_suffix" id="doc_suffix">
                 <input type="hidden" name="doc_no" id="doc_no">
@@ -405,11 +406,11 @@
                                                                 <th width="300px">Ledger Group</th>
                                                                 <th width="300px">Organization</th>
                                                                 <th width="200px">Reference</th>
-                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="selectedCurrencyName"></span>)</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="orgCurrencyName"></span>)</th>
+                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th>Action</th>
                                                             </tr>
                                                         </thead>
@@ -488,18 +489,13 @@
                                                                                 </div>
                                                                             </div>
                                                                         </td>
-                                                                       <td>
-                                                                            <input type="text" class="form-control mw-100  bankInput reference_no" 
-                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
-                                                                                 />
-                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
-                                                                        </td>
 
                                                                         <td>
                                                                             <input type="number"
                                                                                 class="form-control mw-100 text-end amount"
                                                                                 name="amount[]"
                                                                                 id="excAmount{{ $no }}"
+                                                                                readonly
                                                                                 value="{{ $voucher['amount'] }}"
                                                                                 required />
                                                                         </td>
@@ -510,6 +506,12 @@
                                                                                 name="amount_exc[]"
                                                                                 value="{{ $voucher['amount'] }}"
                                                                                 required />
+                                                                        </td>
+                                                                         <td>
+                                                                            <input type="text" class="form-control mw-100  bankInput reference_no" 
+                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
+                                                                                 />
+                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
                                                                         </td>
 
                                                                         <td>
@@ -1174,7 +1176,7 @@
                 $('#party_vouchers' + $(this).attr('data-id')).val('[]');
             }
             calculateTotal();
-            evaluateCostCenterVisibility();
+            // evaluateCostCenterVisibility();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1217,7 +1219,7 @@
         $(function() {
             function updateTotalColspan() {
                 const isBank = $("#Bank").is(":checked");
-                $(".totalsubheadpodetail td:first-child").attr("colspan", isBank ? "7" : "6");
+                $(".totalsubheadpodetail td:first-child").attr("colspan","6");
             }
 
             // Initial update
@@ -1380,7 +1382,7 @@
                 let row = $(this).closest('tr');
                 row.remove();
                 updateLevelNumbers();
-                evaluateCostCenterVisibility();
+                // evaluateCostCenterVisibility();
                 calculateTotal();
             });
 
@@ -1425,13 +1427,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
+                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                         <td>
                             <input type="text" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
-                        <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
@@ -1578,7 +1580,7 @@
         }
         $(document).ready(function() {
             bind();
-            evaluateCostCenterVisibility();
+            // evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
@@ -1857,7 +1859,7 @@
         $('#locations').on('change', function() {
             let selectedLocationIds = $(this).val();
             renderCostCentersForLocation(selectedLocationIds);
-            evaluateCostCenterVisibility(); // <- Add this line
+            // evaluateCostCenterVisibility(); // <- Add this line
         });
 
         function renderCostCentersForLocation(selectedLocationId) {

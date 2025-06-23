@@ -80,132 +80,204 @@
                                                                 </td>
                                                                 <td width="150px">
                                                                     <input type="hidden" name="freight_charges[{{ $rowIndex }}][id]" value="{{ $charges->id ?? '' }}">
-                                                                    <select name="freight_charges[{{ $rowIndex }}][source_state_id]" class="form-control source-state state-select select2" data-type="source">
-                                                                        <option value="">Select State</option>
-                                                                        @foreach($states as $state)
-                                                                            <option value="{{ $state->id }}" {{ $charges->source_state_id == $state->id ? 'selected' : '' }}>{{ $state->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </td>
-                                                                <td width="150px">
-                                                                     <select name="freight_charges[{{ $rowIndex }}][source_city_id]" 
-                                                                        class="form-control source-city city-select select2" 
-                                                                        data-selected="{{ $charges->source_city_id }}" 
-                                                                        {{ $charges->source_city_id ? '' : 'disabled' }}>
-                                                                    <option value="">Select City</option>
-                                                                </select>
-                                                                </td>
-                                                                <td width="150px">
-                                                                   <select name="freight_charges[{{ $rowIndex }}][destination_state_id]" 
-                                                                            class="form-control destination-state state-select select2" 
-                                                                            data-type="destination">
-                                                                        <option value="">Select State</option>
-                                                                        @foreach($states as $state)
-                                                                            <option value="{{ $state->id }}" {{ $charges->destination_state_id == $state->id ? 'selected' : '' }}>{{ $state->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
+                                                                   <input type="text"
+                                                                    name="freight_charges[{{ $rowIndex }}][source_state_name]"
+                                                                    class="form-control mw-100 state-autocomplete"
+                                                                    placeholder="Start typing source state..."
+                                                                    data-type="source"
+                                                                    value="{{ optional($charges->sourceState)->name ?? '' }}" />
 
+                                                                <input type="hidden"
+                                                                    name="freight_charges[{{ $rowIndex }}][source_state_id]"
+                                                                    class="state-id"
+                                                                    data-type="source"
+                                                                    value="{{ $charges->source_state_id ?? '' }}" />
+                                                                 </td>
+                                                                <td width="150px">
+                                                                    <input type="text"
+                                                                        name="freight_charges[{{ $rowIndex }}][source_city_name]"
+                                                                        class="form-control mw-100 city-autocomplete"
+                                                                        placeholder="Start typing source city..."
+                                                                        data-type="source"
+                                                                        value="{{ optional($charges->sourceCity)->name ?? '' }}" />
+
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[{{ $rowIndex }}][source_city_id]"
+                                                                        class="city-id"
+                                                                        data-type="source"
+                                                                        value="{{ $charges->source_city_id ?? '' }}" />
                                                                 </td>
                                                                 <td width="150px">
-                                                                    
-                                                                   <select name="freight_charges[{{ $rowIndex }}][destination_city_id]" 
-                                                                        class="form-control destination-city city-select select2" 
-                                                                        data-selected="{{ $charges->destination_city_id }}" 
-                                                                        {{ $charges->destination_city_id ? '' : 'disabled' }}>
-                                                                    <option value="">Select City</option>
-                                                                </select>
+                                                                <!-- Destination State Autocomplete -->
+                                                                    <input type="text"
+                                                                        name="freight_charges[{{ $rowIndex }}][destination_state_name]"
+                                                                        class="form-control mw-100 state-autocomplete"
+                                                                        placeholder="Start typing destination state..."
+                                                                        data-type="destination"
+                                                                        value="{{ optional($charges->destinationState)->name ?? '' }}" />
+
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[{{ $rowIndex }}][destination_state_id]"
+                                                                        class="state-id"
+                                                                        data-type="destination"
+                                                                        value="{{ $charges->destination_state_id ?? '' }}" />
+
+                                                               </td>
+                                                                <td width="150px">     
+                                                                 <!-- Destination City Autocomplete -->
+                                                                <input type="text"
+                                                                    name="freight_charges[{{ $rowIndex }}][destination_city_name]"
+                                                                    class="form-control mw-100 city-autocomplete"
+                                                                    placeholder="Start typing destination city..."
+                                                                    data-type="destination"
+                                                                    value="{{ optional($charges->destinationCity)->name ?? '' }}" />
+
+                                                                <input type="hidden"
+                                                                    name="freight_charges[{{ $rowIndex }}][destination_city_id]"
+                                                                    class="city-id"
+                                                                    data-type="destination"
+                                                                    value="{{ $charges->destination_city_id ?? '' }}" />
 
                                                                 </td>
                                                                 <td width="100px">
                                                                     <input type="text" name="freight_charges[{{ $rowIndex }}][distance]" class="form-control mw-100" value="{{ $charges->distance ?? 0 }}">
                                                                 </td>
                                                                 <td>
-                                                                    <select name="freight_charges[{{ $rowIndex }}][vehicle_type_id]" class="form-control select2">
-                                                                        <option value="">Select Vehicle Type</option>
-                                                                        @foreach($vehicleTypes as $vehicleType)
-                                                                            <option value="{{ $vehicleType->id }}" {{ $charges->vehicle_type_id == $vehicleType->id ? 'selected' : '' }}>{{ $vehicleType->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
+                                                                    <input type="text" 
+                                                                        name="freight_charges[{{ $rowIndex }}][vehicle_type_name]" 
+                                                                        class="form-control mw-100 vehicle-type-autocomplete" 
+                                                                        placeholder="Start typing vehicle type..." 
+                                                                        value="{{ optional($charges->vehicleType)->name }} ({{ optional($charges->vehicleType)->capacity }} {{ optional($charges->vehicleType->unit)->name }})">
+
+                                                                    <input type="hidden" 
+                                                                        name="freight_charges[{{ $rowIndex }}][vehicle_type_id]" 
+                                                                        class="vehicle-type-id" 
+                                                                        value="{{ $charges->vehicle_type_id }}">
+
                                                                 </td>
                                                                 <td>
                                                                     <input type="text" name="freight_charges[{{ $rowIndex }}][amount]" class="form-control mw-100" value="{{ $charges->amount ?? 0 }}">
                                                                 </td>
                                                                 <td>
-                                                                    <select name="freight_charges[{{ $rowIndex }}][customer_id]" class="form-control mw-100 select2">
-                                                                        <option value="">Select Customer</option>
-                                                                        @foreach($customers as $customer)
-                                                                            <option value="{{ $customer->id }}" {{ $charges->customer_id == $customer->id ? 'selected' : '' }}>
-                                                                                {{ $customer->company_name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </td>
+                                                                   <input type="text"
+                                                                    name="freight_charges[{{ $rowIndex }}][customer_name]"
+                                                                    class="form-control mw-100 customer-autocomplete"
+                                                                    placeholder="Start typing customer..."
+                                                                    value="{{ optional($charges->customer)->company_name ?? '' }}" />
+
+                                                                <input type="hidden"
+                                                                    name="freight_charges[{{ $rowIndex }}][customer_id]"
+                                                                    class="customer-id"
+                                                                    value="{{ $charges->customer_id ?? '' }}" />
+
+                                                              </td>
                                                             </tr>
                                                        @php $rowIndex++; @endphp
                                                        @endforeach
                                                        @if($freightCharges->isEmpty())
-                                                            <tr>
+                                                           <tr>
                                                                 <td>
                                                                     <div class="form-check form-check-primary custom-checkbox">
                                                                         <input type="checkbox" class="form-check-input row-checkbox" name="row_checkbox[]" value="0">
                                                                         <label class="form-check-label"></label>
                                                                     </div>
                                                                 </td>
-                                                                <td width="150px">
-                                                                    <select name="freight_charges[0][source_state_id]" class="form-control mw-100 ledgerselecct source-state state-select" data-type="source">
-                                                                        <option value="">Select State</option>
-                                                                        @foreach($states as $state)
-                                                                            <option value="{{ $state->id }}">{{ $state->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </td>
-                                                                <td width="150px">
-                                                                     <select name="freight_charges[0][source_city_id]" class="form-control mw-100 ledgerselecct source-city city-select ">
-                                                                        <option value="">Select City</option>
-                                                                    </select>
-                                                                </td>
-                                                                <td width="150px">
-                                                                    <select name="freight_charges[0][destination_state_id]" class="form-control mw-100 ledgerselecct destination-state state-select" data-type="destination">
-                                                                        <option value="">Select State</option>
-                                                                        @foreach($states as $state)
-                                                                            <option value="{{ $state->id }}">{{ $state->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </td>
-                                                                <td width="150px">
-                                                                     <select name="freight_charges[0][destination_city_id]" class="form-control mw-100 ledgerselecct destination-city city-select">
-                                                                        <option value="">Select City</option>
-                                                                       
-                                                                    </select>
 
+                                                                {{-- Source State --}}
+                                                                <td width="150px">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][source_state_name]"
+                                                                        class="form-control mw-100 state-autocomplete"
+                                                                        placeholder="Start typing source state..."
+                                                                        data-type="source" />
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[0][source_state_id]"
+                                                                        class="state-id"
+                                                                        data-type="source" />
                                                                 </td>
+
+                                                                {{-- Source City --}}
+                                                                <td width="150px">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][source_city_name]"
+                                                                        class="form-control mw-100 city-autocomplete"
+                                                                        placeholder="Start typing source city..."
+                                                                        data-type="source" />
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[0][source_city_id]"
+                                                                        class="city-id"
+                                                                        data-type="source" />
+                                                                </td>
+
+                                                                {{-- Destination State --}}
+                                                                <td width="150px">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][destination_state_name]"
+                                                                        class="form-control mw-100 state-autocomplete"
+                                                                        placeholder="Start typing destination state..."
+                                                                        data-type="destination" />
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[0][destination_state_id]"
+                                                                        class="state-id"
+                                                                        data-type="destination" />
+                                                                </td>
+
+                                                                {{-- Destination City --}}
+                                                                <td width="150px">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][destination_city_name]"
+                                                                        class="form-control mw-100 city-autocomplete"
+                                                                        placeholder="Start typing destination city..."
+                                                                        data-type="destination" />
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[0][destination_city_id]"
+                                                                        class="city-id"
+                                                                        data-type="destination" />
+                                                                </td>
+
+                                                                {{-- Distance --}}
                                                                 <td width="100px">
-                                                                    <input type="text" name="freight_charges[0][distance]" class="form-control mw-100" value="0">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][distance]"
+                                                                        class="form-control mw-100"
+                                                                        value="0">
                                                                 </td>
+
+                                                                {{-- Vehicle Type Autocomplete --}}
                                                                 <td>
-                                                                    <select name="freight_charges[0][vehicle_type_id]" class="form-control mw-100 ledgerselecct">
-                                                                        <option value="">Select Vehicle Type</option>
-                                                                        @foreach($vehicleTypes as $vehicleType)
-                                                                            <option value="{{ $vehicleType->id }}">{{ $vehicleType->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][vehicle_type_name]"
+                                                                        class="form-control mw-100 vehicle-type-autocomplete"
+                                                                        placeholder="Start typing Vehicle Type..." />
+                                                                    <input type="hidden"
+                                                                        name="freight_charges[0][vehicle_type_id]"
+                                                                        class="vehicle-type-id" />
                                                                 </td>
+
+                                                                {{-- Amount --}}
                                                                 <td>
-                                                                    <input type="text" name="freight_charges[0][amount]" class="form-control mw-100" value="0">
+                                                                    <input type="text"
+                                                                        name="freight_charges[0][amount]"
+                                                                        class="form-control mw-100"
+                                                                        value="0">
                                                                 </td>
+
+                                                                {{-- Customer Select --}}
                                                                 <td>
-                                                                    <select name="freight_charges[0][customer_id]" class="form-control mw-100 ledgerselecct">
-                                                                        <option value="">Select Customer</option>
-                                                                        @foreach($customers as $customer)
-                                                                            <option value="{{ $customer->id }}">{{ $customer->company_name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </td>
+                                                                    <input type="text"
+                                                                    name="freight_charges[0][customer_name]"
+                                                                    class="form-control mw-100 customer-autocomplete"
+                                                                    placeholder="Start typing customer..." />
+
+                                                                <input type="hidden"
+                                                                    name="freight_charges[0][customer_id]"
+                                                                    class="customer-id" />
+                                                                 </td>
                                                             </tr>
+
                                                            @php $rowIndex = 1; @endphp
                                                           @endif
                                                     </tbody>
-
                                                 </table>
                                             </div>
                                         </div>
@@ -232,133 +304,157 @@
         });
 
         document.querySelector('.add-row').addEventListener('click', addNewRow);
-
     });
 
     function addNewRow() {
         const tbody = document.querySelector('.mrntableselectexcel');
+
+        // ✅ Check existing rows for empty required fields
+        const existingRows = tbody.querySelectorAll('tr');
+        let incomplete = false;
+
+        existingRows.forEach(row => {
+            const requiredFields = [
+                row.querySelector('.state-autocomplete[data-type="source"]'),
+                row.querySelector('.city-autocomplete[data-type="source"]'),
+                row.querySelector('.state-autocomplete[data-type="destination"]'),
+                row.querySelector('.city-autocomplete[data-type="destination"]'),
+                row.querySelector('.vehicle-type-autocomplete'),
+                row.querySelector('.customer-autocomplete'),
+                row.querySelector('input[name*="[amount]"]')
+            ];
+
+            for (const field of requiredFields) {
+                if (field && field.value.trim() === '') {
+                    incomplete = true;
+                    break;
+                }
+            }
+        });
+
+      if (incomplete) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Incomplete Row',
+                text: 'Please fill all required fields in the existing row(s) before adding a new one.',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+
         const newIndex = freightRowIndex++;
+        const rowId = 'row' + newIndex;
 
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>
                 <div class="form-check form-check-primary custom-checkbox">
-                    <input type="checkbox" class="form-check-input row-checkbox" name="row_checkbox[]">
+                    <input type="checkbox" class="form-check-input row-checkbox" name="row_checkbox[]" value="${newIndex}" id="${rowId}">
                     <label class="form-check-label"></label>
-                </div> 
+                </div>
             </td>
+
             <td width="150px">
-            <input type="hidden" name="freight_charges[${newIndex}][id]" value="">
-                <select name="freight_charges[${newIndex}][source_state_id]" class="form-control mw-100 ledgerselecct source-state state-select" data-type="source">
-                    <option value="">Select State</option>
-                    @foreach($states as $state)
-                        <option value="{{ $state->id }}">{{ $state->name }}</option>
-                    @endforeach
-                </select>
+                <input type="hidden" name="freight_charges[${newIndex}][id]" value="">
+                <input type="text"
+                    name="freight_charges[${newIndex}][source_state_name]"
+                    class="form-control mw-100 state-autocomplete"
+                    placeholder="Start typing source state..."
+                    data-type="source" />
+                <input type="hidden"
+                    name="freight_charges[${newIndex}][source_state_id]"
+                    class="state-id"
+                    data-type="source" />
             </td>
+
             <td width="150px">
-                <select name="freight_charges[${newIndex}][source_city_id]" class="form-control mw-100 ledgerselecct source-city city-select " disabled>
-                    <option value="">Select City</option>
-                </select>
+                <input type="text"
+                    name="freight_charges[${newIndex}][source_city_name]"
+                    class="form-control mw-100 city-autocomplete"
+                    placeholder="Start typing source city..."
+                    data-type="source" />
+                <input type="hidden"
+                    name="freight_charges[${newIndex}][source_city_id]"
+                    class="city-id"
+                    data-type="source" />
             </td>
+
             <td width="150px">
-                <select name="freight_charges[${newIndex}][destination_state_id]" class="form-control mw-100 ledgerselecct destination-state state-select" data-type="destination">
-                    <option value="">Select State</option>
-                    @foreach($states as $state)
-                        <option value="{{ $state->id }}">{{ $state->name }}</option>
-                    @endforeach
-                </select>
+                <input type="text"
+                    name="freight_charges[${newIndex}][destination_state_name]"
+                    class="form-control mw-100 state-autocomplete"
+                    placeholder="Start typing destination state..."
+                    data-type="destination" />
+                <input type="hidden"
+                    name="freight_charges[${newIndex}][destination_state_id]"
+                    class="state-id"
+                    data-type="destination" />
             </td>
+
             <td width="150px">
-                <select name="freight_charges[${newIndex}][destination_city_id]" class="form-control mw-100 ledgerselecct destination-city city-select" disabled>
-                    <option value="">Select City</option>
-                </select>
+                <input type="text"
+                    name="freight_charges[${newIndex}][destination_city_name]"
+                    class="form-control mw-100 city-autocomplete"
+                    placeholder="Start typing destination city..."
+                    data-type="destination" />
+                <input type="hidden"
+                    name="freight_charges[${newIndex}][destination_city_id]"
+                    class="city-id"
+                    data-type="destination" />
             </td>
+
             <td width="100px">
-                <input type="text" name="freight_charges[${newIndex}][distance]" class="form-control mw-100" value="0" min="0">
+                <input type="text"
+                    name="freight_charges[${newIndex}][distance]"
+                    class="form-control mw-100"
+                    value="0"
+                    min="0" />
             </td>
+
             <td>
-                <select name="freight_charges[${newIndex}][vehicle_type_id]" class="form-control mw-100 ledgerselecct ">
-                    <option value="">Select Vehicle Type</option>
-                    @foreach($vehicleTypes as $vehicleType)
-                        <option value="{{ $vehicleType->id }}">{{ $vehicleType->name }}</option>
-                    @endforeach
-                </select>
+                <input type="text"
+                    name="freight_charges[${newIndex}][vehicle_type_name]"
+                    class="form-control mw-100 ledgerselect vehicle-type-autocomplete"
+                    placeholder="Start typing Vehicle Type ..." />
+                <input type="hidden"
+                    name="freight_charges[${newIndex}][vehicle_type_id]"
+                    class="vehicle-type-id" />
             </td>
+
             <td>
-                <input type="text" name="freight_charges[${newIndex}][amount]" class="form-control mw-100" value="0" min="0" step="0.01">
+                <input type="text"
+                    name="freight_charges[${newIndex}][amount]"
+                    class="form-control mw-100"
+                    value="0"
+                    min="0"
+                    step="0.01" />
             </td>
+
             <td>
                 <div class="d-flex align-items-center gap-1">
-                    <select name="freight_charges[${newIndex}][customer_id]" class="form-control mw-100 ledgerselecct">
-                        <option value="">Select Customer</option>
-                        @foreach($customers as $customer)
-                            <option value="{{ $customer->id }}">{{ $customer->company_name }}</option>
-                        @endforeach
-                    </select>
-                   
+                    <input type="text"
+                        name="freight_charges[${newIndex}][customer_name]"
+                        class="form-control mw-100 customer-autocomplete"
+                        placeholder="Start typing customer..." />
+                    <input type="hidden"
+                        name="freight_charges[${newIndex}][customer_id]"
+                        class="customer-id" />
                 </div>
             </td>
         `;
 
         tbody.appendChild(row);
 
-        // Re-initialize Select2 and icons
-        $('.select2').select2();
+        // ✅ Reinitialize any needed JS (autocomplete etc.)
         if (typeof feather !== 'undefined') feather.replace();
     }
-</script>
-
-<script>
-    function loadCitiesByState($stateSelect) {
-        const stateId = $stateSelect.val();
-        const type = $stateSelect.data('type'); 
-        const row = $stateSelect.closest('tr');
-        const $citySelect = row.find(`.${type}-city`);
-        const selectedCityId = $citySelect.data('selected');
-
-        if (stateId) {
-            $.ajax({
-                url: "{{ route('logistics.freight-charges.get-cities-by-state') }}",
-                type: "GET",
-                data: { state_id: stateId },
-                dataType: "json",
-                success: function (response) {
-                    if (response.status && response.data.length) {
-                        let options = '<option value="">Select City</option>';
-                        response.data.forEach(city => {
-                            const selected = selectedCityId == city.id ? 'selected' : '';
-                            options += `<option value="${city.id}" ${selected}>${city.name}</option>`;
-                        });
-                        $citySelect.html(options).prop('disabled', false).trigger('change');
-                    } else {
-                        $citySelect.html('<option value="">Select City</option>').prop('disabled', false);
-                    }
-                }
-            });
-        } else {
-            $citySelect.html('<option value="">Select City</option>').prop('disabled', true);
-        }
-    }
-
-    $(document).ready(function () {
-        $('.state-select').each(function () {
-            if ($(this).val()) {
-                loadCitiesByState($(this));
-            }
-        });
-
-        $(document).on('change', '.state-select', function () {
-            loadCitiesByState($(this));
-        });
-    });
 </script>
 
 
 <script>
     document.getElementById('delete-selected').addEventListener('click', function () {
     const tableBody = document.querySelector('.mrntableselectexcel');
-    // CORRECTED SELECTOR (hyphen instead of camelCase)
     const checkedRows = tableBody.querySelectorAll('.row-checkbox:checked');
 
     if (checkedRows.length === 0) {
@@ -445,21 +541,186 @@
     });
 });
 
-       $(function() {
-            $( ".ledgerselecct" ).autocomplete({
-                source: [ 
-				"Furniture (IT001)",
-				"Chair (IT002)",
-				"Table (IT003)",
-				"Laptop (IT004)",
-				"Bags (IT005)",
-				],
-					minLength: 0
-				}).focus(function(){
-					if (this.value == ""){
-						$(this).autocomplete("search");
-					}
-				});
-			});
+const vehicleTypes = [
+    @foreach($vehicleTypes as $vt)
+        {
+            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
+            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
+            id: {{ $vt->id }}
+        },
+    @endforeach
+];
+
+   $(document).on('focus', '.vehicle-type-autocomplete', function () {
+    if (!$(this).data('ui-autocomplete')) {
+        $(this).autocomplete({
+            source: vehicleTypes,
+            minLength: 0,
+            select: function (event, ui) {
+                $(this).val(ui.item.label);
+                $(this).closest('tr').find('.vehicle-type-id').val(ui.item.id);
+                return false;
+            }
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
+    }
+});
+
 </script>
+
+<script>
+const states = [
+    @foreach($states as $state)
+        { label: "{{ addslashes($state->name) }}", value: "{{ addslashes($state->name) }}", id: {{ $state->id }} },
+    @endforeach
+];
+
+const customerList = [
+    @foreach($customers as $customer)
+        {
+            label: "{{ addslashes($customer->company_name) }}",
+            value: "{{ addslashes($customer->company_name) }}",
+            id: {{ $customer->id }}
+        },
+    @endforeach
+];
+
+const cityCache = {};
+
+$(document).ready(function () {
+    // Initialize city autocomplete for existing state IDs
+    $('.state-id').each(function () {
+        const $this = $(this);
+        const stateId = $this.val();
+        const type = $this.data('type');
+        const $row = $this.closest('tr');
+
+        if (stateId) {
+            loadCitiesForAutocomplete(stateId, $row, type);
+        }
+    });
+
+    // Change on hidden state ID
+    $(document).on('change', '.state-id', function () {
+        const $this = $(this);
+        const stateId = $this.val();
+        const type = $this.data('type');
+        const $row = $this.closest('tr');
+
+        if (stateId) {
+            loadCitiesForAutocomplete(stateId, $row, type);
+        }
+    });
+
+    // State Autocomplete
+    $(document).on('focus', '.state-autocomplete', function () {
+        const $input = $(this);
+
+        if (!$input.data('ui-autocomplete')) {
+            $input.autocomplete({
+                source: states,
+                minLength: 0,
+                select: function (event, ui) {
+                    const $row = $input.closest('tr');
+                    const type = $input.data('type');
+
+                    $input.val(ui.item.label);
+                    $row.find(`.state-id[data-type="${type}"]`).val(ui.item.id);
+
+                    $row.find(`.city-autocomplete[data-type="${type}"]`).val('');
+                    $row.find(`.city-id[data-type="${type}"]`).val('');
+
+                    loadCitiesForAutocomplete(ui.item.id, $row, type);
+                    return false;
+                }
+            }).focus(function () {
+                $(this).autocomplete('search', '');
+            });
+        }
+    });
+
+    // Customer Autocomplete
+    $(document).on('focus', '.customer-autocomplete', function () {
+        const $input = $(this);
+        if (!$input.data('ui-autocomplete')) {
+            $input.autocomplete({
+                source: customerList,
+                minLength: 0,
+                select: function (event, ui) {
+                    const $row = $input.closest('tr');
+                    $input.val(ui.item.label);
+                    $row.find('.customer-id').val(ui.item.id);
+                    return false;
+                }
+            }).focus(function () {
+                $(this).autocomplete('search', '');
+            });
+        }
+    });
+});
+
+// City loader based on state
+function loadCitiesForAutocomplete(stateId, $row, type) {
+    const cacheKey = `${type}_${stateId}`;
+
+    if (cityCache[cacheKey]) {
+        applyCityAutocomplete(cityCache[cacheKey], $row, type);
+        return;
+    }
+
+    $.ajax({
+        url: "{{ route('logistics.freight-charges.get-cities-by-state') }}",
+        method: "GET",
+        data: { state_id: stateId },
+        dataType: "json",
+        success: function (response) {
+            if (response.status && Array.isArray(response.data)) {
+                cityCache[cacheKey] = response.data;
+                applyCityAutocomplete(response.data, $row, type);
+            } else {
+                console.warn("Invalid city response:", response);
+            }
+        },
+        error: function () {
+            console.error("City loading failed for state ID:", stateId);
+        }
+    });
+}
+
+// City autocomplete binder
+function applyCityAutocomplete(cities, $row, type) {
+    const cityList = cities.map(city => ({
+        label: city.name,
+        value: city.name,
+        id: city.id
+    }));
+
+    const $input = $row.find(`.city-autocomplete[data-type="${type}"]`);
+    const $hidden = $row.find(`.city-id[data-type="${type}"]`);
+
+    if (!$input.length || !$hidden.length) {
+        console.warn("City input or hidden field not found for type:", type);
+        return;
+    }
+
+    if ($input.data("ui-autocomplete")) {
+        $input.autocomplete("destroy");
+    }
+
+    $input.autocomplete({
+        source: cityList,
+        minLength: 0,
+        select: function (event, ui) {
+            $input.val(ui.item.label);
+            $hidden.val(ui.item.id);
+            return false;
+        }
+    }).focus(function () {
+        $(this).autocomplete('search', '');
+    });
+}
+</script>
+
+
 @endsection

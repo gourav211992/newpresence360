@@ -49,21 +49,34 @@
     $payment_received = is_string($payment_received) ? json_decode($payment_received) : $payment_received;
 @endphp
 <table>
+    <tr>
+        <td colspan="7"><strong>Organization: </strong> {{ $organization->name??"-" }}</td>
+    </tr>
+
+    {{-- Date Range --}}
+    <tr>
+        <td colspan="7"><strong>Date: </strong> {{ $fy }}</td>
+    </tr>
+    
+</table>
+<table>
     <thead>
         <tr>
-            <th>S.No.</th>
-            <th>Particulars</th>
-            <th>Date</th>
-            <th>Ledger Name</th>
-            <th>Payment Mode</th>
-            <th>Bank Name</th>
-            <th>Total Amount</th>
+            <th><strong>S.No.</strong></th>
+            <th><strong>Particulars</strong></th>
+            <th><strong>Date</strong></th>
+            <th><strong>Ledger Name</strong></th>
+            <th><strong>Payment Mode</strong></th>
+            <th><strong>Bank Name</strong></th>
+            <th align="right"><strong>Total Amount</strong></th>
         </tr>
     </thead>
     <tbody>
+        
+
         {{-- {{ dd($payment_made) }} --}}
         <tr>
-            <td>1.</td>
+            <td><strong>1.</strong></td>
             <td><strong>Opening Balance</strong></td>
             <td></td>
             <td></td>
@@ -74,7 +87,7 @@
 
         <!-- Payment Made Section -->
         <tr>
-            <td>2.</td>
+            <td><strong>2.</strong></td>
             <td colspan="5"><strong>Payment Made</strong></td>
             {{-- <td></td> --}}
             {{-- <td></td> --}}
@@ -97,7 +110,7 @@
 
         <!-- Payment Received Section -->
         <tr>
-            <td>3.</td>
+            <td><strong>3.</strong></td>
             <td colspan="5"><strong>Payment Received</strong></td>
             <td align="right">{{ number_format($payment_received_t, 2) }}</td>
 

@@ -210,6 +210,7 @@
                                                             if (request('location_id')) $query['location_id'] = request('location_id');
                                                             if (request('organization_id')) $query['organization_id'] = request('organization_id');
                                                             if (request('cost_center_id')) $query['cost_center_id'] = request('cost_center_id');
+                                                            if (request('cost_group_id')) $query['cost_group_id'] = request('cost_group_id');
 
                                                             $url = route('crdr.report.ledger.details', ['debit', $customer->ledger_id, $customer->ledger_parent_id]);
                                                             if ($query) {
@@ -423,6 +424,11 @@
                                         </select>
                                     </div>
                                     <div class="col-md-4">
+                                        <label class="form-label">Cost Group</label>
+                                        <select id="cost_group_id" class="form-select select2" name="cost_group_id" required>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
                                         <label class="form-label">Cost Center</label>
                                         <select id="cost_center_id" class="form-select select2" name="cost_center_id"
                                             required>
@@ -538,6 +544,7 @@
         <input type="hidden" name="age2" value="{{ $age2 }}">
         <input type="hidden" name="age3" value="{{ $age3 }}">
         <input type="hidden" name="age4" value="{{ $age4 }}">
+        <input type="hidden" name="cost_group_id" value="{{ request('cost_group_id')??null }}">
         <input type="hidden" name="cost_center_id" value="{{ request('cost_center_id')??null }}">
         <input type="hidden" name="organization_id" value="{{ request('organization_id')??null }}">
         <input type="hidden" name="location_id" value="{{ request('location_id')??null }}">
@@ -773,6 +780,9 @@
 
             if (urlParams.get('cost_center_id') == "")
                 $('#cost_center_id').val(urlParams.get('cost_center_id'));
+            
+            if (urlParams.get('cost_group_id') == "")
+                $('#cost_group_id').val(urlParams.get('cost_group_id'));
 
             if (urlParams.get('location_id') == "")
                 $('#location_id').val(urlParams.get('location_id'));
@@ -811,6 +821,7 @@
             let group = $('#filter_group').val();
             let location = $('#location_id').val();
             let cost_center = $('#cost_center_id').val();
+            let cost_group = $('#cost_group_id').val();
             let organization = $('#organization_id').val();
             let range = $('#fp-range').val();
             let ages = [];
@@ -855,6 +866,10 @@
                 currentUrl.searchParams.set('cost_center_id', cost_center);
             else
                 currentUrl.searchParams.delete('cost_center_id');
+            if (cost_group !== "" && cost_group !== null)
+                currentUrl.searchParams.set('cost_group_id', cost_group);
+            else
+                currentUrl.searchParams.delete('cost_group_id');
 
             // Add age values to the URL only if aging checkbox is checked
             if (isAgingChecked) {
@@ -927,6 +942,7 @@
     <script>
         const locations = @json($locations);
         const costCenters = @json($cost_centers);
+        const costGroups = @json($cost_groups);
 
         function updateLocationsDropdown(selectedOrgIds) {
             selectedOrgIds = $('#organization_id').val() || [];
@@ -948,45 +964,70 @@
 
             // Load cost centers if location was pre-selected
             if (requestedLocationId) {
-                loadCostCenters(requestedLocationId);
+                loadCostGroupsByLocation(requestedLocationId);
             }
 
             $locationDropdown.trigger('change');
         }
 
+        function loadCostGroupsByLocation(locationId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.val(@json(request('cost_center_id')) || "");
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location) return false;
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+            return locationArray.includes(String(locationId));
+        });
 
+        const costGroupIds = [...new Set(filteredCenters.map(center => center.cost_group_id))];
+        
+        const filteredGroups = costGroups.filter(group => costGroupIds.includes(group.id));
+        console.log(filteredCenters,costGroupIds,filteredGroups);
 
-        function loadCostCenters(locationId) {
-            if (locationId) {
-                const filteredCenters = costCenters.filter(center => {
-                    if (!center.location) return false;
+        const $groupDropdown = $('#cost_group_id');
+        $groupDropdown.empty().append('<option value="">Select Cost Group</option>');
 
-                    const locationArray = Array.isArray(center.location) ?
-                        center.location.flatMap(loc => loc.split(',')) : [];
+        filteredGroups.forEach(group => {
+            $groupDropdown.append(`<option value="${group.id}">${group.name}</option>`);
+        });
 
-                    return locationArray.includes(String(locationId));
-                });
-                // console.log(filteredCenters,costCenters,locationId);
+        $('#cost_group_id').trigger('change');
+    }
 
-                const $costCenter = $('#cost_center_id');
-                $costCenter.empty();
+    function loadCostCentersByGroup(locationId, groupId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.empty();
 
-                if (filteredCenters.length === 0) {
-                    $costCenter.prop('required', false);
-                    $('.cost_center').hide();
-                } else {
-                    $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
-                    $('.cost_center').show();
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location || center.cost_group_id !== groupId) return false;
 
-                    filteredCenters.forEach(center => {
-                        $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
-                    });
-                }
-                $costCenter.val(@json(request('cost_center_id')) || "");
-                $costCenter.trigger('change');
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
 
-            }
+            return locationArray.includes(String(locationId));
+        });
+
+        if (filteredCenters.length === 0) {
+            costCenter.prop('required', false);
+            $('#cost_center_id').hide();
+        } else {
+            costCenter.append('<option value="">Select Cost Center</option>');
+            $('#cost_center_id').show();
+
+            filteredCenters.forEach(center => {
+                costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+            });
         }
+        costCenter.val(@json(request('cost_center_id')) || "");
+        costCenter.trigger('change');
+    }
+
+
+
+        
         $('#organization_id').trigger('change');
         // On change of organization
         $('#organization_id').on('change', function() {
@@ -1008,10 +1049,21 @@
                 // $('.cost_center').hide(); // Optional: hide the section if needed
                 return;
             }
-            loadCostCenters(locationId);
+            loadCostGroupsByLocation(locationId);
 
 
 
         });
+        $('#cost_group_id').on('change', function () {
+                const locationId = $('#location_id').val();
+                const groupId = parseInt($(this).val());
+
+                if (!locationId || !groupId) {
+                    $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+                    return;
+                }
+
+                loadCostCentersByGroup(locationId, groupId);
+            });
     </script>
 @endsection

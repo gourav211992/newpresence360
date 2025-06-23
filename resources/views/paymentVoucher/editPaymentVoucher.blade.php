@@ -462,7 +462,9 @@
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
+                                                        @if($data->cost_center_id=="")
                                                             <option value="">Select</option>
+                                                        @endif
                                                             @foreach ($locationCostCenters as $value)
                                                             <option value="{{ $value['id'] }}"
                                                                 @if($value['id'] == $data->cost_center_id) selected @endif>
@@ -510,12 +512,12 @@
                                                                 <th width="300px">Ledger Group</th>
                                                                 <th width="300px">Organization</th>
                                                                 <th width="300px">Reference</th>
-                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="selectedCurrencyName">{{ $data->currencyCode }}</span>)
                                                                 </th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="orgCurrencyName"></span>)</th>
+                                                                <th width="200px" class="ref-no-header">Ref No.</th>
                                                                 <th>Action</th>
                                                             </tr>
                                                         </thead>
@@ -572,12 +574,6 @@
                                                                             </div>
                                                                         </div>
                                                                     </td>
-                                                                    <td>
-                                                                            <input type="text" class="form-control mw-100 bankInput reference_no" 
-                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
-                                                                                @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
-                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
-                                                                    </td>
                                                                     <td><input type="number"
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]"
@@ -589,7 +585,12 @@
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
-
+                                                                     <td>
+                                                                            <input type="text" class="form-control mw-100 bankInput reference_no" 
+                                                                                name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
+                                                                                @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
+                                                                            <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
+                                                                    </td>
                                                                     <td>
                                                                          @if ($fyear['authorized'])
                                                                          <a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a>
@@ -600,7 +601,7 @@
                                                         </tbody>
                                                         <tfoot>
                                                             <tr class="totalsubheadpodetail">
-                                                                <td colspan="{{ $data->payment_type == 'Bank' ? '7' : '6' }}"  class="text-end">Total</td>
+                                                                <td colspan="{{ $data->payment_type == 'Bank' ? '6' : '5' }}"  class="text-end">Total</td>
                                                                 <td class="text-end currentCurrencySum">0</td>
                                                                 <td class="text-end orgCurrencySum">0</td>
                                                                 <td></td>
@@ -1451,7 +1452,7 @@ function check_amount() {
                 $('#party_vouchers' + $(this).attr('data-id')).val('[]');
             }
              calculateTotal();
-            evaluateCostCenterVisibility();
+            // evaluateCostCenterVisibility();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1516,7 +1517,7 @@ function check_amount() {
 
         $(document).ready(function() {
             bind();
-            evaluateCostCenterVisibility();
+            // evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
                 $(".bankfield").show();
                 $(".cashfield").hide();
@@ -1528,7 +1529,6 @@ function check_amount() {
                 $(".cashfield").show();
                 $(".bankfield").hide();
                 $('.bankInput').prop('required', false);
-                $('.reference_no').prop('required', false).closest('td').hide();
                 $('.ref-no-header').hide(); // Hide the header
                 $('#ledger_id').prop('required', true);
             }
@@ -1582,7 +1582,7 @@ $('#revisionNumber').prop('disabled', false);
         $(function() {
             function updateTotalColspan() {
                     const isBank = $("#Bank").is(":checked");
-                    $(".totalsubheadpodetail td:first-child").attr("colspan", isBank ? "7" : "6");
+                    $(".totalsubheadpodetail td:first-child").attr("colspan", "6");
                 }
 
                 // Initial update
@@ -1743,7 +1743,7 @@ $('#revisionNumber').prop('disabled', false);
                 let row = $(this).closest('tr');
                 row.remove();
                 updateLevelNumbers();
-                evaluateCostCenterVisibility();
+                // evaluateCostCenterVisibility();
                 calculateTotal();
             });
 
@@ -1788,13 +1788,13 @@ $('#revisionNumber').prop('disabled', false);
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
+                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
+                         <td>
                             <input type="text" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
-                        <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
-                        <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
@@ -2303,7 +2303,7 @@ function showToast(icon, title) {
             $('#locations').on('change', function() {
                 let selectedLocationIds = $(this).val();
                 renderCostCentersForLocation(selectedLocationIds);
-                evaluateCostCenterVisibility(); // <- Add this line
+                // evaluateCostCenterVisibility(); // <- Add this line
             });
 
         function renderCostCentersForLocation(selectedLocationId) {

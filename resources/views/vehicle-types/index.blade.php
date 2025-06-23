@@ -76,27 +76,30 @@
                                                         </td>
                                                         <td>
                                                             <input type="hidden" name="vehicle_type[{{ $rowIndex }}][id]" value="{{ $type->id }}">
-                                                            <input type="text" name="vehicle_type[{{ $rowIndex }}][name]" value="{{ $type->name }}" class="form-control mw-100 ledgerselecct" />
+                                                            <input type="text" name="vehicle_type[{{ $rowIndex }}][name]" value="{{ $type->name }}" class="form-control mw-100" />
                                                         </td>
                                                         <td>
-                                                            <input type="text" name="vehicle_type[{{ $rowIndex }}][capacity]" value="{{ $type->capacity }}" class="form-control mw-100 ledgerselecct" />
+                                                            <input type="text" name="vehicle_type[{{ $rowIndex }}][capacity]" value="{{ $type->capacity }}" class="form-control mw-100 " />
                                                         </td>
                                                         <td>
-                                                        <select name="vehicle_type[{{ $rowIndex }}][uom_id]" class="form-control mw-100 select2 ledgerselecct">
-                                                            <option value="">Select UOM</option>
-                                                            @foreach($uoms as $uom)
-                                                                <option value="{{ $uom->id }}" {{ $type->uom_id == $uom->id ? 'selected' : '' }}>
-                                                                    {{ $uom->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                       <input type="text"
+                                                            name="vehicle_type[{{ $rowIndex }}][uom_name]"
+                                                            class="form-control ledgerselect uom-autocomplete"
+                                                            placeholder="Start typing UOM..."
+                                                            value="{{ $type->unit->name ?? '' }}" />
+
+                                                        <input type="hidden"
+                                                            name="vehicle_type[{{ $rowIndex }}][uom_id]"
+                                                            class="uom-id"
+                                                            value="{{ $type->uom_id ?? '' }}" />
+
                                                     </td>
 
                                                         <td>
-                                                            <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100 ledgerselecct" value="{{$type->description}}">
+                                                            <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100" value="{{$type->description}}">
                                                         </td>
                                                         <td>
-                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ledgerselecct">
+                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ">
                                                                 <option value="Active" {{ $type->status == 'Active' ? 'selected' : '' }}>Active</option>
                                                                 <option value="Inactive" {{ $type->status == 'Inactive' ? 'selected' : '' }}>Inactive</option>
                                                             </select>
@@ -113,23 +116,19 @@
                                                             </div>
                                                         </td>
                                                         <td>
-                                                            <input type="text" name="vehicle_type[0][name]" placeholder="Enter Vehicle Type" class="form-control mw-100 ledgerselecct" />
+                                                            <input type="text" name="vehicle_type[0][name]" placeholder="Enter Vehicle Type" class="form-control mw-100" />
                                                         </td>
                                                          <td>
-                                                            <input type="text" name="vehicle_type[0][capacity]"  class="form-control mw-100 ledgerselecct" />
+                                                            <input type="text" name="vehicle_type[0][capacity]"  class="form-control mw-100" />
                                                         </td>
                                                         <td>
-                                                        <select name="vehicle_type[0][uom_id]" class="form-control mw-100 select2 ledgerselecct">
-                                                            <option value="">Select UOM</option>
-                                                            @foreach($uoms as $uom)
-                                                                <option value="{{ $uom->id }}">
-                                                                    {{ $uom->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </td>
+                                                        <input type="text" name="vehicle_type[0][uom_name]" 
+                                                            class="form-control ledgerselect uom-autocomplete" 
+                                                            placeholder="Start typing UOM..." />
+                                                        <input type="hidden" name="vehicle_type[0][uom_id]" class="uom-id" />
+                                                      </td>
                                                         <td>
-                                                            <input name="vehicle_type[0][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct" />
+                                                            <input name="vehicle_type[0][description]" placeholder="Enter Description" class="form-control mw-100" />
                                                         </td>
                                                         <td>
                                                             <select name="vehicle_type[0][status]" class="form-control mw-100 ledgerselecct">
@@ -156,152 +155,185 @@
 
 @section('scripts')
 <script>
-    let rowIndex = {{ $rowIndex ?? 1 }};
+let rowIndex = {{ $rowIndex ?? 1 }};
 
-    document.getElementById('checkAll').addEventListener('change', function () {
-        document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
-    });
+// Select/Deselect All
+document.getElementById('checkAll').addEventListener('change', function () {
+    document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
+});
 
-    document.getElementById('addRowBtn').addEventListener('click', function () {
-        const tbody = document.querySelector('.mrntableselectexcel');
-        const rowId = 'row' + rowIndex;
+// Add New Row
+document.getElementById('addRowBtn').addEventListener('click', function () {
+    const tbody = document.querySelector('.mrntableselectexcel');
 
-        const newRow = document.createElement('tr');
-        newRow.innerHTML = `
-            <td>
-                <div class="form-check form-check-primary">
-                    <input type="checkbox" class="form-check-input rowCheckbox"
-                           name="selected_rows[]" value="${rowIndex}" id="${rowId}">
-                </div>
-            </td>
-            <td>
-                <input type="text" name="vehicle_type[${rowIndex}][name]" placeholder="Enter Vehicle Type" class="form-control mw-100 ledgerselecct" />
-            </td>
-            <td>
-                <input type="text" name="vehicle_type[${rowIndex}][capacity]"  class="form-control mw-100 ledgerselecct" />
-            </td>
-               <td>
-                    <select name="vehicle_type[${rowIndex}][uom_id]" class="form-control mw-100 select2 ledgerselecct">
-                        <option value="">Select UOM</option>
-                        @foreach($uoms as $uom)
-                            <option value="{{ $uom->id }}">
-                                {{ $uom->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </td>
-            <td>
-                <input name="vehicle_type[${rowIndex}][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct" />
-            </td>
-            <td>
-                <select name="vehicle_type[${rowIndex}][status]" class="form-control mw-100 ledgerselecct">
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                </select>
-            </td>
-        `;
+    // ✅ Check for incomplete required fields
+    let incomplete = false;
+    tbody.querySelectorAll('tr').forEach(row => {
+        const requiredFields = [
+            row.querySelector('input[name*="[name]"]'),
+            row.querySelector('input[name*="[capacity]"]'),
+            row.querySelector('.uom-autocomplete'),
+            row.querySelector('input[name*="[description]"]'),
+            row.querySelector('select[name*="[status]"]')
+        ];
 
-        tbody.appendChild(newRow);
-        rowIndex++;
-    });
-
-    // Handle delete selected rows
-    document.getElementById('delete-selected').addEventListener('click', function () {
-        const tableBody = document.querySelector('.mrntableselectexcel');
-        const allRows = tableBody.querySelectorAll('tr');
-        const checkedRows = tableBody.querySelectorAll('.rowCheckbox:checked');
-
-        if (checkedRows.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'No Selection',
-                text: 'Please select at least one row to delete.'
-            });
-            return;
-        }
-
-        // if (checkedRows.length >= allRows.length) {
-        //     Swal.fire({
-        //         icon: 'warning',
-        //         title: 'Action Blocked',
-        //         text: 'At least one row must remain in the table.',
-        //         confirmButtonText: 'OK'
-        //     });
-        //     return;
-        // }
-
-        const idsToDelete = [];
-        checkedRows.forEach(checkbox => {
-            const row = checkbox.closest('tr');
-            const hiddenId = row.querySelector('input[name^="vehicle_type"][name$="[id]"]');
-            if (hiddenId && hiddenId.value) {
-                idsToDelete.push(hiddenId.value);
+        for (const field of requiredFields) {
+            if (field && field.value.trim() === '') {
+                incomplete = true;
+                break;
             }
-        });
+        }
+    });
 
+    if (incomplete) {
         Swal.fire({
-            title: 'Are you sure?',
-            text: 'Selected records will be permanently deleted!',
             icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // If some rows have DB IDs, call backend
-                if (idsToDelete.length > 0) {
-                    fetch("{{ route('logistics.vehicle-type.delete-multiple') }}", {
-                        method: "DELETE",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-CSRF-TOKEN": document.querySelector('input[name="_token"]').value
-                        },
-                        body: JSON.stringify({ ids: idsToDelete })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status) {
-                            checkedRows.forEach(cb => cb.closest('tr').remove());
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Deleted!',
-                                text: 'Record deleted successfully.',
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error!',
-                                text: data.message || 'Error deleting records.'
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Delete failed:", error);
+            title: 'Incomplete Row',
+            text: 'Please fill all required fields in the existing row(s) before adding a new one.',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    const rowId = 'row' + rowIndex;
+
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <div class="form-check form-check-primary">
+                <input type="checkbox" class="form-check-input rowCheckbox" name="selected_rows[]" value="${rowIndex}" id="${rowId}">
+            </div>
+        </td>
+        <td>
+            <input type="text" name="vehicle_type[${rowIndex}][name]" placeholder="Enter Vehicle Type" class="form-control mw-100" />
+        </td>
+        <td>
+            <input type="text" name="vehicle_type[${rowIndex}][capacity]" class="form-control mw-100" />
+        </td>
+        <td>
+            <input type="text" name="vehicle_type[${rowIndex}][uom_name]" class="form-control ledgerselect uom-autocomplete" placeholder="Start typing UOM..." />
+            <input type="hidden" name="vehicle_type[${rowIndex}][uom_id]" class="uom-id" />
+        </td>
+        <td>
+            <input name="vehicle_type[${rowIndex}][description]" placeholder="Enter Description" class="form-control mw-100" />
+        </td>
+        <td>
+            <select name="vehicle_type[${rowIndex}][status]" class="form-control mw-100">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+            </select>
+        </td>
+    `;
+
+    tbody.appendChild(newRow);
+    rowIndex++;
+});
+
+// Delete Selected Rows
+document.getElementById('delete-selected').addEventListener('click', function () {
+    const tableBody = document.querySelector('.mrntableselectexcel');
+    const checkedRows = tableBody.querySelectorAll('.rowCheckbox:checked');
+
+    if (checkedRows.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Selection',
+            text: 'Please select at least one row to delete.'
+        });
+        return;
+    }
+
+    const idsToDelete = [];
+    checkedRows.forEach(cb => {
+        const row = cb.closest('tr');
+        const hiddenId = row.querySelector('input[name^="vehicle_type"][name$="[id]"]');
+        if (hiddenId && hiddenId.value) {
+            idsToDelete.push(hiddenId.value);
+        }
+    });
+
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Selected records will be permanently deleted!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then(result => {
+        if (result.isConfirmed) {
+            if (idsToDelete.length > 0) {
+                fetch("{{ route('logistics.vehicle-type.delete-multiple') }}", {
+                    method: "DELETE",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector('input[name="_token"]').value
+                    },
+                    body: JSON.stringify({ ids: idsToDelete })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status) {
+                        checkedRows.forEach(cb => cb.closest('tr').remove());
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Records deleted successfully.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => location.reload());
+                    } else {
                         Swal.fire({
                             icon: 'error',
                             title: 'Error!',
-                            text: 'An unexpected error occurred.'
+                            text: data.message || 'Error deleting records.'
                         });
-                    });
-                } else {
-                    // No DB rows, just remove from UI
-                    checkedRows.forEach(cb => cb.closest('tr').remove());
+                    }
+                })
+                .catch(err => {
+                    console.error("Delete failed:", err);
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Deleted!',
-                        text: 'Row(s) deleted from the UI.',
-                        timer: 1500,
-                        showConfirmButton: false
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'An unexpected error occurred.'
                     });
-                }
+                });
+            } else {
+                checkedRows.forEach(cb => cb.closest('tr').remove());
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Deleted!',
+                    text: 'Row(s) deleted from the UI.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             }
-        });
+        }
     });
+});
+
+// UOM Autocomplete
+const uoms = [
+    @foreach($uoms as $uom)
+        { label: "{{ $uom->name }}", value: "{{ $uom->name }}", id: {{ $uom->id }} },
+    @endforeach
+];
+
+$(document).on('focus', '.uom-autocomplete', function () {
+    if (!$(this).data('ui-autocomplete')) {
+        $(this).autocomplete({
+            source: uoms,
+            minLength: 0,
+            select: function (event, ui) {
+                $(this).val(ui.item.label);
+                $(this).closest('tr').find('.uom-id').val(ui.item.id);
+                return false;
+            }
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
+    }
+});
 </script>
 
 @endsection

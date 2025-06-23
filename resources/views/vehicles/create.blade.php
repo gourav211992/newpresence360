@@ -65,7 +65,7 @@
                                                 
                                                 <div class="row align-items-center mb-1">
                                                      <div class="col-md-2"> 
-                                                        <label class="form-label">Vehicle No. <span class="text-danger">*</span></label>  
+                                                        <label class="form-label">Vehicle No. <span class="text-danger">*</span>  <i class="ml-2 fas fa-info-circle text-primary" data-bs-toggle="tooltip" data-bs-html="true" title="" data-bs-original-title="Format:&lt;br&gt;[A-Z]{2} – 2 uppercase letters (e.g., 'MH')&lt;br&gt;[0-9]{2} – 2 digits (e.g., '12')&lt;br&gt;[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')&lt;br&gt;[0-9]{4} – 4 digits (e.g., '1234')" aria-label="Format:&lt;br&gt;[A-Z]{2} – 2 uppercase letters (e.g., 'MH')&lt;br&gt;[0-9]{2} – 2 digits (e.g., '12')&lt;br&gt;[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')&lt;br&gt;[0-9]{4} – 4 digits (e.g., '1234')"></i></label>  
                                                     </div>  
                                                     <div class="col-md-4"> 
                                                         <input type="text" class="form-control" name="lorry_no" placeholder="UP65AA123" />
@@ -78,7 +78,7 @@
                                                              <option value="">Select</option>
                                                              @foreach($vehicleTypes as  $type)
                                                                 <option value="{{ $type->id }}">
-                                                                    {{ $type->name }}
+                                                                   {{ $type->name }} ({{ $type->capacity }} {{ $type->unit->name }})
                                                                 </option>
                                                             @endforeach
                                                         </select>
@@ -251,7 +251,7 @@
                                                     
                                                     <div class="row align-items-center mb-1">
                                                          <div class="col-md-2"> 
-                                                            <label class="form-label">Vehicle Video <span class="text-danger">*</span></label>  
+                                                            <label class="form-label">Vehicle Video </label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="vehicle_video" />

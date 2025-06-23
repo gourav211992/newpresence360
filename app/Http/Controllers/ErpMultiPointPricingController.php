@@ -3,12 +3,166 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Helpers\Helper; 
+use App\Http\Requests\MultiPointPricingRequest;
+use App\Helpers\ConstantHelper;
+use App\Models\Customer;
+use App\Models\Country;
+use App\Models\State;
+use App\Models\City;
+use App\Models\ErpLogisticsMultiFixedLocation;
+use App\Models\ErpLogisticsMultiFixedPricing;
+use App\Models\ErpLogisticsMultiPointPricing;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\DB;
+use Auth;
+use App\Models\Organization;
 
 class ErpMultiPointPricingController extends Controller
 {
     
-    public function index(){
+    public function index(Request $request)
+{
+    $user = Helper::getAuthenticatedUser();
+    $organizationId = $user->organization_id;
+    $organization = Organization::with('addresses')->find($organizationId);
+    $countryId = optional($organization->addresses->first())->country_id;
+    $states = State::where('country_id', $countryId)->get();
+    $status = ConstantHelper::STATUS;
+    $customers = Customer::withDefaultGroupCompanyOrg()->get();
+    $multiPoints = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()->get();
 
-        return view('multi-point-pricing.index');
+    if ($request->ajax()) {
+        $data = ErpLogisticsMultiFixedPricing::with([
+            'sourceState', 'sourceCity',
+            'destinationState', 'destinationCity',
+            'customer', 'locations.city'
+        ])
+        ->withDefaultGroupCompanyOrg()
+        ->orderByDesc('id');
+
+        return DataTables::of($data)
+            ->addIndexColumn()
+            ->editColumn('source', fn($row) =>
+                optional($row->sourceCity)->name . ' (' . optional($row->sourceState)->name . ')'
+            )
+            ->editColumn('destination', fn($row) =>
+                optional($row->destinationCity)->name . ' (' . optional($row->destinationState)->name . ')'
+            )
+            ->editColumn('customer', fn($row) =>
+                optional($row->customer)->company_name ?? '-'
+            )
+            ->editColumn('locations', function ($row) {
+                $html = '';
+                foreach ($row->locations->take(2) as $location) {
+                    $html .= '<span class="badge rounded-pill badge-light-primary">'
+                        . optional($location->city)->name . ': ' . number_format($location->amount, 2) . '</span> ';
+                }
+                if ($row->locations->count() > 2) {
+                    $html .= '<span class="badge rounded-pill badge-light-primary">+'
+                        . ($row->locations->count() - 2) . '</span>';
+                }
+                return $html;
+            })
+            ->addColumn('action', function ($row) {
+                return ' <div class="dropdown">
+                            <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                                <i data-feather="more-vertical"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" href="' . route('logistics.multi-point-fixed.edit', $row->id) . '">
+                                    <i data-feather="edit-3" class="me-50"></i>
+                                    <span>Edit</span>
+                                </a>
+                            </div>
+                        </div>';
+            })
+            ->rawColumns(['locations', 'action'])
+            ->make(true);
     }
+
+    return view('multi-point-pricing.index', compact('customers', 'states', 'multiPoints'));
+  }
+
+  public function store(MultiPointPricingRequest $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+
+        $selectedIndexes = $request->input('row_checkbox', []);
+        $insertAll = empty($selectedIndexes);
+        $savedCount = 0;
+
+        foreach ($request->multi_point as $index => $point) {
+            if ($insertAll || in_array($index, $selectedIndexes)) {
+            if (empty($point['source_state_id'])) {
+                continue;
+            }
+
+                $data = [
+                    'organization_id'       => $organization->id,
+                    'group_id'              => $organization->group_id,
+                    'company_id'            => $user->company_id ?? null,
+                    'source_state_id'       => $point['source_state_id'],
+                    'source_city_id'        => $point['source_city_id'],
+                    'free_point'            => $point['free_point'],
+                    'amount'                => $point['amount'],
+                    'customer_id'           => $point['customer_id'] ?? null,
+                ];
+
+                try {
+                    if (!empty($point['id'])) {
+                        ErpLogisticsMultiPointPricing::where('id', $point['id'])->update($data);
+                    } else {
+                        ErpLogisticsMultiPointPricing::create($data);
+                    }
+
+                    $savedCount++;
+                } catch (\Exception $e) {
+                    \Log::error("Failed to save freight charge row {$index}: " . $e->getMessage());
+                }
+            }
+        }
+
+        if ($savedCount > 0) {
+            return response()->json([
+                'status' => true,
+                'message' => "Records saved successfully.",
+            ]);
+        } else {
+            return response()->json([
+                'status' => false,
+                'message' => 'No rows were saved. Please check your selections and input.',
+            ], 422);
+        }
+    }
+
+    public function deleteMultiple(Request $request)
+    {
+        $ids = $request->input('ids', []);
+
+        if (empty($ids)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'No records selected for deletion.'
+            ], 400);
+        }
+
+        try {
+            ErpLogisticsMultiPointPricing::whereIn('id', $ids)->delete();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Records deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Error deleting records: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

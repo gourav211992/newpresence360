@@ -399,7 +399,7 @@
                                     <select id="location_id" class="form-select select2">
                                     </select>
                                 </div>
-                                <div class="mb-1">
+                                <div class="col-md-4">
                                     <label class="form-label">Cost Group</label>
                                     <select id="cost_group_id" class="form-select select2" name="cost_group_id" required>
                                     </select>

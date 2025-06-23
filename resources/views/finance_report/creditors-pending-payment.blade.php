@@ -117,7 +117,7 @@
                                                 <label class="mb-1">&nbsp;</label>
                                                 <button class="btn mt-25 btn-dark btn-sm" id="findFilters" type="submit"><i
                                                         data-feather="search"></i> Find</button>
-                                                <button class="btn mt-25 btn-dark btn-sm" id="clearAll" type="button"><i
+                                                <button class="btn mt-25 btn-danger btn-sm" id="clearAll" type="button"><i
                                                         data-feather="refresh-cw"></i> Clear All</button>
                                             </div>
                                            
@@ -749,8 +749,8 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // Laravel CSRF
                 },
                 success: function(response) {
-                    $('.preloader').hide();
                     window.location.href = response.redirect;
+                    // $('.preloader').hide();
                 },
                 error: function(xhr) {
                     $('.preloader').hide();
@@ -879,6 +879,7 @@
 
        $(document).on('click', '#clearAll', function() {
             // Reset all filter inputs
+            $(".preloader").show();
             $('#fp-range').val('');
             $('#book_code').val('').trigger('change');
             $('#filter_ledger').val('').trigger('change');

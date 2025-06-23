@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\DefaultGroupCompanyOrg;
 
 class ErpLogisticsMultiPointPricing extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg;
 
-    protected $table = 'erp_logistics_multi_point_pricing';
+    protected $table = 'erp_logistics_mp_pricing';
 
     protected $fillable = [
         'organization_id',
@@ -23,4 +24,19 @@ class ErpLogisticsMultiPointPricing extends Model
         'customer_id',
         'status',
     ];
+
+     public function sourceState()
+    {
+        return $this->belongsTo(State::class, 'source_state_id');
+    }
+
+    public function sourceCity()
+    {
+        return $this->belongsTo(City::class, 'source_city_id');
+    }
+
+     public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
 }

@@ -117,7 +117,7 @@
                                                 <label class="mb-1">&nbsp;</label>
                                                 <button class="btn mt-25 btn-dark btn-sm" id="findFilters" type="submit"><i
                                                         data-feather="search"></i> Find</button>
-                                                 <button class="btn mt-25 btn-dark btn-sm" id="clearAll" type="button"><i
+                                                 <button class="btn mt-25 btn-danger btn-sm" id="clearAll" type="button"><i
                                                         data-feather="refresh-cw"></i> Clear All</button>
                                             </div>
                                             </div>
