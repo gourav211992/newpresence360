@@ -1203,7 +1203,7 @@ class GstrHelper
         }
         //Check for only sales invoice
         if (!($documentHeader->document_type === ConstantHelper::SI_SERVICE_ALIAS
-        || ($documentHeader->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$documentHeader->invoice_required))) {
+        || ($documentHeader->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))) {
             return array(
                 'status' => true,
                 'message' => 'Not Required',

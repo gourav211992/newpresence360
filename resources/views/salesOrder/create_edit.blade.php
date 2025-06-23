@@ -145,7 +145,10 @@
                                                         <div class="col-md-5"> 
                                                             <input type="date" value = "{{isset($order) ? $order -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();" min="<?php echo date('Y-m-d'); ?>" max="<?php echo date('Y-m-d'); ?>" >
                                                         </div> 
-                                                     </div>  
+                                                     </div> 
+
+                                                     
+                                                     
 
                                                      <div class="row align-items-center mb-1">
                                                         <div class="col-md-3"> 
@@ -192,9 +195,10 @@
                                                                 <label class="form-label">Reference From </label>  
                                                             </div> 
 
-                                                            <div class="col-md-4 action-button"> 
+                                                            <div class="col-md-auto action-button"> 
                                                                 <button onclick = "openQuotation('sq');" disabled type = "button" id = "select_qt_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Quotation</button>
                                                                 <button onclick = "openQuotation('po');" disabled type = "button" id = "select_po_button" data-bs-toggle="modal" data-bs-target="#rescdulePo" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Inter-Company PO</button>
+                                                                <button onclick = "openQuotation('jo');" disabled type = "button" id = "select_jo_button" data-bs-toggle="modal" data-bs-target="#rescduleJo" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Inter-Company JO</button>
                                                             </div>
                                                         </div>
                                                         @endif
@@ -497,6 +501,10 @@
        
                                                                                    <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> quotation ?-> document_number}}" />
                                                                                    
+                                                                                   @endif
+
+                                                                                   @if (isset($orderItem -> order_quotation_id))
+                                                                                   <input type = "hidden" id = "po_item_ids_{{$orderItemIndex}}" value = "{{$orderItem -> po_item_id}}" name = "po_item_ids[]"/>
                                                                                    @endif
                                                                                    
                                                                                    <input type="text" id = "items_dropdown_{{$orderItemIndex}}" name="item_code[{{$orderItemIndex}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input {{$orderItem -> is_editable ? '' : 'restrict'}}" autocomplete="off" data-name="{{$orderItem -> item ?-> item_name}}" data-code="{{$orderItem -> item ?-> item_code}}" data-id="{{$orderItem -> item ?-> id}}" hsn_code = "{{$orderItem -> item ?-> hsn ?-> code}}" item-name = "{{$orderItem -> item ?-> item_name}}" specs = "{{$orderItem -> item ?-> specifications}}" attribute-array = "{{$orderItem -> item_attributes_array()}}"  value = "{{$orderItem -> item ?-> item_code}}" readonly>
@@ -948,6 +956,100 @@
 				<div class="modal-footer text-end">
 					<button type = "button" class="btn btn-outline-secondary btn-sm can_hide" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
 					<button type = "button" class="btn btn-primary btn-sm can_hide" onclick = "processQuotation('po');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+    <div class="modal fade text-start" id="rescduleJo" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+			<div class="modal-content">
+				<div class="modal-header">
+					<div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select JO</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					 <div class="row">
+
+                     <div class="col">
+                            <div class="mb-1">
+                            <label class="form-label">Customer Name</label>
+                                <input type="text" id="customer_code_input_jo" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_jo_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series</label>
+                                <input type="text" id="book_code_input_jo" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_jo_val"></input>
+                            </div>
+                        </div>
+                         
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Quotation No.</label>
+                                <input type="text" id="document_no_input_jo" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_jo_val"></input>
+                            </div>
+                        </div>
+
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name</label>
+                                <input type="text" id="item_name_input_jo" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_jo_val"></input>
+                            </div>
+                        </div>
+                         
+                         <div class="col  mb-1">
+                              <label class="form-label">&nbsp;</label><br/>
+                             <button onclick = "getQuotations('jo');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
+                         </div>
+
+						 <div class="col-md-12">
+							<div class="table-responsive" style="overflow-y: auto;max-height: 200px;">
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+									<thead>
+										 <tr>
+											<th>
+												<!-- <div class="form-check form-check-inline me-0">
+													<input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
+												</div>  -->
+											</th>  
+											<th>Series</th>
+											<th>Document No.</th>
+											<th>Document Date</th>
+                                            <th>Currency</th>
+                                            <th>Customer Name</th>
+											<th>Item</th>
+											<th>Attributes</th>
+											<th>UOM</th>
+											<th>Quantity</th> 
+											<th>Balance Qty</th> 
+											<th>Rate</th> 
+										  </tr>
+										</thead>
+										<tbody id = "qts_data_table_jo">
+                                            
+									   </tbody>
+
+
+								</table>
+							</div>
+						</div>
+
+
+					 </div>
+				</div>
+				<div class="modal-footer text-end">
+					<button type = "button" class="btn btn-outline-secondary btn-sm can_hide" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+					<button type = "button" class="btn btn-primary btn-sm can_hide" onclick = "processQuotation('jo');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
 				</div>
 			</div>
 		</div>
@@ -3697,6 +3799,10 @@
         if (selectPoButton && itemsPresent) {
             selectPoButton.disabled = true;
         } 
+        const selectJoButton = document.getElementById('select_jo_button');
+        if (selectJoButton && itemsPresent) {
+            selectJoButton.disabled = true;
+        } 
         const custCodeInput = document.getElementById('customer_code_input');
         if (custCodeInput.value && itemsPresent) {
             custCodeInput.disabled = true;
@@ -3729,7 +3835,11 @@
         const selectPoButton = document.getElementById('select_po_button');
         if (selectPoButton) {
             selectPoButton.disabled = false;
-        } 
+        }
+        const selectJoButton = document.getElementById('select_jo_button');
+        if (selectJoButton) {
+            selectJoButton.disabled = false;
+        }
         document.getElementById('customer_code_input').disabled = false;
     }
 
@@ -4066,6 +4176,10 @@
             const selectPoButton = document.getElementById('select_po_button');
             if (selectPoButton) {
                 selectPoButton.disabled = false;
+            }
+            const selectJoButton = document.getElementById('select_jo_button');
+            if (selectJoButton) {
+                selectJoButton.disabled = false;
             };
             if (!document.getElementById('customer_code_input').value) {
                 document.getElementById('customer_code_input').disabled = false;
@@ -4078,6 +4192,10 @@
             const selectPoButton = document.getElementById('select_po_button');
             if (selectPoButton) {
                 selectPoButton.disabled = true;
+            };
+            const selectJoButton = document.getElementById('select_jo_button');
+            if (selectJoButton) {
+                selectJoButton.disabled = true;
             };
             document.getElementById('customer_code_input').disabled = true;
 
@@ -4178,8 +4296,8 @@
         const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
 
         // const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0);
-        const shipToCountryId = $("#current_shipping_country_id").val();
-        const shipToStateId = $("#current_shipping_state_id").val();
+        const billToCountryId = $("#current_billing_country_id").val();
+        const billToStateId = $("#current_billing_state_id").val();
         let itemPrice = 0;
         if (itemQty > 0) {
             itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
@@ -4192,8 +4310,8 @@
                             item_id : itemId,
                             price : itemPrice,
                             transaction_type : 'sale',
-                            party_country_id : shipToCountryId,
-                            party_state_id : shipToStateId,
+                            party_country_id : billToCountryId,
+                            party_state_id : billToStateId,
                             customer_id : $("#customer_id_input").val(),
                             header_book_id : $("#series_id_input").val() ? $("#series_id_input").val() : "{{isset($order) ? $order -> book_id : ''}}",
                             store_id : $("#store_id_input").val(),
@@ -4660,6 +4778,18 @@
                         $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
                         $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                        //ID
+                        $("#current_shipping_address_id").val(currentOrder.shipping_address_details?.id);
+                        $("#current_billing_address_id").val(currentOrder.billing_address_details?.id);
+                        //Main IDs
+                        var newOptionBilling = new Option(currentOrder.billing_address_details?.address, currentOrder.billing_address_details?.id, false, false);
+                        $('#billing_address_dropdown').append(newOptionBilling);
+                        $("#billing_address_dropdown").val(currentOrder.billing_address_details?.id);
+
+                        var newOptionShipping = new Option(currentOrder.shipping_address_details?.address, currentOrder.shipping_address_details?.id, false, false);
+                        $('#shipping_address_dropdown').append(newOptionShipping);
+                        $("#shipping_address_dropdown").val(currentOrder.shipping_address_details?.id);
+
                         const locationElement = document.getElementById('store_id_input');
                             if (locationElement) {
                                 const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
@@ -4681,6 +4811,13 @@
                                 var itemDiscountValuePrev = ((itemValue * percentage)/100).toFixed(2);
                                 discountAmtPrev += parseFloat(itemDiscountValuePrev ? itemDiscountValuePrev : 0);
                             });
+
+                            let pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "quotation_item_ids[]"/>`;
+                            if (docType == "po") {
+                                pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "po_item_ids[]"/>`;
+                            } else if (docType == 'jo') {
+                                pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "jo_item_ids[]"/>`;
+                            }
                             mainTableItem.innerHTML += `
                             <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');" data-index = "${currentOrderIndexVal}">
                                 <td class="customernewsection-form">
@@ -4690,9 +4827,7 @@
                                    </div> 
                                                                         </td>
                                 <td class="poprod-decpt"> 
-
-                                    <input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "quotation_item_ids[]"/>
-
+                                    ${pullUiTag}
                                     <input type = "hidden" id = "qt_book_id_${currentOrderIndexVal}" value = "${currentOrder?.book_id}" />
                                     <input type = "hidden" id = "qt_book_code_${currentOrderIndexVal}" value = "${currentOrder?.book_code}" />
 
@@ -4813,7 +4948,7 @@
                         });
                         setAllTotalFields();
                         disableHeader();
-                        changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
+                        // changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent');
 
                     }
                     let itemIdsDoc = document.getElementsByClassName('item_header_rows');
@@ -4849,6 +4984,12 @@
             book_id = $("#book_id_po_val").val();
             document_id = $("#document_id_po_val").val();
             item_id = $("#item_id_po_val").val();
+        } else if (type == 'jo') {
+            targetTable = document.getElementById('qts_data_table_jo');
+            customer_id = $("#customer_id_jo_val").val();
+            book_id = $("#book_id_jo_val").val();
+            document_id = $("#document_id_jo_val").val();
+            item_id = $("#item_id_jo_val").val();
         }
         $.ajax({
             url: "{{route('sale.order.quotation.get.all')}}",
@@ -4960,12 +5101,19 @@
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document_qt", "document_number", "");
             initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "sale_module_items", "item_code", "item_name");
             getQuotations("sq");
-        } else {
+        } else if (type == 'po') {
             pullType = "po";
             initializeAutocompleteQt("customer_code_input_po", "customer_id_po_val", "customer", "customer_code", "company_name");
             initializeAutocompleteQt("book_code_input_po", "book_id_po_val", "book_sq", "book_code", "");
             initializeAutocompleteQt("document_no_input_po", "document_id_po_val", "sale_order_document_po", "document_number", "");
             initializeAutocompleteQt("item_name_input_po", "item_id_po_val", "sale_module_items", "item_code", "item_name");
+            getQuotations("po");
+        } else {
+            pullType = "jo";
+            initializeAutocompleteQt("customer_code_input_jo", "customer_id_jo_val", "customer", "customer_code", "company_name");
+            initializeAutocompleteQt("book_code_input_jo", "book_id_jo_val", "book_sq", "book_code", "");
+            initializeAutocompleteQt("document_no_input_jo", "document_id_jo_val", "sale_order_document_jo", "document_number", "");
+            initializeAutocompleteQt("item_name_input_jo", "item_id_jo_val", "sale_module_items", "item_code", "item_name");
             getQuotations("po");
         }
         

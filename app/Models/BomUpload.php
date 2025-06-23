@@ -52,6 +52,9 @@ class BomUpload extends Model
         'attribute_name_5',
         'attribute_value_5',
         'consumption_qty',
+        'consumption_per_unit',
+        'pieces',
+        'std_qty',
         'cost_per_unit',
         'station_id',
         'station_name',
@@ -62,13 +65,17 @@ class BomUpload extends Model
         'vendor_id',
         'vendor_code',
         'vendor_name',
+        'customer_id',
+        'customer_code',
+        'customer_name',
         'migrate_status',
         'bom_id',
         'reason',
         'deleted_at',
         'created_by',
         'updated_by',
-        'deleted_by'
+        'deleted_by',
+        'remark'
     ];
     
     public static function boot()
@@ -92,5 +99,13 @@ class BomUpload extends Model
                 $model->deleted_by = $user->auth_user_id;
             }
         });
+    }
+
+    public function getCalculatedConsumptionAttribute()
+    {
+        $qtyPerUnit = floatval($this->consumption_per_unit);
+        $totalQty = floatval($this->pieces);
+        $stdQty = floatval($this->std_qty);
+        return $totalQty > 0 ? ($stdQty / $totalQty) * $qtyPerUnit : 0;
     }
 }

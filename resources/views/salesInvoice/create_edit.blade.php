@@ -51,14 +51,14 @@
                                         if($order->document_type == "si"){
                                             $options=['Tax Invoice'];
                                         }
-                                        elseif($order->document_type == "dnote" && $order->invoice_required == 0)
+                                        elseif($order->document_type == "si-dnote")
                                         {   
                                             $options = [
                                                 'Tax Invoice',
                                                 'Delivery Note',
                                             ];
-                                        }
-                                        else{
+                                        } 
+                                        else if ($order->document_type == "dnote"){
                                             $options = ['Delivery Note'];
                                         }
                                         

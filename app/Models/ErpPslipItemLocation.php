@@ -22,7 +22,10 @@ class ErpPslipItemLocation extends Model
         'shelf_id',
         'bin_id',
         'quantity',
-        'inventory_uom_qty'
+        'inventory_uom_qty',
+        'accepted_qty',
+        'subprime_qty',
+        'rejected_qty'
     ];
 
     protected $hidden = ['deleted_at'];

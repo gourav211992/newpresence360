@@ -30,9 +30,8 @@ class CustomersExport implements FromCollection, WithHeadings, WithMapping, With
     {
         return [
             'Customer Name',          
-            'Customer Code',          
-            'Category',               
-            'Sub Category',           
+            'Customer Code',                       
+            'Group',           
             'Currency',               
             'Payment Term',          
             'Customer Type',        
@@ -74,7 +73,6 @@ class CustomersExport implements FromCollection, WithHeadings, WithMapping, With
         $generalData = [
             $customer->company_name ?? null,
             $customer->customer_code ?? null,
-            $customer->category->name ?? null,
             $customer->subcategory->name ?? null,
             $customer->currency->short_name ?? null,
             $customer->paymentTerms->name ?? null,

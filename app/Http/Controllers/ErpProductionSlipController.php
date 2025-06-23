@@ -160,6 +160,7 @@ class ErpProductionSlipController extends Controller
             'redirect_url' => $redirectUrl,
             'shifts' => $shifts
         ];
+
         return view('productionSlip.create_edit', $data);
     }
 
@@ -299,15 +300,21 @@ class ErpProductionSlipController extends Controller
             }
             $productionSlip = null;
             $store = ErpStore::find($request -> store_id);
-            if ($request -> pslip_id) {
-                $productionSlip = ErpProductionSlip::find($request -> pslip_id);
+            $productionSlip = ErpProductionSlip::find($request -> pslip_id);
+            if ($productionSlip) {
                 $productionSlip -> document_date = $request -> document_date;
                 // $productionSlip -> reference_number = $request -> reference_no;
                 //Store and department keys
                 $productionSlip -> store_id = $request -> store_id ?? null;
+                $productionSlip -> fg_sub_store_id = $request -> fg_sub_store_id ?? null;
+                $productionSlip -> rg_sub_store_id = $request -> rg_sub_store_id ?? null;
                 // $productionSlip -> store_code = $store ?-> store_code ?? null;
                 $productionSlip -> remarks = $request -> final_remarks;
                 $actionType = $request -> action_type ?? '';
+                $productionSlip->mo_id = $request->mo_id ? $request->mo_id[0] : $request->mo_id;
+                $productionSlip->is_last_station = $request->is_last_station ?? 0;
+                $productionSlip->station_id = $request->mo_station_id;
+                $productionSlip->save();
                 //Amend backup
                 if(($productionSlip -> document_status == ConstantHelper::APPROVED || $productionSlip -> document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment')
                 {
@@ -326,25 +333,101 @@ class ErpProductionSlipController extends Controller
                 foreach ($keys as $key) {
                     $deletedData[$key] = json_decode($request->input($key, '[]'), true);
                 }
-
                 if (count($deletedData['deletedSiItemIds'])) {
                     $psItems = ErpPslipItem::whereIn('id',$deletedData['deletedSiItemIds'])->get();
                     # all ted remove item level
                     foreach($psItems as $psItem) {
-                        if (isset($psItem -> so_item_id)) {
-                            //Back update in SO ITEM
+                        
+                        $pslipBomMappings = PslipBomConsumption::where('pslip_id', $productionSlip?->id)
+                                ->where('pslip_item_id', $psItem?->id)
+                                ->get();
+                        $pslipBomIds = [];
+                        foreach($pslipBomMappings as $pslipBomMapping) {
+                            $pslipBomIds[] = $pslipBomMapping->id;
+                            $moProductAttributes = $pslipBomMapping->attributes ?? [];
+                            $moItem = MoItem::where('mo_id',$psItem?->mo_product?->mo_id)
+                                            ->when($psItem->so_id, function ($query) use ($psItem) {
+                                                $query->where('so_id', $psItem->so_id);
+                                            })
+                                            ->where('item_id', $pslipBomMapping?->item_id)
+                                            ->when(count($moProductAttributes), function ($query) use ($moProductAttributes) {
+                                                $query->whereHas('attributes', function ($piAttributeQuery) use ($moProductAttributes) {
+                                                    $piAttributeQuery->where(function ($subQuery) use ($moProductAttributes) {
+                                                        foreach ($moProductAttributes as $poAttribute) {
+                                                            $subQuery->orWhere(function ($q) use ($poAttribute) {
+                                                                $q->where('item_attribute_id', $poAttribute['item_attribute_id'] ?? $poAttribute['attribute_id'])
+                                                                    ->where('attribute_value', $poAttribute['attribute_value']);
+                                                            });
+                                                        }
+                                                    });
+                                                }, '=', count($moProductAttributes));
+                                            })
+                                            ->first();
+                            if($moItem) {
+                                $moItem->consumed_qty = $moItem->consumed_qty - $pslipBomMapping->consumption_qty;
+                                $moItem->save();
+                            }
+
+                        }
+                        //Back update in MO PRODUCT
+                        if($psItem?->mo_product) {
+                            $psItem->mo_product->pslip_qty = $psItem->mo_product->pslip_qty - $psItem->qty;
+                            $psItem->mo_product->save();
+                        }
+                        //Back update in MO
+                        $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$psItem->mo_product?->pwoMapping?->id)
+                                            ->where('mo_id',$psItem->mo_product->mo_id)
+                                            ->where('station_id',$psItem->mo_product?->mo?->station_id)
+                                            ->first();
+                        if($pwoStation) {
+                            $pwoStation->pslip_qty = $pwoStation->pslip_qty - $psItem->qty;
+                            $pwoStation->save();
+                        }
+
+                        if($psItem->mo_product?->mo?->is_last_station && in_array($productionSlip->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $actionType == 'amendment') {
                             $soItem = ErpSoItem::find($psItem -> so_item_id);
                             if (isset($soItem)) {
                                 $soItem -> pslip_qty = $soItem -> pslip_qty - $psItem -> qty;
                                 $soItem -> save();
                             }
                             //Update in mapping table 
-                            $pwoSoMappingItem = PwoSoMapping::where('so_item_id', $psItem -> so_item_id) -> first();
+                            $pwoSoMappingItem = PwoSoMapping::where('id', $psItem->mo_product->pwo_mapping_id) -> first();
                             if (isset($pwoSoMappingItem)) {
                                 $pwoSoMappingItem -> pslip_qty = $pwoSoMappingItem -> pslip_qty - $psItem -> qty;
                                 $pwoSoMappingItem -> save();
                             }
                         }
+                        
+                        # stock ledger remove data for issue
+                        $stockLedgersA = StockLedger::where('document_header_id', $productionSlip -> id)
+                            ->whereIn('document_detail_id', $pslipBomIds)
+                            ->where('book_type', ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS)
+                            ->get();
+                        foreach($stockLedgersA as $stockLedger) {
+                            $stockLedger->attributes()->delete();
+                            $stockLedger->reservations()->delete();
+                            $stockLedger->details()->delete();
+                            $stockLedger->delete();
+                        }
+                        # stock ledger remove data for receipt
+                        $stockLedgersB = StockLedger::where('document_header_id', $productionSlip -> id)
+                            ->where('document_detail_id', $psItem -> id)
+                            ->where('book_type', ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS)
+                            ->get();
+                        foreach($stockLedgersB as $stockLedger) {
+                            $stockLedger->attributes()->delete();
+                            $stockLedger->reservations()->delete();
+                            $stockLedger->details()->delete();
+                            $stockLedger->delete();
+                        }
+                        
+                        ErpPslipItemLocation::where('pslip_item_id', $psItem -> id)
+                            ->delete();
+                        PslipBomConsumption::where("pslip_id", $productionSlip -> id)
+                            ->where("pslip_item_id", $psItem -> id)
+                            ->delete();
+                        ErpPslipItemDetail::where('pslip_item_id', $psItem -> id)
+                                ->delete();
                         # all attr remove
                         $psItem->attributes()->delete();
                         $psItem->delete();
@@ -373,6 +456,8 @@ class ErpProductionSlipController extends Controller
                     'store_id' => $request -> store_id ?? null,
                     'sub_store_id' => $request -> sub_store_id ?? null,
                     'shift_id' => $request -> shift_id ?? null,
+                    'fg_sub_store_id' => $request -> fg_sub_store_id ?? null,
+                    'rg_sub_store_id' => $request -> rg_sub_store_id ?? null,
                     // 'store_code' => $store ?-> store_code ?? null,
                     'document_status' => ConstantHelper::DRAFT,
                     'approval_level' => 1,
@@ -388,7 +473,6 @@ class ErpProductionSlipController extends Controller
                     'group_currency_exg_rate' => $currencyExchangeData['data']['group_currency_exg_rate'],
                 ]);
             }
-
                 $productionSlip -> save();
                 //Seperate array to store each item calculation
                 $itemsData = array();
@@ -423,10 +507,17 @@ class ErpProductionSlipController extends Controller
                                 'inventory_uom_code' => $item -> uom ?-> name,
                                 'inventory_uom_qty' => $inventoryUomQty,
                                 'remarks' => isset($request -> item_remarks[$itemKey]) ? $request -> item_remarks[$itemKey] : null,
+                                'accepted_qty' => isset($request -> item_accepted_qty[$itemKey]) ? $request -> item_accepted_qty[$itemKey] : null,
+                                'subprime_qty' => isset($request -> item_sub_prime_qty[$itemKey]) ? $request -> item_sub_prime_qty[$itemKey] : null,
+                                'rejected_qty' => isset($request -> item_rejected_qty[$itemKey]) ? $request -> item_rejected_qty[$itemKey] : null,
                             ]);
                         }
                     }
+
+                    $oldItem = [];
+
                     foreach ($itemsData as $itemDataKey => $itemDataValue) {
+
                         $itemRowData = [
                             'pslip_id' => $productionSlip -> id,
                             'store_id' => $productionSlip ?->store_id,
@@ -447,13 +538,23 @@ class ErpProductionSlipController extends Controller
                             // 'inventory_uom_code' => $itemDataValue['inventory_uom_code'],
                             'inventory_uom_qty' => $itemDataValue['inventory_uom_qty'],
                             'remarks' => $itemDataValue['remarks'],
+                            'accepted_qty' => $itemDataValue['accepted_qty'] ?? 0,
+                            'subprime_qty' => $itemDataValue['subprime_qty'] ?? 0,
+                            'rejected_qty' => $itemDataValue['rejected_qty'] ?? 0,
                         ];
-                        if (isset($request -> ps_item_id[$itemDataKey])) {
+                        if (isset($request -> pslip_item_id[$itemDataKey])) {
+                            $pslipItemExit = ErpPslipItem::where('id', $request -> pslip_item_id[$itemDataKey])
+                                ->where('pslip_id', $productionSlip -> id)
+                                ->first();
                             $psItem = ErpPslipItem::updateOrCreate(['id' => $request -> pslip_item_id[$itemDataKey]], $itemRowData);
+                            $oldItem[$psItem->id] = [
+                                'qty'    => $pslipItemExit?->qty ?? 0,
+                                'is_new' => $psItem->wasRecentlyCreated,
+                            ];
                         } else {
                             $psItem = ErpPslipItem::create($itemRowData);
+                            $oldItem[$psItem->id] = ['qty' => 0, 'is_new' => true];
                         }
-
                         // $stationId = $psItem->station_id ?? null;
                         // $bomDetails = PwoBomMapping::where('pwo_mapping_id', $psItem?->mo_product?->pwo_mapping_id)
                         // ->where(function($query) use($stationId) {
@@ -465,7 +566,13 @@ class ErpProductionSlipController extends Controller
                         $bomDetails = MoBomMapping::where('mo_product_id', $psItem->mo_product_id)->get();
 
                         foreach ($bomDetails as $bomDetail) {   
-                            $pslipBomMapping = new PslipBomConsumption;
+                            $pslipBomMapping = PslipBomConsumption::where('pslip_id', $productionSlip?->id)
+                                ->where('pslip_item_id', $psItem?->id)
+                                ->where('bom_detail_id', $bomDetail->bom_detail_id)
+                                ->first() ?? new PslipBomConsumption;
+                            $previousConsumption = $pslipBomMapping->exists ? $pslipBomMapping->consumption_qty : 0;
+                            $newConsumption = floatval($bomDetail->bom_qty) * floatval($itemDataValue['qty']);
+
                             $pslipBomMapping->pslip_id = $productionSlip?->id;
                             $pslipBomMapping->pslip_item_id = $psItem?->id;
                             $pslipBomMapping->so_id = $psItem->so_id ?? null;
@@ -484,10 +591,13 @@ class ErpProductionSlipController extends Controller
                             $pslipBomMapping->sub_section_id = $bomDetail->sub_section_id;
                             $pslipBomMapping->save();
 
+                            $delta = $newConsumption - $previousConsumption;
                             // Back Update Mo Item Consumption
                             $moProductAttributes = $bomDetail->attributes ?? [];
                             $moItem = MoItem::where('mo_id',$itemDataValue['mo_id'])
-                                            ->where('so_id',$psItem->so_id)
+                                            ->when($psItem->so_id, function ($query) use ($psItem) {
+                                                $query->where('so_id', $psItem->so_id);
+                                            })
                                             ->where('item_id', $bomDetail->item_id)
                                             ->when(count($moProductAttributes), function ($query) use ($moProductAttributes) {
                                                 $query->whereHas('attributes', function ($piAttributeQuery) use ($moProductAttributes) {
@@ -503,7 +613,7 @@ class ErpProductionSlipController extends Controller
                                             })
                                             ->first();
                             if($moItem) {
-                                $moItem->consumed_qty += $pslipBomMapping->consumption_qty;
+                                $moItem->consumed_qty += $delta;
                                 $moItem->save();
                             }
                         }  
@@ -564,7 +674,7 @@ class ErpProductionSlipController extends Controller
                         //Bundle data
                         // if ($item -> storage_type == ConstantHelper::BUNDLE) {
                             $bundlesArray = json_decode($request -> item_bundles[$itemDataKey], true);
-                            if (json_last_error() === JSON_ERROR_NONE && is_array($bundlesArray)) {
+                            if (!empty($bundlesArray) && is_array($bundlesArray) && json_last_error() === JSON_ERROR_NONE) {
                                 $itemQtyBundleWise = 0;
                                 ErpPslipItemDetail::where('pslip_item_id', $psItem -> id) -> delete();
                                 foreach ($bundlesArray as $bundleElement) {
@@ -599,7 +709,7 @@ class ErpProductionSlipController extends Controller
                                         'error' => ''
                                     ], 422);
                                 }
-                            } else {
+                            } elseif (!empty($bundlesArray)) {
                                 DB::rollBack();
                                 return response() -> json([
                                     'message' => 'Item No. ' . ($itemDataKey + 1) . ' has invalid bundle data',
@@ -608,17 +718,24 @@ class ErpProductionSlipController extends Controller
                             }
                         // }  
                     }
-                } else {
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Please select Items',
-                        'error' => "",
-                    ], 422);
                 }
-                ErpPslipItemAttribute::where([
-                    'pslip_id' => $productionSlip -> id,
-                    'pslip_item_id' => $psItem -> id,
-                ]) -> whereNotIn('id', $itemAttributeIds) -> delete();
+
+                //Remove deleted items from production slip
+                if(!$productionSlip->fresh()->items->count()) {
+                    $productionSlip->mo_id = null;
+                    $productionSlip->is_last_station = 0;
+                    $productionSlip->station_id = null;
+                    $productionSlip->fg_sub_store_id = null;
+                    $productionSlip->rg_sub_store_id = null;
+                    $productionSlip->save();
+                }
+
+                // if(isset($psItem) && $psItem) {
+                //     ErpPslipItemAttribute::where([
+                //         'pslip_id' => $productionSlip -> id,
+                //         // 'pslip_item_id' => $psItem ?-> id,
+                //     ]) -> whereNotIn('id', $itemAttributeIds) -> delete();
+                // }
                 //Header TED (Discount)
                
                 //Approval check
@@ -701,15 +818,17 @@ class ErpProductionSlipController extends Controller
                 }
                 
                 # Issue Raws Materials
-                $maintainStockLedger = self::maintainStockLedger($productionSlip);
-                if(!$maintainStockLedger) {
-                    DB::rollBack();
-                    return response() -> json([
-                        'status' => 'error',
-                        'message' => "Error while updating stock ledger for issue.",
-                    ]);
+                if($productionSlip->fresh()->items->count()) {
+                    $maintainStockLedger = self::maintainStockLedger($productionSlip);
+                    if($maintainStockLedger != 'Success') {
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => "Error while updating stock ledger for issue. $maintainStockLedger",
+                            'error' => ''
+                        ], 422);
+                    }
                 }
-
+                
                 # Update rate in  Pslip Item & insert in Pslip Item Location
                 $moProdItems = ErpPslipItem::where('pslip_id', $productionSlip->id)->get();
                 $detailIds = [];
@@ -721,7 +840,9 @@ class ErpProductionSlipController extends Controller
                     $detailIds[] = $moProdItem->id;
                     $moProdItem->rate = $prodItemRate;
                     $moProdItem->save();
-                    $moProdItemLocation = new ErpPslipItemLocation;
+                    $moProdItemLocation = ErpPslipItemLocation::where('pslip_id', $productionSlip->id)
+                        ->where('pslip_item_id', $moProdItem->id)
+                        ->first() ?? new ErpPslipItemLocation;
                     $moProdItemLocation->pslip_id = $productionSlip->id;
                     $moProdItemLocation->pslip_item_id = $moProdItem->id;
                     $moProdItemLocation->item_id = $moProdItem->item_id;
@@ -730,34 +851,46 @@ class ErpProductionSlipController extends Controller
                     $moProdItemLocation->station_id = $moProdItem?->mo?->station_id;
                     $moProdItemLocation->quantity = $moProdItem->qty;
                     $moProdItemLocation->inventory_uom_qty = $moProdItem->qty;
+
+                    $moProdItemLocation->accepted_qty = $moProdItem->accepted_qty ?? 0;
+                    $moProdItemLocation->subprime_qty = $moProdItem->subprime_qty ?? 0;
+                    $moProdItemLocation->rejected_qty = $moProdItem->rejected_qty ?? 0;
+
                     $moProdItemLocation->save();
                 }
-                
-                $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
-                if($moProdItemReceipt['status'] != 'success') {
-                    DB::rollBack();
-                    return response() -> json([
-                        'status' => 'error',
-                        'message' => "Error while updating stock ledger for receipt.",
-                    ]);
-                }               
+                if($productionSlip->fresh()->items->count()){
+                    $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
+                    if($moProdItemReceipt['status'] != 'success') {
+                        DB::rollBack();
+                        return response() -> json([
+                            'status' => 'error',
+                            'message' => "Error while updating stock ledger for receipt.",
+                        ]);
+                    }               
+                }
 
                 // Back Update Mo Product Qty
                 foreach($productionSlip->items as $pslipItem) {
+
                     $moProduct = $pslipItem?->mo_product ?? null;
                     if($moProduct) {
-                        $moProduct->pslip_qty += floatval($pslipItem->qty);
+
+                        $previousQty = floatval($oldItem[$pslipItem->id]['qty'] ?? 0);
+                        $newQty = floatval($pslipItem->qty);
+                        $deltaQty = $newQty - $previousQty;
+                        // $moProduct->pslip_qty += floatval($pslipItem->qty);
+                        $moProduct->pslip_qty += $deltaQty;
                         $moProduct->save();
                         $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$moProduct?->pwoMapping?->id)
                                             ->where('mo_id',$moProduct->mo_id)
                                             ->where('station_id',$moProduct?->mo?->station_id)
                                             ->first();
                         if($pwoStation) {
-                            $pwoStation->pslip_qty += floatval($pslipItem->qty);
+                            $pwoStation->pslip_qty += $deltaQty;
                             $pwoStation->save();
                         }
                         if($moProduct?->mo?->is_last_station && in_array($productionSlip->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)) {
-                            $moProduct->pwoMapping->pslip_qty += floatval($pslipItem->qty);
+                            $moProduct->pwoMapping->pslip_qty += $deltaQty;
                             $moProduct->pwoMapping->save();
                             if($moProduct?->soItem) {
                                 #to be used after reservation is handled
@@ -783,7 +916,7 @@ class ErpProductionSlipController extends Controller
                                 //     $stockReservation->stockLedger->reserved_qty += $stockReservation->quantity;
                                 //     $stockReservation->stockLedger->save();
                                 // }
-                                $moProduct->soItem->pslip_qty += floatval($pslipItem->qty);
+                                $moProduct->soItem->pslip_qty += $deltaQty;
                                 $moProduct->soItem->save();
                             }
                         }
@@ -791,6 +924,7 @@ class ErpProductionSlipController extends Controller
                 }
 
                 DB::commit();
+
                 $module = "Production Slip";
                 return response() -> json([
                     'message' => $module .  " created successfully",
@@ -908,7 +1042,7 @@ class ErpProductionSlipController extends Controller
     public function processPulledItems(Request $request)
     {
         try {
-            $docIds = json_decode($request->docIds, true) ?? []; 
+            $docIds = json_decode($request?->docIds, true) ?? []; 
             $order = MoProduct::whereIn('id', $docIds)
                     ->with('attributes')
                     ->with('uom')
@@ -929,7 +1063,7 @@ class ErpProductionSlipController extends Controller
             $stationWise = $request->station_wise_consumption ?? 'no';
             $consumptions = MoBomMapping::whereIn('mo_product_id',$docIds)->orderBy('mo_product_id')->get();
             $consHtml = view('productionSlip.partials.process-consumtion', ['consumptions' => $consumptions])->render();
-            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise])->render();
+            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo])->render();
             return response() -> json([
                 'message' => 'Data found',
                 'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml],
@@ -944,10 +1078,18 @@ class ErpProductionSlipController extends Controller
         }
     }
 
+    //Function to get sub store for finished goods
     public function getSubStore(Request $request)
     {
         $storeId = $request->store_id;
-        $results = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $sub_store = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::SHOP_FLOOR]);
+        $fg_sub_store = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::STOCKK]);
+        $rg_sub_store = InventoryHelper::getAccesibleSubLocations($storeId ?? 0,null, [ConstantHelper::STOCKK]);
+        $results = [
+            'sub_store' => $sub_store,
+            'fg_sub_store' => $fg_sub_store,
+            'rg_sub_store' => $rg_sub_store
+        ];
         return response()->json(['data' => $results, 'status' => 200, 'message' => "fetched!"]);
     }
 
@@ -955,8 +1097,11 @@ class ErpProductionSlipController extends Controller
     {
         $pslipStatus = $pslip->document_status;
         $user = Helper::getAuthenticatedUser();
-        $detailIds = $pslip->consumptions->pluck('id')->toArray();
+        $detailIds = $pslip->fresh()->consumptions->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($pslip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $pslipStatus, 'issue');
+        if(isset($issueRecords['message']) && $issueRecords['message'] != 'Success') {
+            return $issueRecords['message'];
+        }
         if(!empty($issueRecords['data'])){
             foreach($issueRecords['data'] as $key => $val){
                 $pslipConsumption = PslipBomConsumption::where('id',@$val->issuedBy->document_detail_id)->first();
@@ -986,14 +1131,13 @@ class ErpProductionSlipController extends Controller
                                 ->get();
 
             foreach($stockLedgers as $stockLedger) {
+                $a = PslipBomConsumption::where('id',$stockLedger?->document_detail_id)->first();
                 $psConsumption = PslipBomConsumption::find($stockLedger->document_detail_id);
                 $psConsumption->rate = floatval($stockLedger->cost) / floatval($psConsumption->qty);
                 $psConsumption->save();
             }
-            return true;
-        } else {
-            return false;
-        }
+            return 'Success';
+        } 
     }
 
     public function getItemDetail(Request $request)

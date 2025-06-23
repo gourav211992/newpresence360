@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\BillOfMaterial;
+
+use App\Exports\BomExport;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
@@ -25,6 +27,7 @@ use App\Models\Organization;
 use App\Models\ItemAttribute;
 use App\Models\BomNormsCalculation;
 use Auth;
+use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
 use PDF;
@@ -36,12 +39,15 @@ use App\Models\BomInstruction;
 use App\Models\Overhead;
 use App\Models\ProductionRoute;
 use App\Models\Station;
+use Excel;
+use PHPUnit\TextUI\Configuration\Constant;
 
 class BomController extends Controller
 {
     # Bill of material list
     public function index(Request $request)
     {
+        // return Excel::download(new BomExport(150), 'bom_' . 150 . '.xlsx');
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -239,6 +245,7 @@ class BomController extends Controller
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first(); 
             $bom = new Bom;
+            $bom->bom_type =  ConstantHelper::FIXED;
             $bom->type = $request->type ?? ConstantHelper::BOM_SERVICE_ALIAS; 
             $bom->organization_id = $organization->id;
             $bom->group_id = $organization->group_id;
@@ -537,19 +544,18 @@ class BomController extends Controller
         $specifications = collect();
         $moduleType = $request->type ?? 'bom';
         $customerId = $request->customer_id ?? null;
-        if($request->type == 'bom') {
-            $bomExists = Bom::where('item_id', $item->id)
-                ->where(function ($query) use ($customerId) {
-                    if ($customerId) {
-                        $query->where('customer_id', $customerId);
-                    }
-                })
-                ->where('status', ConstantHelper::ACTIVE)
-                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
-                ->first();
-            if ($bomExists) {
-                return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => "Bom already exists for this item."]);
-            }
+        $bomExists = Bom::where('item_id', $item?->id)
+            ->where('type',$moduleType)
+            ->where(function ($query) use ($customerId,$moduleType) {
+                if ($moduleType == 'qbom') {
+                    $query->where('customer_id', $customerId);
+                }
+            })
+            ->where('status', ConstantHelper::ACTIVE)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
+            ->first();
+        if ($bomExists) {
+            return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => "Bom already exists for this item."]);
         }
         if($item) {
             $item->uom;
@@ -792,6 +798,7 @@ class BomController extends Controller
         $supercedeCostRequired = false;
         $componentWasteRequired = false;
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
+        $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
         $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
                                 ->where('status', ConstantHelper::ACTIVE)
                                 ->get();
@@ -827,7 +834,8 @@ class BomController extends Controller
             'customizables' => $customizables,
             'headerOverheads' => $headerOverheads,
             'canView' => $canView,
-            'dynamicFieldsUi' => $dynamicFieldsUI
+            'dynamicFieldsUi' => $dynamicFieldsUI,
+            'consumption_method' => $consumption_method
 
         ]); 
     }
@@ -882,6 +890,7 @@ class BomController extends Controller
             $bom = Bom::find($id);
             $currentStatus = $bom->document_status;
             $actionType = $request->action_type;
+            $bom->bom_type = ConstantHelper::FIXED;
             $bom->customizable = $request->customizable ?? 'no';
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
             {
@@ -1279,6 +1288,7 @@ class BomController extends Controller
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));
         $subSectionRequired = isset($parameters['sub_section_required']) && is_array($parameters['sub_section_required']) && in_array('yes', array_map('strtolower', $parameters['sub_section_required']));
+        $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
         $pdf = PDF::loadView(
             'pdf.bom',
             [
@@ -1293,7 +1303,8 @@ class BomController extends Controller
                 'docStatusClass' => $docStatusClass,
                 'sectionRequired' => $sectionRequired,
                 'subSectionRequired' => $subSectionRequired,
-                'canView' => $canView
+                'canView' => $canView,
+                'consumption_method' => $consumption_method
             ]
         );
 
@@ -1519,14 +1530,10 @@ class BomController extends Controller
     }
     public function bomReport(Request $request)
     {
-        $pathUrl = route('sale.order.index');
+        $pathUrl = route('bill.of.material.index');
         $orderType = ConstantHelper::BOM_SERVICE_ALIAS;
-        $soItems = Bom::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            $headerQuery -> where('document_type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
-            //Customer Filter
-            $headerQuery = $headerQuery -> when($request -> customer_id, function ($custQuery) use($request) {
-                $custQuery -> where('customer_id', $request -> customer_id);
-            });
+        $bomItems = BomDetail::whereHas('bom', function ($headerQuery) use($orderType, $pathUrl, $request) {
+            
             //Book Filter
             $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
                 $bookQuery -> where('book_id', $request -> book_id);
@@ -1575,7 +1582,7 @@ class BomController extends Controller
             });
             //Item Id Filter
             $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
-                $itemQuery -> withWhereHas('items', function ($itemSubQuery) use($request) {
+                $itemQuery -> withWhereHas('bomItems', function ($itemSubQuery) use($request) {
                     $itemSubQuery -> where('item_id', $request -> item_id)
                     //Compare Item Category
                     -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
@@ -1589,19 +1596,31 @@ class BomController extends Controller
                     });
                 });
             });
+            //Product Id Filter
+            $headerQuery = $headerQuery -> when($request -> product_id, function ($itemQuery) use($request) {
+                $itemQuery -> withWhereHas('item', function ($itemSubQuery) use($request) {
+                    $itemSubQuery -> where('item_id', $request -> product_id)
+                    //Compare Item Category
+                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
+                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
+                            $itemRelationQuery -> where('category_id', $request -> category_id)
+                            //Compare Item Sub Category
+                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
+                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+                            });
+                        });
+                    });
+                });
+            });
         }) -> orderByDesc('id');
-            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::SO_SERVICE_ALIAS);
-            $datatables = DataTables::of($soItems) ->addIndexColumn()
+            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::BOM_SERVICE_ALIAS);
+            $datatables = DataTables::of($bomItems) ->addIndexColumn()
             ->editColumn('status', function ($row) use($orderType) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->header->document_status ?? ConstantHelper::DRAFT];    
-                $displayStatus = ucfirst($row -> header -> document_status);   
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->bom->document_status ?? ConstantHelper::DRAFT];    
+                $displayStatus = ucfirst($row -> bom -> document_status);   
                 $editRoute = null;
-                if ($orderType == ConstantHelper::SO_SERVICE_ALIAS) {
-                    $editRoute = route('sale.order.edit', ['id' => $row->header->id]);
-                }
-                if ($orderType == ConstantHelper::SQ_SERVICE_ALIAS) {
-                    $editRoute = route('sale.quotation.edit', ['id' => $row->header->id]);
-                }     
+                $editRoute = route('bill.of.material.edit', ['id' => $row->bom->id]);
+                     
                 return "
                 <div style='text-align:right;'>
                     <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
@@ -1611,95 +1630,89 @@ class BomController extends Controller
                 </div>
             ";
             })
-            ->addColumn('book_name', function ($row) {
-                return $row -> header -> book_code;
+            ->addColumn('book_code', function ($row) {
+                return $row -> bom -> book_code;
             })
             ->addColumn('document_number', function ($row) {
-                return $row -> header -> document_number;
+                return $row ?-> bom -> document_number;
             })
             ->addColumn('document_date', function ($row) {
-                return $row -> header -> document_date;
+                return $row ?-> bom -> getFormattedDate('document_date');
             })
-            ->addColumn('store_name', function ($row) {
-                return $row -> header ?-> store ?-> store_name;
+            ->addColumn('product_code', function ($row) {
+                return $row ?-> bom ?-> item ?-> item_code;
             })
-            ->addColumn('store_name', function ($row) {
-                return $row -> header ?-> store ?-> store_name;
+            ->addColumn('product_name', function ($row) {
+                return $row ?-> bom ?-> item ?-> item_name;
             })
-            ->addColumn('customer_name', function ($row) {
-                return $row -> header ?-> customer ?-> company_name;
+            ->addColumn('product_attributes', function ($row) {
+                return $row?-> bom -> bomAttributes ?->map(function ($attribute) {
+                    return "<span class='badge rounded-pill badge-light-primary'>{$attribute-> headerAttribute -> name} : {$attribute-> headerAttributeValue -> value}</span>";
+                })->implode(' ') ?? '';
             })
-            ->addColumn('customer_currency', function ($row) {
-                return $row -> header -> currency_code;
+            ->addColumn('product_uom', function ($row) {
+                return $row ?-> bom ?-> uom ?-> name;
             })
-            ->addColumn('payment_terms_name', function ($row) {
-                return $row -> header -> payment_term_code;
+            ->addColumn('production_type', function ($row) {
+                return $row ?-> bom -> production_type;
             })
-            ->addColumn('hsn_code', function ($row) {
-                return $row -> hsn ?-> code;
+            ->addColumn('production_route', function ($row) {
+                return $row ?-> bom ?-> productionRoute -> name;
             })
-            ->addColumn('uom_name', function ($row) {
-                return $row -> uom ?-> name;
+            ->addColumn('product_cost', function ($row) {
+                return $row ?-> bom ?-> total_item_value;
             })
-            ->addColumn('so_qty', function ($row) {
-                return number_format($row -> order_qty, 2);
+            ->addColumn('overhead_amount', function ($row) {
+                return $row ?-> bom ?-> header_overhead_amount;
             })
-            ->editColumn('mi_qty', function ($row) {
-                return number_format($row -> mi_qty, 2);
+            ->addColumn('total_cost', function ($row) {
+                return ($row ?-> bom ?-> total_item_value + $row ?-> bom ?-> header_overhead_amount + $row ?-> bom ?-> header_waste_amount + $row ?-> bom ?-> item_waste_amount + $row ?-> bom ?-> item_overhead_amount) ?? 0.00;
             })
-            ->editColumn('pwo_qty', function ($row) {
-                return number_format($row -> pwo_qty, 2);
+            ->addColumn('customizable', function ($row) {
+                return $row ?-> bom ?-> customizable;
             })
-            ->editColumn('pslip_qty', function ($row) {
-                return number_format($row -> pslip_qty, 2);
+            ->addColumn('safety_buffer', function ($row) {
+                return $row ?-> bom ?-> safety_buffer_perc;
             })
-            ->editColumn('invoice_qty', function ($row) {
-                return number_format($row -> invoice_qty, 2);
+            ->addColumn('item_code', function ($row) {
+                return $row -> item ?-> item_code;
             })
-            ->editColumn('srn_qty', function ($row) {
-                return number_format($row -> srn_qty, 2);
+            ->addColumn('item_name', function ($row) {
+                return $row -> item ?-> item_name;
             })
-            ->editColumn('rate', function ($row) {
-                return number_format($row -> srn_qty, 2);
+            ->addColumn('item_uom', function ($row) {
+                return $row -> item -> uom ?-> name;
             })
-            ->addColumn('total_discount_amount', function ($row) {
-                return number_format($row -> header_discount_amount + $row -> item_discount_amount, 2);
+            ->addColumn('item_qty', function ($row) {
+                return $row -> qty;
             })
-            ->editColumn('tax_amount', function ($row) {
-                return number_format($row -> tax_amount, 2);
+            ->addColumn('item_cost', function ($row) {
+                return $row -> item_cost;
             })
-            ->addColumn('taxable_amount', function ($row) {
-                return number_format($row -> total_item_amount - $row -> tax_amount, 2);
+            ->addColumn('item_overhead', function ($row) {
+                return $row -> overhead_amount;
             })
-            ->editColumn('total_item_amount', function ($row) {
-                return number_format($row -> total_item_amount, 2);
+            ->addColumn('item_value', function ($row) {
+                return $row -> total_amount;
             })
-            ->editColumn('short_close_qty', function ($row) {
-                return number_format($row -> short_close_qty, 2);
+            ->addColumn('item_station', function ($row) {
+                return $row ?-> station -> name;
             })
-            ->editColumn('pending_qty', function ($row) {
-                return number_format($row -> pending_qty, 2);
+            ->addColumn('item_section', function ($row) {
+                return $row ?-> section ?-> name;
             })
-            ->addColumn('delivery_schedule', function ($row) {
-                $deliveryHtml = '';
-                if (count($row -> item_deliveries) > 0) {
-                    foreach ($row -> item_deliveries as $itemDelivery) {
-                        $deliveryDate = Carbon::parse($itemDelivery -> delivery_date) -> format('d-m-Y');
-                        $deliveryQty = number_format($itemDelivery -> qty, 2);
-                        $deliveryHtml .= "<span class='badge rounded-pill badge-light-primary'><strong>$deliveryDate</strong> : $deliveryQty</span>";
-                    }
-                } else {
-                    $parsedDeliveryDate = Carbon::parse($row -> delivery_date) -> format('d-m-Y');
-                    $deliveryHtml .= "$parsedDeliveryDate";
-                }
-                return $deliveryHtml;
+            ->addColumn('item_sub_section', function ($row) {
+                return $row ?-> subSection ?-> name;
+            })
+            ->addColumn('item_vendor', function ($row) {
+                return $row ?-> vendor ?-> company_name;
             })
             ->addColumn('item_attributes', function ($row) {
                 $attributesUi = '';
-                if (count($row -> item_attributes) > 0) {
-                    foreach ($row -> item_attributes as $soAttribute) {
-                        $attrName = $soAttribute -> attribute_name;
-                        $attrValue = $soAttribute -> attribute_value;
+                if (count($row -> attributes) > 0) {
+                    foreach ($row -> attributes as $soAttribute) {
+                        $attrName = $soAttribute -> headerAttribute -> name;
+                        $attrValue = $soAttribute -> headerAttributeValue -> value;
                         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
                     }
                 } else {
@@ -1710,7 +1723,7 @@ class BomController extends Controller
             foreach ($dynamicFields as $field) {
                 $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
                     $value = "";
-                    $actualDynamicFields = $row -> header ?-> dynamic_fields;
+                    $actualDynamicFields = $row ?-> bom ?-> dynamic_fields;
                     foreach ($actualDynamicFields as $actualDynamicField) {
                         if ($field -> name == $actualDynamicField -> name) {
                             $value = $actualDynamicField -> value;
@@ -1720,9 +1733,8 @@ class BomController extends Controller
                 });
             }
             $datatables = $datatables
-            ->rawColumns(['item_attributes','delivery_schedule','status'])
+            ->rawColumns(['item_attributes','product_attributes','delivery_schedule','status'])
             ->make(true);
             return $datatables;
     }
-
 }

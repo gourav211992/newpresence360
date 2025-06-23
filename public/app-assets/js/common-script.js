@@ -243,7 +243,6 @@ $(document).ready(function() {
             $('.cat_initials-id').val(''); 
         }
         $('.subcategory-autocomplete').val(''); 
-        $('.cat_initials-id').val(''); 
         $('.subcategory-id').val('');
         if (selectedItem.hsn_id) {
             $('.hsn-id').val(selectedItem.hsn_id); 

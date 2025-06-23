@@ -149,13 +149,11 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                     \Log::warning("Non-numeric TDS WEF date encountered: " . $tdsWefDate);
                 }
             }
-
             $uploadedVendor = UploadVendorMaster::create([
                 'company_name' => $row['vendor_name'] ?? null,
                 'vendor_initial'=>  $vendorInitials ?? null,
                 'vendor_code' => $row['vendor_code'] ?? null,
-                'category' => $row['category'] ?? null,
-                'subcategory' => $row['sub_category'] ?? null,
+                'subcategory' => $row['group'] ?? null,
                 'currency' => $row['currency'] ?? null,
                 'payment_term' => $row['payment_term'] ?? null,
                 'vendor_type' => $row['vendor_type'],
@@ -230,28 +228,20 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $errors = [];
-    
-        try {
-            $category = $this->service->getCategory($uploadedVendor->category);
-            if ($category) {
-                try {
-                    $subCategory = $this->service->getSubCategory($uploadedVendor->subcategory, $category);
-                } catch (Exception $e) {
-                    $errors[] = "Error fetching sub-category: " . $e->getMessage();
-                }
-            } else {
-                $errors[] = "Category not found: " . $uploadedVendor->category;
+
+        if (!empty($uploadedVendor->subcategory)) {
+            try {
+                $subCategory = $this->service->getSubCategory($uploadedVendor->subcategory);
+            } catch (Exception $e) {
+                $errors[] = "Error fetching category: " . $e->getMessage();
             }
-        } catch (Exception $e) {
-            $errors[] = "Error fetching category: " . $e->getMessage();
-        }
-    
+       }
         $vendorType = $uploadedVendor->vendor_type === 'R' ? 'Regular' : ($uploadedVendor->vendor_type === 'C' ? 'Cash' : 'Regular');
         $vendorCodeType = $uploadedVendor->vendor_code_type ?? 'Manual';
         
         $vendorInitials = $uploadedVendor->vendor_initial; 
         $vendorCode = null;
-    
+
         if ($vendorCodeType === 'Manual') {
             $vendorCode = $uploadedVendor->vendor_code ?? null; 
         } elseif ($vendorCodeType === 'Auto' && !empty($vendorInitials) && !empty($vendorType)) {
@@ -316,7 +306,6 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
         }
     
         try {
-
             $uploadedVendorData = [
                 'organization_type_id' => $organizationTypeId ?? null,
                 'vendor_code_type' => $uploadedVendor->vendor_code_type ?? null,
@@ -325,7 +314,6 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'company_name' => $uploadedVendor->company_name ?? null,
                 'vendor_type' => $vendorType,
                 'vendor_sub_type' => $vendorSubType,
-                'category_id' => $category->id ?? null,
                 'subcategory_id' => $subCategory->id ?? null,
                 'currency_id' => $currencyId ?? null,
                 'payment_terms_id' => $paymentTermId ?? null,
@@ -496,7 +484,8 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 
                 'category_id.exists' => 'The category selected is invalid.',
                 
-                'subcategory_id.exists' => 'The subcategory selected is invalid.',
+                'subcategory_id.exists' => 'The group selected is invalid.',
+                'subcategory_id.required' => 'The group field is required.',
                 
                 'currency_id.required' => 'Currency is required and must exist.',
                 'currency_id.exists' => 'The currency selected is invalid.',
@@ -605,13 +594,17 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
     
             if (!empty($gstAddressErrors)) {
                 $errors = array_merge($errors, $gstAddressErrors);
-                  $uploadedVendor->update([
+            }
+
+            if (!empty($errors)){
+                $uploadedVendor->update([
                     'status' => 'Failed',
                     'remarks' => implode(', ', $errors),
                 ]);
                 $this->onFailure($uploadedVendor);
                 return; 
-            }
+             }
+
 
             $vendor = new Vendor($uploadedVendorData);
             $vendor->save();

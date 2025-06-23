@@ -47,29 +47,25 @@
                             </td>
                         </tr>
                         <tr>
-                            <td colspan="2" style="padding-top: 3px;">
+                            <td style="padding-top: 3px;">
                                 <span style="font-weight: 700; font-size: 13px;">
-                                    <b>{{ Str::ucfirst(@$organization->name) }}</b>
+                                    <b>{{ Str::ucfirst(@$mrn?->erpStore?->store_name ?? '') }}</b>
                                 </span>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 10px;">
-                                {{@$organizationAddress->line_1}}, {{@$organizationAddress->line_2}}, {{@$organizationAddress->line_3}}
+                            <td style="padding-top: 3px;">
+                                {{@$buyerAddress->address}}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">
-                                {{ @$organizationAddress?->city?->name }}, {{ @$organizationAddress?->state?->name }}, {{ @$organizationAddress?->country?->name }}, Pin Code: {{ @$organizationAddress->postal_code }}
+                                {{ @$buyerAddress?->city?->name }}, {{ @$buyerAddress?->state?->name }}, {{ @$buyerAddress?->country?->name }}, Pin Code: {{ @$buyerAddress->pincode }}
                             </td>
                         </tr>
-                        {{-- <tr>
-                            <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;">{{@$organization?->gst_number}}</td>
-                        </tr> --}}
                         <tr>
                             <td style="padding-top: 3px;">
-                                @if(@$organizationAddress->phone)Phone: {{ @$organizationAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
+                                @if(@$buyerAddress->phone)Phone: {{ @$buyerAddress->phone }}, @endif @if(@$organization?->email) Email: {{ @$organization?->email }} @endif
                             </td>
                         </tr>
                     </table>

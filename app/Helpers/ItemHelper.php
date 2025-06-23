@@ -7,6 +7,7 @@ use App\Models\BomDetail;
 use App\Models\CustomerItem;
 use App\Models\ErpRateContract;
 use App\Models\ErpStore;
+use App\Models\ErpSubStore;
 use App\Models\Item;
 use App\Models\VendorItem;
 use App\Models\Vendor;
@@ -527,83 +528,154 @@ class ItemHelper
         return $safetyBuffer;
     }
 
-    public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, ErpStore $location)
+    private static function processItemAndBOM(Collection &$processedItems, Item $item, array $itemAttributes, int $uomId, ErpStore $location, ?ErpSubStore $subStore)
     {
-        $processedItems = new Collection();
-        $itemBom = ItemHelper::checkItemBomExists($item -> id, []);
-        //Get Sub stores
-        $subStores = InventoryHelper::getAccesibleSubLocations($location -> id);
-        $firstSubStore = $subStores -> first();
-        //Add the Main Item First
         $selectedAttributes = [];
         $attributesUI = "";
+
         foreach ($itemAttributes as $itemAttr) {
-            array_push($selectedAttributes, $itemAttr['attribute_value_id']);
-            //Make attributes UI
-            $attributeName = $itemAttr['attribute_name'];
-            $attributeValue = $itemAttr['attribute_value'];
-            $attributesUI .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue </span>";
+            $selectedAttributes[] = $itemAttr['attribute_value_id'];
+            $attributesUI .= "<span class='badge rounded-pill badge-light-primary'>$itemAttr[attribute_name] : $itemAttr[attribute_value]</span>";
         }
-        $totalStocks = InventoryHelper::totalInventoryAndStock($item -> id, $selectedAttributes, $uomId, $location -> id, $firstSubStore ?-> id ?? 0);
-        $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
-        $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
-        $processedItems -> push([
-            'item_id' => $item -> id,
-            'item_code' => $item -> item_code,
-            'item_name' => $item -> item_name,
-            'group_id' => $item -> group_id,
-            'company_id' => $item -> company_id,
-            'company_name' => $item -> company ?-> name,
-            'organization_id' => $item -> organization_id,
-            'organization_name' => $item -> organization ?-> name,
-            'uom_id' => $item -> uom_id,
-            'uom_name' => $item -> uom ?-> alias,
+
+        $totalStocks = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttributes, $uomId, $location->id, $subStore?->id ?? 0);
+        $confirmedStocks = $totalStocks['confirmedStocks'] ?? 0.00;
+        $unconfirmedStocks = $totalStocks['pendingStocks'] ?? 0.00;
+
+        $processedItems->push([
+            'item_id' => $item->id,
+            'item_code' => $item->item_code,
+            'item_name' => $item->item_name,
+            'group_id' => $item->group_id,
+            'company_id' => $item->company_id,
+            'company_name' => $item->company?->name,
+            'organization_id' => $item->organization_id,
+            'organization_name' => $item->organization?->name,
+            'uom_id' => $item->uom_id,
+            'uom_name' => $item->uom?->alias,
             'attributes_ui' => $attributesUI,
-            'location_id' => $location -> id,
-            'location_name' => $location -> store_name,
-            'sub_store_id' => $firstSubStore ?-> id,
-            'sub_store_name' => $firstSubStore ?-> name,
+            'location_id' => $location->id,
+            'location_name' => $location->store_name,
+            'sub_store_id' => $subStore?->id,
+            'sub_store_name' => $subStore?->name,
             'confirmed_stocks' => number_format($confirmedStocks, 2),
             'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
             'selected_attributes' => $selectedAttributes
         ]);
-        //Add BOM items if exists
-        if (isset($itemBom['bom_id'])) {
-            $bomItems = BomDetail::where('bom_id', $itemBom['bom_id']) -> get();
-            foreach ($bomItems as $bomItem) {
-                $bomItemAttributes = [];
-                $bomAttributesUI = "";
-                foreach ($bomItem -> attributes as $bomAttr) {
-                    array_push($bomItemAttributes, $bomAttr -> attribute_value);
-                    $attributeName = $bomAttr -> headerAttribute ?-> name;
-                    $attributeValue = $bomAttr -> headerAttributeValue ?-> value;
-                    $bomAttributesUI .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue </span>";
-                }
-                $totalStocks = InventoryHelper::totalInventoryAndStock($bomItem -> item_id, $bomItemAttributes, $uomId, $location -> id, $firstSubStore ?-> id ?? 0);
-                $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
-                $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
-                $processedItems -> push([
-                    'item_id' => $bomItem -> item_id,
-                    'item_code' => $bomItem -> item_code,
-                    'item_name' => $bomItem ?-> item ?-> item_name,
-                    'group_id' => $item -> group_id,
-                    'company_id' => $item -> company_id,
-                    'company_name' => $item -> company ?-> name,
-                    'organization_id' => $item -> organization_id,
-                    'organization_name' => $item -> organization ?-> name,
-                    'uom_id' => $bomItem ?-> item -> uom_id,
-                    'uom_name' => $bomItem ?-> item -> uom ?-> alias,
-                    'attributes_ui' => $bomAttributesUI,
-                    'location_id' => $location -> id,
-                    'location_name' => $location -> store_name,
-                    'sub_store_id' => $firstSubStore ?-> id,
-                    'sub_store_name' => $firstSubStore ?-> name,
-                    'confirmed_stocks' => number_format($confirmedStocks, 2),
-                    'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
-                    'selected_attributes' => $bomItemAttributes
-                ]);
-            } 
+
+        // Recursively handle BOM items
+        $itemBom = ItemHelper::checkItemBomExists($item->id, []);
+        if (!isset($itemBom['bom_id'])) return;
+
+        $bomItems = BomDetail::where('bom_id', $itemBom['bom_id'])->get();
+
+        foreach ($bomItems as $bomItem) {
+            $bomAttributes = [];
+            $itemAttributesForChild = [];
+
+            foreach ($bomItem->attributes as $bomAttr) {
+                $attributeName = $bomAttr->headerAttribute?->name;
+                $attributeValue = $bomAttr->headerAttributeValue?->value;
+                $bomAttributes[] = $bomAttr->attribute_value;
+
+                $itemAttributesForChild[] = [
+                    'attribute_value_id' => $bomAttr->attribute_value,
+                    'attribute_name' => $attributeName,
+                    'attribute_value' => $attributeValue,
+                ];
+            }
+
+            self::processItemAndBOM($processedItems, $bomItem->item, $itemAttributesForChild, $uomId, $location, $subStore);
         }
+    }
+
+
+    public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, ErpStore $location)
+    {
+        $processedItems = new Collection();
+        $subStores = InventoryHelper::getAccesibleSubLocations($location->id);
+        $firstSubStore = $subStores->first();
+        self::processItemAndBOM($processedItems, $item, $itemAttributes, $uomId, $location, $firstSubStore);
         return $processedItems;
     }
+
+    // public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, ErpStore $location)
+    // {
+    //     $processedItems = new Collection();
+    //     $itemBom = ItemHelper::checkItemBomExists($item -> id, []);
+    //     //Get Sub stores
+    //     $subStores = InventoryHelper::getAccesibleSubLocations($location -> id);
+    //     $firstSubStore = $subStores -> first();
+    //     //Add the Main Item First
+    //     $selectedAttributes = [];
+    //     $attributesUI = "";
+    //     foreach ($itemAttributes as $itemAttr) {
+    //         array_push($selectedAttributes, $itemAttr['attribute_value_id']);
+    //         //Make attributes UI
+    //         $attributeName = $itemAttr['attribute_name'];
+    //         $attributeValue = $itemAttr['attribute_value'];
+    //         $attributesUI .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue </span>";
+    //     }
+    //     $totalStocks = InventoryHelper::totalInventoryAndStock($item -> id, $selectedAttributes, $uomId, $location -> id, $firstSubStore ?-> id ?? 0);
+    //     $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
+    //     $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
+    //     $processedItems -> push([
+    //         'item_id' => $item -> id,
+    //         'item_code' => $item -> item_code,
+    //         'item_name' => $item -> item_name,
+    //         'group_id' => $item -> group_id,
+    //         'company_id' => $item -> company_id,
+    //         'company_name' => $item -> company ?-> name,
+    //         'organization_id' => $item -> organization_id,
+    //         'organization_name' => $item -> organization ?-> name,
+    //         'uom_id' => $item -> uom_id,
+    //         'uom_name' => $item -> uom ?-> alias,
+    //         'attributes_ui' => $attributesUI,
+    //         'location_id' => $location -> id,
+    //         'location_name' => $location -> store_name,
+    //         'sub_store_id' => $firstSubStore ?-> id,
+    //         'sub_store_name' => $firstSubStore ?-> name,
+    //         'confirmed_stocks' => number_format($confirmedStocks, 2),
+    //         'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
+    //         'selected_attributes' => $selectedAttributes
+    //     ]);
+    //     //Add BOM items if exists
+    //     if (isset($itemBom['bom_id'])) {
+    //         $bomItems = BomDetail::where('bom_id', $itemBom['bom_id']) -> get();
+    //         foreach ($bomItems as $bomItem) {
+    //             $bomItemAttributes = [];
+    //             $bomAttributesUI = "";
+    //             foreach ($bomItem -> attributes as $bomAttr) {
+    //                 array_push($bomItemAttributes, $bomAttr -> attribute_value);
+    //                 $attributeName = $bomAttr -> headerAttribute ?-> name;
+    //                 $attributeValue = $bomAttr -> headerAttributeValue ?-> value;
+    //                 $bomAttributesUI .= "<span class='badge rounded-pill badge-light-primary' > $attributeName : $attributeValue </span>";
+    //             }
+    //             $totalStocks = InventoryHelper::totalInventoryAndStock($bomItem -> item_id, $bomItemAttributes, $uomId, $location -> id, $firstSubStore ?-> id ?? 0);
+    //             $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
+    //             $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
+    //             $processedItems -> push([
+    //                 'item_id' => $bomItem -> item_id,
+    //                 'item_code' => $bomItem -> item_code,
+    //                 'item_name' => $bomItem ?-> item ?-> item_name,
+    //                 'group_id' => $item -> group_id,
+    //                 'company_id' => $item -> company_id,
+    //                 'company_name' => $item -> company ?-> name,
+    //                 'organization_id' => $item -> organization_id,
+    //                 'organization_name' => $item -> organization ?-> name,
+    //                 'uom_id' => $bomItem ?-> item -> uom_id,
+    //                 'uom_name' => $bomItem ?-> item -> uom ?-> alias,
+    //                 'attributes_ui' => $bomAttributesUI,
+    //                 'location_id' => $location -> id,
+    //                 'location_name' => $location -> store_name,
+    //                 'sub_store_id' => $firstSubStore ?-> id,
+    //                 'sub_store_name' => $firstSubStore ?-> name,
+    //                 'confirmed_stocks' => number_format($confirmedStocks, 2),
+    //                 'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
+    //                 'selected_attributes' => $bomItemAttributes
+    //             ]);
+    //         }
+    //     }
+    //     return $processedItems;
+    // }
 }

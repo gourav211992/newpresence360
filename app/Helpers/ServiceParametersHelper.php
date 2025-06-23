@@ -905,7 +905,7 @@ class ServiceParametersHelper
     const DN_CUM_INVOICE_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::SI_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
             "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true

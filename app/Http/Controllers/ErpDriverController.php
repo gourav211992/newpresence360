@@ -99,6 +99,7 @@ class ErpDriverController extends Controller
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
         $employees = Employee::where('organization_id',$user->organization_id)->get();
+       
         return view('drivers.create', compact('status','employees'));
     }
     

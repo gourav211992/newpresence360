@@ -24,11 +24,12 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
             <div class="form-group breadcrumb-right">
                <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
                @if(count($servicesBooks['services']))
-               <a href="{{ route('bill.of.material.import') }}" class="btn btn-warning btn-sm mb-50 mb-sm-0">
+               <a href="{{url($routeAlias)}}/import" class="btn btn-warning btn-sm mb-50 mb-sm-0">
                   <i data-feather="upload"></i>Import
               </a> 
                <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{url($routeAlias)}}/create"><i data-feather="plus-circle"></i> Add New</a> 
                @endif
+               <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'bom']) }}"><i data-feather="bar-chart-2"></i>Report</a>
             </div>
          </div>
       </div>

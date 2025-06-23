@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Traits\DefaultGroupCompanyOrg;
 class UploadItemMaster extends Model
 {
-    use HasFactory;
+    use HasFactory,DefaultGroupCompanyOrg;
 
     protected $table = 'upload_item_masters';
 

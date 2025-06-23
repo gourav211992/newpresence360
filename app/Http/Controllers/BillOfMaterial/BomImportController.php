@@ -15,6 +15,7 @@ use App\Models\Organization;
 use App\Models\Bom;
 use App\Models\BomAttribute;
 use App\Models\BomDetail;
+use App\Models\BomNormsCalculation;
 use App\Models\BomUpload;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -89,14 +90,18 @@ class BomImportController extends Controller
         // }
         DB::beginTransaction();
         try {
+            $bookId = $request->book_id ?? null; 
+            $documentDate = $request->document_date ?? null;
+
             $user = Helper::getAuthenticatedUser();
-            BomUpload::where('created_by', $user->auth_user_id)->delete();
-            Excel::import(new BomImportData, $request->file('attachment'));
+            BomUpload::where('created_by', $user?->auth_user_id)->delete();
+            $parentUrl = request()->segments()[0];
+            $moduleTyle = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
+            Excel::import(new BomImportData($bookId,$documentDate,$moduleTyle), $request->file('attachment'));
 
             $uploads = BomUpload::where('migrate_status', 0)
                     ->where('created_by', $user->auth_user_id)
                     ->get();
-
             $grouped = $uploads->groupBy(function ($item) {
                 return $item->product_item_id . '-' . $item->product_item_code . '-' . $item->uom_id;
             })->map(function ($group) {
@@ -118,6 +123,10 @@ class BomImportController extends Controller
                             'item_uom_id' => $item->item_uom_id,
                             'item_uom_code' => $item->item_uom_code,
                             'consumption_qty' => $item->consumption_qty, 
+                            'consumption_per_unit' => $item->consumption_per_unit, 
+                            'pieces' => $item->pieces, 
+                            'std_qty' => $item->std_qty, 
+                            'calculated_consumption' => $item->calculated_consumption, 
                             'cost_per_unit' => $item->cost_per_unit, 
                             'item_attributes' => $item->item_attributes ?? [],
                             'station_id' => $item->station_id,
@@ -127,7 +136,9 @@ class BomImportController extends Controller
                             'sub_section_name' => $item->sub_section_name,
                             'sub_section_id' => $item->sub_section_id,
                             'vendor_id' => $item->vendor_id,
-                            'reason' => $item->reason
+                            'customer_id' => $item->customer_id,
+                            'reason' => $item->reason,
+                            'remark' => $item->remark,
                         ];
                     })->values()
                 ];
@@ -137,7 +148,14 @@ class BomImportController extends Controller
             foreach($grouped as $groupedData) {   
                 $bomExists = Bom::withDefaultGroupCompanyOrg()
                             ->where('item_id', $groupedData['product_item_id'])
-                            ->where('type', 'bom')
+                            ->where('type', $moduleTyle)
+                            ->where(function ($query) use ($groupedData,$moduleTyle) {
+                                if ($moduleTyle == 'qbom') {
+                                    $query->where('customer_id', $groupedData['customer_id'] ?? null);
+                                }
+                            })
+                            ->where('status', ConstantHelper::ACTIVE)
+                            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_SUBMITTED)
                             ->first();
                 if ($bomExists) {
                     BomUpload::where('migrate_status', 0)
@@ -162,7 +180,8 @@ class BomImportController extends Controller
                 }
 
                 $bom = new Bom;
-                $bom->type = ConstantHelper::BOM_SERVICE_ALIAS; 
+                $bom->type = $moduleTyle; 
+                $bom->bom_type = ConstantHelper::FIXED; 
                 // $bom->type = $request->type ?? ConstantHelper::BOM_SERVICE_ALIAS; 
                 $bom->organization_id = $organization->id;
                 $bom->group_id = $organization->group_id;
@@ -174,6 +193,7 @@ class BomImportController extends Controller
                 $bom->item_name = $groupedData['product_item_name'] ?? null;
                 $bom->revision_number = 0;
                 $bom->production_route_id = $groupedData['production_route_id'] ?? null;
+                $bom->customer_id = $groupedData['customer_id'] ?? null;
                 $bom->customizable = strtolower($groupedData['customizable']) ?? 'no';
                 // $bom->remarks = $request->remarks;
                 # Extra Column
@@ -236,7 +256,7 @@ class BomImportController extends Controller
                         $bomDetail->item_id = $groupedDataItem['item_id'] ?? null;
                         $bomDetail->item_code = $groupedDataItem['item_code'] ?? null;
                         $bomDetail->uom_id = $groupedDataItem['item_uom_id'] ?? null;
-                        $bomDetail->qty = $groupedDataItem['consumption_qty'] ?? 0.00;
+                        $bomDetail->qty = $groupedDataItem['calculated_consumption'] > 0 ? $groupedDataItem['calculated_consumption'] : $groupedDataItem['consumption_qty'];
                         $bomDetail->item_cost = $groupedDataItem['cost_per_unit'] ?? 0.00;
                         $bomDetail->item_value = floatval($groupedDataItem['consumption_qty']) * floatval($groupedDataItem['cost_per_unit']);
                         $bomDetail->total_amount = floatval($groupedDataItem['consumption_qty']) * floatval($groupedDataItem['cost_per_unit']);
@@ -246,9 +266,26 @@ class BomImportController extends Controller
                         $bomDetail->section_name = $groupedDataItem['section_name'] ?? null;
                         $bomDetail->station_id = $groupedDataItem['station_id'] ?? null;
                         $bomDetail->station_name = $groupedDataItem['station_name'] ?? null;
-                        // $bomDetail->remark = $component['remark'] ?? null;
+                        $bomDetail->vendor_id = $groupedDataItem['vendor_id'] ?? null;
+                        $bomDetail->remark = $groupedDataItem['remark'] ?? null;
                         $bomDetail->save();
-    
+
+                        if($groupedDataItem['calculated_consumption']) {
+                                $normData = [
+                                    'bom_id' => $bom->id,
+                                    'bom_detail_id' => $bomDetail->id,
+                                ];
+                                $updateData = [
+                                    'qty_per_unit' => $groupedDataItem['consumption_per_unit'] ?? 0.00,
+                                    'total_qty' => $groupedDataItem['pieces'] ?? 0.00,
+                                    'std_qty' => $groupedDataItem['std_qty'] ?? 0.00,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ];
+                                if($updateData['qty_per_unit'] && $updateData['total_qty'] && $updateData['std_qty']){
+                                    BomNormsCalculation::updateOrCreate($normData, $updateData);
+                                }
+                        }
                         #Save component Attr
                         if(count($groupedDataItem['item_attributes'])) {
                             foreach($groupedDataItem['item_attributes'] as $itemAttribute) {

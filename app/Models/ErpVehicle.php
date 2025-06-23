@@ -17,7 +17,7 @@ class ErpVehicle extends Model
         'company_id',
         'transporter_id',
         'lorry_no',
-        'vehicle_type',
+        'vehicle_type_id',
         'chassis_no',
         'engine_no',
         'rc_no',
@@ -64,6 +64,16 @@ class ErpVehicle extends Model
       public function driver()
     {
         return $this->belongsTo(ErpDriver::class, 'driver_id');
+    }
+
+        public function transporter()
+    {
+        return $this->belongsTo(Organization::class, 'transporter_id');
+    }
+
+     public function vehicleType()
+    {
+        return $this->belongsTo(ErpVehicleType::class, 'vehicle_type_id');
     }
 
         public function attachment()

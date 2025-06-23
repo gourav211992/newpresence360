@@ -47,7 +47,7 @@
                                             <th>Type</th>
                                             <th>Phone</th>
                                             <th>Email</th>
-                                            <th>Category</th>
+                                            <th>Group</th>
                                             <th>Gst Status</th>
                                             <th>Created At</th>
                                             <th>Created By</th>
@@ -73,9 +73,9 @@
                             <div class="modal-body flex-grow-1">
 
                             <div class="mb-1">
-                                    <label class="form-label">Category</label>
+                                    <label class="form-label">Group</label>
                                     <select id="filter-category" name="subcategory_id" class="form-select">
-                                        <option value="">Select Category</option>
+                                        <option value="">Select Group</option>
                                         @foreach($categories as $category)
                                             <option value="{{ $category->id }}">{{ $category->name }}</option>
                                         @endforeach
@@ -218,35 +218,35 @@ $(document).ready(function() {
                         text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
                         className: 'dropdown-item',
                         title: 'Vendor Master',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                     },
                     {
                         extend: 'csv',
                         text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
                         className: 'dropdown-item',
                         title: 'Vendor Master',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                     },
                     {
                         extend: 'excel',
                         text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
                         className: 'dropdown-item',
                         title: 'Vendor Master',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                     },
                     {
                         extend: 'pdf',
                         text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
                         className: 'dropdown-item',
                         title: 'Vendor Master',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                     },
                     {
                         extend: 'copy',
                         text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
                         className: 'dropdown-item',
                         title: 'Vendor Master',
-                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                        exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                     }
                 ],
                 init: function(api, node, config) {

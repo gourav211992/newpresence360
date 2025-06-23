@@ -167,8 +167,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                     ];
                 }
             }
-
-            $categoryInitials = '';
             $subCategoryInitials = '';
             $itemName = $row['item_name'] ?? '';
             $itemInitials = strtoupper(substr($itemName, 0, 3));
@@ -178,34 +176,39 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
             } elseif ($itemCodeType === 'Auto') {
                 try {
-                    $category = $this->service->getCategory($row['category']);
-                    if ($category) {
-                        $categoryInitials = $category->cat_initials ?? null;
-            
+                    $subCategory = $this->service->getSubCategory($row['group']);
+                    if ($subCategory) {
                         try {
-                            $subCategory = $this->service->getSubCategory($row['sub_category'], $category); 
-                            $subCategoryInitials = $subCategory->sub_cat_initials ?? null;
+                            if ($subCategory && $subCategory->sub_cat_initials) {
+                                $subCategoryInitials = $subCategory->sub_cat_initials; 
+                            } elseif ($subCategory && $subCategory->cat_initials) {
+                                $subCategoryInitials = $subCategory->cat_initials; 
+                            }
+                            
                         } catch (Exception $e) {
                             Log::error("Error fetching sub-category: " . $e->getMessage());
                         }
                     } else {
-                        Log::error("Error fetching category: " . $row['category']);
+                        Log::error("Error fetching category: " . $row['group']);
                     }
                 } catch (Exception $e) {
                     Log::error("Error fetching category: " . $e->getMessage());
                 }
             
-                if (!empty($subCategoryInitials) && !empty($subType) && !empty($itemInitials)) {
+                // if (!empty($subCategoryInitials) && !empty($subType) && !empty($itemInitials)) {
+                //     $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
+                // }
+                if (!empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
                     $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
                 }
+                
             }
-
+       
             $uploadedItem = UploadItemMaster::create([
                 'item_name' => $row['item_name'] ?? null,
                 'item_code' => $itemCode,
                 'item_code_type' => $itemCodeType, 
-                'category' => $row['category'] ?? null,
-                'subcategory' => $row['sub_category'] ?? null,
+                'subcategory' => $row['group'] ?? null,
                 'hsn' => $row['hsnsac'] ?? null,
                 'uom' => $row['inventory_uom'] ?? null,
                 'cost_price' =>$row['cost_price']?? null,
@@ -232,7 +235,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'specifications' => json_encode($specifications),
                 'alternate_uoms' => json_encode($alternateUoms),
             ]);
-
+         
             if ($uploadedItem) {
                 $this->processItemFromUpload($uploadedItem);
             } else {
@@ -270,22 +273,15 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
         $currencyId = null;  
         $attributes = [];  
         $specifications = []; 
-        $alternateUoms = [];  
-        try {
+        $alternateUoms = [];
         
-            $category = $this->service->getCategory($uploadedItem->category);
-            if ($category) {
-                try {
-                    $subCategory = $this->service->getSubCategory($uploadedItem->subcategory, $category);
-                } catch (Exception $e) {
-                    $errors[] = "Error fetching sub-category: " . $e->getMessage();
-                }
-            } else {
-                $errors[] = "Category not found: " . $uploadedItem->category;
+        if (!empty($uploadedItem->subcategory)) {
+            try {
+                $subCategory = $this->service->getSubCategory($uploadedItem->subcategory);
+            } catch (Exception $e) {
+                $errors[] = "Error fetching category: " . $e->getMessage();
             }
-        } catch (Exception $e) {
-            $errors[] = "Error fetching category: " . $e->getMessage();
-        }
+       }
         
         if (!empty($uploadedItem->hsn)) {
             try {
@@ -327,25 +323,24 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
         }
        }
     
-        if (!empty($uploadedItem->attributes)) {
+       if (!empty($uploadedItem->attributes)) {
             $attributes = json_decode($uploadedItem->attributes, true);
             $this->service->validateItemAttributes($attributes, $errors);
         }
-
+        
         if (!empty($uploadedItem->specifications)) {
             $specifications = json_decode($uploadedItem->specifications, true);
             $this->service->validateItemSpecifications($specifications, $errors);
         }
-
+        
         if (!empty($uploadedItem->alternate_uoms)) {
             $alternateUoms = json_decode($uploadedItem->alternate_uoms, true);
             $this->service->validateAlternateUoms($alternateUoms, $errors);
-        }
-
+         }
+        
         try {
             $item = new Item([
                 'type' => $uploadedItem->type ?? null,
-                'category_id' => $category->id ?? null,
                 'subcategory_id' => $subCategory->id ?? null,
                 'item_name' => $uploadedItem->item_name ?? null,
                 'item_code' => $uploadedItem->item_code ?? null,
@@ -378,7 +373,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
             $rules = [
                 'type' => 'required|string|in:Goods,Service',
                 'hsn_id' => 'required|exists:erp_hsns,id',
-                'category_id' => 'required|exists:erp_categories,id',
                 'subcategory_id' => 'required|exists:erp_categories,id',
                 'cost_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
                 'sell_price_currency_id' => 'nullable|exists:mysql_master.currency,id',
@@ -428,22 +422,24 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'nullable' => 'The :attribute field may be null.',
                 'array' => 'The :attribute must be an array.',
                 'integer' => 'The :attribute must be an integer.',
+                'subcategory_id.required' => 'The group field is required.',
             ];
         
             $validator = Validator::make($item->toArray(), $rules, $customMessages);
-         
-            if ($validator->fails()) {
-                $errors[] = 'Validation errors: ' . implode(', ', $validator->errors()->all());
-            
+          
+            $validationMessages = $validator->errors()->all();
+
+            if (!empty($validationMessages) || !empty($errors)) {
+                $errors = array_merge($errors, $validationMessages);
                 $uploadedItem->update([
                     'status' => 'Failed',
                     'remarks' => implode(', ', $errors),
                 ]);
-            
-                $this->onFailure($uploadedItem);
-                return; 
-            }
 
+                $this->onFailure($uploadedItem);
+                return;
+            }
+     
             $item->save();
 
             $this->service->createItemAttributes($item, $attributes);

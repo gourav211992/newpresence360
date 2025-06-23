@@ -651,7 +651,7 @@ class CustomerController extends Controller
 
     public function import(Request $request)
     {
-        $user = Helper::getAuthenticatedUser ();
+        $user = Helper::getAuthenticatedUser();
     
         try {
             $request->validate([
@@ -740,20 +740,22 @@ class CustomerController extends Controller
 
     public function exportSuccessfulCustomers()
     {
-        $uploadCustomers = UploadCustomerMaster::where('status', 'Success')->get();
-        $customers = Customer::with(['category', 'subcategory', 'currency', 'paymentTerms'])
-                   ->whereIn('company_name', $uploadCustomers->pluck('company_name'))
-                            ->get();
-
-         return Excel::download(new CustomersExport($customers, $this->itemImportExportService), "successful-customers.xlsx");
+        $user = Helper::getAuthenticatedUser();
+        $uploadCustomers = UploadCustomerMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
+        $customers = Customer::withDefaultGroupCompanyOrg()
+            ->with(['category', 'subcategory', 'currency', 'paymentTerms'])
+            ->whereIn('company_name', $uploadCustomers->pluck('company_name'))
+            ->get();
+    
+        return Excel::download(new CustomersExport($customers, $this->itemImportExportService), "successful-customers.xlsx");
     }
     
     public function exportFailedCustomers()
     {
-        $failedCustomers = UploadCustomerMaster::where('status', 'Failed')->get();
+        $user = Helper::getAuthenticatedUser();
+        $failedCustomers = UploadCustomerMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
         return Excel::download(new FailedCustomersExport($failedCustomers), "failed-customers.xlsx");
     }
-
 
     public function deleteAddress($id)
     {

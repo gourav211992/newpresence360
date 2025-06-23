@@ -31,7 +31,7 @@ public function rules()
     $id = $this->route('id'); // Will be null for create, set for update
 
     return [
-        'user_id'        => 'required|exists:employees,id',
+        'user_id'        => 'nullable|exists:employees,id',
         'name'           => 'required|string|max:255',
         'email'          => 'nullable|email|max:255|unique:erp_drivers,email,' . $id,
         'mobile_no'      => 'required|string|max:20|unique:erp_drivers,mobile_no,' . $id,
@@ -51,7 +51,7 @@ public function rules()
     public function messages()
     {
         return [
-            'user_id.required' => 'Employee is required.',
+            'user_id.nullable' => 'Employee is required.',
             'user_id.exists' => 'Selected employee does not exist.',
             'name.required' => 'Driver name is required.',
             'email.email' => 'Enter a valid email address.',

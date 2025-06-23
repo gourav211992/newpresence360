@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-    <form class="ajax-input-form" method="POST" action="{{ route('bill.of.material.import.save') }}"
+    <form class="ajax-input-form" method="POST" action="{{ url($routeAlias) }}/import-save"
         data-redirect="{{ url($routeAlias) }}" enctype='multipart/form-data'>
         @csrf
         <input type="hidden" name="type" value="{{ $serviceAlias }}">

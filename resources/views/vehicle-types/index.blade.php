@@ -59,6 +59,8 @@
                                                         </div>
                                                     </th>
                                                     <th>Vehicle Type <span class="text-danger">*</span></th>
+                                                    <th>Capacity <span class="text-danger">*</span></th>
+                                                    <th>Uom <span class="text-danger">*</span></th>
                                                     <th>Description</th>
                                                     <th>Status <span class="text-danger">*</span></th>
                                                 </tr>
@@ -77,7 +79,21 @@
                                                             <input type="text" name="vehicle_type[{{ $rowIndex }}][name]" value="{{ $type->name }}" class="form-control mw-100 ledgerselecct" />
                                                         </td>
                                                         <td>
-                                                            <textarea name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100 ledgerselecct">{{ $type->description }}</textarea>
+                                                            <input type="text" name="vehicle_type[{{ $rowIndex }}][capacity]" value="{{ $type->capacity }}" class="form-control mw-100 ledgerselecct" />
+                                                        </td>
+                                                        <td>
+                                                        <select name="vehicle_type[{{ $rowIndex }}][uom_id]" class="form-control mw-100 select2 ledgerselecct">
+                                                            <option value="">Select UOM</option>
+                                                            @foreach($uoms as $uom)
+                                                                <option value="{{ $uom->id }}" {{ $type->uom_id == $uom->id ? 'selected' : '' }}>
+                                                                    {{ $uom->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </td>
+
+                                                        <td>
+                                                            <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100 ledgerselecct" value="{{$type->description}}">
                                                         </td>
                                                         <td>
                                                             <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ledgerselecct">
@@ -99,8 +115,21 @@
                                                         <td>
                                                             <input type="text" name="vehicle_type[0][name]" placeholder="Enter Vehicle Type" class="form-control mw-100 ledgerselecct" />
                                                         </td>
+                                                         <td>
+                                                            <input type="text" name="vehicle_type[0][capacity]"  class="form-control mw-100 ledgerselecct" />
+                                                        </td>
                                                         <td>
-                                                            <textarea name="vehicle_type[0][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct"></textarea>
+                                                        <select name="vehicle_type[0][uom_id]" class="form-control mw-100 select2 ledgerselecct">
+                                                            <option value="">Select UOM</option>
+                                                            @foreach($uoms as $uom)
+                                                                <option value="{{ $uom->id }}">
+                                                                    {{ $uom->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </td>
+                                                        <td>
+                                                            <input name="vehicle_type[0][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct" />
                                                         </td>
                                                         <td>
                                                             <select name="vehicle_type[0][status]" class="form-control mw-100 ledgerselecct">
@@ -149,7 +178,20 @@
                 <input type="text" name="vehicle_type[${rowIndex}][name]" placeholder="Enter Vehicle Type" class="form-control mw-100 ledgerselecct" />
             </td>
             <td>
-                <textarea name="vehicle_type[${rowIndex}][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct"></textarea>
+                <input type="text" name="vehicle_type[${rowIndex}][capacity]"  class="form-control mw-100 ledgerselecct" />
+            </td>
+               <td>
+                    <select name="vehicle_type[${rowIndex}][uom_id]" class="form-control mw-100 select2 ledgerselecct">
+                        <option value="">Select UOM</option>
+                        @foreach($uoms as $uom)
+                            <option value="{{ $uom->id }}">
+                                {{ $uom->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </td>
+            <td>
+                <input name="vehicle_type[${rowIndex}][description]" placeholder="Enter Description" class="form-control mw-100 ledgerselecct" />
             </td>
             <td>
                 <select name="vehicle_type[${rowIndex}][status]" class="form-control mw-100 ledgerselecct">

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\ErpService;
 use App\Models\Book;
 use App\Models\BookType;
+use App\Models\CostGroup;
 use Illuminate\Http\Request;
 use App\Helpers\InventoryHelper;
 use App\Models\CostCenter;
@@ -55,7 +56,7 @@ class VoucherController extends Controller
             $ledger_group = (int)$request->ledgerGroup;
             $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-                ->whereIn('location', $locationIds)
+                // ->whereIn('location', $locationIds)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);
@@ -622,14 +623,33 @@ class VoucherController extends Controller
 
 
         // Retrieve vouchers based on organization_id and include series with levels
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         $data =  Voucher::withDefaultGroupCompanyOrg()
         ->with([
             'documents:id,name',
         ])
-        ->whereHas('items', function ($d) use ($request) {
-            if ($request->cost_center_id) {
-                $d->where('cost_center_id', $request->cost_center_id);
+        ->whereHas('items', function ($d) use ($cost_center_ids) {
+           if (!empty($cost_center_ids)) {
+            // dd($cost_center_ids);
+            if (is_array($cost_center_ids)) {
+                $d->whereIn('cost_center_id', $cost_center_ids);
+            } else {
+                $d->where('cost_center_id', $cost_center_ids);
             }
+        }
         })
         ->where('approvalStatus', '!=', 'cancel')
         ->whereIn('location', $locationIds);
@@ -693,12 +713,14 @@ class VoucherController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
          $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
-        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations'));
+        return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations','cost_groups'));
     }
 
     public function create()

@@ -1017,9 +1017,14 @@ class AutocompleteController extends Controller
                 }
             } else if ($type === 'customer' || $type === 'customer_list') {
                 $results = Customer::withDefaultGroupCompanyOrg() -> with(['payment_terms', 'currency', 'compliances'])
-                -> when($term, function ($termQuery) use($term) { 
+                -> when($term, function ($termQuery) use($term, $authUser) { 
                     $termQuery -> where('company_name', 'LIKE', '%'.$term.'%') -> orWhere('customer_code', 'LIKE', '%'.$term.'%');
                 })->where('status', ConstantHelper::ACTIVE)
+                ->where(function ($relatedPartyQuery) use($authUser) {
+                    $relatedPartyQuery -> where('related_party', 'No') -> orWhere(function ($relatedYesQuery) use($authUser) {
+                        $relatedYesQuery -> where('related_party', 'Yes') -> where('enter_company_org_id', "!=", $authUser -> organization_id);
+                    });
+                })
                 ->limit(10)
                 ->get(['id', 'customer_type', 'email', 'mobile', 'customer_code', 'company_name', 'currency_id', 'payment_terms_id','display_name']);
             } else if ($type === 'location') {
@@ -1947,7 +1952,7 @@ class AutocompleteController extends Controller
                     }) -> limit(10) -> get();
             } elseif ($type === 'stock_locations') {
                 $selectedOrg = $request -> organization_id ?? null;
-                $results = ErpStore::select('id', 'store_name') -> withDefaultGroupCompanyOrg()
+                $results = ErpStore::select('id', 'store_name')
                 ->when(($authUser->authenticable_type == "employee"), function ($locationQuery) use($authUser) { // Location with same country and state
                     $locationQuery->whereHas('employees', function ($employeeQuery) use ($authUser) {
                         $employeeQuery->where('employee_id', $authUser->id);

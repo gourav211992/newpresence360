@@ -215,10 +215,10 @@ class MaterialReceiptRequest extends FormRequest
             $components = $this->input('components', []);
             $items = [];
             foreach ($components as $key => $component) {
-                $itemValue = floatval($component['item_total_cost']);
-                if($itemValue < 0) {
-                    $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
-                }
+                // $itemValue = floatval($component['item_total_cost']);
+                // if($itemValue < 0) {
+                //     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
+                // }
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;

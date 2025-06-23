@@ -53,8 +53,8 @@ function getItemTax(itemIndex)
         headerDiscountAmount = 0;
     }
     const totalItemDiscount = parseFloat(discountAmount ? discountAmount : 0) + parseFloat(headerDiscountAmount ? headerDiscountAmount : 0);
-    const shipToCountryId = $("#current_shipping_country_id").val();
-    const shipToStateId = $("#current_shipping_state_id").val();
+    const billToCountryId = $("#current_billing_country_id").val();
+    const billToStateId = $("#current_billing_state_id").val();
     let itemPrice = 0;
     if (itemQty > 0) {
         itemPrice = (parseFloat(itemValue ? itemValue : 0) + parseFloat(totalItemDiscount ? totalItemDiscount : 0)) / parseFloat(itemQty);
@@ -68,8 +68,8 @@ function getItemTax(itemIndex)
             item_id : itemId,
             price : itemPrice,
             transaction_type : 'sale',
-            party_country_id : shipToCountryId,
-            party_state_id : shipToStateId,
+            party_country_id : billToCountryId,
+            party_state_id : billToStateId,
             customer_id : $("#customer_id_input").val(),
             header_book_id : headerBookId ? headerBookId : $("#series_id_input").val(),
             store_id : $("#store_id_input").val(),
@@ -432,7 +432,6 @@ function editScript()
             const taxesHiddenFields = document.getElementsByClassName('item_taxes_input');
 
             if (taxesHiddenFields && taxesHiddenFields.length > 0) {
-                console.log('yeh to phat gyi ');
                 getItemTax(itemIndex);
             }
             if (itemIndex==0){
@@ -480,7 +479,6 @@ function editScript()
    
 function onSeriesChange(element, reset = true)
 {
-    console.log("series change");
     resetSeries();
     implementSeriesChange(element.value);
     $.ajax({
@@ -821,7 +819,6 @@ function onDocDateChange()
 
 function implementBookParameters(paramData)
 {
-    console.log("Implementing Book Parameters", paramData);
     var selectedRefFromServiceOption = paramData.reference_from_service;
     var selectedBackDateOption = paramData.back_date_allowed;
     var selectedFutureDateOption = paramData.future_date_allowed;
@@ -1605,7 +1602,6 @@ setAttributesUI();
 });
 var currentSelectedItemIndex = null ;
 function setAttributesUI(paramIndex = null) {
-    console.log('setAttributesUI called with paramIndex:', paramIndex);
     let currentItemIndex = null;
     if (paramIndex != null || paramIndex != undefined) {
         currentItemIndex = paramIndex;

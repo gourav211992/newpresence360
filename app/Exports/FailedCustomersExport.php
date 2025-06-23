@@ -27,9 +27,8 @@ class FailedCustomersExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             'Customer Name',       
-            'Customer Code',          
-            'Category',              
-            'Sub Category',          
+            'Customer Code',                   
+            'Group',          
             'Currency',               
             'Payment Term',           
             'Customer Type',          
@@ -72,7 +71,6 @@ class FailedCustomersExport implements FromCollection, WithHeadings, WithMapping
         return [
             $customer->company_name ?? null,
             $customer->customer_code ?? null,
-            $customer->category ?? null,
             $customer->subcategory ?? null,
             $customer->currency ?? null,
             $customer->payment_term ?? null,

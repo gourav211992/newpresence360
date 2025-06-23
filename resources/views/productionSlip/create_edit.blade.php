@@ -297,7 +297,7 @@
                                 <div class="card quation-card">
                                     <div class="card-header newheader">
                                         <div>
-                                            <h4 class="card-title">Mo Details</h4> 
+                                            <h4 class="card-title">General Information</h4> 
                                         </div>
                                     </div>
                                     <div class="card-body"> 
@@ -305,13 +305,13 @@
                                             <div class="col">
                                                 <div class="mb-1">
                                                     <label class="form-label">MO No. </label> 
-                                                    <input type="text" @if(isset($slip)) value="{{$slip->mo->book_code}} - {{$slip->mo->document_number}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_no" name="mo_no" /> 
+                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->book_code}} - {{$slip?->mo?->document_number}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_no" name="mo_no" /> 
                                                 </div>
                                             </div> 
                                             <div class="col">
                                                 <div class="mb-1">
                                                     <label class="form-label">Date </label> 
-                                                    <input type="text" @if(isset($slip)) value="{{$slip->mo->getFormattedDate('document_date')}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_date" name="mo_date"  /> 
+                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->getFormattedDate('document_date')}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_date" name="mo_date"  /> 
                                                 </div>
                                             </div> 
                                             <div class="col">
@@ -332,6 +332,27 @@
                                                     <input type="text" @if(isset($slip)) value="{{$slip?->mo?->station?->name}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="station_name" name="station_name"  /> 
                                                 </div>
                                             </div> 
+                                            <div class="col">
+                                                <div class="mb-1">
+                                                    <label class="form-label" id="fg_label">Finished Goods Store </label> 
+                                                    <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="fg_sub_store_id" name="fg_sub_store_id">
+                                                        @if(isset($slip) && $slip?->fg_sub_store_id)
+                                                            <option value="{{$slip?->fg_sub_store_id}}">{{$slip?->fg_sub_store?->store_name}}</option>
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                            </div> 
+                                            <div class="col">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Rejected Goods Store </label> 
+                                                    <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="rg_sub_store_id" name="rg_sub_store_id">
+                                                        @if(isset($slip) && $slip?->rg_sub_store_id)
+                                                            <option value="{{$slip?->rg_sub_store_id}}">{{$slip?->rg_sub_store?->store_name}}</option>
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                            </div> 
+                                            
                                             <input type="hidden" id="mo_id" name="mo_id" @if(isset($slip)) value="{{$slip?->mo_id}}" @endif>
                                             <input type="hidden" id="mo_product_id" name="mo_product_id" @if(isset($slip)) value="{{$slip?->mo?->item_id}}" @endif>
                                             <input type="hidden" id="is_last_station" name="is_last_station" @if(isset($slip)) value="{{$slip?->is_last_station}}" @endif>
@@ -394,6 +415,9 @@
                                                                    <th>UOM</th>
                                                                    <th class="text-end">SO Qty</th>
                                                                    <th class="text-end">Produced Qty</th>
+                                                                   <th class="text-end">Accepted Qty</th>
+                                                                   <th class="text-end {{@$slip?->mo?->is_last_station ? '' : 'd-none'}}" id="subprime_qty_col">Substandard Qty</th>
+                                                                   <th class="text-end">Rejected Qty</th>
                                                                    @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
@@ -408,9 +432,9 @@
                                                             <tfoot>
                                                                 <tr valign="top">
                                                                    @if (isset($slip))
-                                                                       <td id = "item_details_td" colspan="12" rowspan="10">
+                                                                       <td id = "item_details_td" colspan="15" rowspan="10">
                                                                        @else
-                                                                       <td id = "item_details_td" colspan="10" rowspan="10">
+                                                                       <td id = "item_details_td" colspan="13" rowspan="10">
                                                                    @endif
                                                                        <table class="table border">
                                                                            <tr>
@@ -1492,8 +1516,41 @@
             //     }
             // }
             assignDefaultBundleInfoArray(index);
+            updateQty(element,index);
         }
 
+        function updateQty(element, index) {
+            const totalProduced = parseFloat($("#item_qty_" + index).val()) || 0;
+            let acceptedQty = parseFloat($("#item_accepted_qty_" + index).val()) || 0;
+            let subPrimedQty = parseFloat($("#item_sub_prime_qty_" + index).val()) || 0;
+            const changedType = element.name.includes('accepted')
+                ? 'accepted'
+                : element.name.includes('sub_prime')
+                ? 'sub_prime'
+                : element.name.includes('item_qty')
+                ? 'qty'
+                : '';
+
+            if(changedType == 'qty') {
+                $("#item_accepted_qty_" + index).val(totalProduced);
+                acceptedQty = totalProduced;
+            }
+            // Validation: Accepted Qty must be ≤ Produced Qty
+            if (acceptedQty > totalProduced) {
+                alert("Accepted Qty cannot be greater than Produced Qty.");
+                $("#item_accepted_qty_" + index).val('');
+                acceptedQty = 0;
+            }
+            // Validation: Sub-Prime Qty must be ≤ (Produced - Accepted)
+            if (subPrimedQty > (totalProduced - acceptedQty)) {
+                alert("Sub-Prime Qty cannot be greater than (Produced - Accepted).");
+                $("#item_sub_prime_qty_" + index).val('');
+                subPrimedQty = 0;
+            }
+            // Auto-calculate Rejected Qty
+            let rejectedQty = totalProduced - acceptedQty - subPrimedQty;
+            $("#item_rejected_qty_" + index).val(Math.max(rejectedQty, 0));
+        }
         
         function addHiddenInput(id, val, name, classname, docId, dataId = null)
         {
@@ -3393,7 +3450,6 @@ function openHeaderPullModal(type = null)
                 success: function(data) {
                     // Mo detail fill
                     const currentOrders = data.data;
-
                     $("#mo_no").val(currentOrders.mo.mo_no);
                     $("#mo_date").val(currentOrders.mo.mo_date);
                     $("#mo_product_name").val(currentOrders.mo.mo_product_name);
@@ -3403,7 +3459,7 @@ function openHeaderPullModal(type = null)
                     $("#mo_id").val(currentOrders.mo.mo_id);
                     $("#is_last_station").val(currentOrders.mo.is_last_station);
                     $("#mo_station_id").val(currentOrders.mo.mo_station_id);
-
+                    
                     // const mainTableItem = document.getElementById('item_header');
                     // let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;
                     // mainTableItem.innerHTML = currentOrders.html;
@@ -3429,6 +3485,16 @@ function openHeaderPullModal(type = null)
                     } else {
                         $("#station_name").closest('div').addClass('d-none');
 
+                    }
+                    if(currentOrders.mo.is_last_station) {
+                        $("#fg_label").text("Finished Goods Store");
+                    } else {
+                        $("#fg_label").text("WIP Store");
+                    }
+                    if(!currentOrders.mo.is_last_station) {
+                        $("#subprime_qty_col").addClass('d-none');
+                    } else {
+                        $("#subprime_qty_col").removeClass('d-none');
                     }
                 },
                 error: function(xhr) {
@@ -3485,27 +3551,45 @@ setTimeout(() => {
 }, 0);
     // Sub Store
 function locationOnChange(storeId = '') {
-    let actionUrl = '{{route("get.sub.store")}}'+'?store_id='+storeId;
+    let actionUrl = '{{route("production.slip.substore")}}'+'?store_id='+storeId;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
-                if(data.data.length) {
-                    let subStore = ``;
-                    data.data.forEach(element => {
-                        subStore += `<option value="${element.id}" data-station-wise-consumption="${element.station_wise_consumption}">${element.name}</option>`;
+                let subStore = ``;
+                let selId = @json($slip->sub_store_id ?? '');
+                if(data?.data?.sub_store?.length) {
+                    data?.data?.sub_store?.forEach(element => {
+                        let selected = element.id == selId ? 'selected' : '';
+                        subStore += `<option value="${element.id}" ${selected} data-station-wise-consumption="${element.station_wise_consumption}">${element.name}</option>`;
                     });
-                    $("#sub_store_id").empty().append(subStore);
                     const stationWise = getStationWiseConsBySubStoreId();
                     if(stationWise.includes('yes')) {
                         $("#station_column").removeClass('d-none');
                     } else {
                         $("#station_column").addClass('d-none');
                     }
-                    // $("#sub_store_div").removeClass('d-none');
-                } else {
-                    // $("#sub_store_div").addClass('d-none');
                 }
-                // $("#sub_store_id").empty().append(data.data.html);
+                $("#sub_store_id").empty().append(subStore);
+
+                let subFgStore = `<option value="">Select</option>`;
+                let selectedId1 = @json($slip->fg_sub_store_id ?? '');
+                if(data?.data?.fg_sub_store?.length) {
+                    data?.data?.fg_sub_store?.forEach(element => {
+                        let selected = element.id == selectedId1 ? 'selected' : '';
+                        subFgStore += `<option value="${element.id}" ${selected}>${element.name}</option>`;
+                    });
+                }
+                $("#fg_sub_store_id").empty().append(subFgStore);
+
+                let subRgStore = `<option value="">Select</option>`;
+                let selectedId2 = @json($slip->rg_sub_store_id ?? '');
+                if(data?.data?.rg_sub_store?.length) {
+                    data?.data?.rg_sub_store?.forEach(element => {
+                        let selected = element.id == selectedId2 ? 'selected' : '';
+                        subRgStore += `<option value="${element.id}" ${selected}>${element.name}</option>`;
+                    });
+                }
+                $("#rg_sub_store_id").empty().append(subRgStore);
             }
         });
     });

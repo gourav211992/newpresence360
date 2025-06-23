@@ -32,17 +32,34 @@ use App\Models\ErpStore;
 use App\Helpers\InventoryHelper;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\FixedAssetReportExport;
+use App\Exports\FailedFAExport;
+use App\Imports\FAImport;
+use App\Exports\FAExport;
+use App\Mail\ImportComplete;
+use Illuminate\Support\Facades\Mail;
+use App\Services\FAImportExportService;
+
+
+
+use App\Models\UploadFAMaster;
 use App\Models\Group;
+use App\Models\Book;
 
 
 class RegistrationController extends Controller
 {
+    protected $FAImportExportService;
+
+    public function __construct(FAImportExportService $FAImportExportService)
+    {
+        $this->FAImportExportService = $FAImportExportService;
+    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        $parentURL = request()->segments()[0];
+       
         $parentURL = "fixed-asset_registration";
 
         $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
@@ -803,5 +820,138 @@ class RegistrationController extends Controller
 
     return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
 }
+public function exportSuccessfulItems()
+    {
+        $uploadItems = UploadFAMaster::where('import_status', 'Success')
+            ->get();
+        $items = FixedAssetRegistration::withDefaultGroupCompanyOrg()->latest()
+            ->whereIn('code', $uploadItems->pluck('asset_code'))->get();
+        return Excel::download(new FAExport($items, $this->FAImportExportService), "successful-items.xlsx");
+    }
+
+    public function exportFailedItems()
+    {
+        $failedItems = UploadFAMaster::where('import_status', 'Failed')
+            ->get();
+        return Excel::download(new FailedFAExport($failedItems), "failed-items.xlsx");
+    }
+    public function showImportForm()
+    {
+        return view('fixed-asset.registration.import');
+    }
+
+    public function import(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xlsx,xls|max:30720',
+            ]);
+            if (!$request->hasFile('file')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No file uploaded.',
+                ], 400);
+            }
+            $file = $request->file('file');
+            try {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
+            } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
+                ], 400);
+            }
+
+            $sheet = $spreadsheet->getActiveSheet();
+            $rowCount = $sheet->getHighestRow() - 1;
+            if ($rowCount > 10000) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file contains more than 10000 items. Please upload a file with 10000 or fewer items.',
+                ], 400);
+            }
+            if ($rowCount < 1) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The uploaded file is empty.',
+                ], 400);
+            }
+            $deleteQuery = UploadFAMaster::where('created_by', $user->id);
+            $deleteQuery->delete();
+
+            $import = new FAImport($this->FAImportExportService, $user);
+            Excel::import($import, $request->file('file'));
+
+            $successfulItems = $import->getSuccessfulItems();
+            $failedItems = $import->getFailedItems();
+            $mailData = [
+                'modelName' => 'FixedAssetRegistration',
+                'successful_items' => $successfulItems,
+                'failed_items' => $failedItems,
+                'export_successful_url' => route('finance.fixed-asset.export.successful'),
+                'export_failed_url' => route('finance.fixed-asset.export.failed'),
+            ];
+            if (count($failedItems) > 0) {
+                $message = 'Items import failed.';
+                $status = 'failure';
+            } else {
+                $message = 'Items imported successfully.';
+                $status = 'success';
+            }
+            if ($user->email) {
+                try {
+                    Mail::to($user->email)->send(new ImportComplete($mailData));
+                } catch (\Exception $e) {
+                    $message .= " However, there was an error sending the email notification.";
+                }
+            }
+            return response()->json([
+                'status' => $status,
+                'message' => $message,
+                'successful_items' => $successfulItems,
+                'failed_items' => $failedItems,
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
+            ], 400);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to import items: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+    public static function genrateDocNo(){
+            $services = Helper::getAccessibleServicesFromMenuAlias('fixed-asset_registration');
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+                $firstService = $services['services']->first();
+                $serviceId = $firstService->service_id;
+                $book = Book::where('service_id',$serviceId)->latest()->first();
+                if (!isset($book)) 
+                    return null;
+                $numberPatternData = Helper::generateDocumentNumberNew($book->id, date('y-m-d'));
+                if (!isset($numberPatternData)) 
+                    return null;
+
+                    return[
+                        'document_number' => $numberPatternData['document_number'],
+                        'book_id' => $book->id,
+                        'document_date' => date('Y-m-d'),
+                        'doc_number_type'=>$numberPatternData['type'],
+                        'doc_reset_pattern' => $numberPatternData['reset_pattern'],
+                        'doc_prefix' => $numberPatternData['prefix'],
+                        'doc_suffix' => $numberPatternData['suffix'],
+                        'doc_no' => $numberPatternData['doc_no'],
+                    ];
+                
+            }
+        else {
+            return null;
+    }
+
+    }
 
 }

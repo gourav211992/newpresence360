@@ -152,7 +152,7 @@
                                                                     </div>
                                                                 </td>
                                                                 <td width="150px">
-                                                                    <select name="freight_charges[0][source_state_id]" class="form-control source-state state-select select2" data-type="source">
+                                                                    <select name="freight_charges[0][source_state_id]" class="form-control mw-100 ledgerselecct source-state state-select" data-type="source">
                                                                         <option value="">Select State</option>
                                                                         @foreach($states as $state)
                                                                             <option value="{{ $state->id }}">{{ $state->name }}</option>
@@ -160,12 +160,12 @@
                                                                     </select>
                                                                 </td>
                                                                 <td width="150px">
-                                                                     <select name="freight_charges[0][source_city_id]" class="form-control source-city city-select select2">
+                                                                     <select name="freight_charges[0][source_city_id]" class="form-control mw-100 ledgerselecct source-city city-select ">
                                                                         <option value="">Select City</option>
                                                                     </select>
                                                                 </td>
                                                                 <td width="150px">
-                                                                    <select name="freight_charges[0][destination_state_id]" class="form-control destination-state state-select select2" data-type="destination">
+                                                                    <select name="freight_charges[0][destination_state_id]" class="form-control mw-100 ledgerselecct destination-state state-select" data-type="destination">
                                                                         <option value="">Select State</option>
                                                                         @foreach($states as $state)
                                                                             <option value="{{ $state->id }}">{{ $state->name }}</option>
@@ -173,7 +173,7 @@
                                                                     </select>
                                                                 </td>
                                                                 <td width="150px">
-                                                                     <select name="freight_charges[0][destination_city_id]" class="form-control destination-city city-select select2">
+                                                                     <select name="freight_charges[0][destination_city_id]" class="form-control mw-100 ledgerselecct destination-city city-select">
                                                                         <option value="">Select City</option>
                                                                        
                                                                     </select>
@@ -183,7 +183,7 @@
                                                                     <input type="text" name="freight_charges[0][distance]" class="form-control mw-100" value="0">
                                                                 </td>
                                                                 <td>
-                                                                    <select name="freight_charges[0][vehicle_type_id]" class="form-control select2">
+                                                                    <select name="freight_charges[0][vehicle_type_id]" class="form-control mw-100 ledgerselecct">
                                                                         <option value="">Select Vehicle Type</option>
                                                                         @foreach($vehicleTypes as $vehicleType)
                                                                             <option value="{{ $vehicleType->id }}">{{ $vehicleType->name }}</option>
@@ -194,7 +194,7 @@
                                                                     <input type="text" name="freight_charges[0][amount]" class="form-control mw-100" value="0">
                                                                 </td>
                                                                 <td>
-                                                                    <select name="freight_charges[0][customer_id]" class="form-control select2">
+                                                                    <select name="freight_charges[0][customer_id]" class="form-control mw-100 ledgerselecct">
                                                                         <option value="">Select Customer</option>
                                                                         @foreach($customers as $customer)
                                                                             <option value="{{ $customer->id }}">{{ $customer->company_name }}</option>
@@ -249,7 +249,7 @@
             </td>
             <td width="150px">
             <input type="hidden" name="freight_charges[${newIndex}][id]" value="">
-                <select name="freight_charges[${newIndex}][source_state_id]" class="form-control source-state state-select select2" data-type="source">
+                <select name="freight_charges[${newIndex}][source_state_id]" class="form-control mw-100 ledgerselecct source-state state-select" data-type="source">
                     <option value="">Select State</option>
                     @foreach($states as $state)
                         <option value="{{ $state->id }}">{{ $state->name }}</option>
@@ -257,12 +257,12 @@
                 </select>
             </td>
             <td width="150px">
-                <select name="freight_charges[${newIndex}][source_city_id]" class="form-control source-city city-select select2" disabled>
+                <select name="freight_charges[${newIndex}][source_city_id]" class="form-control mw-100 ledgerselecct source-city city-select " disabled>
                     <option value="">Select City</option>
                 </select>
             </td>
             <td width="150px">
-                <select name="freight_charges[${newIndex}][destination_state_id]" class="form-control destination-state state-select select2" data-type="destination">
+                <select name="freight_charges[${newIndex}][destination_state_id]" class="form-control mw-100 ledgerselecct destination-state state-select" data-type="destination">
                     <option value="">Select State</option>
                     @foreach($states as $state)
                         <option value="{{ $state->id }}">{{ $state->name }}</option>
@@ -270,7 +270,7 @@
                 </select>
             </td>
             <td width="150px">
-                <select name="freight_charges[${newIndex}][destination_city_id]" class="form-control destination-city city-select select2" disabled>
+                <select name="freight_charges[${newIndex}][destination_city_id]" class="form-control mw-100 ledgerselecct destination-city city-select" disabled>
                     <option value="">Select City</option>
                 </select>
             </td>
@@ -278,7 +278,7 @@
                 <input type="text" name="freight_charges[${newIndex}][distance]" class="form-control mw-100" value="0" min="0">
             </td>
             <td>
-                <select name="freight_charges[${newIndex}][vehicle_type_id]" class="form-control select2">
+                <select name="freight_charges[${newIndex}][vehicle_type_id]" class="form-control mw-100 ledgerselecct ">
                     <option value="">Select Vehicle Type</option>
                     @foreach($vehicleTypes as $vehicleType)
                         <option value="{{ $vehicleType->id }}">{{ $vehicleType->name }}</option>
@@ -290,7 +290,7 @@
             </td>
             <td>
                 <div class="d-flex align-items-center gap-1">
-                    <select name="freight_charges[${newIndex}][customer_id]" class="form-control select2 me-1">
+                    <select name="freight_charges[${newIndex}][customer_id]" class="form-control mw-100 ledgerselecct">
                         <option value="">Select Customer</option>
                         @foreach($customers as $customer)
                             <option value="{{ $customer->id }}">{{ $customer->company_name }}</option>
@@ -444,5 +444,22 @@
         }
     });
 });
+
+       $(function() {
+            $( ".ledgerselecct" ).autocomplete({
+                source: [ 
+				"Furniture (IT001)",
+				"Chair (IT002)",
+				"Table (IT003)",
+				"Laptop (IT004)",
+				"Bags (IT005)",
+				],
+					minLength: 0
+				}).focus(function(){
+					if (this.value == ""){
+						$(this).autocomplete("search");
+					}
+				});
+			});
 </script>
 @endsection

@@ -559,7 +559,9 @@
                                                                 <select class="costCenter form-select mw-100"
                                                                     name="cost_center_id[]"
                                                                     id="cost_center_id{{ $no }}">
+                                                                     @if ($item->cost_center_id=="")
                                                                     <option value=""></option>
+                                                                     @endif
                                                                     @foreach ($locationCostCenters as $value)
                                                                         <option value="{{ $value['id'] }}"
                                                                             @if ($value['id'] == $item->cost_center_id) selected @endif>
@@ -640,8 +642,7 @@
                                                         </tr>
                                                         <tr>
                                                             <td class="poprod-decpt">
-                                                                <span class="poitemtxt mw-100"><strong>Ledger Name:
-                                                                    </strong><span id="ledger_name_details">-</span></span>
+                                                                <span class="poitemtxt mw-100"><strong>Ledger Name:</strong><span id="ledger_name_details">-</span></span>
                                                             </td>
                                                         </tr>
                                                         <tr>

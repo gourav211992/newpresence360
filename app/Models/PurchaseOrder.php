@@ -262,6 +262,11 @@ class PurchaseOrder extends Model
         return $this->belongsTo(PaymentTerm::class,'payment_term_id');
     }
 
+    public function paymentTerms()
+    {
+        return $this->belongsTo(PaymentTerm::class,'payment_term_id');
+    }
+
     public function TermsCondition()
     {
         return $this->hasOne(PoTerm::class,'purchase_order_id');

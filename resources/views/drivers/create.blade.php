@@ -50,28 +50,40 @@
                                             <!-- Employee -->
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-2">
-                                                    <label class="form-label">Employee<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Employee</label>
                                                 </div>
                                                 <div class="col-md-4">
-                                                     <select name="user_id" id="user_id"
-                                                            class="form-select select2">
-                                                            <option value=""
-                                                                {{ old('user_id') == '' ? 'selected' : '' }}>
-                                                                Select</option>
-                                                            @foreach ($employees as $employee)
-                                                                <option value="{{ $employee->id }}"
-                                                                    {{ old('user_id') == $employee->id ? 'selected' : '' }}>
-                                                                    {{ $employee->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                </div>
-                                                 <div class="col-md-2">
-                                                    <label class="form-label">Name<span class="text-danger">*</span></label>
+                                                   <select name="user_id" id="user_id" class="form-select select2">
+                                                    <option value="" {{ old('user_id') == '' ? 'selected' : '' }}>Select</option>
+                                                    @foreach ($employees as $employee)
+                                                        <option 
+                                                            value="{{ $employee->id }}"
+                                                            data-name="{{ $employee->name }}"
+                                                            data-email="{{ $employee->email }}"
+                                                            data-mobile="{{ $employee->mobile }}"
+                                                            {{ old('user_id') == $employee->id ? 'selected' : '' }}
+                                                        >
+                                                            {{ $employee->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                                </div>    
+                                              </div>
+                                                <div class="row mb-1">
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Name <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="name" id="name" class="form-control" placeholder="Enter Driver's Name">
                                                 </div>
+
+                                              <div class="col-md-2">
+                                                    <label class="form-label">Experience (Yr) <span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input name="experience_years" id="experience_years" class="form-control" placeholder="Ex.2">
+                                                </div>
+
                                             </div>
 
                                             <!-- Name -->
@@ -83,31 +95,24 @@
                                                     <input name="email" id="email" class="form-control" placeholder="abc@domain.com">
                                                 </div>
                                                  <div class="col-md-2">
-                                                    <label class="form-label">Mobile No.<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Mobile No. <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="mobile_no" id="mobile_no" class="form-control" placeholder="Ex.1234567890">
                                                 </div>
                                             </div>
 
+                                        
+
                                             <div class="row mb-1">
-                                              <div class="col-md-2">
-                                                    <label class="form-label">Experience (Yr)<span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input name="experience_years" id="experience_years" class="form-control" placeholder="Ex.2">
-                                                </div>
                                                  <div class="col-md-2">
-                                                    <label class="form-label">License No.<span class="text-danger">*</span></label>
+                                                    <label class="form-label">License No. <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="license_no" id="license_no" class="form-control" placeholder="HR-0987654321">
-                                                </div>
-                                            </div>
-
-                                            <div class="row mb-1">
+                                                </div> 
                                               <div class="col-md-2">
-                                                    <label class="form-label">License Expiry Date<span class="text-danger">*</span></label>
+                                                    <label class="form-label">License Expiry Date <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="date" name="license_expiry_date" id="license_expiry_date" class="form-control" placeholder="YYYY-MM-DD">
@@ -116,13 +121,13 @@
 
                                           <div class="row mb-1">
                                               <div class="col-md-2">
-                                                    <label class="form-label">Front Side Of License<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Front Side Of License <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="license_front" id="license_front" class="form-control" >
                                                 </div>
                                                  <div class="col-md-2">
-                                                    <label class="form-label">Back Side Of License.<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Back Side Of License. <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="license_back" id="license_back" class="form-control" type="file">
@@ -131,13 +136,13 @@
 
                                               <div class="row mb-1">
                                               <div class="col-md-2">
-                                                    <label class="form-label">Front Side Of ID Proof<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Front Side Of ID Proof <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="id_proof_front" id="id_proof_front" class="form-control" >
                                                 </div>
                                                  <div class="col-md-2">
-                                                    <label class="form-label">Back Side Of ID Proof<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Back Side Of ID Proof <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="id_proof_back" id="id_proof_back" class="form-control" type="file">
@@ -179,4 +184,23 @@
     </div>
 </form>
 @endsection
+@section('scripts')
+<script>
+    $(document).ready(function () {
+        $('#user_id').on('change', function () {
+            var selected = $(this).find('option:selected');
+
+            var name = selected.data('name') || '';
+            var email = selected.data('email') || '';
+            var mobile = selected.data('mobile') || '';
+
+            $('#name').val(name);
+            $('#email').val(email);
+            $('#mobile_no').val(mobile);
+        });
+    });
+</script>
+
+@endsection
+
 

@@ -591,7 +591,9 @@ class JoController extends Controller
                 }
                 $po->total_item_value = $itemTotalValue ?? 0.00;
                 $po->total_discount_value = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                $po->total_tax_value = abs($totalTax) ?? 0.00;
+                if($po?->teds?->count()) {
+                    $po->total_tax_value = abs($totalTax) ?? 0.00;
+                }
                 $po->total_expense_value =  $totalHeaderExpense ?? 0.00;
                 $po->save();
 
@@ -931,7 +933,9 @@ class JoController extends Controller
                 }
                 $po->total_item_value = $itemTotalValue ?? 0.00;
                 $po->total_discount_value = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                $po->total_tax_value = abs($totalTax) ?? 0.00;
+                if($po?->teds?->count()) {
+                    $po->total_tax_value = abs($totalTax) ?? 0.00;
+                }
                 $po->total_expense_value =  $totalHeaderExpense ?? 0.00;
                 $po->save();
             } else {

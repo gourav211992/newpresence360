@@ -25,6 +25,7 @@
         <td class="no-wrap">{!! $attributesHTML !!}</td>
         <td class="no-wrap">{{$order?->uom?->name}}</td>
         <td class="no-wrap text-end">{{$order?->qty - $order?->short_closed_qty}}</td>
+        {{-- @dd($order?->pslip_bal_qty); --}}
         <td class="no-wrap text-end">{{$order?->pslip_bal_qty}}</td>
     </tr>
 @empty

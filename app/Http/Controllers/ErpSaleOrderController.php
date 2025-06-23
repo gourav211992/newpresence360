@@ -274,6 +274,7 @@ class ErpSaleOrderController extends Controller
                         ->where('status', ConstantHelper::ACTIVE)
                         ->get();
         $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
+        // $orderTypes = SaleModuleHelper::ORDER_TYPES;
         $data = [
             'series' => $books,
             'countries' => $countries,
@@ -284,7 +285,8 @@ class ErpSaleOrderController extends Controller
             'services' => $servicesBooks['services'],
             'selectedService'  => $firstService ?-> id ?? null,
             'redirectUrl' => $redirectUrl,
-            'itemImportFile' => $itemImportFile
+            'itemImportFile' => $itemImportFile,
+            // 'orderTypes' => $orderTypes
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -392,6 +394,7 @@ class ErpSaleOrderController extends Controller
         }
         $dynamicFieldsUI = $order -> dynamicfieldsUi();
         $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
+        // $orderTypes = SaleModuleHelper::ORDER_TYPES;
         $data = [
             'user' => $user,
             'series' => $books,
@@ -409,7 +412,8 @@ class ErpSaleOrderController extends Controller
             'services' => $servicesBooks['services'],
             'redirectUrl' => $redirectUrl,
             'itemImportFile' => $itemImportFile,
-            'dynamicFieldsUi' => $dynamicFieldsUI
+            'dynamicFieldsUi' => $dynamicFieldsUI,
+            // 'orderTypes' => $orderTypes
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -599,6 +603,15 @@ class ErpSaleOrderController extends Controller
                                 $qtItem -> save();
                             }
                         }
+                        //If this item is pulled from another org PO
+                        if ($soItem -> po_item_id) {
+                            $poItem = PoItem::find($soItem -> po_item_id);
+                            if (isset($poItem)) {
+                                //Subtract the value utilized
+                                $poItem -> inter_org_so_qty -= $soItem -> order_qty;
+                                $poItem -> save();
+                            }
+                        }
                         #Bom remove
                         $soItem->custom_bom_details()->delete();
                         $soItem->teds()->delete();
@@ -630,7 +643,7 @@ class ErpSaleOrderController extends Controller
                     'revision_date' => null,
                     'reference_number' => $request -> reference_no,
                     'store_id' => $request -> store_id ?? null,
-                    'store_code' => $store ?-> store_code ?? null,
+                    'store_code' => $store ?-> store_name ?? null,
                     'department_id' => $request -> department_id ?? null,
                     'department_code' => $department ?-> name ?? null,
                     'customer_id' => $request -> customer_id,
@@ -842,8 +855,8 @@ class ErpSaleOrderController extends Controller
                         //Tax
                         $itemTax = 0;
                         $itemPrice = ($itemDataValue['item_value'] + $headerDiscount + $itemDataValue['item_discount_amount']) / $itemDataValue['order_qty'];
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
+                        $partyCountryId = isset($billingAddress) ? $billingAddress -> country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress -> state_id : null;
                         $taxDetails = SaleModuleHelper::checkTaxApplicability($request -> customer_id, $request -> book_id) ? TaxHelper::calculateTax($itemDataValue['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'sale') : [];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -925,7 +938,6 @@ class ErpSaleOrderController extends Controller
                                 }
                             }
                         }
-                        
                         //Quotation 
                         if ($request -> quotation_item_ids && isset($request -> quotation_item_ids[$itemDataKey])) {
                             $qtItem = ErpSoItem::find($request -> quotation_item_ids[$itemDataKey]);
@@ -934,6 +946,15 @@ class ErpSaleOrderController extends Controller
                                 $qtItem -> save();
                                 $soItem -> order_quotation_id = $qtItem -> header ?-> id;
                                 $soItem -> sq_item_id = $qtItem -> id;
+                                $soItem -> save();
+                            }
+                        }
+                        if ($request -> po_item_ids && isset($request -> po_item_ids[$itemDataKey])) {
+                            $poItem = PoItem::find($request -> po_item_ids[$itemDataKey]);
+                            if (isset($poItem)) {
+                                $poItem -> inter_org_so_qty = ($poItem -> inter_org_so_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                $poItem -> save();
+                                $soItem -> po_item_id = $poItem -> id;
                                 $soItem -> save();
                             }
                         }
@@ -1552,9 +1573,10 @@ class ErpSaleOrderController extends Controller
                     $header -> customer_email = $customer ?-> email;
                     $header -> customer_gstin = $customer ?-> compliances ?-> gstin_no;
     
-                    $customerShipping = $customer ?-> addresses() -> whereIn('type', ['shipping', 'both']) -> with(['city', 'state', 'country']) -> first();
-                    $customerBilling = $customer ?-> addresses() -> whereIn('type', ['billing', 'both']) -> with(['city', 'state', 'country']) -> first();
-    
+                    // $customerShipping = $customer ?-> addresses() -> whereIn('type', ['shipping', 'both']) -> with(['city', 'state', 'country']) -> first();
+                    $customerShipping = $header -> store_address() -> with(['city', 'state', 'country']) -> first();
+                    // $customerBilling = $customer ?-> addresses() -> whereIn('type', ['billing', 'both']) -> with(['city', 'state', 'country']) -> first();
+                    $customerBilling = $header -> bill_address_details() -> with(['city', 'state', 'country']) -> first();    
                     $header -> billing_address_details = $customerBilling;
                     $header -> billing_address = $customerBilling ?-> id;
                     $header -> shipping_address_details = $customerShipping;
@@ -1610,7 +1632,7 @@ class ErpSaleOrderController extends Controller
                     -> whereHas('vendor', function ($vendorQuery) use($orgId) {
                         $vendorQuery -> where('related_party', 'Yes') -> where('enter_company_org_id', $orgId);
                     });
-                })-> with('attributes') -> with('uom');
+                })-> with('attributes') -> with('uom') -> whereRaw('(order_qty - short_close_qty) > inter_org_so_qty');
     
                 if ($request->item_id) {
                     $quotation = $quotation->where('item_id', $request->item_id);

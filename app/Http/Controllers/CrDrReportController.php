@@ -33,6 +33,8 @@ use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Cookie;
 use App\Exports\DebitorCreditoExcelExport;
+use App\Models\CostGroup;
+
 
 
 
@@ -60,6 +62,20 @@ class CrDrReportController extends Controller
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
             $end = date('Y-m-d', strtotime($dates[1]));
+        }
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
         }
 
 
@@ -102,7 +118,7 @@ class CrDrReportController extends Controller
                     ->get();
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost);
+                if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
@@ -117,7 +133,7 @@ class CrDrReportController extends Controller
                     ->get();
 
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost);
+                if (!is_null($ledger_groups)) $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
             }
         }
         $all_groups = Group::whereIn('id', $drp_group->getAllChildIds())->get();
@@ -150,6 +166,21 @@ class CrDrReportController extends Controller
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
             $end = date('Y-m-d', strtotime($dates[1]));
+        }
+
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
         }
         $user = Helper::getAuthenticatedUser();
         $organizationId = $user->organization_id;
@@ -261,7 +292,12 @@ class CrDrReportController extends Controller
                     $query->where('ledger_parent_id', $group);
                     $query->where($type . '_amt_org', '>', 0);
                     $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                    // $q->where('cost_center_id', $cost);
+                     if (is_array($cost)) {
+                        $q->whereIn('cost_center_id', $cost);
+                    } else {
+                        $q->where('cost_center_id', $cost);
+                    }
                     });
                 })->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                     ->when(!is_null($loc), function ($query) use ($loc) {
@@ -284,7 +320,12 @@ class CrDrReportController extends Controller
                 $l_ledger = ItemDetail::whereIn('ledger_id', $ledgers)
                     ->whereIn('voucher_id', $vouchers)
                     ->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                    // $q->where('cost_center_id', $cost);
+                        if (is_array($cost)) {
+                            $q->whereIn('cost_center_id', $cost);
+                        } else {
+                            $q->where('cost_center_id', $cost);
+                        }
                     })
                     ->where($type . '_amt_org', '>', 0)->get()
                     ->groupBy('ledger_id')
@@ -338,7 +379,12 @@ class CrDrReportController extends Controller
                         $query->where('ledger_parent_id', $group);
                         $query->where($type . '_amt_org', '>', 0);
                         $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                            // $q->where('cost_center_id', $cost);
+                            if (is_array($cost)) {
+                                $q->whereIn('cost_center_id', $cost);
+                            } else {
+                                $q->where('cost_center_id', $cost);
+                            }
                     });
                     })
 
@@ -402,7 +448,13 @@ class CrDrReportController extends Controller
                         $query->whereIn('ledger_id', $ledgers);
                         $query->where($type . '_amt_org', '>', 0);
                         $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                        // $q->where('cost_center_id', $cost);
+                            // $q->where('cost_center_id', $cost);
+                            if (is_array($cost)) {
+                                $q->whereIn('cost_center_id', $cost);
+                            } else {
+                                $q->where('cost_center_id', $cost);
+                            }
                     });
                     })
                         // ->where('organization_id', $organization_id)
@@ -426,7 +478,12 @@ class CrDrReportController extends Controller
 
                     $customer = ItemDetail::whereIn('voucher_id', $vouchers)
                     ->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                        // $q->where('cost_center_id', $cost);
+                        if (is_array($cost)) {
+                            $q->whereIn('cost_center_id', $cost);
+                        } else {
+                            $q->where('cost_center_id', $cost);
+                        }
                     })->where($type . '_amt_org', '>', 0)->get()
                         ->groupBy('ledger_parent_id')
                         ->map(function ($items) use ($group, $ages0, $ages1, $ages2, $ages3, $ages4, $amount) {
@@ -1136,6 +1193,20 @@ class CrDrReportController extends Controller
         if ($request->has('cost_center_id'))
             $cost = $request->cost_center_id;
 
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         if ($request->has('organization_id'))
             $org = array_filter(array_map('intval', explode(',', $request->organization_id)));
 
@@ -1153,12 +1224,17 @@ class CrDrReportController extends Controller
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
         
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost,$ledger, $group, $type) {
+        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost_center_ids,$ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
-              $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+              $query->when(!is_null($cost_center_ids), function ($q) use ($cost_center_ids) {
+                    // $q->where('cost_center_id', $cost);
+                     if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
                     });
         })
             // ->where('organization_id', $organization_id)
@@ -1195,12 +1271,14 @@ class CrDrReportController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
-        return view('finance_report.details', compact('cost_centers', 'companies', 'organizationId', 'locations', 'ledger_name', 'scheduler', 'group_name', 'credit_days', 'data', 'cc_users', 'to_users', 'to_user_mail', 'to_type', 'ledger', 'group', 'type', 'date', 'date2'));
+        return view('finance_report.details', compact('cost_centers', 'companies','cost_groups', 'organizationId', 'locations', 'ledger_name', 'scheduler', 'group_name', 'credit_days', 'data', 'cc_users', 'to_users', 'to_user_mail', 'to_type', 'ledger', 'group', 'type', 'date', 'date2'));
     }
     public function addScheduler(Request $request)
     {
@@ -1299,6 +1377,21 @@ class CrDrReportController extends Controller
             $end = date('Y-m-d', strtotime($dates[1]));
         }
 
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
+
 
             if ($organization_id == null)
                 $organization_id = Helper::getAuthenticatedUser()->organization_id;
@@ -1315,12 +1408,17 @@ class CrDrReportController extends Controller
             $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
             $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
-            $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost,$ledger, $group, $type) {
+            $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost_center_ids,$ledger, $group, $type) {
                 $query->where('ledger_id', $ledger);
                 $query->where('ledger_parent_id', $group);
                 $query->where($type . '_amt_org', '>', 0);
-                  $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                  $query->when(!is_null($cost_center_ids), function ($q) use ($cost_center_ids) {
+                    // $q->where('cost_center_id', $cost);
+                    if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
                     });
 
             })
@@ -1537,6 +1635,20 @@ class CrDrReportController extends Controller
         if ($request->has('organization_id'))
             $org = array_filter(array_map('intval', explode(',', $request->organization_id)));
 
+         $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
 
         $ages_all = [
             $request->age0 ?? 30,
@@ -1557,12 +1669,17 @@ class CrDrReportController extends Controller
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
         $vouchers = Voucher::withDefaultGroupCompanyOrg()
-            ->withWhereHas('items', function ($query) use ($ledger, $group, $type,$cost) {
+            ->withWhereHas('items', function ($query) use ($ledger, $group, $type,$cost_center_ids) {
                 $query->where('ledger_id', $ledger);
                 $query->where('ledger_parent_id', $group);
                 $query->where($type . '_amt_org', '>', 0);
-                  $query->when(!is_null($cost), function ($q) use ($cost) {
-                    $q->where('cost_center_id', $cost);
+                  $query->when(!is_null($cost_center_ids), function ($q) use ($cost_center_ids) {
+                    // $q->where('cost_center_id', $cost);
+                    if (is_array($cost_center_ids)) {
+                        $q->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $q->where('cost_center_id', $cost_center_ids);
+                    }
                     });
 
 
@@ -1668,10 +1785,12 @@ class CrDrReportController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
-        return view('finance_report.creditors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers'));
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        return view('finance_report.creditors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers','cost_groups'));
     }
     public function debitorsPendingPayment(Request $request)
     {
@@ -1747,10 +1866,12 @@ class CrDrReportController extends Controller
             return [
                 'id' => $item->costCenter->id,
                 'name' => $item->costCenter->name,
+                'cost_group_id' => $item->costCenter->cost_group_id,
                 'location' => $item->costCenter->locations,
             ];
         })->toArray();
-        return view('finance_report.debitors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers'));
+        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        return view('finance_report.debitors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers','cost_groups'));
     }
 
     public function getInvocies(Request $request)
@@ -1789,6 +1910,20 @@ class CrDrReportController extends Controller
             
 
         $results = collect();
+        $cost_center_ids = null;
+        if (!empty($request->cost_center_id)) {
+            $cost_center_ids = $request->cost_center_id ?? null;
+            // dd($cost_center_ids);
+        } elseif (!empty($request->cost_group_id)) {
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
+                ->where('id', $request->cost_group_id)
+                ->where('status', 'active')
+                ->first();
+
+            $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
+                        // dd($cost_center_ids);
+        }
         foreach ($ledger_ids as $ledger) {
             $ledgerGroupIds = is_array($ledger->ledger_group_id)
             ? $ledger->ledger_group_id
@@ -1800,7 +1935,7 @@ class CrDrReportController extends Controller
                 ->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereIn('location', $locationIds)
-                ->withWhereHas('items', function ($i) use ($ledger, $request,$ledgerGroupIds) {
+                ->withWhereHas('items', function ($i) use ($ledger, $request,$ledgerGroupIds,$cost_center_ids) {
                     $i->where('ledger_id', $ledger->id)
                     ->whereIn('ledger_parent_id', $ledgerGroupIds);
 
@@ -1809,8 +1944,13 @@ class CrDrReportController extends Controller
                     } else {
                         $i->where('debit_amt_org', '>', 0);
                     }
-                    if ($request->cost_center_id) {
-                    $i->where('cost_center_id', $request->cost_center_id);
+                    if ($cost_center_ids) {
+                         if (is_array($cost_center_ids)) {
+                        $i->whereIn('cost_center_id', $cost_center_ids);
+                    } else {
+                        $i->where('cost_center_id', $cost_center_ids);
+                    }
+                    // $i->where('cost_center_id', $request->cost_center_id);
                     }
                     if ($request->ledgerGroup) {
                     $i->whereHas('ledger_group', function ($lg) use ($request) {

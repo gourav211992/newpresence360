@@ -855,20 +855,22 @@ class VendorController extends Controller
 
         public function exportSuccessfulVendors()
         {
-            $uploadVendors = UploadVendorMaster::where('status', 'Success')->get();
-            $vendors = Vendor::with(['category', 'subcategory', 'currency', 'paymentTerms', 'erpOrganizationType', 'addresses', 'compliances', 'ledgerGroup', 'ledger'])
-                            ->whereIn('company_name', $uploadVendors->pluck('company_name'))
-                            ->get();
-
+            $user = Helper::getAuthenticatedUser();
+            $uploadVendors = UploadVendorMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
+            $vendors = Vendor::withDefaultGroupCompanyOrg()
+                ->with(['category', 'subcategory', 'currency', 'paymentTerms', 'erpOrganizationType', 'addresses', 'compliances', 'ledgerGroup', 'ledger'])
+                ->whereIn('company_name', $uploadVendors->pluck('company_name'))
+                ->get();
+        
             return Excel::download(new VendorsExport($vendors, $this->itemImportExportService), "successful-vendors.xlsx");
         }
-
+        
         public function exportFailedVendors()
         {
-            $failedVendors = UploadVendorMaster::where('status', 'Failed')->get();
+            $user = Helper::getAuthenticatedUser();
+            $failedVendors = UploadVendorMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
             return Excel::download(new FailedVendorsExport($failedVendors), "failed-vendors.xlsx");
         }
-
         public function checkGst()
         {
             try {

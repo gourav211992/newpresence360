@@ -114,7 +114,7 @@ class CustomerRequest extends FormRequest
                         ->whereNull('deleted_at'),
             ],
             'phone' => 'nullable|string|regex:/^\d{10,12}$/',
-            'mobile' => 'nullable|string|regex:/^\d{10,12}$/',
+            'mobile' => 'nullable|string|regex:/^\d{10}$/',
             'whatsapp_number' => 'nullable|string|regex:/^\d{10,12}$/',
             'whatsapp_same_as_mobile' => 'nullable|string',
             'notification' => 'nullable|array',
@@ -166,7 +166,7 @@ class CustomerRequest extends FormRequest
             'contacts.*.salutation' => 'nullable|string|max:50',
             'contacts.*.name' => 'nullable|string|max:255',
             'contacts.*.email' => 'nullable|email|max:255', 
-            'contacts.*.mobile' => 'nullable|string|regex:/^\d{10,12}$/',
+            'contacts.*.mobile' => 'nullable|string|regex:/^\d{10}$/',
             'contacts.*.phone' => 'nullable|string|regex:/^\d{10,12}$/',
             'contacts.*.primary' => 'nullable',
 
@@ -265,7 +265,7 @@ class CustomerRequest extends FormRequest
             'email.unique' => 'The email has already been taken.',
 
             'phone.regex' => 'The phone number must be between 10 and 12 digits.',
-            'mobile.regex' => 'The mobile number must be between 10 and 12 digits.',
+            'mobile.regex' => 'The mobile number must be  10 digits.',
             'whatsapp_number.regex' => 'The WhatsApp number must be between 10 and 12 digits.',
             'whatsapp_same_as_mobile.string' => 'The WhatsApp same as mobile field must be a string.',
             
@@ -350,7 +350,7 @@ class CustomerRequest extends FormRequest
             'contacts.*.email.email' => 'The email must be a valid email address.',
             'contacts.*.email.max' => 'The email may not be greater than 255 characters.',
             'contacts.*.mobile.string' => 'The mobile number must be a string.',
-            'contacts.*.mobile.regex' => 'The mobile number must be between 10 to 12 digits.',
+            'contacts.*.mobile.regex' => 'The mobile number must be 10 digits.',
             'contacts.*.phone.string' => 'The phone number must be a string.',
             'contacts.*.phone.regex' => 'The phone number must be between 10 to 12 digits.',
 

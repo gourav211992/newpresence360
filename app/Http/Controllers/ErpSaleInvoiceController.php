@@ -442,7 +442,7 @@ class ErpSaleInvoiceController extends Controller
             $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
             $einvoice = $order -> irnDetail() -> first();
             $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
-                $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$order -> invoice_required;
+                $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS;
             if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
                 $enableEinvoice = false;
             }
@@ -507,10 +507,10 @@ class ErpSaleInvoiceController extends Controller
             $request -> merge(['type' => $type]);
             $invoiceRequired = false;
             $store = ErpStore::find($request -> store_id);
-            $invoiceRequiredParam = OrganizationBookParameter::where('book_id', $request -> book_id) -> where('parameter_name', ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM) -> first();
-            if (isset($invoiceRequiredParam) && $invoiceRequiredParam -> parameter_value[0] == 'yes') {
-                $invoiceRequired = true;
-            }
+            // $invoiceRequiredParam = OrganizationBookParameter::where('book_id', $request -> book_id) -> where('parameter_name', ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM) -> first();
+            // if (isset($invoiceRequiredParam) && $invoiceRequiredParam -> parameter_value[0] == 'yes') {
+            //     $invoiceRequired = true;
+            // }
             //Auth credentials
             $organization = Organization::find($user -> organization_id);
             $organizationId = $organization ?-> id ?? null;
@@ -958,9 +958,9 @@ class ErpSaleInvoiceController extends Controller
                             $uom = Unit::find($request -> uom_id[$itemKey] ?? null);
                             $dnoteQty = 0;
                             $invoiceQty = 0;
-                            if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                            if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                 $dnoteQty = isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0;
-                                if (!$saleInvoice -> invoice_required) {
+                                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                     $invoiceQty = isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0;
                                 }
                             } else {
@@ -1016,8 +1016,8 @@ class ErpSaleInvoiceController extends Controller
                         //Tax
                         $itemTax = 0;
                         $itemPrice = ($itemDataValue['item_value'] + $headerDiscount + $itemDataValue['item_discount_amount']) / $itemDataValue['order_qty'];
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
+                        $partyCountryId = isset($billingAddress) ? $billingAddress -> country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress -> state_id : null;
                         $taxDetails = TaxHelper::calculateTax($itemDataValue['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'sale');
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -1199,7 +1199,7 @@ class ErpSaleInvoiceController extends Controller
                                         }
                                     }
                                     //If invoice is required then update both quantites
-                                    if (!$saleInvoice -> invoice_required) {
+                                    if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::SI_SERVICE_ALIAS) {
                                         $qtItem -> invoice_qty = $itemDataValue['order_qty'];
                                     }
                                     $soItem -> dnote_id = $qtItem -> header ?-> id;
@@ -2210,7 +2210,7 @@ class ErpSaleInvoiceController extends Controller
             }
         }
         if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
-        ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$order -> invoice_required))
+        ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
         {
             $pdfFile = 'pdf.sales-invoice-pdf';
         } else {
@@ -2810,8 +2810,8 @@ class ErpSaleInvoiceController extends Controller
     public function salesInvoiceReport(Request $request)
     {
         $pathUrl = route('sale.invoice.index');
-        $orderType = [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS];
-        $salesOrders = ErpSaleInvoice::with('items')->whereIn('document_type', $orderType) ->where('invoice_required', 0)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $orderType = [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
+        $salesOrders = ErpSaleInvoice::with('items')->whereIn('document_type', $orderType) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
         //Customer Filter
         $salesOrders = $salesOrders -> when($request -> customer_id, function ($custQuery) use($request) {
             $custQuery -> where('customer_id', $request -> customer_id);

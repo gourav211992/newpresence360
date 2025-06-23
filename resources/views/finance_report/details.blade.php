@@ -399,6 +399,11 @@
                                     <select id="location_id" class="form-select select2">
                                     </select>
                                 </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Cost Group</label>
+                                    <select id="cost_group_id" class="form-select select2" name="cost_group_id" required>
+                                    </select>
+                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Cost Center</label>
                                     <select id="cost_center_id" class="form-select select2" name="cost_center_id"
@@ -548,12 +553,14 @@ const date = document.getElementById('fp-range').value||null;
 const location_id = document.getElementById('location_id').value||null;
 const organization_id = document.getElementById('organization_id').value||null;
 const cost_center_id = document.getElementById('cost_center_id').value||null;
+const cost_group_id = document.getElementById('cost_group_id').value||null;
         let baseUrl = "{{ route('crdr.report.ledger.print', [$type, $ledger, $group, 'outstanding']) }}";
         const filters = {
             date: date, // e.g., '2025-06-16'
             location_id: location_id,
             organization_id: organization_id,
-            cost_center_id: cost_center_id
+            cost_center_id: cost_center_id,
+            cost_group_id: cost_group_id,
         };
 
         // Build query string with non-empty values
@@ -572,6 +579,7 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
             let range = $('#fp-range').val();
             let location = $('#location_id').val();
             let cost_center = $('#cost_center_id').val();
+            let cost_group_id = $('#cost_group_id').val();
             let organization = $('#organization_id').val();
 
             let currentUrl = new URL(window.location.href);
@@ -596,6 +604,10 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
                 currentUrl.searchParams.set('cost_center_id', cost_center);
             else
                 currentUrl.searchParams.delete('cost_center_id');
+            if (cost_group_id !== "" && cost_group_id !== null)
+                currentUrl.searchParams.set('cost_group_id', cost_group_id);
+            else
+                currentUrl.searchParams.delete('cost_group_id');
 
             filterTable();
             window.location.href = currentUrl.toString();
@@ -961,12 +973,14 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
 const location_id = document.getElementById('location_id').value||null;
 const organization_id = document.getElementById('organization_id').value||null;
 const cost_center_id = document.getElementById('cost_center_id').value||null;    
+const cost_group_id = document.getElementById('cost_group_id').value||null;    
             let baseUrl = `{{ route('crdr.report.ledger.print', [$type, $ledger, $group]) }}/${defaultBillType}`;
             const filters = {
             date: date, // e.g., '2025-06-16'
             location_id: location_id,
             organization_id: organization_id,
-            cost_center_id: cost_center_id
+            cost_center_id: cost_center_id,
+            cost_group_id: cost_group_id,
         };
 
         // Build query string with non-empty values
@@ -992,7 +1006,8 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
             date: date, // e.g., '2025-06-16'
             location_id: location_id,
             organization_id: organization_id,
-            cost_center_id: cost_center_id
+            cost_center_id: cost_center_id,
+            cost_group_id: cost_group_id,
         };
 
         // Build query string with non-empty values
@@ -1054,12 +1069,15 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
 
             if (urlParams.get('cost_center_id') == "")
                 $('#cost_center_id').val(urlParams.get('cost_center_id'));
+            if (urlParams.get('cost_group_id') == "")
+                $('#cost_group_id').val(urlParams.get('cost_group_id'));
 
             if (urlParams.get('location_id') == "")
                 $('#location_id').val(urlParams.get('location_id'));
         });
         const locations = @json($locations);
         const costCenters = @json($cost_centers);
+        const costGroups = @json($cost_groups);
 
         function updateLocationsDropdown(selectedOrgIds) {
             selectedOrgIds = $('#organization_id').val() || [];
@@ -1081,7 +1099,7 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
 
             // Load cost centers if location was pre-selected
             if (requestedLocationId) {
-                loadCostCenters(requestedLocationId);
+                loadCostGroupsByLocation(requestedLocationId);
             }
 
             $locationDropdown.trigger('change');
@@ -1089,37 +1107,60 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
 
 
 
-        function loadCostCenters(locationId) {
-            if (locationId) {
-                const filteredCenters = costCenters.filter(center => {
-                    if (!center.location) return false;
+        function loadCostGroupsByLocation(locationId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.val(@json(request('cost_center_id')) || "");
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location) return false;
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+            return locationArray.includes(String(locationId));
+        });
 
-                    const locationArray = Array.isArray(center.location) ?
-                        center.location.flatMap(loc => loc.split(',')) : [];
+        const costGroupIds = [...new Set(filteredCenters.map(center => center.cost_group_id))];
+        
+        const filteredGroups = costGroups.filter(group => costGroupIds.includes(group.id));
+        console.log(filteredCenters,costGroupIds,filteredGroups);
 
-                    return locationArray.includes(String(locationId));
-                });
-                // console.log(filteredCenters,costCenters,locationId);
+        const $groupDropdown = $('#cost_group_id');
+        $groupDropdown.empty().append('<option value="">Select Cost Group</option>');
 
-                const $costCenter = $('#cost_center_id');
-                $costCenter.empty();
+        filteredGroups.forEach(group => {
+            $groupDropdown.append(`<option value="${group.id}">${group.name}</option>`);
+        });
 
-                if (filteredCenters.length === 0) {
-                    $costCenter.prop('required', false);
-                    $('.cost_center').hide();
-                } else {
-                    $costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
-                    $('.cost_center').show();
+        $('#cost_group_id').trigger('change');
+    }
 
-                    filteredCenters.forEach(center => {
-                        $costCenter.append(`<option value="${center.id}">${center.name}</option>`);
-                    });
-                }
-                $costCenter.val(@json(request('cost_center_id')) || "");
-                $costCenter.trigger('change');
+    function loadCostCentersByGroup(locationId, groupId) {
+        const costCenter = $('#cost_center_id');
+        costCenter.empty();
 
-            }
+        const filteredCenters = costCenters.filter(center => {
+            if (!center.location || center.cost_group_id !== groupId) return false;
+
+            const locationArray = Array.isArray(center.location)
+                ? center.location.flatMap(loc => loc.split(','))
+                : [];
+
+            return locationArray.includes(String(locationId));
+        });
+
+        if (filteredCenters.length === 0) {
+            costCenter.prop('required', false);
+            $('#cost_center_id').hide();
+        } else {
+            costCenter.prop('required', true).append('<option value="">Select Cost Center</option>');
+            $('#cost_center_id').show();
+
+            filteredCenters.forEach(center => {
+                costCenter.append(`<option value="${center.id}">${center.name}</option>`);
+            });
         }
+        costCenter.val(@json(request('cost_center_id')) || "");
+        costCenter.trigger('change');
+    }
         $('#organization_id').trigger('change');
         // On change of organization
         $('#organization_id').on('change', function() {
@@ -1141,10 +1182,21 @@ const cost_center_id = document.getElementById('cost_center_id').value||null;
                 // $('.cost_center').hide(); // Optional: hide the section if needed
                 return;
             }
-            loadCostCenters(locationId);
+            loadCostGroupsByLocation(locationId);
 
 
 
         });
+        $('#cost_group_id').on('change', function () {
+                const locationId = $('#location_id').val();
+                const groupId = parseInt($(this).val());
+
+                if (!locationId || !groupId) {
+                    $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+                    return;
+                }
+
+                loadCostCentersByGroup(locationId, groupId);
+            });
     </script>
 @endsection

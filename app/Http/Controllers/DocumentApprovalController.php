@@ -330,7 +330,8 @@ class DocumentApprovalController extends Controller
                         if (isset($siItem)) {
                             $siItem->srn_qty -= $items->order_qty;
                             $siItem->dnote_qty += $items->order_qty;
-                            if ($siItem->header->invoice_required) {
+                            if ($siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS || 
+                                    $siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                 $siItem->invoice_qty += $items->order_qty;
                             }
                             $siItem->save();
@@ -341,7 +342,8 @@ class DocumentApprovalController extends Controller
                                     $soItem->srn_qty -= $items->order_qty;
                                     $soItem->dnote_qty += $items->order_qty;
                                     $soItem->order_qty += $items->order_qty;
-                                    if ($siItem->header->invoice_required) {
+                                    if ($siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS || 
+                                            $siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                         $soItem->invoice_qty += $items->order_qty;
                                     }
                                 }

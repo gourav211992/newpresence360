@@ -20,6 +20,8 @@ class PslipRequest extends FormRequest
         $rules = [
             'book_id' => 'required',
             'cons.*.item_qty' => 'required|numeric|min:0.01',
+            'item_qty.*' => 'required|numeric|min:1',
+            'item_accepted_qty.*' => 'required|numeric|min:1',
         ];
 
         $today = now()->toDateString();
@@ -75,7 +77,8 @@ class PslipRequest extends FormRequest
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
-                if($id) {
+                $pslipBomMappingId = $component['pslip_bom_cons_id'] ?? null;
+                if($pslipBomMappingId) {
                     $moBomMapping = PslipBomConsumption::find($moBomMappingId);
                 } else {
                     $moBomMapping = MoBomMapping::find($moBomMappingId);
@@ -106,7 +109,7 @@ class PslipRequest extends FormRequest
                     $rm_type,
                     $itemWipStationId
                 );
-                $stockBalanceQty = $stocks['confirmedStocks'] ?? 0;
+                $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
                 if ($requiredQty > $stockBalanceQty) {
                     $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
@@ -125,6 +128,12 @@ class PslipRequest extends FormRequest
             'document_date.date' => 'Please enter a valid date for the document date.',
             'document_date.after_or_equal' => 'The document date cannot be in the past.',
             'document_date.before_or_equal' => 'The document date cannot be in the future.',
+            'item_qty.*.required' => 'Produced quantity is required.',
+            'item_qty.*.numeric'  => 'Produced quantity must be a number.',
+            'item_qty.*.min'      => 'Produced quantity must be at least 1.',
+            'item_accepted_qty.*.required' => 'Accepted quantity is required.',
+            'item_accepted_qty.*.numeric'  => 'Accepted quantity must be a number.',
+            'item_accepted_qty.*.min'      => 'Accepted quantity must be at least 1.',
         ];
  
     }
