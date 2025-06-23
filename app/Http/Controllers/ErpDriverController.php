@@ -123,6 +123,7 @@ class ErpDriverController extends Controller
             'experience_years'    => $validated['experience_years'] ?? null,
             'license_no'          => $validated['license_no'],
             'license_expiry_date' => $validated['license_expiry_date'],
+            'status'              => $validated['status'],
         ]);
 
         $this->handleDriverMediaUploads($request, $driver);
@@ -132,7 +133,7 @@ class ErpDriverController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Record created successfully',
-            'data' => $driver->load('licenseFrontMedia', 'licenseBackMedia'), // optional: eager load
+            'data' => $driver->load('licenseFrontMedia', 'licenseBackMedia'), 
         ]);
     } catch (\Exception $e) {
         DB::rollBack();
@@ -198,7 +199,7 @@ class ErpDriverController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validated = $request->validated();
-
+dd($request->all());
         DB::beginTransaction();
 
         try {
@@ -215,6 +216,7 @@ class ErpDriverController extends Controller
                 'experience_years'    => $validated['experience_years'] ?? null,
                 'license_no'          => $validated['license_no'],
                 'license_expiry_date' => $validated['license_expiry_date'],
+                'status'              => $validated['status'],
             ]);
 
             $this->handleDriverMediaUploads($request, $driver); 

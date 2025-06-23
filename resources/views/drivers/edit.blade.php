@@ -60,28 +60,41 @@
                                         <div class="col-md-9">
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-2">
-                                                    <label class="form-label">Employee<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Employee</label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <select name="user_id" id="user_id" class="form-select select2">
                                                         <option value="">Select</option>
                                                         @foreach ($employees as $employee)
-                                                            <option value="{{ $employee->id }}" {{ old('user_id', $driver->user_id) == $employee->id ? 'selected' : '' }}>
+                                                            <option value="{{ $employee->id }}" data-name="{{ $employee->name }}"
+                                                            data-email="{{ $employee->email }}"
+                                                            data-mobile="{{ $employee->mobile }}" {{ old('user_id', $driver->user_id) == $employee->id ? 'selected' : '' }}>
                                                                 {{ $employee->name }}
                                                             </option>
                                                         @endforeach
                                                     </select>
                                                 </div>
 
+                                              
+                                            </div>
+                                                                                        <div class="row mb-1">
                                                 <div class="col-md-2">
                                                     <label class="form-label">Name<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="name" id="name" class="form-control" value="{{ old('name', $driver->name) }}" placeholder="Enter Driver's Name">
                                                 </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label">Experience (Yr)<span class="text-danger">*</span></label>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <input name="experience_years" id="experience_years" class="form-control" value="{{ old('experience_years', $driver->experience_years) }}" placeholder="Ex.2">
+                                                </div>
+
                                             </div>
 
                                             <div class="row mb-1">
+
                                                 <div class="col-md-2">
                                                     <label class="form-label">Email Id</label>
                                                 </div>
@@ -96,22 +109,15 @@
                                                 </div>
                                             </div>
 
+
+
                                             <div class="row mb-1">
-                                                <div class="col-md-2">
-                                                    <label class="form-label">Experience (Yr)<span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <input name="experience_years" id="experience_years" class="form-control" value="{{ old('experience_years', $driver->experience_years) }}" placeholder="Ex.2">
-                                                </div>
                                                 <div class="col-md-2">
                                                     <label class="form-label">License No.<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="license_no" id="license_no" class="form-control" value="{{ old('license_no', $driver->license_no) }}" placeholder="HR-0987654321">
                                                 </div>
-                                            </div>
-
-                                            <div class="row mb-1">
                                                 <div class="col-md-2">
                                                     <label class="form-label">License Expiry Date<span class="text-danger">*</span></label>
                                                 </div>
@@ -205,10 +211,20 @@
 @endsection
 
 @section('scripts')
-<!-- Include Select2 if needed -->
 <script>
     $(document).ready(function () {
-        $('.select2').select2();
+        $('#user_id').on('change', function () {
+            var selected = $(this).find('option:selected');
+
+            var name = selected.data('name') || '';
+            var email = selected.data('email') || '';
+            var mobile = selected.data('mobile') || '';
+
+            $('#name').val(name);
+            $('#email').val(email);
+            $('#mobile_no').val(mobile);
+        });
     });
 </script>
+
 @endsection

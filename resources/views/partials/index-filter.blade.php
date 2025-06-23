@@ -54,17 +54,18 @@ filtersComponents.forEach(filterData => {
         `;
     }
                 
-            });
-            filtersComponents.forEach(filterData => {
-                if (filterData.type == 'auto_complete') {
-                    initializeAutoCompleteFilter(filterData.id, filterData.term, filterData.value_key, filterData.label_key, filterData.dependent);
-                }
-            });
+    });
+    filtersComponents.forEach(filterData => {
+        if (filterData.type == 'auto_complete') {
+            initializeAutoCompleteFilter(filterData.id, filterData.term, filterData.value_key, filterData.label_key, filterData.dependent);
+        }
+    });
 
-            function initializeAutoCompleteFilter(selector, type, valueKey, labelKey, dependentElements = []) {
-                $("#" + selector).autocomplete({
-                    source: function(request, response) {
-                        $.ajax({
+    function initializeAutoCompleteFilter(selector, type, valueKey, labelKey, dependentElements = []) {
+        console.log('autocomplete me entry',selector);
+        $("#" + selector).autocomplete({
+            source: function(request, response) {
+                $.ajax({
                 url: '/search',
                 method: 'GET',
                 dataType: 'json',
@@ -108,6 +109,7 @@ filtersComponents.forEach(filterData => {
         },
         change: function(event, ui) {
             if (!ui.item) {
+                $("#" + selector).val("");
                 $("#" + selector + "_input").val("");
             }
         }

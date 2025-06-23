@@ -2102,6 +2102,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     #filtered document view
     Route::get('/pending-requests', [IndexController::class, 'requests'])->name('riv.requests');
     Route::get('/pending-approvals', [IndexController::class, 'approvals'])->name('riv.approvals');
+    Route::get('/pending-postings', [IndexController::class, 'postings'])->name('riv.postings');
 
 
 
@@ -2255,6 +2256,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::put('/logistics/multi-point-fixed/update/{id}', [ErpMultiPointFixedController::class, 'update'])->name('logistics.multi-point-fixed.update');
     Route::get('/logistics/multi-point-fixed/edit/{id}', [ErpMultiPointFixedController::class, 'edit'])->name('logistics.multi-point-fixed.edit');
     Route::delete('/logistics/multi-point-fixed/{id}', [ErpMultiPointFixedController::class, 'destroy'])->name('logistics.multi-point-fixed.destroy');
+    Route::get('/logistics/multi-point-fixed/get-cities-by-state', [ErpMultiPointFixedController::class, 'getCityByState'])->name('logistics.multi-point-fixed.get-cities-by-state');
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');

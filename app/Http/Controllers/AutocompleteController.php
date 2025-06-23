@@ -30,6 +30,7 @@ use App\Models\ErpShelf;
 use App\Models\ErpSoItem;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
+use App\Models\ErpTransaction;
 use App\Models\ErpVendor;
 use App\Models\ExpenseMaster;
 use App\Models\Hsn;
@@ -1969,6 +1970,28 @@ class AutocompleteController extends Controller
                 }) -> when($term, function ($termQuery) use($term) {
                     $termQuery -> where('name', 'LIKE', '%'.$term.'%');
                 }) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
+            }elseif ($type === 'document_services') {
+                $results = OrganizationService::withDefaultGroupCompanyOrg()->select('id', 'name', 'alias') -> where('status', ConstantHelper::ACTIVE) -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('name', 'LIKE', '%'.$term.'%') -> orWhere('alias', 'LIKE', '%'.$term.'%');
+                }) -> limit(10) -> get();
+            }elseif ($type === 'index_documents') {
+                $results = ErpTransaction::when($term, function ($query) use ($term) {
+                    if (preg_match('/^(.*?)\s*\((.*?)\)$/', $term, $matches)) {
+                        $bookCode = trim($matches[1]);
+                        $documentNumber = trim($matches[2]);
+
+                        $query->where('book_code', $bookCode)
+                            ->where('document_number', $documentNumber);
+                    } else {
+                        $query->where(function ($q) use ($term) {
+                            $q->where('document_number', 'LIKE', "%$term%")
+                            ->orWhere('book_code', 'LIKE', "%$term%");
+                        });
+                    }
+                })
+                ->limit(10)
+                ->selectRaw("CONCAT(book_code, ' - ', document_number) as document_number , book_id")
+                ->get(['document_number','book_id']);
             } else {
                 return response()->json(['error' => 'Invalid type specified'], 400);
             }

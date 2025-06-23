@@ -1,4 +1,5 @@
 @extends('layouts.app')
+
 @section('content')
 <div class="app-content content">
     <div class="content-overlay"></div>
@@ -8,7 +9,7 @@
             <div class="content-header-left col-md-5 mb-2">
                 <div class="row breadcrumbs-top">
                     <div class="col-12">
-                        <h2 class="content-header-title float-start mb-0">Pending Approvals</h2>
+                        <h2 class="content-header-title float-start mb-0">Pending Posting</h2>
                         <div class="breadcrumb-wrapper">
                             <ol class="breadcrumb">
                                 <li class="breadcrumb-item"><a href="#">Home</a></li>
@@ -38,9 +39,8 @@
                                             <th>Doc No.</th>
                                             <th>Rev No</th>
                                             <th>Party Name</th>
-                                            <th class="text-end">Currency</th>
+                                            <th>Currency</th>
                                             <th class="text-end">Total Amt</th>
-                                            <th class="text-end">Submitted BY</th>
                                             <th class="text-center">Status</th>
                                         </tr>
                                     </thead>
@@ -97,9 +97,11 @@
     </div>
 </div>
 @endsection
+
 @section('scripts')
 <script src="{{ asset('assets/js/modules/common-datatable.js') }}"></script>
 <script>
+    let reportDataTableInstance = null;
 $(document).ready(function() {
     function renderData(data) {
     return data ? data.toString() : 'N/A';
@@ -114,10 +116,18 @@ $(document).ready(function() {
         { data: 'party_name', name: 'party_name', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
         { data: 'currency', name: 'currency', render: renderData, createdCell: (td) => $(td).addClass('text-end') },
         { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: (td) => $(td).addClass('text-end') },
-        { data: 'submitted_by', name: 'submitted_by', render: renderData, createdCell: (td) => $(td).addClass('text-center') },
         { data: 'document_status', name: 'document_status', render: renderData, createdCell: (td) => $(td).addClass('no-wrap text-center') },
     ];
-    initializeDataTable('.datatables-basic',"{{ route('riv.approvals') }}" ,columns, {},'Pending Approvals',[0, 1, 2, 3, 4, 5, 6]);
+    // Define your dynamic filters
+    let filtersComponents = @json($filterArray);
+    // Define your dynamic filters
+    let filters = {
+        'date_range' : '#document_date_filter'
+    };
+    filtersComponents.forEach(filter => {
+        filters[filter.requestName] = "#" + (filter.id + "_input");
+    });
+    reportDataTableInstance = initializeDataTable('.datatables-basic',"{{$redirect_url}}" ,columns, filters,'Pending Requests',[0, 1, 2, 3, 4, 5, 6]);
 });
 </script>
 @include('partials.index-filter',$filterArray)

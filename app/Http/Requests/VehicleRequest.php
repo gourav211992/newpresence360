@@ -17,7 +17,13 @@ class VehicleRequest extends FormRequest
 
         return [
             'transporter_id'     => 'required',
-            'lorry_no'           => 'required|string|unique:erp_vehicles,lorry_no,' . $id,
+            'lorry_no' => [
+                    'required',
+                    'string',
+                    'regex:/^[A-Z]{2}\d{2}[A-Z]{1,2}\d{4}$/',
+                    'unique:erp_vehicles,lorry_no,' . $id,
+                ],
+
             'vehicle_type_id'    =>' required|integer|exists:erp_vehicle_types,id',
             'chassis_no'         => 'required|string|unique:erp_vehicles,chassis_no,' . $id,
             'engine_no'          => 'required|string|unique:erp_vehicles,engine_no,' . $id,
@@ -82,6 +88,7 @@ class VehicleRequest extends FormRequest
             'transporter_id.exists'   => 'Selected transporter does not exist.',
 
             'lorry_no.required'       => 'Vehicle number is required.',
+            'lorry_no.regex'          => 'Invalid vehicle number format. Example: MH12AB1234',
             'lorry_no.unique'         => 'This Vehicle number already exists.',
 
             'vehicle_type_id.required'   => 'Vehicle type is required.',

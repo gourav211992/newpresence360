@@ -25,4 +25,9 @@ class ErpVehicleType extends Model
         'created_at',
         'updated_at'
     ];
+
+      public function unit()
+    {
+        return $this->belongsTo(Unit::class, 'uom_id');
+    }
 }
