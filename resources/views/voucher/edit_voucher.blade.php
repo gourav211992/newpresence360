@@ -2,11 +2,24 @@
     use App\Helpers\ConstantHelper;
     // Find the selected location object
     $selectedLocation = $locations->firstWhere('id', $data->location);
+    $locationId = (string) $data->location;
+
 
     // Initialize as empty array if no location found
     $locationCostCenters = [];
-    if ($selectedLocation) {
-        $locationCostCenters = $selectedLocation->cost_centers ?? [];
+    if(!is_null($locationId)){
+        $locationCostCenters = array_filter($cost_centers, function ($center) use ($locationId) {
+            if (empty($center['location'])) return false;
+
+            // Always ensure we have an array of individual strings
+            $locations = is_array($center['location'])
+                ? explode(',', implode(',', $center['location']))
+                : explode(',', $center['location']);
+
+            $locations = array_map('trim', $locations); // remove spaces
+
+            return in_array($locationId, $locations);
+        });
     }
 @endphp
 
@@ -554,14 +567,10 @@
                                                                     step="0.01" value="{{ $item->credit_amt }}" />
                                                             </td>
                                                             <td>
-
-
                                                                 <select class="costCenter form-select mw-100"
                                                                     name="cost_center_id[]"
                                                                     id="cost_center_id{{ $no }}">
-                                                                     @if ($item->cost_center_id=="")
-                                                                    <option value="">Select</option>
-                                                                     @endif
+                                                                    <option value="">Select Cost Center</option>
                                                                     @foreach ($locationCostCenters as $value)
                                                                         <option value="{{ $value['id'] }}"
                                                                             @if ($value['id'] == $item->cost_center_id) selected @endif>
@@ -1245,9 +1254,9 @@
             $('.costCenter').each(function() {
                 let $dropdown = $(this);
                 $dropdown.empty();
-                // $dropdown.append('<option value="">Select Cost Center</option>');
+                $dropdown.append('<option value="">Select Cost Center</option>');
                 if(costCenterSet.length === 0) {
-                    $dropdown.append('<option value="">Select</option>');
+                    $dropdown.append('<option value="">Select Cost Center</option>');
                 }
                 costCenterSet.forEach((center) => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
@@ -1267,6 +1276,7 @@
 
 
             $dropdown.empty();
+            $dropdown.append('<option value="">Select Cost Center</option>');
             costCenterSet.forEach((center) => {
                 $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
             });
@@ -1419,6 +1429,7 @@
                     </td>
                    <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
+                        <option value="">Select Cost Center</option>
                             @isset($locationCostCenters)  
                             @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}" >

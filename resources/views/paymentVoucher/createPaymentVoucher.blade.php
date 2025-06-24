@@ -26,7 +26,7 @@
                 <input type="hidden" name="status" id="status">
                 <input type="hidden" name="doc_number_type" id="doc_number_type">
                 <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
-                <input type="hidden" name="token" value="{{ request('token') }}">
+                <input type="hidden" name="selected_token" value="{{ request('token') }}">
                 <input type="hidden" name="doc_prefix" id="doc_prefix">
                 <input type="hidden" name="doc_suffix" id="doc_suffix">
                 <input type="hidden" name="doc_no" id="doc_no">
@@ -363,7 +363,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
-                                                            <option value="">Select</option>
+                                                            <option value="">Select Cost Center</option>
                                                             {{-- options will be appended dynamically --}}
                                                         </select>
                                                     </div>
@@ -410,7 +410,7 @@
                                                                         id="selectedCurrencyName"></span>)</th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="orgCurrencyName"></span>)</th>
-                                                                <th width="200px" class="ref-no-header">Ref No.</th>
+                                                                <th width="200px" class="ref-no-header">Pay Ref. No</th>
                                                                 <th>Action</th>
                                                             </tr>
                                                         </thead>
@@ -577,11 +577,6 @@
                                                                             </div>
                                                                         </div>
                                                                     </td>
-                                                                    <td>
-                                                                        <input type="text" class="form-control mw-100 bankInput reference_no" 
-                                                                            name="reference_no[]" data-row="1" id="reference_no1" />
-                                                                        <span class="text-danger bankInput" id="reference_error1" style="font-size:12px"></span>
-                                                                    </td>
                                                                     <td><input type="number" value="0"
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]" id="excAmount1" required />
@@ -589,6 +584,11 @@
                                                                     <td><input type="text" value="0" readonly
                                                                             class="form-control mw-100 text-end amount_exc excAmount1"
                                                                             name="amount_exc[]" required /></td>
+                                                                    <td>
+                                                                        <input type="text" class="form-control mw-100 bankInput reference_no" 
+                                                                            name="reference_no[]" data-row="1" id="reference_no1" />
+                                                                        <span class="text-danger bankInput" id="reference_error1" style="font-size:12px"></span>
+                                                                    </td>
                                                                     <td></td>
                                                                 </tr>
                                                             @endif
@@ -1877,6 +1877,7 @@
             if (costCenterSet.length > 0) {
                 $costCenterRow.show();
                 $dropdown.empty();
+                $dropdown.append('<option value="">Select Cost Center</option>');
                 costCenterSet.forEach(center => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });

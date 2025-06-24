@@ -390,6 +390,7 @@
                                                                     <select class="costCenter form-select mw-100"
                                                                         name="cost_center_id[]" id="cost_center_id1">
                                                                         {{-- Dynamically filled --}}
+                                                                        <option value="">Select Cost Center</option>
                                                                     </select>
                                                                 </td>
                                                                 <td>
@@ -1218,7 +1219,7 @@
             $('.costCenter').each(function() {
                 let $dropdown = $(this);
                 $dropdown.empty();
-                // $dropdown.append('<option value="">Select Cost Center</option>');
+                $dropdown.append('<option value="">Select Cost Center</option>');
                 costCenterSet.forEach((center) => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });
@@ -1238,6 +1239,7 @@
 
 
             $dropdown.empty();
+            $dropdown.append('<option value="">Select Cost Center</option>');
             costCenterSet.forEach((center) => {
                 $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
             });
@@ -1388,7 +1390,7 @@
                     </td>
                     <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-
+                            <option value="">Select Cost Center</option>
                         </select>
                     </td>
                     <td>

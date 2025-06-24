@@ -113,8 +113,6 @@
                                                         <th>S.No</th>
                                                         <th>Code</th>
                                                         <th>Name</th>
-                                                        <th>Group</th>
-                                                        <th>Status</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -142,7 +140,6 @@
                                                         <th>#</th>
                                                         <th>Code</th>
                                                         <th>Name</th>
-                                                        <th>Group</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -180,7 +177,6 @@
                     extend: 'excel',
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
                             className: 'btn btn-outline-secondary',
-                            exportOptions: { columns: [0,1,2,3,4] },
                             action: function (e, dt, node, config) {
                                     window.location.href = `/fixed-asset/export-failed`;
                                 },
@@ -194,7 +190,7 @@
                     }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
-                    { "orderable": false, "targets": [4] }
+                    { "orderable": false, "targets": [3] }
                 ],
                 language: {
                     paginate: {
@@ -235,7 +231,7 @@
                     }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
-                    { "orderable": false, "targets": [5] }
+                    { "orderable": false, "targets": [3] }
                 ],
                 language: {
                     paginate: {
@@ -459,7 +455,9 @@
                                 icon: 'error',
                             });
                         }
+                        if(res.successful_items.length>0)
                         populateTable('#success-table-body', res.successful_items);
+                    if(res.failed_items.length>0)
                         populateTable('#failed-table-body', res.failed_items);
                         $('#success-count-badge').text(
                             `Records Succeeded: ${res.successful_items.length}`);
@@ -525,29 +523,17 @@
                 items.forEach((item, index) => {
                     const row = [
                         index + 1,
-                        `<span class="fw-bolder text-dark">${item.code}</span>`,
-                        item.name,
-                        item.groups
+                        `<span class="fw-bolder text-dark">${item.asset_code}</span>`,
+                        item.asset_name,
                     ];
-
-                    if (isSuccessTable) {
-                        row.push(
-                            `<span class="badge rounded-pill ${item.status?.toLowerCase() === 'active'
-                                ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`
-                        );
-                     row.push(`<span class="text-success  fw-bold">${item.remarks || ''}</span>`);
+                    if( isSuccessTable) {
+                        row.push(`<span class="text-success fw-bold">${item.import_remarks || ''}</span>`);
                     } else {
-                        row.push(`<span class="text-danger  fw-bold">${item.remarks || ''}</span>`);
+                        row.push(`<span class="text-danger fw-bold">${item.import_remarks || ''}</span>`);
                     }
                     table.row.add(row);
                 });
-            } else {
-                const emptyRow = isSuccessTable
-                    ? ['', '', 'No records found', '', '', '']
-                    : ['', '', 'No records found', '', ''];
-                table.row.add(emptyRow);
-            }
-
+            } 
             table.draw(false);
 
             new ResizeObserver(() => {

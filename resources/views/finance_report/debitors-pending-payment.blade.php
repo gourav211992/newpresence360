@@ -744,7 +744,7 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') // Laravel CSRF
                 },
                 success: function(response) {
-                    $('.preloader').hide();
+                    // $('.preloader').hide();
                     window.location.href = response.redirect;
                 },
                 error: function(xhr) {
