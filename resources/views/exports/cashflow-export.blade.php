@@ -50,12 +50,15 @@
 @endphp
 <table>
     <tr>
-        <td colspan="7"><strong>Organization: </strong> {{ $organization->name??"-" }}</td>
+        <td colspan="7"><strong>{{ $organization->name??"-" }} </strong></td>
+    </tr>
+    <tr>
+        <td colspan="7">Cashflow Report</td>
     </tr>
 
     {{-- Date Range --}}
     <tr>
-        <td colspan="7"><strong>Date: </strong> {{ $fy }}</td>
+        <td colspan="7"><strong> {{ $fy }} </strong></td>
     </tr>
     
 </table>

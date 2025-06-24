@@ -410,7 +410,6 @@
                 },
                 success: response => {
                     console.log("Voucher Response:", response);
-                    $('.preloader').hide();
                     const table = $('.datatables-basic').DataTable();
                     table.clear().draw(); // Always clear
                     Object.keys(voucherMap).forEach(key => delete voucherMap[key]);
@@ -475,6 +474,7 @@
                     updateVoucherNumbers();
                     calculateSettle();
                     calculateAmountAndBalanceTotals();
+                    $('.preloader').hide();
                 },
                 error: () => $('.preloader').hide()
             });
@@ -601,6 +601,7 @@
         function getSelectedVoucherData() {
     const selectedData = [];
     const validationErrors = [];
+    const reportedLedgers = new Set(); // Track already reported ledger names
 
     selectedVoucherIds.forEach(key => {
         const voucher = voucherMap[key];
@@ -609,13 +610,19 @@
         const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
 
         if (!voucher.item?.ledger?.vendor) {
-            validationErrors.push(`${ledgerName}'s vendor is missing`);
+            if (!reportedLedgers.has(ledgerName)) {
+                validationErrors.push(`${ledgerName}'s vendor is missing`);
+                reportedLedgers.add(ledgerName);
+            }
             return;
         }
 
         const creditDays = voucher.item.ledger.vendor.credit_days;
         if (creditDays === null || creditDays === undefined || creditDays === '') {
-            validationErrors.push(`${ledgerName}'s vendor has no credit days set`);
+            if (!reportedLedgers.has(ledgerName)) {
+                validationErrors.push(`${ledgerName}'s vendor has no credit days set`);
+                reportedLedgers.add(ledgerName);
+            }
             return;
         }
 
@@ -851,7 +858,7 @@
                         'content') // CSRF token
                 },
                 success: function(response) {
-                    $('.preloader').hide();
+                    // $('.preloader').hide();
                     groupDropdown.empty(); // Clear previous options
 
                     response.forEach(item => {
@@ -864,7 +871,7 @@
 
                 },
                 error: function(xhr) {
-                    $('.preloader').hide();
+                    // $('.preloader').hide();
                     let errorMessage =
                     'Error fetching group items.'; // Default message
 
@@ -879,17 +886,12 @@
 
        $(document).on('click', '#clearAll', function() {
             // Reset all filter inputs
-            $(".preloader").show();
+            // $('.preloader').show();
             $('#fp-range').val('');
             $('#book_code').val('').trigger('change');
             $('#filter_ledger').val('').trigger('change');
             $('#filter_group').val('').trigger('change');
             $('#document_no').val('');
-            
-            // Reset modal filters
-            $('#filter-organization').val('').trigger('change');
-            $('#location_id').val('').trigger('change');
-            $('#cost_center_id').val('').trigger('change');
             
             // Uncheck all checkboxes
             $('#inlineCheckbox1').prop('checked', false);
