@@ -153,8 +153,8 @@ class ErpVehicleController extends Controller
         $status = ConstantHelper::STATUS;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
-        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->get();
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         return view('vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes', 'groupOrganizations'));
     }
 
@@ -171,8 +171,8 @@ class ErpVehicleController extends Controller
         $status = ConstantHelper::STATUS;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
-        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->get();
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         return view('vehicles.edit', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicle', 'vehicleTypes', 'groupOrganizations'));
     }
     

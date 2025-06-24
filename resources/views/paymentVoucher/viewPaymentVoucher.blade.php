@@ -21,7 +21,7 @@
                                                         });
                                                     }
                                                     // Check if the selected cost center exists in this location
-                                                     $showCostCenter = !is_null($data->location);
+                                                    $showCostCenter = !empty($locationCostCenters);
 @endphp
 @php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
@@ -514,7 +514,7 @@
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2"
                                                             name="cost_center_id" id="cost_center_id">
-                                                            <option value="">Select Cost Center</option>
+                                                            {{-- <option value="">Select Cost Center</option> --}}
                                                             @isset($locationCostCenters)
                                                             @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}"
@@ -1112,7 +1112,7 @@
                     });
                     voucherEntriesHTML += `
             <tr>
-                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
@@ -1242,6 +1242,7 @@
 
         function openInvoice(id, paymentId = null, details = null, ref = null) {
             console.log(id);
+             $('#excAmount' + id).attr('readonly', true);
             if ($('#party_id' + id).val() != "") {
                 $('.drop' + id).val('Invoice');
                 const comingParty = $('#party_id' + id).val();
@@ -1300,6 +1301,7 @@
                     if (response.data.length > 0) {
                         var html = '';
                         $.each(response.data, function(index, val) {
+                            console.log(val)
                             if (!preSelected.includes(val['id'].toString())) {
                                 $.each(val.items || [], function(i, item) {
 
@@ -1334,7 +1336,7 @@
                                             <td class="text-end">${formatIndianNumber(val['amount'])}</td>
                                             <td class="text-end">${formatIndianNumber(val['balance'])}</td>
                                             <td class="text-end">
-                                                <input type="number" class="form-control mw-100 settleInput settleAmount${val['id']}" readonly data-id="${val['id']}" value="${val['settle']}"/>
+                                                <input type="text" class="form-control mw-100 settleInput settleAmount${val['id']}" readonly data-id="${val['id']}" value="${formatIndianNumber(val['settle'])}"/>
                                             </td>
                                             <td class="text-center">
                                                 <div class="form-check form-check-inline me-0">
@@ -1403,7 +1405,7 @@
         function calculateSettle() {
             let settleSum = 0;
             $('.vouchers:checked').map(function() {
-                const value = parseFloat($('.settleAmount' + this.value).val()) || 0;
+                const value = parseFloat(removeCommas($('.settleAmount' + this.value).val())) || 0;
                 settleSum += value;
             }).get();
             $('.settleTotal').text(formatIndianNumber(settleSum));
@@ -2009,7 +2011,7 @@
                     });
                     voucherEntriesHTML += `
             <tr>
-                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>

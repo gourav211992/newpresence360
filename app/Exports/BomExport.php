@@ -19,6 +19,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     protected $sectionRequired;
     protected $subSectionRequired;
     protected $componentOverheadRequired;
+    protected $isNorm;
 
     public function __construct($bomId)
     {
@@ -30,7 +31,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     
         $bomItemColumns = [
             'id', 'bom_id', 'item_id', 'uom_id', 'qty', 'item_value', 'overhead_amount',
-            'total_amount', 'station_id', 'vendor_id', 'section_id', 'sub_section_id', 'remark'
+            'total_amount', 'station_name', 'vendor_id', 'section_name', 'sub_section_name', 'remark'
         ];
     
         $instructionColumns = [
@@ -46,12 +47,9 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             'bomItems' => fn($q) => $q->select($bomItemColumns),
             'bomItems.item:id,item_code,item_name',
             'bomItems.uom:id,name',
-            'bomItems.station:id,name',
             'bomItems.vendor:id,company_name',
             'bomItems.attributes.headerAttribute:id,name',
             'bomItems.attributes.headerAttributeValue:id,value',
-            'bomItems.section:id,name',
-            'bomItems.subSection:id,name',
             'bomInstructions' => fn($q) => $q->select($instructionColumns),
             'bomInstructions.station:id,name',
             'bomInstructions.section:id,name',
@@ -60,10 +58,10 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         
         $response = BookHelper::fetchBookDocNoAndParameters($this->bom->book_id, $this->bom->document_date);
         $this->parameters = data_get($response, 'data.parameters', []);
-
         $this->sectionRequired = $this->isEnabled('section_required');
         $this->subSectionRequired = $this->isEnabled('sub_section_required');
         $this->componentOverheadRequired = $this->isEnabled('component_overhead_required');
+        $this->isNorm = isset($this->parameters->consumption_method) && is_array($this->parameters->consumption_method) && in_array('norms', $this->parameters->consumption_method);
     }
 
     public function title(): string
@@ -86,13 +84,14 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             $rows[] = $this->getComponentRow($component);
         }
 
-        $rows[] = ['']; // spacing row
-
-        // Instructions Section
-        $rows[] = ['Instructions'];
-        $rows[] = $this->getInstructionHeaders();
-        foreach ($this->bom->bomInstructions as $step) {
-            $rows[] = $this->getInstructionRow($step);
+        if($this->bom->bomInstructions->isNotEmpty()) {
+            $rows[] = ['']; // spacing row
+            // Instructions Section
+            $rows[] = ['Instructions'];
+            $rows[] = $this->getInstructionHeaders();
+            foreach ($this->bom->bomInstructions as $step) {
+                $rows[] = $this->getInstructionRow($step);
+            }
         }
 
         $rows[] = ['']; // spacing row
@@ -141,47 +140,66 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     private function getComponentHeaders(): array
     {
         $headers = [];
-
         if ($this->sectionRequired) {
             $headers[] = 'Section';
         }
-
         if ($this->subSectionRequired) {
             $headers[] = 'Sub Section';
-        }
-
-        return array_merge($headers, [
+        }   
+        $baseHeaders = [
             'Item Code', 'Item Name', 'Attributes', 'UOM',
-            'Consumption', 'Item Value', 'Overhead Cost',
+            'Consumption',
+            'Item Value', 'Overhead Cost',
             'Total Cost', 'Station', 'Vendor Name', 'Remark'
-        ]);
+        ];
+        $headers = array_merge($headers, $baseHeaders);
+        $insertIndex = array_search('Consumption', $headers);
+        $dynamicColumns = [];
+        if ($this->isNorm) {
+            $dynamicColumns[] = 'Consumption per unit';
+            $dynamicColumns[] = 'Pieces';
+            $dynamicColumns[] = 'Std Qty';
+            $dynamicColumns[] = 'Norms';
+        }
+        // Insert dynamic columns after 'Consumption'
+        if ($insertIndex !== false && !empty($dynamicColumns)) {
+            array_splice($headers, $insertIndex + 1, 0, $dynamicColumns);
+        }
+        return $headers;
     }
 
     private function getComponentRow($component): array
     {
         $row = [];
-
         if ($this->sectionRequired) {
-            $row[] = optional($component->section)->name;
+            $row[] = $component->section_name ?? '';
         }
-
         if ($this->subSectionRequired) {
-            $row[] = optional($component->subSection)->name;
+            $row[] = $component->sub_section_name ?? '';
         }
-
-        return array_merge($row, [
+        $baseRow = [
             optional($component->item)->item_code,
             optional($component->item)->item_name,
             $this->formatAttributes($component->attributes),
             optional($component->uom)->name,
-            $component->qty ?? 0,
+            $component->qty ?? 0, // 'Consumption'
             $component->item_value ?? 0,
             $component->overhead_amount ?? 0,
             $component->total_amount ?? 0,
-            optional($component->station)->name,
+            $component->station_name ?? '',
             optional($component->vendor)->company_name,
             $component->remark,
-        ]);
+        ];
+        $dynamicValues = [];
+        if ($this->isNorm) {
+            $dynamicValues[] = $component?->norm?->qty_per_unit ?? 0;
+            $dynamicValues[] = $component?->norm?->total_qty ?? 0;
+            $dynamicValues[] = $component?->norm?->std_qty ?? 0;
+            $dynamicValues[] = $component?->norm?->norms ?? 0;
+        }
+        $consumptionIndex = 4;
+        array_splice($baseRow, $consumptionIndex + 1, 0, $dynamicValues);
+        return array_merge($row, $baseRow);
     }
 
     private function getInstructionHeaders(): array

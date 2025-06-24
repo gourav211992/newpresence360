@@ -1159,18 +1159,18 @@ class InventoryHelper
     private static function updateStockLedger($invoiceLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $issueQty, $stockReservation = null)
     {
         $user = Helper::getAuthenticatedUser();
-
+        $inventoryUomQty = $documentItemLocation->mi_inventory_uom_qty ?? $documentItemLocation->inventory_uom_qty;
         $balanceQty = 0;
         $extraQty = 0;
         $receiptQty = 0;
         $adjustedQty = 0;
         $reservedQty = 0;
         $message = '';
-        if($issueQty && ($issueQty > $documentItemLocation->inventory_uom_qty)){
-            $balanceQty = $issueQty - $documentItemLocation->inventory_uom_qty;
+        if($issueQty && ($issueQty > $inventoryUomQty)){
+            $balanceQty = $issueQty - $inventoryUomQty;
             $message = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
         } else {
-            $balanceQty = $documentItemLocation->inventory_uom_qty - $issueQty;
+            $balanceQty = $inventoryUomQty - $issueQty;
             $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->whereIn('document_status', ['approved','posted','approval_not_required'])
                 ->where('item_id', $invoiceLedger->item_id)
@@ -1204,7 +1204,7 @@ class InventoryHelper
                 }
             }
             $approvedStockLedger = $approvedStockLedger->get();
-                // dd($approvedStockLedger);
+                // dd($approvedStockLedger -> toArray());
             if ($approvedStockLedger->isNotEmpty()) {
                 foreach ($approvedStockLedger as $val) {
                     $stockLedger = StockLedger::find($val -> id);

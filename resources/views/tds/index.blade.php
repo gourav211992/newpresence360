@@ -434,12 +434,12 @@
             const sheet = xlsx.xl.worksheets['sheet1.xml'];
             const sheetData = sheet.getElementsByTagName('sheetData')[0];
 
-            // Shift all existing rows down by 2
+            // Step 1: Shift all rows down by 2
             const rows = sheetData.getElementsByTagName('row');
             for (let i = 0; i < rows.length; i++) {
                 const r = rows[i];
                 const currentRowNum = parseInt(r.getAttribute('r'));
-                r.setAttribute('r', currentRowNum + 2);
+                r.setAttribute('r', currentRowNum + 3);
 
                 const cells = r.getElementsByTagName('c');
                 for (let j = 0; j < cells.length; j++) {
@@ -447,42 +447,128 @@
                     const cellRef = cell.getAttribute('r');
                     if (cellRef) {
                         const col = cellRef.replace(/[0-9]/g, '');
-                        cell.setAttribute('r', col + (currentRowNum + 2));
+                        cell.setAttribute('r', col + (currentRowNum + 3));
                     }
                 }
             }
+            const styles = xlsx.xl['styles.xml'];
 
-            // Helper to create a row with text in column A
-            function createRow(index, text) {
-                const row = sheet.createElement('row');
-                row.setAttribute('r', index);
+            // Step A: Add bold font
+           // Step A: Add bold font
+const fonts = styles.getElementsByTagName('fonts')[0];
+const font = styles.createElement('font');
+const bold = styles.createElement('b');
+font.appendChild(bold);
+fonts.appendChild(font);
+fonts.setAttribute('count', fonts.childNodes.length);
 
-                const c = sheet.createElement('c');
-                c.setAttribute('t', 'inlineStr');
-                c.setAttribute('r', 'A' + index);
+// Step B1: Bold + right aligned
+const cellXfs = styles.getElementsByTagName('cellXfs')[0];
+const rightXf = styles.createElement('xf');
+rightXf.setAttribute('fontId', fonts.childNodes.length - 1);
+rightXf.setAttribute('applyFont', '1');
+rightXf.setAttribute('applyAlignment', '1');
+rightXf.setAttribute('numFmtId', '0');
+rightXf.setAttribute('borderId', '0');
+rightXf.setAttribute('fillId', '0');
+const rightAlign = styles.createElement('alignment');
+rightAlign.setAttribute('horizontal', 'right');
+rightXf.appendChild(rightAlign);
+cellXfs.appendChild(rightXf);
 
-                const is = sheet.createElement('is');
-                const t = sheet.createElement('t');
-                t.textContent = text;
+// Step B2: Bold + left aligned
+const leftXf = styles.createElement('xf');
+leftXf.setAttribute('fontId', fonts.childNodes.length - 1);
+leftXf.setAttribute('applyFont', '1');
+leftXf.setAttribute('applyAlignment', '1');
+leftXf.setAttribute('numFmtId', '0');
+leftXf.setAttribute('borderId', '0');
+leftXf.setAttribute('fillId', '0');
+const leftAlign = styles.createElement('alignment');
+leftAlign.setAttribute('horizontal', 'left');
+leftXf.appendChild(leftAlign);
+cellXfs.appendChild(leftXf);
 
-                is.appendChild(t);
-                c.appendChild(is);
-                row.appendChild(c);
+cellXfs.setAttribute('count', cellXfs.childNodes.length);
 
-                return row;
-            }
-            const org_names = $('#organization_filter option:selected').map(function() {
+const rightAlignBoldStyleIndex = cellXfs.childNodes.length - 2;
+const leftAlignBoldStyleIndex = cellXfs.childNodes.length - 1;
+
+            // Step 2: Create top rows (bold style)
+            function createRow(index, text, styleIndex = '2') {
+    const row = sheet.createElement('row');
+    row.setAttribute('r', index);
+
+    const c = sheet.createElement('c');
+    c.setAttribute('t', 'inlineStr');
+    c.setAttribute('r', 'A' + index);
+    c.setAttribute('s', styleIndex); // 👈 dynamic style index
+
+    const is = sheet.createElement('is');
+    const t = sheet.createElement('t');
+    t.textContent = text;
+
+    is.appendChild(t);
+    c.appendChild(is);
+    row.appendChild(c);
+
+    return row;
+}
+            const org_names = $('#organization_filter option:selected').map(function () {
                 return $(this).text().trim();
             }).get().join(', ');
             const date_range = $('#fp-range').val();
 
-            // Insert custom rows at the top
             const orgRow = createRow(1, org_names);
-            const dateRow = createRow(2, date_range);
+            const tdsTitleRow = createRow(2, 'TDS Report', '0');    // normal (no bold)
+            const dateRow = createRow(3, date_range);
 
-            sheetData.insertBefore(dateRow, sheetData.firstChild);
-            sheetData.insertBefore(orgRow, sheetData.firstChild);
-        }
+            sheetData.insertBefore(dateRow, sheetData.firstChild);      // Row 3
+            sheetData.insertBefore(tdsTitleRow, sheetData.firstChild);  // Row 2
+            sheetData.insertBefore(orgRow, sheetData.firstChild); 
+
+
+            // Step 3: Merge A1:L1 and A2:L2
+            const mergedColsCount = 12; // update as per column count
+            const lastColLetter = String.fromCharCode('A'.charCodeAt(0) + mergedColsCount - 1); // e.g., L for 12 cols
+
+            let mergeCells = sheet.getElementsByTagName('mergeCells')[0];
+            if (!mergeCells) {
+                mergeCells = sheet.createElement('mergeCells');
+                sheet.documentElement.appendChild(mergeCells);
+            }
+
+            function createMergeRef(rowNum) {
+                const mergeCell = sheet.createElement('mergeCell');
+                mergeCell.setAttribute('ref', `A${rowNum}:${lastColLetter}${rowNum}`);
+                return mergeCell;
+            }
+
+            mergeCells.appendChild(createMergeRef(1));
+            mergeCells.appendChild(createMergeRef(2));
+            mergeCells.appendChild(createMergeRef(3));
+            mergeCells.setAttribute('count', mergeCells.childNodes.length);
+
+            // Step 4: right-align certain header columns by column letter
+            const headerRow = sheetData.getElementsByTagName('row')[3]; // Row 3
+            const headerCells = headerRow.getElementsByTagName('c');
+            const rightAlignColumns = ['G', 'K']; // AmountPaid/Credited = G, DeductedAmt = K, DeductionRate = L
+
+            const rightAlignCols = ['G', 'K'];
+
+            for (let i = 0; i < headerCells.length; i++) {
+                const cell = headerCells[i];
+                const cellRef = cell.getAttribute('r');
+                const colLetter = cellRef.replace(/[0-9]/g, '');
+
+                if (rightAlignCols.includes(colLetter)) {
+                    cell.setAttribute('s', rightAlignBoldStyleIndex.toString());
+                } else {
+                    cell.setAttribute('s', leftAlignBoldStyleIndex.toString()); // Force all others to left
+                }
+            }
+
+    }
     }
 ]
 

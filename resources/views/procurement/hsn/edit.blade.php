@@ -223,12 +223,13 @@ $(document).ready(function() {
     function filterTaxGroups(codeType) {
         let filteredTaxGroups = [];
         if (codeType === 'Hsn') {
-            filteredTaxGroups = @json($taxGroups->where('tax_category', 'GST','TCS')->values());
+            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['GST','TCS'])->values());
         } else if (codeType === 'Sac') {
-            filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['TDS'])->values());
+            filteredTaxGroups = @json($taxGroups->where('tax_category', 'TDS')->values());
         }
         return filteredTaxGroups;
     }
+
     function updateTaxGroupDropdowns(codeType, targetRow) {
         let filteredTaxGroups = filterTaxGroups(codeType);
         let $select = targetRow.find('select[name*="[tax_group_id]"]');

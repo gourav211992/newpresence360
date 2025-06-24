@@ -11,6 +11,7 @@ use App\Models\ErpBin;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
+use App\Models\AuthUser;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreRequest;
@@ -72,11 +73,21 @@ class StoreController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
-        $userId= $user->id;
-        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
-        array_push($orgIds, $user?->organization_id);
-        $allOrganizations = Organization::whereIn('id', $orgIds)->with('addresses')->where('status','active')
-        ->get();
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        if ($useRole->user_type === 'IAM-ADMIN') {
+            $allOrganizations = Organization::where('status', 'active')
+                ->with('addresses')
+                ->get();
+        } else {
+            $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+            $allOrganizations = Organization::whereIn('id', $orgIds)
+                ->with('addresses')
+                ->where('status', 'active')
+                ->get();
+        }
     
         $status = ConstantHelper::STATUS;
         $storeLocationType = ConstantHelper::ERP_STORE_LOCATION_TYPES_LABEL_VAL; 
@@ -294,10 +305,21 @@ class StoreController extends Controller
     public function edit($id)
     {
         $user = Helper::getAuthenticatedUser();
-        $userId = $user->id;
-        $orgIds = $user->organizations()->pluck('organizations.id')-> toArray();
-        array_push($orgIds, $user?->organization_id);
-        $allOrganizations = Organization::whereIn('id', $orgIds)->where('status', 'active')->get();
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        if ($useRole->user_type === 'IAM-ADMIN') {
+            $allOrganizations = Organization::where('status', 'active')
+                ->with('addresses')
+                ->get();
+        } else {
+            $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+            $allOrganizations = Organization::whereIn('id', $orgIds)
+                ->with('addresses')
+                ->where('status', 'active')
+                ->get();
+        }
         $states = [];
         $cities = [];
         $store = ErpStore::find($id);

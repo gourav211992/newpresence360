@@ -240,7 +240,7 @@
                                                                     <input type="text"
                                                                         name="freight_charges[0][distance]"
                                                                         class="form-control mw-100"
-                                                                        value="0">
+                                                                       placeholder="Enter Distance">
                                                                 </td>
 
                                                                 {{-- Vehicle Type Autocomplete --}}
@@ -259,7 +259,7 @@
                                                                     <input type="text"
                                                                         name="freight_charges[0][amount]"
                                                                         class="form-control mw-100"
-                                                                        value="0">
+                                                                        placeholder="Enter Amount">
                                                                 </td>
 
                                                                 {{-- Customer Select --}}
@@ -408,8 +408,7 @@
                 <input type="text"
                     name="freight_charges[${newIndex}][distance]"
                     class="form-control mw-100"
-                    value="0"
-                    min="0" />
+                    placeholder="Enter Distance" />
             </td>
 
             <td>
@@ -426,9 +425,7 @@
                 <input type="text"
                     name="freight_charges[${newIndex}][amount]"
                     class="form-control mw-100"
-                    value="0"
-                    min="0"
-                    step="0.01" />
+                    placeholder="Enter Amount" />
             </td>
 
             <td>

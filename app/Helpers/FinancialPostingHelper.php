@@ -6118,7 +6118,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
                         }
@@ -6166,7 +6166,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
                         }
@@ -6225,7 +6225,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
                         }
@@ -6706,7 +6706,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
     }
@@ -6756,7 +6756,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
                         }
@@ -6816,7 +6816,7 @@ class FinancialPostingHelper
                         if (!$exists && $cost!=null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not mapped with Header Location',
+                                'message' => $cost->name.' not Mapped with header location',
                                 'data' => []
                             );
                         }

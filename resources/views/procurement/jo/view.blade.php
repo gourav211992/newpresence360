@@ -724,7 +724,7 @@ function getDocNumberByBookId(bookId) {
         if (data.status == 200) {
           $("#book_code").val(data.data.book_code);
           if(!data.data.doc.document_number) {
-             $("#document_number").val('');
+            $("#document_number").val('{{$po->document_number}}');
          }
          $("#document_number").val(data.data.doc.document_number);
          if(data.data.doc.type == 'Manually') {
@@ -1162,6 +1162,10 @@ setTimeout(() => {
     $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
         let currentIndex = index + 1;
         setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+    $("#itemTable2 .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable2");
     });
 },100);
 </script>

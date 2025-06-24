@@ -932,7 +932,8 @@ class AutocompleteController extends Controller
                                 }
                             })
                             ->where('status', ConstantHelper::ACTIVE)
-                            ->with(['currency:id,short_name', 'paymentTerms:id,name']);
+                            ->with(['currency:id,short_name', 'paymentTerms:id,name'])
+                            ->withCount('locations');
 
                 $results = $subQuery->where('company_name', 'LIKE', "%$term%")
                     ->get(['id', 'company_name', 'vendor_code','currency_id','payment_terms_id']);
@@ -947,6 +948,7 @@ class AutocompleteController extends Controller
                         'currency_name' => $vendor->currency->short_name ?? null,
                         'payment_terms_id' => $vendor->paymentTerms->id ?? null,
                         'payment_terms_name' => $vendor->paymentTerms->name ?? null,
+                        'locations_count' => $vendor->locations_count ?? 0,
                     ];
                 });
 
