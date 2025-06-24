@@ -59,7 +59,6 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
-       
         $parentURL = "fixed-asset_registration";
 
         $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
@@ -824,16 +823,22 @@ public function exportSuccessfulItems()
     {
         $uploadItems = UploadFAMaster::where('import_status', 'Success')
             ->get();
-        $items = FixedAssetRegistration::withDefaultGroupCompanyOrg()->latest()
-            ->whereIn('code', $uploadItems->pluck('asset_code'))->get();
-        return Excel::download(new FAExport($items, $this->FAImportExportService), "successful-items.xlsx");
+        $codes =  $uploadItems->pluck('asset_code')??[];
+
+        $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
+        $query->withDefaultGroupCompanyOrg();
+        $query->whereIn('asset_code', $codes);
+        $query->orderBy('document_date','desc');
+    });
+    $data = $data->get();
+        return Excel::download(new FixedAssetReportExport($data), 'success-asset-import.xlsx');
     }
 
     public function exportFailedItems()
     {
         $failedItems = UploadFAMaster::where('import_status', 'Failed')
             ->get();
-        return Excel::download(new FailedFAExport($failedItems), "failed-items.xlsx");
+        return Excel::download(new FailedFAExport($failedItems), "failed-asset-items.xlsx");
     }
     public function showImportForm()
     {

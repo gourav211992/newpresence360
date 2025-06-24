@@ -110,7 +110,7 @@
                                                 class="datatables-basic1 datatables-success table  myrequesttablecbox">
                                                 <thead>
                                                     <tr>
-                                                        <th>S.No</th>
+                                                        <th>#</th>
                                                         <th>Code</th>
                                                         <th>Name</th>
                                                         <th>Remarks</th>
@@ -402,6 +402,7 @@
                         clearInterval(simulateProgress);
                     }
                 }, 200);
+
                 $.ajax({
                     url: url,
                     type: method,
@@ -442,6 +443,23 @@
                         $(".is-invalid").removeClass("is-invalid");
                         $(".help-block").remove();
                         $(".waves-ripple").remove();
+                        populateTable('#success-table-body', res.successful_items);
+                        populateTable('#failed-table-body', res.failed_items);
+                        
+                        $('#success-count-badge').text(
+                            `Records Succeeded: ${res.successful_items.length}`);
+                        
+                        $('#success-count').text(`(${res.successful_items.length})`);
+                        
+                        $('#failed-count').text(`(${res.failed_items.length})`);
+                        $('#uploadProgress').hide();
+                        $('.hide-this-section').show();
+                        if (res.failed_items.length > 0) {
+                            $('.editbtnNew').show();
+                        } else {
+                            $('.editbtnNew').hide();
+                        }
+                
                         if (res.status === 'success') {
                             Swal.fire({
                                 title: 'Success!',
@@ -455,21 +473,11 @@
                                 icon: 'error',
                             });
                         }
-                        if(res.successful_items.length>0)
-                        populateTable('#success-table-body', res.successful_items);
-                    if(res.failed_items.length>0)
-                        populateTable('#failed-table-body', res.failed_items);
-                        $('#success-count-badge').text(
-                            `Records Succeeded: ${res.successful_items.length}`);
-                        $('#success-count').text(`(${res.successful_items.length})`);
-                        $('#failed-count').text(`(${res.failed_items.length})`);
-                        $('#uploadProgress').hide();
-                        $('.hide-this-section').show();
-                        if (res.failed_items.length > 0) {
-                            $('.editbtnNew').show();
-                        } else {
-                            $('.editbtnNew').hide();
-                        }
+                        feather.replace();
+                     if (res.failed_items.length > 0) {
+    $('a[href="#Failed"]').tab('show'); // Simpler with jQuery + Bootstrap's plugin
+}
+
                         $('.exportBtn').on('click', function() {
                             var activeTab = $('.nav-link.active').attr('href');
                             if (activeTab === '#Succeded') {

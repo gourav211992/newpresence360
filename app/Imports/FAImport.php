@@ -90,7 +90,6 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
             'current_value'    => $row['current_value'] ?? null,
             'vendor'           => $row['vendor'] ?? null,
             'currency'         => $row['currency'] ?? null,
-            'tax'              => $row['tax'] ?? 0,
             'book_date'        => $row['book_date'] ?? null,
         ];
         $user = Helper::getAuthenticatedUser();
@@ -100,7 +99,7 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
             $data = $this->service->processData($mappedRow);
             $data['organization_id'] = $user->organization_id;
             $data['created_by'] = $user->id;
-            $data['type'] = get_class($this);
+            $data['type'] = get_class($user);
             $data['company_id'] = $user->organization->company_id;
             $data['group_id'] = $user->organization->group_id;
             $data['revision_number'] = 0; // Default revision number

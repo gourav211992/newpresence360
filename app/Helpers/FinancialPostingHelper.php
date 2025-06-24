@@ -6112,6 +6112,16 @@ class FinancialPostingHelper
             );
         }
        $cost = CostCenter::find($document?->cost_center_id);
+        $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+                        }
 
                     
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
@@ -6150,6 +6160,16 @@ class FinancialPostingHelper
                             ->where('debit_amt_org', '>', 0)
                             ->first();
                              $cost = CostCenter::find($item?->cost_center_id);
+                              $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+                        }
 
                     
                         $newEntry = [
@@ -6199,6 +6219,16 @@ class FinancialPostingHelper
                         );
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
+                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+                        }
 
                     
 
@@ -6669,7 +6699,18 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-         $cost = CostCenter::find($document?->cost_center_id);
+        $cost = CostCenter::find($document?->cost_center_id);
+        $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+    }
+       
 
                
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
@@ -6709,6 +6750,17 @@ class FinancialPostingHelper
                             ->first();
                     
                     $cost = CostCenter::find($item?->cost_center_id);
+                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+                        }
+                    
 
                   $newEntry = [
                             'ledger_id' => $VendorLedgerId,
@@ -6758,6 +6810,16 @@ class FinancialPostingHelper
                         );
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
+                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $exists = in_array($cost?->id, $ids);
+                        
+                        if (!$exists && $cost!=null) {
+                            return array(
+                                'status' => false,
+                                'message' => $cost->name.' not mapped with Header Location',
+                                'data' => []
+                            );
+                        }
 
                     
 

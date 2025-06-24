@@ -570,7 +570,11 @@
                                                                 <select class="costCenter form-select mw-100"
                                                                     name="cost_center_id[]"
                                                                     id="cost_center_id{{ $no }}">
-                                                                    <option value="">Select Cost Center</option>
+                                                                    
+                                                                    @if($item->cost_center_id==null)
+                                                                    <option value="" selected>Select</option>
+                                                                    @endif
+                                                                    
                                                                     @foreach ($locationCostCenters as $value)
                                                                         <option value="{{ $value['id'] }}"
                                                                             @if ($value['id'] == $item->cost_center_id) selected @endif>
@@ -1254,17 +1258,13 @@
             $('.costCenter').each(function() {
                 let $dropdown = $(this);
                 $dropdown.empty();
-                $dropdown.append('<option value="">Select Cost Center</option>');
-                if(costCenterSet.length === 0) {
-                    $dropdown.append('<option value="">Select Cost Center</option>');
-                }
                 costCenterSet.forEach((center) => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });
             });
         }
 
-        function populateSingleCostCenterDropdown($dropdown) {
+        function populateSingleCostCenterDropdown($dropdown,val) {
             let selectedLocationIds = $('#locations').val();
 
             const costCenterSet = locationCostCentersMap.filter(center => {
@@ -1276,9 +1276,9 @@
 
 
             $dropdown.empty();
-            $dropdown.append('<option value="">Select Cost Center</option>');
-            costCenterSet.forEach((center) => {
-                $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
+           costCenterSet.forEach((center) => {
+                const isSelected = String(center.id) === String(val) ? 'selected' : '';
+                $dropdown.append(`<option value="${center.id}" ${isSelected}>${center.name}</option>`);
             });
         }
 
@@ -1429,14 +1429,6 @@
                     </td>
                    <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                        <option value="">Select Cost Center</option>
-                            @isset($locationCostCenters)  
-                            @foreach ($locationCostCenters as $value)
-                                                                <option value="{{ $value['id'] }}" >
-                                                                    {{ $value['name'] }}
-                                                                </option>
-                                                            @endforeach
-                                                    @endisset
                         </select>
                     </td>
                     <td>
@@ -1463,10 +1455,12 @@
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend',
                     newRow);
                 feather.replace();
-                initializeLedgerAutocomplete(newRow);
+                initializeLedgerAutocomplete($("#item-details-body"));
                 calculate_cr_dr();
                 // Populate cost centers for the new row's dropdown
-                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
+                let selected = $(`#cost_center_id${rowCount}`).val();
+                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`),selected);
+               
                 updateRowNumbers();
 
 

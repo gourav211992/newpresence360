@@ -132,8 +132,6 @@
                                                     <div class="col-md-4">
                                                         <select class="form-select" name="book_type_id"
                                                             id="book_type_id" required onchange="getBooks()">
-                                                            <option disabled selected value="">Select Document Type
-                                                            </option>
                                                             @foreach ($bookTypes as $bookType)
                                                                 <option value="{{ $bookType->id }}"
                                                                     data-alias="{{ $bookType->alias }}"
@@ -213,7 +211,6 @@
                                                     <div class="col-md-4">
                                                         <select id="locations" class="form-select"
                                                             name="location" data-row="${rowCount + 1}" required>
-                                                            <option disabled value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -231,10 +228,10 @@
                                                     <div class="col-md-4">
                                                         <select class="form-control select2" name="currency_id"
                                                             id="currency_id" onchange="getExchangeRate()">
-                                                            <option>Select Currency</option>
+                                                            <option value="" @if($orgCurrency==null) selected @endif>Select Currency</option>
                                                             @foreach ($currencies as $currency)
                                                                 <option value="{{ $currency->id }}"
-                                                                    @if ($orgCurrency == $currency->id || (isset($data->currency_id) && $data->currency_id == $currency->id)) selected @endif>
+                                                                    @if ($orgCurrency == $currency->id) selected @endif>
                                                                     {{ $currency->name . ' (' . $currency->short_name . ')' }}
                                                                 </option>
                                                             @endforeach
@@ -389,8 +386,6 @@
                                                                 <td>
                                                                     <select class="costCenter form-select mw-100"
                                                                         name="cost_center_id[]" id="cost_center_id1">
-                                                                        {{-- Dynamically filled --}}
-                                                                        <option value="">Select Cost Center</option>
                                                                     </select>
                                                                 </td>
                                                                 <td>
@@ -457,10 +452,7 @@
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
-                                                                            <td class="poprod-decpt"><span
-                                                                                    class="poitemtxt mw-100"><strong>Ledger
-                                                                                        Name:</strong><span
-                                                                                        id="ledger_name_details">-</span></span>
+                                                                            <td class="poprod-decpt"><span class="poitemtxt mw-100"><strong>Ledger Name:</strong><span id="ledger_name_details">-</span></span>
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
@@ -614,6 +606,8 @@
 
         $(document).ready(function() {
             $('#book_type_id').trigger('change');
+            $('#locations').trigger('change');
+            // Trigger change event to update voucher details
             if (orgCurrency != "") {
                 $.each(currencies, function(key, value) {
                     if (value['id'] == orgCurrency) {
@@ -1219,30 +1213,30 @@
             $('.costCenter').each(function() {
                 let $dropdown = $(this);
                 $dropdown.empty();
-                $dropdown.append('<option value="">Select Cost Center</option>');
                 costCenterSet.forEach((center) => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });
             });
         }
 
-        function populateSingleCostCenterDropdown($dropdown) {
+        function populateSingleCostCenterDropdown($dropdown,val) {
             let selectedLocationIds = $('#locations').val();
 
             const costCenterSet = locationCostCentersMap.filter(center => {
                 if (!center.location) return false;
-                const locationArray = Array.isArray(center.location) ?
-                    center.location.flatMap(loc => loc.split(',')) :
-                    [];
+                const locationArray = Array.isArray(center.location)
+                    ? center.location.flatMap(loc => loc.split(','))
+                    : [];
                 return locationArray.includes(String(selectedLocationIds));
             });
 
-
             $dropdown.empty();
-            $dropdown.append('<option value="">Select Cost Center</option>');
+
             costCenterSet.forEach((center) => {
-                $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
+                const isSelected = String(center.id) === String(val) ? 'selected' : '';
+                $dropdown.append(`<option value="${center.id}" ${isSelected}>${center.name}</option>`);
             });
+            console.log(`Cost center dropdown populated with value: ${val}`);
         }
 
         function calculate_cr_dr() {
@@ -1390,7 +1384,6 @@
                     </td>
                     <td>
                         <select class="costCenter form-select mw-100" name="cost_center_id[]" id="cost_center_id${rowCount + 1}">
-                            <option value="">Select Cost Center</option>
                         </select>
                     </td>
                     <td>
@@ -1410,7 +1403,9 @@
                 updateRowNumbers();
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend', newRow);
                 // Populate cost centers for the new row's dropdown
-                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`));
+                let selected = $(`#cost_center_id${rowCount}`).val();
+                populateSingleCostCenterDropdown($(`#cost_center_id${rowCount + 1}`),selected);
+                console.log(`Cost center for row ${rowCount + 1} populated with value: ${$(`#cost_center_id${rowCount}`).val()}`);
                 calculate_cr_dr();
 
 
@@ -1671,7 +1666,7 @@
             $('#book_id').empty();
             $('#voucher_name').val('');
             $('#voucher_no').val('');
-            $('#book_id').prepend('<option disabled selected value="">Select Series</option>');
+            //$('#book_id').prepend('<option disabled selected value="">Select Series</option>');
             $.ajax({
                 url: '{{ route('get_voucher_series', ['placeholder']) }}'.replace('placeholder', $('#book_type_id')
                     .val()),
@@ -1681,6 +1676,7 @@
                         $("#book_id").append("<option value ='" + value['id'] + "'>" +
                             value['book_code'] + " </option>");
                     });
+                     $('#book_id').trigger('change'); 
 
                 }
             });
@@ -1718,6 +1714,8 @@
                     }
                 });
             }
+
+           
 
         }
 
