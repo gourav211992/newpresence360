@@ -22,10 +22,11 @@
                 </div>
                 <div class="content-header-right text-end col-md-7 mb-2 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <a class="btn btn-primary btn-sm" href="{{ route('logistics.vehicle.create') }}"><i data-feather="plus-circle"></i> Add New</a>
-                          <button class="btn btn-warning btn-sm me-1 mb-20 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal">
+                         <button class="btn btn-warning btn-sm me-1 mb-20 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal">
                             <i data-feather="filter"></i> Filter
                         </button>
+                        <a class="btn btn-primary btn-sm" href="{{ route('logistics.vehicle.create') }}"><i data-feather="plus-circle"></i> Add New</a>
+                         
                     </div>
                 </div>
             </div>

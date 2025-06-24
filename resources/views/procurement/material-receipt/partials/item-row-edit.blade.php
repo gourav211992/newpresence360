@@ -7,8 +7,13 @@
       <input type="hidden" name="components[{{$rowCount}}][mrn_detail_id]" value="{{$item->id}}">
       <input type="hidden" name="components[{{$rowCount}}][gate_entry_header_id]" value="{{$item->mrnHeader?->gate_entry_header_id}}">
       <input type="hidden" name="components[{{$rowCount}}][gate_entry_detail_id]" value="{{@$item->gate_entry_detail_id}}">
+      @if ($item->header->reference_type == 'po')
       <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{@$item->purchase_order_item_id}}">
       <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->mrnHeader?->purchase_order_id}}">
+      @elseif ($item->header->reference_type == 'jo')
+      <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{@$item->job_order_item_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->mrnHeader?->job_order_id}}">
+      @endif
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
             <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">

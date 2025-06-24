@@ -295,7 +295,7 @@ function setTableCalculation() {
             if(isTax) {
                 let transactionType = 'purchase';
                 let partyCountryId = $("#hidden_country_id").val();
-                let partyStateId = $("#hidden_state_id").val();
+            let partyStateId = $("#hidden_state_id").val();
                 let locationId = $("[name='store_id']").val();
                 let document_date = $("[name='document_date']").val();
                 // Construct the query parameters

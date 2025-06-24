@@ -140,11 +140,11 @@
                                                         <label class="form-label text-primary"><strong>Status</strong></label>   
                                                         <div class="demo-inline-spacing">
                                                             <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="status_active" name="status" class="form-check-input" value="1" checked>
+                                                                <input type="radio" id="status_active" name="status" class="form-check-input" value="active" checked>
                                                                 <label class="form-check-label fw-bolder" for="status_active">Active</label>
                                                             </div> 
                                                             <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="status_inactive" name="status" class="form-check-input" value="0">
+                                                                <input type="radio" id="status_inactive" name="status" class="form-check-input" value="inactive">
                                                                 <label class="form-check-label fw-bolder" for="status_inactive">Inactive</label>
                                                             </div> 
                                                         </div> 

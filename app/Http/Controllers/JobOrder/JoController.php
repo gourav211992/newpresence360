@@ -260,8 +260,8 @@ class JoController extends Controller
         } else {
             return response()->json(['error' => 'Invalid Item'], 500);
         }
-        $transactionType = $request->input('transaction_type', 'sale');
-        if ($transactionType === "sale") {
+        $transactionType = $request->input('transaction_type', 'purchase');
+        if ($transactionType === "purchase") {
             $fromCountry = $companyCountryId;
             $fromState = $companyStateId;
             $upToCountry = $request->input('party_country_id', $companyCountryId) ?? 0;

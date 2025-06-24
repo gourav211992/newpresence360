@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
 use App\Http\Controllers\FixedAsset\RegistrationController;
 use App\Models\FixedAssetRegistration;
+use App\Models\Organization;
 use App\Models\UploadFAMaster;
 use App\Services\FAImportExportService;
 use Maatwebsite\Excel\Concerns\ToModel;
@@ -13,6 +14,8 @@ use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithStartRow;
 use Illuminate\Support\Facades\Log;
+use App\Models\FixedAssetSub;
+use Illuminate\Support\Facades\DB;
 use Exception;
 
 class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRow
@@ -82,44 +85,58 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
             'ledger'           => $row['ledger'] ?? null,
             'capitalize_date'  => $row['capitalize_date'] ?? null,
             'quantity'         => $row['quantity'] ?? null,
-            'mt_sch'           => $row['mt_sch'] ?? null,
+            'maintenance_schedule'           => $row['maintenance_schedule'] ?? null,
             'useful_life'      => $row['useful_life'] ?? null,
             'current_value'    => $row['current_value'] ?? null,
-            'life'             => $row['life'] ?? null,
             'vendor'           => $row['vendor'] ?? null,
             'currency'         => $row['currency'] ?? null,
             'tax'              => $row['tax'] ?? 0,
             'book_date'        => $row['book_date'] ?? null,
         ];
-
+        $user = Helper::getAuthenticatedUser();
         try {
             // Validate required fields
             $this->service->checkRequiredFields($mappedRow);
             $data = $this->service->processData($mappedRow);
-            $data['organization_id'] = $this->user->organization_id;
-            $data['created_by'] = $this->user->id;
+            $data['organization_id'] = $user->organization_id;
+            $data['created_by'] = $user->id;
             $data['type'] = get_class($this);
-            $data['company_id'] = $this->user->company_id;
-            $data['group_id']= $this->user->group_id;
+            $data['company_id'] = $user->organization->company_id;
+            $data['group_id'] = $user->organization->group_id;
+            $data['revision_number'] = 0; // Default revision number
             $docData = RegistrationController::genrateDocNo();
-            if($docData==null)
-            {
+            if ($docData == null) {
                 throw new Exception("Document number generation failed.");
             }
             $data = array_merge($data, $docData);
             $item = FixedAssetRegistration::create($data);
-            $approveDocument = Helper::approveDocument($item->book_id, $item->id, $item->revision_number , null, null, 1,'submit', $item->current_value, get_class($item));
+            if($item){
+                FixedAssetSub::generateSubAssets(
+                    $item->id,
+                    $item->asset_code,
+                    $item->quantity,
+                    $item->current_value,
+                    $item->salvage_value,
+                );
+            
+
+            }
+
+            
+            $approveDocument = Helper::approveDocument($item->book_id, $item->id, $item->revision_number, null, null, 1, 'submit', $item->current_value, get_class($item));
             $item->document_status = $approveDocument['approvalStatus'] ?? 'submitted';
             $item->approval_level = $approveDocument['approvalLevel'] ?? 1;
             $item->save();
-            
-           
 
-            // Create upload record
-            $uploadedItem = UploadFAMaster::create([
+            $uploadData = [
                 'import_status' => 'Success',
-                'import_remarks' => 'Successfully imported item.',
-            ]);
+                'import_remarks' => 'Successfully imported item.'
+            ];
+            $uploadData = array_merge($data, $uploadData);
+
+
+
+            $uploadedItem = UploadFAMaster::create($uploadData);
 
             $this->onSuccess($uploadedItem);
             return $uploadedItem;
@@ -130,14 +147,29 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
             ]);
             $uploadData = [
                 'import_status' => 'Failed',
+                'asset_code' => $mappedRow['asset_code'] ?? null,
+                'asset_name' => $mappedRow['asset_name'] ?? null,
                 'import_remarks' => $e->getMessage(),
+            
             ];
 
+           
+
             if (isset($data) && is_array($data)) {
-                $uploadData = array_merge($data, $uploadData);
+                $uploadData = array_merge($data, $uploadData); // Optional: merge with any additional data
+            }else{
+                 $uploadData = array_merge(
+                $mappedRow, // Save all mapped row data
+                [
+                    'import_status' => 'Failed',
+                    'import_remarks' => $e->getMessage(),
+
+                ]
+            );
             }
 
             $uploadedItem = UploadFAMaster::create($uploadData);
+
             $this->onFailure($uploadedItem);
             return null;
         }

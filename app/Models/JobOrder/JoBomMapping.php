@@ -2,6 +2,7 @@
 
 namespace App\Models\JobOrder;
 
+use App\Models\ErpMiItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -27,12 +28,21 @@ class JoBomMapping extends Model
         'sub_section_id'
     ];
     protected $casts = ['attributes' => 'array'];
+
     public function jo()
     {
         return $this->belongsTo(JobOrder::class,'jo_id');
     }
+
     public function joProduct()
     {
         return $this->belongsTo(JoProduct::class,'jo_product_id');
     }
+
+    public function miMappings()
+    {
+        return $this->hasMany(ErpMiItem::class, 'jo_id', 'jo_id')
+                    ->with('item_attributes');
+    }
+
 }

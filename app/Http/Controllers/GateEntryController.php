@@ -2265,7 +2265,7 @@ class GateEntryController extends Controller
         return response()->json(['data' => ['quantity' => $request->qty], 'status' => 200, 'message' => 'fetched']);
     }
 
-    # Get PI Item List
+    # Get PO Item List
     public function getPo(Request $request)
     {
         $query = $this->buildPoQuery($request);
@@ -2351,7 +2351,6 @@ class GateEntryController extends Controller
         $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
 
         $poData = '';
-        $poItemIds = [];
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
         $poItems = PoItem::select(
@@ -2408,6 +2407,9 @@ class GateEntryController extends Controller
             if ($poItem->supp_invoice_required == 'yes') {
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
+                    ->whereHas('vendorAsn', function ($query)  {
+                        $query->where('type', 'po');
+                    })
                     ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
                     ->get();
 
@@ -2433,239 +2435,81 @@ class GateEntryController extends Controller
         return $finalPoItems;
     }
 
-    # Get PO Item List
-    public function getPo2(Request $request){
-        // Initialize variables
-        $documentDate = $request->document_date ?? null;
-        $seriesId = $request->series_id ?? null;
-        $docNumber = $request->document_number ?? null;
-        $itemId = $request->item_id ?? null;
-        $storeId = $request->store_id ?? null;
-        $vendorId = $request->vendor_id ?? null;
-        $headerBookId = $request->header_book_id ?? null;
-        $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
-        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        
-        $poData = '';
-        $poItemIds = [];
-        $poItems = PoItem::select(
-                'erp_po_items.*',
-                'erp_purchase_orders.id as po_id',
-                'erp_purchase_orders.vendor_id as vendor_id',
-                'erp_purchase_orders.book_id as book_id',
-                'erp_purchase_orders.gate_entry_required as gate_entry_required',
-                'erp_purchase_orders.supp_invoice_required as supp_invoice_required'
-            )
-            ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
-            ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
-            ->where('erp_purchase_orders.gate_entry_required', 'yes')
-            ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item){
-                $item->where('type', 'Goods');
-            })
-            ->with(['po', 'item', 'attributes', 'po.book', 'po.vendor'])
-            ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
-                // Filter by book_id (headerBookId)
-                // Filter by series ID
-                $po->withDefaultGroupCompanyOrg();
-                $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                if($seriesId) {
-                    $po->where('erp_purchase_orders.book_id',$seriesId);
-                }
-
-                // Filter by document number
-                if ($docNumber) {
-                    $po->where('erp_purchase_orders.document_number', $docNumber);
-                }
-
-                // Filter by vendor ID
-                if ($vendorId) {
-                    $po->where('erp_purchase_orders.vendor_id', $vendorId);
-                }
-
-                // Filter by vendor ID
-                if ($storeId) {
-                    $po->where('erp_purchase_orders.store_id', $storeId);
-                }
-            });
-
-            if ($itemId) {
-                $poItems->where('item_id', $itemId);
-            };
-        
-        if ($request->type == 'create') {
-            if (count($selected_po_ids)) {
-                $poData = PoItem::with('po')->whereIn('id', $selected_po_ids)->first();
-                $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-            }
-        } else if ($request->type == 'edit') {
-            if (count($selected_po_ids)) {
-                $poData = PoItem::with('po')->whereIn('purchase_order_id', $selected_po_ids)->first();
-                $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
-            }
-        }
-
-        $poItems = $poItems->get();
-        
-        // Process PO items
-        $poItemIds = [];
-        $finalPoItems = [];
-
-        foreach ($poItems as $poItem) {
-            if($poItem->supp_invoice_required == 'yes') {
-                // Fetch Gate Entry Details
-                $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
-                    ->whereRaw('((balance_qty - short_close_qty) > ge_qty)')
-                    ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
-                    ->get();
-                
-                foreach ($siItems as $siItem) {
-                    if (in_array($siItem->id, $selected_po_ids)) {
-                        continue;
-                    }
-                    $poItemIds[] = $siItem->id;
-                    $siItem->balance_qty = ($siItem->balance_qty - $siItem->short_close_qty) - $siItem->ge_qty;
-                    $siItem->po = $siItem->po_item->po; // Keep reference to PO
-                    $siItem->item = $siItem->po_item->item;
-                    $siItem->attributes = $siItem->po_item->attributes;
-                    $siItem->rate = $siItem->rate;
-                    $finalPoItems[] = $siItem;
-                }
-            } else {
-                if (!in_array($poItem->id, $selected_po_ids)) {
-                    $finalPoItems[] = $poItem;
-                    $poItemIds[] = $poItem->id;
-                }
-            }
-        }
-
-        $html = view('procurement.gate-entry.partials.po-item-list', [
-            'poItems' => $finalPoItems,
-            'poData' => $poData
-        ])
-        ->render();
-
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
-
-    }
-
-    # Get PO Item List
-    public function getPo1(Request $request){
-        // Initialize variables
-        $documentDate = $request->document_date ?? null;
-        $seriesId = $request->series_id ?? null;
-        $docNumber = $request->document_number ?? null;
-        $itemId = $request->item_id ?? null;
-        $storeId = $request->store_id ?? null;
-        $vendorId = $request->vendor_id ?? null;
-        $headerBookId = $request->header_book_id ?? null;
-        $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
-        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-
-        $poData = '';
-        $poItemIds = [];
-        $poItems = PoItem::select(
-                'erp_po_items.*',
-                'erp_purchase_orders.id as po_id',
-                'erp_purchase_orders.vendor_id as vendor_id',
-                'erp_purchase_orders.book_id as book_id',
-                'erp_purchase_orders.gate_entry_required as gate_entry_required',
-                'erp_purchase_orders.supp_invoice_required as supp_invoice_required'
-            )
-            ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
-            ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
-            ->where('erp_purchase_orders.gate_entry_required', 'yes')
-            ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item){
-                $item->where('type', 'Goods');
-            });
-        if ($request->type == 'create') {
-            if (count($selected_po_ids)) {
-                $poData = PoItem::with('po')->whereIn('id', $selected_po_ids)->first();
-                $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-            }
-        } else if ($request->type == 'edit') {
-            if (count($selected_po_ids)) {
-                $poData = PoItem::with('po')->whereIn('purchase_order_id', $selected_po_ids)->first();
-                $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
-            }
-        }
-
-        $poItems = $poItems->get();
-
-        foreach ($poItems as $poItem) {
-            if($poItem->supp_invoice_required == 'yes') {
-                $siItem = PoItem::where('id', $poItem->id)
-                    ->whereHas('po', function($po){
-                        $po->where('type', 'supplier-invoice');
-                    })
-                    ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-                    ->first();
-                if($siItem){
-                    $poItemIds[] = $siItem->id;
-                }
-            } else {
-                $poItemIds[] = $poItem->id;
-            }
-        }
-
-        // Query to get PO items with the required conditions
-        $poItems = PoItem::with('attributes')->whereIn('id',$poItemIds)
-            ->where(function ($query) use ($seriesId, $docNumber, $itemId, $vendorId, $storeId) {
-            // Ensure item exists
-            $query->whereHas('item', function($item){
-                $item->where('type', 'Goods');
-            });
-
-            // Check POs
-            $query->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
-                // Filter by book_id (headerBookId)
-                // Filter by series ID
-                $po->withDefaultGroupCompanyOrg();
-                $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                if($seriesId) {
-                    $po->where('erp_purchase_orders.book_id',$seriesId);
-                }
-
-                // Filter by document number
-                if ($docNumber) {
-                    $po->where('erp_purchase_orders.document_number', $docNumber);
-                }
-
-                // Filter by vendor ID
-                if ($vendorId) {
-                    $po->where('erp_purchase_orders.vendor_id', $vendorId);
-                }
-
-                // Filter by store ID
-                if ($storeId) {
-                    $po->where('erp_purchase_orders.store_id', $storeId);
-                }
-            });
-
-            // Filter by item ID if provided
-            if ($itemId) {
-                $query->where('item_id', $itemId);
-            }
-
-            // Ensure remaining quantity condition
-            $query->whereRaw('((order_qty - short_close_qty) > ge_qty)');
-        })->get();
-        $html = view('procurement.gate-entry.partials.po-item-list', [
-            'poItems' => $poItems,
-            'poData' => $poData
-        ])
-        ->render();
-
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
-
-    }
-
-
     # Get Job Order Item List
-    public function getJo(Request $request){
+    public function getJo(Request $request)
+    {
+        $query = $this->buildJoQuery($request);
+
+        return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) use ($request) {
+                $moduleType = $row?->jo?->supp_invoice_required == 'yes' ? 'suppl-inv' : 'j-order';
+                $ref_no = $moduleType === 'suppl-inv'
+                    ? ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA')
+                    : ($row?->jo?->book?->book_code ?? 'NA') . '-' . ($row?->jo?->document_number ?? 'NA');
+
+                $dataCurrentJo = $moduleType === 'suppl-inv'
+                    ? ($row->vendor_asn_id ?? 'null')
+                    : ($row->job_order_id ?? 'null');
+                $dataExistingJo = $request->type == 'create' && $row?->job_order_id
+                    ? ($request->selected_jo_ids[0] ?? 'null')
+                    : 'null';
+
+                $disabled = ($dataExistingJo != 'null' && $dataExistingJo != $row->job_order_id) ? 'disabled' : '';
+
+                return "<div class='form-check form-check-inline me-0'>
+                            <input class='form-check-input jo_item_checkbox' type='checkbox' name='jo_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-jo='{$dataCurrentJo}' data-existing-jo='{$dataExistingJo}' {$disabled}>
+                            <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
+                        </div>";
+            })
+            ->addColumn('vendor', fn($row) => $row?->jo?->vendor?->company_name ?? 'NA')
+            ->addColumn('jo_doc', fn($row) => ($row?->jo?->book_code ?? 'NA') . ' - ' . ($row?->jo?->document_number ?? 'NA'))
+            ->addColumn('jo_date', fn($row) => $row?->jo?->getFormattedDate('document_date') ?? '-')
+            ->addColumn('si_doc', fn($row) => $row?->jo?->supp_invoice_required == 'yes' ? ($row?->vendorAsn?->book_code ?? 'NA') . ' - ' . ($row?->vendorAsn?->document_number ?? 'NA') : '-')
+            ->addColumn('si_date', fn($row) => $row?->jo?->supp_invoice_required == 'yes' ? ($row?->vendorAsn?->getFormattedDate('document_date') ?? '-') : '-')
+            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? 'NA')
+            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? 'NA')
+            ->addColumn('attributes', function ($row) {
+                return $row?->attributes->map(function ($attr) {
+                    return "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->headerAttribute->name}</strong>: {$attr->headerAttributeValue->value}</span>";
+                })->implode(' ');
+            })
+            ->addColumn('order_qty', function ($row) {
+                return number_format((($row->order_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+            })
+            ->addColumn('inv_order_qty', function ($row) {
+                if ($row?->jo?->supp_invoice_required == 'yes') {
+                    return number_format((($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+                }
+                return number_format(0, 2);
+            })
+            ->addColumn('ge_qty', fn($row) => number_format(($row->ge_qty ?? 0), 2))
+            ->addColumn('balance_qty', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+                if ($row?->jo?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                }
+                return number_format(($orderQty - $geQty), 2);
+            })
+            ->addColumn('rate', fn($row) => number_format(($row->rate ?? 0), 2))
+            ->addColumn('total_amount', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                }
+                return number_format(($orderQty - $geQty) * ($row->rate ?? 0), 2);
+            })
+            ->rawColumns([
+                'select_checkbox', 'attributes', 'vendor', 'jo_doc', 'jo_date', 'si_doc', 'si_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'balance_qty', 'rate', 'total_amount'
+            ])
+            ->make(true);
+    }
+
+
+    # This for both bulk and single po
+    protected function buildJoQuery(Request $request)
+    {
         // Initialize variables
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
@@ -2679,7 +2523,6 @@ class GateEntryController extends Controller
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
         $joData = '';
-        $joItemIds = [];
         $joItems = JoProduct::select(
                 'erp_jo_products.*',
                 'erp_job_orders.id as jo_id',
@@ -2694,7 +2537,28 @@ class GateEntryController extends Controller
             ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
             ->whereHas('item', function($item){
                 $item->where('type', 'Goods');
+            })
+            ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
+            ->whereHas('jo', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
+                $po->withDefaultGroupCompanyOrg();
+                $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                if ($seriesId) {
+                    $po->where('erp_job_orders.book_id', $seriesId);
+                }
+                if ($docNumber) {
+                    $po->where('erp_job_orders.document_number', $docNumber);
+                }
+                if ($vendorId) {
+                    $po->where('erp_job_orders.vendor_id', $vendorId);
+                }
+                if ($storeId) {
+                    $po->where('erp_job_orders.store_id', $storeId);
+                }
             });
+
+        if ($itemId) {
+            $joItems->where('item_id', $itemId);
+        }
 
         if ($request->type == 'create') {
             if (count($selected_jo_ids)) {
@@ -2708,72 +2572,40 @@ class GateEntryController extends Controller
             }
         }
         $joItems = $joItems->get();
+        // dd($joItems);
+        $joItemIds = [];
+        $finalJoItems = [];
 
         foreach ($joItems as $joItem) {
-            if($joItem->supp_invoice_required == 'yes') {
-                $siItem = JoProduct::where('id', $joItem->id)
-                    ->whereHas('jo', function($jo){
-                        $jo->where('type', 'supplier-invoice');
+            if ($joItem->supp_invoice_required == 'yes') {
+                $siItems = VendorAsnItem::where('jo_prod_id', $joItem->id)
+                    ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
+                    ->whereHas('vendorAsn', function ($query)  {
+                        $query->where('type', 'jo');
                     })
-                    ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-                    ->first();
-                if($siItem){
+                    ->with(['vendorAsn', 'vendorAsn.jo', 'jo_item'])
+                    ->get();
+
+                foreach ($siItems as $siItem) {
+                    if (in_array($siItem->id, $selected_jo_ids)) {
+                        continue;
+                    }
                     $joItemIds[] = $siItem->id;
+                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
+                    $siItem->jo = $siItem->jo_item->jo;
+                    $siItem->item = $siItem->jo_item->item;
+                    $siItem->attributes = $siItem->jo_item->attributes;
+                    $finalJoItems[] = $siItem;
                 }
             } else {
-                $joItemIds[] = $joItem->id;
+                if (!in_array($joItem->id, $selected_jo_ids)) {
+                    $finalJoItems[] = $joItem;
+                    $joItemIds[] = $joItem->id;
+                }
             }
         }
 
-        // Query to get PO items with the required conditions
-        $joItems = JoProduct::with('attributes')->whereIn('id',$joItemIds)
-            ->where(function ($query) use ($seriesId, $docNumber, $itemId, $vendorId, $storeId) {
-            // Ensure item exists
-            $query->whereHas('item', function($item){
-                $item->where('type', 'Goods');
-            });
-
-            // Check POs
-            $query->whereHas('jo', function ($jo) use ($seriesId, $docNumber, $vendorId, $storeId) {
-                // Filter by book_id (headerBookId)
-                // Filter by series ID
-                $jo->withDefaultGroupCompanyOrg();
-                $jo->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                if($seriesId) {
-                    $jo->where('erp_job_orders.book_id',$seriesId);
-                }
-
-                // Filter by document number
-                if ($docNumber) {
-                    $jo->where('erp_job_orders.document_number', $docNumber);
-                }
-
-                // Filter by vendor ID
-                if ($vendorId) {
-                    $jo->where('erp_job_orders.vendor_id', $vendorId);
-                }
-
-                // Filter by store ID
-                if ($storeId) {
-                    $jo->where('erp_job_orders.store_id', $storeId);
-                }
-            });
-
-            // Filter by item ID if provided
-            if ($itemId) {
-                $query->where('item_id', $itemId);
-            }
-
-            // Ensure remaining quantity condition
-            $query->whereRaw('((order_qty - short_close_qty) > ge_qty)');
-        })->get();
-        $html = view('procurement.gate-entry.partials.jo-item-list', [
-            'joItems' => $joItems,
-            'joData' => $joData
-        ])
-        ->render();
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
-
+        return $finalJoItems;
     }
 
     # Submit PO Item list
@@ -2887,7 +2719,6 @@ class GateEntryController extends Controller
         if(count($uniquePoIds) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time gate entry can be created from one JO."]);
         }
-
         // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
@@ -2931,7 +2762,7 @@ class GateEntryController extends Controller
         $vendorId = JobOrder::whereIn('id',$poIds)->pluck('vendor_id')->toArray();
         $vendorId = array_unique($vendorId);
         if(count($vendorId) && count($vendorId) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of JO item at same time."]);
+            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of PO item at time."]);
         } else {
             $vendorId = $vendorId[0];
             $vendor = Vendor::find($vendorId);
@@ -2958,7 +2789,7 @@ class GateEntryController extends Controller
                 'vendor' => $vendor,
                 'finalDiscounts' => $finalDiscounts,
                 'finalExpenses' => $finalExpenses,
-                'purchaseOrder' => $purchaseOrder
+                'jobOrder' => $purchaseOrder
             ],
             'status' => 200,
             'message' => "fetched!"

@@ -415,6 +415,8 @@
         } else {
             $('.cost_group').hide();
             $('#cost_group_id').prop('required', false);
+            $('.cost_center').hide();
+            costCenter.prop('required', false);
         }
     }
 

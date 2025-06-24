@@ -478,16 +478,7 @@ class TrialBalanceController extends Controller
             ->with('organizations', function ($orgQuery) use ($orgIds) {
                 $orgQuery->whereIn('id', $orgIds);
             })->select('id', 'name')->get();
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -522,16 +513,7 @@ class TrialBalanceController extends Controller
             $startDate = $fyear['start_date'];
             $endDate = $fyear['end_date'];
         }
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
@@ -736,16 +718,7 @@ class TrialBalanceController extends Controller
             $startDate = $financialYear['start_date'];
             $endDate = $financialYear['end_date'];
         }
-       $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
 
         $cost_center_ids = null;

@@ -7379,7 +7379,6 @@ class FinancialPostingHelper
                     'debit_amt' => $post['debit_amount'],
                     'credit_amt' => $post['credit_amount'],
                     'cost_center_id' => $post['cost_center_id'] ?? null,
-                    'cost_name' => $post['cost_name'] ?? null,
                     'debit_amt_org' => $debitAmtOrg,
                     'credit_amt_org' => $creditAmtOrg,
                     'debit_amt_comp' => $debitAmtComp,

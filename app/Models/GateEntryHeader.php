@@ -24,6 +24,7 @@ class GateEntryHeader extends Model
         'group_id',
         'company_id',
         'purchase_order_id',
+        'job_order_id',
         'series_id',
         'book_id',
         'book_code',

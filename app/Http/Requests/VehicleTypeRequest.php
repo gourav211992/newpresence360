@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class VehicleTypeRequest extends FormRequest
@@ -15,11 +16,24 @@ class VehicleTypeRequest extends FormRequest
     {
         return [
             'vehicle_type' => 'required|array|min:1',
-            'vehicle_type.*.name' => 'required|string|max:255',
-            'vehicle_type.*.capacity' => 'required|numeric|max:999999.99',
+            'vehicle_type.*.name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-z\s\.\-]+$/'
+            ],
+
+           'vehicle_type.*.capacity' => [
+                'required',
+                'numeric',
+                'min:0.01', 
+                'max:999999.99',
+                'regex:/^\d{1,6}(\.\d{1,2})?$/', 
+            ],
+
             'vehicle_type.*.uom_id' => 'required|integer|exists:erp_units,id',
-            'vehicle_type.*.description' => 'nullable|string',
-            'vehicle_type.*.status' => 'required|in:Active,Inactive',
+            'vehicle_type.*.description' => 'nullable|string|max:500|regex:/^[A-Za-z0-9\s\.\,\-\(\)]+$/',
+            'vehicle_type.*.status' => ['required', Rule::in(['active', 'inactive'])],
         ];
     }
 
@@ -29,11 +43,11 @@ class VehicleTypeRequest extends FormRequest
             'vehicle_type.required' => 'At least one vehicle type entry is required.',
 
             'vehicle_type.*.name.required' => 'Vehicle type name is required.',
-            'vehicle_type.*.name.string' => 'Vehicle type name must be a string.',
+            'vehicle_type.*.name.regex' => 'The vehicle type name may only contain letters, spaces, dots, and hyphens.',
             'vehicle_type.*.name.max' => 'Vehicle type name may not be greater than 255 characters.',
 
             'vehicle_type.*.capacity.required' => 'Capacity is required.',
-            'vehicle_type.*.capacity.numeric' => 'Capacity must be a valid number.',
+            'vehicle_type.*.capacity.regex' => 'Capacity must be a valid number with up to 2 decimal places (max 999999.99).',
             'vehicle_type.*.capacity.max' => 'Capacity may not exceed the allowed limit.',
 
             'vehicle_type.*.uom_id.required' => 'UOM is required.',

@@ -8,6 +8,7 @@ use App\Models\ErpAssetCategory;
 use App\Models\FixedAssetRegistration;
 use App\Models\ErpStore;
 use App\Models\CostCenterOrgLocations;
+use App\Models\CostCenter;
 use App\Models\Vendor;
 use App\Models\Currency;
 
@@ -26,10 +27,9 @@ class FAImportExportService
             'ledger',
             'capitalize_date', // fixed spelling
             'quantity',
-            'mt_sch',
+            'maintenance_schedule',
             'useful_life', // optional if not used directly, otherwise remove
             'current_value', // used in calculation
-            'life', // added
             'vendor',
             'currency',
         ];
@@ -56,15 +56,15 @@ class FAImportExportService
         if ($existing) {
             throw new \Exception("Asset Code already exists: {$data['asset_code']}");
         }
-        if (!in_array($data['mt_sch'], ['weekly', 'monthly', 'quarterly', 'semi-annually', 'anually'])) {
-            throw new \Exception("Invalid maintenance schedule: {$data['mt_sch']}");
+        if (!in_array($data['maintenance_schedule'], ['weekly', 'monthly', 'quarterly', 'semi-annually', 'anually'])) {
+            throw new \Exception("Invalid maintenance schedule: {$data['maintenance_schedule']}");
         }
 
         if (!isset($data['quantity']) || filter_var($data['quantity'], FILTER_VALIDATE_INT) === false) {
             throw new \Exception("Quantity must be an integer.");
         }
 
-        if (!isset($data['life']) || !is_numeric($data['life'])) {
+        if (!isset($data['useful_life']) || !is_numeric($data['useful_life'])) {
             throw new \Exception("Life must be a number.");
         }
 
@@ -97,27 +97,25 @@ class FAImportExportService
         }
 
 
-        $cost_center = CostCenterOrgLocations::with('costCenter')
-            ->whereHas('costCenter', fn($q) => $q->where('status', 'active')
-                ->where('name', $data['cost_center']))
+        $cost_center = CostCenter::where('status', 'active')->where('name', $data['cost_center'])
             ->withDefaultGroupCompanyOrg()
-            ->first()?->costCenter;
+            ->first();
 
         if (empty($cost_center)) {
-            throw new \Exception("Cost Center(s) not found");
+            throw new \Exception($data['cost_center']." Cost Center(s) not found");
         }
 
 
-        $ledger = Ledger::withDefaultGroupCompanyOrg()
-            ->where('name', $data['ledger'])
-            ->first();
+    $ledger = Ledger::withDefaultGroupCompanyOrg()
+    ->where('name', 'LIKE', '%' . trim($data['ledger'] ?? '') . '%')
+    ->first();
 
-        if (empty($existingLedger)) {
-            throw new \Exception("Ledger(s) not found");
+        if (empty($ledger)) {
+            throw new \Exception($data['ledger']. " Ledger(s) not found");
         }
 
         $ledgerGroup = $ledger->group() ?? null;
-        if (empty($ledgerGroup)) {
+        if (empty($ledgerGroup[0])) {
             throw new \Exception("Ledger group not found for ledger: {$data['ledger']}");
         }
 
@@ -126,15 +124,15 @@ class FAImportExportService
             ->first();
 
         if (empty($category)) {
-            throw new \Exception("Category(s) not found");
+            throw new \Exception($data['category'] ." Category(s) not found");
         }
-        $vendor = Vendor::withDefaultGroupCompanyOrg()->where('company_name', $data['vendor'])->first();
+        $vendor = Vendor::withDefaultGroupCompanyOrg()->where('display_name', $data['vendor'])->first();
         if (empty($vendor)) {
-            throw new \Exception("Vendor(s) not found");
+            throw new \Exception($data['vendor'] ." Vendor(s) not found");
         }
-        $currency = Currency::where('name', $data['currency'])->first();
+        $currency = Currency::where('short_name', $data['currency'])->first();
         if (empty($currency)) {
-            throw new \Exception("Currency(s) not found");
+            throw new \Exception($data['currency']. " Currency(s) not found");
         }
 
         $setup = $category->setup ?? null;
@@ -147,7 +145,7 @@ class FAImportExportService
             throw new \Exception("Depreciation percentage not found for category: {$data['category']}");
         }
 
-        $life = (int)$data['life'];
+        $life = (int)$data['useful_life'];
         $value = (float)$data['current_value'];
 
         if ($life <= 0 || $value <= 0) {
@@ -184,10 +182,10 @@ class FAImportExportService
             'asset_code' => $data['asset_code'],
             'quantity' => (int)$data['quantity'],
             'ledger_id' => $ledger->id,
-            'ledger_group_id' => $ledgerGroup->id,
+            'ledger_group_id' => $ledgerGroup[0]->id,
             'capitalize_date' => $data['capitalize_date'],
             'last_dep_date' => $data['capitalize_date'],
-            'maintenance_schedule' => $data['mt_sch'],
+            'maintenance_schedule' => $data['maintenance_schedule'],
             'depreciation_method' => $method,
             'useful_life' => $usefulLife,
             'salvage_value' => $salvageValue,

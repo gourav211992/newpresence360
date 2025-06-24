@@ -1,18 +1,27 @@
 @php
     $type = $data->document_type === 'receipts' ? 'debit' : 'credit';
       // Find the selected location object
-                                                    $selectedLocation = $locations->firstWhere('id', $data->location);
+                                                    $locationId = (string) $data->location;
+
 
                                                     // Initialize as empty array if no location found
                                                     $locationCostCenters = [];
-                                                    if ($selectedLocation) {
-                                                        $locationCostCenters = $selectedLocation->cost_centers ?? [];
-                                                    }
+                                                    if(!is_null($locationId)){
+                                                        $locationCostCenters = array_filter($cost_centers, function ($center) use ($locationId) {
+                                                            if (empty($center['location'])) return false;
 
+                                                            // Always ensure we have an array of individual strings
+                                                            $locations = is_array($center['location'])
+                                                                ? explode(',', implode(',', $center['location']))
+                                                                : explode(',', $center['location']);
+
+                                                            $locations = array_map('trim', $locations); // remove spaces
+
+                                                            return in_array($locationId, $locations);
+                                                        });
+                                                    }
                                                     // Check if the selected cost center exists in this location
-                                                     $showCostCenter = !empty($locationCostCenters) &&
-                                                    !is_null($data->cost_center_id) &&
-                                                    collect($locationCostCenters)->contains('id', $data->cost_center_id);
+                                                     $showCostCenter = !is_null($data->location);
 @endphp
 @php use App\Helpers\ConstantHelper; @endphp
 @extends('layouts.app')
@@ -505,10 +514,8 @@
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2"
                                                             name="cost_center_id" id="cost_center_id">
+                                                            <option value="">Select Cost Center</option>
                                                             @isset($locationCostCenters)
-                                                            @if($data->cost_center_id=="")
-                                                            <option value="">Select</option>
-                                                        @endif
                                                             @foreach ($locationCostCenters as $value)
                                                                 <option value="{{ $value['id'] }}"
                                                                     @if ($value['id'] == $data->cost_center_id) selected @endif>
@@ -559,7 +566,7 @@
                                                                 </th>
                                                                 <th width="200px" class="text-end">Amount (<span
                                                                         id="orgCurrencyName"></span>)</th>
-                                                                <th width="200px" class="ref-no-header">Ref No.</th>
+                                                                <th width="200px" class="ref-no-header">Pay Ref. No</th>
                                                                 <th>Action</th>
                                                             </tr>
                                                         </thead>
@@ -634,13 +641,13 @@
                                                                         </div>
                                                                     </td>
                                                                     <td><input type="text"
-                                                                            class="form-control mw-100 text-end amount"
+                                                                            class="form-control mw-100 text-end amount indian-number"
                                                                             name="amount[]"
                                                                             id="excAmount{{ $no }}"
                                                                             value="{{ $item->currentAmount }}" required />
                                                                     </td>
                                                                     <td><input type="text" readonly
-                                                                            class="form-control mw-100 text-end amount_exc excAmount{{ $no }}"
+                                                                            class="form-control mw-100 text-end amount_exc excAmount{{ $no }} indian-number"
                                                                             name="amount_exc[]"
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
@@ -1929,14 +1936,14 @@
         function calculateTotal() {
             let currentCurrencySum = 0;
             $('.amount').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 currentCurrencySum = parseFloat(parseFloat(currentCurrencySum + value).toFixed(2));
             });
             $('.currentCurrencySum').text(formatIndianNumber(currentCurrencySum));
 
             let orgCurrencySum = 0;
             $('.amount_exc').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 orgCurrencySum = parseFloat(parseFloat(orgCurrencySum + value).toFixed(2));
             });
             $('.orgCurrencySum').text(formatIndianNumber(orgCurrencySum));

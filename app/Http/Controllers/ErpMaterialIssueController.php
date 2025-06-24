@@ -585,7 +585,7 @@ class ErpMaterialIssueController extends Controller
                 if ($materialIssue -> issue_type === "Sub Contracting" || $materialIssue -> issue_type === "Job Work") {
                     if ($materialIssue -> issue_type === "Sub Contracting" && isset($request -> jo_item_id[0])) {
                         $joItem = JoItem::find($request -> jo_item_id[0]);
-                    } else {
+                    } else if (isset($request -> jo_product_id[0])) {
                         $joItem = JoProduct::find($request -> jo_product_id[0]);
                     }
                     if (isset($joItem)) {
@@ -788,6 +788,8 @@ class ErpMaterialIssueController extends Controller
                             $joItem = JoItem::find($request -> jo_item_id[$itemDataKey]);
                             if (isset($joItem)) {
                                 $joItem -> mi_qty = ($joItem -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
+                                $miItem -> jo_id = $joItem -> jo_id;
+                                $miItem -> save();
                                 $joItem -> save();
                             }
                         }
@@ -796,6 +798,8 @@ class ErpMaterialIssueController extends Controller
                             $joProduct = JoProduct::find($request -> jo_product_id[$itemDataKey]);
                             if (isset($joProduct)) {
                                 $joProduct -> mi_qty = ($joProduct -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
+                                $miItem -> jo_id = $joItem -> jo_id;
+                                $miItem -> save();
                                 $joProduct -> save();
                             }
                         }

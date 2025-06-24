@@ -35,11 +35,11 @@
 </head>
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
-    @include('pdf.partials.header', [
-        'orgLogo' => $orgLogo,
-        'imagePath' => $imagePath,
-        'moduleTitle' => 'Job Order'
-    ])
+        @include('pdf.partials.header', [
+            'orgLogo' => $orgLogo,
+            'imagePath' => $imagePath,
+            'moduleTitle' => 'Job Order'
+        ])
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">
@@ -245,8 +245,6 @@
                 </td>
             </tr>
         </table>
-
-
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td
@@ -271,7 +269,7 @@
                 </td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
-                    Rate
+                    Service Charge
                 </td>
                 <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
@@ -350,7 +348,7 @@
                     </td>
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                       {{ucfirst(@$val?->item?->uom?->name)}}
+                        {{ucfirst(@$val?->item?->uom?->name)}}
                     </td>
 
                     <td
@@ -407,7 +405,6 @@
                 </tr>
             @endforeach
         </table>
-
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="padding: 3px; border: 1px solid #000; width: 60%; border-top: none; vertical-align: top;">
@@ -520,85 +517,8 @@
                     </table>
                 </td>
             </tr>
-            {{-- <tr>
-            <td colspan="2"
-                style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
-                <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                    <tr>
-                        <td style="font-weight: bold; font-size: 13px;"> <b>Attachment :</b></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div style="min-height: 80px;">
-                                @if($po->getDocuments() && $po->getDocuments()->count())
-                                    @foreach($po->getDocuments() as $attachment)
-                                    @php
-                                        $imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp'];
-                                    @endphp
-                                    @if(in_array(pathinfo($attachment->file_name, PATHINFO_EXTENSION), $imageExtensions))
-                                    @php
-                                    @endphp
-                                    <a href="{{ url($po->getDocumentUrl($attachment)) }}" target="_blank">
-                                        <img src="{{$po->getDocumentUrl($attachment)}}" alt="Image : {{$attachment->name}}" style="max-width: 100%; max-height: 150px; margin-top: 10px;">
-                                    </a>
-                                    @else
-                                    <p>
-                                        <a href="{{ url($po->getDocumentUrl($attachment)) }}" target="_blank">
-                                        {{ $attachment->name }}
-                                        </a>
-                                    </p>
-                                    @endif
-                                    @endforeach
-                                @else
-                                    <p>No attachments available.</p>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr> --}}
-            <!-- <tr>
-                <td
-                    style="padding: 3px; border: 1px solid #000; width: 55%; border-top: none; border-right: none; vertical-align: top;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td>Price Basis : </td>
-                            <td>FOR GREATER NOIDA</td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 15px;">Delivery on or before :</td>
-                            <td style="padding-top: 15px;"></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 5px;">Mode of Transport :</td>
-                            <td style="padding-top: 5px;"></td>
-                        </tr>
-                    </table>
-
-                </td>
-                <td
-                    style="padding: 3px; border: 1px solid #000; border-top: none; border-left: none; vertical-align: top; padding-left: 80px;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                        <tr>
-                            <td>Insurance :</td>
-                            <td></td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 5px; width: 80px; ">Pack Charges :
-                            </td>
-                            <td style="padding-top: 5px;"> INCLUDED
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-            </tr> -->
-
-            <!--  -->
-
             <tr>
-                <td
-                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
+                <td style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
 
                         <tr>
@@ -634,6 +554,8 @@
                 </td>
             </tr>
         </table>
+        
+        @if($po->termsConditions->isNotEmpty())
         <div style="page-break-before:always"></div>
         <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
             cellpadding="0">
@@ -646,9 +568,71 @@
                 <td colspan="2"
                     style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
                     @foreach($po->termsConditions as $poTerm)
-                       {{$loop->iteration}} > {!! $poTerm->termAndCondition?->term_detail !!}
+                        {{$loop->iteration}} > {!! $poTerm->termAndCondition?->term_detail !!}
                     @endforeach
                 </td>
             </tr>
         </table>
+        @endif
+
+        @if($po->joItems->isNotEmpty())
+        <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th colspan="6" style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px 0 10px;">
+                        Raw Materials
+                    </th>
+                </tr>
+                <tr style="background: #80808070;">
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">#</th>
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">Order No.</th>
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">Item Code</th>
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">Item Name</th>
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">Attributes</th>
+                    <th style="padding: 5px; border: 1px solid #000; border-top: none; text-align: center;">UOM</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($po->joItems as $key => $val)
+                <tr>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
+                        {{ $key + 1 }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        {{ $val?->so?->full_document_number ?? '-' }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        {{ $val?->item?->item_code ?? '-' }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        {{ $val?->item?->item_name ?? '-' }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        @if($val?->attributes->count())
+                            @php
+                                $html = '';
+                                foreach($val->attributes as $attribute) {
+                                    $attr = \App\Models\AttributeGroup::find($attribute->attribute_name);
+                                    $attrValue = \App\Models\Attribute::find($attribute->attribute_value);
+                                    if ($attr && $attrValue) {
+                                        $html .= ($html ? ', ' : '') . "$attr->name : $attrValue->value";
+                                    }
+                                }
+                            @endphp
+                            {{ $html }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
+                        {{ ucfirst($val?->item?->uom?->name ?? '-') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
+    </div>
+</body>
+</html>
 

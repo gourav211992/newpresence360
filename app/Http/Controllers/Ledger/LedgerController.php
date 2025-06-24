@@ -62,20 +62,40 @@ class LedgerController extends Controller
                 }
 
                 // $ledgers = Ledger::whereIn('organization_id', $organizations)->orderBy('id', 'desc');
-                $ledgers = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
+                // $ledgers = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
+                // if ($request->group) {
+                //     $ledgers->whereJsonContains('ledger_group_id', (string) $request->group)
+                //         ->orWhere('ledger_group_id', $request->group);
+                // }
+                // if ($request->status) {
+                //     $ledgers->where('status', $request->status == "Active" ? 1 : 0);
+                // }
+                // if ($request->date) {
+                //     $dates = explode(' to ', $request->date);
+                //     $start = date('Y-m-d', strtotime($dates[0]));
+                //     $end = date('Y-m-d', strtotime($dates[1]));
+                //     $ledgers->whereDate('created_at', '>=', $start)->whereDate('created_at', '<=', $end);
+                // }
+                $ledgersQuery = Ledger::withDefaultGroupCompanyOrg()
+                ->whereIn('organization_id', $organizations)->orderBy('id', 'desc');
+
                 if ($request->group) {
-                    $ledgers->whereJsonContains('ledger_group_id', (string) $request->group)
-                        ->orWhere('ledger_group_id', $request->group);
+                    $ledgersQuery->whereJsonContains('ledger_group_id', (string) $request->group)
+                                ->orWhere('ledger_group_id', $request->group);
                 }
+
                 if ($request->status) {
-                    $ledgers->where('status', $request->status == "Active" ? 1 : 0);
+                    $ledgersQuery->where('status', $request->status == "Active" ? 1 : 0);
                 }
+
                 if ($request->date) {
                     $dates = explode(' to ', $request->date);
                     $start = date('Y-m-d', strtotime($dates[0]));
                     $end = date('Y-m-d', strtotime($dates[1]));
-                    $ledgers->whereDate('created_at', '>=', $start)->whereDate('created_at', '<=', $end);
+                    $ledgersQuery->whereDate('created_at', '>=', $start)
+                                ->whereDate('created_at', '<=', $end);
                 }
+                $ledgers = $ledgersQuery->get(); 
                 return DataTables::of($ledgers)
                     ->addColumn('group_name', function ($ledger) {
                         $groups = $ledger->group();

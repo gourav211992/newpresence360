@@ -26,6 +26,7 @@ class ErpDriver extends Model
         'license_back',
         'id_proof_front',
         'id_proof_back',
+        'status'
     ];
 
     public function employee(){

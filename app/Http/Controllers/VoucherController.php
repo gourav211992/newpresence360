@@ -707,16 +707,7 @@ class VoucherController extends Controller
 
         $voucher_no = $request->voucher_no;
         $voucher_name = $request->voucher_name;
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
          $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
@@ -745,15 +736,7 @@ class VoucherController extends Controller
         $allledgers = Ledger::withDefaultGroupCompanyOrg()->get();
         $allowedCVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::CV_ALLOWED_GROUPS,'names');
         $exlucdeJVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::JV_EXCLUDE_GROUPS,'names');
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // pass authenticate user's org locations
      $locations = InventoryHelper::getAccessibleLocations();
@@ -832,15 +815,7 @@ class VoucherController extends Controller
         $approvalHistory = $history;
         $allowedCVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::CV_ALLOWED_GROUPS,'names');
         $exlucdeJVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::JV_EXCLUDE_GROUPS,'names');
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         $locations = InventoryHelper::getAccessibleLocations();
        return view('voucher.edit_voucher', compact('cost_centers','groups', 'orgCurrency', 'currencies', 'cost_centers', 'bookTypes', 'data', 'books', 'buttons', 'history', 'revision_number', 'currNumber','approvalHistory','ref_view_route','allowedCVGroups','exlucdeJVGroups','locations','fyear'));

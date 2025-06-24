@@ -218,16 +218,7 @@ class CashflowReportController extends Controller
             $startDate = date('d-m-Y', strtotime($startDate));
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 

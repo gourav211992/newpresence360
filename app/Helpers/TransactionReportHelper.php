@@ -14,6 +14,8 @@ use App\Helpers\TransactionReport\moReportHelper;
 class TransactionReportHelper
 {
     //Report filter routes mapping
+    public static array $TABLE_HEADERS = [];
+
     const FILTER_ROUTES = [
         ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.report',
         ConstantHelper::SO_SERVICE_ALIAS . 'attributeGrouped' => 'sale.order.report.attribute.grouped',
@@ -2856,27 +2858,28 @@ class TransactionReportHelper
         ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::BOM_FILTERS,
 
     ];
-    const TABLE_HEADERS = [
-        ConstantHelper::SO_SERVICE_ALIAS => self::SO_TABLE_HEADERS,
-        ConstantHelper::SO_SERVICE_ALIAS . 'attributeGrouped' => self::SO_ATTRIBUTE_GROUPED_TABLE_HEADERS,
-        ConstantHelper::SI_SERVICE_ALIAS => self::SI_TABLE_HEADERS,
-        ConstantHelper::SR_SERVICE_ALIAS => self::SR_TABLE_HEADERS,
-        ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => self::MATERIAL_RETURN_SERVICE_ALIAS_NAME_TABLE_HEADERS,
-        ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME_TABLE_HEADERS,
-        ConstantHelper::MRN_SERVICE_ALIAS => mrnReportHelper::MRN_TABLE_HEADERS,
-        ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_TABLE_HEADERS,
-        ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_TABLE_HEADERS,
-        ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_TABLE_HEADERS,
-        ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_TABLE_HEADERS,
-        ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_TABLE_HEADERS,
-        ConstantHelper::PO_SERVICE_ALIAS => self::PO_TABLE_HEADERS,
-        ConstantHelper::PI_SERVICE_ALIAS => self::PI_TABLE_HEADERS,
-        ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_TABLE_HEADERS,
-        ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_TABLE_HEADERS,
-        ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::BOM_TABLE_HEADERS,
-
-    ];
-
+    public static function initialize(): void
+    {
+        self::$TABLE_HEADERS = [
+            ConstantHelper::SO_SERVICE_ALIAS => self::SO_TABLE_HEADERS,
+            ConstantHelper::SO_SERVICE_ALIAS . 'attributeGrouped' => self::SO_ATTRIBUTE_GROUPED_TABLE_HEADERS,
+            ConstantHelper::SI_SERVICE_ALIAS => self::SI_TABLE_HEADERS,
+            ConstantHelper::SR_SERVICE_ALIAS => self::SR_TABLE_HEADERS,
+            ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME => self::MATERIAL_RETURN_SERVICE_ALIAS_NAME_TABLE_HEADERS,
+            ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME => self::MATERIAL_ISSUE_SERVICE_ALIAS_NAME_TABLE_HEADERS,
+            ConstantHelper::MRN_SERVICE_ALIAS => mrnReportHelper::MRN_TABLE_HEADERS,
+            ConstantHelper::GATE_ENTRY_SERVICE_ALIAS => geReportHelper::GE_TABLE_HEADERS,
+            ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS => expenseReportHelper::EXPENSE_TABLE_HEADERS,
+            ConstantHelper::PB_SERVICE_ALIAS => pbReportHelper::PB_TABLE_HEADERS,
+            ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS => prReportHelper::PR_TABLE_HEADERS,
+            ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_TABLE_HEADERS,
+            ConstantHelper::PO_SERVICE_ALIAS => self::PO_TABLE_HEADERS,
+            ConstantHelper::PI_SERVICE_ALIAS => self::PI_TABLE_HEADERS,
+            ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_TABLE_HEADERS,
+            ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_TABLE_HEADERS,
+            ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::getBomTableHeaders('bill-of-material'),
+        ];
+    }
     const DYNAMIC_FIELDS_SEPERATION_INDEX = [
         ConstantHelper::SO_SERVICE_ALIAS => 7
     ];

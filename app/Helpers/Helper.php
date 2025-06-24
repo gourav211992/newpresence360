@@ -6,6 +6,7 @@ use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
 use App\Models\AuthUser;
 use Illuminate\Validation\Rule;
+use App\Models\CostCenterOrgLocations;
 use App\Models\Address;
 use App\Models\Bom;
 use App\Models\Book;
@@ -574,7 +575,10 @@ class Helper
 
                 $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                    // $query->where('cost_center_id', $cost);
+                    return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })
                 ->whereIn('ledger_id', $ledgers)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
@@ -606,7 +610,10 @@ class Helper
 
                 $openingData = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                    // $query->where('cost_center_id', $cost);
+                     return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })
                 ->whereIn('ledger_id',$ledgers)
                 ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$cost,$location) {
@@ -697,7 +704,10 @@ class Helper
                   $query->whereBetween('document_date', [$startDate, $endDate]);
                 })
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                    // $query->where('cost_center_id', $cost);
+                    return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })->get();
 
             // Calculate totals for the master group
@@ -710,7 +720,10 @@ class Helper
 
             $openingData =  ItemDetail::whereIn('ledger_id', $ledgers)
             ->when($cost, function ($query) use ($cost) {
-                $query->where('cost_center_id', $cost);
+                // $query->where('cost_center_id', $cost);
+                return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
             })
             ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
@@ -817,7 +830,10 @@ class Helper
 
             $itemVouchers = ItemDetail::where('ledger_id', $ledger_id)
             ->when($cost, function ($query) use ($cost) {
-                $query->where('cost_center_id', $cost);
+                // $query->where('cost_center_id', $cost)
+                return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);;
             })
         ->where('ledger_parent_id',$ledger_parent)
         ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate,$location){
@@ -845,7 +861,10 @@ class Helper
             ->with([
                 'items' => function ($it) use ($currency,$cost) {
                     $it->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     });
                     $it->select('id', "debit_amt_{$currency} as debit_amt", "credit_amt_{$currency} as credit_amt", 'voucher_id', 'ledger_id','ledger_parent_id')->with([
                         'ledger' => function ($l) {
@@ -905,7 +924,10 @@ class Helper
                 'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
                     $query->whereIn('ledger_parent_id', $childrens)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
@@ -927,7 +949,10 @@ class Helper
                 'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
                     $query->whereIn('ledger_parent_id', $childrens)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
@@ -948,7 +973,10 @@ class Helper
                 'details' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
                     $query->whereIn('ledger_parent_id', $childrens)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
@@ -973,7 +1001,10 @@ class Helper
 
                 $openingData =  ItemDetail::where('ledger_id',$ledger->id)
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                    // $query->where('cost_center_id', $cost);
+                    return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })
                     ->whereIn('ledger_parent_id',$childrens)
                    ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
@@ -1838,7 +1869,10 @@ class Helper
                 'details' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                         return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
                     })
                           ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                             $query->withDefaultGroupCompanyOrg();
@@ -1858,7 +1892,11 @@ class Helper
                 'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // dd($cost);
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
@@ -1880,7 +1918,10 @@ class Helper
                 'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
                     ->when($cost, function ($query) use ($cost) {
-                        $query->where('cost_center_id', $cost);
+                        // $query->where('cost_center_id', $cost);
+                         return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
                         $query->withDefaultGroupCompanyOrg();
@@ -1902,7 +1943,10 @@ class Helper
 
                 $openingData = ItemDetail::where('ledger_parent_id', $group_id)
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                    // $query->where('cost_center_id', $cost);
+                     return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })
                 ->where('ledger_id',$ledger->id)
                 ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$location) {
@@ -2013,7 +2057,9 @@ class Helper
                 $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
+                        return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
                 })
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
@@ -2035,12 +2081,13 @@ class Helper
 
 
 
-
                 $transactionsOpen = ItemDetail::whereIn('ledger_id', $ledgers)
                 ->whereIn('ledger_parent_id',$allChildIds)
-                ->when($cost, function ($query) use ($cost) {
-                    $query->where('cost_center_id', $cost);
-                })
+                 ->when($cost, function ($query) use ($cost) {
+                         return is_array($cost)
+                            ? $query->whereIn('cost_center_id', $cost)
+                            : $query->where('cost_center_id', $cost);
+                    })
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
                     $query->where('document_date', '<', $startDate);
                     //if(!$carry)
@@ -3077,15 +3124,17 @@ return [
 
         //get active location
         public static function getStoreLocation($org_ids){
-            $query = ErpStore::where('status', ConstantHelper::ACTIVE);
+            $query = InventoryHelper::getAccessibleLocations();
 
-            if (is_array($org_ids)) {
-                $query->whereIn('organization_id', $org_ids);
-            } else {
-                $query->where('organization_id', $org_ids);
-            }
+             $filtered = $query->filter(function ($store) use ($org_ids) {
+                if (is_array($org_ids)) {
+                    return in_array($store->organization_id, $org_ids);
+                } else {
+                    return $store->organization_id == $org_ids;
+                }
+            });
 
-            return $query->get();
+            return $filtered->values(); 
         }
 
          public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)
@@ -3229,5 +3278,21 @@ return [
 
             return $financialYear ?? null;
 
+        }
+
+        public static function getActiveCostCenters(): array
+        {
+            return CostCenterOrgLocations::with([
+                'costCenter' => function ($query) {
+                    $query->withDefaultGroupCompanyOrg()->where('status', 'active');
+                }
+            ])->get()->map(function ($item) {
+                return $item->costCenter ? [
+                    'id' => $item->costCenter->id,
+                    'name' => $item->costCenter->name,
+                    'cost_group_id' => $item->costCenter->cost_group_id,
+                    'location' => $item->costCenter->locations,
+                ] : null;
+            })->filter()->values()->toArray();
         }
 }

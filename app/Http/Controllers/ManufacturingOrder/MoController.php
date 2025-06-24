@@ -250,91 +250,93 @@ class MoController extends Controller
                     # Get Product Route By Item_id
                     $selectedRow = false;
                     foreach($request->all()['components'] as $component) {
-                        if(!isset($component['selected'])) {
-                            continue;
-                        }
-                        $selectedRow = true;
-                        # MoProductDetail
-                        $moProdDetail = new MoProduct;
-                        $moProdDetail->mo_id = $mo->id; 
-                        $moProdDetail->item_id = $component['item_id']; 
-                        $moProdDetail->item_code = $component['item_code']; 
-                        $moProdDetail->customer_id = $component['customer_id']; 
-                        $moProdDetail->uom_id = $component['uom_id']; 
-                        $moProdDetail->qty = $component['qty']; 
-                        $moProdDetail->so_id = $component['so_id'] ?? null; 
-                        $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
-                        $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
-                        $moProdDetail->remark = $component['remark'] ?? null; 
-                        $moProdDetail->machine_id = $component['machine_id'] ?? null; 
-                        $moProdDetail->number_of_sheet = $component['sheet'] ?? 0; 
-                        $moProdDetail->save();
-                        #Save MoProductDetailAttr component Attr
-                        $attributes = [];
-                        $newAttributes = [];
-                        foreach($moProdDetail?->item?->itemAttributes as $itemAttribute) {
-                            if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                                $moProdAttr = new MoProductAttribute;
-                                $moProdAttr->mo_id = $mo->id;
-                                $moProdAttr->mo_product_id = $moProdDetail->id;
-                                $moProdAttr->item_attribute_id = $itemAttribute->id;
-                                $moProdAttr->item_code = $component['item_code'];
-                                $moProdAttr->attribute_name = $itemAttribute->attribute_group_id;
-                                $moProdAttr->attribute_value = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                                $moProdAttr->save();
-                                $attributes[] = ['attribute_id' => intval($itemAttribute?->id), 'attribute_value' => intval($moProdAttr->attribute_value)];
-                                $newAttributes[] = [
-                                    'attribute_id' => intval($moProdAttr->attribute_value), 
-                                    'attribute_name' => $moProdAttr?->headerAttribute?->name,
-                                    'attribute_value' => $moProdAttr?->headerAttributeValue?->value,
-                                    'item_attribute_id' => intval($moProdAttr->item_attribute_id),
-                                    'attribute_group_id' => intval($moProdAttr->attribute_name)
-                                ];
+                        if (!empty($component['is_pi_item_id'])) {
+                            if(!isset($component['selected'])) {
+                                continue;
                             }
-                        }
-
-                        # Back update PWO station consumption
-                        if(isset($moProdDetail->pwoMapping) && $moProdDetail->pwoMapping) {
-                            $pwoStation = PwoStationConsumption::where('pwo_mapping_id', $moProdDetail?->pwoMapping?->id)
-                                                    ->where('station_id', $mo->station_id)
-                                                    ->first();
-                            if($pwoStation) {
-                                $pwoStation->mo_product_qty += $moProdDetail->qty;
-                                $pwoStation->mo_id = $mo->id;
-                                $pwoStation->save();
-                            } else {
-                                $moProdDetail->pwoMapping->mo_id = $mo->id; 
-                                $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
-                                $moProdDetail->pwoMapping->save(); 
+                            $selectedRow = true;
+                            # MoProductDetail
+                            $moProdDetail = new MoProduct;
+                            $moProdDetail->mo_id = $mo->id; 
+                            $moProdDetail->item_id = $component['item_id']; 
+                            $moProdDetail->item_code = $component['item_code']; 
+                            $moProdDetail->customer_id = $component['customer_id']; 
+                            $moProdDetail->uom_id = $component['uom_id']; 
+                            $moProdDetail->qty = $component['qty']; 
+                            $moProdDetail->so_id = $component['so_id'] ?? null; 
+                            $moProdDetail->so_item_id = $component['so_item_id'] ?? null; 
+                            $moProdDetail->pwo_mapping_id = $component['pwo_mapping_id'] ?? null; 
+                            $moProdDetail->remark = $component['remark'] ?? null; 
+                            $moProdDetail->machine_id = $component['machine_id'] ?? null; 
+                            $moProdDetail->number_of_sheet = $component['sheet'] ?? 0; 
+                            $moProdDetail->save();
+                            #Save MoProductDetailAttr component Attr
+                            $attributes = [];
+                            $newAttributes = [];
+                            foreach($moProdDetail?->item?->itemAttributes as $itemAttribute) {
+                                if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
+                                    $moProdAttr = new MoProductAttribute;
+                                    $moProdAttr->mo_id = $mo->id;
+                                    $moProdAttr->mo_product_id = $moProdDetail->id;
+                                    $moProdAttr->item_attribute_id = $itemAttribute->id;
+                                    $moProdAttr->item_code = $component['item_code'];
+                                    $moProdAttr->attribute_name = $itemAttribute->attribute_group_id;
+                                    $moProdAttr->attribute_value = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
+                                    $moProdAttr->save();
+                                    $attributes[] = ['attribute_id' => intval($itemAttribute?->id), 'attribute_value' => intval($moProdAttr->attribute_value)];
+                                    $newAttributes[] = [
+                                        'attribute_id' => intval($moProdAttr->attribute_value), 
+                                        'attribute_name' => $moProdAttr?->headerAttribute?->name,
+                                        'attribute_value' => $moProdAttr?->headerAttributeValue?->value,
+                                        'item_attribute_id' => intval($moProdAttr->item_attribute_id),
+                                        'attribute_group_id' => intval($moProdAttr->attribute_name)
+                                    ];
+                                }
                             }
-                        }
 
-                        # Mo Item Store
-                        $bomDetails = PwoBomMapping::where('pwo_mapping_id', $moProdDetail->pwo_mapping_id)
-                                    ->where(function($query) use($stationId) {
-                                        if($stationId) {
-                                            $query->where('station_id', $stationId);
-                                        }
-                                    })      
-                                    ->get();
+                            # Back update PWO station consumption
+                            if(isset($moProdDetail->pwoMapping) && $moProdDetail->pwoMapping) {
+                                $pwoStation = PwoStationConsumption::where('pwo_mapping_id', $moProdDetail?->pwoMapping?->id)
+                                                        ->where('station_id', $mo->station_id)
+                                                        ->first();
+                                if($pwoStation) {
+                                    $pwoStation->mo_product_qty += $moProdDetail->qty;
+                                    $pwoStation->mo_id = $mo->id;
+                                    $pwoStation->save();
+                                } else {
+                                    $moProdDetail->pwoMapping->mo_id = $mo->id; 
+                                    $moProdDetail->pwoMapping->mo_product_qty += $moProdDetail->qty; 
+                                    $moProdDetail->pwoMapping->save(); 
+                                }
+                            }
 
-                        foreach ($bomDetails as $bomDetail) {
-                            $moBomMapping = new MoBomMapping;
-                            $moBomMapping->mo_id = $mo->id;
-                            $moBomMapping->mo_product_id = $moProdDetail->id;
-                            $moBomMapping->so_id = $bomDetail->so_id ?? null;
-                            $moBomMapping->bom_id = $bomDetail->bom_id;
-                            $moBomMapping->bom_detail_id = $bomDetail->bom_detail_id;
-                            $moBomMapping->item_id = $bomDetail->item_id;
-                            $moBomMapping->item_code = $bomDetail->item_code;
-                            $moBomMapping->attributes = $bomDetail->attributes;
-                            $moBomMapping->uom_id = $bomDetail->uom_id;
-                            $moBomMapping->bom_qty = $bomDetail->bom_qty;
-                            $moBomMapping->consumption_qty = $bomDetail->qty;
-                            $moBomMapping->station_id = $bomDetail->station_id;
-                            $moBomMapping->section_id = $bomDetail->section_id;
-                            $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
-                            $moBomMapping->save();
+                            # Mo Item Store
+                            $bomDetails = PwoBomMapping::where('pwo_mapping_id', $moProdDetail->pwo_mapping_id)
+                                        ->where(function($query) use($stationId) {
+                                            if($stationId) {
+                                                $query->where('station_id', $stationId);
+                                            }
+                                        })      
+                                        ->get();
+
+                            foreach ($bomDetails as $bomDetail) {
+                                $moBomMapping = new MoBomMapping;
+                                $moBomMapping->mo_id = $mo->id;
+                                $moBomMapping->mo_product_id = $moProdDetail->id;
+                                $moBomMapping->so_id = $bomDetail->so_id ?? null;
+                                $moBomMapping->bom_id = $bomDetail->bom_id;
+                                $moBomMapping->bom_detail_id = $bomDetail->bom_detail_id;
+                                $moBomMapping->item_id = $bomDetail->item_id;
+                                $moBomMapping->item_code = $bomDetail->item_code;
+                                $moBomMapping->attributes = $bomDetail->attributes;
+                                $moBomMapping->uom_id = $bomDetail->uom_id;
+                                $moBomMapping->bom_qty = $bomDetail->bom_qty;
+                                $moBomMapping->consumption_qty = $bomDetail->qty;
+                                $moBomMapping->station_id = $bomDetail->station_id;
+                                $moBomMapping->section_id = $bomDetail->section_id;
+                                $moBomMapping->sub_section_id = $bomDetail->sub_section_id;
+                                $moBomMapping->save();
+                            } 
                         } 
                     }   
                     if(!$selectedRow) {

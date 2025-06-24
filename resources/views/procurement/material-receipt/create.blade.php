@@ -192,14 +192,14 @@
                                                         </button>
                                                         {{-- <input type="hidden" name="module_type" id="module_type" class="module_type" value="po"> --}}
                                                     </div>
-                                                    <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
-                                                        <div class="col-md-3">
-                                                            <label class="form-label">Reference No <span class="text-danger">*</span></label>
-                                                        </div>
-                                                        <div class="col-md-5">
-                                                            <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
-                                                            <input type="hidden" name="reference_type" class="form-control" id="reference_type_input" readonly>
-                                                        </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Reference No <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
+                                                        <input type="hidden" name="reference_type" class="form-control" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1215,6 +1215,7 @@
             if(!$("tr[id*='row_']").length) {
                 $(".poSelect").show();
                 $(".joSelect").show();
+                $(".importItem").prop('disabled',false);
                 $("#referenceNoDiv").hide();
                 $("#reference_number_input").val('');
                 $("#addNewItemBtn").show();
@@ -1255,8 +1256,13 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+            if(currentProcessType != null)
+            {
+                rowCount = tableRowCount;
+            }
+
             let mrn_detail_id = "";
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${tableRowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1695,7 +1701,7 @@
             &item_id=${encodeURIComponent(item_id)}
             &vendor_id=${encodeURIComponent(vendor_id)}
             &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_po_ids=${selectedJoIds}
+            &selected_jo_ids=${selectedJoIds}
             &document_date=${document_date}
             &item_search=${item_search}`;
 
@@ -1735,22 +1741,16 @@
         {
             let ids = [];
             let referenceNos = [];
-            // let codes = [];
             $('.po_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
                     referenceNos.push(referenceNo);
                 }
-                // var dataCode = $(this).attr('data-current-po');
-                // if (dataCode) {
-                //     codes.push(dataCode);
-                // }
             });
             return {
                 ids: ids,
-                referenceNos: referenceNos,
-                // headerIds: codes
+                referenceNos: referenceNos
             };
         }
 
@@ -2106,7 +2106,7 @@
                 $("#joModal").modal('hide');
                 Swal.fire({
                     title: 'Error!',
-                    text: 'Please select at least one one po',
+                    text: 'Please select at least one jo',
                     icon: 'error',
                 });
                 return false;

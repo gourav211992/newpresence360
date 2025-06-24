@@ -1712,9 +1712,10 @@
                 orderable: false,
                 searchable: false,
                 render: (data, type, row) => {
+                    let numericAvlStock = parseFloat(row.avl_stock.replace(/,/g, ''));
                     return `<div class="form-check form-check-inline me-0">
                         <input class="form-check-input pull_checkbox" type="checkbox"
-                            ${row.avl_stock > 0 ? '' : 'disabled'}
+                            ${numericAvlStock > 0 ? '' : 'disabled'}
                             doc-id="${row.id}"
                             current-doc-id="0"
                             document-id="${row.id}"
@@ -1945,7 +1946,7 @@
                                         }
                                     }
                                     // item.balance_qty = item.mi_balance_qty;
-                                    if (item.avl_stock < item.mi_balance_qty){
+                                    if (Number(item.avl_stock) < Number(item.mi_balance_qty)){
                                         item.mi_balance_qty = item.avl_stock;
                                     }
                                     let itemIdKeyName = "mo_item_id";

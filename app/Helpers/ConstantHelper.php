@@ -509,6 +509,8 @@ class ConstantHelper
     const MATERIAL_REQUEST_SERVICE_ALIAS = 'material-request';
     const MATERIAL_ISSUE_SERVICE_ALIAS = 'material-issue';
     const MATERIAL_ISSUE_SERVICE_ALIAS_NAME = 'mi';
+    const MI_MRN_SERVICE_ALIAS_NAME = 'mi-mrn';
+
     const MATERIAL_ISSUE_SERVICE_NAME = 'Material Issue';
     const MATERIAL_RETURN_SERVICE_ALIAS = 'material-return';
     const MATERIAL_RETURN_SERVICE_ALIAS_NAME = 'mr';

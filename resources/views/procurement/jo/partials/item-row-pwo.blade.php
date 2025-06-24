@@ -45,7 +45,7 @@
          @endforeach
       </select>
 </td>
-<td><input type="number" class="form-control mw-100 text-end" value="{{$pwoItem?->qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>
+<td><input type="number" class="form-control mw-100 text-end" value="{{$pwoItem?->qty - $pwoItem?->jo_qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>
 <td><input type="number" name="components[{{$rowCount}}][rate]" value="" class="form-control mw-100 text-end" /></td> 
 <td><input type="number" readonly value="" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" step="any" /></td>
 <td>

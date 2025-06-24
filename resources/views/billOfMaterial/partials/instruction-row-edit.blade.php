@@ -5,7 +5,11 @@
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}">
     <td class="customernewsection-form">
        <div class="form-check form-check-primary custom-checkbox">
-          <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" value="{{$rowCount}}" data-id="{{$bomInstruction->id}}">
+        @if(empty($isCopy) || !$isCopy)
+            <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" value="{{$rowCount}}" data-id="{{$bomInstruction->id}}">
+        @else
+            <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" value="{{$rowCount}}" data-id="">
+        @endif
           <label class="form-check-label" for="Email_{{$rowCount}}"></label>
        </div>
     </td>
@@ -54,11 +58,14 @@
                     </div>
                     @endforeach
                 </div>
-           
             @endif
            </div>
         </div>
      </td>
-     <input type="hidden" name="instructions[{{$rowCount}}][id]" value="{{$bomInstruction?->id}}">
+     @if(empty($isCopy) || !$isCopy)
+        <input type="hidden" name="instructions[{{$rowCount}}][id]" value="{{$bomInstruction?->id}}">
+      @else
+        <input type="hidden" name="instructions[{{$rowCount}}][instruction_id]" value="{{$bomInstruction?->id}}">
+     @endif
  </tr>
  @endforeach

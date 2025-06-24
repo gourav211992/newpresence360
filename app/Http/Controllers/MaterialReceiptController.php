@@ -53,11 +53,13 @@ use App\Models\ErpRack;
 use App\Models\Currency;
 use App\Models\ErpStore;
 use App\Models\ErpShelf;
+use App\Models\VendorAsn;
 use App\Models\VendorBook;
 use App\Models\ErpAddress;
 use App\Models\PaymentTerm;
 use App\Models\Organization;
 use App\Models\ErpSaleOrder;
+use App\Models\VendorAsnItem;
 use App\Models\PurchaseOrder;
 use App\Models\NumberPattern;
 use App\Models\AttributeGroup;
@@ -94,8 +96,12 @@ use App\Exports\MaterialReceiptExport;
 use App\Exports\TransactionItemsExport;
 use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
+use App\Models\ErpMiItem;
+use App\Models\JobOrder\JoBomMapping;
 use App\Models\JobOrder\JobOrder;
+use App\Models\JobOrder\JoItem;
 use App\Models\JobOrder\JoProduct;
+use App\Models\MrnMiMapping;
 
 class MaterialReceiptController extends Controller
 {
@@ -956,6 +962,18 @@ class MaterialReceiptController extends Controller
             $mrn->save();
             if($mrn){
                 $invoiceLedger = self::maintainStockLedger($mrn);
+                if($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS)
+                {
+                    $errorStatus = self::checkRawMaterial($mrn);
+                    if ($errorStatus) {
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => $errorStatus,
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+               
             }
 
             $redirectUrl = '';
@@ -1872,7 +1890,7 @@ class MaterialReceiptController extends Controller
             'jo' => $typeId,
             default => $vendorId,
         };
-        
+
         $typeData = match ($type) {
             'po' => PurchaseOrder::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
@@ -1883,11 +1901,11 @@ class MaterialReceiptController extends Controller
             default => Vendor::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId),
-        };  
-        
+        };
+
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-        
+
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
@@ -1921,7 +1939,7 @@ class MaterialReceiptController extends Controller
             ]);
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
-        
+
         $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
         $locationAddress = $store?->address;
@@ -1932,20 +1950,20 @@ class MaterialReceiptController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
-        
+
         return response()->json(
             [
                 'data' => [
-                    'status' => 200, 
-                    'vendor' =>$vendor, 
+                    'status' => 200,
+                    'vendor' =>$vendor,
                     'message' => 'fetched',
-                    'currency' => $currency, 
+                    'currency' => $currency,
                     'org_address' => $orgAddress,
-                    'paymentTerm' => $paymentTerm, 
-                    'vendor_address' => $vendorAddress, 
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
                     'currency_exchange' => $currencyData
-                ], 
-                'delivery_address' => $locationAddress, 
+                ],
+                'delivery_address' => $locationAddress,
             ]
         );
     }
@@ -2615,6 +2633,209 @@ class MaterialReceiptController extends Controller
         return response()->json(['data' => ['quantity' => $request->qty], 'status' => 200, 'message' => 'fetched']);
     }
 
+    # Get PO/SI/GE Item List
+    public function getPo1(Request $request)
+    {
+        $query = $this->buildPoQuery($request);
+
+        return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) use ($request) {
+                $moduleType = match (true) {
+                    $row?->po?->supp_invoice_required === 'yes' => 'suppl-inv',
+                    $row?->po?->gate_entry_required === 'yes' => 'gate-entry',
+                    default => 'p-order',
+                };
+
+                $ref_no = match ($moduleType) {
+                    'suppl-inv'  => ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA'),
+                    'gate-entry' => ($row?->gateEntryHeader?->book?->book_code ?? 'NA') . '-' . ($row?->gateEntryHeader?->document_number ?? 'NA'),
+                    default      => ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA'),
+                };
+                
+                $dataCurrentPo = match ($moduleType) {
+                    'suppl-inv'  => $row->vendor_asn_id ?? 'null',
+                    'gate-entry' => $row->purchase_order_id ?? 'null',
+                    default      => $row->purchase_order_id ?? 'null',
+                };
+
+                $ref_no = $moduleType === 'suppl-inv'
+                    ? ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA')
+                    : ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA');
+
+                $dataCurrentPo = $moduleType === 'suppl-inv'
+                    ? ($row->vendor_asn_id ?? 'null')
+                    : ($row->purchase_order_id ?? 'null');
+                $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
+                    ? ($request->selected_po_ids[0] ?? 'null')
+                    : 'null';
+
+                $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
+
+                return "<div class='form-check form-check-inline me-0'>
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' {$disabled}>
+                            <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
+                        </div>";
+            })
+            ->addColumn('vendor', fn($row) => $row?->po?->vendor?->company_name ?? 'NA')
+            ->addColumn('po_doc', fn($row) => ($row?->po?->book?->book_code ?? 'NA') . ' - ' . ($row?->po?->document_number ?? 'NA'))
+            ->addColumn('po_date', fn($row) => $row?->po?->getFormattedDate('document_date') ?? '-')
+            ->addColumn('si_doc', fn($row) => $row?->po?->supp_invoice_required == 'yes' ? ($row?->vendorAsn?->book_code ?? 'NA') . ' - ' . ($row?->vendorAsn?->document_number ?? 'NA') : '-')
+            ->addColumn('si_date', fn($row) => $row?->po?->supp_invoice_required == 'yes' ? ($row?->vendorAsn?->getFormattedDate('document_date') ?? '-') : '-')
+            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? 'NA')
+            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? 'NA')
+            ->addColumn('attributes', function ($row) {
+                return $row?->attributes->map(function ($attr) {
+                    return "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->headerAttribute->name}</strong>: {$attr->headerAttributeValue->value}</span>";
+                })->implode(' ');
+            })
+            ->addColumn('order_qty', function ($row) {
+                return number_format((($row->order_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+            })
+            ->addColumn('inv_order_qty', function ($row) {
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    return number_format((($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+                }
+                return number_format(0, 2);
+            })
+            ->addColumn('ge_qty', fn($row) => number_format(($row->ge_qty ?? 0), 2))
+            ->addColumn('balance_qty', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                }
+                return number_format(($orderQty - $geQty), 2);
+            })
+            ->addColumn('rate', fn($row) => number_format(($row->rate ?? 0), 2))
+            ->addColumn('total_amount', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                }
+                return number_format(($orderQty - $geQty) * ($row->rate ?? 0), 2);
+            })
+            ->rawColumns([
+                'select_checkbox', 'attributes', 'vendor', 'po_doc', 'po_date', 'si_doc', 'si_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'balance_qty', 'rate', 'total_amount'
+            ])
+            ->make(true);
+    }
+
+
+    # This for both bulk and single po
+    protected function buildPoQuery(Request $request)
+    {
+        $documentDate = $request->document_date ?? null;
+        $seriesId = $request->series_id ?? null;
+        $docNumber = $request->document_number ?? null;
+        $itemId = $request->item_id ?? null;
+        $storeId = $request->store_id ?? null;
+        $vendorId = $request->vendor_id ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
+
+        $poData = '';
+        $poItemIds = [];
+        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+
+        $poItems = PoItem::select(
+                'erp_po_items.*',
+                'erp_purchase_orders.id as po_id',
+                'erp_purchase_orders.vendor_id as vendor_id',
+                'erp_purchase_orders.book_id as book_id',
+                'erp_purchase_orders.gate_entry_required as gate_entry_required',
+                'erp_purchase_orders.supp_invoice_required as supp_invoice_required'
+            )
+            ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
+            ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
+            ->where('erp_purchase_orders.gate_entry_required', 'yes')
+            ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
+            ->whereHas('item', function($item){
+                $item->where('type', 'Goods');
+            })
+            ->with(['po', 'item', 'attributes', 'po.book', 'po.vendor'])
+            ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
+                $po->withDefaultGroupCompanyOrg();
+                $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                if ($seriesId) {
+                    $po->where('erp_purchase_orders.book_id', $seriesId);
+                }
+                if ($docNumber) {
+                    $po->where('erp_purchase_orders.document_number', $docNumber);
+                }
+                if ($vendorId) {
+                    $po->where('erp_purchase_orders.vendor_id', $vendorId);
+                }
+                if ($storeId) {
+                    $po->where('erp_purchase_orders.store_id', $storeId);
+                }
+            });
+
+        if ($itemId) {
+            $poItems->where('item_id', $itemId);
+        }
+
+        if ($request->type == 'create' && count($selected_po_ids)) {
+            $poData = PoItem::with('po')->whereIn('id', $selected_po_ids)->first();
+            $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
+        } elseif ($request->type == 'edit' && count($selected_po_ids)) {
+            $poData = PoItem::with('po')->whereIn('purchase_order_id', $selected_po_ids)->first();
+            $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
+        }
+
+        $poItems = $poItems->get();
+
+        $poItemIds = [];
+        $finalPoItems = [];
+
+        foreach ($poItems as $poItem) {
+            if ($poItem->supp_invoice_required == 'yes') {
+                $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
+                    ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
+                    ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
+                    ->get();
+
+                foreach ($siItems as $siItem) {
+                    if (in_array($siItem->id, $selected_po_ids)) {
+                        continue;
+                    }
+                    $poItemIds[] = $siItem->id;
+                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
+                    $siItem->po = $siItem->po_item->po;
+                    $siItem->item = $siItem->po_item->item;
+                    $siItem->attributes = $siItem->po_item->attributes;
+                    $finalPoItems[] = $siItem;
+                }
+            } else if ($poItem->gate_entry_required == 'yes') {
+                // Fetch Gate Entry Details
+                $geItems = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
+                    ->whereRaw('(accepted_qty > mrn_qty)')
+                    ->with(['gateEntryHeader'])
+                    ->get();
+
+                foreach ($geItems as $geItem) {
+                    if (in_array($geItem->id, $selected_po_ids)) {
+                        continue;
+                    }
+                    $poItemIds[] = $geItem->id;
+                    $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
+                    $geItem->po = $geItem->po_item->po; // Keep reference to PO
+                    $geItem->item = $geItem->po_item->item;
+                    $geItem->attributes = $geItem->po_item->attributes;
+                    $finalPoItems[] = $geItem;
+                }
+            } else {
+                if (!in_array($poItem->id, $selected_po_ids)) {
+                    $finalPoItems[] = $poItem;
+                    $poItemIds[] = $poItem->id;
+                }
+            }
+        }
+
+        return $finalPoItems;
+    }
+
     # Get PO Item List
     public function getPo(Request $request)
     {
@@ -2631,6 +2852,10 @@ class MaterialReceiptController extends Controller
         // Fetch applicable book IDs
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         // Fetch PO Items along with related details
+        $headerId = [];
+        if (!empty($selected_po_ids)) {
+            $headerId = PoItem::whereIn('id', $selected_po_ids)->pluck('purchase_order_id')->toArray();
+        }
         $poItems = PoItem::select(
                 'erp_po_items.*',
                 'erp_purchase_orders.id as po_id',
@@ -2646,11 +2871,14 @@ class MaterialReceiptController extends Controller
                 $query->where('type', 'Goods');
             })
             ->with(['po', 'item', 'attributes', 'po.book', 'po.vendor'])
-            ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
+            ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId, $headerId) {
                 // Filter by book_id (headerBookId)
                 // Filter by series ID
                 $po->withDefaultGroupCompanyOrg();
                 $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                if (!empty($headerId)) {
+                    $po->whereIn('id', $headerId);
+                }
                 if($seriesId) {
                     $po->where('erp_purchase_orders.book_id',$seriesId);
                 }
@@ -2685,6 +2913,11 @@ class MaterialReceiptController extends Controller
             if ($poItem->gate_entry_required == 'yes') {
                 // Fetch Gate Entry Details
                 $geItems = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
+                    ->whereHas('gateEntryHeader', function ($query) use ($headerId) {
+                        if (!empty($headerId)) {
+                            $query->whereIn('purchase_order_id', $headerId);
+                        }
+                    })
                     ->whereRaw('(accepted_qty > mrn_qty)')
                     ->with(['gateEntryHeader'])
                     ->get();
@@ -2704,8 +2937,11 @@ class MaterialReceiptController extends Controller
             } else {
                 if ($poItem->supp_invoice_required == 'yes') {
                     $siItem = PoItem::where('po_item_id', $poItem->id)
-                        ->whereHas('po', function ($query) {
+                        ->whereHas('po', function ($query, $headerId) {
                             $query->where('type', 'supplier-invoice');
+                            if (!empty($headerId)) {
+                                $query->whereIn('id', $headerId);
+                            }
                         })
                         ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
                         ->first();
@@ -2729,122 +2965,6 @@ class MaterialReceiptController extends Controller
 
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
-
-    # Get JO Item List
-    public function getJo(Request $request)
-    {
-        $poData = '';
-        $documentDate = $request->document_date ?? null;
-        $headerBookId = $request->header_book_id ?? null;
-        $seriesId = $request->series_id ?? null;
-        $docNumber = $request->document_number ?? null;
-        $itemId = $request->item_id ?? null;
-        $storeId = $request->store_id ?? null;
-        $vendorId = $request->vendor_id ?? null;
-        $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
-        // Fetch applicable book IDs
-        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        // Fetch PO Items along with related details
-        $poItems = JoProduct::select(
-                'erp_jo_products.*',
-                'erp_job_orders.id as jo_id',
-                'erp_job_orders.vendor_id',
-                'erp_job_orders.book_id',
-                'erp_job_orders.gate_entry_required',
-                'erp_job_orders.supp_invoice_required'
-            )
-            ->leftJoin('erp_job_orders', 'erp_job_orders.id', '=', 'erp_jo_products.jo_id')
-            ->whereIn('erp_job_orders.book_id', $applicableBookIds)
-            ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
-            ->whereHas('item', function ($query) {
-                $query->where('type', 'Goods');
-            })
-            ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
-            ->whereHas('jo', function ($jo) use ($seriesId, $docNumber, $vendorId, $storeId) {
-                // Filter by book_id (headerBookId)
-                // Filter by series ID
-                $jo->withDefaultGroupCompanyOrg();
-                $jo->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                if($seriesId) {
-                    $jo->where('erp_job_orders.book_id',$seriesId);
-                }
-
-                // Filter by document number
-                if ($docNumber) {
-                    $jo->where('erp_job_orders.document_number', $docNumber);
-                }
-
-                // Filter by vendor ID
-                if ($vendorId) {
-                    $jo->where('erp_job_orders.vendor_id', $vendorId);
-                }
-
-                // Filter by vendor ID
-                if ($storeId) {
-                    $jo->where('erp_job_orders.store_id', $storeId);
-                }
-            });
-
-            if ($itemId) {
-                $poItems->where('item_id', $itemId);
-            }
-
-        $poItems = $poItems->get();
-
-        // Process PO items
-        $poItemIds = [];
-        $finalPoItems = [];
-
-        foreach ($poItems as $poItem) {
-            if ($poItem->gate_entry_required == 'yes') {
-                // Fetch Gate Entry Details
-                $geItems = GateEntryDetail::where('job_order_item_id', $poItem->id)
-                    ->whereRaw('(accepted_qty > mrn_qty)')
-                    ->with(['gateEntryHeader'])
-                    ->get();
-
-                foreach ($geItems as $geItem) {
-                    if (in_array($geItem->id, $selected_po_ids)) {
-                        continue;
-                    }
-                    $poItemIds[] = $geItem->id;
-                    $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
-                    $geItem->jo = $poItem->jo; // Keep reference to JO
-                    $geItem->item = $poItem->item;
-                    $geItem->attributes = $poItem->attributes;
-                    $geItem->rate = $poItem->rate;
-                    $finalPoItems[] = $geItem;
-                }
-            } else {
-                if ($poItem->supp_invoice_required == 'yes') {
-                    $siItem = JoProduct::where('id', $poItem->id)
-                        ->whereHas('jo', function ($query) {
-                            $query->where('type', 'supplier-invoice');
-                        })
-                        ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
-                        ->first();
-                    if ($siItem && !in_array($siItem->id, $selected_po_ids)) {
-                        $finalPoItems[] = $siItem;
-                        $poItemIds[] = $siItem->id;
-                    }
-                } else {
-                    if (!in_array($poItem->id, $selected_po_ids)) {
-                        $finalPoItems[] = $poItem;
-                        $poItemIds[] = $poItem->id;
-                    }
-                }
-            }
-        }
-        $html = view('procurement.material-receipt.partials.jo-item-list', [
-            'joItems' => $finalPoItems,
-            'joData' => $poData
-        ])
-        ->render();
-
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
-    }
-
 
     # Submit PI Item list
     public function processPoItem(Request $request)
@@ -3031,6 +3151,435 @@ class MaterialReceiptController extends Controller
         ]);
     }
 
+    # Get PO Item List
+    public function getPoBackup(Request $request)
+    {
+        $poData = '';
+        $documentDate = $request->document_date ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $seriesId = $request->series_id ?? null;
+        $docNumber = $request->document_number ?? null;
+        $itemId = $request->item_id ?? null;
+        $storeId = $request->store_id ?? null;
+        $vendorId = $request->vendor_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $selected_po_ids = json_decode($request->selected_jo_ids) ?? [];
+        // Fetch applicable book IDs
+        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+        // Fetch PO Items along with related details
+        $headerId = [];
+        if (!empty($selected_po_ids)) {
+            $headerId = JoProduct::whereIn('id', $selected_po_ids)->pluck('jo_id')->toArray();
+        }
+        $poItems = JoProduct::select(
+                'erp_jo_products.*',
+                'erp_job_orders.id as jo_id',
+                'erp_job_orders.vendor_id',
+                'erp_job_orders.book_id',
+                'erp_job_orders.gate_entry_required',
+                'erp_job_orders.supp_invoice_required'
+            )
+            ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', '=', 'erp_po_items.purchase_order_id')
+            ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
+            ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+            ->whereHas('item', function ($query) {
+                $query->where('type', 'Goods');
+            })
+            ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
+            ->whereHas('jo', function ($jo) use ($seriesId, $docNumber, $vendorId, $storeId, $headerId) {
+                // Filter by book_id (headerBookId)
+                // Filter by series ID
+                $jo->withDefaultGroupCompanyOrg();
+                $jo->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                if (!empty($headerId)) {
+                    $jo->whereIn('id', $headerId);
+                }
+                if($seriesId) {
+                    $po->where('erp_purchase_orders.book_id',$seriesId);
+                }
+
+                // Filter by document number
+                if ($docNumber) {
+                    $po->where('erp_purchase_orders.document_number', $docNumber);
+                }
+
+                // Filter by vendor ID
+                if ($vendorId) {
+                    $po->where('erp_purchase_orders.vendor_id', $vendorId);
+                }
+
+                // Filter by vendor ID
+                if ($storeId) {
+                    $po->where('erp_purchase_orders.store_id', $storeId);
+                }
+            });
+
+            if ($itemId) {
+                $poItems->where('item_id', $itemId);
+            }
+
+        $poItems = $poItems->get();
+
+        // Process PO items
+        $poItemIds = [];
+        $finalPoItems = [];
+
+        foreach ($poItems as $poItem) {
+            if ($poItem->gate_entry_required == 'yes') {
+                // Fetch Gate Entry Details
+                $geItems = GateEntryDetail::where('job_order_item_id', $poItem->id)
+                    ->whereHas('gateEntryHeader', function ($query) use ($headerId) {
+                            if (!empty($headerId)) {
+                                $query->whereIn('job_order_id', $headerId);
+                            }
+                        })
+                    ->whereRaw('(accepted_qty > mrn_qty)')
+                    ->with(['gateEntryHeader'])
+                    ->get();
+
+                foreach ($geItems as $geItem) {
+                    if (in_array($geItem->id, $selected_po_ids)) {
+                        continue;
+                    }
+                    $poItemIds[] = $geItem->id;
+                    $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
+                    $geItem->po = $poItem->po; // Keep reference to PO
+                    $geItem->item = $poItem->item;
+                    $geItem->attributes = $poItem->attributes;
+                    $geItem->rate = $poItem->rate;
+                    $finalPoItems[] = $geItem;
+                }
+            } else {
+                if ($poItem->supp_invoice_required == 'yes') {
+                    $siItem = JoProduct::where('id', $poItem->id)
+                        ->whereHas('jo', function ($query, $headerId) {
+                            $query->where('type', 'supplier-invoice');
+                            if (!empty($headerId)) {
+                                $query->whereIn('id', $headerId);
+                            }
+                        })
+                        ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+                        ->first();
+                    if ($siItem && !in_array($siItem->id, $selected_po_ids)) {
+                        $finalPoItems[] = $siItem;
+                        $poItemIds[] = $siItem->id;
+                    }
+                } else {
+                    if (!in_array($poItem->id, $selected_po_ids)) {
+                        $finalPoItems[] = $poItem;
+                        $poItemIds[] = $poItem->id;
+                    }
+                }
+            }
+        }
+        $html = view('procurement.material-receipt.partials.po-item-list', [
+            'poItems' => $finalPoItems,
+            'poData' => $poData
+        ])
+        ->render();
+
+        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
+    }
+
+    # Submit PI Item list
+    public function processPoItemBackup(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        $view = '';
+        $poItems = [];
+        $vendor = null;
+        $vendorId = '';
+        $gateEntry = '';
+        $subStoreCount = 0;
+        $uniquePoIds = [];
+        $finalDiscounts = collect();
+        $finalExpenses = collect();
+        $requestIds = json_decode($request->ids, true) ?: [];
+        $moduleTypes = json_decode($request->moduleTypes, true) ?: [];
+        $type = "po";
+        $tableRowCount = $request->tableRowCount ?: 0;
+
+        // Ensure all module types are the same
+        if (count(array_unique($moduleTypes)) > 1) {
+            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Multiple different module types are not allowed."]);
+        }
+
+        // Check Unique Request Id
+        // if (count($requestIds) > 1) {
+        //     return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Only one row can be selected at a time."]);
+        // }
+
+        // Determine module type
+        $moduleType = $moduleTypes[0] ?? null;
+
+        if ($moduleType === 'gate-entry') {
+            $poItems = GateEntryDetail::with(
+                [
+                    'gateEntryHeader',
+                    'gateEntryHeader.purchaseOrder',
+                    'poItem',
+                    'poItem.po',
+                ]
+            )
+            ->whereIn('id', $requestIds)
+            ->groupBy('purchase_order_item_id')
+            ->get();
+            // $subStoreCount = $poItems->where('sub_store_id', '!=', null)->count();
+            $poItemIds = $poItems->pluck('purchase_order_item_id')->unique()->toArray();
+            $gateEntryIds = $poItems->pluck('header_id')->unique()->toArray();
+            $gateEntry = GateEntryHeader::whereIn('id', $gateEntryIds)->first();
+
+            $uniqueGateEntryIds = GateEntryDetail::whereIn('id', $requestIds)
+                ->distinct()
+                ->pluck('header_id')
+                ->toArray();
+            if(count($uniqueGateEntryIds) > 1) {
+                return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one Gate Entry."]);
+            }
+
+            // Fetch the unique PO IDs linked to selected gate entries
+            $uniquePoIds = PoItem::whereIn('id', $poItemIds)
+                ->distinct()
+                ->pluck('purchase_order_id')
+                ->toArray();
+
+                $view = 'procurement.material-receipt.partials.gate-entry-item-row';
+        } else {
+            $poItems = PoItem::whereIn('id', $requestIds)->get();
+            $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
+            $view = 'procurement.material-receipt.partials.po-item-row';
+        }
+
+        if(count($uniquePoIds) > 1) {
+            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one PO."]);
+        }
+
+        // Fetch purchase order and vendor details
+        $purchaseOrder = PurchaseOrder::whereIn('id', $uniquePoIds)->first();
+        $vendorId = PurchaseOrder::whereIn('id', $uniquePoIds)->pluck('vendor_id')->unique()->toArray();
+        if (count($vendorId) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "You cannot select multiple vendors for PO items at once."
+            ]);
+        }
+
+        $vendor = Vendor::find($vendorId[0] ?? null);
+        if ($vendor) {
+            $vendor->billing = $vendor->addresses()
+                ->whereIn('type', ['billing', 'both'])
+                ->latest()
+                ->first();
+            $vendor->shipping = $vendor->addresses()
+                ->whereIn('type', ['shipping', 'both'])
+                ->latest()
+                ->first();
+
+            $vendor->currency = $vendor->currency;
+            $vendor->paymentTerm = $vendor->paymentTerm;
+        }
+
+        $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        // Fetch discounts & expenses efficiently
+        $discounts = collect();
+        $expenses = collect();
+
+        $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->with(['headerDiscount', 'headerExpenses'])->get();
+
+        foreach ($pos as $po) {
+            foreach ($po->headerDiscount as $headerDiscount) {
+                if (!intval($headerDiscount->ted_perc)) {
+                    $tedPerc = (floatval($headerDiscount->ted_amount) / floatval($headerDiscount->assessment_amount)) * 100;
+                    $headerDiscount['ted_perc'] = $tedPerc;
+                }
+                $discounts->push($headerDiscount);
+            }
+
+            foreach ($po->headerExpenses as $headerExpense) {
+                if (!intval($headerExpense->ted_perc)) {
+                    $tedPerc = (floatval($headerExpense->ted_amount) / floatval($headerExpense->assessment_amount)) * 100;
+                    $headerExpense['ted_perc'] = $tedPerc;
+                }
+                $expenses->push($headerExpense);
+            }
+        }
+
+        $groupedDiscounts = $discounts
+            ->groupBy('ted_id')
+            ->map(function ($group) {
+                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+            });
+        $groupedExpenses = $expenses
+            ->groupBy('ted_id')
+            ->map(function ($group) {
+                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
+            });
+        $finalDiscounts = $groupedDiscounts->values()->toArray();
+        $finalExpenses = $groupedExpenses->values()->toArray();
+
+        // **Gate Entry Quantity Calculation**
+        $totalGateEntryQty = 0;
+        if ($moduleType === 'gate-entry') {
+            $totalGateEntryQty = GateEntryDetail::with(
+                [
+                    'gateEntryHeader',
+                    'gateEntryHeader.purchaseOrder',
+                    'poItem',
+                    'poItem.po',
+                    'joItem',
+                    'joItem.jo',
+                ]
+            )
+            ->whereIn('id', $requestIds)
+            ->groupBy('purchase_order_item_id')
+            ->sum('accepted_qty'); // Sum of selected gate entry quantities
+        }
+
+
+        $html = view($view,
+        [
+            'poItems' => $poItems,
+            'locations'=>$locations,
+            'moduleType'=>$moduleType,
+            'totalGateEntryQty' => $totalGateEntryQty,
+            'type' => $type,
+            'tableRowCount' => $tableRowCount
+        ])
+        ->render();
+
+        return response()->json([
+            'data' => [
+                'pos' => $html,
+                'vendor' => $vendor,
+                'gateEntry' => $gateEntry,
+                'moduleType' => $moduleType,
+                'subStoreCount' => $subStoreCount,
+                'purchaseOrder' => $purchaseOrder,
+                'finalExpenses' => $finalExpenses,
+                'finalDiscounts' => $finalDiscounts,
+                'totalGateEntryQty' => $totalGateEntryQty
+            ],
+            'status' => 200,
+            'message' => "fetched!"
+        ]);
+    }
+
+    # Get JO Item List
+    public function getJo(Request $request)
+    {
+        $poData = '';
+        $documentDate = $request->document_date ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $seriesId = $request->series_id ?? null;
+        $docNumber = $request->document_number ?? null;
+        $itemId = $request->item_id ?? null;
+        $storeId = $request->store_id ?? null;
+        $vendorId = $request->vendor_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
+        // Fetch applicable book IDs
+        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+        // Fetch PO Items along with related details
+        $poItems = JoProduct::select(
+                'erp_jo_products.*',
+                'erp_job_orders.id as jo_id',
+                'erp_job_orders.vendor_id',
+                'erp_job_orders.book_id',
+                'erp_job_orders.gate_entry_required',
+                'erp_job_orders.supp_invoice_required'
+            )
+            ->leftJoin('erp_job_orders', 'erp_job_orders.id', '=', 'erp_jo_products.jo_id')
+            ->whereIn('erp_job_orders.book_id', $applicableBookIds)
+            ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+            ->whereHas('item', function ($query) {
+                $query->where('type', 'Goods');
+            })
+            ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
+            ->whereHas('jo', function ($jo) use ($seriesId, $docNumber, $vendorId, $storeId) {
+                // Filter by book_id (headerBookId)
+                // Filter by series ID
+                $jo->withDefaultGroupCompanyOrg();
+                $jo->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                if($seriesId) {
+                    $jo->where('erp_job_orders.book_id',$seriesId);
+                }
+
+                // Filter by document number
+                if ($docNumber) {
+                    $jo->where('erp_job_orders.document_number', $docNumber);
+                }
+
+                // Filter by vendor ID
+                if ($vendorId) {
+                    $jo->where('erp_job_orders.vendor_id', $vendorId);
+                }
+
+                // Filter by vendor ID
+                if ($storeId) {
+                    $jo->where('erp_job_orders.store_id', $storeId);
+                }
+            });
+
+            if ($itemId) {
+                $poItems->where('item_id', $itemId);
+            }
+
+        $poItems = $poItems->get();
+
+        // Process PO items
+        $poItemIds = [];
+        $finalPoItems = [];
+
+        foreach ($poItems as $poItem) {
+            if ($poItem->gate_entry_required == 'yes') {
+                // Fetch Gate Entry Details
+                $geItems = GateEntryDetail::where('job_order_item_id', $poItem->id)
+                    ->whereRaw('(accepted_qty > mrn_qty)')
+                    ->with(['gateEntryHeader'])
+                    ->get();
+
+                foreach ($geItems as $geItem) {
+                    if (in_array($geItem->id, $selected_po_ids)) {
+                        continue;
+                    }
+                    $poItemIds[] = $geItem->id;
+                    $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
+                    $geItem->jo = $poItem->jo; // Keep reference to JO
+                    $geItem->item = $poItem->item;
+                    $geItem->attributes = $poItem->attributes;
+                    $geItem->rate = $poItem->rate;
+                    $finalPoItems[] = $geItem;
+                }
+            } else {
+                if ($poItem->supp_invoice_required == 'yes') {
+                    $siItem = JoProduct::where('id', $poItem->id)
+                        ->whereHas('jo', function ($query) {
+                            // $query->where('type', 'supplier-invoice');
+                        })
+                        ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+                        ->first();
+                    if ($siItem && !in_array($siItem->id, $selected_po_ids)) {
+                        $finalPoItems[] = $siItem;
+                        $poItemIds[] = $siItem->id;
+                    }
+                } else {
+                    if (!in_array($poItem->id, $selected_po_ids)) {
+                        $finalPoItems[] = $poItem;
+                        $poItemIds[] = $poItem->id;
+                    }
+                }
+            }
+        }
+        $html = view('procurement.material-receipt.partials.jo-item-list', [
+            'joItems' => $finalPoItems,
+            'joData' => $poData
+        ])
+        ->render();
+
+        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
+    }
     public function processJoItem(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
@@ -3062,8 +3611,6 @@ class MaterialReceiptController extends Controller
                 [
                     'gateEntryHeader',
                     'gateEntryHeader.jobOrder',
-                    // 'poItem',
-                    // 'poItem.po',
                     'joItem',
                     'joItem.jo',
                 ]
@@ -3073,6 +3620,20 @@ class MaterialReceiptController extends Controller
             ->get();
             // $subStoreCount = $poItems->where('sub_store_id', '!=', null)->count();
             $poItemIds = $poItems->pluck('job_order_item_id')->unique()->toArray();
+
+            // Check if all job order item has entry in material issue
+            // $joItemIds = $poItems->pluck('job_order_item_id')->unique()->toArray();
+            // $existingIds = ErpMiItem::whereIn('jo_product_id', $joItemIds)->pluck('jo_product_id')->toArray();
+            // $missingIds = array_diff($joItemIds, $existingIds);
+            // if (!empty($missingIds)) {
+            //     $missingItems = JoProduct::whereIn('id', $missingIds)->pluck('item_code')->toArray();
+            //     return response()->json([
+            //         'data' => ['pos' => ''],
+            //         'status' => 422,
+            //         'message' => "Material issue is not created for the following items: " . implode(', ', $missingItems)
+            //     ]);
+            // }
+
             $gateEntryIds = $poItems->pluck('header_id')->unique()->toArray();
             $gateEntry = GateEntryHeader::whereIn('id', $gateEntryIds)->first();
 
@@ -3092,13 +3653,26 @@ class MaterialReceiptController extends Controller
 
             $view = 'procurement.material-receipt.partials.gate-entry-item-row';
         } else {
+            // Check if all job order item has entry in material issue
+            // $existingIds = ErpMiItem::whereIn('jo_product_id', $requestIds)->pluck('jo_product_id')->toArray();
+            // $missingIds = array_diff($requestIds, $existingIds);
+            // if (!empty($missingIds)) {
+            //     $missingItems = JoProduct::whereIn('id', $missingIds)->pluck('item_code')->toArray();
+            //     return response()->json([
+            //         'data' => ['pos' => ''],
+            //         'status' => 422,
+            //         'message' => "Material issue is not created for the following items: " . implode(', ', $missingItems)
+
+            //     ]);
+            // }
+
             $poItems = JoProduct::whereIn('id', $requestIds)->get();
             $uniquePoIds = $poItems->pluck('jo_id')->unique()->toArray();
             $view = 'procurement.material-receipt.partials.jo-item-row';
         }
 
         if(count($uniquePoIds) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one PO."]);
+            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one JO."]);
         }
 
         // Fetch purchase order and vendor details
@@ -3206,124 +3780,6 @@ class MaterialReceiptController extends Controller
                 'finalExpenses' => $finalExpenses,
                 'finalDiscounts' => $finalDiscounts,
                 'totalGateEntryQty' => $totalGateEntryQty
-            ],
-            'status' => 200,
-            'message' => "fetched!"
-        ]);
-    }
-
-    public function processPoItem2(Request $request)
-    {
-        $user = Helper::getAuthenticatedUser();
-
-        $ids = [];
-        $gateEntry = '';
-        $requestIds = json_decode($request->ids, true) ?: [];
-        $moduleTypes = json_decode($request->moduleTypes, true) ?: [];
-
-        // Ensure all module types are the same
-        if (count(array_unique($moduleTypes)) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Multiple different module types are not allowed."]);
-        }
-
-        // Check Unique Request Id
-        if (count($requestIds) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Only one row can be selected at a time."]);
-        }
-
-        // Determine module type
-        $moduleType = $moduleTypes[0] ?? null;
-
-        if ($moduleType === 'gate-entry') {
-            $ids = GateEntryDetail::whereIn('id', $requestIds)
-                ->distinct()
-                ->pluck('purchase_order_item_id')
-                ->toArray();
-
-            $gateEntry = GateEntryHeader::whereIn('id', $requestIds)->first();
-        } else {
-            $ids = $requestIds;
-        }
-
-        $vendor = null;
-        $finalDiscounts = collect();
-        $finalExpenses = collect();
-        $poItems = PoItem::whereIn('id', $ids)->get();
-        $uniquePoIds = PoItem::whereIn('id', $ids)
-                    ->distinct()
-                    ->pluck('purchase_order_id')
-                    ->toArray();
-        if(count($uniquePoIds) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time mrn create from one PO."]);
-        }
-        $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-        $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->get();
-        $purchaseOrder = PurchaseOrder::whereIn('id', $uniquePoIds)->first();
-        $discounts = collect();
-        $expenses = collect();
-
-        foreach ($pos as $po) {
-            foreach ($po->headerDiscount as $headerDiscount) {
-                if (!intval($headerDiscount->ted_perc)) {
-                    $tedPerc = (floatval($headerDiscount->ted_amount) / floatval($headerDiscount->assessment_amount)) * 100;
-                    $headerDiscount['ted_perc'] = $tedPerc;
-                }
-                $discounts->push($headerDiscount);
-            }
-
-            foreach ($po->headerExpenses as $headerExpense) {
-                if (!intval($headerExpense->ted_perc)) {
-                    $tedPerc = (floatval($headerExpense->ted_amount) / floatval($headerExpense->assessment_amount)) * 100;
-                    $headerExpense['ted_perc'] = $tedPerc;
-                }
-                $expenses->push($headerExpense);
-            }
-        }
-        $groupedDiscounts = $discounts
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max ted_perc
-            });
-        $groupedExpenses = $expenses
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max ted_perc
-            });
-        $finalDiscounts = $groupedDiscounts->values()->toArray();
-        $finalExpenses = $groupedExpenses->values()->toArray();
-
-        $poIds = $poItems->pluck('purchase_order_id')->all();
-        $vendorId = PurchaseOrder::whereIn('id',$poIds)->pluck('vendor_id')->toArray();
-        $vendorId = array_unique($vendorId);
-        if(count($vendorId) && count($vendorId) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of PO item at time."]);
-        } else {
-            $vendorId = $vendorId[0];
-            $vendor = Vendor::find($vendorId);
-            $vendor->billing = $vendor->addresses()->where(function($query) {
-                $query->where('type', 'billing')->orWhere('type', 'both');
-            })->latest()->first();
-            $vendor->shipping = $vendor->addresses()->where(function($query) {
-                $query->where('type', 'shipping')->orWhere('type', 'both');
-            })->latest()->first();
-            $vendor->currency = $vendor->currency;
-            $vendor->paymentTerm = $vendor->paymentTerm;
-        }
-        $html = view('procurement.material-receipt.partials.po-item-row',
-        [
-            'poItems' => $poItems,
-            'locations'=>$locations,
-        ])
-        ->render();
-
-        return response()->json([
-            'data' => [
-                'pos' => $html,
-                'vendor' => $vendor,
-                'finalDiscounts' => $finalDiscounts,
-                'finalExpenses' => $finalExpenses,
-                'purchaseOrder' => $purchaseOrder,
-                'gateEntry' => $gateEntry
             ],
             'status' => 200,
             'message' => "fetched!"
@@ -4321,4 +4777,90 @@ class MaterialReceiptController extends Controller
         ]);
     }
 
+    # checkRawMaterial;
+
+    private static function checkRawMaterial($mrn)
+    {
+        $errorMessage = "";
+        $joType = $mrn->jobOrder->job_order_type;
+        $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+        foreach ($mrnData as $detail) {
+            if($joType == ConstantHelper::TYPE_SUBCONTRACTING)
+            {
+                $miData = JoBomMapping::where('jo_product_id', $detail->job_order_item_id)
+                ->with(['joProduct', 'miMappings.item_attributes'])
+                ->get()
+                ->map(function ($bomMapping) {
+                    $itemId = $bomMapping->item_id;
+                    $bomAttrs = collect($bomMapping->attributes ?? []);
+
+                    $filteredMi = $bomMapping->miMappings->filter(function ($miItem) use ($itemId, $bomAttrs) {
+                        if ($miItem->item_id != $itemId) return false;
+
+                        $miAttrs = collect($miItem->item_attributes ?? []);
+
+                        foreach ($bomAttrs as $bomAttr) {
+                            $match = $miAttrs->first(function ($miAttr) use ($bomAttr) {
+                                return $miAttr['attr_name'] == $bomAttr['attribute_name']
+                                    && $miAttr['attr_value'] == $bomAttr['attribute_value'];
+                            });
+
+                            if (!$match) return false;
+                        }
+                        return true;
+                    });
+                    $bomMapping->setRelation('miMappings', $filteredMi);
+                    return $bomMapping;
+                });
+
+                foreach ($miData as $value) {
+                    foreach ($value->miMappings as $miMapping) {
+                        $issue_qty = is_numeric($miMapping->issue_qty) ? (int) $miMapping->issue_qty : 0;
+                        $grn_qty = is_numeric($miMapping->grn_qty) ? (int) $miMapping->grn_qty : 0;
+                        $order_qty = is_numeric($detail->order_qty) ? (int) $detail->order_qty : 0;
+                        $bom_qty = is_numeric($value->bom_qty) ? (int) $value->bom_qty : 0;
+                        $pending_qty = $issue_qty - $grn_qty;
+                        $check_qty = $order_qty * $bom_qty;
+    
+                        if($pending_qty < $check_qty)
+                        {
+                            // return response()->json([
+                            //     'message' => 'MI Issue quantity is less than Order Quantity please check.'
+                            // ], 422);
+                            $errorMessage = "MI Issue quantity is less than Order Quantity please check.";
+                            break;
+                        }
+    
+                        $mrnMiMappingData = new MrnMiMapping();
+                        $mrnMiMappingData->mrn_header_id = $mrn->id;
+                        $mrnMiMappingData->mrn_detail_id = $detail->id;
+                        $mrnMiMappingData->jo_id = $value->jo_id;
+                        $mrnMiMappingData->jo_product_id = $value->jo_product_id;
+                        $mrnMiMappingData->jo_item_id = $miMapping->jo_item_id;
+                        $mrnMiMappingData->mi_item_id = $miMapping->id;
+                        $mrnMiMappingData->mi_qty = $miMapping->issue_qty;
+                        $mrnMiMappingData->mi_rate = $miMapping->rate;
+                        $mrnMiMappingData->mi_inventory_uom_qty = $miMapping->inventory_uom_qty;
+                        $mrnMiMappingData->from_store_id = $miMapping->from_store_id;
+                        $mrnMiMappingData->to_store_id = $miMapping->to_store_id;
+                        $mrnMiMappingData->consumed_qty = $check_qty;
+    
+                        $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $check_qty);
+                        $mrnMiMappingData->consumed_inventory_uom_qty = $inventoryQty;
+                        $mrnMiMappingData->save();
+                        $miData = ErpMiItem::find($miMapping->id);
+                        $miData->grn_qty = $miData->grn_qty + $check_qty;
+                        $miData->save();
+                        //Stock Ledger
+                        $response = InventoryHelper::settlementForMIForIssueFromMrn($mrn->id, $miData -> id, ConstantHelper::MI_MRN_SERVICE_ALIAS_NAME, $miData -> header ?-> document_status, 'issue');
+                        if (isset($response['status']) && $response['status'] == 'error') {
+                            $errorMessage = isset($response['message']) ? $response['message'] : "Error";
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return $errorMessage;
+    }
 }

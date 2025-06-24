@@ -11,7 +11,6 @@ use App\Console\Commands\GenerateCrDrReport;
 use Illuminate\Support\Facades\Cache;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
-use App\Models\CostCenterOrgLocations;
 use App\Helpers\ConstantHelper;
 use App\Models\Group;
 use App\Models\VoucherReference;
@@ -84,16 +83,8 @@ class CrDrReportController extends Controller
         $organizationId = $user->organization_id;
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
 
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
+       $cost_centers = Helper::getActiveCostCenters();
 
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -188,16 +179,7 @@ class CrDrReportController extends Controller
         $organizationId = $user->organization_id;
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
 
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -1269,16 +1251,7 @@ class CrDrReportController extends Controller
         $organizationId = $user->organization_id;
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
 
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -1783,16 +1756,7 @@ class CrDrReportController extends Controller
         $mappings = $user->access_rights_org;
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         return view('finance_report.creditors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers','cost_groups'));
     }
@@ -1864,16 +1828,7 @@ class CrDrReportController extends Controller
         $mappings = $user->access_rights_org;
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         return view('finance_report.debitors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers','cost_groups'));
     }

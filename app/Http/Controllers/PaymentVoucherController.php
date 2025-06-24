@@ -329,16 +329,7 @@ class PaymentVoucherController extends Controller
         $date = $request->date ?? Carbon::parse($fyear['start_date'])->format('d-m-Y') . " to " . Carbon::parse($fyear['end_date'])->format('d-m-Y');
         $date2 = Carbon::parse($start)->format('jS-F-Y') . ' to ' . Carbon::parse($end)->format('jS-F-Y');
 
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'cost_group_id' => $item->costCenter->cost_group_id,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
         $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
@@ -383,15 +374,7 @@ class PaymentVoucherController extends Controller
 
         $orgCurrency = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('currency_id');
 
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
         // pass authenticate user's org locations
          $locations = InventoryHelper::getAccessibleLocations();
          $fyear = Helper::getFinancialYear(date('Y-m-d'));
@@ -440,19 +423,11 @@ class PaymentVoucherController extends Controller
         $voucherExists = PaymentVoucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
         ->where('book_id',$request -> book_id)->exists();
         
-        $token = $request->token;
-        $cached = Cache::get($token, ['grouped' => [], 'raw' => []]);
-
-        $selectedRows = $cached['grouped'];
-        $rawItemData = $cached['raw']; 
+        $selected_token = $request->selected_token;
         if ($voucherExists) {
             return redirect()
-            ->route($request->document_type . '.create')
-            ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!'])
-              ->with([
-                'selectedRows' => $selectedRows,
-                'rawItemData' => $rawItemData
-            ]);
+            ->route($request->document_type . '.create', ['token' => $selected_token])
+            ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
         }
         // dd($request->all(),$numberPatternData);
 // if($request->reference_no!="" && $request->payment_type === "Bank"){
@@ -567,12 +542,8 @@ class PaymentVoucherController extends Controller
 
                     if ($ref) {
                         return redirect()
-                            ->route($request->document_type . '.create')
-                            ->withErrors(['Reference No. Already Exist!'])->withInput()
-                              ->with([
-                                    'selectedRows' => $selectedRows,
-                                    'rawItemData' => $rawItemData
-                                ]);
+                            ->route($request->document_type . '.create', ['token' => $selected_token])
+                            ->withErrors(['Reference No. Already Exist!'])->withInput();
                     }
                 }
                 $details->payment_voucher_id = $voucher->id;
@@ -599,11 +570,8 @@ class PaymentVoucherController extends Controller
                             $insertRef->save();
                         } else {
                             $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
-                            return redirect()->route($request->document_type . '.create')->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher)
-                              ->with([
-                                'selectedRows' => $selectedRows,
-                                'rawItemData' => $rawItemData
-                            ]);
+                            return redirect()->route($request->document_type . '.create', ['token' => $selected_token])
+                            ->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
                         }
                     }
                 }
@@ -633,11 +601,9 @@ class PaymentVoucherController extends Controller
             // dd($e->getMessage());
 
             // Log the error or return a response
-            return redirect()->route($request->document_type . '.create')->withErrors('Error occurred: ' . $e->getMessage())
-             ->with([
-                    'selectedRows' => $selectedRows,
-                    'rawItemData' => $rawItemData
-                ]);
+            return redirect()
+            ->route($request->document_type . '.create', ['token' => $selected_token])
+            ->withErrors('Error occurred: ' . $e->getMessage());
         }
     }
 
@@ -744,15 +710,7 @@ class PaymentVoucherController extends Controller
             }
         }
         
-        $cost_centers = CostCenterOrgLocations::with('costCenter')->get()->map(function ($item) {
-            $item->withDefaultGroupCompanyOrg()->where('status', 'active');
-
-            return [
-                'id' => $item->costCenter->id,
-                'name' => $item->costCenter->name,
-                'location' => $item->costCenter->locations,
-            ];
-        })->toArray();
+        $cost_centers = Helper::getActiveCostCenters();
 
 
 

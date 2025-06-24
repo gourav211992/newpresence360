@@ -380,6 +380,7 @@
         const itemId = document.getElementById('stock_item_id_' + itemIndex).value;
         const locationId = document.getElementById('stock_location_name_input_id_' + itemIndex).value;
         const subStoreId = document.getElementById('stock_sub_store_name_input_id_' + itemIndex).value;
+        const orgId = document.getElementById('stock_org_name_input_id_' + itemIndex).value;
         document.getElementById('stock_confirmed_qty_' + itemIndex).innerHTML = `<div class="skeleton skeleton-td"></div>`;
         document.getElementById('stock_unconfirmed_qty_' + itemIndex).innerHTML = `<div class="skeleton skeleton-td"></div>`;
         $.ajax({
@@ -389,7 +390,8 @@
                 item_id : itemId,
                 location_id : locationId,
                 sub_store_id : subStoreId,
-                item_attributes : selectedAttributes
+                item_attributes : selectedAttributes,
+                organization_id : orgId
             },
             beforeSend: function () {
                 //Loader

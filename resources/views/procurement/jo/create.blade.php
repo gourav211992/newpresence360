@@ -277,7 +277,7 @@
                                         <th max-width="180px">Attributes</th>
                                         <th>UOM</th>
                                         <th>Qty</th>
-                                        <th>Rate</th>
+                                        <th>Service Charge</th>
                                         <th>Value</th> 
                                         <th>Discount</th>
                                         <th>Total</th> 

@@ -99,9 +99,9 @@
                                                             <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100" value="{{$type->description}}">
                                                         </td>
                                                         <td>
-                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ">
-                                                                <option value="Active" {{ $type->status == 'Active' ? 'selected' : '' }}>Active</option>
-                                                                <option value="Inactive" {{ $type->status == 'Inactive' ? 'selected' : '' }}>Inactive</option>
+                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ledgerselecct">
+                                                                <option value="active" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
+                                                                <option value="inactive" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                                             </select>
                                                         </td>
                                                     </tr>
@@ -132,8 +132,8 @@
                                                         </td>
                                                         <td>
                                                             <select name="vehicle_type[0][status]" class="form-control mw-100 ledgerselecct">
-                                                                <option value="Active">Active</option>
-                                                                <option value="Inactive">Inactive</option>
+                                                                <option value="active">Active</option>
+                                                                <option value="inactive">Inactive</option>
                                                             </select>
                                                         </td>
                                                     </tr>
@@ -219,8 +219,8 @@ document.getElementById('addRowBtn').addEventListener('click', function () {
         </td>
         <td>
             <select name="vehicle_type[${rowIndex}][status]" class="form-control mw-100">
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
             </select>
         </td>
     `;

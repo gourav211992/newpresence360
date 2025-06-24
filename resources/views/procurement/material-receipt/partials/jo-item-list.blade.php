@@ -7,6 +7,7 @@
         $grnQty = 0.00;
         $balanceQty = 0.00;
         $moduleType = 'p-order';
+        $ref_no = ($joDetail->jo?->book?->book_code ?? 'NA') . '-' . ($joDetail->jo?->document_number ?? 'NA');
         if($joDetail->gateEntryHeader){
             $orderQty = (($joDetail->gateEntryHeader ? $joDetail?->joItem?->order_qty : 0.00) - ($joDetail->gateEntryHeader ? $joDetail?->joItem?->short_close_qty : 0.00));
             $invOrderQty = 0.00;
@@ -36,9 +37,11 @@
                 @if($moduleType == 'gate-entry')
                     <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$joDetail->id}}" data-module="{{$moduleType}}"
                     data-current-po="{{ $joDetail ? $joDetail->header_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
+                    <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
                 @else
-                    <input class="form-check-input jo_item_checkbox" type="checkbox" name="jo_item_check" value="{{$joDetail->id}}" data-module="{{$moduleType}}"
+                    <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$joDetail->id}}" data-module="{{$moduleType}}"
                     data-current-po="{{ $joDetail ? $joDetail->purchase_order_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joDetail->purchase_order_id)  disabled="disabled" @endif >
+                    <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
                 @endif
             </div>
         </td>

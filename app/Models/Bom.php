@@ -104,7 +104,7 @@ class Bom extends Model
 
     public function customer()
     {
-        return $this->belongsTo(ErpCustomer::class, 'customer_id');
+        return $this->belongsTo(ErpCustomer::class, 'customer_id','id');
     }
 
     public function getTotalValueAttribute()

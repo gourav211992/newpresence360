@@ -32,6 +32,7 @@ class ErpVehicle extends Model
         'vehicle_attachment',
         'vehicle_video',
         'attachment_id',
+        'status',
         'created_at',
         'updated_at',
     ];

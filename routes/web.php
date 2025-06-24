@@ -298,8 +298,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
     Route::get('/report/getLedgerPrint/{type}/{ledger}/{group}/{bill_type?}', [CrDrReportController::class, 'getLedgerDetailsPrint'])->name('crdr.report.ledger.print');
     Route::post('/crdr/report/add-scheduler', [CrDrReportController::class, 'addScheduler'])->name('crdr.add.scheduler');
-     Route::get('/report/pending-receipts', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
-    Route::get('/report/pending-payments', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
+     Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
+    Route::get('/report/pending-receipts', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
       Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
@@ -1290,6 +1290,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
             Route::get('edit/{id}', 'edit')->name('edit');
+            Route::get('copy/{id}', 'copy')->name('copy');
             Route::post('update/{id}', 'update')->name('update');
             # get bom item cost child item
             Route::get('get-item-cost', 'getItemCost')->name('get.item.cost');
@@ -1304,6 +1305,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             # Only for the production Bom
             Route::get('check-bom-exist', 'checkBomExist')->name('check.bom.exist');
             Route::get('report', 'bomReport')->name('report');
+            Route::get('export/{id}', 'export')->name('export');
         });
 
     # Bom Import
