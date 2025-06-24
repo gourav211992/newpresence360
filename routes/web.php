@@ -1821,6 +1821,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
             Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::get('copy/{id}', 'copy')->name('copy');
         });
 
     // Production Work Order routes

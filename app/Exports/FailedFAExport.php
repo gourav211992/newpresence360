@@ -1,14 +1,12 @@
 <?php
-
 namespace App\Exports;
 
 use App\Helpers\ConstantHelper;
-use App\Models\UploadItemMaster;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class FailedFAExport implements FromCollection, WithHeadings, WithMapping, WithStyles
 {
@@ -26,95 +24,90 @@ class FailedFAExport implements FromCollection, WithHeadings, WithMapping, WithS
 
     public function headings(): array
     {
-        $headings = [
-            'S.No',
-            'Code',
-            'Name',
-            'Status',
-            'Remarks',
+        return [
+            'Asset Code',
+            'Asset Name',
+            'Location',
+            'Cost Center',
+            'Category',
+            'Ledger',
+            'Capitalize Date',
+            'Quantity',
+            'Maintenance Schedule',
+            'Useful Life',
+            'Current Value',
+            'Vendor',
+            'Currency',
+            'Book Date',
+            'Import Status',
+            'Import Remarks'
         ];
-
-        return $headings;
     }
 
     public function map($item): array
     {
-        static $index = 1;
-        $data = [
-            $index++,
-            $item->code,
-            $item->name,
-            $item->ledger_groups,
-            $item->status ?? 'N/A',
-            $item->import_remarks ?? 'N/A'
+        return [
+            $item->asset_code ?? '',
+            $item->asset_name ?? '',
+            $item->location ?? '',
+            $item->cost_center ?? '',
+            $item->category ?? '',
+            $item->ledger ?? '',
+            $item->capitalize_date ?? '',
+            $item->quantity ?? '',
+            $item->maintenance_schedule ?? '',
+            $item->useful_life ?? '',
+            $item->current_value ?? '',
+            $item->vendor ?? '',
+            $item->currency ?? '',
+            $item->book_date ?? '',
+            $item->import_status ?? 'Failed',
+            $item->import_remarks ?? 'No remarks provided'
         ];
-
-
-        return $data;
     }
 
     public function styles(Worksheet $sheet)
-    {
-        $styles = [];
-        $requiredColumns = range(1, 6);
-        $totalColumns = count($this->headings());
-        $remarksColIndex = $totalColumns;
-        foreach ($requiredColumns as $col) {
-            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
-            $styles["{$columnLetter}1"] = [
-                'font' => [
-                    'color' => ['argb' => ConstantHelper::EXCEL_FONT_COLOR_BLACK],
-                    'bold' => ConstantHelper::EXCEL_FONT_BOLD,
-                ],
-                'fill' => [
-                    'fillType' => ConstantHelper::EXCEL_FILL_TYPE_SOLID,
-                    'startColor' => ['argb' => ConstantHelper::EXCEL_FILL_YELLOW],
-                ],
-                'alignment' => [
-                    'wrapText' => ConstantHelper::EXCEL_ALIGNMENT_WRAP,
-                    'vertical' => ConstantHelper::EXCEL_ALIGNMENT_VERTICAL_CENTER,
-                    'horizontal' => ConstantHelper::EXCEL_ALIGNMENT_HORIZONTAL_CENTER,
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => ConstantHelper::EXCEL_BORDER_STYLE_THIN,
-                        'color' => ['argb' => ConstantHelper::EXCEL_BORDER_COLOR_BLACK],
-                    ],
-                ],
+{
+    $styles = [];
+    $headings = $this->headings();
+    $totalColumns = count($headings);
 
-            ];
-            $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
-                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
-        }
+    for ($col = 1; $col <= $totalColumns; $col++) {
+        $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+        $headingText = $headings[$col - 1];
 
+        // Estimate width: length of heading * factor
+        $approxWidth = max(strlen($headingText) * 1.2, ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
 
-        $totalColumns = count($this->headings());
-        for ($col = 6; $col <= $totalColumns; $col++) {
-            $columnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
-            $sheet->getStyle("{$columnLetter}1")->applyFromArray([
-                'font' => [
-                    'color' => ['argb' => ConstantHelper::EXCEL_FONT_COLOR_BLACK],
-                    'bold' => ConstantHelper::EXCEL_FONT_BOLD,
+        $styles["{$columnLetter}1"] = [
+            'font' => [
+                'color' => ['argb' => ConstantHelper::EXCEL_FONT_COLOR_BLACK],
+                'bold' => ConstantHelper::EXCEL_FONT_BOLD,
+            ],
+            'fill' => [
+                'fillType' => ConstantHelper::EXCEL_FILL_TYPE_SOLID,
+                'startColor' => ['argb' => ConstantHelper::EXCEL_FILL_YELLOW],
+            ],
+            'alignment' => [
+                'wrapText' => ConstantHelper::EXCEL_ALIGNMENT_WRAP,
+                'vertical' => ConstantHelper::EXCEL_ALIGNMENT_VERTICAL_CENTER,
+                'horizontal' => ConstantHelper::EXCEL_ALIGNMENT_HORIZONTAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => ConstantHelper::EXCEL_BORDER_STYLE_THIN,
+                    'color' => ['argb' => ConstantHelper::EXCEL_BORDER_COLOR_BLACK],
                 ],
-                'fill' => [
-                    'fillType' => ConstantHelper::EXCEL_FILL_TYPE_SOLID,
-                    'startColor' => ['argb' => ConstantHelper::EXCEL_FILL_YELLOW],
-                ],
-                'alignment' => [
-                    'wrapText' => ConstantHelper::EXCEL_ALIGNMENT_WRAP,
-                    'vertical' => ConstantHelper::EXCEL_ALIGNMENT_VERTICAL_CENTER,
-                    'horizontal' => ConstantHelper::EXCEL_ALIGNMENT_HORIZONTAL_CENTER,
-                ],
-                'borders' => [
-                    'allBorders' => [
-                        'borderStyle' => ConstantHelper::EXCEL_BORDER_STYLE_THIN,
-                        'color' => ['argb' => ConstantHelper::EXCEL_BORDER_COLOR_BLACK],
-                    ],
-                ],
-            ]);
-            $sheet->getColumnDimension($columnLetter)->setWidth(ConstantHelper::EXCEL_COLUMN_WIDTH_DEFAULT);
-                $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
-        }
-        return $styles;
+            ],
+        ];
+
+        // Set dynamic width based on heading length
+        $sheet->getColumnDimension($columnLetter)->setWidth($approxWidth);
+
+        // Ensure cell text wraps
+        $sheet->getStyle("{$columnLetter}")->getAlignment()->setWrapText(ConstantHelper::EXCEL_ALIGNMENT_WRAP);
     }
+
+    return $styles;
+}
 }

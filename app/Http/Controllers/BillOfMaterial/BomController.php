@@ -41,7 +41,7 @@ use App\Models\ProductionRoute;
 use App\Models\Station;
 use Excel;
 use PHPUnit\TextUI\Configuration\Constant;
-
+use Illuminate\Support\Str;
 class BomController extends Controller
 {
     # Bill of material list
@@ -201,10 +201,7 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
-        $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
-        $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
-        $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
-        if($stationRequired && $request->document_status == ConstantHelper::SUBMITTED) {
+        if($request->document_status == ConstantHelper::SUBMITTED) {
             $allStations = [];
             foreach ($request->input('components', []) as $index => $component) {
                 $stationId = isset($component['station_id']) ? $component['station_id'] : null;
@@ -303,6 +300,24 @@ class BomController extends Controller
                         if (!empty($uploadedFiles)) {
                             $mediaFiles = $bomInstruction->uploadDocuments($uploadedFiles, 'bom_instruction', false);
                         }
+                    } elseif (!empty($instruction['instruction_id'])) {
+                        $oldInstruction = BomInstruction::find($instruction['instruction_id']);
+                        if ($oldInstruction) {
+                            $oldAttachments = $oldInstruction->media;
+                            foreach ($oldAttachments as $media) {
+                                $newMedia = $media->replicate();
+                                $newMedia->uuid = (string) Str::uuid();
+                                $newMedia->model_id = $bomInstruction->id;
+                                if (!empty($media->file_path) && Storage::exists($media->file_path)){
+                                    $filename = pathinfo($media->file_path, PATHINFO_BASENAME);
+                                    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+                                    $newPath = 'bom_instruction/' . uniqid() . '.' . $extension;
+                                    Storage::copy($media->file_path, $newPath);
+                                    $newMedia->file_path = $newPath;
+                                }
+                                $newMedia->save();
+                            }
+                        }
                     }
                 }
             }
@@ -350,6 +365,7 @@ class BomController extends Controller
                     $bomDetail->overhead_amount = $component['overhead_amount'] ?? 0.00;
                     $bomDetail->total_amount = $component['item_total_cost'] ?? 0.00;
                     $bomDetail->sub_section_id = $component['sub_section_id'] ?? null;
+                    $bomDetail->section_id = $component['section_id'] ?? null;
                     $bomDetail->section_name = $component['section_name'] ?? null;
                     $bomDetail->sub_section_name = $component['sub_section_name'] ?? null;
                     $bomDetail->station_name = $component['station_name'] ?? null;
@@ -498,6 +514,24 @@ class BomController extends Controller
             /*Bom Attachment*/
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $bom->uploadDocuments($request->file('attachment'), 'bom', false);
+            } else {
+                $oldBom = Bom::find($request->copy_bom_id ?? null);
+                if($oldBom) {
+                    $oldAttachments = $oldBom->media;
+                    foreach ($oldAttachments as $media) {
+                        $newMedia = $media->replicate();
+                        $newMedia->uuid = (string) Str::uuid();
+                        $newMedia->model_id = $bom->id;
+                        if (!empty($media->file_path) && Storage::exists($media->file_path)){
+                            $filename = pathinfo($media->file_path, PATHINFO_BASENAME);
+                            $extension = pathinfo($filename, PATHINFO_EXTENSION);
+                            $newPath = 'bom/' . uniqid() . '.' . $extension;
+                            Storage::copy($media->file_path, $newPath);
+                            $newMedia->file_path = $newPath;
+                        }
+                        $newMedia->save();
+                    }
+                }
             }
              //Dynamic Fields
             $status = DynamicFieldHelper::saveDynamicFields(ErpBomDynamicField::class, $bom -> id, $request -> dynamic_field ?? []);
@@ -909,11 +943,7 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
-        # check validation
-        $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
-        $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
-        $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
-        if($stationRequired && $request->document_status == ConstantHelper::SUBMITTED) {
+        if($request->document_status == ConstantHelper::SUBMITTED) {
             $allStations = [];
             foreach ($request->input('components', []) as $index => $component) {
                 $stationId = isset($component['station_id']) ? $component['station_id'] : null;
@@ -1080,6 +1110,7 @@ class BomController extends Controller
                     $bomDetail->total_amount = $component['item_total_cost'] ?? 0.00;
                     $bomDetail->sub_section_id = $component['sub_section_id'] ?? null;
                     $bomDetail->section_name = $component['section_name'] ?? null;
+                    $bomDetail->section_id = $component['section_id'] ?? null;
                     $bomDetail->sub_section_name = $component['sub_section_name'] ?? null;
                     $bomDetail->station_name = $component['station_name'] ?? null;
                     $bomDetail->station_id = $component['station_id'] ?? null;

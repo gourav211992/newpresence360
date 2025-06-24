@@ -959,23 +959,25 @@ setTimeout(() => {
 $(document).on('change','#book_id', (e) => {
     let bookId = e.target.value;
     if (bookId) {
-       getDocNumberByBookId(bookId);
+       getDocNumberByBookId(bookId,true);
     } else {
        $("#document_number").val('');
        $("#book_id").val('');
        $("#document_number").attr('readonly', false);
     }
 });
-function getDocNumberByBookId(bookId) {
+function getDocNumberByBookId(bookId, reset = false) {
   let document_date = $("[name='document_date']").val();
   let actionUrl = '{{route("book.get.doc_no_and_parameters")}}'+'?book_id='+bookId+'&document_date='+document_date;
   fetch(actionUrl).then(response => {
     return response.json().then(data => {
         if (data.status == 200) {
+            if(reset) {
+                if(!data.data.doc.document_number) {
+                    $("#document_number").val('');
+                }
+            }
           $("#book_code").val(data.data.book_code);
-          if(!data.data.doc.document_number) {
-             $("#document_number").val('');
-         }
          if(data.data.doc.type == 'Manually') {
              $("#document_number").attr('readonly', false);
          } else {
@@ -1781,6 +1783,10 @@ setTimeout(() => {
     $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
         let currentIndex = index + 1;
         setAttributesUIHelper(currentIndex,"#itemTable");
+    });
+    $("#itemTable2 .mrntableselectexcel tr").each(function(index, item) {
+        let currentIndex = index + 1;
+        setAttributesUIHelper(currentIndex,"#itemTable2");
     });
 },100);
 </script>

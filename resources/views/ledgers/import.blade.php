@@ -13,89 +13,108 @@
                             <h2 class="content-header-title float-start mb-0">Upload Ledger Data</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
+                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>
                                     <li class="breadcrumb-item active">Item Ledger</li>
                                 </ol>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                             <i data-feather="arrow-left-circle"></i> Back
                         </a>
-                        <a href="{{ asset('templates/ledger_sample_template.xlsx') }}" class="btn btn-secondary btn-sm" id="download-template-btn" download>
+                        <a href="{{ asset('templates/ledger_sample_template.xlsx') }}" class="btn btn-primary btn-sm"
+                            id="download-template-btn" download>
                             <i data-feather="download"></i> Download Template
-                        </a> 
+                        </a>
                     </div>
                 </div>
-                
+
             </div>
             <div class="content-body">
-				<section id="basic-datatable">
+                <section id="basic-datatable">
                     <div class="row justify-content-center">
                         <div class="col-9">
-                        <form class="importForm" method="POST" action="{{ route('ledger.import') }}" enctype="multipart/form-data">
-                            @csrf
-                            <div class="upload-item-masstrerdata">
-                                <!-- File Upload Section -->
-                                <div class="drapdroparea upload-btn-wrapper text-center default-dragdrop-area-unique">
-                                    <i class="uploadiconsvg" data-feather='upload'></i>
-                                    <p>Upload the template file with updated data</p>
-                                    <button class="btn btn-primary">DRAG AND DROP HERE OR CHOOSE FILE</button>  
-                                    <input type="file" name="file" accept=".xlsx, .xls, .csv" class="form-control" id="fileUpload"/>
-                                </div>
-                
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="fileNameDisplay" style="display: none;">
-                                    <div class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center"> <span id="selectedFileName"></span> <i data-feather='x-circle' id="cancelBtn" class="ms-75"></i></div>
-                                    <button type="submit" class="btn btn-primary">Proceed to Upload</button>
-                                </div>
+                            <form class="importForm" method="POST" action="{{ route('ledger.import') }}"
+                                enctype="multipart/form-data">
+                                @csrf
+                                <div class="upload-item-masstrerdata">
+                                    <!-- File Upload Section -->
+                                    <div class="drapdroparea upload-btn-wrapper text-center default-dragdrop-area-unique">
+                                        <i class="uploadiconsvg" data-feather='upload'></i>
+                                        <p>Upload the template file with updated data</p>
+                                        <button class="btn btn-primary">DRAG AND DROP HERE OR CHOOSE FILE</button>
+                                        <input type="file" name="file" accept=".xlsx, .xls, .csv" class="form-control"
+                                            id="fileUpload" />
+                                    </div>
 
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadProgress" style="display: none;">
-                                    <span class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center" id="progressFileName">
-                                        <span id="selectedFileName"></span>
-                                    </span>
-                                    <button class="btn btn-primary" disabled>Proceed to Upload</button>
-                                    <div class="w-75 mt-3">
-                                        <div class="progress" style="height: 15px">
-                                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped bg-success progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0%</div>
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="fileNameDisplay" style="display: none;">
+                                        <div
+                                            class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center">
+                                            <span id="selectedFileName"></span> <i data-feather='x-circle' id="cancelBtn"
+                                                class="ms-75"></i></div>
+                                        <button type="submit" class="btn btn-primary">Proceed to Upload</button>
+                                    </div>
+
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadProgress" style="display: none;">
+                                        <span
+                                            class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center"
+                                            id="progressFileName">
+                                            <span id="selectedFileName"></span>
+                                        </span>
+                                        <button class="btn btn-primary" disabled>Proceed to Upload</button>
+                                        <div class="w-75 mt-3">
+                                            <div class="progress" style="height: 15px">
+                                                <div id="uploadProgressBar"
+                                                    class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+                                                    role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                                                    aria-valuemax="100" style="width: 0%">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Error Section -->
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadError" style="display: none;">
+                                        <i class="alertdropdatamaster" data-feather='alert-triangle'></i><br>
+                                        <div class="alert alert-danger" id="upload-error" style="display: none;"></div>
+                                        <div class="mt-2 downloadtemplate">
+                                            <button class="editbtnNew">
+                                                <i data-feather='upload'></i> Upload Again
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Success Section -->
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadSuccess" style="display: none;">
+                                        <i class="itemdatasuccesssmaster" data-feather='check-circle'></i>
+                                        <p>All records have been uploaded successfully.<br>
+                                            Please proceed to process sales.</p>
+                                        <div class="d-flex">
+                                            <span
+                                                class="badge rounded-pill badge-light-success fw-bold me-1 font-small-2 badgeborder-radius"
+                                                id="success-count-badge"></span>
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Error Section -->
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadError" style="display: none;">
-                                    <i class="alertdropdatamaster" data-feather='alert-triangle'></i><br>
-                                    <div class="alert alert-danger" id="upload-error" style="display: none;"></div>
-                                    <div class="mt-2 downloadtemplate"> 
-                                        <button class="editbtnNew">
-                                            <i data-feather='upload'></i> Upload Again
-                                        </button> 									
-                                    </div> 	
-                                </div>
-
-                                <!-- Success Section -->
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadSuccess" style="display: none;">
-                                    <i class="itemdatasuccesssmaster" data-feather='check-circle'></i>
-                                    <p>All records have been uploaded successfully.<br>
-                                    Please proceed to process sales.</p>
-                                    <div class="d-flex">
-                                        <span class="badge rounded-pill badge-light-success fw-bold me-1 font-small-2 badgeborder-radius" id="success-count-badge"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                            </form>
                         </div>
-                        
+
                         <div class="col-md-11 mt-3 col-12 hide-this-section" style="display:none">
-                           <div class="card  new-cardbox"> 
+                            <div class="card  new-cardbox">
                                 <ul class="nav nav-tabs border-bottom" role="tablist">
                                     <li class="nav-item">
-                                        <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Records Succeeded &nbsp;<span id="success-count">(0)</span></a>
+                                        <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Records Succeeded
+                                            &nbsp;<span id="success-count">(0)</span></a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link" data-bs-toggle="tab" href="#Failed">Records Failed &nbsp;<span id="failed-count">(0)</span></a>
+                                        <a class="nav-link" data-bs-toggle="tab" href="#Failed">Records Failed &nbsp;<span
+                                                id="failed-count">(0)</span></a>
                                     </li>
                                 </ul>
                                 <div class="tab-content">

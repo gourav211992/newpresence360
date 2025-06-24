@@ -490,7 +490,7 @@
                     $('#store_id').val(storeId).select2();
                     var data = {
                         store_id: storeId,
-                        type: subStoreLocType
+                        types: subStoreLocType
 
                     };
                     $.ajax({

@@ -468,7 +468,7 @@
                                                     }
 
                                                     // Check if the selected cost center exists in this location
-                                                    $showCostCenter = !is_null($data->location);
+                                                    $showCostCenter = !empty($locationCostCenters);
                                                 @endphp
 
                                                 <div class="row align-items-center mb-1" id="costCenterRow" style="{{ $showCostCenter ? '' : 'display:none;' }}">
@@ -478,9 +478,9 @@
 
                                                     <div class="col-md-5 mb-1 mb-sm-0">
                                                         <select class="costCenter form-control select2" name="cost_center_id" id="cost_center_id">
-                                                        {{-- @if($data->cost_center_id=="") --}}
-                                                            <option value="">Select Cost Center</option>
-                                                        {{-- @endif --}}
+                                                        @if($data->cost_center_id=="")
+                                                        <option value="">Select</option>
+                                                        @endif
                                                             @foreach ($locationCostCenters as $value)
                                                             <option value="{{ $value['id'] }}"
                                                                 @if($value['id'] == $data->cost_center_id) selected @endif>
@@ -591,6 +591,7 @@
                                                                         </div>
                                                                     </td>
                                                                     <td><input type="number"
+                                                                            readonly
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]"
                                                                             id="excAmount{{ $no }}"
@@ -1095,6 +1096,7 @@ $('.settleInput').each(function () {
 
         function openInvoice(id,paymentId=null,details=null,ref=null) {
             console.log(id);
+             $('#excAmount' + id).attr('readonly', true);
             if ($('#party_id'+id).val()!="") {
                 $('.drop' + id).val('Invoice');
                 const comingParty = $('#party_id' + id).val();
@@ -1458,17 +1460,27 @@ function check_amount() {
             }
         }
         $(document).on('change', '.invoiceDrop', function() {
-            if ($(this).val() == "Invoice") {
-                $('.invoice' + $(this).attr('data-id')).attr('disabled', false);
-                $('#excAmount' + $(this).attr('data-id')).attr('readonly', true);
-                openInvoice($(this).attr('data-id'));
+            const rowId = $(this).attr('data-id');
+            const selectedValue = $(this).val();
+            
+            if (selectedValue == "Invoice") {
+                $('.invoice' + rowId).attr('disabled', false);
+                $('#excAmount' + rowId).attr('readonly', true).val('0.00');
+                $('.excAmount' + rowId).val('0.00'); // Set to 0.00 initially
+                openInvoice(rowId);
             } else {
-                $('.invoice' + $(this).attr('data-id')).attr('disabled', true);
-                $('#excAmount' + $(this).attr('data-id')).attr('readonly', false);
-                $('#party_vouchers' + $(this).attr('data-id')).val('[]');
+                $('.invoice' + rowId).attr('disabled', true);
+                $('#excAmount' + rowId).attr('readonly', false).val('0.00');
+                $('.excAmount' + rowId).val('0.00'); // Set to 0.00 initially
+                $('#party_vouchers' + rowId).val('[]');
             }
-             calculateTotal();
-            // evaluateCostCenterVisibility();
+            
+            // Trigger amount calculation if amount is not 0
+            if (parseFloat($('#excAmount' + rowId).val())) {
+                $('#excAmount' + rowId).trigger('keyup');
+            }
+            
+            calculateTotal();
         });
 
         $(document).on('click', '.vouchers', function() {
@@ -1998,17 +2010,20 @@ $('#revisionNumber').prop('disabled', false);
 
         function calculateTotal() {
             let currentCurrencySum = 0;
+            let orgCurrencySum = 0;
+            
             $('.amount').each(function() {
                 const value = parseFloat($(this).val()) || 0;
                 currentCurrencySum = parseFloat(parseFloat(currentCurrencySum + value).toFixed(2));
+                
+                // Calculate amount_exc for each row
+                const rowId = $(this).attr('id').replace('excAmount', '');
+                const excValue = value * parseFloat($('#orgExchangeRate').val() || 1);
+                $('.excAmount' + rowId).val(excValue.toFixed(2));
+                orgCurrencySum = parseFloat(parseFloat(orgCurrencySum + excValue).toFixed(2));
             });
+            
             $('.currentCurrencySum').text(formatIndianNumber(currentCurrencySum));
-
-            let orgCurrencySum = 0;
-            $('.amount_exc').each(function() {
-                const value = parseFloat($(this).val()) || 0;
-                orgCurrencySum = parseFloat(parseFloat(orgCurrencySum + value).toFixed(2));
-            });
             $('.orgCurrencySum').text(formatIndianNumber(orgCurrencySum));
             $('#totalAmount').val(orgCurrencySum);
         }
@@ -2336,7 +2351,7 @@ function showToast(icon, title) {
             if (costCenterSet.length > 0) {
                 $costCenterRow.show();
                 $dropdown.empty();
-                $dropdown.append('<option value="">Select Cost Center</option>');
+                // $dropdown.append('<option value="">Select Cost Center</option>');
                 costCenterSet.forEach(center => {
                     $dropdown.append(`<option value="${center.id}">${center.name}</option>`);
                 });

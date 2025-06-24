@@ -569,7 +569,7 @@ $(function(){
                     $("#customer_name").val(customerName);
                     let itemId = $("#head_item_id").val() || '';
                     if(itemId) {
-                        itemCodeChange(itemId);
+                        itemCodeChange(itemId, customerId);
                     }
                     return false;
                 },
@@ -776,13 +776,16 @@ $(function(){
         
    }
 
-    function itemCodeChange(itemId){
+    function itemCodeChange(itemId, customerId = null) {
         let customer_id = $("#customer_id").val() || '';
         let type = '{{ $servicesBooks['services'][0]?->alias }}';
         let actionUrl = '{{route("bill.of.material.item.code")}}'+'?item_id='+itemId+'&customer_id='+customer_id+'&type='+type;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
+                    if(customerId) {
+                        return false;
+                    }
                   let item_name = data.data.item?.item_name || ''; 
                   let item_id = data.data.item?.id || ''; 
                   let uom_id = data.data.item?.uom_id || ''; 
@@ -811,6 +814,11 @@ $(function(){
                         text: data.message,
                         icon: 'error',
                     });
+                    if(customerId) {
+                        $("#customer_id").val("");
+                        $("#customer").val("");
+                        $("#customer_name").val("");
+                    }
                 }
             });
         });
