@@ -104,13 +104,15 @@ class MoRequest extends FormRequest
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.uom_id'] = 'required';
         foreach ($this->input('components', []) as $index => $component) {
-            $item_id = $component['item_id'] ?? null;
-            $item = Item::find($item_id);
-            $index = $index + 1;
-            if ($item && $item->itemAttributes->count() > 0) {
-                $rules["components.$index.attr_group_id.*.attr_name"] = 'required';
-            } else {
-                $rules["components.$index.attr_group_id.*.attr_name"] = 'nullable';
+            if (!empty($component['is_pi_item_id'])) {
+                $item_id = $component['item_id'] ?? null;
+                $item = Item::find($item_id);
+                $index = $index + 1;
+                if ($item && $item->itemAttributes->count() > 0) {
+                    $rules["components.$index.attr_group_id.*.attr_name"] = 'required';
+                } else {
+                    $rules["components.$index.attr_group_id.*.attr_name"] = 'nullable';
+                }
             }
         }
         return $rules;
@@ -125,49 +127,51 @@ class MoRequest extends FormRequest
             $selectedAttributes = [];
             if (count($attributes)) {
                 foreach ($attributes as $k => $attribute) {
-                    $itemId = $attribute['item_id'] ?? null;
-                    $attr_group = isset($attribute['attr_group_id']) ? array_values($attribute['attr_group_id']) : [];
-                    if(count($attr_group)) {
-                        $itemAttr = ItemAttribute::where('item_id', $itemId)->first();
-                        if(!$itemAttr->all_checked) {
-                            $itemAttr = ItemAttribute::where('item_id', $itemId)
-                                ->where('attribute_group_id', @$attr_group[0]['attr_name'])
-                                ->first();
+                    if (!empty($component['is_pi_item_id'])) {
+                        $itemId = $attribute['item_id'] ?? null;
+                        $attr_group = isset($attribute['attr_group_id']) ? array_values($attribute['attr_group_id']) : [];
+                        if(count($attr_group)) {
+                            $itemAttr = ItemAttribute::where('item_id', $itemId)->first();
+                            if(!$itemAttr->all_checked) {
+                                $itemAttr = ItemAttribute::where('item_id', $itemId)
+                                    ->where('attribute_group_id', @$attr_group[0]['attr_name'])
+                                    ->first();
+                            }
+                            $selectedAttributes[] = ['attribute_id' => $itemAttr?->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];   
                         }
-                        $selectedAttributes[] = ['attribute_id' => $itemAttr?->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];   
-                    }
-                    # Check bom not exist in header item
-                    $bomExists = ItemHelper::checkItemBomExists($itemId, $selectedAttributes);
-                    if (!$bomExists['bom_id']) {
-                        $validator->errors()->add("components.$k.item_code", $bomExists['message']);
-                    }
-                    # So Item Qty Check
-                    if(isset($attribute['pwo_mapping_id']) && $attribute['pwo_mapping_id']) {
-                        $pwoMappingId = $attribute['pwo_mapping_id'] ?? null;
+                        # Check bom not exist in header item
+                        $bomExists = ItemHelper::checkItemBomExists($itemId, $selectedAttributes);
+                        if (!$bomExists['bom_id']) {
+                            $validator->errors()->add("components.$k.item_code", $bomExists['message']);
+                        }
+                        # So Item Qty Check
+                        if(isset($attribute['pwo_mapping_id']) && $attribute['pwo_mapping_id']) {
+                            $pwoMappingId = $attribute['pwo_mapping_id'] ?? null;
 
-                        $pwoMapping = PwoSoMapping::find($pwoMappingId);
-                        
-                        $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$pwoMapping?->id)
-                                                ->where('station_id',$stationId)
-                                                ->first();
-                        if($pwoStation) {
-                            $inputQty = floatval($attribute['qty']);
-                            $pwoSoMapping = PwoSoMapping::find($pwoMappingId); 
-                            if(floatval($inputQty) != (floatval($pwoSoMapping->inventory_uom_qty))) {
-                                $validator->errors()->add("components.$k.qty", "Quantity can't be changed.");
-                            } 
-                            // if($moId) {
-                            //     $existingQty = $pwoStation ? floatval($pwoStation->mo_product_qty) : 0;
-                            //     $availableQty = floatval($pwoSoMapping->inventory_uom_qty) - floatval($pwoStation->mo_product_qty) + $existingQty;
-                            //     if ($inputQty > $availableQty) {
-                            //         $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
-                            //     }
-                            // } else {
-                            //     // if(floatval($inputQty) > (floatval($pwoSoMapping->inventory_uom_qty) - floatval($pwoStation->mo_product_qty))) {
-                            //     if(floatval($inputQty) != (floatval($pwoSoMapping->inventory_uom_qty))) {
-                            //         $validator->errors()->add("components.$k.qty", "Quantity must be equal to PWO Qty.");
-                            //     } 
-                            // }
+                            $pwoMapping = PwoSoMapping::find($pwoMappingId);
+                            
+                            $pwoStation = PwoStationConsumption::where('pwo_mapping_id',$pwoMapping?->id)
+                                                    ->where('station_id',$stationId)
+                                                    ->first();
+                            if($pwoStation) {
+                                $inputQty = floatval($attribute['qty']);
+                                $pwoSoMapping = PwoSoMapping::find($pwoMappingId); 
+                                if(floatval($inputQty) != (floatval($pwoSoMapping->inventory_uom_qty))) {
+                                    $validator->errors()->add("components.$k.qty", "Quantity can't be changed.");
+                                } 
+                                // if($moId) {
+                                //     $existingQty = $pwoStation ? floatval($pwoStation->mo_product_qty) : 0;
+                                //     $availableQty = floatval($pwoSoMapping->inventory_uom_qty) - floatval($pwoStation->mo_product_qty) + $existingQty;
+                                //     if ($inputQty > $availableQty) {
+                                //         $validator->errors()->add("components.$k.qty", "Quantity can't be greater than Order Qty.");
+                                //     }
+                                // } else {
+                                //     // if(floatval($inputQty) > (floatval($pwoSoMapping->inventory_uom_qty) - floatval($pwoStation->mo_product_qty))) {
+                                //     if(floatval($inputQty) != (floatval($pwoSoMapping->inventory_uom_qty))) {
+                                //         $validator->errors()->add("components.$k.qty", "Quantity must be equal to PWO Qty.");
+                                //     } 
+                                // }
+                            }
                         }
                     }
                 }

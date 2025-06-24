@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\refined_index;
 
-use App\Helpers\{ConstantHelper, Helper, RefinedIndex\indexFilterHelper};
+use App\Helpers\{ConstantHelper, Helper, RefinedIndex\indexFilterHelper, InventoryHelper};
 use App\Http\Controllers\Controller;
 use App\Models\{AttributeGroup, AuthUser, Book, Category, ErpTransaction, Item, Organization};
+use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
@@ -76,9 +77,12 @@ class IndexController extends Controller
     private function handleTransactionView(Request $request, string $view, string $redirectRoute, array $documentStatuses, callable $userFilter = null, bool $excludeOwn = false)
     {
         $user = Helper::getAuthenticatedUser();
+        $accessible_locations = InventoryHelper::getAccessibleLocations()->pluck('id')->toArray();
+        $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
 
         $query = ErpTransaction::withDefaultGroupCompanyOrg()
             ->whereIn('document_status', $documentStatuses)
+            ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
             ->orderBy('created_at', 'desc');
 
         if ($userFilter) {

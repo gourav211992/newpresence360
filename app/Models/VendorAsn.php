@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
-use App\Traits\DateFormatTrait;
-use App\Traits\DefaultGroupCompanyOrg;
-use App\Traits\DynamicFieldsTrait;
+use App\Helpers\ConstantHelper;
+
+use App\Models\JobOrder\JobOrder;
+
 use App\Traits\FileUploadTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\DateFormatTrait;
+use App\Traits\DynamicFieldsTrait;
+use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class VendorAsn extends Model
 {
@@ -90,6 +93,11 @@ class VendorAsn extends Model
     public function po()
     {
         return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id', 'id');
+    }
+
+    public function jo()
+    {
+        return $this->belongsTo(JobOrder::class, 'job_order_id', 'id');
     }
 
     public function items()

@@ -7,6 +7,7 @@
         $grnQty = 0.00;
         $balanceQty = 0.00;
         $moduleType = 'p-order';
+        $ref_no = ($poDetail->po?->book?->book_code ?? 'NA') . '-' . ($poDetail->po?->document_number ?? 'NA');
         if($poDetail->gateEntryHeader){
             $orderQty = (($poDetail->gateEntryHeader ? $poDetail?->poItem?->order_qty : 0.00) - ($poDetail->gateEntryHeader ? $poDetail?->poItem?->short_close_qty : 0.00));
             $invOrderQty = 0.00;
@@ -36,9 +37,11 @@
                 @if($moduleType == 'gate-entry')
                     <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poDetail->id}}" data-module="{{$moduleType}}"
                     data-current-po="{{ $poDetail ? $poDetail->header_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poDetail->purchase_order_id)  disabled="disabled" @endif >
+                    <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
                 @else
                     <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$poDetail->id}}" data-module="{{$moduleType}}"
                     data-current-po="{{ $poDetail ? $poDetail->purchase_order_id : 'null' }}" data-existing-po="{{ $poData ? $poData->purchase_order_id : 'null' }}"  @if ($poData && $poData->purchase_order_id !=  $poDetail->purchase_order_id)  disabled="disabled" @endif >
+                    <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
                 @endif
             </div>
         </td>

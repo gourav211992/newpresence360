@@ -3,6 +3,7 @@ namespace App\Helpers;
 
 use App\Models\ErpPsvHeader;
 use App\Models\ErpPsvItem;
+use App\Models\MrnMiMapping;
 use DB;
 use Auth;
 
@@ -60,6 +61,7 @@ use App\Models\StockLedgerItemAttribute;
 
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
+use App\Models\Attribute;
 use App\Models\MoProductionItem;
 use App\Models\MoProductionItemLocation;
 
@@ -311,8 +313,104 @@ class InventoryHelper
         $user = Helper::getAuthenticatedUser();
         $reservedStocks = 0.00;
         $reservedStockAltUom = 0.00;
-        $attributeGroups = ErpAttribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id');
+        $attributeGroups = Attribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id');
         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+            ->with('details')
+            ->where('item_id', $itemId)
+            ->whereNull('utilized_id')
+            ->whereNotNull('receipt_qty');
+
+        // Apply attribute filtering if needed
+        if (!empty($attributeGroups) && !empty($selectedAttr)) {
+            sort($selectedAttr);
+            foreach ($attributeGroups as $key => $group) {
+                // Ensure index exists and handle type consistency
+                if (isset($selectedAttr[$key])) {
+                    $stockLedger->whereJsonContains('item_attributes', [
+                        'attr_name' => (string)$group,
+                        'attr_value' => (string)$selectedAttr[$key]
+                    ]);
+                }
+            }
+        }
+
+        // Filters for Store, Rack, Shelf, and Bin (if needed)
+        if ($storeId) {
+            $stockLedger->where('store_id', $storeId);
+        }
+
+        if ($subStoreId) {
+            $stockLedger->where('sub_store_id', $subStoreId);
+        }
+        if ($stationId) {
+            $stockLedger->where('station_id', $stationId);
+        }
+        $stockLedger -> where('stock_type', $stockType);
+        if ($itemWipStationId && $stockType === self::STOCK_TYPE_WIP) {
+            $stockLedger -> where('wip_station_id', $itemWipStationId);
+        }
+        // $stockLedger = $stockLedger->get();
+        // $pendingStocks = $stockLedger->whereNotIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
+        // $confirmedStocks = $stockLedger->whereIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
+
+        // Clone the query before executing
+        $pendingStocksQuery = clone $stockLedger;
+        $confirmedStocksQuery = clone $stockLedger;
+        $reservedStocksQuery = clone $stockLedger;
+
+        $pendingStocks = $pendingStocksQuery
+            ->whereNotIn('document_status', ['approved', 'posted', 'approval_not_required'])
+            ->selectRaw('SUM(receipt_qty - reserved_qty) as total')
+            ->value('total'); // Fetch the summed value
+
+        $confirmedStocks = $confirmedStocksQuery
+            ->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
+            ->selectRaw('SUM(receipt_qty - reserved_qty) as total')
+            ->value('total'); // Fetch the summed value
+
+        if ($orderId) {
+            $stocks = $reservedStocksQuery
+                ->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
+                ->with(['reservations' => function ($q) use ($orderId) {
+                    $q->where('so_item_id', $orderId);
+                }])
+                ->get();
+
+            foreach ($stocks as $stock) {
+                $reservedStocks += $stock->reservations->sum('quantity');
+            }
+        }
+        $rate = $stockLedger->pluck('cost_per_unit')->first();
+        $pendingStockAltUom = $pendingStocks;
+        $reservedStockAltUom = $reservedStocks;
+        $confirmedStockAltUom = $confirmedStocks;
+        if($uomId){
+            $pendingStockAltUom =  ItemHelper::convertToAltUom($itemId, $uomId, $pendingStocks ?? 0);
+            if($orderId){
+                $reservedStockAltUom =  ItemHelper::convertToAltUom($itemId, $uomId, $reservedStocks ?? 0);
+            }
+            $confirmedStockAltUom =  ItemHelper::convertToAltUom($itemId, $uomId, $confirmedStocks ?? 0);
+        }
+        $data = [
+            'pendingStocks' => $pendingStocks ?? 0,
+            'reservedStocks' => $reservedStocks ?? 0,
+            'confirmedStocks' => $confirmedStocks ?? 0,
+            'pendingStockAltUom' => $pendingStockAltUom ?? 0,
+            'reservedStockAltUom' => $reservedStockAltUom ?? 0,
+            'confirmedStockAltUom' => $confirmedStockAltUom ?? 0,
+            'rate' => $rate ?? 0,
+        ];
+        return $data;
+    }
+
+    public static function totalInventoryAndStockV1($orgId, $itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null, $stationId = null, $stockType = self::STOCK_TYPE_REGULAR, $itemWipStationId = null)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $reservedStocks = 0.00;
+        $reservedStockAltUom = 0.00;
+        $attributeGroups = ErpAttribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id');
+        $stockLedger = StockLedger::withDefaultGroupCompany()
+            ->where('organization_id', $orgId)
             ->with('details')
             ->where('item_id', $itemId)
             ->whereNull('utilized_id')
@@ -339,13 +437,13 @@ class InventoryHelper
         if ($subStoreId) {
             $stockLedger->where('sub_store_id', $subStoreId);
         }
-        if ($stationId) {
-            $stockLedger->where('station_id', $stationId);
-        }
-        $stockLedger -> where('stock_type', $stockType);
-        if ($itemWipStationId && $stockType === self::STOCK_TYPE_WIP) {
-            $stockLedger -> where('wip_station_id', $itemWipStationId);
-        }
+        // if ($stationId) {
+        //     $stockLedger->where('station_id', $stationId);
+        // }
+        // $stockLedger -> where('stock_type', $stockType);
+        // if ($itemWipStationId && $stockType === self::STOCK_TYPE_WIP) {
+        //     $stockLedger -> where('wip_station_id', $itemWipStationId);
+        // }
         // $stockLedger = $stockLedger->get();
         // $pendingStocks = $stockLedger->whereNotIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
         // $confirmedStocks = $stockLedger->whereIn('document_status', ['approved','posted','approval_not_required'])->sum('receipt_qty');
@@ -725,7 +823,7 @@ class InventoryHelper
                 if($stockType == 'R') { // Regular
                     $qty = ($documentItemLocation->accepted_qty - $utilizedQty);
                     if($documentHeader?->fg_sub_store_id) {
-                        $stockLedger->sub_store_id = $documentHeader->fg_sub_store_id ?? null;    
+                        $stockLedger->sub_store_id = $documentHeader->fg_sub_store_id ?? null;
                     } else {
                         $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
                         $stockLedger->station_id = $documentHeader->station_id ?? null;
@@ -739,7 +837,7 @@ class InventoryHelper
                     $qty = ($documentItemLocation->subprime_qty - $utilizedQty);
                     $stockLedger->stock_type = 'S';
                     if($documentHeader?->fg_sub_store_id) {
-                        $stockLedger->sub_store_id = $documentHeader->fg_sub_store_id ?? null;    
+                        $stockLedger->sub_store_id = $documentHeader->fg_sub_store_id ?? null;
                     } else {
                         $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
                         $stockLedger->station_id = $documentHeader->station_id ?? null;
@@ -749,7 +847,7 @@ class InventoryHelper
                     $qty = ($documentItemLocation->rejected_qty - $utilizedQty);
                     $stockLedger->stock_type = 'J';
                     if($documentHeader?->rg_sub_store_id) {
-                        $stockLedger->sub_store_id = $documentHeader->rg_sub_store_id ?? null;    
+                        $stockLedger->sub_store_id = $documentHeader->rg_sub_store_id ?? null;
                     } else {
                         $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
                         $stockLedger->station_id = $documentHeader->station_id ?? null;
@@ -758,7 +856,7 @@ class InventoryHelper
                         $stockLedger->wip_station_id = $documentHeader?->station_id ?? null;
                     }
                 }
-                
+
                 // Over ride attribute
                 $stockLedger->vendor_id = null;
                 $stockLedger->vendor_code = null;
@@ -922,6 +1020,43 @@ class InventoryHelper
                 $stockLedger->sub_store = @$documentDetail->header->sub_store->store_code;
             }
 
+
+        }
+        if($bookType == ConstantHelper::MI_MRN_SERVICE_ALIAS_NAME){
+            $qty = @$documentItemLocation->mi_inventory_uom_qty;
+            $documentHeader = ErpMaterialIssueHeader::find($documentItemLocation->miItem->material_issue_id);
+            $detailId = $documentItemLocation->mi_item_id;
+            $documentDetail = ErpMiItem::with(['header', 'attributes'])->find($detailId);
+            $stockLedger->vendor_id = @$documentHeader->vendor_id;
+            $stockLedger->vendor_code = @$documentHeader->vendor_code;
+            if ($transactionType == 'issue') {
+                $stockLedger->issue_qty = @$qty;
+            }
+            $stockLedger->book_id = @$documentHeader->book_id;
+            $totalItemCost = ($documentItemLocation->mi_inventory_uom_qty*$documentItemLocation->rate);
+            $costPerUnit = $totalItemCost/$qty;
+
+            $stockLedger->stock_type=$documentDetail->stock_type;
+            $stockLedger->wip_station_id=@$documentDetail->wip_station_id;
+
+            // Item Location Data
+            if(($transactionType == 'issue') && $documentDetail->to_store_id){
+                $stockLedger->store_id = $documentDetail->to_store_id ?? null;
+                $stockLedger->store = @$documentDetail->toErpStore->store_code;
+            }
+
+            if(($transactionType == 'issue') && $documentDetail->to_sub_store_id){
+                $stockLedger->sub_store_id = $documentDetail->to_sub_store_id ?? null;
+                $stockLedger->sub_store = @$documentDetail->toErpSubStore->store_code;
+            }
+
+            // if(($transactionType == 'issue') && $documentDetail->from_station_id){
+            //     $stockLedger->station_id = $documentDetail->from_station_id ?? null;
+            // }
+
+            // if(($transactionType == 'receipt') && ($documentDetail->to_station_id)){
+            //     $stockLedger->station_id = $documentDetail->to_station_id ?? null;
+            // }
 
         }
 
@@ -2116,7 +2251,6 @@ class InventoryHelper
                 }
             }
         } catch (\Exception $e) {
-            dd($e);
             $errorMsg = "ERROR: " . $e->getMessage();
             return self::errorResponse($errorMsg);
 
@@ -2386,7 +2520,7 @@ class InventoryHelper
                         $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty,null,$stockType);
                     }
                 }
-               
+
             }
         } catch (\Exception $e) {
             $errorMsg = "ERROR: " . $e->getMessage();
@@ -2398,7 +2532,7 @@ class InventoryHelper
     }
 
     // Settlement For Material Issue For Issue
-    private static function settlementForMIForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    public static function settlementForMIForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
 
@@ -2417,6 +2551,45 @@ class InventoryHelper
                             ->where('document_header_id',$documentHeaderId)
                             ->where('document_detail_id',$documentItem->id)
                             ->where('book_type','=',$bookType)
+                            ->first();
+                        if(!$stockLedger){
+                            $stockLedger = new StockLedger();
+                        }
+                        $utilizedQty = 0;
+                        $issueQty = $stockLedger->issue_qty;
+                        $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
+                        $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: " . $e->getMessage();
+            return self::errorResponse($errorMsg);
+
+        }
+        $message = 'success';
+        return $message;
+    }
+    public static function settlementForMIForIssueFromMrn($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        try{
+            $documentItems = MrnMiMapping::where('mrn_header_id',$documentHeaderId)
+                ->with(['miItem',
+                    'miItem.header',
+                    'detail.attributes',
+                    'jobProduct'
+                ])
+                ->get();
+            if(isset($documentItems) && $documentItems){
+                foreach ($documentItems as $documentItem) {
+                    if($documentItem->to_store_id){
+                        $miHeaderId = $documentItem?->miItem?->header;
+                        $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                            ->where('document_header_id',$miHeaderId)
+                            ->where('document_detail_id',$documentItem->mi_item_id)
+                            ->where('book_type','=',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME)
                             ->first();
                         if(!$stockLedger){
                             $stockLedger = new StockLedger();

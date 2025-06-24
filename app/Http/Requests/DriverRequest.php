@@ -32,11 +32,30 @@ public function rules()
 
     return [
         'user_id'        => 'nullable|exists:employees,id',
-        'name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z\s\.\-]+$/'],
+       'name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z\s\.\-]+$/'], // only letters, space, dot, hyphen
+        'experience_years' => [
+            'required',
+            'integer',
+            'min:0',
+            'max:99',
+            'regex:/^\d{1,2}$/', 
+        ],
         'email'          => 'nullable|email|max:255|unique:erp_drivers,email,' . $id,
-        'mobile_no'      => 'required|string|max:20|unique:erp_drivers,mobile_no,' . $id,
-        'experience_years' => 'required|integer|min:0',
-        'license_no'     => 'required|string|max:100|unique:erp_drivers,license_no,' . $id,
+      'mobile_no' => [
+            'required',
+            'string',
+            'regex:/^\d{10}$/',
+            Rule::unique('erp_drivers', 'mobile_no')->ignore($id),
+        ],
+
+        'license_no' => [
+            'required',
+            'string',
+            'max:100',
+            'regex:/^[A-Za-z0-9\-]+$/',  
+            Rule::unique('erp_drivers', 'license_no')->ignore($id),
+        ],
+
         'license_expiry_date' => 'required|date|after:today',
 
 
@@ -73,32 +92,52 @@ public function rules()
 }
 
 
-    public function messages()
-    {
-        return [
-            'user_id.nullable' => 'Employee is required.',
-            'user_id.exists' => 'Selected employee does not exist.',
-            'name.required' => 'Driver name is required.',
-            'name.regex' => 'The name only contain letters, spaces and dot.',
-            'email.email' => 'Enter a valid email address.',
-            'email.unique' => 'This email is already used.',
-            'mobile_no.required' => 'Mobile number is required.',
-            'mobile_no.unique' => 'This mobile number is already used.',
-            'experience_years.required' => 'Experience is required.',
-            'experience_years.integer' => 'Experience must be an integer.',
-            'license_no.required' => 'License number is required.',
-            'license_no.unique' => 'This license number is already used.',
-            'license_expiry_date.required' => 'License expiry date is required.',
-            'license_expiry_date.after' => 'License expiry must be a future date.',
-            'license_front.required' => 'License front media is required.',
-            'license_front.exists' => 'License front file not found.',
-            'license_back.required' => 'License back media is required.',
-            'license_back.exists' => 'License back file not found.',
-            'id_proof_front.required' => 'ID proof front is required.',
-            'id_proof_front.exists' => 'ID proof front file not found.',
-            'id_proof_back.required' => 'ID proof back is required.',
-            'id_proof_back.exists' => 'ID proof back file not found.',
-        ];
-    }
+   public function messages()
+{
+    return [
+        'user_id.nullable' => 'Employee is required.',
+        'user_id.exists' => 'Selected employee does not exist.',
+        
+        'name.required' => 'Driver name is required.',
+        'name.regex' => 'The name may only contain letters, spaces, dots, and hyphens.',
+        
+        'email.email' => 'Enter a valid email address.',
+        'email.unique' => 'This email is already used.',
+        
+        'mobile_no.required' => 'Mobile number is required.',
+        'mobile_no.regex' => 'Mobile number must be exactly 10 digits and contain only numbers.',
+        'mobile_no.unique' => 'This mobile number is already used.',
+
+        'experience_years.required' => 'Experience is required.',
+        'experience_years.integer' => 'Experience must be an integer.',
+        'experience_years.min' => 'Experience cannot be negative.',
+        'experience_years.max' => 'Experience cannot exceed 99 years.',
+        'experience_years.regex' => 'Experience must be a 1 or 2-digit number only.',
+
+        'license_no.required' => 'License number is required.',
+        'license_no.regex' => 'License number may only contain letters, numbers, and hyphens.',
+        'license_no.unique' => 'This license number is already used.',
+        
+        'license_expiry_date.required' => 'License expiry date is required.',
+        'license_expiry_date.after' => 'License expiry must be a future date.',
+
+        'license_front.required' => 'License front media is required.',
+        'license_front.min' => 'License front must be at least 10 KB.',
+        'license_front.max' => 'License front must not exceed 2 MB.',
+
+        'license_back.required' => 'License back media is required.',
+        'license_back.min' => 'License back must be at least 10 KB.',
+        'license_back.max' => 'License back must not exceed 2 MB.',
+
+        'id_proof_front.required' => 'ID proof front is required.',
+        'id_proof_front.min' => 'ID proof front must be at least 10 KB.',
+        'id_proof_front.max' => 'ID proof front must not exceed 2 MB.',
+
+        'id_proof_back.required' => 'ID proof back is required.',
+        'id_proof_back.min' => 'ID proof back must be at least 10 KB.',
+        'id_proof_back.max' => 'ID proof back must not exceed 2 MB.',
+    ];
+}
+
 
 }

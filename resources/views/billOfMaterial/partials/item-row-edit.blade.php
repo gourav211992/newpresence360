@@ -7,7 +7,11 @@
 <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
    <td class="customernewsection-form">
       <div class="form-check form-check-primary custom-checkbox">
-         <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$bomDetail->id}}" value="{{$rowCount}}">
+         @if(empty($isCopy) || !$isCopy)
+            <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$bomDetail->id}}" value="{{$rowCount}}">
+         @else
+            <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="" value="{{$rowCount}}">
+         @endif
          <label class="form-check-label" for="Email_{{$rowCount}}"></label>
       </div>
    </td>
@@ -32,9 +36,11 @@
       @php
       $selectedAttr = $bomDetail->attributes ? $bomDetail->attributes()->pluck('attribute_value')->all() : []; 
       @endphp
-      @foreach($bomDetail->attributes as $attributeHidden)
-         <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
-      @endforeach
+      @if(empty($isCopy) || !$isCopy)
+         @foreach($bomDetail->attributes as $attributeHidden)
+            <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attribute_name}}][attr_id]" value="{{$attributeHidden->id}}">
+         @endforeach
+      @endif
       @foreach($bomDetail->item?->itemAttributes as $itemAttribute)
          @foreach ($itemAttribute->attributes() as $value)
             @if(in_array($value->id, $selectedAttr))
@@ -104,7 +110,9 @@
          @if($canView)
             <input type="number" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
             @foreach($bomDetail->overheads()->where('type','D')->get() as $over_key => $overhead)
-            <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+            @if(empty($isCopy) || !$isCopy)
+               <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][id]" value="{{$overhead->id}}">
+            @endif
             <input type="hidden" id="item_overhead_id_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][overhead_id]" value="{{$overhead->overhead_id}}">
             <input type="hidden" id="item_overhead_input_{{$rowCount}}_{{$over_key+1}}" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][description]" value="{{$overhead?->overhead_description}}">
             <input type="hidden" name="components[{{$rowCount}}][overhead][{{$over_key+1}}][perc]" value="{{isset($overhead->overhead_perc) && $overhead->overhead_perc != 0 ? $overhead->overhead_perc : ''}}">
@@ -158,6 +166,8 @@
         </div>
      </div>
    </td>
-   <input type="hidden" name="components[{{$rowCount}}][bom_detail_id]" value="{{$bomDetail->id}}">
+   @if(empty($isCopy) || !$isCopy)
+      <input type="hidden" name="components[{{$rowCount}}][bom_detail_id]" value="{{$bomDetail->id}}">
+   @endif
 </tr>
 @endforeach

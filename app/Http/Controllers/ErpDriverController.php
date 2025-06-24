@@ -199,7 +199,7 @@ class ErpDriverController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validated = $request->validated();
-dd($request->all());
+
         DB::beginTransaction();
 
         try {
@@ -216,7 +216,7 @@ dd($request->all());
                 'experience_years'    => $validated['experience_years'] ?? null,
                 'license_no'          => $validated['license_no'],
                 'license_expiry_date' => $validated['license_expiry_date'],
-                'status'              => $validated['status'],
+                'status'              => $request->status,
             ]);
 
             $this->handleDriverMediaUploads($request, $driver); 

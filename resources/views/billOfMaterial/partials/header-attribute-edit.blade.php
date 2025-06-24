@@ -17,8 +17,10 @@
 @php
 $headerAttribute = $bom->bomAttributes()->where('attribute_name',$attribute->attribute_group_id)->first(); 
 @endphp
-@if(isset($headerAttribute)) 
-<input type="hidden" name="attributes[{{$index + 1 }}][attr_group_id][{{$headerAttribute->attribute_name}}][attr_id]" value="{{$headerAttribute->id}}">
+@if(empty($isCopy) || !$isCopy)
+   @if(isset($headerAttribute)) 
+   <input type="hidden" name="attributes[{{$index + 1 }}][attr_group_id][{{$headerAttribute->attribute_name}}][attr_id]" value="{{$headerAttribute->id}}">
+   @endif
 @endif
    <div class="col-md-3 heaer_item header_attr">
       <div class="mb-1">

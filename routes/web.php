@@ -1290,6 +1290,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
             Route::get('edit/{id}', 'edit')->name('edit');
+            Route::get('copy/{id}', 'copy')->name('copy');
             Route::post('update/{id}', 'update')->name('update');
             # get bom item cost child item
             Route::get('get-item-cost', 'getItemCost')->name('get.item.cost');
@@ -1304,6 +1305,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             # Only for the production Bom
             Route::get('check-bom-exist', 'checkBomExist')->name('check.bom.exist');
             Route::get('report', 'bomReport')->name('report');
+            Route::get('export/{id}', 'export')->name('export');
         });
 
     # Bom Import

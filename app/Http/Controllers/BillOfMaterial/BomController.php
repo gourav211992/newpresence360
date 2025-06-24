@@ -47,7 +47,6 @@ class BomController extends Controller
     # Bill of material list
     public function index(Request $request)
     {
-        // return Excel::download(new BomExport(150), 'bom_' . 150 . '.xlsx');
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -153,7 +152,6 @@ class BomController extends Controller
                 ->make(true);
         }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
-
         return view('billOfMaterial.index', ['servicesBooks' => $servicesBooks]);
     }
 
@@ -169,9 +167,7 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
-
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
-
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
@@ -180,7 +176,6 @@ class BomController extends Controller
         $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
                                 ->where('status', ConstantHelper::ACTIVE)
                                 ->get();
-        
         $customizables = ['yes','no'];
         return view('billOfMaterial.create', [
             'books' => $books,
@@ -206,7 +201,6 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view');
         }
-        
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
@@ -238,7 +232,6 @@ class BomController extends Controller
                 }
             }
         }
-
         DB::beginTransaction();
         try {
             # Bom Header save
@@ -263,8 +256,7 @@ class BomController extends Controller
             // $bom->status = $request->status;
             $bom->remarks = $request->remarks;
             # Extra Column
-            $document_number = $request->document_number ?? null;
-            
+            $document_number = $request->document_number ?? null;   
             /**/
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
             if (!isset($numberPatternData)) {
@@ -290,7 +282,6 @@ class BomController extends Controller
             $bom->doc_suffix = $numberPatternData['suffix'];
             $bom->doc_no = $numberPatternData['doc_no'];
             /**/
-
             $bom->book_id = $request->book_id;
             $bom->book_code = $request->book_code;
             $bom->document_number = $document_number;
@@ -809,6 +800,7 @@ class BomController extends Controller
         }
         $headerOverheads = $bom->bomOverheadItems()->where('type','H')->orderBy('level')->get();
         $dynamicFieldsUI = $bom -> dynamicfieldsUi();
+        $canView = true;
         return view($view, [
             'isEdit' => $isEdit,
             'books' => $books,
@@ -835,9 +827,74 @@ class BomController extends Controller
             'headerOverheads' => $headerOverheads,
             'canView' => $canView,
             'dynamicFieldsUi' => $dynamicFieldsUI,
-            'consumption_method' => $consumption_method
-
+            'consumption_method' => $consumption_method,
+            'isCopy' => false
         ]); 
+    }
+
+    public function copy(Request $request, $id)
+    {
+        $parentUrl = request()->segments()[0];
+        $servicesAliasParam = $parentUrl == 'quotation-bom' 
+            ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS 
+            : ConstantHelper::BOM_SERVICE_ALIAS;
+        $canView = true; 
+        // $canView = $servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS
+        //     ? request()->user()?->hasPermission('quotation_bom.item_cost_view')
+        //     : request()->user()?->hasPermission('production_bom.item_cost_view');
+
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->back();
+        }
+
+        $originalBom = Bom::with([
+            'bomAttributes',
+            'bomOverheadItems',
+            'item.specifications',
+        ])->findOrFail($id);
+
+        $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
+        $productionTypes = ['In-house', 'Job Work'];
+        $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
+                                ->where('status', ConstantHelper::ACTIVE)
+                                ->get();
+
+        $customizables = ['yes','no'];
+        $headerAttributes = $originalBom->bomAttributes()->where('type', 'H')->get();
+        $selectedAttributes = $headerAttributes->pluck('attribute_value')->all();
+        $specifications = $originalBom->item?->specifications()->whereNotNull('value')->get() ?? collect();
+        $headerOverheads = $originalBom->bomOverheadItems()->where('type', 'H')->orderBy('level')->get();
+        $dynamicFieldsUI = $originalBom->dynamicfieldsUi();
+
+        // get document parameters
+        $response = BookHelper::fetchBookDocNoAndParameters($originalBom?->book_id, $originalBom?->document_date);
+        $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
+
+        return view('billOfMaterial.copy', [
+            'books' => $books,
+            'bom' => $originalBom,
+            'item' => $originalBom->item,
+            'headerAttributes' => $headerAttributes,
+            'selectedAttributes' => $selectedAttributes,
+            'specifications' => $specifications,
+            'productionTypes' => $productionTypes,
+            'servicesBooks' => $servicesBooks,
+            'serviceAlias' => $servicesAliasParam,
+            'productionRoutes' => $productionRoutes,
+            'customizables' => $customizables,
+            'headerOverheads' => $headerOverheads,
+            'canView' => $canView,
+            'dynamicFieldsUi' => $dynamicFieldsUI,
+            'sectionRequired' => in_array('yes', array_map('strtolower', $parameters['section_required'] ?? [])),
+            'subSectionRequired' => in_array('yes', array_map('strtolower', $parameters['sub_section_required'] ?? [])),
+            'stationRequired' => true,
+            'supercedeCostRequired' => false,
+            'componentWasteRequired' => false,
+            'componentOverheadRequired' => in_array('yes', array_map('strtolower', $parameters['component_overhead_required'] ?? [])),
+            'consumption_method' => ($parameters['consumption_method'][0] ?? '') !== 'manual',
+            'isCopy' => true,
+        ]);
     }
 
     # Bom Update
@@ -1736,5 +1793,18 @@ class BomController extends Controller
             ->rawColumns(['item_attributes','product_attributes','delivery_schedule','status'])
             ->make(true);
             return $datatables;
+    }
+
+    public function export(Request $request, $id)
+    {
+        $bom = Bom::find($id);
+        if (!$bom) {
+            return '';
+        }
+        $label = $bom->type === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? 'Quotation_Bom_' : 'Production_Bom_';
+        return Excel::download(
+            new BomExport($id),
+            $label . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 }

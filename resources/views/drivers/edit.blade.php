@@ -77,7 +77,7 @@
 
                                               
                                             </div>
-                                                                                        <div class="row mb-1">
+                                                <div class="row mb-1">
                                                 <div class="col-md-2">
                                                     <label class="form-label">Name<span class="text-danger">*</span></label>
                                                 </div>
@@ -133,6 +133,7 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="license_front" class="form-control">
+                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
                                                   @if ($driver->licenseFrontMedia)
                                                     <img src="{{ asset('storage/driver_uploads/' . $driver->licenseFrontMedia->file_name) }}" class="mt-1" width="120" alt="License Front">
                                                  @endif
@@ -144,6 +145,7 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="license_back" class="form-control">
+                                                 <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
                                                      @if ($driver->licenseBackMedia)
                                                     <img src="{{ asset('storage/driver_uploads/' . $driver->licenseBackMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif
@@ -157,6 +159,7 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="id_proof_front" class="form-control">
+                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
                                                     @if($driver->idProofFrontMedia)
                                                         <img src="{{ asset('storage/driver_uploads/' . $driver->idProofFrontMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif
@@ -167,6 +170,7 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="id_proof_back" class="form-control">
+                                                   <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
                                                     @if($driver->idProofBackMedia)
                                                         <img src="{{ asset('storage/driver_uploads/' . $driver->idProofBackMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif

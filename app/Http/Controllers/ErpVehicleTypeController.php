@@ -37,10 +37,11 @@ class ErpVehicleTypeController extends Controller
 
         $selectedIndexes = $request->input('selected_rows', []);
         $insertAll = empty($selectedIndexes);
-
+// dd($request->vehicle_type);
         foreach ($request->vehicle_type as $index => $type) {
             if ($insertAll || in_array($index, $selectedIndexes)) {
                 if (!empty($type['name'])) {
+                    
                     $data = [
                         'organization_id' => $organization->id,
                         'group_id'        => $organization->group_id,
@@ -49,7 +50,8 @@ class ErpVehicleTypeController extends Controller
                         'capacity'        => $type['capacity'],
                         'uom_id'          => $type['uom_id'],
                         'description'     => $type['description'] ?? null,
-                        'status'          => $type['status'] ?? 'Active',
+                        'status'          => $type['status'],
+
                     ];
 
                     if (!empty($type['id'])) {

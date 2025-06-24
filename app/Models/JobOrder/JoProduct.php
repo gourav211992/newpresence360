@@ -8,6 +8,7 @@ use App\Models\Hsn;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\Attribute;
+use App\Models\ErpMiItem;
 use App\Models\PwoSoMapping;
 use App\Models\Unit;
 use App\Traits\DateFormatTrait;
@@ -50,7 +51,7 @@ class JoProduct extends Model
         'hsn' => 'hsn_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
-    
+
     protected $appends = [
         'cgst_value',
         'sgst_value',
@@ -90,7 +91,7 @@ class JoProduct extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
-    
+
     public function hsn()
     {
         return $this->belongsTo(Hsn::class, 'hsn_id');
@@ -233,7 +234,7 @@ class JoProduct extends Model
         $maxQty = max($this->invoice_quantity,$this->grn_qty);
         // $maxQty = max((float) $this->invoice_quantity, (float) $this->grn_qty) - (float) $this->short_close_qty;
         $balance = max(($this->order_qty - $maxQty - $this->short_close_qty),0);
-        return $balance; 
+        return $balance;
     }
 
     public function item_attributes_array()
@@ -300,6 +301,11 @@ class JoProduct extends Model
         $currentQty = $this -> getAttribute('order_qty') - $this -> getAttribute('short_close_qty');
         $miQty = $this -> getAttribute('mi_qty');
         return $currentQty - $miQty;
+    }
+
+    public function miItems()
+    {
+        return $this->hasMany(ErpMiItem::class, 'jo_product_id');
     }
 
 }

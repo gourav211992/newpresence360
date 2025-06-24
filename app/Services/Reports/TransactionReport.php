@@ -34,6 +34,7 @@ class TransactionReport
 
     public function __construct(string $serviceAlias, string $reportType = '')
     {
+        TransactionReportHelper::initialize();
         $this -> serviceAlias = $serviceAlias;
         $this -> reportType = $reportType;
         //Set the report name
@@ -57,6 +58,7 @@ class TransactionReport
         //Get the filters
         $this -> filters = isset(TransactionReportHelper::FILTERS_MAPPING[$this -> serviceAlias]) ? 
         TransactionReportHelper::FILTERS_MAPPING[$this -> serviceAlias] : [];  
+        
     }
     public function getBasicFilters()
     {
@@ -111,8 +113,8 @@ class TransactionReport
 
     private function getReportColumns()
     {
-        $columns = isset(TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias . $this -> reportType]) ?
-        TransactionReportHelper::TABLE_HEADERS[$this -> serviceAlias . $this -> reportType] : [];
+        $columns = isset(TransactionReportHelper::$TABLE_HEADERS[$this -> serviceAlias . $this -> reportType]) ?
+        TransactionReportHelper::$TABLE_HEADERS[$this -> serviceAlias . $this -> reportType] : [];
         $model = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$this -> serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$this -> serviceAlias] : '';
         if (!isset($model)) {
             return $columns;
@@ -171,6 +173,9 @@ class TransactionReport
                     'column_style' => '',
                 ]);
             }
+        }
+        if($this -> serviceAlias === ConstantHelper::BOM_SERVICE_ALIAS){
+            
         }
         return ['columns' => $additionalColumns, 'placement' => 11];
     }

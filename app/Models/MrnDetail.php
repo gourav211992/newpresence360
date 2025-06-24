@@ -6,6 +6,7 @@ use App\Models\PO\PoHeader;
 use App\Models\PO\PoDetail;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
+use App\Models\JobOrder\JoProduct;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -138,6 +139,11 @@ class MrnDetail extends Model
     public function poItem()
     {
         return $this->belongsTo(PoItem::class, 'purchase_order_item_id');
+    }
+
+    public function joItem()
+    {
+        return $this->belongsTo(JoProduct::class, 'job_order_item_id');
     }
 
     public function item()

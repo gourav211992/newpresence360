@@ -1645,7 +1645,7 @@ class ErpSaleOrderController extends Controller
                      first();
                     $qt -> customer = $customer;
                 }
-            } else {
+            } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
                 $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl) {
                     $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->
                     whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
@@ -2575,6 +2575,7 @@ class ErpSaleOrderController extends Controller
             $itemId = $request -> item_id ?? null;
             $locationId = $request -> location_id ?? null;
             $sub_store_id = $request -> sub_store_id ?? null;
+            $organization_id = $request -> organization_id ?? null;
             $selectedAttributes = $request -> item_attributes ?? [];
             $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
             $location = ErpStore::withDefaultGroupCompanyOrg() -> where('id', $locationId) -> first();
@@ -2584,7 +2585,7 @@ class ErpSaleOrderController extends Controller
                     'message' => 'Item Or Location Not Found',
                 ], 422);
             }
-            $totalStocks = InventoryHelper::totalInventoryAndStock($item -> id, $selectedAttributes, $item -> uom_id, $locationId, $sub_store_id);
+            $totalStocks = InventoryHelper::totalInventoryAndStockV1($organization_id, $item -> id, $selectedAttributes, $item -> uom_id, $locationId, $sub_store_id);
             $confirmedStocks = isset($totalStocks['confirmedStocks']) ? $totalStocks['confirmedStocks'] : 0.00;
             $unconfirmedStocks = isset($totalStocks['pendingStocks']) ? $totalStocks['pendingStocks'] : 0.00;
             return response() -> json([

@@ -338,7 +338,11 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
         const jsonArray = [];
         $rows.each(function () {
             const obj = {};
-            const isChecked = $(this).find('input.pi_item_checkbox').is(':checked');
+            let checkbox = $(this).find('input.pi_item_checkbox');
+            if (checkbox.length === 0) {
+                checkbox = $(this).find('input.form-check-input');
+            }
+            const isChecked = checkbox.is(':checked');
             obj['is_pi_item_id'] = isChecked;
             $(this).find('input, select, textarea').each(function () {
                 const name = $(this).attr('name');

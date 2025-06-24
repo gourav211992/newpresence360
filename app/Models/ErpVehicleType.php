@@ -14,7 +14,7 @@ class ErpVehicleType extends Model
 
 
     protected $fillable = [
-        'organization_id',
+         'organization_id',
         'group_id',
         'company_id',
         'name',

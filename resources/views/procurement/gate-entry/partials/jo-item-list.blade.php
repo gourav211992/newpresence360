@@ -1,17 +1,17 @@
 @forelse($joItems as $joItem)
-        @php
-            $orderQty = (($joItem->order_qty ?? 0) - ($joItem->short_close_qty ?? 0));
-            $invOrderQty = (($joItem->jo_item?->order_qty ?? 0) - ($joItem->short_close_qty ?? 0));
-            if (isset($joItem->jo->type) && ($joItem->jo->type == 'supplier-invoice')) {
-                $ref_no = ($joItem->jo_item?->jo?->book?->book_code ?? 'NA') . '-' . ($joItem->jo_item?->jo?->document_number ?? 'NA');
-            } else {
-                $ref_no = ($joItem->jo?->book?->book_code ?? 'NA') . '-' . ($joItem->jo?->document_number ?? 'NA');
-            }
-        @endphp
+    @php
+        $orderQty = (($joItem->order_qty ?? 0) - ($joItem->short_close_qty ?? 0));
+        $invOrderQty = (($joItem->jo_item?->order_qty ?? 0) - ($joItem->short_close_qty ?? 0));
+        if (isset($joItem->jo->type) && ($joItem->jo->type == 'supplier-invoice')) {
+            $ref_no = ($joItem->jo_item?->jo?->book?->book_code ?? 'NA') . '-' . ($joItem->jo_item?->jo?->document_number ?? 'NA');
+        } else {
+            $ref_no = ($joItem->jo?->book?->book_code ?? 'NA') . '-' . ($joItem->jo?->document_number ?? 'NA');
+        }
+    @endphp
     <tr>
         <td>
             <div class="form-check form-check-inline me-0">
-                <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$joItem->id}}" data-current-jo="{{ $joItem ? $joItem->purchase_order_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joItem->purchase_order_id)  disabled="disabled" @endif>
+                <input class="form-check-input jo_item_checkbox" type="checkbox" name="jo_item_check" value="{{$joItem->id}}" data-current-jo="{{ $joItem ? $joItem->purchase_order_id : 'null' }}" data-existing-jo="{{ $joData ? $joData->purchase_order_id : 'null' }}"  @if ($joData && $joData->purchase_order_id !=  $joItem->purchase_order_id)  disabled="disabled" @endif>
                 <input type="hidden" name="reference_no" id="reference_no" value={{ $ref_no }}>
             </div>
         </td>

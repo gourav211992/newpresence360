@@ -954,8 +954,9 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
-        let currentProcessType = null;
+        const selectedCostCenterId = @json($mrn->cost_center_id);
+        let currentProcessType = @json($mrn->reference_type);
+
         let tableRowCount = 0;
         /*Clear local storage*/
         setTimeout(() => {
@@ -2904,6 +2905,17 @@
         /*Open Po model*/
         $(document).on('click', '.poSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
+            if(tableRowCount)
+            {
+                let poDetailIds = [];
+                $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
+                    let poDetailId = $(this).find("input[name*='[po_detail_id]']").val();
+                    if (poDetailId !== undefined) {
+                        poDetailIds.push(poDetailId);
+                    }
+                });
+                localStorage.setItem('selectedPoIds', JSON.stringify(poDetailIds));
+            }
             $("#poModal").modal('show');
             currentProcessType='po';
             openPurchaseRequest();
@@ -2911,6 +2923,18 @@
         });
         $(document).on('click', '.joSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
+            if(tableRowCount)
+            {
+                let poDetailIds = [];
+                $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
+                    let poDetailId = $(this).find("input[name*='[po_detail_id]']").val();
+                    if (poDetailId !== undefined) {
+                        poDetailIds.push(poDetailId);
+                    }
+                });
+                localStorage.setItem('selectedPoIds', JSON.stringify(poDetailIds));
+            }
+
             $("#joModal").modal('show');
             currentProcessType='jo';
             openJobRequest();
@@ -2993,62 +3017,14 @@
             initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
         }
 
-        // function initializeAutocomplete3(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
-        //     $("#" + selector).autocomplete({
-        //         source: function(request, response) {
-        //             $.ajax({
-        //                 url: '/search',
-        //                 method: 'GET',
-        //                 dataType: 'json',
-        //                 data: {
-        //                     q: request.term,
-        //                     type: typeVal,
-        //                     vendor_id: $("#vendor_id_qt_val").val(),
-        //                     header_book_id: $("#book_id").val(),
-        //                 },
-        //                 success: function(data) {
-        //                     response($.map(data, function(item) {
-        //                         return {
-        //                             id: item.id,
-        //                             label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-        //                             code: item[labelKey1] || '',
-        //                         };
-        //                     }));
-        //                 },
-        //                 error: function(xhr) {
-        //                     console.error('Error fetching customer data:', xhr.responseText);
-        //                 }
-        //             });
-        //         },
-        //         appendTo: '#joModal',
-        //         minLength: 0,
-        //         select: function(event, ui) {
-        //             var $input = $(this);
-        //             $input.val(ui.item.label);
-        //             $("#" + selectorSibling).val(ui.item.id);
-        //             return false;
-        //         },
-        //         change: function(event, ui) {
-        //             if (!ui.item) {
-        //                 $(this).val("");
-        //                 $("#" + selectorSibling).val("");
-        //             }
-        //         }
-        //     }).focus(function() {
-        //         if (this.value === "") {
-        //             $(this).autocomplete("search", "");
-        //         }
-        //     });
-        // }
-
         window.onload = function () {
             let selectedPoIds = [];
 
-            @if ($mrn->reference_type == 'po')
-                selectedPoIds.push(...@json((array) $mrn->purchase_order_id));
-            @elseif ($mrn->reference_type == 'jo')
-                selectedPoIds.push(...@json((array) $mrn->job_order_id));
-            @endif
+            // @if ($mrn->reference_type == 'po')
+            //     selectedPoIds.push(...@json((array) $mrn->purchase_order_id));
+            // @elseif ($mrn->reference_type == 'jo')
+            //     selectedPoIds.push(...@json((array) $mrn->job_order_id));
+            // @endif
 
             localStorage.setItem('selectedPoIds', JSON.stringify(selectedPoIds));
         };
@@ -3066,7 +3042,7 @@
             let vendor_id = $("#vendor_id_qt_val").val() || '';
             let type = 'edit';
             let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("gate-entry.get.po", ["type" => "edit"]) }}';
+            let actionUrl = '{{ route("material-receipt.get.po", ["type" => "edit"]) }}';
             let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
             &document_number=${encodeURIComponent(document_number)}
             &item_id=${encodeURIComponent(item_id)}
@@ -3098,7 +3074,7 @@
             let item_id = $("#item_id_qt_val").val() || '';
             let vendor_id = $("#vendor_id_qt_val").val() || '';
             let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("gate-entry.get.jo", ["type" => "edit"]) }}';
+            let actionUrl = '{{ route("material-receipt.get.jo", ["type" => "edit"]) }}';
             let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
             &document_number=${encodeURIComponent(document_number)}
             &item_id=${encodeURIComponent(item_id)}

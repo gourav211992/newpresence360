@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Helpers\ConstantHelper;
+
+use App\Models\JobOrder\JoProduct;
+
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
@@ -20,6 +23,7 @@ class VendorAsnItem extends Model
     protected $fillable = [
         'vendor_asn_id', 
         'po_item_id', 
+        'jo_prod_id', 
         'item_id', 
         'item_code', 
         'item_name', 
@@ -55,6 +59,11 @@ class VendorAsnItem extends Model
     public function po_item()
     {
         return $this->belongsTo(PoItem::class, 'po_item_id', 'id');
+    }
+
+    public function jo_item()
+    {
+        return $this->belongsTo(JoProduct::class, 'jo_prod_id', 'id');
     }
 
     public function vendorAsn()
