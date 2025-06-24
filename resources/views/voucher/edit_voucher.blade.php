@@ -554,14 +554,14 @@
                                                                 value="{{ $item->credit_amt_org }}" />
 
 
-                                                            <td><input type="number"
-                                                                    class="form-control mw-100 dbt_amt debt_{{ $no }} text-end"
+                                                            <td><input @if(!$buttons['draft']) type="text" @else type="number" @endif  
+                                                                    class="form-control mw-100 dbt_amt debt_{{ $no }} text-end @if(!$buttons['draft']) indian-number @endif"
                                                                     name="debit_amt[]" id="dept_{{ $no }}"
                                                                     onfocus="focusInput(this)" min="0"
                                                                     step="0.01" value="{{ $item->debit_amt }}" /></td>
 
-                                                            <td><input type="number"
-                                                                    class="form-control mw-100 crd_amt crd_{{ $no }} text-end"
+                                                            <td><input @if(!$buttons['draft']) type="text" @else type="number" @endif  
+                                                                    class="form-control mw-100 crd_amt crd_{{ $no }} text-end @if(!$buttons['draft']) indian-number @endif"
                                                                     name="credit_amt[]" id="crd_{{ $no }}"
                                                                     onfocus="focusInput(this)" min="0"
                                                                     step="0.01" value="{{ $item->credit_amt }}" />
@@ -571,7 +571,7 @@
                                                                     name="cost_center_id[]"
                                                                     id="cost_center_id{{ $no }}">
                                                                     
-                                                                    @if($item->cost_center_id==null)
+                                                                    @if($item->cost_center_id==null && count($locationCostCenters)>0)
                                                                     <option value="" selected>Select</option>
                                                                     @endif
                                                                     
@@ -1319,25 +1319,25 @@
             let dr_sum = 0;
             let dr_sum_inr = 0;
             $('.crd_amt').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 cr_sum += value;
             });
 
             // Iterate over credit INR amount fields
             $('.crd_amt_inr').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 cr_sum_inr += value;
             });
 
             // Iterate over debit amount fields
             $('.dbt_amt').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 dr_sum += value;
             });
 
             // Iterate over debit INR amount fields
             $('.dbt_amt_inr').each(function() {
-                const value = parseFloat($(this).val()) || 0;
+                const value = parseFloat(removeCommas($(this).val())) || 0;
                 dr_sum_inr += value;
             });
             $('#crd_total_inr').text(formatIndianNumber(cr_sum_inr.toFixed(2)));

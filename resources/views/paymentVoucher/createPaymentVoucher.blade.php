@@ -113,7 +113,6 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="book_id" name="book_id"
                                                             required onchange="getDocNumberByBookId()">
-                                                            <option disabled selected value="">Select</option>
                                                             @foreach ($books as $book)
                                                                 <option value="{{ $book->id }}" {{ old('book_id') == $book->id ? 'selected' : '' }}>
                                                                     {{ strtoupper($book->book_code) }}
@@ -202,7 +201,6 @@
                                                     <div class="col-md-3 mb-1 mb-sm-0">
                                                         <select class="form-control select2 bankInput" name="bank_id"
                                                             id="bank_id" onchange="getAccounts()" required>
-                                                            <option selected disabled value="">Select Bank</option>
                                                             @foreach ($banks as $bank)
                                                                 <option value="{{ $bank->id }}" {{ old('bank_id') == $bank->id ? 'selected' : '' }}>
                                                                     {{ $bank->bank_name }}</option>
@@ -217,8 +215,6 @@
                                                     <div class="col-md-3">
                                                         <select class="form-control select2 bankInput" name="account_id"
                                                             id="account_id" required>
-                                                            <option selected disabled value="">Select Bank Account
-                                                            </option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -232,7 +228,6 @@
                                                     <div class="col-md-3 mb-1 mb-sm-0">
                                                         <select class="form-control select2 bankInput" name="payment_mode"
                                                             required>
-                                                            <option value="">Select</option>
                                                             <option>IMPS/RTGS</option>
                                                             <option>NEFT</option>
                                                             <option>By Cheque</option>
@@ -250,7 +245,6 @@
                                                     <div class="col-md-5">
                                                         <select class="form-control select2" name="ledger_id"
                                                             id="ledger_id">
-                                                            <option disabled selected value="">Select Ledger</option>
                                                             @foreach ($ledgers as $ledger)
                                                                 <option value="{{ $ledger->id }}">{{ $ledger->name }}
                                                                 </option>
@@ -346,7 +340,6 @@
                                                     <div class="col-md-5">
                                                         <select id="locations" class="form-select"
                                                             name="location" required>
-                                                            <option value="" selected>Select Location</option>
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}">
                                                                     {{ $location->store_name }}</option>
@@ -1512,8 +1505,6 @@
             var accounts = [];
             var oldSelected = "{{ old('account_id') }}"; // Inject the old value from Laravel
             $('#account_id').empty();
-            $('#account_id').prepend('<option disabled value="">Select Bank Account</option>');
-
             const bank_id = $('#bank_id').val();
             $.each(banks, function(key, value) {
                 if (value['id'] == bank_id) {
@@ -1589,6 +1580,13 @@
             }
         }
         $(document).ready(function() {
+            if($('#bank_id').val() != "") {
+          getAccounts();
+            }
+            if($('#locations').val() != "") {
+                $('#locations').trigger('change');
+            
+            }
             bind();
             // evaluateCostCenterVisibility();
             if ($("#Bank").is(":checked")) {
@@ -1912,6 +1910,16 @@
             // Clear previous validation
             $input.removeClass('is-invalid');
             $errorSpan.text('');
+            let otherRefs = [];
+            $('.reference_no').each(function() {
+                if (this !== $input[0]) {
+                    let val = $(this).val();
+                    if (val.length > 0) {
+                        otherRefs.push(val);
+                    }
+                }
+            });
+            
             
             if (refNo.length > 0) {
                 timer = setTimeout(function() {
@@ -1920,7 +1928,8 @@
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
-                            reference_no: refNo
+                            reference_no: refNo,
+                            otherRefs: otherRefs,
                         },
                         success: function(response) {
                             if (response.exists) {
