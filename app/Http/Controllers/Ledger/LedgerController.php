@@ -95,6 +95,13 @@ class LedgerController extends Controller
                     $ledgersQuery->whereDate('created_at', '>=', $start)
                                 ->whereDate('created_at', '<=', $end);
                 }
+                if($request->ledger)
+                {
+                    $searchTerm = $request->input('ledger');
+                    $ledgersQuery->where(function ($query) use ($searchTerm) {
+                        $query->where('id',$searchTerm);
+                    });
+                }
                 $ledgers = $ledgersQuery->get(); 
                 return DataTables::of($ledgers)
                     ->addColumn('group_name', function ($ledger) {

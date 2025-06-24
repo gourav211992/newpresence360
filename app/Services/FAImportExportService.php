@@ -11,6 +11,7 @@ use App\Models\CostCenterOrgLocations;
 use App\Models\CostCenter;
 use App\Models\Vendor;
 use App\Models\Currency;
+use App\Helpers\CurrencyHelper;
 
 use Exception;
 
@@ -80,15 +81,10 @@ class FAImportExportService
             }
         }
 
-        if (isset($data['tax']) && $data['tax'] !== null && !is_numeric($data['tax'])) {
-            throw new \Exception("Tax must be a numeric value or null.");
-        }
-
-        // Normalize null tax to 0 for calculation
-        $tax = isset($data['tax']) && $data['tax'] !== null ? $data['tax'] : 0;
-
+        
+      
         // Calculate purchase_amount
-        $data['purchase_amount'] = $data['current_value'] + $tax;
+        $data['purchase_amount'] = $data['current_value'];
         $location = ErpStore::withDefaultGroupCompanyOrg()
             ->where('store_name', $data['location'])
             ->first();
@@ -133,6 +129,11 @@ class FAImportExportService
         $currency = Currency::where('short_name', $data['currency'])->first();
         if (empty($currency)) {
             throw new \Exception($data['currency']. " Currency(s) not found");
+        }
+        $echange = CurrencyHelper::getCurrencyExchangeRates($currency->id, date('Y-m-d'));
+        $echange = $echange['data'];
+        if (empty($echange)) {
+            throw new \Exception("Exchange rate not found for currency: {$data['currency']}");
         }
 
         $setup = $category->setup ?? null;
@@ -198,7 +199,6 @@ class FAImportExportService
             'vendor_id' => $vendor->id,
             'currency_id' => $currency->id,
             'sub_total' => $data['current_value'],
-            'tax' => $tax,
             'purchase_amount' => $data['purchase_amount'],
             'book_date' => $data['book_date'] ?? null,
         ];

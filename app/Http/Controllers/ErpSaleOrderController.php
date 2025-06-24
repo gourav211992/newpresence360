@@ -2549,7 +2549,7 @@ class ErpSaleOrderController extends Controller
             $locationId = $request -> location_id ?? null;
             $selectedAttributes = $request -> item_attributes ?? [];
             $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
-            $location = ErpStore::withDefaultGroupCompanyOrg() -> where('id', $locationId) -> first();
+            $location = ErpStore::where('id', $locationId) -> first();
             if (!$item || !$location) {
                 return response() -> json([
                     'status' => 'error',
@@ -2578,8 +2578,8 @@ class ErpSaleOrderController extends Controller
             $organization_id = $request -> organization_id ?? null;
             $selectedAttributes = $request -> item_attributes ?? [];
             $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
-            $location = ErpStore::withDefaultGroupCompanyOrg() -> where('id', $locationId) -> first();
-            if (!$item || !$location) {
+            $location = ErpStore::where('id', $locationId) -> first();
+            if (!$item) {
                 return response() -> json([
                     'status' => 'error',
                     'message' => 'Item Or Location Not Found',

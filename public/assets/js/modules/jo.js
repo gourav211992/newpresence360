@@ -1473,7 +1473,8 @@ function initializeAutocompleteVendor(selector, type) {
                         return {
                             id: item.id,
                             label: item.company_name,
-                            code: item.vendor_code
+                            code: item.vendor_code,
+                            locations_count : item.locations_count
                         };
                     }));
                 },
@@ -1483,7 +1484,18 @@ function initializeAutocompleteVendor(selector, type) {
             });
         },
         select: function(event, ui) {
+            if(ui.item.locations_count <= 0) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Sub location is not mapped to this vendor',
+                    icon: 'error',
+                });
+                $(this).val('');
+                clearVendorData();
+                return false;
+            }
             var itemId = ui.item.id;
+            
             vendorOnChange(itemId);
             $(".editAddressBtn").removeClass('d-none');
             return false;

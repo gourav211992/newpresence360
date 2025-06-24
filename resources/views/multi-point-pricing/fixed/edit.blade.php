@@ -436,7 +436,7 @@ $(document).on('click', '.add-row', function () {
                 <input type="hidden" name="multi_fixed_pricing[${rowIndex}][location_city_id]" class="city-id" data-type="location" />
             </td>
             <td>
-                <input type="text" name="multi_fixed_pricing[${rowIndex}][amount]" class="form-control mw-100 amount" value="0.00" />
+                <input type="text" name="multi_fixed_pricing[${rowIndex}][amount]" class="form-control mw-100 amount" placeholder="Enter Amount" />
             </td>
             <td>
                 <a href="javascript:void(0);" class="delete-row text-danger"><i data-feather="trash-2"></i></a>

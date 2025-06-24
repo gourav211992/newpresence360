@@ -3280,19 +3280,30 @@ return [
 
         }
 
-        public static function getActiveCostCenters(): array
-        {
-            return CostCenterOrgLocations::with([
-                'costCenter' => function ($query) {
-                    $query->withDefaultGroupCompanyOrg()->where('status', 'active');
-                }
-            ])->get()->map(function ($item) {
+    public static function getActiveCostCenters($id = null)
+    {
+        $query = CostCenterOrgLocations::with([
+            'costCenter' => function ($query) {
+                $query->withDefaultGroupCompanyOrg()->where('status', 'active');
+            }
+        ]);
+
+        // Apply location_id filter if $id is provided
+        if ($id !== null) {
+            $query->where('location_id', $id);
+        }
+
+        return $query->get()
+            ->map(function ($item) {
                 return $item->costCenter ? [
                     'id' => $item->costCenter->id,
                     'name' => $item->costCenter->name,
                     'cost_group_id' => $item->costCenter->cost_group_id,
                     'location' => $item->costCenter->locations,
                 ] : null;
-            })->filter()->values()->toArray();
-        }
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+    }
 }

@@ -26,6 +26,7 @@ class BomDetail extends Model
         'waste_amount',
         'overhead_amount',
         'total_amount',
+        'section_id',
         'sub_section_id',
         'section_name',
         'sub_section_name',

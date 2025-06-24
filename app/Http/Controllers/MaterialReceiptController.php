@@ -973,7 +973,7 @@ class MaterialReceiptController extends Controller
                         ], 422);
                     }
                 }
-               
+
             }
 
             $redirectUrl = '';
@@ -2651,7 +2651,7 @@ class MaterialReceiptController extends Controller
                     'gate-entry' => ($row?->gateEntryHeader?->book?->book_code ?? 'NA') . '-' . ($row?->gateEntryHeader?->document_number ?? 'NA'),
                     default      => ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA'),
                 };
-                
+
                 $dataCurrentPo = match ($moduleType) {
                     'suppl-inv'  => $row->vendor_asn_id ?? 'null',
                     'gate-entry' => $row->purchase_order_id ?? 'null',
@@ -4815,22 +4815,26 @@ class MaterialReceiptController extends Controller
 
                 foreach ($miData as $value) {
                     foreach ($value->miMappings as $miMapping) {
-                        $issue_qty = is_numeric($miMapping->issue_qty) ? (int) $miMapping->issue_qty : 0;
-                        $grn_qty = is_numeric($miMapping->grn_qty) ? (int) $miMapping->grn_qty : 0;
-                        $order_qty = is_numeric($detail->order_qty) ? (int) $detail->order_qty : 0;
-                        $bom_qty = is_numeric($value->bom_qty) ? (int) $value->bom_qty : 0;
+                        // $issue_qty = is_numeric($miMapping->issue_qty) ? (int) $miMapping->issue_qty : 0;
+                        // $grn_qty = is_numeric($miMapping->grn_qty) ? (int) $miMapping->grn_qty : 0;
+                        // $order_qty = is_numeric($detail->order_qty) ? (int) $detail->order_qty : 0;
+                        // $bom_qty = is_numeric($value->bom_qty) ? (int) $value->bom_qty : 0;
+                        $issue_qty = $miMapping->issue_qty ? (float) $miMapping->issue_qty : 0;
+                        $grn_qty = $miMapping->grn_qty ? (float) $miMapping->grn_qty : 0;
+                        $order_qty = $detail->order_qty ? (float) $detail->order_qty : 0;
+                        $bom_qty = $value->bom_qty ? (float) $value->bom_qty : 0;
                         $pending_qty = $issue_qty - $grn_qty;
                         $check_qty = $order_qty * $bom_qty;
-    
-                        if($pending_qty < $check_qty)
-                        {
-                            // return response()->json([
-                            //     'message' => 'MI Issue quantity is less than Order Quantity please check.'
-                            // ], 422);
-                            $errorMessage = "MI Issue quantity is less than Order Quantity please check.";
-                            break;
-                        }
-    
+
+                        // if($pending_qty < $check_qty)
+                        // {
+                        //     // return response()->json([
+                        //     //     'message' => 'MI Issue quantity is less than Order Quantity please check.'
+                        //     // ], 422);
+                        //     $errorMessage = "MI Issue quantity is less than Order Quantity please check.";
+                        //     break;
+                        // }
+
                         $mrnMiMappingData = new MrnMiMapping();
                         $mrnMiMappingData->mrn_header_id = $mrn->id;
                         $mrnMiMappingData->mrn_detail_id = $detail->id;
@@ -4844,7 +4848,7 @@ class MaterialReceiptController extends Controller
                         $mrnMiMappingData->from_store_id = $miMapping->from_store_id;
                         $mrnMiMappingData->to_store_id = $miMapping->to_store_id;
                         $mrnMiMappingData->consumed_qty = $check_qty;
-    
+
                         $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $check_qty);
                         $mrnMiMappingData->consumed_inventory_uom_qty = $inventoryQty;
                         $mrnMiMappingData->save();

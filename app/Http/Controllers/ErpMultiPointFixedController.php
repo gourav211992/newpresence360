@@ -31,8 +31,8 @@ class ErpMultiPointFixedController extends Controller
         $organization = Organization::with('addresses')->find($organizationId);
         $countryId = optional($organization->addresses->first())->country_id;
         $states = State::where('country_id',$countryId)->get();
-        $customers = Customer::withDefaultGroupCompanyOrg()->get();
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
         return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes'));
     }
@@ -67,8 +67,8 @@ class ErpMultiPointFixedController extends Controller
     $countryId = optional($organization->addresses->first())->country_id;
     $states = State::where('country_id',$countryId)->get();
     $multiPricing = ErpLogisticsMultiFixedPricing::with('locations')->findOrFail($id);
-    $customers = Customer::withDefaultGroupCompanyOrg()->get();
-    $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+    $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
     return view('multi-point-pricing.fixed.edit', [
         'multiPricing' => $multiPricing,

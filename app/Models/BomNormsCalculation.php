@@ -23,4 +23,13 @@ class BomNormsCalculation extends Model
         return $this->belongsTo(BomDetail::class);
     }
 
+    public function getNormsAttribute(): float
+    {
+        $qty = (float) $this->qty_per_unit;
+        $total = (float) $this->total_qty;
+        $std = (float) $this->std_qty;
+
+        return $total > 0 ? ($std / $total) * $qty : 0;
+    }
+
 }

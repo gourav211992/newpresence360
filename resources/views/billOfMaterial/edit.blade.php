@@ -1,8 +1,9 @@
 @extends('layouts.app')
 @section('content')
+@use(\App\Helpers\ConstantHelper)
 @php
 $routeAlias = $servicesBooks['services'][0]?->alias ?? null;
-if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS) 
+if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS) 
 {
    $routeAlias = 'bill-of-material';
 } else {
@@ -34,14 +35,18 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                   @if($buttons['draft'])
                      <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   @endif
-                  @if(!intval(request('amendment') ?? 0) && $bom->document_status != \App\Helpers\ConstantHelper::DRAFT && $bom->document_status != \App\Helpers\ConstantHelper::SUBMITTED)
+                  @if(!intval(request('amendment') ?? 0) && $bom->document_status != ConstantHelper::DRAFT && $bom->document_status != ConstantHelper::SUBMITTED)
                     <a href="{{ route('bill.of.material.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                         <i data-feather="file-text"></i> Export
                     </a>
                     <a href="{{ route('bill.of.material.generate-pdf', $bom->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                         <i data-feather="printer"></i> Print
                     </a>
-                    {{-- <a target="_blank" href="{{ route('bill.of.material.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a> --}}
+                        @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
+                            <a href="{{ route('bill.of.material.copy', ['id' => $bom->id, 'type' => ConstantHelper::BOM_SERVICE_ALIAS]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                        @else
+                            <a target="_blank" href="{{ route('quotation-bom.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                        @endif
                     @endif
                   @if($buttons['submit'])
                      <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
@@ -170,7 +175,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                     
                                     @include('billOfMaterial.partials.header-attribute-edit')
 
-                                    @if($servicesBooks['services'][0]?->alias != \App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
+                                    @if($servicesBooks['services'][0]?->alias != ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3 customer_div">
                                         <div class="mb-1">
                                             <label class="form-label">Customer <span class="text-danger">*</span></label>
@@ -185,7 +190,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                         </div>
                                     </div>
                                     @endif
-                                    @if($servicesBooks['services'][0]?->alias == \App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
+                                    @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3 production_type_div">
                                         <div class="mb-1">
                                             <label class="form-label">Production Type <span class="text-danger">*</span></label>
@@ -215,7 +220,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                             <input type="text" id="safety_buffer_perc" value="{{$bom->safety_buffer_perc}}" class="form-control mw-100 ledgerselecct" name="safety_buffer_perc"/>
                                         </div>
                                     </div>
-                                    @if($servicesBooks['services'][0]?->alias == \App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
+                                    @if($servicesBooks['services'][0]?->alias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3">
                                         <div class="mb-1">
                                             <label class="form-label">Customizable <span class="text-danger">*</span></label>
@@ -754,7 +759,7 @@ $(function(){
                     $("#customer_name").val(customerName);
                     let itemId = $("#head_item_id").val() || '';
                     if(itemId) {
-                        itemCodeChange(itemId);
+                        itemCodeChange(itemId, customerId);
                     }
                     return false;
                 },
@@ -944,7 +949,7 @@ $(function(){
        }
         let reference_from_service = parameters.reference_from_service;
         if(reference_from_service.length) {
-            let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
+            let c_bom = '{{ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
             if(reference_from_service.includes(c_bom)) {
                 $("#reference_from").removeClass('d-none');
             } else {
@@ -967,13 +972,16 @@ $(function(){
         }
    }
 
-    function itemCodeChange(itemId){
+    function itemCodeChange(itemId,customerId = null){
         let customer_id = $("#customer_id").val() || '';
         let type = '{{ $servicesBooks['services'][0]?->alias }}';
         let actionUrl = '{{route("bill.of.material.item.code")}}'+'?item_id='+itemId+'&customer_id='+customer_id+'&type='+type;
         fetch(actionUrl).then(response => {
             return response.json().then(data => {
                 if (data.status == 200) {
+                    if(customerId) {
+                        return false;
+                    }
                   let item_name = data.data.item?.item_name || ''; 
                   let item_id = data.data.item?.id || ''; 
                   let uom_id = data.data.item?.uom_id || ''; 
@@ -1001,6 +1009,11 @@ $(function(){
                         text: data.message,
                         icon: 'error',
                     });
+                    if(customerId) {
+                        $("#customer_id").val("");
+                        $("#customer").val("");
+                        $("#customer_name").val("");
+                    }
                 }
             });
         });

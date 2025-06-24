@@ -600,11 +600,11 @@
             const validationErrors = [];
             const reportedLedgers = new Set(); // Track already reported ledger names
 
-            selectedVoucherIds.forEach(key => {
-                const voucher = voucherMap[key];
-                if (!voucher || !voucher.item?.id) return;
+        selectedVoucherIds.forEach(key => {
+        const voucher = voucherMap[key];
+        if (!voucher || !voucher.item?.id) return;
 
-                const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
+        const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
 
                 if (!voucher.item?.ledger?.customer) {
                     if (!reportedLedgers.has(ledgerName)) {
@@ -638,11 +638,8 @@
                 });
                 return false;
             }
-
-            return selectedData;
+            return;
         }
-
-
 
         $('#inlineCheckbox1').on('click', function() {
             const isChecked = this.checked;

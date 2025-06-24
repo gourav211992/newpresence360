@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Http\Controllers\FixedAsset;
 
 use App\Helpers\ConstantHelper;
@@ -14,7 +13,6 @@ use App\Models\Ledger;
 use App\Models\MrnDetail;
 use App\Models\MrnHeader;
 use App\Models\Vendor;
-use App\Models\FixedAssetInsurance;
 use App\Http\Requests\FixedAssetRegistrationRequest;
 use App\Models\FixedAssetRegistration;
 use App\Models\FixedAssetRegistrationHistory;
@@ -30,35 +28,17 @@ use App\Models\CostCenter;
 use Exception;
 use App\Models\ErpStore;
 use App\Helpers\InventoryHelper;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\FixedAssetReportExport;
-use App\Exports\FailedFAExport;
-use App\Imports\FAImport;
-use App\Exports\FAExport;
-use App\Mail\ImportComplete;
-use Illuminate\Support\Facades\Mail;
-use App\Services\FAImportExportService;
-
-
-
-use App\Models\UploadFAMaster;
 use App\Models\Group;
-use App\Models\Book;
 
 
 class RegistrationController extends Controller
 {
-    protected $FAImportExportService;
-
-    public function __construct(FAImportExportService $FAImportExportService)
-    {
-        $this->FAImportExportService = $FAImportExportService;
-    }
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $parentURL = request()->segments()[0];
         $parentURL = "fixed-asset_registration";
 
         $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
@@ -67,12 +47,6 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        if ($request->filter_asset)
-            $data = $data->where('id', $request->filter_asset);
-        if ($request->filter_ledger)
-            $data = $data->where('ledger_id', $request->filter_ledger);
-        if ($request->filter_status)
-            $data = $data->where('document_status', $request->filter_status);
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
@@ -88,10 +62,7 @@ class RegistrationController extends Controller
             $end = $fyear['end_date'];
         }
         $data = $data->get();
-        $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
-        $ledgers = FixedAssetRegistration::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
-        return view('fixed-asset.registration.index', compact('data','assetCodes', 'ledgers'));
+        return view('fixed-asset.registration.index', compact('data'));
     }
 
     /**
@@ -125,8 +96,8 @@ class RegistrationController extends Controller
 
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->whereHas('items', function ($q) {
-                $q->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
+                $q->whereHas('item.subTypes.subType', function ($q) {
+                    $q->where('name', 'Asset');
                 })->doesntHave('asset');
                 $q->where('basic_value', '>', 0);
             })
@@ -138,9 +109,9 @@ class RegistrationController extends Controller
             'item'
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
-                })->where('basic_value', '>', 0)->doesntHave('asset')->get();
+        })->whereHas('item.subTypes.subType', function ($q) {
+            $q->where('name', 'Asset');
+        })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
@@ -227,18 +198,12 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $currNumber = $r->has('revisionNumber');
+        $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $currNumber = $r->revisionNumber;
-            $data = FixedAssetRegistrationHistory::where('source_id', $id)
-                ->where('revision_number', $currNumber)->first();
+            $data = FixedAssetRegistrationHistory::where('source_id', $id)->first();
         } else {
             $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
         }
-
-
-
-
 
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
@@ -302,16 +267,30 @@ class RegistrationController extends Controller
             if ($model != null) {
                 $referenceDoc = $model::find($data->reference_doc_id);
                 if ($referenceDoc != null) {
-                    $approvalHistory = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
+                    //$history = Helper::getApprovalHistory($referenceDoc->book_id, $referenceDoc->id, $referenceDoc->revision_number);
                     $ref_view_route = Helper::getRouteNameFromServiceAlias($data->reference_series, $data->reference_doc_id);
                     $buttons['reference'] = true;
                     $buttons['post'] = false;
-                    $buttons['amend'] = false;
                 }
             }
         }
-
-        return view('fixed-asset.registration.show', compact('ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        return view('fixed-asset.registration.show', 
+        compact('ref_view_route', 
+        'locations', 
+        'sub_assets', 
+        'series', 
+        'data', 
+        'ledgers', 
+        'categories', 
+        'grns', 
+        'vendors', 
+        'currencies', 
+        'grn_details', 
+        'buttons', 
+        'docStatusClass', 
+        'revision_number', 
+        'currNumber', 
+        'approvalHistory'));
     }
 
     /**
@@ -487,9 +466,9 @@ class RegistrationController extends Controller
             'taxes'
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
-        })->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
-                })->doesntHave('asset')->where('basic_value', '>', 0);
+        })->whereHas('item.subTypes.subType', function ($q) {
+            $q->where('name', 'Asset');
+        })->doesntHave('asset')->where('basic_value', '>', 0);
 
 
         if ($request->grn_no) {
@@ -648,10 +627,7 @@ class RegistrationController extends Controller
         }
 
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+            ->where('document_status', ConstantHelper::POSTED)
             //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->withWhereHas('subAsset', function ($query) use ($oldAssets) {
@@ -720,10 +696,7 @@ class RegistrationController extends Controller
     public function getCategories(Request $request)
     {
         $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            });
+            ->where('document_status', ConstantHelper::POSTED);
 
         if ($request->location_id) {
             $query->where('location_id', $request->location_id);
@@ -753,10 +726,7 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+            ->where('document_status', ConstantHelper::POSTED)
             ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = InventoryHelper::getAccessibleLocations()->map(function ($store) {
             return [
@@ -771,11 +741,7 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationId =  $request->input('location_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_status', ConstantHelper::POSTED)
             ->where('category_id', $categoryId)
             ->where('location_id', $locationId)
             ->pluck('cost_center_id')->unique()->toArray();
@@ -785,178 +751,4 @@ class RegistrationController extends Controller
 
         return response()->json($costCenters);
     }
-    public function export(Request $request)
-{
-    $data = FixedAssetSub::whereHas('asset', function ($query) use ($request) {
-        $query->withDefaultGroupCompanyOrg();
-
-        if ($request->filled('filter_asset')) {
-            $query->where('id', $request->filter_asset);
-        }
-
-        if ($request->filled('filter_ledger')) {
-            $query->where('ledger_id', $request->filter_ledger);
-        }
-
-        if ($request->filled('filter_status')) {
-            $query->where('document_status', $request->filter_status);
-        }
-
-        if ($request->filled('date')) {
-            [$start, $end] = explode(' to ', $request->date);
-            $start = date('Y-m-d', strtotime($start));
-            $end = date('Y-m-d', strtotime($end));
-        } else {
-            $fyear = Helper::getFinancialYear(now());
-            $start = $fyear['start_date'];
-            $end = $fyear['end_date'];
-        }
-
-        $query->whereBetween('document_date', [$start, $end]);
-        $query->orderBy('document_date','desc');
-    });
-    $data = $data->get();
-
-    return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
-}
-public function exportSuccessfulItems()
-    {
-        $uploadItems = UploadFAMaster::where('import_status', 'Success')
-            ->get();
-        $codes =  $uploadItems->pluck('asset_code')??[];
-
-        $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
-        $query->withDefaultGroupCompanyOrg();
-        $query->whereIn('asset_code', $codes);
-        $query->orderBy('document_date','desc');
-    });
-    $data = $data->get();
-        return Excel::download(new FixedAssetReportExport($data), 'success-asset-import.xlsx');
-    }
-
-    public function exportFailedItems()
-    {
-        $failedItems = UploadFAMaster::where('import_status', 'Failed')
-            ->get();
-        return Excel::download(new FailedFAExport($failedItems), "failed-asset-items.xlsx");
-    }
-    public function showImportForm()
-    {
-        return view('fixed-asset.registration.import');
-    }
-
-    public function import(Request $request)
-    {
-        $user = Helper::getAuthenticatedUser();
-        try {
-            $request->validate([
-                'file' => 'required|mimes:xlsx,xls|max:30720',
-            ]);
-            if (!$request->hasFile('file')) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'No file uploaded.',
-                ], 400);
-            }
-            $file = $request->file('file');
-            try {
-                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
-            } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
-                ], 400);
-            }
-
-            $sheet = $spreadsheet->getActiveSheet();
-            $rowCount = $sheet->getHighestRow() - 1;
-            if ($rowCount > 10000) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'The uploaded file contains more than 10000 items. Please upload a file with 10000 or fewer items.',
-                ], 400);
-            }
-            if ($rowCount < 1) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'The uploaded file is empty.',
-                ], 400);
-            }
-            $deleteQuery = UploadFAMaster::where('created_by', $user->id);
-            $deleteQuery->delete();
-
-            $import = new FAImport($this->FAImportExportService, $user);
-            Excel::import($import, $request->file('file'));
-
-            $successfulItems = $import->getSuccessfulItems();
-            $failedItems = $import->getFailedItems();
-            $mailData = [
-                'modelName' => 'FixedAssetRegistration',
-                'successful_items' => $successfulItems,
-                'failed_items' => $failedItems,
-                'export_successful_url' => route('finance.fixed-asset.export.successful'),
-                'export_failed_url' => route('finance.fixed-asset.export.failed'),
-            ];
-            if (count($failedItems) > 0) {
-                $message = 'Items import failed.';
-                $status = 'failure';
-            } else {
-                $message = 'Items imported successfully.';
-                $status = 'success';
-            }
-            if ($user->email) {
-                try {
-                    Mail::to($user->email)->send(new ImportComplete($mailData));
-                } catch (\Exception $e) {
-                    $message .= " However, there was an error sending the email notification.";
-                }
-            }
-            return response()->json([
-                'status' => $status,
-                'message' => $message,
-                'successful_items' => $successfulItems,
-                'failed_items' => $failedItems,
-            ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
-            ], 400);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Failed to import items: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-    public static function genrateDocNo(){
-            $services = Helper::getAccessibleServicesFromMenuAlias('fixed-asset_registration');
-            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $book = Book::where('service_id',$serviceId)->latest()->first();
-                if (!isset($book)) 
-                    return null;
-                $numberPatternData = Helper::generateDocumentNumberNew($book->id, date('y-m-d'));
-                if (!isset($numberPatternData)) 
-                    return null;
-
-                    return[
-                        'document_number' => $numberPatternData['document_number'],
-                        'book_id' => $book->id,
-                        'document_date' => date('Y-m-d'),
-                        'doc_number_type'=>$numberPatternData['type'],
-                        'doc_reset_pattern' => $numberPatternData['reset_pattern'],
-                        'doc_prefix' => $numberPatternData['prefix'],
-                        'doc_suffix' => $numberPatternData['suffix'],
-                        'doc_no' => $numberPatternData['doc_no'],
-                    ];
-                
-            }
-        else {
-            return null;
-    }
-
-    }
-
 }

@@ -162,7 +162,7 @@
                     <td style="padding: 2px; border: 1px solid #000; border-top: none; background: #80808070; text-align: center; font-weight: bold;width: 15px;">
                         #
                     </td>
-                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 100px;">Station / Section
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 98px;">Station / Section
                     </td>
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 150px;">Item
                     </td>
@@ -173,8 +173,8 @@
                         Qty
                     </td>
                     @if($consumption_method)
-                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
-                        Cons Per Unit
+                    <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 66px;">
+                        Norms
                     </td>
                     @endif
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
@@ -229,11 +229,16 @@
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{number_format(@$bomItem->qty,4)}}
                     </td>
-                    @if($consumption_method)
+                    @if($consumption_method && $bomItem?->norm)
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                        {{number_format(@$bomItem?->norm?->qty_per_unit ?? 0,4)}}
-                    </td>
+                        QPU:{{number_format($bomItem->norm->qty_per_unit ?? 0, 4)}}
+                        PCS:{{number_format($bomItem->norm->total_qty ?? 0, 4)}}
+                        STD:{{number_format($bomItem->norm->std_qty ?? 0, 4)}}
+                        NRM:{{number_format($bomItem->norm->norms ?? 0, 4)}}
+                        </td>
                     @endif
+
+
                     <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{ $canView ? number_format(floatval($bomItem->item_cost), 4, '.', '') : '' }}
                     </td>

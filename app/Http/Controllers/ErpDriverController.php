@@ -98,7 +98,7 @@ class ErpDriverController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
-        $employees = Employee::where('organization_id',$user->organization_id)->get();
+        $employees = Employee::where('organization_id',$user->organization_id)->where('status', 'active')->get();
        
         return view('drivers.create', compact('status','employees'));
     }
@@ -189,7 +189,7 @@ class ErpDriverController extends Controller
         $driver = ErpDriver::with('employee','licenseFrontMedia', 'licenseBackMedia', 'idProofFrontMedia', 'idProofBackMedia')->findOrFail($id);
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
-        $employees = Employee::where('organization_id',$user->organization_id)->get();
+        $employees = Employee::where('organization_id',$user->organization_id)->where('status', 'active')->get();
         return view('drivers.edit', compact('driver', 'status', 'employees'));
     }
 
