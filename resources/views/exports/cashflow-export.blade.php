@@ -85,7 +85,7 @@
             <td></td>
             <td></td>
             <td></td>
-            <td align="right">{{ number_format($opening_balance, 2) }}</td>
+            <td align="right"><strong>{{ number_format($opening_balance, 2) }}</strong></td>
         </tr>
 
         <!-- Payment Made Section -->
@@ -96,7 +96,7 @@
             {{-- <td></td> --}}
             {{-- <td></td> --}}
             {{-- <td></td> --}}
-            <td align="right">{{ number_format($payment_made_t, 2) }}</td>
+            <td align="right"><strong>{{ number_format($payment_made_t, 2) }}</strong></td>
         </tr>
         @foreach ($payment_made as $index => $item)
         {{-- {{ dd($item) }} --}}
@@ -115,7 +115,7 @@
         <tr>
             <td><strong>3.</strong></td>
             <td colspan="5"><strong>Payment Received</strong></td>
-            <td align="right">{{ number_format($payment_received_t, 2) }}</td>
+            <td align="right"><strong>{{ number_format($payment_received_t, 2) }}</strong></td>
 
         </tr>
         @foreach ($payment_received as $index => $item)
