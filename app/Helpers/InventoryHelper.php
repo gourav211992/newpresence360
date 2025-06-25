@@ -1024,9 +1024,9 @@ class InventoryHelper
         }
         if($bookType == ConstantHelper::MI_MRN_SERVICE_ALIAS_NAME){
             $qty = @$documentItemLocation->mi_inventory_uom_qty;
-            $documentHeader = ErpMaterialIssueHeader::find($documentItemLocation->miItem->material_issue_id);
-            $detailId = $documentItemLocation->mi_item_id;
-            $documentDetail = ErpMiItem::with(['header', 'attributes'])->find($detailId);
+            $documentHeader = MrnHeader::find($documentItemLocation->mrn_header_id);
+            $detailId = $documentItemLocation->mrn_detail_id;
+            $documentDetail = MrnDetail::with(['mrnHeader', 'attributes'])->find($detailId);
             $stockLedger->vendor_id = @$documentHeader->vendor_id;
             $stockLedger->vendor_code = @$documentHeader->vendor_code;
             if ($transactionType == 'issue') {
@@ -1036,18 +1036,18 @@ class InventoryHelper
             $totalItemCost = ($documentItemLocation->mi_inventory_uom_qty*$documentItemLocation->rate);
             $costPerUnit = $totalItemCost/$qty;
 
-            $stockLedger->stock_type=$documentDetail->stock_type;
+            // $stockLedger->stock_type=@$documentDetail->stock_type;
             $stockLedger->wip_station_id=@$documentDetail->wip_station_id;
 
             // Item Location Data
-            if(($transactionType == 'issue') && $documentDetail->to_store_id){
-                $stockLedger->store_id = $documentDetail->to_store_id ?? null;
-                $stockLedger->store = @$documentDetail->toErpStore->store_code;
+            if(($transactionType == 'issue') && $documentItemLocation->from_store_id){
+                $stockLedger->store_id = $documentItemLocation->from_store_id ?? null;
+                $stockLedger->store = @$documentItemLocation->erpStore->store_code;
             }
 
-            if(($transactionType == 'issue') && $documentDetail->to_sub_store_id){
-                $stockLedger->sub_store_id = $documentDetail->to_sub_store_id ?? null;
-                $stockLedger->sub_store = @$documentDetail->toErpSubStore->store_code;
+            if(($transactionType == 'issue') && $documentItemLocation->to_store_id){
+                $stockLedger->sub_store_id = $documentItemLocation->to_store_id ?? null;
+                $stockLedger->sub_store = @$documentItemLocation->subStore->code;
             }
 
             // if(($transactionType == 'issue') && $documentDetail->from_station_id){
@@ -2576,8 +2576,8 @@ class InventoryHelper
 
         try{
             $documentItems = MrnMiMapping::where('mrn_header_id',$documentHeaderId)
-                ->with(['miItem',
-                    'miItem.header',
+                ->with(['header',
+                    'detail',
                     'detail.attributes',
                     'jobProduct'
                 ])
@@ -2585,11 +2585,10 @@ class InventoryHelper
             if(isset($documentItems) && $documentItems){
                 foreach ($documentItems as $documentItem) {
                     if($documentItem->to_store_id){
-                        $miHeaderId = $documentItem?->miItem?->header;
                         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                            ->where('document_header_id',$miHeaderId)
-                            ->where('document_detail_id',$documentItem->mi_item_id)
-                            ->where('book_type','=',ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME)
+                            ->where('document_header_id',$documentItem->mrn_header_id)
+                            ->where('document_detail_id',$documentItem->mrn_detail_id)
+                            ->where('book_type','=',$bookType)
                             ->first();
                         if(!$stockLedger){
                             $stockLedger = new StockLedger();

@@ -99,10 +99,12 @@
                                                             <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100" value="{{$type->description}}">
                                                         </td>
                                                         <td>
-                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" class="form-control mw-100 ledgerselecct">
-                                                                <option value="active" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
-                                                                <option value="inactive" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                                            </select>
+                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" 
+                                                                class="form-control mw-100 ledgerselecct status-dropdown">
+                                                            <option value="active" data-color="success" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
+                                                            <option value="inactive" data-color="danger" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                                        </select>
+
                                                         </td>
                                                     </tr>
                                                     @php $rowIndex++; @endphp
@@ -173,7 +175,6 @@ document.getElementById('addRowBtn').addEventListener('click', function () {
             row.querySelector('input[name*="[name]"]'),
             row.querySelector('input[name*="[capacity]"]'),
             row.querySelector('.uom-autocomplete'),
-            row.querySelector('input[name*="[description]"]'),
             row.querySelector('select[name*="[status]"]')
         ];
 

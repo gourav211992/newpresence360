@@ -38,7 +38,7 @@
                                     <div class="newheader border-bottom mb-2 pb-25">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <h4 class="card-title text-theme">Basic Information</h4>
+                                                <h4 class="card-title text-theme">Basic Information </h4>
                                                 <p class="card-text">Fill the details</p> 
                                             </div>
                                             <div class="col-md-6 mt-sm-0 mt-50 text-sm-end"> 
@@ -320,7 +320,6 @@
                 row.querySelector('.state-autocomplete[data-type="destination"]'),
                 row.querySelector('.city-autocomplete[data-type="destination"]'),
                 row.querySelector('.vehicle-type-autocomplete'),
-                row.querySelector('.customer-autocomplete'),
                 row.querySelector('input[name*="[amount]"]')
             ];
 

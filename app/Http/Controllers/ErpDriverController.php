@@ -62,8 +62,8 @@ class ErpDriverController extends Controller
                 ->editColumn('status', function ($row) {
                     $colors = [
                         'active'    => 'badge-light-success',
-                        'inactive'  => 'badge-light-secondary',
-                        'block'     => 'badge-light-danger',
+                        'inactive'  => 'badge-light-danger',
+                        'block'     => 'badge-light-secondary',
                         'transfer'  => 'badge-light-warning',
                         'blacklist' => 'badge-dark',
                     ];

@@ -1561,7 +1561,7 @@ function check_amount() {
                 $('.ref-no-header').hide(); // Hide the header
                 $('#ledger_id').prop('required', true);
             }
-            // $('#reference_no').trigger('input');
+            //$('#reference_no').trigger('input');
 
             @if (!$buttons['draft'] || !$fyear['authorized'])
 $('#voucherForm').find('input, select, textarea').prop('disabled', true);
@@ -2363,39 +2363,54 @@ function showToast(icon, title) {
             }
         }
         let timer;
-
-        $('#reference_no').on('input', function () {
+        $(document).on('input', '.reference_no', function() {
             clearTimeout(timer);
-            const refNo = $(this).val();
-
+            
+            let $input = $(this);
+            let refNo = $input.val();
+            let row = $input.data('row');
+            let $errorSpan = $('#reference_error' + row);
+            
+            // Clear previous validation
+            $input.removeClass('is-invalid');
+            $errorSpan.text('');
+            let otherRefs = [];
+            $('.reference_no').each(function() {
+                if (this !== $input[0]) {
+                    let val = $(this).val();
+                    if (val.length > 0) {
+                        otherRefs.push(val);
+                    }
+                }
+            });
+            
+            
             if (refNo.length > 0) {
-                timer = setTimeout(function () {
+                timer = setTimeout(function() {
                     $.ajax({
-                        url: '{{ route("voucher.checkReference") }}', // route defined below
+                        url: '{{ route('voucher.checkReference') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',
                             reference_no: refNo,
-                            edit_id:"{{$data->id}}",
-
+                            otherRefs: otherRefs,
+                            edit_id : '{{ $data->id }}'
                         },
-                        success: function (response) {
-                            $('.preloader').hide();
+                        success: function(response) {
                             if (response.exists) {
-                                $('#reference_error').text('This reference number already exists.');
-                                $('#reference_no').addClass('is-invalid');
-                            } else {
-                                $('#reference_error').text('');
-                                $('#reference_no').removeClass('is-invalid');
+                                $errorSpan.text('This reference number already exists.');
+                                $input.addClass('is-invalid');
                             }
+                        },
+                        error: function() {
+                            $errorSpan.text('Error validating reference number.');
+                            $input.addClass('is-invalid');
                         }
                     });
-                }, 500); // debounce
-            } else {
-                $('#reference_error').text('');
-                $('#reference_no').removeClass('is-invalid');
+                }, 500);
             }
         });
+
 
     </script>
 @endsection

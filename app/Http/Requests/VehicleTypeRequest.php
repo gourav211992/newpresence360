@@ -19,7 +19,7 @@ class VehicleTypeRequest extends FormRequest
             'vehicle_type.*.name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:100',
                 'regex:/^[A-Za-z\s\.\-]+$/'
             ],
 

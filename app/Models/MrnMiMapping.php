@@ -46,4 +46,13 @@ class MrnMiMapping extends Model
     {
         return $this->belongsTo(MrnDetail::class, 'mrn_detail_id');
     }
+
+    public function erpStore()
+    {
+        return $this->belongsTo(ErpStore::class, 'from_store_id');
+    }
+    public function subStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'to_store_id');
+    }
 }

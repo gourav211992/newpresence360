@@ -291,7 +291,7 @@
                             $('#store_id').val(paramObj[key]).select2();
                             var data = {
                                 store_id: paramObj[key],
-                                types : subStoreLocType,
+                                type : subStoreLocType,
                             };
                             $.ajax({
                                 type: 'GET',
@@ -857,7 +857,7 @@
                     }, 10);
                     var data = {
                         store_id: store_code_id,
-                        types: subStoreLocType,
+                        type: subStoreLocType,
                     };
                     $.ajax({
                         type: 'GET',
