@@ -76,11 +76,13 @@
                                                     <div class="col-md-4"> 
                                                         <select name="vehicle_type_id" id="vehicle_type_id" class="form-select select2">
                                                              <option value="">Select</option>
-                                                             @foreach($vehicleTypes as  $type)
-                                                                <option value="{{ $type->id }}">
-                                                                   {{ $type->name }} ({{ $type->capacity }} {{ $type->unit->name }})
-                                                                </option>
-                                                            @endforeach
+                                                             @foreach($vehicleTypes as $type)
+                                                        <option value="{{ $type->id }}" 
+                                                            data-capacity="{{ $type->capacity }}" 
+                                                            data-unit="{{ $type->unit->name }}">
+                                                            {{ $type->name }} 
+                                                        </option>
+                                                    @endforeach
                                                         </select>
                                                     </div> 
                                                     
@@ -180,12 +182,13 @@
                                                 <div class="tab-pane active" id="other_details">
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
-                                                            <label class="form-label">Capacity (kg)</label>  
+                                                            <label class="form-label">Capacity</label>  
                                                         </div>  
-                                                        <div class="col-md-3"> 
-                                                            <input type="number" class="form-control" name="capacity_kg" placeholder="e.g. 5000" />
-                                                        </div> 
+                                                        <div class="col-md-3">
+                                                            <input type="text" class="form-control" id="display_capacity" placeholder="e.g. 5000 kg" disabled>
+                                                            <input type="number" name="capacity_kg" id="capacity_kg" value="{{ old('capacity_kg', $vehicle->capacity_kg ?? '') }}" hidden>
                                                         </div>
+                                                     </div>
                                                         <div class="row align-items-center mb-1">
                                                         <div class="col-md-2"> 
                                                             <label class="form-label">Driver Name</label>  
@@ -245,7 +248,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="vehicle_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div> 
                                                     </div>
                                                     
@@ -255,7 +258,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="vehicle_video" />
-                                                            <span class="text-danger">Mp4,Mkv</span>
+                                                            <span class="text-danger font-small-2">File size should be Min: 100KB and Max: 20MB (Mp4,Mkv)</span>
                                                         </div> 
                                                         </div> 
                                                          <div class="row align-items-center mb-1">
@@ -265,7 +268,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="rc_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div> 
                                                     </div>
                                                 </div>
@@ -324,7 +327,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="permit_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -370,7 +373,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="fitness_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -425,7 +428,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="insurance_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -471,7 +474,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="pollution_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -517,7 +520,7 @@
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="road_tax_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -534,4 +537,23 @@
     </div>
 </form>
     <!-- END: Content-->
+@endsection
+@section('scripts')
+<script>
+    $(document).ready(function () {
+        $('#vehicle_type_id').on('change', function () {
+            var selected = $(this).find('option:selected');
+
+            var capacity = selected.data('capacity') || '';
+            var unit = selected.data('unit') || '';
+
+            $('#display_capacity').val(capacity + ' ' + unit); 
+            $('#capacity_kg').val(capacity); 
+        });
+       
+        $('#vehicle_type_id').trigger('change');
+    });
+</script>
+
+
 @endsection

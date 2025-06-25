@@ -97,11 +97,13 @@ use App\Exports\TransactionItemsExport;
 use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
 use App\Models\ErpMiItem;
+use App\Models\ErpSubStoreParent;
 use App\Models\JobOrder\JoBomMapping;
 use App\Models\JobOrder\JobOrder;
 use App\Models\JobOrder\JoItem;
 use App\Models\JobOrder\JoProduct;
 use App\Models\MrnMiMapping;
+use App\Models\VendorLocation;
 
 class MaterialReceiptController extends Controller
 {
@@ -4777,7 +4779,7 @@ class MaterialReceiptController extends Controller
         ]);
     }
 
-    # checkRawMaterial;
+    # checkRawMaterial
 
     private static function checkRawMaterial($mrn)
     {
@@ -4787,80 +4789,75 @@ class MaterialReceiptController extends Controller
         foreach ($mrnData as $detail) {
             if($joType == ConstantHelper::TYPE_SUBCONTRACTING)
             {
-                $miData = JoBomMapping::where('jo_product_id', $detail->job_order_item_id)
-                ->with(['joProduct', 'miMappings.item_attributes'])
-                ->get()
-                ->map(function ($bomMapping) {
-                    $itemId = $bomMapping->item_id;
-                    $bomAttrs = collect($bomMapping->attributes ?? []);
+                $joData = JoBomMapping::where('jo_product_id', $detail->job_order_item_id)
+                    ->with(['joProduct'])
+                    ->get();
 
-                    $filteredMi = $bomMapping->miMappings->filter(function ($miItem) use ($itemId, $bomAttrs) {
-                        if ($miItem->item_id != $itemId) return false;
+                    // ->map(function ($bomMapping) {
+                    //     $bomAttrs = collect($bomMapping->attributes ?? []);
 
-                        $miAttrs = collect($miItem->item_attributes ?? []);
+                    //     $filteredStock = $bomMapping->stockMappings->filter(function ($stock) use ($bomAttrs) {
+                    //         $stockAttrs = collect(json_decode($stock->item_attributes, true));
 
-                        foreach ($bomAttrs as $bomAttr) {
-                            $match = $miAttrs->first(function ($miAttr) use ($bomAttr) {
-                                return $miAttr['attr_name'] == $bomAttr['attribute_name']
-                                    && $miAttr['attr_value'] == $bomAttr['attribute_value'];
-                            });
+                    //         foreach ($bomAttrs as $bomAttr) {
+                    //             $match = $stockAttrs->first(function ($stockAttr) use ($bomAttr) {
+                    //                 return $stockAttr['attr_name'] == $bomAttr['attribute_name']
+                    //                     && $stockAttr['attr_value'] == $bomAttr['attribute_value'];
+                    //             });
 
-                            if (!$match) return false;
-                        }
-                        return true;
-                    });
-                    $bomMapping->setRelation('miMappings', $filteredMi);
-                    return $bomMapping;
-                });
+                    //             if (!$match) return false;
+                    //         }
+                    //         return true;
+                    //     });
+                    //     $bomMapping->setRelation('stockMappings', $filteredStock);
+                    //     return $bomMapping;
+                    // });
+                foreach ($joData as $miMapping) {
+                    $selectedattr = collect($miMapping['attributes'])->pluck('attribute_value')->toArray();
+                    $vendorData = $mrn->vendor;
+                    $vendorLocations = VendorLocation::where('vendor_id', $vendorData->id)->first();
+                    $subStore = $vendorLocations->store_id;
+                    $storeData = ErpSubStoreParent::where('sub_store_id', $subStore)->first();
+                    $storeId = $storeData->store_id;
+                    $availableStock = InventoryHelper::totalInventoryAndStock($miMapping->item_id, $selectedattr, $miMapping->uom_id, $storeId, $subStore);
+                    // $issue_qty = $miMapping->issue_qty ? (float) $miMapping->issue_qty : 0;
+                    // $grn_qty = $miMapping->grn_qty ? (float) $miMapping->grn_qty : 0;
+                    // $order_qty = $detail->order_qty ? (float) $detail->order_qty : 0;
+                    $bom_qty = $miMapping->bom_qty ? (float) $miMapping->bom_qty : 0;
+                    // $pending_qty = $issue_qty - $grn_qty;
+                    $check_qty = $detail?->inventory_uom_qty * $bom_qty;
 
-                foreach ($miData as $value) {
-                    foreach ($value->miMappings as $miMapping) {
-                        // $issue_qty = is_numeric($miMapping->issue_qty) ? (int) $miMapping->issue_qty : 0;
-                        // $grn_qty = is_numeric($miMapping->grn_qty) ? (int) $miMapping->grn_qty : 0;
-                        // $order_qty = is_numeric($detail->order_qty) ? (int) $detail->order_qty : 0;
-                        // $bom_qty = is_numeric($value->bom_qty) ? (int) $value->bom_qty : 0;
-                        $issue_qty = $miMapping->issue_qty ? (float) $miMapping->issue_qty : 0;
-                        $grn_qty = $miMapping->grn_qty ? (float) $miMapping->grn_qty : 0;
-                        $order_qty = $detail->order_qty ? (float) $detail->order_qty : 0;
-                        $bom_qty = $value->bom_qty ? (float) $value->bom_qty : 0;
-                        $pending_qty = $issue_qty - $grn_qty;
-                        $check_qty = $order_qty * $bom_qty;
+                    if($availableStock < $check_qty)
+                    {
+                        // return response()->json([
+                        //     'message' => 'MI Issue quantity is less than Order Quantity please check.'
+                        // ], 422);
+                        $errorMessage = "Available Stock Quantity for " + $miMapping->item_code + " is less than Order Quantity please check.";
+                        break;
+                    }
 
-                        // if($pending_qty < $check_qty)
-                        // {
-                        //     // return response()->json([
-                        //     //     'message' => 'MI Issue quantity is less than Order Quantity please check.'
-                        //     // ], 422);
-                        //     $errorMessage = "MI Issue quantity is less than Order Quantity please check.";
-                        //     break;
-                        // }
+                    $mrnMiMappingData = new MrnMiMapping();
+                    $mrnMiMappingData->mrn_header_id = $mrn->id;
+                    $mrnMiMappingData->mrn_detail_id = $detail->id;
+                    $mrnMiMappingData->jo_id = $miMapping->jo_id;
+                    $mrnMiMappingData->jo_product_id = $miMapping->jo_product_id;
+                    $mrnMiMappingData->jo_item_id = $miMapping->item_id;
+                    // $mrnMiMappingData->mi_item_id = $miMapping->id;
+                    // $mrnMiMappingData->mi_qty = $miMapping->issue_qty;
+                    $mrnMiMappingData->mi_rate = $detail?->rate ?? 0;
+                    $mrnMiMappingData->mi_inventory_uom_qty = $detail->inventory_uom_qty ?? 0;
+                    $mrnMiMappingData->from_store_id = $storeId;
+                    $mrnMiMappingData->to_store_id = $subStore;
+                    $mrnMiMappingData->consumed_qty = $miMapping->qty;
 
-                        $mrnMiMappingData = new MrnMiMapping();
-                        $mrnMiMappingData->mrn_header_id = $mrn->id;
-                        $mrnMiMappingData->mrn_detail_id = $detail->id;
-                        $mrnMiMappingData->jo_id = $value->jo_id;
-                        $mrnMiMappingData->jo_product_id = $value->jo_product_id;
-                        $mrnMiMappingData->jo_item_id = $miMapping->jo_item_id;
-                        $mrnMiMappingData->mi_item_id = $miMapping->id;
-                        $mrnMiMappingData->mi_qty = $miMapping->issue_qty;
-                        $mrnMiMappingData->mi_rate = $miMapping->rate;
-                        $mrnMiMappingData->mi_inventory_uom_qty = $miMapping->inventory_uom_qty;
-                        $mrnMiMappingData->from_store_id = $miMapping->from_store_id;
-                        $mrnMiMappingData->to_store_id = $miMapping->to_store_id;
-                        $mrnMiMappingData->consumed_qty = $check_qty;
-
-                        $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $check_qty);
-                        $mrnMiMappingData->consumed_inventory_uom_qty = $inventoryQty;
-                        $mrnMiMappingData->save();
-                        $miData = ErpMiItem::find($miMapping->id);
-                        $miData->grn_qty = $miData->grn_qty + $check_qty;
-                        $miData->save();
-                        //Stock Ledger
-                        $response = InventoryHelper::settlementForMIForIssueFromMrn($mrn->id, $miData -> id, ConstantHelper::MI_MRN_SERVICE_ALIAS_NAME, $miData -> header ?-> document_status, 'issue');
-                        if (isset($response['status']) && $response['status'] == 'error') {
-                            $errorMessage = isset($response['message']) ? $response['message'] : "Error";
-                            break;
-                        }
+                    $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $miMapping->qty);
+                    $mrnMiMappingData->consumed_inventory_uom_qty = $inventoryQty;
+                    $mrnMiMappingData->save();
+                    //Stock Ledger
+                    $response = InventoryHelper::settlementForMIForIssueFromMrn($mrn->id, $detail -> id, ConstantHelper::MI_MRN_SERVICE_ALIAS_NAME, $mrn-> document_status, 'issue');
+                    if (isset($response['status']) && $response['status'] == 'error') {
+                        $errorMessage = isset($response['message']) ? $response['message'] : "Error";
+                        break;
                     }
                 }
             }

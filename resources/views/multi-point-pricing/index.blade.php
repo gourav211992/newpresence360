@@ -433,7 +433,7 @@ function applyCityAutocomplete(stateId, type, $input) {
             const requiredFields = [
                 row.querySelector('.state-autocomplete[data-type="source"]'),
                 row.querySelector('.city-autocomplete[data-type="source"]'),
-                row.querySelector('.customer-autocomplete'),
+                row.querySelector('input[name*="[free_point]"]'),
                 row.querySelector('input[name*="[amount]"]')
             ];
 
@@ -478,8 +478,8 @@ function applyCityAutocomplete(stateId, type, $input) {
                 <input type="hidden" name="multi_point[${newIndex}][source_city_id]" class="city-id" data-type="source" />
             </td>
 
-            <td><input type="text" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" value="0" /></td>
-            <td><input type="text" name="multi_point[${newIndex}][amount]" class="form-control mw-100" value="0" /></td>
+            <td><input type="text" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" placeholder="Enter Free Point" /></td>
+            <td><input type="text" name="multi_point[${newIndex}][amount]" class="form-control mw-100" placeholder="Enter Amount" /></td>
             <td>
                 <input type="text" name="multi_point[${newIndex}][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer..." />
                 <input type="hidden" name="multi_point[${newIndex}][customer_id]" class="customer-id" />

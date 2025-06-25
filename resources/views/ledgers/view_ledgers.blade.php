@@ -87,7 +87,7 @@
 								</select>
 							</div>
 
-							<div class="mb-1">
+							<div class="mb-1 d-none">
 								<label class="form-label">Parent Ledger</label>
 								<select id="filter-ledger-name" class="form-select select2">
 									<option value="">Select</option>

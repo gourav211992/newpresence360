@@ -40,7 +40,7 @@
                                         <thead>
                                             <tr>
                                                 <th>S.NO</th>
-                                                <th>Lorry No</th>
+                                                <th>Vehicle No</th>
                                                 <th>Vehicle Type</th>
                                                 <th>Driver Name</th>
                                                 <th>Fuel Type</th>

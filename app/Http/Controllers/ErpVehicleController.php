@@ -104,8 +104,8 @@ class ErpVehicleController extends Controller
                 ->editColumn('status', function ($row) {
                     $colors = [
                         'active'    => 'badge-light-success',
-                        'inactive'  => 'badge-light-secondary',
-                        'block'     => 'badge-light-danger',
+                        'inactive'  => 'badge-light-danger',
+                        'block'     => 'badge-light-secondary',
                         'transfer'  => 'badge-light-warning',
                         'blacklist' => 'badge-dark',
                     ];
@@ -144,12 +144,15 @@ class ErpVehicleController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = $user->organization;
-        $groupId = $organization->group_id;
-        $groupOrganizations = Organization::where('status', 'active')
-        ->where('group_id', $groupId)
-        ->where('id', '!=', $organization->id)
-        ->get();
+        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+        $groupOrganizations = Organization::whereIn('id', $orgIds)
+            ->with('addresses')
+            ->where('status', 'active')
+            ->get();
+       
         $status = ConstantHelper::STATUS;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
@@ -162,12 +165,14 @@ class ErpVehicleController extends Controller
     {
         $vehicle = ErpVehicle::with('driver','fitness', 'pollution', 'permit', 'insurance', 'roadTax','attachment','vehicleAttachment', 'vehicleVideo')->findOrFail($id);
         $user = Helper::getAuthenticatedUser();
-        $organization = $user->organization;
-        $groupId = $organization->group_id;
-        $groupOrganizations = Organization::where('status', 'active')
-        ->where('group_id', $groupId)
-        ->where('id', '!=', $organization->id)
-        ->get();
+        $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+        $groupOrganizations = Organization::whereIn('id', $orgIds)
+            ->with('addresses')
+            ->where('status', 'active')
+            ->get();
         $status = ConstantHelper::STATUS;
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;

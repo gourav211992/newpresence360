@@ -319,7 +319,7 @@ class PaymentVoucherController extends Controller
         $ledger_id = $request->ledger_id;
         $document_type = $request->document_type;
         $cost_center = $request->cost_center_id;
-        $banks = Bank::withDefaultGroupCompanyOrg()->get();
+        $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
         $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
@@ -363,8 +363,9 @@ class PaymentVoucherController extends Controller
         $firstService = $servicesBooks['services'][0];
         $books = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
-        $banks = Bank::withDefaultGroupCompanyOrg()->with('bankDetails')->get();
-        $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
+       $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
+        
+       $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId) // Cast groupId to string
@@ -664,7 +665,7 @@ class PaymentVoucherController extends Controller
 
         $history = Helper::getApprovalHistory($data->book_id, $id, $revNo,$data->amount,$data->created_by);
 
-        $banks = Bank::withDefaultGroupCompanyOrg()->with('bankDetails')->get();
+        $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
         $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
@@ -1691,8 +1692,12 @@ class PaymentVoucherController extends Controller
     }
     public function checkReference(Request $request)
 {
+    if(in_array($request->reference_no, $request->otherRefs ?? [])) {
+        return response()->json(['exists' => true]);
+    }
     if($request->edit_id)
-    $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)->where('id','!=',$request->edit_id)->exists();
+    $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)
+        ->where('payment_voucher_id','!=',$request->edit_id)->exists();
     else
     $exists = PaymentVoucherDetails::where('reference_no', $request->reference_no)->exists();
 
