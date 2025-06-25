@@ -152,7 +152,7 @@ class FixedAssetSplit extends Model
                 'current_value' => $items->sum('current_value'),
                 'current_value_after_dep' => $items->sum('current_value'),
                 'document_status' => 'approved',
-                'approval_level' => 1,
+                'approval_lesvel' => 1,
                 'revision_number' => 0,
                 'revision_date' => null,
                 'status' => 'active',
@@ -173,11 +173,7 @@ class FixedAssetSplit extends Model
                     'cost_center_id' => $request->cost_center_id,
                     'capitalize_date' => $subAsset->capitalize_date,
                     'last_dep_date' => $subAsset->capitalize_date,
-                    'expiry_date' => $subAsset->capitalize_date && $subAsset->life
-                        ? \Carbon\Carbon::parse($subAsset->capitalize_date)
-                            ->addYears($subAsset->life)
-                            ->subDay()->toDateString()
-                        : null,
+                    'expiry_date' => $subAsset->expiry_date?? null,
                 ]);
             }
         }

@@ -3682,7 +3682,7 @@ class FinancialPostingHelper
         //Invoice to follow
         $postingArray = array(
             self::ASSET => [],
-            self::EXPENSE_ACCOUNT => [],
+            self::SURPLUS_ACCOUNT => [],
         );
 
         //Status to check if all ledger entries were properly set
@@ -3741,7 +3741,7 @@ class FinancialPostingHelper
             $ledgerErrorStatus = self::ERROR_PREFIX . 'Surplus Account not setup';
         }
 
-        $postingArray[self::EXPENSE_ACCOUNT][] = [
+        $postingArray[self::SURPLUS_ACCOUNT][] = [
             'ledger_id' => $expLedgerId,
             'ledger_group_id' => $expLedgerGroupId,
             'ledger_code' => $expLedger?->code,
@@ -3858,7 +3858,7 @@ class FinancialPostingHelper
         //Invoice to follow
         $postingArray = array(
             self::ASSET => [],
-            self::SURPLUS_ACCOUNT => [],
+            self::EXPENSE_ACCOUNT => [],
         );
 
         //Status to check if all ledger entries were properly set
@@ -3917,7 +3917,7 @@ class FinancialPostingHelper
             $ledgerErrorStatus = self::ERROR_PREFIX . 'Expense Account not setup';
         }
 
-        $postingArray[self::SURPLUS_ACCOUNT][] = [
+        $postingArray[self::EXPENSE_ACCOUNT][] = [
             'ledger_id' => $impLedgerId,
             'ledger_group_id' => $impLedgerGroupId,
             'ledger_code' => $impLedger?->code,
