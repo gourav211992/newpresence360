@@ -268,7 +268,7 @@ class RevImpController extends Controller
         $asset = FixedAssetRevImp::findOrFail($id);
 
         $data = $request->all();
-        
+        dd($request->all());
         DB::beginTransaction();
         
         try {
