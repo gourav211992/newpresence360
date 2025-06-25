@@ -282,7 +282,7 @@
                                                                 <td><input type="date" name="last_dep_date[]" id="last_dep_date_1" data-id="1"
                                                                     class="form-control mw-100 last_dep_date" value="{{$value->last_dep_date??null}}" readonly/>
                                                             </td>
-                                                                <td><input type="number" step="2" value="{{$value->revaluate??null}}" readonly required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
+                                                                <td><input type="text" value="{{$value->revaluate??null}}" readonly required name="revaluate_amount[]" id="revaluate_amount_1" data-id="1"
                                                                     class="form-control mw-100 text-end revaluate_amount indian-number" /></td>
                                                             </tr>
 

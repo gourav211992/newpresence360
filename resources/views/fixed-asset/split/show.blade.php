@@ -255,7 +255,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
-                                                                Dep. <span class="text-danger">*</span></label>
+                                                                Posted <span class="text-danger">*</span></label>
                                                             @php
                                                                 $lastDate = $data?->capitalize_date;
                                                                 $adjustedDate = $lastDate
@@ -270,6 +270,15 @@
                                                                 name="last_dep_date" class="form-control indian-number" />
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label" for="expiry_date">Last Date of
+                                                                Dep.<span class="text-danger">*</span></label>
+                                                            <input type="date" id="expiry_date" name="expiry_date"
+                                                                class="form-control" readonly
+                                                                value="{{ $data->subAsset->expiry_date }}" />
+                                                        </div>
+                                                    </div>
 
                                                     <!-- Current Value -->
                                                     <div class="col-md-3">
@@ -281,6 +290,17 @@
                                                                 name="current_value_asset"
                                                                 value="{{ $data?->subAsset?->current_value_after_dep }}"
                                                                 class="form-control indian-number " disabled required />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label" for="salvage_value">Salvage
+                                                                Value
+                                                                <span class="text-danger">*</span></label>
+                                                            <input type="text" id="salvage_value_asset"
+                                                                value="{{ $data->subAsset->salvage_value }}"
+                                                                name="salvage_value_asset" class="form-control" disabled
+                                                                required />
                                                         </div>
                                                     </div>
                                                 </div>

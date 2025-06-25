@@ -1,8 +1,8 @@
 @extends('layouts.app')
 <style>
     .code_error {
-    font-size: 12px;
-}
+        font-size: 12px;
+    }
 </style>
 
 @section('content')
@@ -228,8 +228,16 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="last_dep_date">Last Date of
-                                                                Dep. <span class="text-danger">*</span></label>
+                                                                Posted<span class="text-danger">*</span></label>
                                                             <input type="date" id="last_dep_date" name="last_dep_date"
+                                                                class="form-control" readonly />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label" for="expiry_date">Last Date of
+                                                                Dep.<span class="text-danger">*</span></label>
+                                                            <input type="date" id="expiry_date" name="expiry_date"
                                                                 class="form-control" readonly />
                                                         </div>
                                                     </div>
@@ -244,6 +252,16 @@
                                                                 <span class="text-danger">*</span></label>
                                                             <input type="text" id="current_value_asset"
                                                                 name="current_value_asset" class="form-control" disabled
+                                                                required />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label" for="salvage_value">Salvage
+                                                                Value
+                                                                <span class="text-danger">*</span></label>
+                                                            <input type="text" id="salvage_value_asset"
+                                                                name="salvage_value_asset" class="form-control" disabled
                                                                 required />
                                                         </div>
                                                     </div>
@@ -322,18 +340,20 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            <tr >
-                                                               <td class="customernewsection-form">
-                <div class="form-check form-check-primary custom-checkbox">
-                  <input type="checkbox" class="form-check-input">
-                  <label class="form-check-label"></label>
-                </div>
-              </td>
+                                                            <tr>
+                                                                <td class="customernewsection-form">
+                                                                    <div
+                                                                        class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input">
+                                                                        <label class="form-check-label"></label>
+                                                                    </div>
+                                                                </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
                                                                         class="form-control mw-100 mb-25 asset-code-input"
                                                                         oninput="this.value = this.value.toUpperCase();" />
-                                                                    <span class="text-danger code_error" style="font-size:12px"></span>
+                                                                    <span class="text-danger code_error"
+                                                                        style="font-size:12px"></span>
                                                                 </td>
                                                                 <td class="poprod-decpt">
                                                                     <input type="text" required placeholder="Enter"
@@ -368,7 +388,7 @@
                                                                 </td>
                                                                 <td>
                                                                     <input type="number" required
-                                                                        class="form-control mw-100 mb-25 life"
+                                                                        class="form-control mw-100 mb-25 life" disabled
                                                                         oninput="syncInputAcrossSameAssets(this)">
                                                                 </td>
                                                                 <td>
@@ -653,32 +673,32 @@
 
 
 
-       
+
         // Delegated click event for dynamically added rows
-$(document).on('click', '.mrntableselectexcel tr', function() {
-    $(this).addClass('trselected').siblings().removeClass('trselected');
-});
+        $(document).on('click', '.mrntableselectexcel tr', function() {
+            $(this).addClass('trselected').siblings().removeClass('trselected');
+        });
 
-// Keyboard navigation for up/down arrow keys
-$(document).on('keydown', function(e) {
-    var $selected = $('.trselected');
+        // Keyboard navigation for up/down arrow keys
+        $(document).on('keydown', function(e) {
+            var $selected = $('.trselected');
 
-    if (e.which === 38) { // Up arrow
-        $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
-    } else if (e.which === 40) { // Down arrow
-        $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
-    }
+            if (e.which === 38) { // Up arrow
+                $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
+            } else if (e.which === 40) { // Down arrow
+                $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
+            }
 
-    // Scroll to the selected row inside scrollable container
-    var $container = $('.mrntableselectexcel');
-    var $newSelected = $('.trselected');
+            // Scroll to the selected row inside scrollable container
+            var $container = $('.mrntableselectexcel');
+            var $newSelected = $('.trselected');
 
-    if ($newSelected.length && $container.length && $newSelected.offset()) {
-        var containerOffset = $container.offset().top;
-        var selectedOffset = $newSelected.offset().top;
-        $container.scrollTop($container.scrollTop() + (selectedOffset - containerOffset - 40));
-    }
-});
+            if ($newSelected.length && $container.length && $newSelected.offset()) {
+                var containerOffset = $container.offset().top;
+                var selectedOffset = $newSelected.offset().top;
+                $container.scrollTop($container.scrollTop() + (selectedOffset - containerOffset - 40));
+            }
+        });
 
 
         $('#add_new_sub_asset').on('click', function() {
@@ -707,7 +727,7 @@ $(document).on('keydown', function(e) {
             let Current = $('#current_value_asset').val();
             let subAssetId = $('#sub_asset_id').val();
             let assetId = $('#asset_id').val();
-            let formattedDate="";
+            let formattedDate = "";
             if ($('#last_dep_date').val() != "") {
                 let lastDepDate = new Date($('#last_dep_date').val());
                 lastDepDate.setDate(lastDepDate.getDate() + 1);
@@ -747,7 +767,7 @@ $(document).on('keydown', function(e) {
                 </select>
                                                             </td>
               <td>
-                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" disabled oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" value="${formattedDate}" oninput="syncInputAcrossSameAssets(this)"/>
@@ -769,26 +789,7 @@ $(document).on('keydown', function(e) {
             $(".mrntableselectexcel tr").removeClass('trselected');
             $('.mrntableselectexcel').append(newRow);
             initializeCategoryAutocomplete('.category-input');
-            if ($('#last_dep_date').val() != "") {
-                console.log("last_dep");
-                let lastDepDate = new Date($('#last_dep_date').val());
-                lastDepDate.setDate(lastDepDate.getDate() - 1);
-                let formattedDate = lastDepDate.toISOString().split('T')[0];
-                let today = new Date().toISOString().split('T')[0];
-                // $('.capitalize_date')
-                //     .removeAttr('min')
-                //     .removeAttr('max')
-                //     .prop('readonly', true)
-                //     .prop('required', false);
-                depCapitalizeDate();
-                //  $('#last_dep_date').trigger('change');
-
-
-
-            } else {
-                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
-            }
+            depCapitalizeDate();
         }
         $('#Email').on('change', function() {
             let isChecked = $(this).is(':checked');
@@ -1034,45 +1035,20 @@ $(document).on('keydown', function(e) {
                 minLength: 0,
                 select: function(event, ui) {
                     const asset = ui.item.asset;
-
-                    // Set the input box and hidden ID field
                     $(this).val(ui.item.label);
                     $('#asset_id').val(ui.item.value);
-                    $('#subasset_search_input').val('');
-                    $('#sub_asset_id').val('');
-                    $('#last_dep_date')
-                        .val('')
-                        .removeAttr('min')
-                        .removeAttr('max')
-                        .prop('readonly', true).prop('required', false);
-                    $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                        '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
-                    $('#current_value_asset').val('');
-                    add_blank();
-
+                    clearSubAsset();
                     return false; // Prevent default behavior
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
-                        $(this).val('');
-                        $('#asset_id').val('');
-                        $('#subasset_search_input').val('');
-                        $('#sub_asset_id').val('');
-                        $('#last_dep_date')
-                            .val('')
-                            .removeAttr('min')
-                            .removeAttr('max')
-                            .prop('readonly', true).prop('required', false);
-                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                            '{{ $financialEndDate }}').prop('readonly', false).prop('required',
-                            true);
-                        $('#current_value_asset').val('');
-                        add_blank();
-
+                        clearAsset();
                     }
                 },
                 focus: function(event, ui) {
-                    return false; // Prevent default behavior
+                    if (!ui.item) {
+                        clearAsset();
+                    }
                 }
             }).focus(function() {
                 if (this.value === '') {
@@ -1128,34 +1104,35 @@ $(document).on('keydown', function(e) {
                         .removeAttr('min')
                         .removeAttr('max')
                         .prop('readonly', true).prop('required', false);
-                    $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                        '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
+                    $('#expiry_date').val('');
+                    $('#salvage_value_asset').val('');
+                    let expiryDate = new Date(sub_asset.expiry_date).toISOString().split('T')[0];
 
                     // Handle depreciation date
                     if (sub_asset.last_dep_date !== sub_asset.capitalize_date) {
-                        console.log("last_dep");
-                        let lastDepDate = new Date(asset.last_dep_date);
+                        let lastDepDate = new Date(sub_asset.last_dep_date);
                         lastDepDate.setDate(lastDepDate.getDate() - 1);
                         let formattedDate = lastDepDate.toISOString().split('T')[0];
                         let today = new Date().toISOString().split('T')[0];
+
                         $('#last_dep_date')
                             .val(formattedDate)
                             .attr('min', formattedDate)
-                            .attr('max', today)
+                            .attr('max', expiryDate)
                             .prop('readonly', false).prop('required', true);
-
-                        // $('.capitalize_date')
-                        //     .removeAttr('min')
-                        //     .removeAttr('max').prop('readonly', true).prop('required', false);
-                        depCapitalizeDate();
                     }
 
+                    $('#expiry_date').val(expiryDate);
+                     $('#salvage_value_asset').val(sub_asset.salvage_value);
                     $('.capitalize_date').val(sub_asset.last_dep_date);
+                    depCapitalizeDate();
                     $('#depreciation_rate').val(asset.depreciation_percentage);
                     $('#depreciation_rate_year').val(asset.depreciation_percentage_year);
                     $('#useful_life').val(asset.useful_life);
                     $('#maintenance_schedule').val(asset.maintenance_schedule);
                     $('#current_value_asset').val(sub_asset.current_value_after_dep);
+                   
+
                     $('#total_depreciation').val(sub_asset.total_depreciation);
                     add_blank();
 
@@ -1163,30 +1140,14 @@ $(document).on('keydown', function(e) {
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
-                        $(this).val('');
-                        $('#current_value_asset').val("");
-                        $('#last_dep_date').val("");
-                        $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                            '{{ $financialEndDate }}').prop('readonly', false).prop('required',
-                            true);
-                        $('#sub_asset_id').val('');
-                        //$('#category').val("");
-                        $('#ledger').val("");
-                        $('#ledger_group').val("");
-                        $('.capitalize_date').val("");
-                        $('#depreciation_rate').val("");
-                        $('#depreciation_rate_year').val("");
-                        $('#useful_life').val("");
-                        $('#maintenance_schedule').val("");
-                        $('#current_value_asset').val("");
-                        $('#total_depreciation').val("");
-
-                        add_blank();
-
+                        clearSubAsset();
                     }
+
                 },
                 focus: function(event, ui) {
-                    return false; // Prevent default behavior
+                    if (!ui.item) {
+                        clearSubAsset();
+                    }
                 }
             }).focus(function() {
                 if (this.value === '') {
@@ -1364,11 +1325,13 @@ $(document).on('keydown', function(e) {
                 .removeAttr('min')
                 .removeAttr('max')
                 .prop('readonly', true).prop('required', false);
-            $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max', '{{ $financialEndDate }}')
-                .prop('readonly', false).prop('required', true);
+            $('#expiry_date').val('');
+            $('#salvage_value_asset').val('');
             $('#current_value_asset').val('');
             $('#category').val($(this).val()).trigger('change');
             loadLocation();
+            depCapitalizeDate();
+
 
         });
 
@@ -1498,7 +1461,7 @@ $(document).on('keydown', function(e) {
              
                                                              </td>
               <td>
-                <input type="number" required class="form-control mw-100 mb-25 life" oninput="syncInputAcrossSameAssets(this)"> 
+                <input type="number" required class="form-control mw-100 mb-25 life" disabled oninput="syncInputAcrossSameAssets(this)"> 
                 </td>
               <td>
                 <input type="date" required class="form-control mw-100 mb-25 capitalize_date" oninput="syncInputAcrossSameAssets(this)"/>
@@ -1519,30 +1482,7 @@ $(document).on('keydown', function(e) {
             </tr>`;
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
-
-            if ($('#last_dep_date').val() != "") {
-                console.log("last_dep");
-                let lastDepDate = new Date($('#last_dep_date').val());
-                lastDepDate.setDate(lastDepDate.getDate() - 1);
-                let formattedDate = lastDepDate.toISOString().split('T')[0];
-                let today = new Date().toISOString().split('T')[0];
-                // $('.capitalize_date')
-                //     .removeAttr('min')
-                //     .removeAttr('max').prop('readonly', true).prop('required', false);
-                depCapitalizeDate();
-                //$('#last_dep_date').trigger('change');
-
-
-
-
-
-            } else {
-                $('.capitalize_date').attr('min', '{{ $financialStartDate }}').attr('max',
-                    '{{ $financialEndDate }}').prop('readonly', false).prop('required', true);
-            }
-
-
-
+            depCapitalizeDate();
         }
 
         function loadLocation(selectlocation = null) {
@@ -1583,10 +1523,9 @@ $(document).on('keydown', function(e) {
             if (!isNaN(selectedDate)) {
                 selectedDate.setDate(selectedDate.getDate() + 1);
                 let nextDate = selectedDate.toISOString().split('T')[0];
-                depCapitalizeDate();
                 $('.capitalize_date').val(nextDate);
                 $('#capitalize_date_old').val(nextDate);
-
+                depCapitalizeDate();
             }
         });
 
@@ -1625,8 +1564,6 @@ $(document).on('keydown', function(e) {
                 minLength: 0,
                 select: function(event, ui) {
                     renderLedgerSelects();
-                    //syncInputAcrossSameAssets('category');
-                    //syncInputAcrossSameAssets('category-input');
                     const row = $(this).closest('tr');
                     row.find('.category').val(ui.item.value);
                     $(this).val(ui.item.label);
@@ -1666,10 +1603,6 @@ $(document).on('keydown', function(e) {
                         syncInputAcrossSameAssets($('.ledger'));
                         syncInputAcrossSameAssets($('.salvage_per'));
                         calculateTotals();
-
-                        //syncInputAcrossSameAssets('category');
-                        //syncInputAcrossSameAssets('category-input');
-
                     }
                     return false;
                 }
@@ -1732,16 +1665,8 @@ $(document).on('keydown', function(e) {
                 const usefulLife = parseFloat($row.find('.life').val()) || 0;
                 const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
                 $salvageValueInput.val(salvageValue);
-
-
-
                 // Ensure all required values are provided
                 if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-                    // if (!depreciationType) console.log("Missing: depreciationType");
-                    // if (!currentValue) console.log("Missing: currentValue");
-                    // if (!depreciationPercentage) console.log("Missing: depreciationPercentage");
-                    // if (!usefulLife) console.log("Missing: usefulLife");
-                    // if (!method) console.log("Missing: method");
                     return;
                 }
 
@@ -1807,14 +1732,103 @@ $(document).on('keydown', function(e) {
             });
         }
 
-        
+
         function depCapitalizeDate() {
-            let lastDepDate = new Date($('#last_dep_date').val());
-            lastDepDate.setDate(lastDepDate.getDate() + 1);
-            let formattedDate = lastDepDate.toISOString().split('T')[0];
             let today = new Date().toISOString().split('T')[0];
-            $('.capitalize_date').removeAttr('min').removeAttr('max').prop('readonly',true).prop('required', false);
-            $('.capitalize_date').val(formattedDate);
+            let capitalize_date = $('#capitalize_date_old').val();
+            let expiry = $('#expiry_date').val();
+            if (expiry == "") {
+                return;
+            }
+            if (capitalize_date == "") {
+                capitalize_date = '{{ $financialStartDate }}';
+            }
+            if ($('#last_dep_date').val() == "") {
+                $('.capitalize_date').attr('min', capitalize_date).attr('max', expiry).prop('readonly', false).prop(
+                    'required', true);
+                
+            } else {
+                let lastDepDate = new Date($('#last_dep_date').val());
+                lastDepDate.setDate(lastDepDate.getDate() + 1);
+                let formattedDate = lastDepDate.toISOString().split('T')[0];
+                $('.capitalize_date').removeAttr('min').removeAttr('max').prop('readonly', true).prop('required', false);
+                $('.capitalize_date').val(formattedDate);
+
+            }
+            updateLife();
+        }
+
+        function clearSubAsset() {
+            $('#subasset_search_input').val('');
+            $('#current_value_asset').val("");
+            $('#last_dep_date').val("")
+                .removeAttr('min')
+                .removeAttr('max')
+                .prop('readonly', true).prop('required', false);
+            $('#expiry_date').val("");
+            $('#salvage_value_asset').val("");
+            $('#sub_asset_id').val("");
+            $('#ledger').val("");
+            $('#ledger_group').val("");
+            $('.capitalize_date').val("");
+            $('#capitalize_date_old').val("");
+            $('#depreciation_rate').val("");
+            $('#depreciation_rate_year').val("");
+            $('#useful_life').val("");
+            $('#maintenance_schedule').val("");
+            $('#current_value_asset').val("");
+            $('#total_depreciation').val("");
+            depCapitalizeDate();
+            add_blank();
+
+        }
+
+        function clearAsset() {
+            $('#asset_search_input').val('');
+            $('#asset_id').val('');
+            clearSubAsset();
+        }
+
+
+        $(document).on('change', '.capitalize_date, #expiry_date', function() {
+            var $row = $(this).closest('tr');
+            calculateUsefulLife($row);
+        });
+
+        function calculateUsefulLife($row) {
+            var startDate = new Date($row.find('.capitalize_date').val());
+            var endDate = new Date($('#expiry_date').val());
+
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                var years = endDate.getFullYear() - startDate.getFullYear();
+                var months = endDate.getMonth() - startDate.getMonth();
+                var days = endDate.getDate() - startDate.getDate();
+
+                if (days < 0) {
+                    months -= 1;
+                    days += new Date(startDate.getFullYear(), startDate.getMonth() + 1, 0).getDate();
+                }
+
+                if (months < 0) {
+                    years -= 1;
+                    months += 12;
+                }
+
+                var totalYears = years + (months / 12) + (days / 365);
+                $row.find('.life').val(totalYears.toFixed(2));
+                if(startDate == endDate) {
+                    $row.find('.life').val(0);
+                }
+            } else {
+                $row.find('.life').val('');
+            }
+        }
+
+        function updateLife() {
+            $('.capitalize_date').each(function() {
+                var $row = $(this).closest('tr');
+                calculateUsefulLife($row);
+            });
         }
     </script>
     <!-- END: Content-->
