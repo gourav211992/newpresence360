@@ -31,7 +31,7 @@ class ErpFreightChargesController extends Controller
         $states = State::where('country_id',$countryId)->get();
         $status = ConstantHelper::STATUS;
         $customers = Customer::withDefaultGroupCompanyOrg()->get();
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $freightCharges = ErpFreightCharge::withDefaultGroupCompanyOrg()->get();
         
 

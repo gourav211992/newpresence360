@@ -70,14 +70,16 @@
                                                     <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
-                                                    <select name="vehicle_type_id" class="form-select select2">
+                                                <select name="vehicle_type_id" id="vehicle_type_id" class="form-select select2">
                                                     <option value="">Select</option>
-                                                     @foreach($vehicleTypes as  $type)
-                                                                <option value="{{ $type->id }}" {{ old('vehicle_type_id', $vehicle->vehicle_type_id ?? '') === $type->id ? 'selected' : '' }}>
-                                                                   {{ $type->name }} ({{ $type->capacity }} {{ $type->unit->name }})
-                                                                </option>
+                                                    @foreach($vehicleTypes as $type)
+                                                        <option value="{{ $type->id }}" 
+                                                            data-capacity="{{ $type->capacity }}" 
+                                                            data-unit="{{ $type->unit->name }}"
+                                                            {{ old('vehicle_type_id', $vehicle->vehicle_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                                                            {{ $type->name }} 
+                                                        </option>
                                                     @endforeach
-
                                                 </select>
                                                 </div> 
                                                 
@@ -183,13 +185,13 @@
                                     <div class="tab-pane active" id="other_details">
                                         <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
-                                                <label class="form-label">Capacity (kg) </label>
+                                                <label class="form-label">Capacity</label>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="number" class="form-control" name="capacity_kg" placeholder="e.g. 5000"
-                                                    value="{{ old('capacity_kg', $vehicle->capacity_kg ?? '') }}" />
-                                            </div>
-                                            </div>
+                                            <input type="text" class="form-control" id="display_capacity" placeholder="e.g. 5000 kg" disabled>
+                                            <input type="number" name="capacity_kg" id="capacity_kg" value="{{ old('capacity_kg', $vehicle->capacity_kg ?? '') }}" hidden>
+                                        </div>
+                                    </div>
                                             <div class="row align-items-center mb-1">
                                             <div class="col-md-2">
                                                 <label class="form-label">Driver Name </label>
@@ -250,49 +252,55 @@
                                             </div>
                                              </div>
 
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row  mb-1">
                                             <div class="col-md-2">
                                                 <label class="form-label">Vehicle Photo</label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="file" class="form-control" name="vehicle_attachment" />
-                                                <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                              @if(isset($vehicle->vehicleAttachment))
-                                                <div class="mt-1">
-                                                    <a href="{{ $vehicle->vehicleAttachment->url }}" target="_blank">View Existing File</a>
-                                                </div>
-                                            @endif
+                                                 <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG)</span>
+                                                @if(isset($vehicle->vehicleAttachment) && $vehicle->vehicleAttachment->url)
+                                                    <div class="mt-1">
+                                                        <img src="{{ $vehicle->vehicleAttachment->url }}" alt="Vehicle Attachment" style="max-width: 200px; height: auto; border: 1px solid #ccc; border-radius: 4px;">
+                                                    </div>
+                                                @endif
+
 
                                             </div>
                                         </div>
 
-                                        <div class="row align-items-center mb-1">
+                                        <div class="row  mb-1">
                                             <div class="col-md-2">
                                                 <label class="form-label">Vehicle Video</label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="file" class="form-control" name="vehicle_video" />
-                                                <span class="text-danger">Mp4, Mkv</span>
-                                                @if(isset($vehicle->vehicleVideo))
-                                                    <div class="mt-1">
-                                                        <a href="{{ $vehicle->vehicleVideo->url }}" target="_blank">View Existing Video</a>
-                                                    </div>
-                                                @endif
+                                                 <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 20MB (Mp4, Mkv)</span>
+                                              @if(isset($vehicle->vehicleVideo) && $vehicle->vehicleVideo->url)
+                                                <div class="mt-1">
+                                                    <video width="320" height="240" controls>
+                                                        <source src="{{ $vehicle->vehicleVideo->url }}" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                </div>
+                                            @endif
+
                                             </div>
                                              </div>
 
-                                             <div class="row align-items-center mb-1">
+                                             <div class="row  mb-1">
                                             <div class="col-md-2">
                                                 <label class="form-label">RC Attachments</label>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="file" class="form-control" name="rc_attachment" />
-                                                <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                                @if(isset($vehicle->attachment))
-                                                    <div class="mt-1">
-                                                        <a href="{{ $vehicle->attachment->url }}" target="_blank">View Existing RC</a>
-                                                    </div>
-                                                @endif
+                                               <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG)</span>
+                                               @if(isset($vehicle->attachment) && $vehicle->attachment->url)
+                                                <div class="mt-1">
+                                                    <img src="{{ $vehicle->attachment->url }}" alt="RC Image" style="max-width: 200px; height: auto; border: 1px solid #ccc; border-radius: 4px;">
+                                                </div>
+                                            @endif
+
                                             </div>
                                         </div>
                                     </div>
@@ -345,18 +353,19 @@
                                                             <input type="text" class="form-control" name="permit_amount" value="{{ old('permit_amount', $vehicle->permit->amount) }}" placeholder="0" />
                                                         </div> 
                                                     </div>
-                                                    <div class="row align-items-center mb-1">
+                                                    <div class="row  mb-1">
                                                         <div class="col-md-2"> 
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="permit_attachment" />
-                                                            <span class="text-danger">Jpg,Png,Jpeg,Svg</span>
-                                                             @if(isset($vehicle->permit->permitAttachment))
-                                                            <div class="mt-1">
-                                                                <a href="{{ $vehicle->permit->permitAttachment->url }}" target="_blank">View Existing Permit Attachment</a>
-                                                            </div>
-                                                        @endif
+                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
+                                                           @if(isset($vehicle->permit->permitAttachment) && $vehicle->permit->permitAttachment->url)
+                                                                <div class="mt-1">
+                                                                    <img src="{{ $vehicle->permit->permitAttachment->url }}" alt="Permit Attachment" style="max-width: 200px; height: auto;">
+                                                                </div>
+                                                            @endif
+
 
                                                         </div>  
                                                     </div>
@@ -402,18 +411,19 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row  mb-1">
                                                     <div class="col-md-2"> 
                                                         <label class="form-label">Attachment</label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
                                                         <input type="file" class="form-control" name="fitness_attachment" />
-                                                        <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                                          @if(isset($vehicle->fitness->fitnessAttachment))
-                                                            <div class="mt-1">
-                                                                <a href="{{ $vehicle->fitness->fitnessAttachment->url }}" target="_blank">View Existing Fitness Attachment</a>
-                                                            </div>
-                                                        @endif
+                                                         <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
+                                                        @if(isset($vehicle->fitness->fitnessAttachment) && $vehicle->fitness->fitnessAttachment->url)
+                                                        <div class="mt-1">
+                                                            <img src="{{ $vehicle->fitness->fitnessAttachment->url }}" alt="Fitness Attachment" style="max-width: 200px; height: auto;">
+                                                        </div>
+                                                    @endif
+
                                                     </div>  
                                                 </div>
                                             </div>
@@ -468,18 +478,19 @@
                                                                 value="{{ old('insurance_amount', $vehicle->insurance->amount ?? '') }}" />
                                                         </div>
                                                         </div>
-                                                        <div class="row align-items-center mb-1">
+                                                        <div class="row  mb-1">
                                                         <div class="col-md-2"> 
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="insurance_attachment" />
-                                                            <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                                             @if(isset($vehicle->insurance->insuranceAttachment))
-                                                            <div class="mt-1">
-                                                                <a href="{{ $vehicle->insurance->insuranceAttachment->url }}" target="_blank">View Existing Insurance Attachment</a>
-                                                            </div>
-                                                        @endif
+                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
+                                                          @if(isset($vehicle->insurance->insuranceAttachment) && $vehicle->insurance->insuranceAttachment->url)
+                                                                <div class="mt-1">
+                                                                    <img src="{{ $vehicle->insurance->insuranceAttachment->url }}" alt="Insurance Attachment" style="max-width: 200px; height: auto;">
+                                                                </div>
+                                                            @endif
+
                                                         </div>  
                                                     </div>
                                                 </div>
@@ -525,18 +536,19 @@
                                                                 value="{{ old('pollution_amount', $vehicle->pollution->amount ?? '') }}" />
                                                         </div>
                                                         </div>
-                                                        <div class="row align-items-center mb-1">
+                                                        <div class="row  mb-1">
                                                         <div class="col-md-2"> 
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="pollution_attachment" />
-                                                            <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                                               @if(isset($vehicle->pollution->pollutionAttachment))
-                                                            <div class="mt-1">
-                                                                <a href="{{ $vehicle->pollution->pollutionAttachment->url }}" target="_blank">View Existing Pollution Attachment</a>
-                                                            </div>
-                                                        @endif
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
+                                                             @if(isset($vehicle->pollution->pollutionAttachment) && $vehicle->pollution->pollutionAttachment->url)
+                                                                <div class="mt-1">
+                                                                    <img src="{{ $vehicle->pollution->pollutionAttachment->url }}" alt="Pollution Attachment" style="max-width: 200px; height: auto;">
+                                                                </div>
+                                                            @endif
+
                                                           
                                                         </div>  
                                                     </div>
@@ -583,18 +595,19 @@
                                                         </div> 
                                                     </div>
 
-                                                    <div class="row align-items-center mb-1">
+                                                    <div class="row  mb-1">
                                                         <div class="col-md-2"> 
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
                                                             <input type="file" class="form-control" name="road_tax_attachment" />
-                                                            <span class="text-danger">Jpg, Png, Jpeg, Svg</span>
-                                                                @if(isset($vehicle->roadTax->roadTaxAttachment))
-                                                            <div class="mt-1">
-                                                                <a href="{{ $vehicle->roadTax->roadTaxAttachment->url }}" target="_blank">View Existing Road Tax Attachment</a>
-                                                            </div>
-                                                        @endif
+                                                            <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
+                                                            @if(isset($vehicle->roadTax->roadTaxAttachment) && $vehicle->roadTax->roadTaxAttachment->url)
+                                                                <div class="mt-1">
+                                                                    <img src="{{ $vehicle->roadTax->roadTaxAttachment->url }}" alt="Road Tax Attachment" style="max-width: 200px; height: auto;">
+                                                                </div>
+                                                            @endif
+
                                                          
                                                         </div>  
                                                     </div>
@@ -613,4 +626,23 @@
     </div>
 </form>
     <!-- END: Content-->
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function () {
+        $('#vehicle_type_id').on('change', function () {
+            var selected = $(this).find('option:selected');
+
+            var capacity = selected.data('capacity') || '';
+            var unit = selected.data('unit') || '';
+
+            $('#display_capacity').val(capacity + ' ' + unit); 
+            $('#capacity_kg').val(capacity); 
+        });
+       
+        $('#vehicle_type_id').trigger('change');
+    });
+</script>
+
 @endsection

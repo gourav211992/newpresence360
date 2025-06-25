@@ -125,15 +125,12 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="license_front" id="license_front" class="form-control" >
-                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
                                                 </div>
                                                  <div class="col-md-2">
                                                     <label class="form-label">Back Side Of License. <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="license_back" id="license_back" class="form-control" type="file">
-                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
-
                                                 </div>
                                             </div>
 
@@ -143,7 +140,6 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input type="file" name="id_proof_front" id="id_proof_front" class="form-control" >
-                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
 
                                                 </div>
                                                  <div class="col-md-2">
@@ -151,10 +147,11 @@
                                                 </div>
                                                 <div class="col-md-4">
                                                     <input name="id_proof_back" id="id_proof_back" class="form-control" type="file">
-                                                    <span class="text-danger">Min :10KB , Max: 2MB (jpg,jpeg,png,pdf)</span>
+                                                  
 
                                                 </div>
                                             </div>
+                                            <span class="text-danger font-small-2">Note: All File size should Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
 
                                             <!-- Status -->
                                         </div>

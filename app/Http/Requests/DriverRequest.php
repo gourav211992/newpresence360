@@ -32,7 +32,7 @@ public function rules()
 
     return [
         'user_id'        => 'nullable|exists:employees,id',
-       'name' => ['required', 'string', 'max:255', 'regex:/^[A-Za-z\s\.\-]+$/'], // only letters, space, dot, hyphen
+        'name' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z\s\.\-]+$/'], 
         'experience_years' => [
             'required',
             'integer',
@@ -40,7 +40,7 @@ public function rules()
             'max:99',
             'regex:/^\d{1,2}$/', 
         ],
-        'email'          => 'nullable|email|max:255|unique:erp_drivers,email,' . $id,
+        'email'          => 'nullable|email|max:100|unique:erp_drivers,email,' . $id,
       'mobile_no' => [
             'required',
             'string',

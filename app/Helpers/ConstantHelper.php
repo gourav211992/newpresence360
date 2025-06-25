@@ -1050,7 +1050,7 @@ class ConstantHelper
      public const FUEL_TYPES = [
         'diesel'   => 'Diesel',
         'petrol'   => 'Petrol',
-        'cng'      => 'CNG',
+        'CNG'      => 'CNG',
         'electric' => 'Electric',
     ];
 

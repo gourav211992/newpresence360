@@ -596,54 +596,50 @@
         }
 
         function getSelectedVoucherData() {
-    const selectedData = [];
-    const validationErrors = [];
-    const reportedLedgers = new Set(); // Track already reported ledger names
+           const selectedData = [];
+            const validationErrors = [];
+            const reportedLedgers = new Set(); // Track already reported ledger names
 
-    selectedVoucherIds.forEach(key => {
-        const voucher = voucherMap[key];
-        if (!voucher || !voucher.item?.id) return;
+            selectedVoucherIds.forEach(key => {
+                const voucher = voucherMap[key];
+                if (!voucher || !voucher.item?.id) return;
 
-        const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
+                const ledgerName = voucher.item?.ledger?.name ?? 'Unknown Ledger';
 
-        if (!voucher.item?.ledger?.vendor) {
-            if (!reportedLedgers.has(ledgerName)) {
-                validationErrors.push(`${ledgerName}'s vendor is missing`);
-                reportedLedgers.add(ledgerName);
+                if (!voucher.item?.ledger?.customer) {
+                    if (!reportedLedgers.has(ledgerName)) {
+                        validationErrors.push(`${ledgerName}'s customer is missing`);
+                        reportedLedgers.add(ledgerName);
+                    }
+                    return;
+                }
+
+                const creditDays = voucher.item.ledger.customer.credit_days;
+                if (creditDays === null || creditDays === undefined || creditDays === '') {
+                    if (!reportedLedgers.has(ledgerName)) {
+                        validationErrors.push(`${ledgerName}'s customer has no credit days set`);
+                        reportedLedgers.add(ledgerName);
+                    }
+                    return;
+                }
+
+                selectedData.push({
+                    ...voucher,
+                    settle_amt: parseFloat(voucher.settle_amt || 0).toFixed(2),
+                    item_id: voucher.item.id
+                });
+            });
+
+            if (validationErrors.length > 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validation Error',
+                    html: validationErrors.map(e => `<div>${e}</div>`).join(''),
+                });
+                return false;
             }
-            return;
+            return selectedData;
         }
-
-        const creditDays = voucher.item.ledger.vendor.credit_days;
-        if (creditDays === null || creditDays === undefined || creditDays === '') {
-            if (!reportedLedgers.has(ledgerName)) {
-                validationErrors.push(`${ledgerName}'s vendor has no credit days set`);
-                reportedLedgers.add(ledgerName);
-            }
-            return;
-        }
-
-        selectedData.push({
-            ...voucher,
-            settle_amt: parseFloat(voucher.settle_amt || 0).toFixed(2),
-            item_id: voucher.item.id
-        });
-    });
-
-    if (validationErrors.length > 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Validation Error',
-            html: validationErrors.map(e => `<div>${e}</div>`).join(''),
-        });
-        return false;
-    }
-
-    return selectedData;
-}
-
-
-
 
         $('#inlineCheckbox1').on('click', function() {
             const isChecked = this.checked;
