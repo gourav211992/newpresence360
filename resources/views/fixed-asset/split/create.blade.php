@@ -907,6 +907,7 @@
         });
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function() {
+            $('.preloader').show();
             document.getElementById('document_status').value = 'draft';
 
             collectSubAssetDataToJson();
@@ -915,19 +916,23 @@
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
             if (totalCurrentValue > currentValueAsset) {
+                $('.preloader').hide();
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
+                $('.preloader').hide();
                 showToast('error', 'Total Current Value must be greater than 0.');
                 return false;
             }
             let isValid = true;
             $('.asset-code-input').each(function(index) {
                 if ($(this).hasClass('is-invalid')) {
+                    // $('.preloader').hide();
                     isValid = false;
                 }
             });
             if (isValid == false) {
+                $('.preloader').hide();
                 showToast('error', 'Code Already Exist.');
                 return false;
             }
@@ -937,6 +942,7 @@
         });
 
         $('#fixed-asset-split-form').on('submit', function(e) {
+            $('.preloader').show();
             e.preventDefault(); // Always prevent default first
 
             collectSubAssetDataToJson();
@@ -947,9 +953,11 @@
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
             if (totalCurrentValue > currentValueAsset) {
+                $('.preloader').hide();
                 showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
+                $('.preloader').hide();
                 showToast('error', 'Total Current Value must be greater than 0.');
                 return false;
             }
@@ -959,6 +967,7 @@
                 }
             });
             if (isValid == false) {
+                $('.preloader').hide();
                 showToast('error', 'Code Already Exist.');
                 return false;
             }
@@ -1177,14 +1186,17 @@
         }
 
         @if (session('success'))
+        $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
+        $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
+        $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );

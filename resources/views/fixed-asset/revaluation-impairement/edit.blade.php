@@ -551,7 +551,6 @@
             $('.preloader').show();
             document.getElementById('document_status').value = 'submitted';
             updateJsonData();
-
             if (validateRevaluationAmounts()) {
                 this.submit();
             }
@@ -1035,11 +1034,9 @@
 
                 
                if (documentType === 'revaluation' && revalVal <= currentVal) {
-                 $('.preloader').hide();
                     isValid = false;
                     
                 } else if (documentType === 'impairement' && (revalVal >= currentVal || revalVal <= salVal)) {
-                    $('.preloader').hide();
                     isValid = false;
                 }
             });

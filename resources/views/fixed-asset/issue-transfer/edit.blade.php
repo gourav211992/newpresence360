@@ -498,14 +498,17 @@ function showToast(icon, title) {
         }
 
         @if (session('success'))
+            $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
+            $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
+            $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
