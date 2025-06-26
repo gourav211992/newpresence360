@@ -562,6 +562,9 @@ emptyRow.appendChild(emptyCell)
     mergeCells.appendChild(createMergeRef(2));
     mergeCells.appendChild(createMergeRef(3));
     mergeCells.setAttribute('count', mergeCells.childNodes.length);
+    function normalizeHeader(header) {
+        return header.replace(/\s+/g, '').trim();
+    }
 
     // Step 4: Align header row
     const headerRow = sheetData.getElementsByTagName('row')[4]; // new header row
@@ -572,21 +575,24 @@ emptyRow.appendChild(emptyCell)
         'Type ofDeductee': 'Type of Deductee', // ✅ FIX for your case
         'AmountPaid/Credited': 'Amount Paid / Credited',
         'Paid/CreditedDate': 'Paid / Credited Date',
-        'CashWith.Exceed.Limit': 'Cash With. Exceed. Limit',
+        'CashWith.Exceed.Limit': 'Cash withdrawal Exceeding Limit',
         'DeductionDate': 'Deduction Date',
         'DeductedAmt': 'Deducted Amt',
         'DeductionRate': 'Deduction Rate'
     };
     const rightAlignCols = ['G', 'K'];
     const alwaysLeftAlignCols = ['F', 'L'];
-    for (let i = 0; i < headerCells.length; i++) {
+   for (let i = 0; i < headerCells.length; i++) {
     const cell = headerCells[i];
     const isNode = cell.getElementsByTagName('is')[0];
     const tNode = isNode?.getElementsByTagName('t')[0];
     const original = tNode?.textContent?.trim();
 
-    if (original && headerMap[original]) {
-        tNode.textContent = headerMap[original];
+    if (original) {
+        const normalized = normalizeHeader(original);
+        if (headerMap[normalized]) {
+            tNode.textContent = headerMap[normalized];
+        }
     }
 
     const cellRef = cell.getAttribute('r');

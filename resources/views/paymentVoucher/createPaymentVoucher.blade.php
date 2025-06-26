@@ -407,9 +407,20 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            @php $totalAmount = 0; $totalExcAmount = 0; @endphp
+                                                            @php $totalAmount = 0; $totalExcAmount = 0; $partyVoucher=[]; @endphp
                                                             @if (isset($selectedRows) && !empty($selectedRows))
                                                                 @foreach ($selectedRows as $index => $voucher)
+                                                                @foreach ($voucher['items'] as $i => $item)
+                                                                 @php
+                                                                    $partyVoucher[] = [
+                                                                            'party_id' => (string) $item['ledger_id'],
+                                                                            'voucher_id' => (string) $item['voucher_id'],
+                                                                            'amount' => number_format((float) $item['settle_amt'], 2, '.', ''),
+                                                                        ];
+                                                                    @endphp
+
+                                                                @endforeach
+
                                                                     @php $no = $index + 1;
                                                                     $totalAmount += $voucher['amount'];
                                                                     $totalExcAmount += $voucher['amount'];
@@ -430,7 +441,7 @@
 
                                                                             <input type="hidden" name="party_vouchers[]"
                                                                                 id="party_vouchers{{ $no }}"
-                                                                                class="party_vouchers" />
+                                                                                class="party_vouchers" value="{{ json_encode($partyVoucher) }}"/>
                                                                         </td>
 
                                                                         <td class="poprod-decpt">
@@ -1048,11 +1059,11 @@
                         const refNo = $(this).val().trim();
                         const row = $(this).data('row');
                         
-                        if (refNo === '') {
-                            $(this).addClass('is-invalid');
-                            $('#reference_error' + row).text('Reference number is required');
-                            refError = true;
-                        }
+                        // if (refNo === '') {
+                        //     $(this).addClass('is-invalid');
+                        //     $('#reference_error' + row).text('Reference number is required');
+                        //     refError = true;
+                        // }
                     });
                     // Then check for duplicates
                     if (!validateReferenceNumbers()) {
@@ -1439,7 +1450,7 @@
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
                         <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                          <td>
-                            <input type="text" class="form-control mw-100 bankInput reference_no" 
+                            <input type="number" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
@@ -1630,26 +1641,12 @@
                 $('#orgCurrencyName').text(orgCurrencyName);
             }
             getExchangeRate();
-            const selectedRowsJS = @json($selectedRows ?? []);
-            // $('.invoiceDrop').each(function () {
-            //     if ($(this).val() === 'Invoice') {
-            //         $(this).trigger('change');
-            //     }
-            // });
-    //         const initialOrgSumText = $('.orgCurrencySum').text().replace(/,/g, '').trim();
-    // const initialOrgSum = parseFloat(initialOrgSumText) || 0;
-    // if (initialOrgSum > 0) {
-    //     $('#totalAmount').val(initialOrgSum.toFixed(2));
-    // }
 
-    // // 🟢 Set totals and settle amounts if preloaded
-    // if (selectedRowsJS.length > 0) {
-    //     // simulate `setAmount()` logic
-    //     setTimeout(() => {
-    //         calculateTotal(); // recalculate
-    //         setAmount();       // trigger the modal settle logic
-    //     }, 300); // give DOM time to settle if needed
-    // }
+            const initialOrgSumText = $('.orgCurrencySum').text().replace(/,/g, '').trim();
+            const initialOrgSum = parseFloat(initialOrgSumText) || 0;
+            if (initialOrgSum > 0) {
+                $('#totalAmount').val(initialOrgSum.toFixed(2));
+            }
         });
 
         function resetCurrencies() {
@@ -1949,13 +1946,6 @@
                     $errorSpan.text('');
                 }
                 
-                // Check for empty fields (only if Bank is selected)
-                if ($("#Bank").is(":checked") && refNo === '') {
-                    hasEmptyFields = true;
-                    $input.addClass('is-invalid');
-                    $errorSpan.text('Reference number is required');
-                    return;
-                }
                 
                 // Skip empty references for duplicate check
                 if (refNo === '') {

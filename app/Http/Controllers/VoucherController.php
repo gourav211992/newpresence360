@@ -323,7 +323,7 @@ class VoucherController extends Controller
                 } else {
                     $data = $data->with(['series' => function ($s) {
                         $s->select('id', 'book_code');
-                    }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
+                    }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no','location', 'organization_id')
                         ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($request, $ledger) {
                             $voucher->date = date('d/m/Y', strtotime($voucher->date));
                              $amount = 0;
@@ -343,7 +343,7 @@ class VoucherController extends Controller
                                 ->where('voucher_details_id', (int)$request->details_id)
                                 ->where('party_id', $ledger)->sum('amount');
 
-                            $voucher->balance = (int)$voucher->amount-(int)$balance;
+                            $voucher->balance = $voucher->amount-$balance;
                             $voucher->settle = $settle;
 
 
