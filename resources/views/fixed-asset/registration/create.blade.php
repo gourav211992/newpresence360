@@ -283,7 +283,9 @@
                                                                     {{ old('category') ? '' : 'selected' }}>
                                                                     Select</option>
                                                                 @foreach ($categories as $category)
-                                                                    <option value="{{ $category->id }}"
+                                                                    <option value="{{ $category->id }}" 
+                                                                        data-act-type="{{$category->setup->act_type??"company"}}"
+                                                                        data-dep="{{$category->setup->dep_percentage??null}}"
                                                                         {{ old('category') == $category->id ? 'selected' : '' }}>
                                                                         {{ $category->name }}
                                                                     </option>
@@ -1605,11 +1607,16 @@
             }
 
             let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+            const actType = $('#category option:selected').data('act-type');
+            const rate = parseFloat($('#category option:selected').data('dep'))||0;
 
             let depreciationRate = 0;
             if (method === "SLM") {
                 depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
             } else if (method === "WDV") {
+                if(actType=="income_tax")
+                depreciationRate=rate;
+                else
                 depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
             }
 

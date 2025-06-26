@@ -107,7 +107,32 @@
                                                 </div>
                                             </div>
                                             <input type="hidden" name="asset_category_id" id="asset_category_id">
+
                                             <div class="col-md-9">
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Act Type <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+
+                                                    <div class="col-md-8">
+                                                        <div class="demo-inline-spacing">
+                                                            <div class="form-check form-check-primary mt-25">
+                                                                <input type="radio" id="company" name="act_type"
+                                                                    value="company" class="form-check-input" checked>
+                                                                <label class="form-check-label fw-bolder"
+                                                                    for="company">Company</label>
+                                                            </div>
+                                                            <div class="form-check form-check-primary mt-25">
+                                                                <input type="radio" id="income_tax" name="act_type"
+                                                                    value="income_tax" class="form-check-input">
+                                                                <label class="form-check-label fw-bolder"
+                                                                    for="income_tax">Income Tax</label>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Asset Category <span
@@ -166,6 +191,16 @@
                                                             value="{{ $dep_percentage }}" />
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1 income_tax">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Dep % <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="number" class="form-control" name="dep_percentage"
+                                                            required />
+                                                    </div>
+                                                </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -179,7 +214,7 @@
                                                     </div>
                                                 </div>
 
-                                                
+
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -384,10 +419,11 @@
 
     <script type="text/javascript">
         $('#setup').on('submit', function(e) {
-                $('.preloader').show();
-                e.preventDefault(); 
-                this.submit();
-            });
+            $('.preloader').show();
+            e.preventDefault();
+            this.submit();
+        });
+
         function showToast(icon, title) {
             const Toast = Swal.mixin({
                 toast: true,
@@ -422,7 +458,7 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        
+
         function handleLedgerChange(ledgerSelector, groupSelector, selectedGroupId = null) {
             $(ledgerSelector).change(function() {
                 const ledgerId = $(this).val();
@@ -478,6 +514,25 @@
             $("#asset_category_id").val(''); // Set to empty string or null
         });
         $('#dep_ledger').trigger('change');
+
+        function toggleFields() {
+            if ($('#income_tax').is(':checked')) {
+                if ('{{ $dep_method }}' == "WDV") {
+                    $('.income_tax').removeClass('d-none');
+                    $('#dep_percentage').attr('required', true);
+                } else {
+                    showToast('warning', 'Organization Dep method must be WDV for Income Tax');
+                    $('#company').prop('checked', true);
+                    $('.income_tax').addClass('d-none');
+                    $('#dep_percentage').removeAttr('required');
+                }
+            } else {
+                $('.income_tax').addClass('d-none');
+                $('#dep_percentage').removeAttr('required');
+            }
+        }
+        $('input[name="act_type"]').on('change', toggleFields);
+        toggleFields();
     </script>
 @endsection
 

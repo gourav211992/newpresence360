@@ -59,6 +59,7 @@ class RegistrationController extends Controller
      */
     public function index(Request $request)
     {
+
         $parentURL = "fixed-asset_registration";
 
         $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
@@ -91,7 +92,7 @@ class RegistrationController extends Controller
         $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
         $ledgers = FixedAssetRegistration::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
         $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
-        return view('fixed-asset.registration.index', compact('data','assetCodes', 'ledgers'));
+        return view('fixed-asset.registration.index', compact('data', 'assetCodes', 'ledgers'));
     }
 
     /**
@@ -103,12 +104,13 @@ class RegistrationController extends Controller
         $parentURL = "fixed-asset_registration";
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
-        //  if (count($servicesBooks['services']) == 0) {
-        //     return redirect() -> route('/');
-        // }
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         $organization = Helper::getAuthenticatedUser()->organization;
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -121,7 +123,7 @@ class RegistrationController extends Controller
                     }
                 });
         })->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+
 
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->whereHas('items', function ($q) {
@@ -139,8 +141,8 @@ class RegistrationController extends Controller
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
-                })->where('basic_value', '>', 0)->doesntHave('asset')->get();
+            $q->where('is_asset', 1);
+        })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
         $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
@@ -150,6 +152,20 @@ class RegistrationController extends Controller
 
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
+            ->where('status', 1)
+            ->when($dep_method == "SLM", function ($query) {
+                $query->whereHas('setup', function ($q) {
+                    $q->where(function ($subQuery) {
+                        $subQuery->where('act_type', '!=', 'income_tax')
+                            ->orWhereNull('act_type');
+                    });
+                });
+            })
+            ->select('id', 'name')
+            ->get();
+
+
         $locations = InventoryHelper::getAccessibleLocations();
 
 
@@ -274,7 +290,7 @@ class RegistrationController extends Controller
                     }
                 });
         })->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->whereHas('items')->whereHas('vendor')->get();
         $grn_details = MrnDetail::withwhereHas('header', function ($query) {
             $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
@@ -345,7 +361,7 @@ class RegistrationController extends Controller
                     }
                 });
         })->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+
         $grns = MrnHeader::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->whereHas('vendor')->get();
         $grn_details = MrnDetail::with('header')->whereHas('header', function ($query) {
             $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
@@ -356,6 +372,18 @@ class RegistrationController extends Controller
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
+        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
+            ->where('status', 1)
+            ->when($dep_method == "SLM", function ($query) {
+                $query->whereHas('setup', function ($q) {
+                    $q->where(function ($subQuery) {
+                        $subQuery->where('act_type', '!=', 'income_tax')
+                            ->orWhereNull('act_type');
+                    });
+                });
+            })
+            ->select('id', 'name')
+            ->get();
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = InventoryHelper::getAccessibleLocations();
@@ -488,8 +516,8 @@ class RegistrationController extends Controller
         ])->whereHas('header', function ($q) {
             $q->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->whereHas('item', function ($q) {
-                    $q->where('is_asset', 1);
-                })->doesntHave('asset')->where('basic_value', '>', 0);
+            $q->where('is_asset', 1);
+        })->doesntHave('asset')->where('basic_value', '>', 0);
 
 
         if ($request->grn_no) {
@@ -631,6 +659,13 @@ class RegistrationController extends Controller
 
     public function assetSearch(Request $request)
     {
+        $referrer = $request->headers->get('referer'); // full referrer URL
+        $module = "";
+        if ($referrer) {
+            $path = parse_url($referrer, PHP_URL_PATH); // e.g. "/fixed-asset/split/5/edit"
+            $segments = explode('/', trim($path, '/')); // ['fixed-asset', 'split', '5', 'edit']
+            $module = $segments[1] ?? null;
+        }
         $q = $request->input('q');
         $ids = $request->input('ids');
         $category = $request->input('category');
@@ -654,11 +689,22 @@ class RegistrationController extends Controller
             })
             //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
-            ->withWhereHas('subAsset', function ($query) use ($oldAssets) {
+            ->withWhereHas('subAsset', function ($query) use ($oldAssets, $module) {
                 $query->whereNotIn('id', $oldAssets);
                 $query->where('current_value_after_dep', '>', 0);
-                //$query->whereNotNull('expiry_date');
-                //$query->where('expiry_date','>','last_dep_date');
+
+                if ($module == "split") {
+                    $query->whereNotNull('capitalize_date');
+                    $query->whereNotNull('expiry_date');
+                    $query->whereColumn('expiry_date', '>', 'last_dep_date');
+                } else if ($module == "merger") {
+                    $query->whereNull('capitalize_date');
+                } else {
+                    $query->where(function ($q) {
+                        $q->whereNull('expiry_date')
+                            ->orWhereColumn('expiry_date', '>', 'last_dep_date');
+                    });
+                }
             });
 
         if (!empty($ids)) {
@@ -675,6 +721,9 @@ class RegistrationController extends Controller
         if (!empty($cost_center)) {
             $query->where('cost_center_id', $cost_center);
         }
+
+
+
 
         return $query->limit(20)->get();
     }
@@ -697,8 +746,16 @@ class RegistrationController extends Controller
 
     public function subAssetSearch(Request $request)
     {
+
         $Id = $request->id;
         $q = $request->q;
+        $referrer = $request->headers->get('referer'); // full referrer URL
+        $module = "";
+        if ($referrer) {
+            $path = parse_url($referrer, PHP_URL_PATH); // e.g. "/fixed-asset/split/5/edit"
+            $segments = explode('/', trim($path, '/')); // ['fixed-asset', 'split', '5', 'edit']
+            $module = $segments[1] ?? null;
+        }
 
         $oldAssets = FixedAssetSub::oldSubAssets();
         if ($request->merger)
@@ -708,13 +765,25 @@ class RegistrationController extends Controller
 
         $Id = $request->input('id');
 
-        return FixedAssetSub::where('parent_id', $Id)
+        $query = FixedAssetSub::where('parent_id', $Id)
             ->whereNotIn('id', $oldAssets)->with('asset')
             ->where('current_value_after_dep', '>', 0)
-            ->where('sub_asset_code', 'like', "%$q%")
-            //->whereNotNull('expiry_date')
-            //->whereColumn('expiry_date', '>', 'last_dep_date')
-            ->limit(20)
+            ->where('sub_asset_code', 'like', "%$q%");
+
+        if ($module == "split") {
+            $query->whereNotNull('capitalize_date');
+            $query->whereNotNull('expiry_date');
+            $query->whereColumn('expiry_date', '>', 'last_dep_date');
+        } else if ($module == "merger") {
+            $query->whereNull('capitalize_date');
+        } else {
+            $query->where(function ($q) {
+                $q->whereNull('expiry_date')
+                    ->orWhereColumn('expiry_date', '>', 'last_dep_date');
+            });
+        }
+
+        return $query->limit(20)
             ->get();
     }
     public function getCategories(Request $request)
@@ -786,51 +855,51 @@ class RegistrationController extends Controller
         return response()->json($costCenters);
     }
     public function export(Request $request)
-{
-    $data = FixedAssetSub::whereHas('asset', function ($query) use ($request) {
-        $query->withDefaultGroupCompanyOrg();
+    {
+        $data = FixedAssetSub::whereHas('asset', function ($query) use ($request) {
+            $query->withDefaultGroupCompanyOrg();
 
-        if ($request->filled('filter_asset')) {
-            $query->where('id', $request->filter_asset);
-        }
+            if ($request->filled('filter_asset')) {
+                $query->where('id', $request->filter_asset);
+            }
 
-        if ($request->filled('filter_ledger')) {
-            $query->where('ledger_id', $request->filter_ledger);
-        }
+            if ($request->filled('filter_ledger')) {
+                $query->where('ledger_id', $request->filter_ledger);
+            }
 
-        if ($request->filled('filter_status')) {
-            $query->where('document_status', $request->filter_status);
-        }
+            if ($request->filled('filter_status')) {
+                $query->where('document_status', $request->filter_status);
+            }
 
-        if ($request->filled('date')) {
-            [$start, $end] = explode(' to ', $request->date);
-            $start = date('Y-m-d', strtotime($start));
-            $end = date('Y-m-d', strtotime($end));
-        } else {
-            $fyear = Helper::getFinancialYear(now());
-            $start = $fyear['start_date'];
-            $end = $fyear['end_date'];
-        }
+            if ($request->filled('date')) {
+                [$start, $end] = explode(' to ', $request->date);
+                $start = date('Y-m-d', strtotime($start));
+                $end = date('Y-m-d', strtotime($end));
+            } else {
+                $fyear = Helper::getFinancialYear(now());
+                $start = $fyear['start_date'];
+                $end = $fyear['end_date'];
+            }
 
-        $query->whereBetween('document_date', [$start, $end]);
-        $query->orderBy('document_date','desc');
-    });
-    $data = $data->get();
+            $query->whereBetween('document_date', [$start, $end]);
+            $query->orderBy('document_date', 'desc');
+        });
+        $data = $data->get();
 
-    return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
-}
-public function exportSuccessfulItems()
+        return Excel::download(new FixedAssetReportExport($data), 'FixedAsset.xlsx');
+    }
+    public function exportSuccessfulItems()
     {
         $uploadItems = UploadFAMaster::where('import_status', 'Success')
             ->get();
-        $codes =  $uploadItems->pluck('asset_code')??[];
+        $codes =  $uploadItems->pluck('asset_code') ?? [];
 
         $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
-        $query->withDefaultGroupCompanyOrg();
-        $query->whereIn('asset_code', $codes);
-        $query->orderBy('document_date','desc');
-    });
-    $data = $data->get();
+            $query->withDefaultGroupCompanyOrg();
+            $query->whereIn('asset_code', $codes);
+            $query->orderBy('document_date', 'desc');
+        });
+        $data = $data->get();
         return Excel::download(new FixedAssetReportExport($data), 'success-asset-import.xlsx');
     }
 
@@ -882,10 +951,50 @@ public function exportSuccessfulItems()
                     'message' => 'The uploaded file is empty.',
                 ], 400);
             }
+            $expectedSeries = trim($sheet->getCell('A3')->getValue());
+
+            for ($row = 4; $row <= $sheet->getHighestRow(); $row++) {
+                $currentSeries = trim($sheet->getCell('A' . $row)->getValue());
+
+                if ($currentSeries !== $expectedSeries) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => "Series mismatch at row {$row}. All rows must have the same Series",
+                    ], 400);
+                }
+            }
+            $parentURL = "fixed-asset_registration";
+
+            $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+            if (count($servicesBooks['services']) == 0) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Series not accesible.",
+                ], 400);
+            }
+            $firstService = $servicesBooks['services'][0];
+            $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+            if ($series->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Series not found.",
+                ], 400);
+            }
+            $s_exists = in_array($expectedSeries, $series->pluck('book_code')->toArray());
+            if (!$s_exists) {
+                return response()->json([
+                    'status' => false,
+                    'message' => "Series '{$expectedSeries}' does not exist in the system. Expected series are: [" . implode(', ', $series->pluck('book_code')->toArray()) . ']',
+                ], 400);
+            }
+
+            $book = $series->where('book_code', $expectedSeries)->first();
+
+
             $deleteQuery = UploadFAMaster::where('created_by', $user->id);
             $deleteQuery->delete();
 
-            $import = new FAImport($this->FAImportExportService, $user);
+            $import = new FAImport($this->FAImportExportService, $user, $book);
             Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
@@ -929,34 +1038,24 @@ public function exportSuccessfulItems()
             ], 500);
         }
     }
-    public static function genrateDocNo(){
-            $services = Helper::getAccessibleServicesFromMenuAlias('fixed-asset_registration');
-            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $book = Book::where('service_id',$serviceId)->latest()->first();
-                if (!isset($book)) 
-                    return null;
-                $numberPatternData = Helper::generateDocumentNumberNew($book->id, date('y-m-d'));
-                if (!isset($numberPatternData)) 
-                    return null;
-
-                    return[
-                        'document_number' => $numberPatternData['document_number'],
-                        'book_id' => $book->id,
-                        'document_date' => date('Y-m-d'),
-                        'doc_number_type'=>$numberPatternData['type'],
-                        'doc_reset_pattern' => $numberPatternData['reset_pattern'],
-                        'doc_prefix' => $numberPatternData['prefix'],
-                        'doc_suffix' => $numberPatternData['suffix'],
-                        'doc_no' => $numberPatternData['doc_no'],
-                    ];
-                
-            }
-        else {
+    public static function genrateDocNo($book)
+    {
+        if (!isset($book))
             return null;
-    }
 
-    }
+        $numberPatternData = Helper::generateDocumentNumberNew($book->id, date('y-m-d'));
+        if (!isset($numberPatternData))
+            return null;
 
+        return [
+            'document_number' => $numberPatternData['document_number'],
+            'book_id' => $book->id,
+            'document_date' => date('Y-m-d'),
+            'doc_number_type' => $numberPatternData['type'],
+            'doc_reset_pattern' => $numberPatternData['reset_pattern'],
+            'doc_prefix' => $numberPatternData['prefix'],
+            'doc_suffix' => $numberPatternData['suffix'],
+            'doc_no' => $numberPatternData['doc_no'],
+        ];
+    }
 }

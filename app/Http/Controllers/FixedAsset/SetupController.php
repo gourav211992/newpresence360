@@ -139,12 +139,13 @@ class SetupController extends Controller
        $organization = Helper::getAuthenticatedUser()->organization;
         
         $dep_percentage = $organization->dep_percentage;
+        $dep_method = $organization->dep_method;
        
 
         
         $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_id;
         $dep_ledger_group_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
-        return view('fixed-asset.setup.create', compact('categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers','dep_percentage'))
+        return view('fixed-asset.setup.create', compact('dep_method','categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers','dep_percentage'))
             ->with('services', $servicesBooks['services'])
             ->with('parentURL', $parentURL);
     }
@@ -299,13 +300,15 @@ class SetupController extends Controller
 
         $ledgerGroups = json_decode(self::getLedgerGroups($data->ledger_id)->content());
         $ledgerGroupsDep = json_decode(self::getLedgerGroups($data->dep_ledger_id)->content());
+        $organization = Helper::getAuthenticatedUser()->organization;
+        $dep_method = $organization->dep_method;
+        
 
 
 
 
 
-
-        return view('fixed-asset.setup.edit', compact('ledgerGroups', 'categories', 'data', 'ledgers', 'ledgerGroupsDep', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers'));
+        return view('fixed-asset.setup.edit', compact('dep_method','ledgerGroups', 'categories', 'data', 'ledgers', 'ledgerGroupsDep', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers'));
     }
 
     /**
