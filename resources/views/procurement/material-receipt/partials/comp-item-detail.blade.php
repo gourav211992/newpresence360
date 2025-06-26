@@ -171,3 +171,11 @@
         </td>
     </tr>
 @endif
+@if($mrn->reference_type == 'jo' && $totalCost)
+    <tr>
+        <td class="poprod-decpt">
+            <span class="badge rounded-pill badge-light-secondary text-wrap"><strong>Item Cost</strong>:{{@$totalCost ?? ''}}</span>
+        </td>
+    </tr>
+@endif
+

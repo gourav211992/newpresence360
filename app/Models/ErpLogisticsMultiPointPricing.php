@@ -25,14 +25,24 @@ class ErpLogisticsMultiPointPricing extends Model
         'status',
     ];
 
-     public function sourceState()
+  public function sourceState()
     {
         return $this->belongsTo(State::class, 'source_state_id');
+    }
+
+    public function destinationState()
+    {
+        return $this->belongsTo(State::class, 'destination_state_id');
     }
 
     public function sourceCity()
     {
         return $this->belongsTo(City::class, 'source_city_id');
+    }
+
+    public function destinationCity()
+    {
+        return $this->belongsTo(City::class, 'destination_city_id');
     }
 
      public function customer()

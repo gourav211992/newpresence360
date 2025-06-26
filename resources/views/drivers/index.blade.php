@@ -41,7 +41,6 @@
                                                 <th>S.NO</th>
                                                 <th>Date</th>
                                                 <th>Name</th>
-                                                <th>Emp Code</th>
                                                 <th>Email</th>
                                                 <th>Mobile No.</th>
                                                 <th>Exp(Yr)</th>
@@ -139,13 +138,6 @@ $(document).ready(function () {
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                 { data: 'created_at', name: 'created_at', render: renderData },
                 { data: 'name', name: 'name', render: renderData },
-                { 
-                    data: 'employee_code', 
-                    name: 'employee.employee_code', 
-                    render: renderData,
-                    searchable: false,
-                    orderable: false
-                },
                 { data: 'email', name: 'email', render: renderData },
                 { data: 'mobile_no', name: 'mobile_no', render: renderData },
                 { data: 'experience_years', name: 'experience_years', render: renderData },

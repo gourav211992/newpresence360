@@ -19,6 +19,7 @@ use App\Models\AuthUser;
 use App\Models\ErpSaleOrder;
 use App\Http\Requests\JoRequest;
 use App\Models\Address;
+use App\Models\Bom;
 use App\Models\City;
 use App\Models\Country;
 use App\Models\Currency;
@@ -884,7 +885,10 @@ class JoController extends Controller
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
                     if(isset($component['jo_product_id']) && $component['jo_product_id']) {
-                        continue;
+                        $joProduct = JoProduct::where('id', $component['jo_product_id'])->first();
+                        if(floatval($joProduct->inventory_uom_id) == $component['uom_id']) {
+                            continue;
+                        }
                     }
                     $ctr++;
                     # Save Jo Item with Attribute
@@ -1007,14 +1011,14 @@ class JoController extends Controller
 
             DB::commit();
             return response()->json([
-                'message' => 'Record created successfully',
+                'message' => 'Record updated successfully',
                 'data' => $po,
                 'redirect_url' => $redirectUrl
             ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Error occurred while creating the record.',
+                'message' => 'Error occurred while updating the record.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -1344,6 +1348,10 @@ class JoController extends Controller
                     }
                 });
             });
+        })
+        ->whereHas('bom', function ($query) {
+            $query->whereIn('production_type', ['Job Work'])
+                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
         })
         ->when($storeId, function ($q) use ($storeId) {
             $q->where('store_id', $storeId);
@@ -1725,5 +1733,45 @@ class JoController extends Controller
             ->rawColumns(['item_attributes','status'])
             ->make(true);
             return $datatables;
+    }
+    // Check bom job
+    public function checkBomJob(Request $request)
+    {
+        $itemId = $request->item_id ?? null;
+        $item = Item::find($itemId);
+        if (!$item) {
+            return response()->json([
+                'data' => ['is_bom' => false],
+                'status' => 404,
+                'message' => 'Item not found'
+            ], 404);
+        }
+
+        $bomExists = Bom::withDefaultGroupCompanyOrg()
+            ->where('item_id', $item->id)
+            ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->exists();
+
+        if(!$bomExists) {
+            return response()->json([
+                'data' => ['is_bom' => false],
+                'status' => 422,
+                'message' => 'Bom not exist!'
+            ]);
+        }
+
+        $bomExists = Bom::withDefaultGroupCompanyOrg()
+        ->where('item_id', $item->id)
+        ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+        ->where('production_type', 'Job Work')
+        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+        ->exists();
+
+        return response()->json([
+            'data' => ['is_bom' => $bomExists],
+            'status' => 200,
+            'message' => $bomExists ? 'Fetched!' : "Select item of bom not exist as job work."
+        ]);
     }
 }

@@ -37,7 +37,6 @@
 <td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-disabled="true" data-count="{{$rowCount}}" attribute-array="{{$pwoItem->item_attributes_array()}}"> 
 </td>
 <td>
-    <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$pwoItem->inventoty_uom_id}}">
     <select  class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
          <option value="{{$pwoItem?->uom?->id}}">{{ucfirst($pwoItem?->uom?->name)}}</option>
          @foreach($pwoItem?->item?->alternateUOMs as $alternateUOM)

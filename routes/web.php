@@ -8,6 +8,7 @@ use App\Http\Controllers\ErpVehicleTypeController;
 use App\Http\Controllers\ErpFreightChargesController;
 use App\Http\Controllers\ErpMultiPointPricingController;
 use App\Http\Controllers\ErpMultiPointFixedController;
+use App\Http\Controllers\ErpRouteMasterController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
@@ -540,6 +541,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
         Route::post('send-mail', 'poMail')->name('poMail');
         Route::get('report','poReport')->name('report');
+        Route::get('check-bom-job','checkBomJob')->name('check.bom.job');
     });
 
     # Manufacturing Order
@@ -2229,7 +2231,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/logistics/vehicle', [ErpVehicleController::class, 'index'])->name('logistics.vehicle.index');
     Route::get('/logistics/vehicle/create', [ErpVehicleController::class, 'create'])->name('logistics.vehicle.create');
     Route::post('/logistics/vehicle/store', [ErpVehicleController::class, 'store'])->name('logistics.vehicle.store');
-    Route::put('/logistics/vehicle/update/{id}', [ErpVehicleController::class, 'update'])->name('logistics.vehicle.update');
+    Route::post('/logistics/vehicle/update/{id}', [ErpVehicleController::class, 'update'])->name('logistics.vehicle.update');
     Route::get('/logistics/vehicle/edit/{id}', [ErpVehicleController::class, 'edit'])->name('logistics.vehicle.edit');
     Route::delete('/logistics/vehicle/{id}', [ErpVehicleController::class, 'destroy'])->name('logistics.vehicle.destroy');
 
@@ -2260,6 +2262,17 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/logistics/multi-point-fixed/edit/{id}', [ErpMultiPointFixedController::class, 'edit'])->name('logistics.multi-point-fixed.edit');
     Route::delete('/logistics/multi-point-fixed/{id}', [ErpMultiPointFixedController::class, 'destroy'])->name('logistics.multi-point-fixed.destroy');
     Route::get('/logistics/multi-point-fixed/get-cities-by-state', [ErpMultiPointFixedController::class, 'getCityByState'])->name('logistics.multi-point-fixed.get-cities-by-state');
+
+
+    //Route-Master
+    Route::get('/logistics/route-master', [ErpRouteMasterController::class, 'index'])->name('logistics.vroute-master.index');
+    Route::post('/logistics/vroute-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
+    Route::delete('/logistics/route-master/delete-multiple', [ErpRouteMasterController::class, 'deleteMultiple'])->name('logistics.route-master.delete-multiple');
+    Route::get('/logistics/route-master/countries',        [ErpRouteMasterController::class, 'countries'])->name('logistics.route-master.countries');
+    Route::get('/logistics/route-master/states/{country}', [ErpRouteMasterController::class, 'states'   ])->name('logistics.route-master.states');
+    Route::get('/logistics/route-master/cities/{state}',   [ErpRouteMasterController::class, 'cities'   ])->name('logistics.route-master.cities');
+
+
 
      //Production Slip
      Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');

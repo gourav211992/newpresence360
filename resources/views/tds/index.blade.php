@@ -566,10 +566,29 @@ emptyRow.appendChild(emptyCell)
     // Step 4: Align header row
     const headerRow = sheetData.getElementsByTagName('row')[4]; // new header row
     const headerCells = headerRow.getElementsByTagName('c');
+    const headerMap = {
+        'VendorName': 'Vendor Name',
+        'TypeofDeductee': 'Type  of  Deductee',
+        'Type ofDeductee': 'Type of Deductee', // ✅ FIX for your case
+        'AmountPaid/Credited': 'Amount Paid / Credited',
+        'Paid/CreditedDate': 'Paid / Credited Date',
+        'CashWith.Exceed.Limit': 'Cash With. Exceed. Limit',
+        'DeductionDate': 'Deduction Date',
+        'DeductedAmt': 'Deducted Amt',
+        'DeductionRate': 'Deduction Rate'
+    };
     const rightAlignCols = ['G', 'K'];
     const alwaysLeftAlignCols = ['F', 'L'];
     for (let i = 0; i < headerCells.length; i++) {
     const cell = headerCells[i];
+    const isNode = cell.getElementsByTagName('is')[0];
+    const tNode = isNode?.getElementsByTagName('t')[0];
+    const original = tNode?.textContent?.trim();
+
+    if (original && headerMap[original]) {
+        tNode.textContent = headerMap[original];
+    }
+
     const cellRef = cell.getAttribute('r');
     const colLetter = cellRef.replace(/[0-9]/g, '');
 

@@ -3,10 +3,8 @@
 namespace App\Http\Controllers\BillOfMaterial;
 
 use App\Exports\BomImportErrorExport;
-use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
-use App\Helpers\ItemHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\BomImportRequest;
 use Maatwebsite\Excel\Facades\Excel;
@@ -18,7 +16,6 @@ use App\Models\BomDetail;
 use App\Models\BomNormsCalculation;
 use App\Models\BomUpload;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use DB;
 
 class BomImportController extends Controller
@@ -28,7 +25,6 @@ class BomImportController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = request()->segments()[0] == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
-
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
@@ -56,49 +52,15 @@ class BomImportController extends Controller
     #Bill of material store
     public function importSave(BomImportRequest $request)
     {
-        # check validation
-        // $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
-        // $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
-        // $stationRequired = isset($parameters['station_required']) && is_array($parameters['station_required']) && in_array('yes', array_map('strtolower', $parameters['station_required']));
-        // if($stationRequired && $request->document_status == ConstantHelper::SUBMITTED) {
-        //     $allStations = [];
-        //     foreach ($request->input('components', []) as $index => $component) {
-        //         $stationId = isset($component['station_id']) ? $component['station_id'] : null;
-        //         if($stationId) {
-        //             $allStations[] = intval($stationId);
-        //         } 
-        //     }
-        //     $allStations = array_unique($allStations);
-        //     $productionStationIds = [];
-        //     $productionRouteId = $request->production_route_id;
-        //     $productionRoute = ProductionRoute::find($productionRouteId);
-        //     if($productionRoute) {
-        //         $productionStationIds = $productionRoute->details()->where('consumption','yes')->pluck('station_id')->toArray(); 
-        //     }
-        //     if($allStations !== $productionStationIds) {
-        //         $arrayDiff = array_diff($productionStationIds, $allStations);
-        //         if(count($arrayDiff)) {
-        //             $arrayDiff = array_values($arrayDiff);
-        //             $station = Station::whereIn('id', $arrayDiff)->pluck('name')->implode(',');
-        //             $message = "Consumption not defined for {$station}.";
-        //             return response()->json([
-        //                 'message' => $message,
-        //                 'error' => "",
-        //             ], 422);
-        //         }
-        //     }
-        // }
         DB::beginTransaction();
         try {
             $bookId = $request->book_id ?? null; 
             $documentDate = $request->document_date ?? null;
-
             $user = Helper::getAuthenticatedUser();
             BomUpload::where('created_by', $user?->auth_user_id)->delete();
             $parentUrl = request()->segments()[0];
             $moduleTyle = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
             Excel::import(new BomImportData($bookId,$documentDate,$moduleTyle), $request->file('attachment'));
-
             $uploads = BomUpload::where('migrate_status', 0)
                     ->where('created_by', $user->auth_user_id)
                     ->get();
@@ -171,14 +133,12 @@ class BomImportController extends Controller
                         });
                     continue;
                 }
-
                 $reasonCount = $groupedData['items']->sum(function ($item) {
                     return is_array($item['reason']) ? count($item['reason']) : 0;
                 });
                 if($reasonCount) {
                     continue;
                 }
-
                 $bom = new Bom;
                 $bom->type = $moduleTyle; 
                 $bom->bom_type = ConstantHelper::FIXED; 
@@ -199,7 +159,6 @@ class BomImportController extends Controller
                 # Extra Column
                 // $document_number = $request->document_number ?? null;
                 $document_number = null;
-                
                 /**/
                 $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
                 // if (!isset($numberPatternData)) {
@@ -220,20 +179,16 @@ class BomImportController extends Controller
                 //         'error' => "",
                 //     ], 422);
                 // }
-
                 $bom->doc_number_type = $numberPatternData['type'];
                 $bom->doc_reset_pattern = $numberPatternData['reset_pattern'];
                 $bom->doc_prefix = $numberPatternData['prefix'];
                 $bom->doc_suffix = $numberPatternData['suffix'];
                 $bom->doc_no = $numberPatternData['doc_no'];
-                /**/
-
                 $bom->book_id = $request->book_id;
                 $bom->book_code = $request->book_code;
                 $bom->document_number = $document_number;
                 $bom->document_date = $request->document_date ?? now();
                 $bom->save();
-
                 # Save header attribute
                 if(count($groupedData['product_attributes'])) {
                     foreach($groupedData['product_attributes'] as $productAttribute) {
@@ -248,7 +203,6 @@ class BomImportController extends Controller
                         $bomAttr->save();
                     }
                 }
-
                 if(count($groupedData['items'])) {
                     foreach($groupedData['items'] as $groupedDataItem) {
                         $bomDetail = new BomDetail;
@@ -269,7 +223,6 @@ class BomImportController extends Controller
                         $bomDetail->vendor_id = $groupedDataItem['vendor_id'] ?? null;
                         $bomDetail->remark = $groupedDataItem['remark'] ?? null;
                         $bomDetail->save();
-
                         if($groupedDataItem['calculated_consumption']) {
                                 $normData = [
                                     'bom_id' => $bom->id,
@@ -303,7 +256,6 @@ class BomImportController extends Controller
                         }
                     }
                 }
-
                 /*Update Bom header*/
                 $bom->total_item_value = $bom->bomItems()->sum('item_value') ?? 0.00;
                 $bom->save();
@@ -320,18 +272,11 @@ class BomImportController extends Controller
                     $actionType = 'submit';
                     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 }
-
                 if ($request->document_status == 'submitted') {
                     $bom->document_status = $approveDocument['approvalStatus'] ?? $request->document_status;
                 } else {
                     $bom->document_status = $request->document_status ?? ConstantHelper::DRAFT;
                 }
-                
-                /*Bom Attachment*/
-                // if ($request->hasFile('attachment')) {
-                //     $mediaFiles = $bom->uploadDocuments($request->file('attachment'), 'bom', false);
-                // }
-
                 $bom->save();
                 if($bom) {
                     BomUpload::where('migrate_status', 0)
@@ -345,16 +290,13 @@ class BomImportController extends Controller
                             });
                 }
             }
-
             DB::commit();
-
             $errorRows = BomUpload::where('created_by', $user->auth_user_id)
                         ->where('migrate_status', 0)
                         ->get();
             if(count($errorRows)) {
                 if(isset($bom) && $bom) {
                     return response()->json([
-                        // 'message' => 'Record imported successfully ',
                         'message' => 'Some records were imported successfully, but some had issues. Please downloaded error file to review them.',
                         'data' => @$bom,
                         'redirect_url' => route('bill.of.material.import.error')

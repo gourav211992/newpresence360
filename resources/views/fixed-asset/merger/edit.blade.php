@@ -728,6 +728,7 @@ $(document).on('keydown', function(e) {
         });
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function(e) {
+            $('.preloader').show();
             e.preventDefault(); // Prevent default form submission
             document.getElementById('document_status').value = 'draft';
             const allRows = [];
@@ -755,6 +756,7 @@ $(document).on('keydown', function(e) {
 
             $('#asset_details').val(JSON.stringify(allRows));
             if ($('#asset_code').hasClass('is-invalid')) {
+                $('.preloader').hide();
                 showToast('error', 'Code already exist.');
                 return false;
 
@@ -767,6 +769,7 @@ $(document).on('keydown', function(e) {
 
 
         $('#fixed-asset-merger-form').on('submit', function(e) {
+            $('.preloader').show();
             e.preventDefault(); // Always prevent default first
 
             document.getElementById('document_status').value = 'submitted';
@@ -797,6 +800,7 @@ $(document).on('keydown', function(e) {
 
             $('#asset_details').val(JSON.stringify(allRows));
             if ($('#asset_code').hasClass('is-invalid')) {
+                $('.preloader').hide();
                 showToast('error', 'Code already exist.');
                 return false;
 
@@ -827,14 +831,17 @@ $(document).on('keydown', function(e) {
         }
 
         @if (session('success'))
+            $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
+            $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
+            $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );

@@ -167,12 +167,14 @@ $("#sub_asset_code").change(function () {
     });
 });
 function validateForm() {
+    $('.preloader').show();
     // Get the JSON data from #selectedSubAssets
     let subAssetJson = $("#selectedSubAssets").val();
 
 
     // Check if the parsed JSON is an array or object and ensure it's not empty
     if (Array.isArray(subAssetJson) && subAssetJson.length === 0) {
+        $('.preloader').hide();
         showToast('error', 'Please Select a Sub Asset.');
         return false;  // Prevent form submission
     }
@@ -180,6 +182,7 @@ function validateForm() {
     // If it's an object, check if sub_asset is available
     if (typeof subAssetJson === 'object' && subAssetJson !== null) {
         if (!subAssetJson.sub_asset || subAssetJson.sub_asset.trim() === "") {
+            $('.preloader').hide();
             showToast('error', 'Please Select a Sub Asset.');
             return false;  // Prevent form submission
         }

@@ -15,6 +15,7 @@ class VehicleRequest extends FormRequest
     public function rules(): array
     {
         $id = $this->route('id') ?? null;
+        
 
         return [
             'transporter_id' => 'required',
@@ -28,33 +29,33 @@ class VehicleRequest extends FormRequest
 
             'vehicle_type_id' => 'required|integer|exists:erp_vehicle_types,id',
 
-        'chassis_no' => [
-            'required',
-            'string',
-            'regex:/^[A-Z0-9\-]{6,20}$/i', 
-            Rule::unique('erp_vehicles', 'chassis_no')->ignore($id),
-        ],
+            'chassis_no' => [
+                'required',
+                'string',
+                'regex:/^[A-Z0-9\-]{6,20}$/i', 
+                Rule::unique('erp_vehicles', 'chassis_no')->ignore($id),
+            ],
 
-        'engine_no' => [
-            'required',
-            'string',
-            'max:17',
-            'regex:/^[A-Z0-9]{6,17}$/i', // strict 6-17 uppercase letters and numbers
-            Rule::unique('erp_vehicles', 'engine_no')->ignore($id),
-        ],
+            'engine_no' => [
+                'required',
+                'string',
+                'max:17',
+                'regex:/^[A-Z0-9]{6,17}$/i', 
+                Rule::unique('erp_vehicles', 'engine_no')->ignore($id),
+            ],
 
-        'rc_no' => [
-            'nullable',
-            'string',
-            'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/i', // eg: UP14CA1234
-            Rule::unique('erp_vehicles', 'rc_no')->ignore($id),
-        ],
+            'rc_no' => [
+                'nullable',
+                'string',
+                'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{1,2}[0-9]{4}$/i', 
+                Rule::unique('erp_vehicles', 'rc_no')->ignore($id),
+            ],
 
-        'rto_no' => [
-            'nullable',
-            'string',
-            'regex:/^[A-Z]{2}[0-9]{2}$/i', // eg: UP14
-        ],
+            'rto_no' => [
+                'nullable',
+                'string',
+                'regex:/^[A-Z]{2}[0-9]{2}$/i', 
+            ],
 
             'company_name'   => 'nullable|string',
             'model_name'     => 'nullable|string',
@@ -102,7 +103,7 @@ class VehicleRequest extends FormRequest
             // Road Tax
             'road_tax_from'   => 'nullable|date',
             'road_tax_to'     => 'nullable|date|after_or_equal:road_tax_from',
-            'road_paid_on'    => 'required_with:road_tax_from,road_tax_to|date',
+            'road_paid_on'    => 'nullable|required_with:road_tax_from,road_tax_to|date',
 
             'road_tax_amount'        => 'nullable|numeric|min:0',
             'road_tax_attachment'    => 'nullable|file|mimes:jpg,jpeg,png,pdf|min:10|max:2048',
@@ -161,10 +162,10 @@ class VehicleRequest extends FormRequest
 
             'rc_no.unique'            => 'This RC number already exists.',
 
-            'chassis_no.regex' => 'Chassis number must be alphanumeric and 6–20 characters.',
-            'engine_no.regex'  => 'Engine number must be alphanumeric and up to 17 characters.',
-            'rc_no.regex'      => 'RC number format is invalid. Example: UP14CA1234.',
-            'rto_no.regex'     => 'RTO number format is invalid. Example: UP14.',
+            'chassis_no.regex'        => 'Chassis number must be alphanumeric and 6–20 characters.',
+            'engine_no.regex'         => 'Engine number must be alphanumeric and up to 17 characters.',
+            'rc_no.regex'             => 'RC number format is invalid. Example: UP14CA1234.',
+            'rto_no.regex'            => 'RTO number format is invalid. Example: UP14.',
 
             'capacity_kg.numeric'     => 'Capacity must be a valid number.',
             'capacity_kg.min'         => 'Capacity must be a positive number.',

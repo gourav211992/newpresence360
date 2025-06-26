@@ -536,19 +536,23 @@ $(document).on('keydown', function(e) {
         });
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function() {
+            $('.preloader').show();
             document.getElementById('document_status').value = 'draft';
             updateJsonData();
-            if(validateRevaluationAmounts())
-            document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+            if(validateRevaluationAmounts()){
+                document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+            }
         });
 
 
 $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
+                $('.preloader').show();
      document.getElementById('document_status').value = 'submitted';
             e.preventDefault(); // Always prevent default first
              updateJsonData();
-                if(validateRevaluationAmounts())
-                this.submit();
+                if(validateRevaluationAmounts()){
+                    this.submit();
+                }
         });
 
         function showToast(icon, title) {
@@ -570,14 +574,17 @@ $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
         }
 
         @if (session('success'))
+                $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
+                $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
+                $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
@@ -946,6 +953,7 @@ function getAllAssetIds() {
 
                 
                if (documentType === 'revaluation' && revalVal <= currentVal) {
+                
                     isValid = false;
                     
                 } else if (documentType === 'impairement' && (revalVal >= currentVal || revalVal <= salVal)) {
@@ -953,6 +961,7 @@ function getAllAssetIds() {
                 }
             });
                 if (!isValid) {
+                    $('.preloader').hide();
                     if (documentType === 'revaluation') 
                         showToast('error', 'Revaluation amount must be greater than current value.');
                     else

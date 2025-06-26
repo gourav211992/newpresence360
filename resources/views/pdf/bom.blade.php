@@ -86,6 +86,14 @@
                                 {{ @$bom?->item?->uom?->name }}
                             </td>
                         </tr>
+                        @if(@$bom?->customer)
+                        <tr>
+                            <td style="padding-top: 3px;">Customer:</td>
+                            <td style="padding-top: 3px;">
+                                {{ @$bom?->customer?->company_name }}
+                            </td>
+                        </tr>
+                        @endif
                     </table>
                 </td>
                 <td rowspan="2"
@@ -234,7 +242,7 @@
                         QPU:{{number_format($bomItem->norm->qty_per_unit ?? 0, 4)}}
                         PCS:{{number_format($bomItem->norm->total_qty ?? 0, 4)}}
                         STD:{{number_format($bomItem->norm->std_qty ?? 0, 4)}}
-                        NRM:{{number_format($bomItem->norm->norms ?? 0, 4)}}
+                        QTY:{{number_format($bomItem->norm->norms ?? 0, 4)}}
                         </td>
                     @endif
 
@@ -440,13 +448,13 @@
                         <tr>
                             <td style="padding-top: 5px;">Created By :</td>
                             <td style="padding-top: 5px;">
-                                {{@$bom->createdBy->name}}
+                                {{@$bom?->createdBy?->name}}
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 5px;">Printed By :</td>
                             <td style="padding-top: 5px;">
-                                {{ auth()->guard('web2')->user()->name ?? ''}}
+                                {{ @$user?->name ?? ''}}
                             </td>
                         </tr>
                     </table>

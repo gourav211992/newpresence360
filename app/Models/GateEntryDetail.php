@@ -113,6 +113,16 @@ class GateEntryDetail extends Model
         return $this->belongsTo(JoProduct::class, 'job_order_item_id');
     }
 
+    public function po_item()
+    {
+        return $this->belongsTo(PoItem::class, 'purchase_order_item_id');
+    }
+
+    public function jo_item()
+    {
+        return $this->belongsTo(JoProduct::class, 'job_order_item_id');
+    }
+
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');

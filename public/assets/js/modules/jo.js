@@ -1399,7 +1399,6 @@ function hasDuplicateObjects(arr) {
 }
 // UOM on change bind rate
 function handleRowChange(tr) {
-    getItemCostPrice(tr);
     setTableCalculation();
 }
 // Debounced handler for select/input changes
@@ -1847,6 +1846,7 @@ function initAutoForItem(selector, type) {
         let itemName = ui.item.value;
         let itemN = ui.item.item_name;
         let itemId = ui.item.item_id;
+        checkBomJobWork(itemId,$input);
         let uomId = ui.item.uom_id;
         let uomName = ui.item.uom_name;
         $input.attr('data-name', itemName);
@@ -1873,7 +1873,6 @@ function initAutoForItem(selector, type) {
             }
         }, 100);
 
-        getItemCostPrice($input.closest('tr'));
         setTableCalculation();
         validateItems($input, true);
         return false;
@@ -1904,6 +1903,28 @@ function initAutoForItem(selector, type) {
     });
 }
 
+function checkBomJobWork(itemId = null,$input) {
+    fetch(checkBomJobUrl+'?item_id='+itemId).then((response) => {
+        return response.json().then(data => {
+            if(!data?.data?.is_bom) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data?.message || '',
+                    icon: 'error',
+                });
+                $input.closest('tr').find("input[name*='component_item_name']").val('');
+                $input.closest('tr').find("input[name*='item_name']").val('');
+                $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                $input.closest('tr').find("input[name*='item_id']").val('');
+                $input.closest('tr').find("input[name*='item_code']").val('');
+                $input.closest('tr').find("input[name*='inventoty_uom_id']").val();
+                $input.closest('tr').find("input[name*='uom_id']").emopty();
+                $input.closest('tr').find("input[name*='attr_name']").remove();
+                return false;
+            }
+        });
+    });
+}
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
     if(!checkBasicFilledDetail()) {
@@ -1985,47 +2006,6 @@ $(document).on('click','#addNewItemBtn', (e) => {
     });
     });
 });
-
-// Get Item Rate
-function getItemCostPrice(currentTr)
-{
-    let vendorId = $("#vendor_id").val();
-    let currencyId = $("select[name='currency_id']").val();
-    let transactionDate = $("input[name='document_date']").val(); 
-    let itemId = $(currentTr).find("input[name*='[item_id]']").val();
-    let attributesRaw = $(currentTr).find('td[attribute-array]').attr('attribute-array');
-    let parsedAttributes = attributesRaw ? JSON.parse(attributesRaw) : [];
-    let formattedAttributes = parsedAttributes.map(attr => {
-        let selectedValue = attr.values_data.find(val => val.selected);
-        return {
-            id: attr.id,
-            group_name: attr.group_name,
-            attr_name: attr.attribute_group_id,
-            attr_value: selectedValue ? selectedValue.id : null
-        };
-    });
-    let itemQty = $(currentTr).find("input[name*='[qty]']").val() ?? 0;
-    let uomId = $(currentTr).find("select[name*='[uom_id]']").val();
-    let queryParams = new URLSearchParams({
-        vendor_id: vendorId,
-        currency_id: currencyId,
-        transaction_date: transactionDate,
-        item_id: itemId,
-        attr: JSON.stringify(formattedAttributes),
-        uom_id: uomId,
-        item_qty : itemQty
-    });
-    let actionUrl = getItemCostUrl+'?'+queryParams.toString();
-    fetch(actionUrl).then(response => {
-        return response.json().then(data => {
-            if(data.status == 200) {
-                let cost = data?.data?.cost || 0;
-                $(currentTr).find("input[name*='[rate]']").val(cost);
-                setTableCalculation();
-            }
-        });
-    });
-}
 
 let selectedPwoId = null;
 $(document).on('change', '.po-order-detail > tbody .pi_item_checkbox', function (e) {
