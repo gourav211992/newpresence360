@@ -302,10 +302,10 @@
                 <tr>
 
                     <td
-                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;word-break: break-word;">
                         {{ $key + 1 }}</td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;word-break: break-word;">
                         <b> {{ @$val?->item?->item_name }}</b><br/>
 
                         @if($val?->attributes->count())
@@ -339,31 +339,31 @@
                         @if(@$val->remarks)Remarks : {{@$val->remarks}}@endif
                     </td>
                     <td
-                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
                         {{ @$val?->hsn?->code }}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{@$val->order_qty}}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
                         {{ucfirst(@$val?->item?->uom?->name)}}
                     </td>
 
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{@$val->rate}}
                     </td>
                     @php
                     $total = number_format(($val->order_qty * $val->rate), 2, '.', '');
                     @endphp
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{ $total }}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
                         {{ number_format($val->item_discount_amount + $val->header_discount_amount, 2) }}
                     </td>
                     @php
@@ -372,7 +372,7 @@
                         $netValue = number_format($netValue, 2, '.', '');
                     @endphp
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
                         {{number_format($netValue,2)}}
                     </td>
                     @php
@@ -395,11 +395,11 @@
 
                                 @endphp
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
                         {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
                     </td>
                     <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;">
+                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
                         {{ $val?->ted_tax?->taxDetail?->erpTax?->tax_group ?? 'NA' }}
                     </td>
                 </tr>
@@ -522,12 +522,12 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
 
                         <tr>
-                            <td style="padding-top: 5px;">Created By : {{@$po->createdBy->name}}
+                            <td style="padding-top: 5px;">Created By : {{@$po?->createdBy?->name}}
                             </td>
                         </tr>
 
                         <tr>
-                            <td style="padding-top: 5px;">Printed By : {{@$user->name}}
+                            <td style="padding-top: 5px;">Printed By : {{@$user?->name}}
                             </td>
                         </tr>
                     </table>

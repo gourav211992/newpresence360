@@ -537,19 +537,23 @@
         });
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function() {
+            $('.preloader').show();
             document.getElementById('document_status').value = 'draft';
             updateJsonData();
-            if (validateRevaluationAmounts())
+            if (validateRevaluationAmounts()) {
                 document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+            }
         });
 
 
         $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
+            e.preventDefault();
+            $('.preloader').show();
             document.getElementById('document_status').value = 'submitted';
-            e.preventDefault(); // Always prevent default first
             updateJsonData();
-            if (validateRevaluationAmounts())
+            if (validateRevaluationAmounts()) {
                 this.submit();
+            }
         });
 
         function showToast(icon, title) {
@@ -571,14 +575,17 @@
         }
 
         @if (session('success'))
+            $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
+            $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
+            $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
@@ -1034,6 +1041,7 @@
                 }
             });
                 if (!isValid) {
+                    $('.preloader').hide();
                     if (documentType === 'revaluation') 
                         showToast('error', 'Revaluation amount must be greater than current value.');
                     else

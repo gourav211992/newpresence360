@@ -1392,7 +1392,8 @@ class BomController extends Controller
                 'sectionRequired' => $sectionRequired,
                 'subSectionRequired' => $subSectionRequired,
                 'canView' => $canView,
-                'consumption_method' => $consumption_method
+                'consumption_method' => $consumption_method,
+                'user' => $user
             ]
         );
 

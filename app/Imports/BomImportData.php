@@ -8,7 +8,6 @@ use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
 use App\Models\AttributeGroup;
 use App\Models\Attribute;
-use App\Models\Bom;
 use App\Models\BomUpload;
 use App\Models\Customer;
 use App\Models\Item;
@@ -19,7 +18,6 @@ use App\Models\ProductSection;
 use App\Models\ProductSectionDetail;
 use App\Models\Station;
 use App\Models\Vendor;
-use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\ToCollection;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
@@ -52,9 +50,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
             return collect($rowArray);
         });
         $user = Helper::getAuthenticatedUser();
-        // $filteredRows = $rows->filter(fn($row) => collect($row)->filter()->isNotEmpty());
-        // DB::beginTransaction(); // Start Transaction
-        // try {
             foreach ($trimmedRows as $index => $row) {
                 if($index) {
                     $errors = [];
@@ -62,7 +57,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     if(!$productItem) {
                         $errors[] = "Product not found: {$row['product_code']}";
                     }
-
                     $productAttributes = [];
                     # Need to valid item attribute length
                     if($productItem?->itemAttributes?->count()) {
@@ -79,7 +73,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             $errors[] = "Product Attribute length not match";
                         }
                     }
-
                     $productCode = $productItem?->item_code; 
                     $productName = $productItem?->item_name;
                     $productId = $productItem?->id;
@@ -101,7 +94,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                         $errors[] = "Station not found";
                     }
                     $stationId = $station?->id;
-
                     $vendorcode = $row['vendor_code'] ?? ''; 
                     $vendor = Vendor::where('vendor_code', $vendorcode)->first();
                     if(!$vendor) {
@@ -116,7 +108,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                         }
                     }
                     $customerId = $customer?->id;
-                    
                     $sectionName = $row['section'] ?? ''; 
                     $section = ProductSection::where('name', $sectionName)->first();
                     if(!$section) {
@@ -150,7 +141,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     $itemCode = $item?->item_code; 
                     $itemUomId = $item?->uom?->id;
                     $itemUomCode = $item?->uom?->name;
-
                     $itemAttributes = [];
                     # Need to valid item attribute length
                     if($item?->itemAttributes?->count()) {
@@ -167,9 +157,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             $errors[] = "Item Attribute length not match";
                         }
                     }
-
                     $consumptionQty = $row['consumption_qty'] ?? 0; 
-
                     if(!$consumption_method) {
                         if (is_null($consumptionQty) || $consumptionQty === '') {
                             $errors[] = "Consumption is required.";
@@ -181,20 +169,20 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             $errors[] = "Consumption cannot be zero.";
                         }
                     }
-                    $consumption_per_unit = 0;
+                    $component_per_unit = 0;
                     $pieces = 0;
                     $std_qty = 0;
                     if($consumption_method) {
-                        $consumption_per_unit = $row['consumption_per_unit'] ?? 0;
+                        $component_per_unit = $row['component_per_unit'] ?? 0;
                         $pieces = $row['pieces'] ?? 0;
                         $std_qty = $row['std_qty'] ?? 0;
-                        if ($consumption_per_unit !== null && $consumption_per_unit !== '') {
-                            if (!is_numeric($consumption_per_unit)) {
-                                $errors[] = "Norms Consumption per unit must be a valid number.";
-                            } elseif ($consumption_per_unit < 0) {
-                                $errors[] = "Norms Consumption per unit cannot be negative.";
-                            } elseif ($consumption_per_unit == 0) {
-                                $errors[] = "Norms Consumption per unit cannot be zero.";
+                        if ($component_per_unit !== null && $component_per_unit !== '') {
+                            if (!is_numeric($component_per_unit)) {
+                                $errors[] = "Norms component per unit must be a valid number.";
+                            } elseif ($component_per_unit < 0) {
+                                $errors[] = "Norms component per unit cannot be negative.";
+                            } elseif ($component_per_unit == 0) {
+                                $errors[] = "Norms component per unit cannot be zero.";
                             }
                         }
                         if ($pieces !== null && $pieces !== '') {
@@ -216,8 +204,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             }
                         }
                     }
-                    
-
                     $costPerUnit = $row['cost_per_unit'] ?? 0;
                     $currency =  CurrencyHelper::getOrganizationCurrency();
                     $currencyId = $currency?->id ?? null; 
@@ -232,7 +218,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     if(!$costPerUnit) {
                         $errors[] = "Item cost not defined";
                     }
-                    
                     BomUpload::create(
                         [
                             'type' => 'bom',
@@ -274,7 +259,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             'attribute_name_5' => @$row['attribute_name_5'],
                             'attribute_value_5' => @$row['attribute_value_5'],
                             'consumption_qty' => $consumptionQty,
-                            'consumption_per_unit' => $consumption_per_unit,
+                            'consumption_per_unit' => $component_per_unit,
                             'pieces' => $pieces,
                             'std_qty' => $std_qty,
                             'cost_per_unit' => $costPerUnit,
@@ -297,11 +282,9 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     );                        
                 }
             }
-
             $groupedItemsTests = BomUpload::where('migrate_status', 0)
                 ->where('created_by', $user->auth_user_id)
                 ->get();
-            
             foreach($groupedItemsTests as $groupedItemsTest) {
                 if (empty($groupedItemsTest->calculated_consumption) && empty($groupedItemsTest->consumption_qty)) {
                     $reasons = $groupedItemsTest->reason ?? [];
@@ -321,14 +304,12 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
 
                 }
             } 
-
             $groupedItems = BomUpload::select('product_item_id', DB::raw('COUNT(DISTINCT production_route_id) as route_count'))
                 ->where('migrate_status', 0)
                 ->where('created_by', $user->auth_user_id)
                 ->groupBy('product_item_id')
                 ->get();
             foreach ($groupedItems as $item) {
-
                 if ($item->route_count > 1) {
                     BomUpload::where('migrate_status', 0)
                         ->where('created_by', $user->auth_user_id)
@@ -341,17 +322,14 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             $row->save();
                         });
                 } else {
-                    
                     $allData = BomUpload::where('migrate_status', 0)
                     ->where('product_item_id', $item->product_item_id)
                     ->where('created_by', $user->auth_user_id)
                     ->first();
-
                     $prDetailStationIds = ProductionRouteDetail::where('production_route_id',$allData?->production_route_id)
                                     ->where('consumption', 'yes')
                                     ->pluck('station_id')
                                     ->toArray();
-
                     $bomStationIds = BomUpload::where('migrate_status', 0)
                                     ->where('product_item_id', $item->product_item_id)
                                     ->where('created_by', $user->auth_user_id)
@@ -366,15 +344,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     }
                 }
             }
-
-        //     DB::commit();
-        // } catch (\Exception $e) {
-        //     DB::rollBack();
-        //     \Log::error('BOM Import Error: ' . $e->getMessage());
-        //     throw $e;
-        // }
     }
-
     private function validateAttribute($item, $row, int $index, $label): array
     {
         $attribute = null;

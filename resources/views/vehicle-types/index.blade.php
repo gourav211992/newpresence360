@@ -99,11 +99,16 @@
                                                             <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100" value="{{$type->description}}">
                                                         </td>
                                                         <td>
-                                                            <select name="vehicle_type[{{ $rowIndex }}][status]" 
-                                                                class="form-control mw-100 ledgerselecct status-dropdown">
-                                                            <option value="active" data-color="success" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
-                                                            <option value="inactive" data-color="danger" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                                         @php
+                                                            $statusClass = $type->status === 'active' ? 'bg-success text-white' : 'bg-danger text-white';
+                                                        @endphp
+
+                                                        <select name="vehicle_type[{{ $rowIndex }}][status]"
+                                                                class="form-control mw-100 {{ $statusClass }}">
+                                                            <option value="active" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
+                                                            <option value="inactive" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                                         </select>
+
 
                                                         </td>
                                                     </tr>
@@ -157,6 +162,27 @@
 
 @section('scripts')
 <script>
+
+  $(document).ready(function () {
+    function updateSelectColor(select) {
+        const color = $('option:selected', select).data('color');
+        const bgColor = {
+            success: '#e8f9e5',
+            danger: '#f8d7da',
+        }[color] || '#ffffff';
+
+        $(select).css({
+            'background-color': bgColor
+        });
+    }
+    $('.status-dropdown').each(function () {
+        updateSelectColor(this);
+    });
+    $('.status-dropdown').on('change', function () {
+        updateSelectColor(this);
+    });
+});
+
 let rowIndex = {{ $rowIndex ?? 1 }};
 
 // Select/Deselect All
@@ -164,11 +190,10 @@ document.getElementById('checkAll').addEventListener('change', function () {
     document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
 });
 
-// Add New Row
+
 document.getElementById('addRowBtn').addEventListener('click', function () {
     const tbody = document.querySelector('.mrntableselectexcel');
 
-    // ✅ Check for incomplete required fields
     let incomplete = false;
     tbody.querySelectorAll('tr').forEach(row => {
         const requiredFields = [

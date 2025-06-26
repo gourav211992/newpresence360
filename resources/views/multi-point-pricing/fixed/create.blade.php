@@ -156,14 +156,14 @@
                                                         
                                                         <div class="col-md-12"> 
                                                             <div class="demo-inline-spacing">
-                                                                <div class="form-check form-check-primary mt-25">
-                                                                    <input type="radio" id="customColorRadio3" name="customColorRadio3" class="form-check-input" checked="">
-                                                                    <label class="form-check-label fw-bolder" for="customColorRadio3">Active</label>
-                                                                </div> 
-                                                                <div class="form-check form-check-primary mt-25">
-                                                                    <input type="radio" id="customColorRadio4" name="customColorRadio3" class="form-check-input">
-                                                                    <label class="form-check-label fw-bolder" for="customColorRadio4">Inactive</label>
-                                                                </div> 
+                                                                @foreach ($status as $statusOption)
+                                                            <div class="form-check form-check-primary mt-25">
+                                                                <input type="radio"id="status_{{ $statusOption }}" name="status" value="{{ $statusOption }}" class="form-check-input"  {{ $statusOption === 'active' ? 'checked' : '' }}>
+                                                                <label class="form-check-label fw-bolder" for="status_{{ $statusOption }}">
+                                                                    {{ ucfirst($statusOption) }}
+                                                                </label>
+                                                            </div>
+                                                             @endforeach
                                                             </div> 
                                                         </div>
                                                     </div>

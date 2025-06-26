@@ -3,7 +3,7 @@
 @section('content')
 <form method="POST" action="{{ route('logistics.vehicle.update', $vehicle->id) }}" enctype="multipart/form-data" data-redirect="{{ url('/logistics/vehicle') }}" class="ajax-input-form">
     @csrf
-    @method('PUT')
+   
     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>

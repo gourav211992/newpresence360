@@ -16,6 +16,7 @@ use App\Models\JobOrder\JoProductDelivery;
 use App\Models\JobOrder\JoTerm;
 use App\Models\PwoBomMapping;
 use App\Models\PwoSoMapping;
+use PHPUnit\TextUI\Configuration\Constant;
 
 class JobOrderService
 {
@@ -278,7 +279,12 @@ class JobOrderService
         }
         $bomDetails = PwoBomMapping::where('pwo_mapping_id', $joProduct?->pwo_so_mapping_id)->get();
         if ($bomDetails->isEmpty()) {
-            $bom = Bom::where('item_id', $joProduct->item_id)->first();
+            $bom = Bom::withDefaultGroupCompanyOrg()
+                ->whereIn('production_type', ['Job Work'])
+                ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+                ->where('item_id', $joProduct?->item_id)
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                ->first();
             if (!$bom) return;
             $bomDetails = BomDetail::with('attributes')
                 ->where('bom_id', $bom->id)
@@ -298,7 +304,7 @@ class JobOrderService
                 'attributes'      => json_encode($attributes),
                 'uom_id'          => $bomDetail->uom_id,
                 'bom_qty'         => (float) $bomDetail->qty,
-                'qty'             => (float) $joProduct->order_qty * (float) $bomDetail->qty,
+                'qty'             => (float) $joProduct->inventory_uom_qty * (float) $bomDetail->qty,
                 'station_id'      => $bomDetail->station_id,
                 'section_id'      => $bomDetail->section_id,
                 'sub_section_id'  => $bomDetail->sub_section_id,
@@ -309,7 +315,6 @@ class JobOrderService
         if (!empty($insertData)) {
             JoBomMapping::insert($insertData);
         }
-        $a = JoBomMapping::all();
     }
     # Job Order Bom Mapping
     public static function saveJoItems(JobOrder $po): void

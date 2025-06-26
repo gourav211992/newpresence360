@@ -603,7 +603,7 @@
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
                                                                      <td>
-                                                                            <input type="text" class="form-control mw-100 bankInput reference_no" 
+                                                                            <input type="number" class="form-control mw-100 bankInput reference_no" 
                                                                                 name="reference_no[]" data-row="{{ $no }}" id="reference_no{{ $no }}" 
                                                                                 @if($item->reference_no) value="{{ $item->reference_no }}" @endif />
                                                                             <span class="text-danger bankInput" id="reference_error{{ $no }}" style="font-size:12px"></span>
@@ -1391,15 +1391,21 @@ function check_amount() {
             //   }
             if ($("#Bank").is(":checked")) {
                     let refError = false;
+                    // First check for empty references
                     $('.reference_no').each(function() {
-                        if ($(this).val().trim() === '') {
+                        const refNo = $(this).val().trim();
+                        const row = $(this).data('row');
+                        
+                        if (refNo === '') {
                             $(this).addClass('is-invalid');
-                            $('#reference_error' + $(this).data('row')).text('Reference number is required');
-                            refError = true;
-                        } else if ($(this).hasClass('is-invalid')) {
+                            $('#reference_error' + row).text('Reference number is required');
                             refError = true;
                         }
                     });
+                    // Then check for duplicates
+                    if (!validateReferenceNumbers()) {
+                        refError = true;
+                    }
                     
                     if (refError) {
                         $('.preloader').hide();
@@ -1820,19 +1826,24 @@ $('#revisionNumber').prop('disabled', false);
                         <td><input type="number" value="0" class="form-control mw-100 text-end amount" name="amount[]" id="excAmount${rowCount}" required/></td>
                         <td><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                          <td>
-                            <input type="text" class="form-control mw-100 bankInput reference_no" 
+                            <input type="number" class="form-control mw-100 bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
+                                
+                // Initialize reference tracking for the new row
+                $(`#reference_no${rowCount}`).on('input', function() {
+                    validateReferenceNumbers();
+                });
                 
                 // Set visibility based on payment type
                 if ($("#Bank").is(":checked")) {
-                    $('#reference_no' + rowCount).prop('required', true).closest('td').show();
+                    $(`#reference_no${rowCount}`).prop('required', true).closest('td').show();
                 } else {
-                    $('#reference_no' + rowCount).prop('required', false).closest('td').hide();
+                    $(`#reference_no${rowCount}`).prop('required', false).closest('td').hide();
                 }
                 
                 bind();
@@ -2362,28 +2373,92 @@ function showToast(icon, title) {
             }
         }
         let timer;
-        $(document).on('input', '.reference_no', function() {
-            clearTimeout(timer);
+        // Global variable to track reference numbers
+        let referenceNumbers = {};
+        let serverValidationErrors = {}; // Track server-side validation errors
+
+        // Function to validate reference numbers
+        function validateReferenceNumbers() {
+            let duplicatesFound = false;
+            let hasEmptyFields = false;
             
-            let $input = $(this);
-            let refNo = $input.val();
-            let row = $input.data('row');
-            let $errorSpan = $('#reference_error' + row);
+            // Reset local duplicate tracking but keep server errors
+            referenceNumbers = {}; 
+
+            $('.reference_no').each(function() {
+                const $input = $(this);
+                const refNo = $input.val().trim();
+                const row = $input.data('row');
+                const $errorSpan = $('#reference_error' + row);
+                
+                // Clear previous local errors but preserve server errors
+                if (!serverValidationErrors[row]) {
+                    $input.removeClass('is-invalid');
+                    $errorSpan.text('');
+                }
+                
+                // Check for empty fields (only if Bank is selected)
+                if ($("#Bank").is(":checked") && refNo === '') {
+                    hasEmptyFields = true;
+                    $input.addClass('is-invalid');
+                    $errorSpan.text('Reference number is required');
+                    return;
+                }
+                
+                // Skip empty references for duplicate check
+                if (refNo === '') {
+                    return;
+                }
+                
+                // Track reference numbers and their rows
+                if (!referenceNumbers[refNo]) {
+                    referenceNumbers[refNo] = [row];
+                } else {
+                    referenceNumbers[refNo].push(row);
+                }
+            });
+            
+            // Highlight duplicates
+            Object.entries(referenceNumbers).forEach(([refNo, rows]) => {
+                if (rows.length > 1) {
+                    duplicatesFound = true;
+                    rows.forEach(row => {
+                        // Only override if no server error exists
+                        if (!serverValidationErrors[row]) {
+                            $(`#reference_no${row}`).addClass('is-invalid');
+                            $(`#reference_error${row}`).text('This reference number already exists.');
+                        }
+                    });
+                }
+            });
+            
+            return !duplicatesFound && !hasEmptyFields;
+        }
+
+
+
+        // Update the input event handler
+       $(document).on('input', '.reference_no', function() {
+       clearTimeout(timer);
+    
+            const $input = $(this);
+            const refNo = $input.val().trim();
+            const row = $input.data('row');
+            const $errorSpan = $('#reference_error' + row);
+            
+            // Clear server error if it exists for this field
+            if (serverValidationErrors[row]) {
+                delete serverValidationErrors[row];
+            }
             
             // Clear previous validation
             $input.removeClass('is-invalid');
             $errorSpan.text('');
-            let otherRefs = [];
-            $('.reference_no').each(function() {
-                if (this !== $input[0]) {
-                    let val = $(this).val();
-                    if (val.length > 0) {
-                        otherRefs.push(val);
-                    }
-                }
-            });
             
+            // First validate locally
+            validateReferenceNumbers();
             
+            // Only check with server if reference is not empty and no local duplicates
             if (refNo.length > 0) {
                 timer = setTimeout(function() {
                     $.ajax({
@@ -2392,24 +2467,27 @@ function showToast(icon, title) {
                         data: {
                             _token: '{{ csrf_token() }}',
                             reference_no: refNo,
-                            otherRefs: otherRefs,
-                            edit_id : '{{ $data->id }}'
+                            // Include all other reference numbers in the form
+                            otherRefs: Object.keys(referenceNumbers).filter(r => r !== refNo),
                         },
                         success: function(response) {
                             if (response.exists) {
-                                $errorSpan.text('This reference number already exists.');
+                                // Track this as a server validation error
+                                serverValidationErrors[row] = true;
+                                $errorSpan.text(response.message || 'This reference number already exists.');
                                 $input.addClass('is-invalid');
                             }
                         },
-                        error: function() {
-                            $errorSpan.text('Error validating reference number.');
+                        error: function(xhr) {
+                            // Track this as a server validation error
+                            serverValidationErrors[row] = true;
+                            const errorMessage = xhr.responseJSON?.message || 'Error validating reference number.';
+                            $errorSpan.text(errorMessage);
                             $input.addClass('is-invalid');
                         }
                     });
                 }, 500);
             }
         });
-
-
     </script>
 @endsection

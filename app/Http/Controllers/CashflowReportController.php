@@ -533,7 +533,23 @@ class CashflowReportController extends Controller
         // $payment_received = json_decode($request->payment_received);
         $data = $request->all();
         $data['organization_id'] = Helper::getAuthenticatedUser()->organization_id;
-        $data['fy']=$request->fy;
+       $fyString = $request->fy; // e.g., "1st April 2025 to 31st March 2026"
+
+        if (strpos($fyString, ' to ') !== false) {
+            [$start, $end] = explode(' to ', $fyString);
+
+            try {
+                $startFormatted = Carbon::parse($start)->format('d-m-Y');
+                $endFormatted = Carbon::parse($end)->format('d-m-Y');
+
+                $data['fy'] = $startFormatted . ' to ' . $endFormatted;
+            } catch (\Exception $e) {
+                $data['fy'] = $fyString; // fallback if parsing fails
+            }
+        } else {
+            $data['fy'] = $fyString; // fallback if format not matched
+        }
+        // $data['fy']=$request->fy;
         $data['createdBy'] = Helper::getAuthenticatedUser()->name;
         $organization = Organization::find($data['organization_id']);
         $data['currency'] = Currency::find($organization?->currency_id)?->name;

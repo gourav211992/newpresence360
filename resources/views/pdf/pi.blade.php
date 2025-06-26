@@ -274,7 +274,7 @@
                         <tr>
                             <td style="padding-top: 5px;">Printed By :</td>
                             <td style="padding-top: 5px;">
-                                {{ auth()->guard('web2')->user()->name ?? ''}}
+                                {{ $user->name ?? ''}}
                             </td>
                         </tr>
                     </table>

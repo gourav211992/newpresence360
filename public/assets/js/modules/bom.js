@@ -486,7 +486,6 @@ setTimeout(() => {
 $(document).on('change', '#production_route_id', function (e) {
    let selectedOption = $(e.target).find('option:selected');
    let safetyBufferPerc = selectedOption.data('perc');
-   console.log(safetyBufferPerc);
    $("#safety_buffer_perc").attr('placeholder', safetyBufferPerc);
 });
 

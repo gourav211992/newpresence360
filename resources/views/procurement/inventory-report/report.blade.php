@@ -175,13 +175,13 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="store" checked="">
+                                            <input type="checkbox" class="form-check-input autoTriggerChangeApply" id="store" checked="">
                                             <label class="form-check-label" for="store">Location</label>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="sub_location" checked="">
+                                            <input type="checkbox" class="form-check-input autoTriggerChangeApply" id="sub_location" checked="">
                                             <label class="form-check-label" for="sub_location">Store</label>
                                         </div>
                                     </div>
@@ -193,7 +193,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="stock_types" checked="">
+                                            <input type="checkbox" class="form-check-input autoTriggerChangeApply" id="stock_types" checked="">
                                             <label class="form-check-label" for="stock_types">Stock Type</label>
                                         </div>
                                     </div>
@@ -874,6 +874,13 @@
                 filterData.m_subCategory = formData.m_subCategory;
                 filterData.m_attribute = formData.m_attribute;
                 filterData.m_attributeValue = formData.m_attributeValue;
+
+
+                // Manually trigger change if already checked
+                // #For Store
+                if ($('.autoTriggerChangeApply').is(':checked')) {
+                    $('.autoTriggerChangeApply').trigger('change');
+                }
 
                 // Call updateFilterAndFetch once
                 updateFilterAndFetch();

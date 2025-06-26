@@ -65,16 +65,16 @@
                             </div>
                             <div class="modal-body flex-grow-1">
                                 <div class="mb-1">
-                                    <label class="form-label">Lorry No.</label>
+                                    <label class="form-label">Vehicle No.</label>
                                     <input type="text" id="filter-lorry-no"  name="lorry_no" class="form-control">
                                 </div>
                                 <div class="mb-1">
                                     <label class="form-label">Vehicle Type</label>
                                   <select id="filter-vehicle-type" name="vehicle_type"  class="form-select select2">
                                         <option value="">Select</option>
-                                        @foreach($vehicleTypes as $value => $label)
-                                        <option value="{{ $value }}">
-                                            {{ $label }}
+                                        @foreach($vehicleTypes as  $type)
+                                        <option value="{{ $type->id }}">
+                                            {{ $type->name }}
                                         </option>
                                     @endforeach
                                 </select>

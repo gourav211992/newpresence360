@@ -652,7 +652,7 @@
                                                                             value="{{ $item->orgAmount }}" required />
                                                                     </td>
                                                                      <td>
-                                                                        <input type="text"
+                                                                        <input type="number"
                                                                             class="form-control mw-100 bankInput reference_no"
                                                                             name="reference_no[]"
                                                                             data-row="{{ $no }}"
@@ -1104,8 +1104,8 @@
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
-                    <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                    <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                    <td class="text-end indian-number">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                    <td class="text-end indian-number">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
 					</tr>
                     `
                         });
@@ -1113,8 +1113,8 @@
                     voucherEntriesHTML += `
             <tr>
                 <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
             `;
                     document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
@@ -1754,7 +1754,7 @@
                         <td class="indian-number"><input type="text" value="0" class="form-control mw-100 text-end amount " name="amount[]" id="excAmount${rowCount}" required/></td>
                         <td class="indian-number"><input type="text" value="0" readonly class="form-control mw-100 text-end amount_exc excAmount${rowCount}" name="amount_exc[]" required/></td>
                         <td>
-                            <input type="text" class="form-control mw-100 text-end bankInput reference_no" 
+                            <input type="number" class="form-control mw-100 text-end bankInput reference_no" 
                                 name="reference_no[]" data-row="${rowCount}" id="reference_no${rowCount}" />
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
@@ -2003,8 +2003,8 @@
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
-                    <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                    <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
+                    <td class="text-end indian-number">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
+                    <td class="text-end indian-number">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
 					</tr>
                     `
                         });
@@ -2012,8 +2012,8 @@
                     voucherEntriesHTML += `
             <tr>
                 <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
+                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
             `;
                     document.getElementById('posting-table').innerHTML = voucherEntriesHTML;

@@ -186,7 +186,7 @@ class PurchaseIndent extends Model
     }
     public function createdBy()
     {
-        return $this->belongsTo(Employee::class,'created_by','id');
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
     public function department()
     {

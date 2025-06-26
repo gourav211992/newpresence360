@@ -43,7 +43,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                         <i data-feather="printer"></i> Print
                     </a>
                         @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
-                            <a href="{{ route('bill.of.material.copy', ['id' => $bom->id, 'type' => ConstantHelper::BOM_SERVICE_ALIAS]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
+                            <a target="_blank" href="{{ route('bill.of.material.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
                         @else
                             <a target="_blank" href="{{ route('quotation-bom.copy', ['id' => $bom->id]) }}" class="btn btn-warning btn-sm">Copy BOM</a>
                         @endif
@@ -1680,7 +1680,7 @@ function subSection(id, thisObj) {
         }
     });
 }
-
+subSection();
 function subSectionInstruction(id, thisObj) {
     $(thisObj).closest('tr').find("[name='instruction_sub_section']").autocomplete({
         source: function (request, response) {
@@ -1731,7 +1731,6 @@ function subSectionInstruction(id, thisObj) {
         }
     });
 }
-
 function initializeInstructionProductSectionAutocomplete() {
     $("[name*='instruction_section']").autocomplete({
         source: function (request, response) {
@@ -1787,6 +1786,7 @@ function initializeInstructionProductSectionAutocomplete() {
         }
     });
 }
+initializeInstructionProductSectionAutocomplete();
 
 // Function to initialize the product section autocomplete
 function initializeStationAutocomplete() {
@@ -1839,6 +1839,17 @@ function initializeStationAutocomplete() {
         }
     });
 }
+initializeStationAutocomplete();
+
+setTimeout(() => {
+    $("#itemTable3 tbody tr").each(function(index,item) {
+        let sectionId = $(item).find("[name*='[section_id]']").val() || '';
+        let subSection = $(item).find('[name*="instruction_sub_section"]');
+        if (sectionId)  {
+            subSectionInstruction(sectionId, subSection);
+        }
+    });
+}, 100);
 
 function initializeVendorAutocomplete() {
     $("[name*='product_vendor']").autocomplete({
@@ -1960,6 +1971,7 @@ function initializeInstructionStationAutocomplete() {
         }
     });
 }
+initializeInstructionStationAutocomplete();
 /*Delete server side rows*/
 $(document).on('click', '#deleteItemConfirmOverhead', (e) => {
     let ids = JSON.parse(e.target.getAttribute('data-ids'));
