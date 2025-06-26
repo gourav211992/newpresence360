@@ -573,8 +573,8 @@ emptyRow.appendChild(emptyCell)
         'VendorName': 'Vendor Name',
         'TypeofDeductee': 'Type  of  Deductee',
         'Type ofDeductee': 'Type of Deductee', // ✅ FIX for your case
-        'AmountPaid/Credited': 'Amount Paid / Credited',
-        'Paid/CreditedDate': 'Paid / Credited Date',
+        'AmountPaid/Credited': 'Amount Paid/Credited',
+        'Paid/CreditedDate': 'Paid/Credited Date',
         'CashWith.Exceed.Limit': 'Cash withdrawal Exceeding Limit',
         'DeductionDate': 'Deduction Date',
         'DeductedAmt': 'Deducted Amt',

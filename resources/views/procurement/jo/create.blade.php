@@ -618,6 +618,7 @@
  var getItemCostUrl = '{{ route("items.get.cost") }}';
  var newNewRowUrl = '{{ route("jo.item.row") }}';
  var pwoProcessUrl = '{{ route("jo.process.pi-item") }}';
+ var checkBomJobUrl = '{{ route("jo.check.bom.job") }}';
 </script>
 <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/jo.js')}}"></script>
@@ -750,7 +751,7 @@ $(document).on('click', '.attributeBtn', (e) => {
         let rowCount = tr.getAttribute('data-index');
         getItemAttribute(item_id, rowCount, selectedAttr, tr);
     } else {
-        alert("Please select first item name.");
+        // alert("Please select first item name.");
     }
 });
 

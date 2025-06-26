@@ -299,7 +299,10 @@ class Helper
                     $prefix = $data->prefix;
                     $suffix = $data->suffix;
                     $currentDocNo = $model->withDefaultGroupCompanyOrg($authUser)->where('book_id', $book_id)
-                        ->whereNotNull('doc_no')->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
+                        ->whereNotNull('doc_no')
+                        // ->orderBy('doc_no', 'DESC')
+                        ->orderByRaw('CAST(doc_no AS UNSIGNED) DESC')
+                        ->pluck('doc_no')->first() ?? $startFrom;
                 } else if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_YEARLY) {
                     if (!(isset($financialYear) && isset($financialQuarter) && isset($financialMonth))) {
                         $data = [

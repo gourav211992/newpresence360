@@ -541,11 +541,11 @@
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td style="padding-top: 5px;">Created By : {{@$po->createdBy->name}}
+                            <td style="padding-top: 5px;">Created By : {{@$po?->createdBy?->name ?? ''}}
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 5px;">Printed By : {{@$user->name}}
+                            <td style="padding-top: 5px;">Printed By : {{@$user?->name ?? ''}}
                             </td>
                         </tr>
                     </table>

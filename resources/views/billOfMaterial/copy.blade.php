@@ -32,7 +32,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
             <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                <div class="form-group breadcrumb-right">
                   <input type="hidden" name="document_status" id="document_status">
-                  <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button> 
+                  {{-- <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  --}}
                   <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
                </div>
@@ -756,8 +756,8 @@ $(function(){
 
        }
 
-       let reference_from_service = parameters.reference_from_service;
-        if(reference_from_service.length) {
+       let reference_from_service = parameters?.reference_from_service;
+        if(reference_from_service?.length) {
             let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
             if(reference_from_service.includes(c_bom)) {
                 $("#reference_from").removeClass('d-none');
@@ -929,6 +929,7 @@ function initializeAutocomplete2(selector, type) {
         }
     });
 }
+initializeAutocomplete2('.comp_item_code');
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
     let rowsLength = $("#itemTable > tbody > tr").length;
@@ -1336,6 +1337,9 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
 setTimeout(() => {
    initializeStationAutocomplete();
    initializeProductSectionAutocomplete();
+   $("[name*='[section_id]']").each(function(index, item){
+      subSection($(item).val(), item);
+   });
 },10);
 // Function to initialize the product section autocomplete
 function initializeProductSectionAutocomplete() {
@@ -1448,7 +1452,7 @@ function initializeInstructionProductSectionAutocomplete() {
         }
     });
 }
-
+initializeInstructionProductSectionAutocomplete();
 // Function to initialize sub-section autocomplete
 function subSection(id, thisObj) {
     $(thisObj).closest('tr').find("[name='product_sub_section']").autocomplete({
@@ -1550,6 +1554,17 @@ function subSectionInstruction(id, thisObj) {
         }
     });
 }
+
+setTimeout(() => {
+    $("#itemTable3 tbody tr").each(function(index,item) {
+        let sectionId = $(item).find("[name*='[section_id]']").val() || '';
+        let subSection = $(item).find('[name*="instruction_sub_section"]');
+        if (sectionId)  {
+            subSectionInstruction(sectionId, subSection);
+        }
+    });
+}, 100);
+
 // Function to initialize the product section autocomplete
 function initializeStationAutocomplete() {
     $("[name*='product_station']").autocomplete({
@@ -1656,7 +1671,7 @@ function initializeVendorAutocomplete() {
         }
     });
 }
-
+initializeVendorAutocomplete();
 function initializeInstructionStationAutocomplete() {
     $("#itemTable3 [name*='instruction_station']").autocomplete({
         source: function (request, response) {
@@ -1721,7 +1736,7 @@ function initializeInstructionStationAutocomplete() {
         }
     });
 }
-
+initializeInstructionStationAutocomplete();
 /*Get Item Cost*/
 function getBomItemCost(itemId,itemAttributes)
 {

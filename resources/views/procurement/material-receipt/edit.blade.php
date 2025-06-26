@@ -485,7 +485,7 @@
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
+                                                                <th class="text-end" id="rateHeader">Rate</th>
                                                                 <th class="text-end">Value</th>
                                                                 <th>Discount</th>
                                                                 <th class="text-end">Total</th>
@@ -956,6 +956,20 @@
     <script>
         const selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
+        console.log('currentProcessType--->>', currentProcessType);
+
+        if(currentProcessType == 'jo')
+        {
+            document.getElementById('rateHeader').textContent = 'Service Charge';
+            $("#addNewItemBtn").hide();
+            $("#importItem").hide();
+        }
+        if(currentProcessType == 'po')
+        {
+            document.getElementById('rateHeader').textContent = 'Rate';
+            $("#addNewItemBtn").hide();
+            $("#importItem").hide();
+        }
 
         let tableRowCount = 0;
         /*Clear local storage*/
@@ -3130,6 +3144,7 @@
             let idsLength = ids.length;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'po';
+            rateHeader.textContent = 'Rate';
             if (!ids.length) {
                 $("#poModal").modal('hide');
                 Swal.fire({
@@ -3431,6 +3446,7 @@
             let idsLength = ids.length;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'jo';
+            rateHeader.textContent = 'Service Charge';
             if (!ids.length) {
                 $("#joModal").modal('hide');
                 Swal.fire({

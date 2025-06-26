@@ -364,6 +364,7 @@ class AutocompleteController extends Controller
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['itemAttributes:id'])
                     ->with(['uom:id,name'])
+                    ->with(['alternateUOMs.uom'])
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code','uom_id']);

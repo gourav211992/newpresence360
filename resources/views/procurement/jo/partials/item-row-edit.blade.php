@@ -39,9 +39,8 @@
 <td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}"> 
 </td>
 <td>
-    <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$po_item->inventoty_uom_id}}">
     <select  class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
-         <option value="{{$po_item?->uom?->id}}">{{ucfirst($po_item?->uom?->name)}}</option>
+         <option value="{{$po_item?->item?->uom_id}}">{{ucfirst($po_item?->item?->uom?->name)}}</option>
          @foreach($po_item?->item?->alternateUOMs as $alternateUOM)
          <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == $po_item->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
          @endforeach

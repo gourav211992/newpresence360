@@ -27,6 +27,7 @@ class ErpMultiPointFixedController extends Controller
 
     public function create(){
         $user = Helper::getAuthenticatedUser();
+        $status = ConstantHelper::STATUS;
         $organizationId = $user->organization_id;
         $organization = Organization::with('addresses')->find($organizationId);
         $countryId = optional($organization->addresses->first())->country_id;
@@ -34,7 +35,7 @@ class ErpMultiPointFixedController extends Controller
         $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes'));
+        return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes','status'));
     }
 
       public function getCityByState(Request $request)
@@ -61,10 +62,11 @@ class ErpMultiPointFixedController extends Controller
 
     public function edit($id)
 {
-     $user = Helper::getAuthenticatedUser();
+    $user = Helper::getAuthenticatedUser();
     $organizationId = $user->organization_id;
     $organization = Organization::with('addresses')->find($organizationId);
     $countryId = optional($organization->addresses->first())->country_id;
+    $status = ConstantHelper::STATUS;
     $states = State::where('country_id',$countryId)->get();
     $multiPricing = ErpLogisticsMultiFixedPricing::with('locations')->findOrFail($id);
     $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
@@ -75,6 +77,7 @@ class ErpMultiPointFixedController extends Controller
         'vehicleTypes' => $vehicleTypes,
         'customers' => $customers,
         'states' => $states,
+        'status' => $status
     ]);
 }
 
@@ -97,6 +100,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_city_id   = $request->destination_city_id;
         $multiPricing->vehicle_type_id      = json_encode($request->vehicle_type_id); 
         $multiPricing->customer_id           = $request->customer_id;
+        $multiPricing->status                = $request->status;
         $multiPricing->save();
 
      
@@ -132,6 +136,7 @@ class ErpMultiPointFixedController extends Controller
 
     DB::beginTransaction();
 
+
     try {
         $multiPricing = ErpLogisticsMultiFixedPricing::findOrFail($id);
 
@@ -144,6 +149,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_city_id   = $request->destination_city_id;
         $multiPricing->vehicle_type_id       = json_encode($request->vehicle_type_id);
         $multiPricing->customer_id           = $request->customer_id;
+        $multiPricing->status                = $request->status;
         $multiPricing->save();
 
         $locationIds = [];

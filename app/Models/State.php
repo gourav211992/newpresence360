@@ -15,22 +15,22 @@ class State extends Model
 
 
     protected $fillable = [
-        'id',
-        'name',
-        'state_code',
-        'country_id ',
-        'status',
-        'created_by',
-        'updated_by',
-        'deleted_by'
-    ];
+    'id',
+    'name',
+    'state_code',
+    'country_id', 
+    'status',
+    'created_by',
+    'updated_by',
+    'deleted_by'
+];
 
-    protected $auditInclude = [
-        'name',
-        'state_code',
-        'country_id ',
-        'status',
-    ];
+protected $auditInclude = [
+    'name',
+    'state_code',
+    'country_id', 
+    'status',
+];
 
     public static function boot()
     {

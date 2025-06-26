@@ -4,14 +4,13 @@ namespace App\Models\JobOrder;
 
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\AuthUser;
 use App\Models\Book;
 use App\Models\Currency;
 use App\Models\Department;
-use App\Models\Employee;
 use App\Models\ErpAddress;
 use App\Models\ErpPoDynamicField;
 use App\Models\ErpStore;
-use App\Models\JobOrder\JoItemDelivery;
 use App\Models\JobOrder\JoTerm;
 use App\Models\Organization;
 use App\Models\PaymentTerm;
@@ -135,10 +134,6 @@ class JobOrder extends Model
         }
         return $this->attributes['document_status'];
     }
-    // public function source()
-    // {
-    //     return $this->hasOne(JobOrderHistory::class, 'source_id');
-    // }
     public function book()
     {
         return $this->belongsTo(Book::class, 'book_id');
@@ -295,7 +290,7 @@ class JobOrder extends Model
     }
     public function createdBy()
     {
-        return $this->belongsTo(Employee::class,'created_by','id');
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
     public function department()
     {

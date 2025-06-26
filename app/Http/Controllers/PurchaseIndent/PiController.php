@@ -947,7 +947,8 @@ class PiController extends Controller
                 'organization' => $organization,
                 'organizationAddress' => $organizationAddress,
                 'imagePath' => $imagePath,
-                'docStatusClass' => $docStatusClass
+                'docStatusClass' => $docStatusClass,
+                'user' => $user
             ]
         );
         return $pdf->stream('Purchase-Indent-' . date('Y-m-d') . '.pdf');

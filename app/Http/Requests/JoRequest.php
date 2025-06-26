@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Helpers\BookHelper;
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\Bom;
 use App\Models\Item;
 use App\Models\JobOrder\JoProduct;
 use App\Models\NumberPattern;
@@ -141,11 +143,34 @@ class JoRequest extends FormRequest
             $components = $this->input('components', []);
             $items = [];
             foreach ($components as $key => $component) {
+                
                 $itemValue = floatval($component['item_total_cost']);
                 if($itemValue < 0) {
                     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
                 }
                 $itemId = $component['item_id'] ?? null;
+
+                $bomExists = Bom::withDefaultGroupCompanyOrg()
+                ->where('item_id', $itemId)
+                ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                ->exists();
+
+                if(!$bomExists) {
+                    $validator->errors()->add("components.$key.item_name", "Bom not exist.");
+                }
+
+                $bomExists = Bom::withDefaultGroupCompanyOrg()
+                ->where('item_id', $itemId)
+                ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+                ->where('production_type', 'Job Work')
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                ->exists();
+                
+                if (!$bomExists) {
+                    $validator->errors()->add("components.$key.item_name", "Job Work BOM not exist.");
+                }
+
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
                 $attributes = [];

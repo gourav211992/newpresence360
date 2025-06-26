@@ -43,6 +43,9 @@
                         <div class="tab-content pb-1">
                            <div class="tab-pane active" id="Fixed">
                               <div class="text-end mb-50">
+                                <!-- <button class="btn btn-warning btn-sm me-1 mb-20 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal">
+                                 <i data-feather="filter"></i> Filter
+                               </button> -->
                                  <a href="{{route('logistics.multi-point-fixed.create')}}" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="plus-circle"></i> Add New</a>
                               </div>
                               <div class="row">
@@ -56,6 +59,7 @@
                                                 <th>Destination</th>
                                                 <th>Customer</th>
                                                 <th>Locations</th>
+                                                <th>Status</th>
                                                 <th>Action</th>
                                              </tr>
                                           </thead>
@@ -111,7 +115,7 @@
                                                    <input type="hidden" name="multi_point[{{ $rowIndex }}][source_city_id]" class="city-id" data-type="source" value="{{ old("multi_point.$rowIndex.source_city_id", $charges->source_city_id) }}">
                                                 </td>
                                                 <td>
-                                                   <input type="text" name="multi_point[{{ $rowIndex }}][free_point]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.free_point", $charges->free_point) }}">
+                                                   <input type="number" name="multi_point[{{ $rowIndex }}][free_point]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.free_point", $charges->free_point) }}" max="2">
                                                 </td>
                                                 <td>
                                                    <input type="text" name="multi_point[{{ $rowIndex }}][amount]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.amount", $charges->amount) }}">
@@ -141,8 +145,8 @@
                                                    <input type="text" name="multi_point[0][source_city_name]" class="form-control mw-100 city-autocomplete" placeholder="Start typing source city..." data-type="source">
                                                    <input type="hidden" name="multi_point[0][source_city_id]" class="city-id" data-type="source">
                                                 </td>
-                                                <td><input type="text" name="multi_point[0][free_point]" class="form-control mw-100" value="0"></td>
-                                                <td><input type="text" name="multi_point[0][amount]" class="form-control mw-100" value="0"></td>
+                                                <td><input type="number" name="multi_point[0][free_point]" class="form-control mw-100" placeholder="Enter Free point" max="2"></td>
+                                                <td><input type="text" name="multi_point[0][amount]" class="form-control mw-100" placeholder="Enter Amount."></td>
                                                 <td>
                                                    <input type="text" name="multi_point[0][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer...">
                                                    <input type="hidden" name="multi_point[0][customer_id]" class="customer-id">
@@ -164,7 +168,46 @@
                </div>
             </div>
             <!-- Modal to add new record -->
-      </section>
+        </section>
+         <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+            <div class="modal-dialog sidebar-sm">
+                <form class="add-new-record modal-content pt-0" id="multi-fixed-filter-form">
+                    <div class="modal-header mb-1">
+                        <h5 class="modal-title">Apply Filters</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
+                    </div>
+                    <div class="modal-body flex-grow-1">
+                        <div class="mb-1">
+                            <label class="form-label">Source State</label>
+                            <input type="text" id="source_state_name" name="source_state_name" class="form-control" placeholder="Enter source state">
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label">Source City</label>
+                            <input type="text" id="source_city_name" name="source_city_name" class="form-control" placeholder="Enter source city">
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label">Destination State</label>
+                            <input type="text" id="destination_state_name" name="destination_state_name" class="form-control" placeholder="Enter destination state">
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label">Destination City</label>
+                            <input type="text" id="destination_city_name" name="destination_city_name" class="form-control" placeholder="Enter destination city">
+                        </div>
+                        <div class="mb-1">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" id="customer_name" name="customer_name" class="form-control" placeholder="Enter customer name">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-start">
+                        <button type="button" class="btn btn-primary apply-filter me-1">Apply</button>
+                        <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="reset" class="btn btn-outline-secondary" id="reset-filters">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>   
+
       </div>
    </div>
 </div>
@@ -186,6 +229,13 @@ $(document).ready(function () {
             serverSide: true,
             ajax: {
                 url: "{{ route('logistics.multi-point-pricing.index') }}",
+                data: function (d) {
+                    d.source_state_name = $('#source_state_name').val();
+                    d.source_city_name = $('#source_city_name').val();
+                    d.destination_state_name = $('#destination_state_name').val();
+                    d.destination_city_name = $('#destination_city_name').val();
+                    d.customer_name = $('#customer_name').val();
+                },
                 error: function (xhr, status, error) {
                     console.error("DataTables AJAX Error:", error);
                     console.error("Response Text:", xhr.responseText);
@@ -194,10 +244,11 @@ $(document).ready(function () {
             },
             columns: [
                 { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'source', name: 'source', render: renderOrDefault },
-                { data: 'destination', name: 'destination', render: renderOrDefault },
-                { data: 'customer', name: 'customer', render: renderOrDefault },
+                { data: 'source', name: 'source' },
+                { data: 'destination', name: 'destination' },
+                { data: 'customer', name: 'customer' },
                 { data: 'locations', name: 'locations', orderable: false, searchable: false },
+                { data: 'status', name: 'status', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
             dom:
@@ -214,43 +265,7 @@ $(document).ready(function () {
                     extend: 'collection',
                     className: 'btn btn-outline-secondary dropdown-toggle',
                     text: feather.icons['share'] ? feather.icons['share'].toSvg({ class: 'font-small-4 me-50' }) + ' Export' : 'Export',
-                    buttons: [
-                        {
-                            extend: 'print',
-                            text: feather.icons['printer'] ? feather.icons['printer'].toSvg({ class: 'font-small-4 me-50' }) + ' Print' : 'Print',
-                            className: 'dropdown-item',
-                            title: 'Multi Fixed Pricing',
-                            exportOptions: { columns: [0, 1, 2, 3, 4] }
-                        },
-                        {
-                            extend: 'csv',
-                            text: feather.icons['file-text'] ? feather.icons['file-text'].toSvg({ class: 'font-small-4 me-50' }) + ' CSV' : 'CSV',
-                            className: 'dropdown-item',
-                            title: 'Multi Fixed Pricing',
-                            exportOptions: { columns: [0, 1, 2, 3, 4] }
-                        },
-                        {
-                            extend: 'excel',
-                            text: feather.icons['file'] ? feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + ' Excel' : 'Excel',
-                            className: 'dropdown-item',
-                            title: 'Multi Fixed Pricing',
-                            exportOptions: { columns: [0, 1, 2, 3, 4] }
-                        },
-                        {
-                            extend: 'pdf',
-                            text: feather.icons['clipboard'] ? feather.icons['clipboard'].toSvg({ class: 'font-small-4 me-50' }) + ' PDF' : 'PDF',
-                            className: 'dropdown-item',
-                            title: 'Multi Fixed Pricing',
-                            exportOptions: { columns: [0, 1, 2, 3, 4] }
-                        },
-                        {
-                            extend: 'copy',
-                            text: feather.icons['copy'] ? feather.icons['copy'].toSvg({ class: 'font-small-4 me-50' }) + ' Copy' : 'Copy',
-                            className: 'dropdown-item',
-                            title: 'Multi Fixed Pricing',
-                            exportOptions: { columns: [0, 1, 2, 3, 4] }
-                        }
-                    ]
+                    buttons: ['print', 'csv', 'excel', 'pdf', 'copy']
                 }
             ],
             drawCallback: function () {
@@ -265,6 +280,24 @@ $(document).ready(function () {
             search: { caseInsensitive: true }
         });
     }
+
+    // Reload on input change
+    $('#source_state_name, #source_city_name, #destination_state_name, #destination_city_name, #customer_name')
+        .on('keyup change', function () {
+            multiFixedDataTable.ajax.reload();
+        });
+
+    // Reset filters
+    $('#reset-filters').on('click', function () {
+        $('#multi-fixed-filter-form')[0].reset();
+        multiFixedDataTable.ajax.reload();
+    });
+
+    // Apply filter
+    $('.apply-filter').on('click', function () {
+        multiFixedDataTable.ajax.reload();
+        $('#filter').modal('hide');
+    });
 });
 </script>
 
@@ -478,7 +511,7 @@ function applyCityAutocomplete(stateId, type, $input) {
                 <input type="hidden" name="multi_point[${newIndex}][source_city_id]" class="city-id" data-type="source" />
             </td>
 
-            <td><input type="text" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" placeholder="Enter Free Point" /></td>
+            <td><input type="number" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" placeholder="Enter Free Point" max="2"/></td>
             <td><input type="text" name="multi_point[${newIndex}][amount]" class="form-control mw-100" placeholder="Enter Amount" /></td>
             <td>
                 <input type="text" name="multi_point[${newIndex}][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer..." />
@@ -493,6 +526,17 @@ function applyCityAutocomplete(stateId, type, $input) {
             bindAutocomplete(row); 
         }
     }
+document.addEventListener('input', function (e) {
+    if (e.target.matches('input[name^="multi_point"][name$="[free_point]"]')) {
+        const value = parseInt(e.target.value);
+
+        if (value < 1 || value > 99) {
+            e.target.value = ''; 
+        }
+    }
+});
+
+
 </script>
 
 <script>

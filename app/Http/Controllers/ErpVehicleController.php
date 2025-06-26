@@ -234,7 +234,7 @@ class ErpVehicleController extends Controller
 
     public function update(VehicleRequest $request, $id)
     {
-       
+     
         DB::beginTransaction();
 
         try {
