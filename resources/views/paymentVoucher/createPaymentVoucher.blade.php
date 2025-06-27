@@ -99,13 +99,11 @@
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div class="row">
                                             <div class="col-md-10">
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-2">
-                                                        {{-- {{ dd($books) }} --}}
                                                         <label class="form-label">Series <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
@@ -738,7 +736,9 @@
 
 @section('scripts')
     <script>
-        const rawItemData = @json($rawItemData ?? []);
+        const token = "{{request('token')  }}";
+        let groupedData = @json($selectedRows);
+        let rawItemData = @json($rawItemData ?? []);
     </script>
     <script>
         var banks = {!! json_encode($banks) !!};
@@ -747,9 +747,6 @@
         var count = 2;
         var orgCurrencyName = '';
 
-        // $('#voucherForm').on('submit', function () {
-        //     $('.preloader').show();
-        // });
         function setAmount() {
             let isValid = true;
 
@@ -793,13 +790,68 @@
                 return this.value;
             }).get();
             $('#party_vouchers' + $('#currentRow').val()).val(JSON.stringify(selectedVouchers));
+
             resetCalculations();
             $('#invoice').modal('hide');
+            console.log(token)
+            console.log("Token value:", `"${token}"`);
+            if (token && token.trim() !== "") {
+                processVoucherRowsAndUpdateCache(false, null);
+            }
+        }
+
+        function processVoucherRowsAndUpdateCache(deleteFlag = false, ledgerId = null) {
+            let selectedFullVouchers = [];
+
+            $('.voucherRows').each(function () {
+                const checkbox = $(this).find('.vouchers');
+                if (checkbox.is(':checked')) {
+                    const voucherDataStr = $(this).attr('data-voucher');
+                    const ledgerId = $(this).find('.ledger-id').val(); // hidden input
+                    const settleAmt = parseFloat($(this).find('.settleInput').val() || 0).toFixed(2);
+
+                    if (voucherDataStr) {
+                        try {
+                            const voucherData = JSON.parse(voucherDataStr);
+
+                            // Add ledgerId and settleAmt to voucherData
+                            voucherData.ledger_id = ledgerId;
+                            voucherData.settle_amt = settleAmt;
+
+                            selectedFullVouchers.push(voucherData);
+                        } catch (e) {
+                            console.warn('Invalid JSON in data-voucher', e);
+                        }
+                    }
+                }
+            });
+
+            // Update cache
+            fetch('/report/update-cache', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+                body: JSON.stringify({
+                    token: token,
+                    delete:deleteFlag,
+                    ledger_id:ledgerId,
+                    rows: selectedFullVouchers
+                })
+            }).then(res => {
+                if (res.ok) {
+                    console.log('Cache updated successfully');
+                } else {
+                    console.warn('Cache update failed');
+                }
+            });
         }
 
         $(document).on('input', '.settleInput', function(e) {
             let max = parseInt(e.target.max);
             let value = parseInt(e.target.value);
+
 
             if (value > 0) {
                 $('.voucherCheck' + $(this).attr('data-id')).attr('checked', true);
@@ -900,7 +952,7 @@
                                 if (val['balance'] < 1 && checked == "") {
                                     console.log('hii' + val['id']);
                                 } else {
-                                    html += `<tr id="${val['id']}" class="voucherRows">
+                                    html += `<tr id="${val['id']}" class="voucherRows" data-voucher='${JSON.stringify(val)}'>
                                         <td>${index + 1}</td>
                                         <td>${val['date']}</td>
                                         <td class="fw-bolder text-dark">${val['series']?.book_code?.toUpperCase() ?? '-'}</td>
@@ -917,6 +969,8 @@
                                                     <input class="form-check-input vouchers voucherCheck${val['id']}" data-id="${val['id']}" type="checkbox" ${checked} name="vouchers" value="${val['id']}" data-amount="${dataAmount}">
                                                 </div>
                                             </td>
+                                                <input type="hidden" class="ledger-id" value="${item.ledger_id}">
+                                                <input type="hidden" class="item-id" value="${item.id}">
                                         </tr>`;
                                 }
                                 });
@@ -1324,6 +1378,7 @@
                         const id = $(this).attr("data-id");
                         $("#party_id" + id).val(ui.item.value);
                         $("#party_vouchers" + id).val("");
+                        $("#ledger_id" + id).val(ui.item.value);
                         $("#excAmount" + id).val("0.00");
                         $("#organization" + id).val(ui.item.organization.name);
                         $(".drop" + id).val("");
@@ -1400,8 +1455,21 @@
             $('.mrntableselectexcel').on('click', '.deleteRow', function(e) {
                 e.preventDefault();
                 let row = $(this).closest('tr');
+                 let partyId = row.find('.ledgers').val(); // or use row.find('[id^="party_id"]').val();
+
+                // console.log('Party ID (ledger ID):', partyId);
+
+                // If needed, also get the ledger_id (if present and used separately)
+                // let ledgerId = row.find('.ledger-id').val();
+                // const ledgerId = row.find('#ledger_id').val(); // make sure to add this hidden input
+                // console.log(row)
+                // const ledgerId = row.find('.ledger-id').val();
+                if (token && token.trim() !== "") {
+                   processVoucherRowsAndUpdateCache(true, partyId);
+               }
                 row.remove();
                 updateLevelNumbers();
+                // processVoucherRowsAndUpdateCache();
                 // evaluateCostCenterVisibility();
                 calculateTotal();
             });
@@ -1455,6 +1523,8 @@
                             <span class="text-danger bankInput" id="reference_error${rowCount}" style="font-size:12px"></span>
                         </td>
                         <td><a href="#" class="text-danger deleteRow"><i data-feather="trash-2"></i></a></td>
+                        <input type="hidden" class="ledger-id" id="ledger_id${rowCount}" >
+                        <input type="hidden" class="item-id">
                     </tr>`;
                 $('.mrntableselectexcel').append(newRow);
                 

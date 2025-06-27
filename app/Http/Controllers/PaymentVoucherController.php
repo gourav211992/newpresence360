@@ -8,6 +8,7 @@ use App\Helpers\FinancialPostingHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
 use Illuminate\Support\Facades\Cache;
+use App\Http\Controllers\VoucherController;
 use App\Models\Bank;
 use App\Models\CostGroup;
 use App\Models\BankDetail;
@@ -561,7 +562,12 @@ class PaymentVoucherController extends Controller
 
                 if ($request->reference[$index] == "Invoice") {
                     foreach (json_decode($request->party_vouchers[$index]) as $reference) {
-                        if (self::getVoucherBalance($reference->amount,$reference->voucher_id,$request->document_type,$details->ledger_id,$details->ledger_group_id) >= 0) {
+                        $blnc = self::getVoucherBalance($reference->amount,$reference->voucher_id,$request->document_type,$details->ledger_id,$details->ledger_group_id);
+                        if ($blnc<0) {
+                           $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
+                            return redirect()->route($request->document_type . '.create', ['token' => $selected_token])
+                            ->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
+                        } else {
                             $insertRef = new VoucherReference();
                             $insertRef->payment_voucher_id = $voucher->id;
                             $insertRef->voucher_details_id = $details->id;
@@ -569,10 +575,7 @@ class PaymentVoucherController extends Controller
                             $insertRef->voucher_id = $reference->voucher_id;
                             $insertRef->amount = $reference->amount;
                             $insertRef->save();
-                        } else {
-                            $voucher = Voucher::find($reference->voucher_id)?->voucher_no;
-                            return redirect()->route($request->document_type . '.create', ['token' => $selected_token])
-                            ->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucher);
+                       
                         }
                     }
                 }
@@ -1398,7 +1401,21 @@ class PaymentVoucherController extends Controller
 
         return Response::json(['success' => 'Email Send Succesfully!']);
     }
-    static function getVoucherBalance($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
+    public function getVoucherBalance($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
+    {
+       $request = new \Illuminate\Http\Request();
+        $request->merge([
+            'type' => $doc_type,
+            'partyID' => $ledger,
+            'ledgerGroup' => $group,
+            'payment_voucher_id' => $id,
+            'voucher_id' => $voucher_id,
+        ]);
+        $data = VoucherController::getLedgerVouchers($request);
+        $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();
+        return bcsub($voucher->balance, $settle, 2);
+    }
+    static function getVoucherBalance2($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
     {
 
         $type = $doc_type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
@@ -1430,7 +1447,7 @@ class PaymentVoucherController extends Controller
 
                 $data = $data->with(['series' => function ($s) {
                     $s->select('id', 'book_code');
-                }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
+                }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
                     ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($ledger) {
                         $voucher->date = date('d/m/Y', strtotime($voucher->date));
                         $voucher->document_date = $voucher->document_date;
@@ -1534,7 +1551,7 @@ class PaymentVoucherController extends Controller
             } else {
                    $data = $data->with(['series' => function ($s) {
                         $s->select('id', 'book_code');
-                    }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no')
+                    }])->select('id', 'amount', 'book_id', 'document_date as date','created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
                         ->orderBy('id', 'desc')->get()->map(function ($voucher) use ($id, $ledger) {
                             $voucher->date = date('d/m/Y', strtotime($voucher->date));
                             $balance = VoucherReference::where('voucher_id', $voucher->id)
@@ -1548,7 +1565,7 @@ class PaymentVoucherController extends Controller
                                 ->where('payment_voucher_id', (int)$id)
                                 ->where('party_id', $ledger)->sum('amount');
 
-                            $voucher->balance = (int)$voucher->amount-(int)$balance;
+                            $voucher->balance = (float)$voucher->amount-(float)$balance;
                             $voucher->settle = $settle;
 
 

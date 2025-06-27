@@ -43,7 +43,7 @@ use App\Models\Vendor;
 
 class VoucherController extends Controller
 {
-    public function getLedgerVouchers(Request $request)
+    public static function getLedgerVouchers(Request $request)
     {
         $type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
 
@@ -67,7 +67,9 @@ class VoucherController extends Controller
                         $i->where('debit_amt_org', '>', 0);
                     }
                     $i->with([
-                    'ledger',
+                    'ledger.organization', 
+                    'ledger.vendor', 
+                    'ledger.customer',
                     'ledger_group',
                     'costCenter',
                     ]);
