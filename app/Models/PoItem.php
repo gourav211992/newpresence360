@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\InventoryHelper;
 use App\Traits\DateFormatTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -319,5 +320,14 @@ class PoItem extends Model
     public function getInterOrgSoBalQtyAttribute()
     {
         return ($this->order_qty - $this->inter_org_so_qty);
+    }
+
+    public function getPendingPoAttribute()
+    {   
+        $itemId       = $this->item_id;
+        $selectedAttr = $this->attributes; 
+        $uomId        = $this->uom_id;
+        $storeId      = $this?->po?->store_id;
+        return InventoryHelper::getPendingPo($itemId, $uomId, $selectedAttr, $storeId);
     }
 }

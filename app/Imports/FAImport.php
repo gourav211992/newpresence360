@@ -24,11 +24,13 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
     protected $failedItems = [];
     protected $service;
     protected $user;
+    protected $book;
 
-    public function __construct(FAImportExportService $service, $user)
+    public function __construct(FAImportExportService $service, $user,$book)
     {
         $this->service = $service;
         $this->user = $user;
+        $this->book = $book;
     }
 
     public function chunkSize(): int
@@ -77,21 +79,23 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
 
         // Normalize and map row fields to expected keys
         $mappedRow = [
-            'asset_code'       => $row['asset_code'] ?? null,
-            'asset_name'       => $row['asset_name'] ?? null,
-            'location'         => $row['location'] ?? null,
-            'cost_center'      => $row['cost_center'] ?? null,
-            'category'         => $row['category'] ?? null,
-            'ledger'           => $row['ledger'] ?? null,
-            'capitalize_date'  => $row['capitalize_date'] ?? null,
-            'quantity'         => $row['quantity'] ?? null,
-            'maintenance_schedule'           => $row['maintenance_schedule'] ?? null,
-            'useful_life'      => $row['useful_life'] ?? null,
-            'current_value'    => $row['current_value'] ?? null,
-            'vendor'           => $row['vendor'] ?? null,
-            'currency'         => $row['currency'] ?? null,
-            'book_date'        => $row['book_date'] ?? null,
+            'series'       => isset($row['series']) ? trim($row['series']) : null,
+            'asset_code'       => isset($row['asset_code']) ? trim($row['asset_code']) : null,
+            'asset_name'       => isset($row['asset_name']) ? trim($row['asset_name']) : null,
+            'location'         => isset($row['location']) ? trim($row['location']) : null,
+            'cost_center'      => isset($row['cost_center']) ? trim($row['cost_center']) : null,
+            'category'         => isset($row['category']) ? trim($row['category']) : null,
+            'ledger'           => isset($row['ledger']) ? trim($row['ledger']) : null,
+            'capitalize_date'  => isset($row['capitalize_date']) ? trim($row['capitalize_date']) : null,
+            'quantity'         => isset($row['quantity']) ? trim($row['quantity']) : null,
+            'maintenance_schedule' => isset($row['maintenance_schedule']) ? trim($row['maintenance_schedule']) : null,
+            'useful_life'      => isset($row['useful_life']) ? trim($row['useful_life']) : null,
+            'current_value'    => isset($row['current_value']) ? trim($row['current_value']) : null,
+            'vendor'           => isset($row['vendor']) ? trim($row['vendor']) : null,
+            'currency'         => isset($row['currency']) ? trim($row['currency']) : null,
+            'book_date'        => isset($row['book_date']) ? trim($row['book_date']) : null,
         ];
+
         $user = Helper::getAuthenticatedUser();
         try {
             // Validate required fields
@@ -103,13 +107,13 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
             $data['company_id'] = $user->organization->company_id;
             $data['group_id'] = $user->organization->group_id;
             $data['revision_number'] = 0; // Default revision number
-            $docData = RegistrationController::genrateDocNo();
+            $docData = RegistrationController::genrateDocNo($this->book);
             if ($docData == null) {
                 throw new Exception("Document number generation failed.");
             }
             $data = array_merge($data, $docData);
             $item = FixedAssetRegistration::create($data);
-            if($item){
+            if ($item) {
                 FixedAssetSub::generateSubAssets(
                     $item->id,
                     $item->asset_code,
@@ -117,11 +121,9 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
                     $item->current_value,
                     $item->salvage_value,
                 );
-            
-
             }
 
-            
+
             $approveDocument = Helper::approveDocument($item->book_id, $item->id, $item->revision_number, null, null, 1, 'submit', $item->current_value, get_class($item));
             $item->document_status = $approveDocument['approvalStatus'] ?? 'submitted';
             $item->approval_level = $approveDocument['approvalLevel'] ?? 1;
@@ -129,7 +131,7 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
 
             $uploadData = [
                 'import_status' => 'Success',
-                'import_remarks' => 'Successfully imported item.'
+                'import_remarks' => 'success'
             ];
             $uploadData = array_merge($data, $uploadData);
 
@@ -149,22 +151,22 @@ class FAImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRo
                 'asset_code' => $mappedRow['asset_code'] ?? null,
                 'asset_name' => $mappedRow['asset_name'] ?? null,
                 'import_remarks' => $e->getMessage(),
-            
+
             ];
 
-           
+
 
             if (isset($data) && is_array($data)) {
                 $uploadData = array_merge($data, $uploadData); // Optional: merge with any additional data
-            }else{
-                 $uploadData = array_merge(
-                $mappedRow, // Save all mapped row data
-                [
-                    'import_status' => 'Failed',
-                    'import_remarks' => $e->getMessage(),
+            } else {
+                $uploadData = array_merge(
+                    $mappedRow, // Save all mapped row data
+                    [
+                        'import_status' => 'Failed',
+                        'import_remarks' => $e->getMessage(),
 
-                ]
-            );
+                    ]
+                );
             }
 
             $uploadedItem = UploadFAMaster::create($uploadData);

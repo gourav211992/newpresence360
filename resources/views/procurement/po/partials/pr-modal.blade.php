@@ -92,6 +92,8 @@
 										<th>Attributes</th>
 										<th>UOM</th>
 										<th>Quantity</th>
+										<th>Pending PO</th>
+										<th>Avl Stock</th>
 										<th style="min-width: 250px; max-width: 350px;">Vendor</th>
 										@if(request()->type != 'supplier-invoice')
 											<th>Sales Order</th>

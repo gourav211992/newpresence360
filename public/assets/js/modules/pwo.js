@@ -31,32 +31,36 @@ $(document).on('change','#itemTable > thead .form-check-input',(e) => {
      $("#approveModal").find("#action_type").val(actionType);
      $("#approveModal").modal('show');
   });
+
   /*Delete Row*/
-  $(document).on('click','#deleteBtn', (e) => {
-      let editItemIds = [];
-      $('#itemTable > tbody .form-check-input').each(function() {
-          if ($(this).is(":checked")) {
-              if($(this).attr('data-id')) {
-                 editItemIds.push($(this).attr('data-id'));
-              } else {
+$(document).on('click', '#deleteBtn', (e) => {
+    e.preventDefault();
+    let editItemIds = [];
+    let anyChecked = false;
+    $('#itemTable > tbody .form-check-input').each(function() {
+        if ($(this).is(":checked")) {
+            anyChecked = true;
+            let dataId = $(this).attr('data-id');
+            if (dataId) {
+                editItemIds.push(dataId);
+            } else {
                 $(this).closest('tr').remove();
-              }
-          }
-      });
-      if(editItemIds.length == 0) {
-        alert("Please first add & select row item.");
-      }
-      if (editItemIds.length) {
-        $("#deleteComponentModal").find("#deleteConfirm").attr('data-ids',JSON.stringify(editItemIds));
+            }
+        }
+    });
+    if (!anyChecked) {
+        alert("Please select at least one row to delete.");
+        return;
+    }
+    if (editItemIds.length > 0) {
+        $("#deleteComponentModal").find("#deleteConfirm").attr('data-ids', JSON.stringify(editItemIds));
         $("#deleteComponentModal").modal('show');
-      }
-  
-      if(!$("tr[id*='row_']").length) {
-          $("#itemTable > thead .form-check-input").prop('checked',false);
-        //   $(".prSelect").prop('disabled',false);
-      }
-  });
-  
+    }
+    if ($("#itemTable > tbody tr").length === 0) {
+        $("#itemTable > thead .form-check-input").prop('checked', false);
+        // $(".prSelect").prop('disabled', false); // Uncomment if needed
+    }
+});
   /*Attribute on change*/
   $(document).on('change', '[name*="comp_attribute"]', (e) => {
       let rowCount = e.target.closest('tr').querySelector('[name*="row_count"]').value;
@@ -209,32 +213,14 @@ $(document).on('click', '.toggle-collapse', function (e) {
 function initStoreAutocomplete(context = "#analyzeModal") {
     $(context).find('input[name*="store_name"]').each(function () {
         let $input = $(this);
-        // Avoid duplicating button
         if (!$input.closest('.autocomplete-wrapper').length) {
-            // $input.wrap('<div class="autocomplete-wrapper" style="position:relative;"></div>');
-            // $input.css('padding-right', '10px');
-            // $input.after(`
-            //     <span class="clear-autocomplete" 
-            //         style="position:absolute; right:8px; top:50%; transform:translateY(-50%);
-            //                 cursor:pointer; font-size:18px; color:#888; display:none; z-index:1;">
-            //         &times;
-            //     </span>
-            // `);
             $input.wrap('<div class="autocomplete-wrapper" style="position:relative;"></div>');
             $input.after('<span class="clear-autocomplete" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:18px; color:#888; display:none;">&times;</span>');
         }
         let $clearBtn = $input.siblings('.clear-autocomplete');
-        // Show/hide clear button on input
         $input.on('input focus', function () {
             $clearBtn.toggle(!!$input.val());
         });
-
-        // $input.on('blur', function () {
-        //     setTimeout(function () {
-        //         $clearBtn.hide();
-        //     }, 1000);
-        // });
-
         $clearBtn.on('click', function () {
             $input.val('').focus();
             $input.closest('td').find('input[name="store_id"]').val('');
@@ -244,8 +230,6 @@ function initStoreAutocomplete(context = "#analyzeModal") {
         $input.autocomplete({
             minLength: 0,
             source: function (request, response) {
-                // let itemId = $input.closest('tr').find("input[name*='item_id']").val() || '';
-                // let attrGroupId = $input.data('attr-group-id');
                 $.ajax({
                     url: '/search',
                     method: 'GET',
@@ -253,8 +237,6 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                     data: {
                         q: request.term,
                         type: "location",
-                        // item_id: itemId,
-                        // attr_group_id: attrGroupId,
                     },
                     success: function (data) {
                         response($.map(data, function (item) {
@@ -273,6 +255,9 @@ function initStoreAutocomplete(context = "#analyzeModal") {
             select: function (event, ui) {
                 $input.val(ui.item.label);
                 $input.closest('td').find('input[name="store_id"]').val(ui.item.id);
+                if(!$input.closest('td').find('input[name="store_id"]').length) {
+                    $input.closest('td').find('input[name*="store_id"]').val(ui.item.id);
+                }
                 $clearBtn.show();
                 let storeId = ui.item.id;
                 let checkBox = $input.closest('tr').find(".analyze_row");
@@ -285,8 +270,10 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                         attr.values_data.filter(v => v.selected).map(v => v.id)
                     );
                 }
-                let tr = $input.closest('tr')[0];
-                getStock(itemId, uomId, selectAttribute, storeId, tr);
+                if(context == '#analyzeModal') {
+                    let tr = $input.closest('tr')[0];
+                    getStock(itemId, uomId, selectAttribute, storeId, tr);
+                }
                 return false;
             },
             focus: function (event, ui) {
@@ -297,6 +284,9 @@ function initStoreAutocomplete(context = "#analyzeModal") {
             if (!$(this).val()) {
                 $(this).autocomplete("search", "");
                 $(this).closest('td').find('input[name="store_id"]').val("");
+                if(!$(this).closest('td').find('input[name="store_id"]').length) {
+                    $(this).closest('td').find('input[name*="store_id"]').val("");
+                }
                 let storeId = "";
                 let checkBox = $(this).closest('tr').find(".analyze_row");
                 let itemId = checkBox.data('item-id') || '';
@@ -308,13 +298,18 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                         attr.values_data.filter(v => v.selected).map(v => v.id)
                     );
                 }
-                let tr = $input.closest('tr')[0];
-                getStock(itemId, uomId, selectAttribute, storeId, tr);
+                if(context == '#analyzeModal') {
+                    let tr = $input.closest('tr')[0];
+                    getStock(itemId, uomId, selectAttribute, storeId, tr);
+                }
             }
         });
         $input.on('input', function () {
             if (!$(this).val()) {
                 $(this).closest('td').find('input[name="store_id"]').val("");
+                if(!$(this).closest('td').find('input[name="store_id"]').length) {
+                    $(this).closest('td').find('input[name*="store_id"]').val("");
+                }
                 $clearBtn.hide();
                 let storeId = "";
                 let checkBox = $(this).closest('tr').find(".analyze_row");
@@ -327,8 +322,10 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                         attr.values_data.filter(v => v.selected).map(v => v.id)
                     );
                 }
-                let tr = $input.closest('tr')[0];
-                getStock(itemId, uomId, selectAttribute, storeId, tr);
+                if(context == '#analyzeModal') {
+                    let tr = $input.closest('tr')[0];
+                    getStock(itemId, uomId, selectAttribute, storeId, tr);
+                }
             }
         });
     });

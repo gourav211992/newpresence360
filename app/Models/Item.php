@@ -247,4 +247,25 @@ class Item extends Model
             }
         });
     }
+
+    public function getSelectedAttributeData(array $selectedAttrIds)
+    {
+        $attrData = collect();
+        $itemAttributes = ItemAttribute::where('item_id', $this->id)->get();
+        foreach ($itemAttributes as $itemAttribute) {
+            $attributeIds = is_array($itemAttribute->attribute_id)
+                ? $itemAttribute->attribute_id
+                : [$itemAttribute->attribute_id];
+            foreach ($attributeIds as $attrValueId) {
+                if (in_array($attrValueId, $selectedAttrIds)) {
+                    $attrData->push((object)[
+                        'item_attribute_id' => $itemAttribute->id,
+                        'attribute_value'   => $attrValueId,
+                    ]);
+                }
+            }
+        }
+        return $attrData;
+    }
+
 }

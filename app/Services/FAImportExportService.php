@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\InventoryHelper;
 use App\Models\Ledger;
 use App\Helpers\Helper;
 use App\Models\ErpAssetCategory;
@@ -12,6 +13,7 @@ use App\Models\CostCenter;
 use App\Models\Vendor;
 use App\Models\Currency;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\ConstantHelper;
 
 use Exception;
 
@@ -20,20 +22,22 @@ class FAImportExportService
     public function checkRequiredFields(array $data)
     {
         $requiredFields = [
+            'series',
             'asset_code',
             'asset_name',
             'location',
             'cost_center',
             'category',
             'ledger',
-            'capitalize_date', // fixed spelling
+            'capitalize_date',
             'quantity',
             'maintenance_schedule',
-            'useful_life', // optional if not used directly, otherwise remove
-            'current_value', // used in calculation
+            'useful_life',
+            'current_value',
             'vendor',
             'currency',
         ];
+
         $missingFields = [];
 
         foreach ($requiredFields as $field) {
@@ -46,8 +50,20 @@ class FAImportExportService
             throw new Exception("Missing required fields: " . implode(', ', $missingFields));
         }
 
+        // Validate asset_code has no spaces and is all uppercase
+        $assetCode = $data['asset_code'];
+
+        if (preg_match('/\s/', $assetCode)) {
+            throw new Exception("Asset code must not contain spaces.");
+        }
+
+        if ($assetCode !== strtoupper($assetCode)) {
+            throw new Exception("Asset code must be in all uppercase letters.");
+        }
+
         return true;
     }
+
     public function processData(array $data)
     {
 
@@ -81,54 +97,72 @@ class FAImportExportService
             }
         }
 
-        
-      
+
+
         // Calculate purchase_amount
         $data['purchase_amount'] = $data['current_value'];
         $location = ErpStore::withDefaultGroupCompanyOrg()
             ->where('store_name', $data['location'])
             ->first();
+        
         if (empty($location)) {
             throw new \Exception("Location(s) not found");
         }
-
-
+        $locations = InventoryHelper::getAccessibleLocations();
+        $loc_access = in_array($location->id,$locations->pluck('id')->toArray());
+        if(!$loc_access){
+            throw new \Exception("Location(s) not accessible");
+        }
+        
         $cost_center = CostCenter::where('status', 'active')->where('name', $data['cost_center'])
             ->withDefaultGroupCompanyOrg()
             ->first();
 
         if (empty($cost_center)) {
-            throw new \Exception($data['cost_center']." Cost Center(s) not found");
+            throw new \Exception($data['cost_center'] . " Cost Center(s) not found");
         }
+        
+        $ids = array_column(Helper::getActiveCostCenters($location->id), 'id');
+        $mapped = in_array($cost_center?->id, $ids);
+
+        if (!$mapped) {
+            throw new \Exception($data['cost_center'] . " not mapped with ".$location->store_name);
+        }
+        
 
 
-    $ledger = Ledger::withDefaultGroupCompanyOrg()
-    ->where('name', 'LIKE', '%' . trim($data['ledger'] ?? '') . '%')
-    ->first();
+
+        $ledger = Ledger::withDefaultGroupCompanyOrg()
+            ->where('name', 'LIKE', '%' . trim($data['ledger'] ?? '') . '%')
+            ->first();
 
         if (empty($ledger)) {
-            throw new \Exception($data['ledger']. " Ledger(s) not found");
+            throw new \Exception($data['ledger'] . " Ledger(s) not found");
         }
 
         $ledgerGroup = $ledger->group() ?? null;
         if (empty($ledgerGroup[0])) {
             throw new \Exception("Ledger group not found for ledger: {$data['ledger']}");
         }
-
+        
+        if ($ledgerGroup[0]->name!=ConstantHelper::FIXED_ASSETS) {
+            throw new \Exception($data['ledger']. "Ledger not mapped with Fixed Assets group");
+        }
+        
         $category = ErpAssetCategory::withDefaultGroupCompanyOrg()
             ->where('name', $data['category'])
             ->first();
 
         if (empty($category)) {
-            throw new \Exception($data['category'] ." Category(s) not found");
+            throw new \Exception($data['category'] . " Category(s) not found");
         }
         $vendor = Vendor::withDefaultGroupCompanyOrg()->where('display_name', $data['vendor'])->first();
         if (empty($vendor)) {
-            throw new \Exception($data['vendor'] ." Vendor(s) not found");
+            throw new \Exception($data['vendor'] . " Vendor(s) not found");
         }
         $currency = Currency::where('short_name', $data['currency'])->first();
         if (empty($currency)) {
-            throw new \Exception($data['currency']. " Currency(s) not found");
+            throw new \Exception($data['currency'] . " Currency(s) not found");
         }
         $echange = CurrencyHelper::getCurrencyExchangeRates($currency->id, date('Y-m-d'));
         $echange = $echange['data'];

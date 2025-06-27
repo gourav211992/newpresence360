@@ -155,14 +155,14 @@ class PiItem extends Model
     
     public function getMiBalanceQtyAttribute()
     {
-        return max(($this -> indent_qty) - $this -> mi_qty, 0);
+        return max(($this->indent_qty) - $this->mi_qty, 0);
     }
 
     # Use For MI
     public function getAvlStock($storeId, $subStoreId = null, $stationId = null)
     {
         $selectedAttributeIds = [];
-        $itemAttributes = $this -> item_attributes_array();
+        $itemAttributes = $this->item_attributes_array();
         foreach ($itemAttributes as $itemAttr) {
             foreach ($itemAttr['values_data'] as $valueData) {
                 if ($valueData['selected']) {
@@ -170,12 +170,12 @@ class PiItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($this -> item_id, $selectedAttributeIds,$this -> uom_id,$storeId,$subStoreId,NULL,$stationId);
+        $stocks = InventoryHelper::totalInventoryAndStock($this->item_id, $selectedAttributeIds, $this->uom_id, $storeId, $subStoreId, NULL, $stationId);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
-        return min($stockBalanceQty, $this -> indent_qty);
+        return $stockBalanceQty;
     }
 
     public function getAvlStockForPi($storeId = null)
@@ -201,6 +201,15 @@ class PiItem extends Model
     public function getQtyAttribute()
     {
         return $this -> indent_qty;
+    }
+
+    public function getPendingPoAttribute()
+    {   
+        $itemId       = $this->item_id;
+        $selectedAttr = $this->attributes()->get();
+        $uomId        = $this->uom_id;
+        $storeId      = $this?->pi?->store_id;
+        return InventoryHelper::getPendingPo($itemId, $uomId, $selectedAttr, $storeId);
     }
 
 }

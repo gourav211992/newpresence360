@@ -13,89 +13,110 @@
                             <h2 class="content-header-title float-start mb-0">Upload Fixed Asset Data</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{route('finance.fixed-asset.registration.index')}}">Home</a></li>  
+                                    <li class="breadcrumb-item"><a
+                                            href="{{ route('finance.fixed-asset.registration.index') }}">Home</a></li>
                                     <li class="breadcrumb-item active">Fixed Asset Import</li>
                                 </ol>
                             </div>
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <a href="{{route('finance.fixed-asset.registration.index')}}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
+                        <a href="{{ route('finance.fixed-asset.registration.index') }}"
+                            class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                             <i data-feather="arrow-left-circle"></i> Back
                         </a>
-                        <a href="{{ asset('templates/FA_sample_template.xlsx') }}" class="btn btn-secondary btn-sm" id="download-template-btn" download>
+                        <a href="{{ asset('templates/FA_sample_template.xlsx') }}" class="btn btn-primary btn-sm"
+                            id="download-template-btn" download>
                             <i data-feather="download"></i> Download Template
-                        </a> 
+                        </a>
                     </div>
                 </div>
-                
+
             </div>
             <div class="content-body">
-				<section id="basic-datatable">
+                <section id="basic-datatable">
                     <div class="row justify-content-center">
                         <div class="col-9">
-                        <form class="importForm" method="POST" action="{{route('finance.fixed-asset.import')}}" enctype="multipart/form-data">
-                            @csrf
-                            <div class="upload-item-masstrerdata">
-                                <!-- File Upload Section -->
-                                <div class="drapdroparea upload-btn-wrapper text-center default-dragdrop-area-unique">
-                                    <i class="uploadiconsvg" data-feather='upload'></i>
-                                    <p>Upload the template file with updated data</p>
-                                    <button class="btn btn-primary">DRAG AND DROP HERE OR CHOOSE FILE</button>  
-                                    <input type="file" name="file" accept=".xlsx, .xls, .csv" class="form-control" id="fileUpload"/>
-                                </div>
-                
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="fileNameDisplay" style="display: none;">
-                                    <div class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center"> <span id="selectedFileName"></span> <i data-feather='x-circle' id="cancelBtn" class="ms-75"></i></div>
-                                    <button type="submit" class="btn btn-primary">Proceed to Upload</button>
-                                </div>
+                            <form class="importForm" method="POST" action="{{ route('finance.fixed-asset.import') }}"
+                                enctype="multipart/form-data">
+                                @csrf
+                                <div class="upload-item-masstrerdata">
+                                    <!-- File Upload Section -->
+                                    <div class="drapdroparea upload-btn-wrapper text-center default-dragdrop-area-unique">
+                                        <i class="uploadiconsvg" data-feather='upload'></i>
+                                        <p>Upload the template file with updated data</p>
+                                        <button class="btn btn-primary">DRAG AND DROP HERE OR CHOOSE FILE</button>
+                                        <input type="file" name="file" accept=".xlsx, .xls, .csv" class="form-control"
+                                            id="fileUpload" />
+                                    </div>
 
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadProgress" style="display: none;">
-                                    <span class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center" id="progressFileName">
-                                        <span id="selectedFileName"></span>
-                                    </span>
-                                    <button class="btn btn-primary" disabled>Proceed to Upload</button>
-                                    <div class="w-75 mt-3">
-                                        <div class="progress" style="height: 15px">
-                                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped bg-success progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">0%</div>
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="fileNameDisplay" style="display: none;">
+                                        <div
+                                            class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center">
+                                            <span id="selectedFileName"></span> <i data-feather='x-circle' id="cancelBtn"
+                                                class="ms-75"></i></div>
+                                        <button type="submit" class="btn btn-primary">Proceed to Upload</button>
+                                    </div>
+
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadProgress" style="display: none;">
+                                        <span
+                                            class="badge rounded-pill badge-light-warning fw-bold mb-1 badgeborder-radius d-flex align-items-center"
+                                            id="progressFileName">
+                                            <span id="selectedFileName"></span>
+                                        </span>
+                                        <button class="btn btn-primary" disabled>Proceed to Upload</button>
+                                        <div class="w-75 mt-3">
+                                            <div class="progress" style="height: 15px">
+                                                <div id="uploadProgressBar"
+                                                    class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+                                                    role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                                                    aria-valuemax="100" style="width: 0%">0%</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Error Section -->
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadError" style="display: none;">
+                                        <i class="alertdropdatamaster" data-feather='alert-triangle'></i><br>
+                                        <div class="alert alert-danger" id="upload-error" style="display: none;"></div>
+                                        <div class="mt-2 downloadtemplate">
+                                            <button class="editbtnNew">
+                                                <i data-feather='upload'></i> Upload Again
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Success Section -->
+                                    <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
+                                        id="uploadSuccess" style="display: none;">
+                                        <i class="itemdatasuccesssmaster" data-feather='check-circle'></i>
+                                        <p>All records have been uploaded successfully.<br>
+                                            Please proceed to process sales.</p>
+                                        <div class="d-flex">
+                                            <span
+                                                class="badge rounded-pill badge-light-success fw-bold me-1 font-small-2 badgeborder-radius"
+                                                id="success-count-badge"></span>
                                         </div>
                                     </div>
                                 </div>
-                                <!-- Error Section -->
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadError" style="display: none;">
-                                    <i class="alertdropdatamaster" data-feather='alert-triangle'></i><br>
-                                    <div class="alert alert-danger" id="upload-error" style="display: none;"></div>
-                                    <div class="mt-2 downloadtemplate"> 
-                                        <button class="editbtnNew">
-                                            <i data-feather='upload'></i> Upload Again
-                                        </button> 									
-                                    </div> 	
-                                </div>
-
-                                <!-- Success Section -->
-                                <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center" id="uploadSuccess" style="display: none;">
-                                    <i class="itemdatasuccesssmaster" data-feather='check-circle'></i>
-                                    <p>All records have been uploaded successfully.<br>
-                                    Please proceed to process sales.</p>
-                                    <div class="d-flex">
-                                        <span class="badge rounded-pill badge-light-success fw-bold me-1 font-small-2 badgeborder-radius" id="success-count-badge"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
+                            </form>
                         </div>
-                        
+
                         <div class="col-md-11 mt-3 col-12 hide-this-section" style="display:none">
-                           <div class="card  new-cardbox"> 
+                            <div class="card  new-cardbox">
                                 <ul class="nav nav-tabs border-bottom" role="tablist">
                                     <li class="nav-item">
-                                        <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Records Succeeded &nbsp;<span id="success-count">(0)</span></a>
+                                        <a class="nav-link active" data-bs-toggle="tab" href="#Succeded">Records Succeeded
+                                            &nbsp;<span id="success-count">(0)</span></a>
                                     </li>
                                     <li class="nav-item">
-                                        <a class="nav-link" data-bs-toggle="tab" href="#Failed">Records Failed &nbsp;<span id="failed-count">(0)</span></a>
+                                        <a class="nav-link" data-bs-toggle="tab" href="#Failed">Records Failed &nbsp;<span
+                                                id="failed-count">(0)</span></a>
                                     </li>
                                 </ul>
                                 <div class="tab-content">
@@ -106,8 +127,7 @@
                                                     data-feather="download"></i>Export to Excel</button>
                                         </div> --}}
                                         <div class="table-responsive">
-                                            <table
-                                                class="datatables-basic1 datatables-success table  myrequesttablecbox">
+                                            <table class="datatables-basic1 datatables-success table  myrequesttablecbox">
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
@@ -133,8 +153,7 @@
                                                     data-feather="download"></i>Export to Excel</button>
                                         </div> --}}
                                         <div class="table-responsive">
-                                            <table
-                                                class="datatables-basic datatables-failed table myrequesttablecbox">
+                                            <table class="datatables-basic datatables-failed table myrequesttablecbox">
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
@@ -160,88 +179,98 @@
 @endsection
 @section('scripts')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/finance-table.js') }}"></script>
     <script>
-         $('.datatables-basic').DataTable({
-                processing: true,
-                scrollX: true,
-                serverSide: false,
-                drawCallback: function () {
-                    feather.replace();
+        $('.datatables-basic').DataTable({
+            processing: true,
+            scrollX: true,
+            serverSide: false,
+            drawCallback: function() {
+                feather.replace();
+            },
+            order: [
+                [0, 'asc']
+            ],
+            dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
+            buttons: [{
+                extend: 'excel',
+                text: feather.icons['file'].toSvg({
+                    class: 'font-small-4 me-50'
+                }) + 'Excel',
+                className: 'btn btn-outline-secondary',
+                action: function(e, dt, node, config) {
+                    window.location.href = `/fixed-asset/export-failed`;
                 },
-                order: [[0, 'asc']],
-                dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-				  lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
-                   buttons:
-                [{
-                    extend: 'excel',
-                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
-                            className: 'btn btn-outline-secondary',
-                            action: function (e, dt, node, config) {
-                                    window.location.href = `/fixed-asset/export-failed`;
-                                },
-                    init: function (api, node, config) {
-                        $(node).removeClass('btn-secondary');
-                        $(node).parent().removeClass('btn-group');
-                        setTimeout(function () {
-                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                        }, 50);
-                    }
-                    }],
-                lengthMenu: [7, 10, 25, 50, 75, 100],
-                columnDefs: [
-                    { "orderable": false, "targets": [3] }
-                ],
-                language: {
-                    paginate: {
-                        previous: '&nbsp;',
-                        next: '&nbsp;'
-                    }
+                init: function(api, node, config) {
+                    $(node).removeClass('btn-secondary');
+                    $(node).parent().removeClass('btn-group');
+                    setTimeout(function() {
+                        $(node).closest('.dt-buttons').removeClass('btn-group').addClass(
+                            'd-inline-flex');
+                    }, 50);
                 }
-            });
+            }],
+            lengthMenu: [7, 10, 25, 50, 75, 100],
+            columnDefs: [{
+                "orderable": false,
+                "targets": [3]
+            }],
+            language: {
+                paginate: {
+                    previous: '&nbsp;',
+                    next: '&nbsp;'
+                }
+            }
+        });
 
-            handleRowSelection('.datatables-basic');
+        handleRowSelection('.datatables-basic');
 
-       
-            $('.datatables-basic1').DataTable({
-                processing: true,
-                scrollX: true,
-                serverSide: false,
-                drawCallback: function () {
-                    feather.replace();
+
+        $('.datatables-basic1').DataTable({
+            processing: true,
+            scrollX: true,
+            serverSide: false,
+            drawCallback: function() {
+                feather.replace();
+            },
+            order: [
+                [0, 'asc']
+            ],
+            dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
+            buttons: [{
+                extend: 'excel',
+                text: feather.icons['file'].toSvg({
+                    class: 'font-small-4 me-50'
+                }) + 'Excel',
+                className: 'btn btn-outline-secondary',
+                action: function(e, dt, node, config) {
+                    window.location.href = `/fixed-asset/export-successful`;
                 },
-                order: [[0, 'asc']],
-                dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-				  lengthMenu: [7, 10, 25, 50, 75, 100], // Options for number of rows to show
-                   buttons:
-                [{
-                    extend: 'excel',
-                            text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
-                            className: 'btn btn-outline-secondary',
-                            action: function (e, dt, node, config) {
-                                    window.location.href = `/fixed-asset/export-successful`;
-                                },
-                    init: function (api, node, config) {
-                        $(node).removeClass('btn-secondary');
-                        $(node).parent().removeClass('btn-group');
-                        setTimeout(function () {
-                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                        }, 50);
-                    }
-                    }],
-                lengthMenu: [7, 10, 25, 50, 75, 100],
-                columnDefs: [
-                    { "orderable": false, "targets": [3] }
-                ],
-                language: {
-                    paginate: {
-                        previous: '&nbsp;',
-                        next: '&nbsp;'
-                    }
+                init: function(api, node, config) {
+                    $(node).removeClass('btn-secondary');
+                    $(node).parent().removeClass('btn-group');
+                    setTimeout(function() {
+                        $(node).closest('.dt-buttons').removeClass('btn-group').addClass(
+                            'd-inline-flex');
+                    }, 50);
                 }
-            });
+            }],
+            lengthMenu: [7, 10, 25, 50, 75, 100],
+            columnDefs: [{
+                "orderable": false,
+                "targets": [3]
+            }],
+            language: {
+                paginate: {
+                    previous: '&nbsp;',
+                    next: '&nbsp;'
+                }
+            }
+        });
 
-            handleRowSelection('.datatables-basic1');
+        handleRowSelection('.datatables-basic1');
         $(document).ready(function() {
             feather.replace();
             var fileInput = $("#fileUpload");
@@ -311,7 +340,7 @@
                 if (fileSize > MAX_FILE_SIZE) {
                     displayError(
                         `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024} MB (30 MB). Please upload a smaller file.`
-                        );
+                    );
                     fileInput.val('');
                     return;
                 }
@@ -330,7 +359,7 @@
                         if (rowCount > MAX_ROW_COUNT) {
                             displayError(
                                 `File contains more than ${MAX_ROW_COUNT} rows. Please upload a smaller file.`
-                                );
+                            );
                             fileInput.val('');
                             return;
                         }
@@ -376,7 +405,7 @@
                 e.preventDefault();
                 const currentForm = this;
                 var submitButton = (e.originalEvent && e.originalEvent.submitter) || $(this).find(
-                ':submit');
+                    ':submit');
                 var submitButtonHtml = submitButton.innerHTML;
                 submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
                 submitButton.disabled = true;
@@ -409,7 +438,9 @@
                     data: data,
                     contentType: false,
                     processData: false,
+                    
                     beforeSend: function() {
+                        timeoutHandler =
                         setTimeout(function() {
                             if (!timeoutWarningShown) {
                                 showTimeoutMessage();
@@ -437,6 +468,7 @@
                     },
                     success: function(res) {
                         clearInterval(simulateProgress);
+                        clearTimeout(timeoutHandler);
                         submitButton.disabled = false;
                         submitButton.innerHTML = submitButtonHtml;
                         $('.ajax-validation-error-span').remove();
@@ -445,12 +477,12 @@
                         $(".waves-ripple").remove();
                         populateTable('#success-table-body', res.successful_items);
                         populateTable('#failed-table-body', res.failed_items);
-                        
+
                         $('#success-count-badge').text(
                             `Records Succeeded: ${res.successful_items.length}`);
-                        
+
                         $('#success-count').text(`(${res.successful_items.length})`);
-                        
+
                         $('#failed-count').text(`(${res.failed_items.length})`);
                         $('#uploadProgress').hide();
                         $('.hide-this-section').show();
@@ -459,7 +491,7 @@
                         } else {
                             $('.editbtnNew').hide();
                         }
-                
+
                         if (res.status === 'success') {
                             Swal.fire({
                                 title: 'Success!',
@@ -474,9 +506,10 @@
                             });
                         }
                         feather.replace();
-                     if (res.failed_items.length > 0) {
-    $('a[href="#Failed"]').tab('show'); // Simpler with jQuery + Bootstrap's plugin
-}
+                        if (res.failed_items.length > 0) {
+                            $('a[href="#Failed"]').tab(
+                            'show'); // Simpler with jQuery + Bootstrap's plugin
+                        }
 
                         $('.exportBtn').on('click', function() {
                             var activeTab = $('.nav-link.active').attr('href');
@@ -488,6 +521,7 @@
                         });
                     },
                     error: function(xhr, status, error) {
+                        clearTimeout(timeoutHandler);
                         $('#fileNameDisplay').hide();
                         clearInterval(simulateProgress);
                         submitButton.disabled = false;
@@ -513,48 +547,54 @@
                         } else {
                             $('#upload-error').html(
                                 'An error occurred while processing the file. Please try again.'
-                                ).show();
+                            ).show();
                         }
                         $("#uploadError").show();
                     }
                 });
             });
 
-         function populateTable(tableBodySelector, items) {
-            const $table = $(tableBodySelector).closest('table');
-            const table = $table.DataTable();
-            table.clear();
+            function populateTable(tableBodySelector, items) {
+                const $table = $(tableBodySelector).closest('table');
+                const table = $table.DataTable();
+                table.clear();
 
-            const isSuccessTable = tableBodySelector === '#success-table-body';
+                const isSuccessTable = tableBodySelector === '#success-table-body';
 
-            if (items.length > 0) {
-                items.forEach((item, index) => {
-                    const row = [
-                        index + 1,
-                        `<span class="fw-bolder text-dark">${item.asset_code}</span>`,
-                        item.asset_name,
-                    ];
-                    if( isSuccessTable) {
-                        row.push(`<span class="text-success fw-bold">${item.import_remarks || ''}</span>`);
-                    } else {
-                        row.push(`<span class="text-danger fw-bold">${item.import_remarks || ''}</span>`);
-                    }
-                    table.row.add(row);
-                });
-            } 
-            table.draw(false);
+                if (items.length > 0) {
+                    items.forEach((item, index) => {
+                        const row = [
+                            index + 1,
+                            `<span class="fw-bolder text-dark">${item.asset_code}</span>`,
+                            item.asset_name,
+                        ];
+                        if (isSuccessTable) {
+                            row.push(
+                                `<span class="text-success fw-bold">${item.import_remarks || ''}</span>`
+                                );
+                        } else {
+                            row.push(
+                                `<span class="text-danger fw-bold">${item.import_remarks || ''}</span>`);
+                        }
+                        table.row.add(row);
+                    });
+                }
+                table.draw(false);
 
-            new ResizeObserver(() => {
-                table.columns.adjust().draw(false);
-            }).observe($table[0]);
-        }
+                new ResizeObserver(() => {
+                    table.columns.adjust().draw(false);
+                }).observe($table[0]);
+            }
 
-        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function () {
-            $.fn.dataTable
-                .tables({ visible: true, api: true })
-                .columns.adjust()
-                .draw();
-        });
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function() {
+                $.fn.dataTable
+                    .tables({
+                        visible: true,
+                        api: true
+                    })
+                    .columns.adjust()
+                    .draw();
+            });
 
 
         });

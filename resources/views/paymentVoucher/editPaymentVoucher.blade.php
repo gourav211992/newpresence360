@@ -1396,11 +1396,6 @@ function check_amount() {
                         const refNo = $(this).val().trim();
                         const row = $(this).data('row');
                         
-                        if (refNo === '') {
-                            $(this).addClass('is-invalid');
-                            $('#reference_error' + row).text('Reference number is required');
-                            refError = true;
-                        }
                     });
                     // Then check for duplicates
                     if (!validateReferenceNumbers()) {
@@ -2397,13 +2392,6 @@ function showToast(icon, title) {
                     $errorSpan.text('');
                 }
                 
-                // Check for empty fields (only if Bank is selected)
-                if ($("#Bank").is(":checked") && refNo === '') {
-                    hasEmptyFields = true;
-                    $input.addClass('is-invalid');
-                    $errorSpan.text('Reference number is required');
-                    return;
-                }
                 
                 // Skip empty references for duplicate check
                 if (refNo === '') {

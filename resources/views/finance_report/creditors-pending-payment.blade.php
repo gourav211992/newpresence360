@@ -132,7 +132,7 @@
                                 <div
                                     class="table-responsive trailbalnewdesfinance po-reportnewdesign leadger-balancefinance trailbalnewdesfinancerightpad gsttabreporttotal">
                                     <table
-                                        class="mt-1 datatables-basic table myrequesttablecbox tablecomponentreport po-order-detail">
+                                        class="mt-1 datatables-basic table myrequesttablecbox tablecomponentreport po-order-detail tableistlastcolumnfixed">
                                         <thead>
                                             <tr>
                                                 <th>#</th>
@@ -439,18 +439,18 @@
                                     const isChecked = existingSettleAmt > 0;
                                     html += `<tr id="${uniqueKey}" class="voucherRows">
                                         <td>${rowIndex}</td>
-                                        <td>${voucher.date ?? '-'}</td>
-                                        <td data-ledger-id="${item.ledger ?? ''}">${item.ledger?.name ?? '-'}</td>
-                                        <td>${item.ledger_group?.name ?? item.ledger?.ledger_group?.name ?? '-'}</td>
-                                        <td>${voucher.organization?.name ?? '-'}</td>
-                                        <td>${voucher.erp_location?.store_name ?? '-'}</td>
-                                        <td>${item.cost_center?.name ?? '-'}</td>
-                                        <td class="fw-bolder text-dark">${voucher.series?.book_code?.toUpperCase() || '-'}</td>
-                                        <td>${voucher.voucher_no ?? '-'}</td>
-                                        <td class="text-end">${formatIndianNumber(amount)}</td>
-                                        <td class="balanceInput text-end">${formatIndianNumber(balance)}</td>
+                                        <td class="text-nowrap">${voucher.date ?? '-'}</td>
+                                        <td class="text-nowrap" data-ledger-id="${item.ledger ?? ''}">${item.ledger?.name ?? '-'}</td>
+                                        <td class="text-nowrap">${item.ledger_group?.name ?? item.ledger?.ledger_group?.name ?? '-'}</td>
+                                        <td class="text-nowrap">${voucher.organization?.name ?? '-'}</td>
+                                        <td class="text-nowrap">${voucher.erp_location?.store_name ?? '-'}</td>
+                                        <td class="text-nowrap">${item.cost_center?.name ?? '-'}</td>
+                                        <td class="text-nowrap fw-bolder text-dark">${voucher.series?.book_code?.toUpperCase() || '-'}</td>
+                                        <td class="text-nowrap">${voucher.voucher_no ?? '-'}</td>
+                                        <td class="text-nowrap text-end">${formatIndianNumber(amount)}</td>
+                                        <td class="text-nowrap balanceInput text-end">${formatIndianNumber(balance)}</td>
                                         <td class="text-end">
-                                            <input type="number" class="form-control text-end mw-100 settleInput settleAmount${uniqueKey}" data-id="${uniqueKey}" value="${existingSettleAmt}"/>
+                                            <input type="number" style="width:105px" class="form-control text-end mw-100 settleInput settleAmount${uniqueKey}" data-id="${uniqueKey}" value="${existingSettleAmt}"/>
                                         </td>
                                         <td class="text-center">
                                             <div class="form-check form-check-inline me-2">

@@ -50,11 +50,11 @@
                                             <!-- Existing Fields -->
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
-                                                    <label class="form-label">Company<span class="text-danger">*</span></label>
+                                                    <label class="form-label">Organization<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
                                                     <select name="organization_id" id="company" class="form-select select2">
-                                                        <option value="">Select</option>
+                                                        <option value="">Select Organization</option>
                                                         @foreach($allOrganizations as $organization)
                                                             <option value="{{ $organization->id }}" data-address='@json($organization->addresses->first())'>
                                                                 {{ $organization->name }}

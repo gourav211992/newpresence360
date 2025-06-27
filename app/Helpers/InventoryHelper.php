@@ -66,6 +66,7 @@ use App\Models\MoProductionItem;
 use App\Models\MoProductionItemLocation;
 
 use App\Models\ErpSoItem;
+use App\Models\PoItem;
 use Illuminate\Support\Collection;
 use App\Models\PslipBomConsumption;
 use Illuminate\Support\Facades\Log;
@@ -401,6 +402,47 @@ class InventoryHelper
             'rate' => $rate ?? 0,
         ];
         return $data;
+    }
+
+    # Get Pending stock for Po and Pi
+    public static function getPendingPo($itemId, $uomId=null, $selectedAttr = null, $storeId=null)
+    {
+        if (!($selectedAttr instanceof Collection)) {
+            $item = Item::find($itemId);
+            $selectedAttr = $selectedAttr ? $item->getSelectedAttributeData($selectedAttr ?? []) : collect();
+        }
+        $pendingOrderQty = PoItem::selectRaw('SUM(order_qty - grn_qty - short_close_qty) as pending_order_qty')
+        ->whereHas('po', function ($query) {
+            $query->withDefaultGroupCompanyOrg()
+                  ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+        })
+        ->where('item_id', $itemId)
+        ->where('uom_id', $uomId)
+        ->when($selectedAttr->count(), function ($query) use ($selectedAttr) {
+            $query->whereHas('attributes', function ($query) use ($selectedAttr) {
+                $query->where(function ($q) use ($selectedAttr) {
+                    foreach ($selectedAttr as $attr) {
+                        $q->orWhere(function ($subQ) use ($attr) {
+                            $subQ->where('item_attribute_id', $attr->item_attribute_id);
+                            $subQ->where('attribute_value', $attr->attribute_value);
+                        });
+                    }
+                });
+            })
+            ->withCount(['attributes as matched_attr_count' => function ($query) use ($selectedAttr) {
+                $query->where(function ($q) use ($selectedAttr) {
+                    foreach ($selectedAttr as $attr) {
+                        $q->orWhere(function ($subQ) use ($attr) {
+                            $subQ->where('item_attribute_id', $attr->item_attribute_id);
+                            $subQ->where('attribute_value', $attr->attribute_value);
+                        });
+                    }
+                });
+            }])
+            ->having('matched_attr_count', '=', $selectedAttr->count());
+        })
+        ->value('pending_order_qty'); 
+        return $pendingOrderQty ?? 0;
     }
 
     public static function totalInventoryAndStockV1($orgId, $itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null, $stationId = null, $stockType = self::STOCK_TYPE_REGULAR, $itemWipStationId = null)
@@ -1047,7 +1089,6 @@ class InventoryHelper
 
         }
 
-        $inventoryUom = Unit::find($documentDetail->item->uom_id);
         //Header Data
         $stockLedger->group_id = @$documentHeader->group_id;
         $stockLedger->company_id = @$documentHeader->company_id;
@@ -1074,10 +1115,25 @@ class InventoryHelper
         $stockLedger->group_currency_exg_rate = @$documentHeader->group_currency_exg_rate;
         $stockLedger->original_receipt_date = @$documentHeader->document_date;
 
-        // Detail Data
-        $stockLedger->item_id = @$documentDetail->item_id;
-        $stockLedger->item_code = @$documentDetail->item_code;
-        $stockLedger->item_name = @$documentDetail->item->item_name;
+        //  Detail Data
+        $itemId = '';
+        $itemCode = '';
+        $itemName = '';
+        $inventoryUom = '';
+        if(($bookType == ConstantHelper::MRN_SERVICE_ALIAS) && ($transactionType == 'issue')) {
+            $itemId = @$documentItemLocation->item_id;
+            $itemCode = @$documentItemLocation?->item_code;
+            $itemName = @$documentItemLocation?->item?->item_name;
+            $inventoryUom = Unit::find($documentItemLocation?->uom_id);
+        }else{
+            $itemId = @$documentDetail->item_id;
+            $itemCode = @$documentDetail->item_code;
+            $itemName = @$documentDetail->item->item_name;
+            $inventoryUom = Unit::find($documentDetail->item->uom_id);
+        }
+        $stockLedger->item_id = $itemId;
+        $stockLedger->item_code = $itemCode;
+        $stockLedger->item_name = $itemName;
         $stockLedger->inventory_uom_id = @$inventoryUom->id;
         $stockLedger->inventory_uom = @$inventoryUom->name;
 
@@ -1094,41 +1150,79 @@ class InventoryHelper
 
         $attributeArray = array();
         $attributeJsonArray = array();
-        if(isset($documentDetail->attributes) && !empty($documentDetail->attributes)){
-            foreach($documentDetail->attributes as $key1 => $attribute) {
-                $attributeName = @$attribute->attr_name ?? @$attribute->attribute_group_id ?? @$attribute->attribute_name;
-                $attributeValue = @$attribute->attr_value ?? @$attribute->attribute_id ?? @$attribute->attribute_value;
-                $itemAttributeId = @$attribute->item_attribute_id;
-
-                if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS && $transactionType == 'issue') {
-                    $itemAttributeId = $attribute['attribute_id'];
-                    $attributeName = $attribute['attribute_name'];
-                    $attributeValue = $attribute['attribute_value'];
+        if (($bookType == ConstantHelper::MRN_SERVICE_ALIAS) && ($transactionType == 'issue')) {
+            if (!empty($documentItemLocation->attributes)) {
+                $attributes = $documentItemLocation->attributes;
+                // If it's a JSON string, decode it to array
+                if (is_string($attributes)) {
+                    $attributes = json_decode($attributes, true);
                 }
+                if (!empty($attributes) && is_array($attributes)) {
+                    // dd($attributes);
+                    foreach ($attributes as $docAttribute) {
+                        $ledgerAttribute = new StockLedgerItemAttribute();
+                        $ledgerAttribute->stock_ledger_id = $stockLedger->id;
+                        $ledgerAttribute->item_id = $documentItemLocation->item_id ?? null;
+                        $ledgerAttribute->item_code = $documentItemLocation->item_code ?? null;
+                        $ledgerAttribute->item_attribute_id = $docAttribute['attribute_name'];
+                        $ledgerAttribute->attribute_name = $docAttribute['attribute_name'] ?? null;
+                        $ledgerAttribute->attribute_value = $docAttribute['attribute_value'] ?? null;
+                        $ledgerAttribute->status = "active";
+                        $ledgerAttribute->save();
 
-                $ledgerAttribute = new StockLedgerItemAttribute();
-                $ledgerAttribute->stock_ledger_id = $stockLedger->id;
-                $ledgerAttribute->item_id = @$documentDetail->item_id;
-                $ledgerAttribute->item_code = @$documentDetail->item_code;
-                $ledgerAttribute->item_attribute_id = $itemAttributeId;
-                $ledgerAttribute->attribute_name = @$attributeName;
-                $ledgerAttribute->attribute_value = @$attributeValue;
-                $ledgerAttribute->status = "active";
-                $ledgerAttribute->save();
+                        $attributeArray[] = [
+                            "attr_name" => (string) $ledgerAttribute->attribute_name,
+                            "attribute_name" => (string) optional($ledgerAttribute->attributeName)->name,
+                            "attr_value" => (string) $ledgerAttribute->attribute_value,
+                            "attribute_value" => (string) optional($ledgerAttribute->attributeValue)->value,
+                        ];
 
-                $attributeArray[] = [
-                    "attr_name" => (string)$ledgerAttribute->attribute_name,
-                    "attribute_name" => (string)@$ledgerAttribute->attributeName->name,
-                    "attr_value" => (string)@$ledgerAttribute->attribute_value,
-                    "attribute_value" => (string)@$ledgerAttribute->attributeValue->value,
-                ];
+                        $attributeJsonArray[] = [
+                            "attr_name" => (string) $ledgerAttribute->attribute_name,
+                            "attribute_name" => (string) optional($ledgerAttribute->attributeName)->name,
+                            "attr_value" => (string) $ledgerAttribute->attribute_value,
+                            "attribute_value" => (string) optional($ledgerAttribute->attributeValue)->value,
+                        ];
+                    }
+                }
+            }
+        } else {
+            if(isset($documentDetail->attributes) && !empty($documentDetail->attributes)){
+                foreach($documentDetail->attributes as $key1 => $attribute) {
+                    $attributeName = @$attribute->attr_name ?? @$attribute->attribute_group_id ?? @$attribute->attribute_name;
+                    $attributeValue = @$attribute->attr_value ?? @$attribute->attribute_id ?? @$attribute->attribute_value;
+                    $itemAttributeId = @$attribute->item_attribute_id;
 
-                $attributeJsonArray[] = [
-                    "attr_name" => (string)$ledgerAttribute->attribute_name,
-                    "attribute_name" => (string)@$ledgerAttribute->attributeName->name,
-                    "attr_value" => (string)@$ledgerAttribute->attribute_value,
-                    "attribute_value" => (string)@$ledgerAttribute->attributeValue->value,
-                ];
+                    if($bookType == ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS && $transactionType == 'issue') {
+                        $itemAttributeId = $attribute['attribute_id'];
+                        $attributeName = $attribute['attribute_name'];
+                        $attributeValue = $attribute['attribute_value'];
+                    }
+
+                    $ledgerAttribute = new StockLedgerItemAttribute();
+                    $ledgerAttribute->stock_ledger_id = $stockLedger->id;
+                    $ledgerAttribute->item_id = @$documentDetail->item_id;
+                    $ledgerAttribute->item_code = @$documentDetail->item_code;
+                    $ledgerAttribute->item_attribute_id = $itemAttributeId;
+                    $ledgerAttribute->attribute_name = @$attributeName;
+                    $ledgerAttribute->attribute_value = @$attributeValue;
+                    $ledgerAttribute->status = "active";
+                    $ledgerAttribute->save();
+
+                    $attributeArray[] = [
+                        "attr_name" => (string)$ledgerAttribute->attribute_name,
+                        "attribute_name" => (string)@$ledgerAttribute->attributeName->name,
+                        "attr_value" => (string)@$ledgerAttribute->attribute_value,
+                        "attribute_value" => (string)@$ledgerAttribute->attributeValue->value,
+                    ];
+
+                    $attributeJsonArray[] = [
+                        "attr_name" => (string)$ledgerAttribute->attribute_name,
+                        "attribute_name" => (string)@$ledgerAttribute->attributeName->name,
+                        "attr_value" => (string)@$ledgerAttribute->attribute_value,
+                        "attribute_value" => (string)@$ledgerAttribute->attributeValue->value,
+                    ];
+                }
             }
         }
 
@@ -1191,7 +1285,6 @@ class InventoryHelper
                 }
             }
             $approvedStockLedger = $approvedStockLedger->get();
-                // dd($approvedStockLedger -> toArray());
             if ($approvedStockLedger->isNotEmpty()) {
                 foreach ($approvedStockLedger as $val) {
                     $stockLedger = StockLedger::find($val -> id);
@@ -1339,6 +1432,26 @@ class InventoryHelper
             $mrnJoItem->cost_per_unit = $stockLedger->cost_per_unit;
             $mrnJoItem->total_cost = $stockLedger->total_cost;
             $mrnJoItem->save();
+
+            $receiptStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                ->where('document_header_id',$mrnJoItem->mrn_header_id)
+                ->where('document_detail_id',$mrnJoItem->mrn_detail_id)
+                ->where('book_type','=',$bookType)
+                ->where('transaction_type','=','receipt')
+                ->whereNull('utilized_id')
+                ->latest()
+                ->first();
+
+            if($receiptStockLedger){
+                $receiptStockLedger->total_cost += $mrnJoItem->total_cost;
+                $receiptStockLedger->save();
+
+                $receiptStockLedger->cost_per_unit = $stockLedger->total_cost/$receiptStockLedger->receipt_qty;
+                $receiptStockLedger->save();
+
+                self::updateStockCost($receiptStockLedger);
+            }
+
         }
 
     }
@@ -2581,9 +2694,10 @@ class InventoryHelper
             $utilizedQty = 0;
             $issueQty = $stockLedger->issue_qty;
             $stockReservation = null;
-            $invoiceLedger = self::insertStockLedger($stockLedger, $document,  $bookType, $documentStatus, $transactionType, $utilizedQty);
+            $invoiceLedger = self::insertStockLedger($stockLedger, $document,  $bookType, $documentStatus, $transactionType, $utilizedQty, NULL, "R");
             $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $document, $bookType, $documentStatus, $transactionType, $issueQty, $stockReservation, $document->id);
         } catch (\Exception $e) {
+            dd($e);
             $errorMsg = "ERROR: " . $e->getMessage();
             return self::errorResponse($errorMsg);
 
@@ -2607,9 +2721,9 @@ class InventoryHelper
                 foreach ($documentItems as $documentItem) {
                     if($documentItem->header->store_id){
                         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                            ->where('document_header_id',$documentHeaderId)
-                            ->where('document_detail_id',$documentItem->id)
-                            ->where('book_type','=',$bookType)
+                            ->where('document_header_id', $documentHeaderId)
+                            ->where('document_detail_id', $documentItem->id)
+                            ->where('book_type','=', $bookType)
                             ->first();
                         if(!$stockLedger){
                             $stockLedger = new StockLedger();
@@ -2625,7 +2739,6 @@ class InventoryHelper
         } catch (\Exception $e) {
             $errorMsg = "ERROR: " . $e->getMessage();
             return self::errorResponse($errorMsg);
-
         }
         $message = 'success';
         return $message;

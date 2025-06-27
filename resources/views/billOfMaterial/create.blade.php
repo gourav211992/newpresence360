@@ -1916,6 +1916,7 @@ $(document).on('click', '.prProcess', (e) => {
                 $("#head_item_id").val(data.data.bom.item_id);
                 $("#head_uom_id").val(data.data.bom.uom.id);
                 $("#head_uom_name").val(data.data.bom.uom.name);
+                $("#safety_buffer_perc").val(data?.data?.bom?.safety_buffer_perc);
                 $(".heaer_item").remove();
                 if($(".customer_div").length) {
                       $(".customer_div").before(data.data.headerAttrHtml);

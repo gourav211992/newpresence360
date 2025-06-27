@@ -74,7 +74,7 @@ class StoreController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $useRole = AuthUser::where('id', $user->auth_user_id)->first();
-        if ($useRole->user_type === 'IAM-ADMIN') {
+        if ($useRole->user_type === 'IAM-SUPER') {
             $allOrganizations = Organization::where('status', 'active')
                 ->with('addresses')
                 ->get();
@@ -306,7 +306,7 @@ class StoreController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $useRole = AuthUser::where('id', $user->auth_user_id)->first();
-        if ($useRole->user_type === 'IAM-ADMIN') {
+        if ($useRole->user_type === 'IAM-SUPER') {
             $allOrganizations = Organization::where('status', 'active')
                 ->with('addresses')
                 ->get();

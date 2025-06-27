@@ -272,10 +272,17 @@
                                                                         ->subDay()
                                                                         ->format('Y-m-d')
                                                                     : '';
+                                                                 $expiry = $data->subAsset->expiry_date
+                                                                    ? \Carbon\Carbon::parse(
+                                                                        $data->subAsset->expiry_date,
+                                                                    )
+                                                                        ->subDay()
+                                                                        ->format('Y-m-d')
+                                                                    : '';
                                                             @endphp
 
                                                             <input type="date" id="last_dep_date"
-                                                                @if (!$isValid) readonly @else max="{{ date('Y-m-d') }}" min="{{ $maxDate }}" @endif
+                                                                @if (!$isValid) readonly @else max="{{ $data->subAsset->expiry_date }}" min="{{ $maxDate }}" @endif
                                                                 value="{{ $isValid ? $adjustedDate : '' }}"
                                                                 name="last_dep_date" class="form-control indian-number" />
                                                         </div>
@@ -446,8 +453,8 @@
                                                                             @endforeach
                                                                         </select>
                                                                         <select
-                                                                            class="d-none ledger-group form-select mw-100 mb-25"
-                                                                            required>
+                                                                            class="d-none ledger-group form-select mw-100 mb-25">
+                                                                            <option value="{{$subAsset?->ledger_group ?? ''}}"></option>
                                                                         </select>
                                                                     </td>
                                                                     <td>
@@ -767,7 +774,7 @@
         $('#add_new_sub_asset').on('click', function() {
             let allInputsFilled = true;
 
-            $('.mrntableselectexcel').find('input, select').each(function() {
+           $('.mrntableselectexcel').find('input, select:not(.ledger-group)').each(function() {
                 if ($(this).val() === null || $(this).val().toString().trim() === '') {
                     allInputsFilled = false;
                     $(this).addClass('is-invalid'); // highlight empty input/select
@@ -950,9 +957,9 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+            if (totalCurrentValue != currentValueAsset) {
                 $('.preloader').hide();
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+                showToast('error', 'Total Current Value must equal to Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
                 $('.preloader').hide();
@@ -989,9 +996,9 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+           if (totalCurrentValue != currentValueAsset) {
                 $('.preloader').hide();
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+                showToast('error', 'Total Current Value must equal to Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
                 $('.preloader').hide();
@@ -1016,8 +1023,13 @@
         });
 
 $(document).ready(function() {
-       initializeCategoryAutocomplete('.category-input');
+
+
+        initializeCategoryAutocomplete('.category-input');
+   
         depCapitalizeDate();
+   
+
          
             $(document).on('change', '.ledger', function() {
                 const $row = $(this).closest('tr');
@@ -1050,7 +1062,11 @@ $(document).ready(function() {
                     $ledgerGroupSelect.empty();
                 }
                 syncInputAcrossSameAssets(this);
+
             });
+   
+   
+        
             $('#category').val($('#old_category').val()).trigger('change');
 
             $("#asset_search_input").autocomplete({
@@ -1400,7 +1416,7 @@ $(document).ready(function() {
                 const category = $row.find('.category').val()?.trim() || '';
                 const categoryInput = $row.find('.category-input').val()?.trim() || '';
                 const ledger = $row.find('.ledger').val() || '';
-                const ledgerGroup = $row.find('.ledger-group').val() || '';
+                const ledgerGroup = $('#ledger_group').val() || '';
                 const life = $row.find('.life').val()?.trim() || '';
                 const salvagePer = $row.find('.salvage_per').val()?.trim() || '';
                 const depPer = $row.find('.dep_per').val()?.trim() || '';

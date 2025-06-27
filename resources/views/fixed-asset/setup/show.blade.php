@@ -340,6 +340,16 @@
     $('#setup radio').attr('disabled', true);
     $('#setup textarea').attr('readonly', true);
 });
+  function toggleFields() {
+        if ($('#income_tax').is(':checked')) {
+            $('.income_tax').removeClass('d-none');
+        } else {
+            $('.income_tax').addClass('d-none');
+        }
+    }
+     $('input[name="act_type"]').on('change', toggleFields);
+     toggleFields();
+
     </script>
 @endsection
 

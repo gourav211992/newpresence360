@@ -1,4 +1,4 @@
-<input type="text" name="component_item_name[{{$rowCount}}]"  class="form-control" value="{{$row?->item_code}}" readonly>
+<input type="text" style="min-width: 100px" name="component_item_name[{{$rowCount}}]"  class="form-control" value="{{$row?->item_code}}" readonly>
 <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$row?->item_id}}" />
 <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$row?->item_code}}" />
 <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{$row?->item?->name ?? ''}}" />

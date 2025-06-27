@@ -148,6 +148,7 @@ class MoItem extends Model
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];
         }
-        return min($stockBalanceQty, $this -> qty);
+        // return min($stockBalanceQty, $this -> qty);
+        return $stockBalanceQty;
     }
 }

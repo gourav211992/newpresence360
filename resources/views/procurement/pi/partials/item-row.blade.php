@@ -29,6 +29,9 @@
     <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][avl_stock]">
 </td>
 <td>
+    <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][pending_po]">
+</td>
+<td>
     <input type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][adj_qty]">
 </td>
 <td>

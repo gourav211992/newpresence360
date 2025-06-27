@@ -257,7 +257,7 @@
                                                 <label class="form-label">Vehicle Photo</label>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="file" class="form-control" name="vehicle_attachment" />
+                                                <input type="file" class="form-control" name="vehicle_attachment" onchange="simpleFileValidation(this)">
                                                  <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG)</span>
                                                 @if(isset($vehicle->vehicleAttachment) && $vehicle->vehicleAttachment->url)
                                                     <div class="mt-1">
@@ -274,7 +274,7 @@
                                                 <label class="form-label">Vehicle Video</label>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="file" class="form-control" name="vehicle_video" />
+                                                <input type="file" class="form-control" name="vehicle_video" onchange="simpleVideoFileValidation(this)"/>
                                                  <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 20MB (Mp4, Mkv)</span>
                                               @if(isset($vehicle->vehicleVideo) && $vehicle->vehicleVideo->url)
                                                 <div class="mt-1">
@@ -293,7 +293,7 @@
                                                 <label class="form-label">RC Attachments</label>
                                             </div>
                                             <div class="col-md-3">
-                                                <input type="file" class="form-control" name="rc_attachment" />
+                                                <input type="file" class="form-control" name="rc_attachment" onchange="simpleFileValidation(this)"/>
                                                <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG)</span>
                                                @if(isset($vehicle->attachment) && $vehicle->attachment->url)
                                                 <div class="mt-1">
@@ -358,7 +358,7 @@
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
-                                                            <input type="file" class="form-control" name="permit_attachment" />
+                                                            <input type="file" class="form-control" name="permit_attachment" onchange="simpleFileValidation(this)"/>
                                                              <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                            @if(isset($vehicle->permit->permitAttachment) && $vehicle->permit->permitAttachment->url)
                                                                 <div class="mt-1">
@@ -416,7 +416,7 @@
                                                         <label class="form-label">Attachment</label>  
                                                     </div>  
                                                     <div class="col-md-3"> 
-                                                        <input type="file" class="form-control" name="fitness_attachment" />
+                                                        <input type="file" class="form-control" name="fitness_attachment" onchange="simpleFileValidation(this)"/>
                                                          <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                         @if(isset($vehicle->fitness->fitnessAttachment) && $vehicle->fitness->fitnessAttachment->url)
                                                         <div class="mt-1">
@@ -483,7 +483,7 @@
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
-                                                            <input type="file" class="form-control" name="insurance_attachment" />
+                                                            <input type="file" class="form-control" name="insurance_attachment" onchange="simpleFileValidation(this)"/>
                                                              <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                           @if(isset($vehicle->insurance->insuranceAttachment) && $vehicle->insurance->insuranceAttachment->url)
                                                                 <div class="mt-1">
@@ -541,7 +541,7 @@
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
-                                                            <input type="file" class="form-control" name="pollution_attachment" />
+                                                            <input type="file" class="form-control" name="pollution_attachment" onchange="simpleFileValidation(this)"/>
                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                              @if(isset($vehicle->pollution->pollutionAttachment) && $vehicle->pollution->pollutionAttachment->url)
                                                                 <div class="mt-1">
@@ -600,7 +600,7 @@
                                                             <label class="form-label">Attachment</label>  
                                                         </div>  
                                                         <div class="col-md-3"> 
-                                                            <input type="file" class="form-control" name="road_tax_attachment" />
+                                                            <input type="file" class="form-control" name="road_tax_attachment" onchange="simpleFileValidation(this)">
                                                             <span class="text-danger font-small-2">File size should be Min: 10KB and Max: 2MB (JPG, JPEG, PNG, PDF)</span>
                                                             @if(isset($vehicle->roadTax->roadTaxAttachment) && $vehicle->roadTax->roadTaxAttachment->url)
                                                                 <div class="mt-1">
@@ -644,5 +644,83 @@
         $('#vehicle_type_id').trigger('change');
     });
 </script>
+<script>
+    const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
+    const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
+    const MAX_FILE_SIZE_SIMPLE = 2048; 
 
+    function simpleFileValidation(element) {
+        const input = element;
+        const files = Array.from(input.files);
+        const dt = new DataTransfer();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const fileSize = (file.size / 1024).toFixed(2); 
+
+            if (!ALLOWED_EXTENSIONS_SIMPLE.includes(fileExtension) || !ALLOWED_MIME_TYPES_SIMPLE.includes(file.type)) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Only PDF, JPG, JPEG, PNG files are allowed.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            if (fileSize > MAX_FILE_SIZE_SIMPLE) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'File size must not exceed 2MB.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            dt.items.add(file);
+        }
+
+        input.files = dt.files;
+    }
+</script>
+<script>
+    const VIDEO_ALLOWED_EXTENSIONS = ['mp4', 'mkv'];
+    const VIDEO_ALLOWED_MIME_TYPES = ['video/mp4', 'video/x-matroska'];
+    const VIDEO_MAX_FILE_SIZE = 20480; 
+
+
+    function simpleVideoFileValidation(element) {
+    const input = element;
+    const files = Array.from(input.files);
+    const dt = new DataTransfer();
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        const fileSize = file.size / 1024;
+
+        if (
+            !VIDEO_ALLOWED_EXTENSIONS.includes(fileExtension) ||
+            !VIDEO_ALLOWED_MIME_TYPES.includes(file.type)
+        ) {
+            Swal.fire('Error!', 'Only MP4 and MKV video files are allowed.', 'error');
+            input.value = '';
+            return;
+        }
+
+        if (fileSize > VIDEO_MAX_FILE_SIZE) {
+            Swal.fire('Error!', 'File size must not exceed 20MB.', 'error');
+            input.value = '';
+            return;
+        }
+
+        dt.items.add(file);
+    }
+
+    input.files = dt.files;
+}
+
+</script>
 @endsection

@@ -549,7 +549,8 @@ $(document).on('click','#addNewItemBtn', (e) => {
             });
         });
     }
-    let actionUrl = '{{route("pwo.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+'&comp_attr='+JSON.stringify(componentAttr); 
+    let store_id = $("#store_id").val() || '';
+    let actionUrl = '{{route("pwo.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj)+'&comp_attr='+JSON.stringify(componentAttr)+`&store_id=${store_id}`; 
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if (data.status == 200) {

@@ -107,6 +107,7 @@ class PwoRequest extends FormRequest
         // $rules['attributes.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.uom_id'] = 'required';
+        $rules['components.*.store_id'] = 'required';
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);

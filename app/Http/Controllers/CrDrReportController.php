@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PaymentVoucher;
+// use App\Models\UploadPendingPaymentMaster;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\PaymentVoucherDetails;
@@ -32,6 +33,7 @@ use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Cookie;
 use App\Exports\DebitorCreditoExcelExport;
+// use App\Mail\ImportComplete;
 use App\Models\CostGroup;
 
 
@@ -2136,4 +2138,299 @@ class CrDrReportController extends Controller
 
         return response()->json(['redirect' => $route]);
     }
+
+    // IN PROGRESS  IMPORT  PENDING_PAYMENTS
+    //  public function showImportForm()
+    // {
+    //     return view('finance_report.import');
+    // }
+
+    // public function import(Request $request)
+    // {
+    //     $user = Helper::getAuthenticatedUser();
+    //     try {
+    //         $request->validate([
+    //             'file' => 'required|mimes:xlsx,xls|max:30720',
+    //         ]);
+    //         if (!$request->hasFile('file')) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'No file uploaded.',
+    //             ], 400);
+    //         }
+    //         $file = $request->file('file');
+    //         try {
+    //             $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
+    //         } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
+    //             ], 400);
+    //         }
+
+    //         $sheet = $spreadsheet->getActiveSheet();
+    //         $rowCount = $sheet->getHighestRow() - 1;
+    //         if ($rowCount > 10000) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'The uploaded file contains more than 10000 items. Please upload a file with 10000 or fewer items.',
+    //             ], 400);
+    //         }
+    //         if ($rowCount < 1) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'The uploaded file is empty.',
+    //             ], 400);
+    //         }
+    //         $deleteQuery = UploadPendingPaymentMaster::where('user_id', $user->id);
+    //         $deleteQuery->delete();
+    //         // dd($sheet);
+
+    //         $import = new CrDrReportImport($this->ledgerImportExportService, $user);
+    //         Excel::import($import, $request->file('file'));
+
+    //         $successfulItems = $import->getSuccessfulItems();
+    //         $failedItems = $import->getFailedItems();
+    //         $mailData = [
+    //             'modelName' => 'Ledgers',
+    //             'successful_items' => $successfulItems,
+    //             'failed_items' => $failedItems,
+    //             'export_successful_url' => route('ledgers.export.successful'),
+    //             'export_failed_url' => route('ledgers.export.failed'),
+    //         ];
+    //         if (count($failedItems) > 0) {
+    //             $message = 'Items import failed.';
+    //             $status = 'failure';
+    //         } else {
+    //             $message = 'Items imported successfully.';
+    //             $status = 'success';
+    //         }
+    //         if ($user->email) {
+    //             try {
+    //                 Mail::to($user->email)->send(new ImportComplete($mailData));
+    //             } catch (\Exception $e) {
+    //                 $message .= " However, there was an error sending the email notification.";
+    //             }
+    //         }
+    //         return response()->json([
+    //             'status' => $status,
+    //             'message' => $message,
+    //             'successful_items' => $successfulItems,
+    //             'failed_items' => $failedItems,
+    //         ], 200);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
+    //         ], 400);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Failed to import items: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+    public function updateCacheData(Request $request)
+    {
+         $payload = $request->all();
+// dd($payload);
+    $token = $payload['token'] ?? null;
+    $selectedVouchers = $payload['rows'] ?? [];
+
+    if (!$token || !Cache::has($token)) {
+        return response()->json(['error' => 'Invalid or missing token'], 404);
+    }
+    $delete = $payload['delete'] ?? false;
+$ledgerIdToDelete = $payload['ledger_id'] ?? null;
+$selectedToDelete = collect($selectedVouchers)->flatMap(function ($voucher) {
+    return collect($voucher['items'])->map(function ($item) use ($voucher) {
+        return [
+            'item_id'   => $item['id'],
+            'ledger_id' => $item['ledger_id'],
+        ];
+    });
+});
+// dd(    $selectedVouchers );
+    $cacheData = Cache::get($token);
+    // 1. Update `raw` by item_id
+    $existingRaw = collect($cacheData['raw']);
+$newRawItems = collect();
+$allSelectedItemIds = collect(); // To collect all valid selected item IDs
+
+foreach ($selectedVouchers as $voucher) {
+    if (!isset($voucher['items']) || !is_array($voucher['items'])) {
+        continue;
+    }
+
+    foreach ($voucher['items'] as $item) {
+        $itemId = $item['id'];
+        $allSelectedItemIds->push($itemId);
+
+        $existing = $existingRaw->first(fn($rawItem) => $rawItem['item_id'] == $itemId);
+
+        if ($existing) {
+            // Update if exists
+            $existing['settle_amt'] = $item['settle_amt'] ?? $voucher['settle_amt'] ?? 0;
+            $existingRaw = $existingRaw->map(function ($rawItem) use ($existing) {
+                return $rawItem['item_id'] == $existing['item_id'] ? $existing : $rawItem;
+            });
+        } else {
+            // Add new if doesn't exist
+            $newRawItems->push([
+                'item_id'    => $itemId,
+                'ledger_id'  => $item['ledger_id'],
+                'settle_amt' => $item['settle_amt'] ?? $voucher['settle_amt'] ?? 0,
+                'voucher_id' => $voucher['id'],
+            ]);
+        }
+    }
+}
+
+// ❌ Remove any raw items not present in selectedVouchers
+    if ($delete && $ledgerIdToDelete) {
+            // Just remove all raw items where ledger_id matches
+            $updatedRaw = $existingRaw->reject(fn($item) => $item['ledger_id'] == $ledgerIdToDelete)->values();
+        } else {
+            // Only keep items in payload, and update them
+            $updatedRaw = collect($selectedVouchers)->flatMap(function ($voucher) {
+                return collect($voucher['items'])->map(function ($item) use ($voucher) {
+                    return [
+                        'item_id'    => $item['id'],
+                        'ledger_id'  => $item['ledger_id'],
+                        'settle_amt' => $item['settle_amt'] ?? $voucher['settle_amt'] ?? 0,
+                        'voucher_id' => $voucher['id'],
+                    ];
+                });
+            })->values();
+        }
+
+        // ✅ Final merged raw data
+        $updatedRaw = $existingRaw->merge($newRawItems)->values();
+        // dd($updatedRaw);
+            // 2. Update `grouped` by ledger_id and item_id
+        $selectedVouchersCollection = collect($selectedVouchers);
+        //    dd($selectedVouchersCollection);
+        $allSelectedItems = $selectedVouchersCollection->flatMap(function ($voucher) {
+            return collect($voucher['items'])->map(function ($item) use ($voucher) {
+                return [
+                    'voucher_id'  => $voucher['id'],
+                    'item_id'     => $item['id'],
+                    'ledger_id'   => $item['ledger_id'],
+                    'ledger_code'  => $item['ledger']['code'] ?? '-',
+                    'ledger_name'   => $item['ledger']['name'] ?? '-',
+                    'ledger_group_name' => $item['ledger_group']['name'] ?? $item['ledger']['ledger_group']['name'] ?? '-',
+                    'ledger_parent_id' => $item['ledger_parent_id'] ?? null,
+                    'amount'     => $item['amount'] ?? $voucher['amount'] ?? 0,
+                    'settle_amt'  => $item['settle_amt'] ?? $voucher['settle_amt'] ?? 0,
+                    'organization'         => $item['ledger']['organization']['name'] ?? '-',
+                ];
+            });
+        });
+        // dd($allSelectedItems);
+        $existingGrouped = collect($cacheData['grouped']);
+
+        // Step 1: Remove unselected items from current grouped, and update matching ones
+        $existingGrouped = $existingGrouped->map(function ($group) use ($selectedToDelete, $delete, $allSelectedItems) {
+            $items = collect($group['items']);
+
+            if ($delete) {
+                // Remove only the selected items
+                $items = $items->reject(function ($item) use ($selectedToDelete) {
+                    return $selectedToDelete->contains(function ($del) use ($item) {
+                        return $item['item_id'] == $del['item_id'] && $item['ledger_id'] == $del['ledger_id'];
+                    });
+                });
+            } else {
+                // ✅ Do not remove anything — just update matching items
+                $items = $items->map(function ($item) use ($allSelectedItems) {
+                    $match = $allSelectedItems->first(function ($sel) use ($item) {
+                        return $sel['item_id'] == $item['item_id'] && $sel['ledger_id'] == $item['ledger_id'];
+                    });
+                    if ($match) {
+                        $item['settle_amt'] = $match['settle_amt'];
+                    }
+                    return $item;
+                });
+            }
+
+            if ($items->isEmpty()) return null;
+
+            return [
+                ...$group,
+                'items' => $items->values(),
+                'amount' => $items->sum('settle_amt'),
+                'settle_amt' => $items->sum('settle_amt'),
+            ];
+        })->filter();
+        // remove null groups
+
+        // Step 2: Add any new selected items not present in existing grouped
+        $existingKeys = $existingGrouped->flatMap(function ($group) {
+            return collect($group['items'])->map(fn($item) => $item['ledger_id'] . '_' . $item['item_id']);
+        });
+
+        $newItemsByLedger = $allSelectedItems->filter(function ($item) use ($existingKeys) {
+            return !$existingKeys->contains($item['ledger_id'] . '_' . $item['item_id']);
+        })->groupBy('ledger_id');
+
+        $existingGrouped = $existingGrouped->map(function ($group) use ($newItemsByLedger) {
+            $ledgerId = $group['ledger_id'];
+
+            if ($newItemsByLedger->has($ledgerId)) {
+                $newItems = $newItemsByLedger->get($ledgerId);
+                $mergedItems = collect($group['items'])->merge($newItems)->values();
+
+                return [
+                    ...$group,
+                    'items' => $mergedItems,
+                    'amount' => $mergedItems->sum('settle_amt'),
+                    'settle_amt' => $mergedItems->sum('settle_amt'),
+                ];
+            }
+
+            return $group;
+        });
+
+        // Add new groups that don't exist in existingGrouped
+        $newGroups = $newItemsByLedger->filter(function ($_, $ledgerId) use ($existingGrouped) {
+            return !$existingGrouped->contains('ledger_id', $ledgerId);
+        })->map(function ($items, $ledgerId) {
+            $first = $items->first();
+
+            return [
+                'ledger_id'         => $ledgerId,
+                'ledger_code'       => $first['ledger_code'] ?? '-',
+                'ledger_name'       => $first['ledger_name'] ?? '-',
+                'ledger_group_name' => $first['ledger_group_name'] ?? '-',
+                'ledger_parent_id'  => $first['ledger_parent_id'],
+                'amount'            => $items->sum('settle_amt'),
+                'settle_amt'        => $items->sum('settle_amt'),
+                'voucher_id'        => $first['voucher_id'],
+                'item_id'           => $first['item_id'],
+                'items'             => $items,
+                'organization'      => $first['organization'] ?? '-',
+            ];
+        });
+
+        // $updatedGrouped = $existingGrouped->merge($newGroups)->values();
+
+
+        $updatedGrouped = $existingGrouped->merge($newGroups)->values();
+
+                // dd($updatedGrouped,$existingGrouped);
+
+
+            if (!$token) {
+            return response()->json(['error' => 'Missing token'], 400);
+        }
+
+        Cache::put($token, [
+            'grouped' => $updatedGrouped,
+            'raw'     => $updatedRaw,
+        ], 3600);
+
+        return response()->json(['status' => 'Cache updated']);
+    }
+
 }

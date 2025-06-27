@@ -30,7 +30,7 @@
    </td>
    <td></td>
    <td>
-      <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" name="components[{{$rowCount}}][store_name]">
-      <input type="hidden" name="components[{{$rowCount}}][store_id]">
+      <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" name="components[{{$rowCount}}][store_name]" value="{{$store?->store_name}}">
+      <input type="hidden" name="components[{{$rowCount}}][store_id]" value="{{$store?->id}}">
    </td>
 </tr>

@@ -1664,7 +1664,7 @@ class GateEntryController extends Controller
             'jo' => $typeId,
             default => $vendorId,
         };
-        
+
         $typeData = match ($type) {
             'po' => PurchaseOrder::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
@@ -1675,11 +1675,11 @@ class GateEntryController extends Controller
             default => Vendor::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId),
-        };  
-        
+        };
+
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-        
+
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
@@ -1713,7 +1713,7 @@ class GateEntryController extends Controller
             ]);
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
-        
+
         $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
         $locationAddress = $store?->address;
@@ -1724,20 +1724,20 @@ class GateEntryController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
-        
+
         return response()->json(
             [
                 'data' => [
-                    'status' => 200, 
-                    'vendor' =>$vendor, 
+                    'status' => 200,
+                    'vendor' =>$vendor,
                     'message' => 'fetched',
-                    'currency' => $currency, 
+                    'currency' => $currency,
                     'org_address' => $orgAddress,
-                    'paymentTerm' => $paymentTerm, 
-                    'vendor_address' => $vendorAddress, 
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
                     'currency_exchange' => $currencyData
-                ], 
-                'delivery_address' => $locationAddress, 
+                ],
+                'delivery_address' => $locationAddress,
             ]
         );
     }
@@ -2284,10 +2284,10 @@ class GateEntryController extends Controller
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
 
-                $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
+                // $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
 
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' {$disabled}>
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' >
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -2572,7 +2572,6 @@ class GateEntryController extends Controller
             }
         }
         $joItems = $joItems->get();
-        // dd($joItems);
         $joItemIds = [];
         $finalJoItems = [];
 

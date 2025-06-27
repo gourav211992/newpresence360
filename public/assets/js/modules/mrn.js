@@ -2,7 +2,7 @@
 $(document).on('click', '.summaryTaxBtn', (e) => {
     getTaxSummary();
 });
-
+let selectedCostCenterId = null;
 /*Approve modal*/
 $(document).on('click', '#approved-button', (e) => {
     let actionType = 'approve';
@@ -182,7 +182,8 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
         '&poDetailId='+poDetailId+
         '&geDetailId='+geDetailId+
         '&siDetailId='+siDetailId+
-        '&qty='+acceptedQuantity.val();
+        '&qty='+acceptedQuantity.val()+
+        '&type='+currentProcessType;
 
         fetch(actionUrl).then(response => {
             return response.json().then(data => {

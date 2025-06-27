@@ -794,7 +794,7 @@
             /*Reference from*/
             let reference_from_service = parameters.reference_from_service;
             console.log(reference_from_service);
-            
+
             if(reference_from_service.length) {
                 let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
                 let jo = '{{\App\Helpers\ConstantHelper::JO_SERVICE_ALIAS}}';
@@ -1152,7 +1152,7 @@
                     icon: 'error',
                 });
             }
-            if(!$("tr[id*='row_']").length) {
+            if(!$("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                 $(".poSelect").show();
                 $(".joSelect").show();
                 $("#referenceNoDiv").hide();
@@ -1546,7 +1546,7 @@
         };
 
         function renderData(data) {
-            return data ? data : ''; 
+            return data ? data : '';
         }
 
         function getDynamicParams() {
@@ -1563,11 +1563,11 @@
                 store_id: $("#store_id").val() || '',
                 so_id: $("#po_so_qt_val").val() || '',
                 item_search: $("#item_name_search").val(),
-                selected_pO_ids: encodeURIComponent(selectedPoIds)
+                selected_po_ids: encodeURIComponent(selectedPoIds)
             };
         }
 
-        function getPurchaseOrders() 
+        function getPurchaseOrders()
         {
             const ajaxUrl = '{{ route("gate-entry.get.po", ["type" => "create"]) }}';
             var columns = [];
@@ -1607,7 +1607,7 @@
                     }
                 },
             ];
-            initializeDataTableCustom('#poModal .po-order-detail', 
+            initializeDataTableCustom('#poModal .po-order-detail',
                 ajaxUrl,
                 columns
             );
@@ -1818,7 +1818,7 @@
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-                        
+
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                         } else {
@@ -2039,7 +2039,7 @@
         };
 
         function renderJoData(data) {
-            return data ? data : ''; 
+            return data ? data : '';
         }
 
         function getJoDynamicParams() {
@@ -2060,7 +2060,7 @@
             };
         }
 
-        function getJobOrders() 
+        function getJobOrders()
         {
             const ajaxUrl = '{{ route("gate-entry.get.jo", ["type" => "create"]) }}';
             var columns = [];
@@ -2100,7 +2100,7 @@
                     }
                 },
             ];
-            initializeDataTableCustom('#joModal .jo-order-detail', 
+            initializeDataTableCustom('#joModal .jo-order-detail',
                 ajaxUrl,
                 columns
             );
@@ -2158,7 +2158,7 @@
             let moduleTypes = getSelectedJoTypes();
 
             $("[name='jo_item_ids']").val(ids);
-            $(".joSelect").hide();
+            $(".poSelect").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -2311,7 +2311,7 @@
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-                        
+
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                         } else {

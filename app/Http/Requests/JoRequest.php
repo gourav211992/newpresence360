@@ -163,12 +163,12 @@ class JoRequest extends FormRequest
                 $bomExists = Bom::withDefaultGroupCompanyOrg()
                 ->where('item_id', $itemId)
                 ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
-                ->where('production_type', 'Job Work')
+                ->whereIn('production_type', ['Job Work'])
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->exists();
                 
                 if (!$bomExists) {
-                    $validator->errors()->add("components.$key.item_name", "Job Work BOM not exist.");
+                    $validator->errors()->add("components.$key.item_name", "Only products with production type Job Work are allowed.");
                 }
 
                 $uomId = $component['uom_id'] ?? null;

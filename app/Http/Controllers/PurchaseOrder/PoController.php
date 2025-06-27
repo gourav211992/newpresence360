@@ -1953,6 +1953,7 @@ class PoController extends Controller
     # Get PI Item List
     public function getPi(Request $request)
     {
+        $storeId = $request->store_id ?? null;
         $query = $this->buildPiQuery($request);
         if($this->type == 'po') {
             return DataTables::of($query)
@@ -1964,7 +1965,9 @@ class PoController extends Controller
             ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
             ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
             ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
-            ->addColumn('balance_qty', fn($row) => ($row?->indent_qty - $row?->order_qty) ?? '')
+            ->addColumn('balance_qty', fn($row) => number_format(($row?->indent_qty - $row?->order_qty),2) ?? '')
+            ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
+            ->addColumn('avl_stock', fn($row) => number_format($row?->getAvlStock($storeId),2))
             ->addColumn('vendor_select', fn($row) => app(\App\View\Components\Po\Vendor::class, [
                 'row' => $row,
                 'documentDate' => request()->get('document_date'),
@@ -1981,7 +1984,6 @@ class PoController extends Controller
                 'item_name',
                 'attributes',
                 'uom',
-                'balance_qty',
                 'vendor_select',
                 'so_no',
                 'location',
@@ -2000,7 +2002,9 @@ class PoController extends Controller
             ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
             ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
             ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
-            ->addColumn('balance_qty', fn($row) => $row?->order_qty ?? '')
+            ->addColumn('balance_qty', fn($row) => number_format(($row?->indent_qty - $row?->order_qty),2) ?? '')
+            ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
+            ->addColumn('avl_stock', fn($row) => $row?->getAvlStock($storeId) ?? '')
             ->addColumn('vendor_select', fn($row) => $row?->po?->vendor?->company_name ?? '')            
             ->addColumn('location', fn($row) => $row?->po?->store_location?->store_name)
             ->addColumn('requester', fn($row) => $row->po->department->name ?? '')
@@ -2012,7 +2016,6 @@ class PoController extends Controller
                 'item_name',
                 'attributes',
                 'uom',
-                'balance_qty',
                 'vendor_select',
                 'location',
                 'requester',
@@ -2168,7 +2171,10 @@ class PoController extends Controller
                 'currencyId' => $row?->vendor?->currency_id ?? $orgCurrencyId,
                 'documentDate' => $documentDate,
             ]);
-        });
+        })
+        ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
+        ->addColumn('avl_stock', fn($row) => number_format($row?->getAvlStock($row?->pi?->store_id),2));
+
         foreach ($partials as $key => $partialView) {
             $dataTable->addColumn($key, function ($row) use (&$rowCount, $partialView) {
                 return view($partialView, [

@@ -1941,7 +1941,21 @@ function getIndents()
             { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
             { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
             { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false,
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+             },
+            { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+            },
+            { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+            },
             { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
             { data: 'so_no', name: 'so_no', render: renderData, orderable: false, searchable: false },
             { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
@@ -1959,7 +1973,21 @@ function getIndents()
             { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
             { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
             { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false },
+            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false,
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+             },
+            { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+            },
+            { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
+                createdCell: function (td, cellData, rowData, row, col) {
+                    $(td).addClass('text-end');
+                } 
+            },
             { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
             { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
             { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },

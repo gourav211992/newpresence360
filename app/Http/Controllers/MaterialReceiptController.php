@@ -737,6 +737,7 @@ class MaterialReceiptController extends Controller
                     $mrnDetail->group_currency = $mrnItem['group_currency_id'];
                     $mrnDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
                     $mrnDetail->remark = $mrnItem['remark'];
+
                     $mrnDetail->save();
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
@@ -939,10 +940,8 @@ class MaterialReceiptController extends Controller
                 $modelName = get_class($mrn);
                 $totalValue = $mrn->total_amount ?? 0;
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-
             }
 
-            $mrn = MrnHeader::find($mrn->id);
             if ($request->document_status == 'submitted') {
                 // $totalValue = $po->grand_total_amount ?? 0;
                 // $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
@@ -969,7 +968,6 @@ class MaterialReceiptController extends Controller
                 if($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS)
                 {
                     $errorStatus = self::checkRawMaterial($mrn);
-                    // dd('out');
                     if ($errorStatus) {
                         DB::rollBack();
                         return response() -> json([
@@ -2520,6 +2518,7 @@ class MaterialReceiptController extends Controller
         $errorMessage = '';
         $incomingQty = '';
         $item = Item::find($request->item_id);
+        $type = $request->type;
         if(!$item){
             return response() -> json([
                 'data' => array(
@@ -2543,7 +2542,13 @@ class MaterialReceiptController extends Controller
                     )
                 ]);
             }
-            $poDetail = PoItem::find($request->poDetailId);
+            if($type == ConstantHelper::JO_SERVICE_ALIAS)
+            {
+                $poDetail = JoProduct::find($request->poDetailId);
+            }
+            else{
+                $poDetail = PoItem::find($request->poDetailId);
+            }
             if($poDetail){
                 $availableQty = 0.00;
                 if($poDetail->order_qty < $request->qty){
@@ -2570,7 +2575,13 @@ class MaterialReceiptController extends Controller
             $poTelerenaceCheck = 0;
             $tolerenceInputQty = 0;
             $tolerenceBalanceQty = 0;
-            $poDetail = PoItem::find($request->poDetailId);
+            if($type == ConstantHelper::JO_SERVICE_ALIAS)
+            {
+                $poDetail = JoProduct::find($request->poDetailId);
+            }
+            else{
+                $poDetail = PoItem::find($request->poDetailId);
+            }
             if($request->geDetailId){
                 $gateEntryDetail = GateEntryDetail::find($request->geDetailId);
                 $balanceQty = ($gateEntryDetail->accepted_qty - ($gateEntryDetail->mrn_qty ?? 0.00));
@@ -2582,7 +2593,13 @@ class MaterialReceiptController extends Controller
                     $poTelerenaceCheck = 1;
                 }
             } elseif($request->siDetailId){
-                $supplierInvDetail = PoItem::find($request->siDetailId);
+                if($type == ConstantHelper::JO_SERVICE_ALIAS)
+                {
+                    $supplierInvDetail = JoProduct::find($request->siDetailId);
+                }
+                else{
+                    $supplierInvDetail = PoItem::find($request->siDetailId);
+                }
                 $balanceQty = ($supplierInvDetail->order_qty - ($gateEntryDetail->grn_qty ?? 0.00));
                 if($balanceQty < $inputQty){
                     $poTelerenaceCheck = 0;
@@ -2678,11 +2695,10 @@ class MaterialReceiptController extends Controller
                 $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
-
-                $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
+                // $disabled = ($dataExistingPo !== 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
 
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' {$disabled}>
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}'>
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -2761,7 +2777,7 @@ class MaterialReceiptController extends Controller
 
 
     # This for both bulk and single po
-    protected function buildPoQuery(Request $request)
+    protected function buildPoQuery($request)
     {
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
@@ -2771,7 +2787,16 @@ class MaterialReceiptController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
+        if($request->type == 'create')
+        {
+            $decoded_string = urldecode($request->selected_po_ids) ?? [];
+            $selected_po_ids = json_decode($decoded_string) ?? [];
+        }
+        else{
+            $first_decode = urldecode($request->selected_po_ids);
+            $second_decode = urldecode($first_decode);
+            $selected_po_ids = json_decode($second_decode) ?? [];
+        }
 
         $poData = '';
         $poItemIds = [];
@@ -2787,7 +2812,7 @@ class MaterialReceiptController extends Controller
             )
             ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
             ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
-            ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+            ->whereRaw('(ROUND(order_qty - short_close_qty) > ROUND(grn_qty))')
             ->whereHas('item', function($item){
                 $item->where('type', 'Goods');
             })
@@ -3092,10 +3117,10 @@ class MaterialReceiptController extends Controller
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
 
-                $disabled = ($dataExistingJo != 'null' && $dataExistingJo != $row->job_orer_id) ? 'disabled' : '';
+                $disabled = ($dataExistingJo !== 'null' && $dataExistingJo != $row->job_orer_id) ? 'disabled' : '';
 
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input jo_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingJo}' {$disabled}>
+                            <input class='form-check-input jo_item_checkbox' type='checkbox' name='jo_item_check' value='{$row->id}' data-module='{$this->moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingJo}' {$disabled}>
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -3184,7 +3209,8 @@ class MaterialReceiptController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
+        $decoded_string = urldecode($request->selected_jo_ids) ?? [];
+        $selected_po_ids = json_decode($decoded_string) ?? [];
 
         $poData = '';
         $joItemIds = [];
@@ -3200,7 +3226,7 @@ class MaterialReceiptController extends Controller
             )
             ->leftJoin('erp_job_orders', 'erp_job_orders.id', 'erp_jo_products.jo_id')
             ->whereIn('erp_job_orders.book_id', $applicableBookIds)
-            ->whereRaw('((order_qty - short_close_qty) > grn_qty)')
+            ->whereRaw('(ROUND(order_qty - short_close_qty) > ROUND(grn_qty))')
             ->whereHas('item', function($item){
                 $item->where('type', 'Goods');
             })
@@ -4483,124 +4509,6 @@ class MaterialReceiptController extends Controller
     }
 
     # checkRawMaterial
-
-    private static function checkRawMaterial1($mrn)
-    {
-        $errorMessage = "";
-        $joType = $mrn->jobOrder->job_order_type;
-        $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
-        foreach ($mrnData as $detail) {
-            if($joType == ConstantHelper::TYPE_SUBCONTRACTING)
-            {
-                $joData = JoBomMapping::where('jo_product_id', $detail->job_order_item_id)
-                    ->with(['joProduct'])
-                    ->get();
-
-                    // ->map(function ($bomMapping) {
-                    //     $bomAttrs = collect($bomMapping->attributes ?? []);
-
-                    //     $filteredStock = $bomMapping->stockMappings->filter(function ($stock) use ($bomAttrs) {
-                    //         $stockAttrs = collect(json_decode($stock->item_attributes, true));
-
-                    //         foreach ($bomAttrs as $bomAttr) {
-                    //             $match = $stockAttrs->first(function ($stockAttr) use ($bomAttr) {
-                    //                 return $stockAttr['attr_name'] == $bomAttr['attribute_name']
-                    //                     && $stockAttr['attr_value'] == $bomAttr['attribute_value'];
-                    //             });
-
-                    //             if (!$match) return false;
-                    //         }
-                    //         return true;
-                    //     });
-                    //     $bomMapping->setRelation('stockMappings', $filteredStock);
-                    //     return $bomMapping;
-                    // });
-                foreach ($joData as $miMapping) {
-                    $selectedattr = collect($miMapping['attributes'])->pluck('attribute_value')->toArray();
-                    $vendorData = $mrn->vendor;
-                    $vendorLocations = VendorLocation::where('vendor_id', $vendorData->id)->first();
-                    $subStore = $vendorLocations->store_id;
-                    $storeData = ErpSubStoreParent::where('sub_store_id', $subStore)->first();
-                    $storeId = $storeData->store_id;
-                    $availableStock = InventoryHelper::totalInventoryAndStock($miMapping->item_id, $selectedattr, $miMapping->uom_id, $storeId, $subStore);
-                    $bom_qty = $miMapping->bom_qty ? (float) $miMapping->bom_qty : 0;
-                    $check_qty = $detail?->inventory_uom_qty * $bom_qty;
-
-                    if($availableStock['confirmedStocks'] < $check_qty)
-                    {
-                        $errorMessage = "Available Stock Quantity for " . $miMapping->item_code . " is less than Order Quantity please check.";
-                        break;
-                    }
-
-                    $mrnJoItem = new MrnJoItem();
-                    $mrnJoItem->type = $joType;
-                    $mrnJoItem->mrn_header_id = $mrn->id;
-                    $mrnJoItem->mrn_detail_id = $detail->id;
-                    $mrnJoItem->jo_product_id = $miMapping->jo_product_id;
-                    $mrnJoItem->jo_item_id = $miMapping->item_id;
-                    $mrnJoItem->store_id = $storeId;
-                    $mrnJoItem->sub_store_id = $subStore;
-                    $mrnJoItem->consumed_qty = $miMapping->qty;
-
-                    $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $miMapping->qty);
-                    $mrnJoItem->inventory_uom_qty = $inventoryQty;
-                    $mrnJoItem->save();
-                    //Stock Ledger
-                    $response = InventoryHelper::settlementForMIForIssueFromMrn($mrn->id, $detail -> id, ConstantHelper::MRN_SERVICE_ALIAS, $mrn-> document_status, 'issue');
-                    if (isset($response['status']) && $response['status'] == 'error') {
-                        $errorMessage = isset($response['message']) ? $response['message'] : "Error";
-                        break;
-                    } else{
-                        $mrnJoItem->cost_per_unit = $response['cost_per_unit'];
-                        $mrnJoItem->total_cost = $response['total_cost'];
-                        $mrnJoItem->save();
-                    }
-                }
-            }
-
-            if($joType == ConstantHelper::TYPE_JOB_ORDER)
-            {
-                $selectedattr = array_column($detail->attributes->toArray(), 'attr_value');
-                $vendorData = $mrn->vendor;
-                $vendorLocations = VendorLocation::where('vendor_id', $vendorData->id)->first();
-                $subStore = $vendorLocations->store_id;
-                $storeData = ErpSubStoreParent::where('sub_store_id', $subStore)->first();
-                $storeId = $storeData->store_id;
-                $availableStock = InventoryHelper::totalInventoryAndStock($detail->item_id, $selectedattr, $detail->uom_id, $storeId, $subStore);
-                if($availableStock['confirmedStocks'] < $detail?->inventory_uom_qty)
-                {
-                    $errorMessage = "Available Stock Quantity for " . $miMapping->item_code . " is less than Order Quantity please check.";
-                    break;
-                }
-
-                $mrnJoItem = new MrnJoItem();
-                $mrnJoItem->type = $joType;
-                $mrnJoItem->mrn_header_id = $mrn->id;
-                $mrnJoItem->mrn_detail_id = $detail->id;
-                $mrnJoItem->jo_product_id = $miMapping->jo_product_id;
-                $mrnJoItem->jo_item_id = $miMapping->item_id;
-                $mrnJoItem->store_id = $storeId;
-                $mrnJoItem->sub_store_id = $subStore;
-                $mrnJoItem->consumed_qty = $miMapping->qty;
-
-                $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $miMapping->qty);
-                $mrnJoItem->inventory_uom_qty = $inventoryQty;
-                $mrnJoItem->save();
-                //Stock Ledger
-                $response = InventoryHelper::settlementForMIForIssueFromMrn($mrn->id, $detail -> id, ConstantHelper::MRN_SERVICE_ALIAS, $mrn-> document_status, 'issue');
-                if (isset($response['status']) && $response['status'] == 'error') {
-                    $errorMessage = isset($response['message']) ? $response['message'] : "Error";
-                    break;
-                } else{
-                    $mrnJoItem->cost_per_unit = $response['cost_per_unit'];
-                    $mrnJoItem->total_cost = $response['total_cost'];
-                    $mrnJoItem->save();
-                }
-            }
-        }
-        // return $errorMessage;
-    }
-
     private static function checkRawMaterial($mrn)
     {
         try {
@@ -4624,12 +4532,10 @@ class MaterialReceiptController extends Controller
                     $errorMessage = 'Main store not found for sub store.';
                     break;
                 }
-
                 if ($joType === ConstantHelper::TYPE_SUBCONTRACTING) {
                     $joData = JoBomMapping::where('jo_product_id', $detail->job_order_item_id)
                         ->with(['joProduct'])
                         ->get();
-
                     foreach ($joData as $miMapping) {
                         $selectedAttr = collect($miMapping['attributes'])->pluck('attribute_value')->toArray();
                         $bomQty = (float) ($miMapping->bom_qty ?? 0);
@@ -4685,7 +4591,7 @@ class MaterialReceiptController extends Controller
         }
     }
 
-    private static function storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore)
+    private static function storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore, $selectedAttr = [])
     {
         $mrnJoItem = new MrnJoItem();
         $mrnJoItem->type = $joType;
@@ -4696,11 +4602,14 @@ class MaterialReceiptController extends Controller
         $mrnJoItem->store_id = $storeId;
         $mrnJoItem->sub_store_id = $subStore;
         $mrnJoItem->consumed_qty = $miMapping->qty;
+        $mrnJoItem->item_id = $miMapping->item_id;
+        $mrnJoItem->item_code = $miMapping->item_code;
+        $mrnJoItem->uom_id = $miMapping->uom_id;
+        $mrnJoItem->attributes = json_encode($miMapping->attributes);
 
         $inventoryQty = ItemHelper::convertToBaseUom($miMapping->item_id, $miMapping->uom_id, $miMapping->qty);
         $mrnJoItem->inventory_uom_qty = $inventoryQty;
         $mrnJoItem->save();
-
         $response = InventoryHelper::settlementForMIForIssueFromMrn(
             $mrnJoItem,
             ConstantHelper::MRN_SERVICE_ALIAS,

@@ -51,6 +51,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                  <th>Product Name</th>
                                  <th>Attributes</th>
                                  <th>UOM</th>
+                                 <th>Production Type</th>
                                  <th>Components</th>
                                  <th>Item Cost</th>
                                  <th>Overheads</th>
@@ -155,6 +156,7 @@ $(document).ready(function() {
         { data: 'item_name', name: 'item_name', render: renderData },
         { data: 'attributes', name: 'attributes', render: renderData },
         { data: 'uom_name', name: 'uom_name', render: renderData },
+        { data: 'production_type', name: 'production_type', render: renderData },
         { data: 'components', name: 'components', render: renderData },
         { data: 'total_item_value', name: 'total_item_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
