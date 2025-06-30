@@ -296,7 +296,7 @@ class DepreciationController extends Controller
                     $query->where('document_status', ConstantHelper::POSTED)
                         ->orWhereNotNull('reference_doc_id');
             })
-            ->withWhereHas('category')
+            ->withWhereHas('category.setup')
             ->get()->values();
         return response()->json($asset_details);
     }

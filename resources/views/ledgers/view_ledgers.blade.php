@@ -110,7 +110,7 @@
                                     <select id="filter-organization" class="form-select select2" multiple>
                                         <option value="" disabled>Select</option>
                                         @foreach($mappings as $organization)
-                                            <option value="{{ $organization->organization->id }}"     {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>{{ $organization->organization->name }}
+                                            <option value="{{ $organization->organization->id }}">{{ $organization->organization->name }}
                                             </option>
                                         @endforeach
                                     </select>

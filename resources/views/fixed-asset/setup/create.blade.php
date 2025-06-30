@@ -197,7 +197,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control" name="dep_percentage"
+                                                        <input type="number" class="form-control" name="dep_percentage" id="dep_percentage"
                                                             required />
                                                     </div>
                                                 </div>
@@ -337,6 +337,36 @@
 
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Writeoff Ledger </label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select select2" name="wri_ledger_id"
+                                                            id="wri_ledger">
+                                                            <option value="">Select</option>
+                                                            @foreach ($sales_exp_ledgers as $wri)
+                                                                <option value="{{ $wri->id }}">
+                                                                    {{ $wri->name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1 d-none">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Wri. Ledger Group <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" name="wri_ledger_group_id"
+                                                            id="wri_ledger_group">
+                                                        </select>
+
+                                                    </div>
+                                                </div>
+                                                
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sales Ledger </label>
@@ -489,6 +519,7 @@
         handleLedgerChange('#rev_ledger', '#rev_ledger_group');
         handleLedgerChange('#imp_ledger', '#imp_ledger_group');
         handleLedgerChange('#sales_ledger', '#sales_ledger_group');
+        handleLedgerChange('#wri_ledger', '#wri_ledger_group');
         handleLedgerChange('#dep_ledger', '#dep_ledger_group', "{{ $dep_ledger_group_id }}");
 
 
@@ -524,11 +555,11 @@
                     showToast('warning', 'Organization Dep method must be WDV for Income Tax');
                     $('#company').prop('checked', true);
                     $('.income_tax').addClass('d-none');
-                    $('#dep_percentage').removeAttr('required');
+                    $('#dep_percentage').attr('required', false);
                 }
             } else {
                 $('.income_tax').addClass('d-none');
-                $('#dep_percentage').removeAttr('required');
+                 $('#dep_percentage').attr('required', false);
             }
         }
         $('input[name="act_type"]').on('change', toggleFields);

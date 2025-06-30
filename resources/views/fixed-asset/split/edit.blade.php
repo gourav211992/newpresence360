@@ -229,7 +229,7 @@
                                                             <label class="form-label" for="asset_id">Asset Code &
                                                                 Name <span class="text-danger">*</span></label>
                                                             <input type="text" id="asset_search_input"
-                                                                value="{{ $data?->asset?->asset_code . '(' . $data?->asset?->asset_name . ')' }}"
+                                                                value="{{ $data?->asset?->asset_code . ' (' . $data?->asset?->asset_name . ')' }}"
                                                                 class="form-control">
                                                             <input type="hidden" id="asset_id" name="asset_id"
                                                                 value="{{ $data->asset_id }}">
@@ -410,7 +410,7 @@
                                                                         </div>
                                                                     </td>
                                                                     <td class="poprod-decpt">
-                                                                        <input type="text" placeholder="Enter"
+                                                                        <input type="text" placeholder="Enter" required
                                                                             class="form-control mw-100 mb-25 asset-code-input"
                                                                             oninput="this.value = this.value.toUpperCase();"
                                                                             value="{{ $subAsset?->asset_code ?? '' }}" />
@@ -418,7 +418,7 @@
                                                                             style="font-size:12px"></span>
                                                                     </td>
                                                                     <td class="poprod-decpt">
-                                                                        <input type="text" placeholder="Enter"
+                                                                        <input type="text" placeholder="Enter" required
                                                                             class="form-control mw-100 mb-25 asset-name-input"
                                                                             oninput="syncInputAcrossSameAssets(this)"
                                                                             value="{{ $subAsset?->asset_name ?? '' }}" />
@@ -429,7 +429,7 @@
                                                                             value="{{ $subAsset?->sub_asset_id ?? '' }}" />
                                                                     </td>
                                                                     <td>
-                                                                        <input type="text" placeholder="Enter"
+                                                                        <input type="text" placeholder="Enter" required
                                                                             class="form-control mw-100 mb-25 category-input"
                                                                             value="{{ $subAsset?->category_input ?? '' }}" />
                                                                         <input type="hidden" class="category"
@@ -475,7 +475,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <input type="text"
-                                                                            class="form-control mw-100 text-end current-value-input"
+                                                                            class="form-control mw-100 text-end current-value-input" required
                                                                             value="{{ $subAsset?->current_value ?? '' }}"
                                                                             oninput="calculateTotals()" />
                                                                     </td>
@@ -651,12 +651,12 @@
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control"
-                                                                id="depreciation_rate"
+                                                                id="depreciation_rate" name="depreciation_percentage"
                                                                 value="{{ $data->depreciation_percentage }}" readonly />
                                                             <input type="hidden" value="{{ $dep_percentage }}"
                                                                 id="depreciation_percentage" />
                                                             <input type="hidden" id="depreciation_rate_year"
-                                                                name="depreciation_percentage_year" />
+                                                                name="depreciation_percentage_year" value="{{ $data->depreciation_percentage_year}}"/>
 
                                                         </div>
                                                     </div>
@@ -792,6 +792,7 @@
 
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
+            applyFixedPrefixToInputs();
         });
 
         function genereateSubAssetRow(code) {
@@ -980,7 +981,11 @@
 
 
 
-
+            if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
+                return false;
+            }
 
             document.getElementById('fixed-asset-split-form').submit();
         });
@@ -1015,6 +1020,11 @@
             if (isValid == false) {
                 $('.preloader').hide();
                 showToast('error', 'Code Already Exist.');
+                return false;
+            }
+             if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
                 return false;
             }
 
@@ -1550,6 +1560,7 @@ $(document).ready(function() {
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
             depCapitalizeDate();
+            applyFixedPrefixToInputs();
         }
 
 
@@ -1629,7 +1640,7 @@ $(document).ready(function() {
         }
 
 
-        function calculateTotals() {
+            function calculateTotals() {
             let totalQuantity = 0;
             let totalCurrentValue = 0;
             let totalSalvageValue = 0;
@@ -1641,37 +1652,35 @@ $(document).ready(function() {
             $('.mrntableselectexcel tr').each(function() {
                 const $row = $(this);
                 const $salvageValueInput = $row.find('.salvage-value-input');
+                const old_asset_salvage = parseFloat($('#salvage_value_asset').val()) || 0;
+                const rdv = parseFloat($('#current_value_asset').val()) || 0;
                 const $depRateInput = $row.find('.dep_per');
                 const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
                 const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
                 const depreciationPercentage = parseFloat($row.find('.salvage_per').val()) || 0;
                 const usefulLife = parseFloat($row.find('.life').val()) || 0;
-                const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+                const dep_percentage = $('#depreciation_rate').val() || 0;
+                //const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+                const salvageValue = currentValue * old_asset_salvage / rdv;
                 $salvageValueInput.val(salvageValue);
-
-
-
                 // Ensure all required values are provided
                 if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-                    // if (!depreciationType) console.log("Missing: depreciationType");
-                    // if (!currentValue) console.log("Missing: currentValue");
-                    // if (!depreciationPercentage) console.log("Missing: depreciationPercentage");
-                    // if (!usefulLife) console.log("Missing: usefulLife");
-                    // if (!method) console.log("Missing: method");
                     return;
                 }
 
-                let depreciationRate = 0;
-                if (method === "SLM") {
-                    depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100)
-                        .toFixed(2);
-                } else if (method === "WDV") {
-                    depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(
-                        2);
-                }
-                //console.log(depreciationRate);
+                // let depreciationRate = 0;
+                // if (method === "SLM") {
+                //     depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100)
+                //         .toFixed(2);
+                // } else if (method === "WDV") {
+                //     depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(
+                //         2);
+                // }
+                // //console.log(depreciationRate);
 
-                $depRateInput.val(depreciationRate);
+                // $depRateInput.val(depreciationRate);
+                
+                $depRateInput.val(dep_percentage);
 
 
                 // Accumulate totals
@@ -1679,7 +1688,9 @@ $(document).ready(function() {
                 totalQuantity += quantity;
                 totalCurrentValue += currentValue;
             });
+            
             $('#quantity').val(totalQuantity);
+
 
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             if (totalCurrentValue > currentValueAsset) {
@@ -1692,7 +1703,7 @@ $(document).ready(function() {
 
         }
 
-        function initializeCategoryAutocomplete(selector) {
+ function initializeCategoryAutocomplete(selector) {
 
             let salvage_rate = '{{ $dep_percentage }}';
             $(selector).autocomplete({
@@ -1902,6 +1913,85 @@ $(document).ready(function() {
                 var $row = $(this).closest('tr');
                 calculateUsefulLife($row);
             });
+        }
+         function applyFixedPrefixToInputs() {
+            const selector = '.asset-code-input';
+            let prefix = $('#asset_search_input').val();
+
+            if (!prefix) {
+                return; // Exit if prefix is not set
+            }
+
+            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+            const inputs = document.querySelectorAll(selector);
+
+            inputs.forEach(input => {
+                // Set default value if needed
+                if (!input.value.startsWith(prefix)) {
+                    input.value = prefix;
+                }
+
+                // Enforce prefix and allow only numbers after it
+                input.addEventListener("input", function() {
+                    if (!this.value.startsWith(prefix)) {
+                        this.value = prefix;
+                    }
+
+                    // Extract the numeric part after prefix
+                    let numericPart = this.value.slice(prefix.length).replace(/\D/g, '');
+                    this.value = prefix + numericPart;
+                });
+
+                // Prevent deleting or navigating into the prefix
+                input.addEventListener("keydown", function(e) {
+                    if (
+                        this.selectionStart <= prefix.length &&
+                        (e.key === "Backspace" || e.key === "Delete" || e.key === "ArrowLeft")
+                    ) {
+                        e.preventDefault();
+                    }
+                });
+
+                // Keep cursor after prefix on click
+                input.addEventListener("click", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+
+                // Optional: force cursor after prefix on focus
+                input.addEventListener("focus", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+            });
+        }
+
+        function validateAssetCodes() {
+            const inputs = document.querySelectorAll('.asset-code-input');
+            let prefix = $('#asset_search_input').val();
+
+            if (!prefix) return true; // If no prefix, nothing to validate
+
+            // Trim and extract first word + '#S'
+            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+
+            let allValid = true;
+
+            inputs.forEach(input => {
+                const value = input.value.trim();
+                if (value === prefix) {
+                    allValid = false;
+
+                    // Optional: visually mark invalid input
+                    input.style.border = "1px solid red";
+                } else {
+                    input.style.border = ""; // Reset border if valid
+                }
+            });
+
+            return allValid;
         }
     </script>
 
