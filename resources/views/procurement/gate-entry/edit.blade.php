@@ -2829,7 +2829,7 @@
                 }
             }
         });
-        
+
         function getSelectedPoTypes()
         {
             let moduleTypes = [];
@@ -2910,7 +2910,7 @@
         }
 
         function renderData(data) {
-            return data ? data : ''; 
+            return data ? data : '';
         }
 
         function getDynamicParams() {
@@ -2927,11 +2927,11 @@
                 store_id: $("#store_id").val() || '',
                 so_id: $("#po_so_qt_val").val() || '',
                 item_search: $("#item_name_search").val(),
-                selected_pO_ids: encodeURIComponent(selectedPoIds)
+                selected_po_ids: encodeURIComponent(selectedPoIds)
             };
         }
 
-        function getPurchaseOrders() 
+        function getPurchaseOrders()
         {
             const ajaxUrl = '{{ route("gate-entry.get.po", ["type" => "edit"]) }}';
             var columns = [];
@@ -2971,7 +2971,7 @@
                     }
                 },
             ];
-            initializeDataTableCustom('#poModal .po-order-detail', 
+            initializeDataTableCustom('#poModal .po-order-detail',
                 ajaxUrl,
                 columns
             );

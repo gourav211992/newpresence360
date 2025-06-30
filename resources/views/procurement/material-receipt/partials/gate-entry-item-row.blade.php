@@ -2,6 +2,13 @@
     @php
         $rowCount = $tableRowCount + $key + 1;
         $balanceQty = (($item->accepted_qty ?? 0) - ($item->mrn_qty ?? 0));
+        if($type == 'jo')
+        {
+            $poQty = $item?->joItem?->order_qty;
+        }
+        else {
+            $poQty = $item?->poItem?->order_qty;
+        }
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
@@ -65,7 +72,7 @@
             </select>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item?->poItem?->order_qty}}" step="any" readonly />
+            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$poQty}}" step="any" readonly />
         </td>
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">

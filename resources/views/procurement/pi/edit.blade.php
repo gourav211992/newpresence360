@@ -266,6 +266,7 @@
                                             <th >UOM</th>
                                             <th class="text-end">Req Qty</th>
                                             <th class="text-end">Avl Stock</th>
+                                            <th class="text-end">Pending PO</th>
                                             <th class="text-end">Adj Qty</th>
                                             <th class="text-end">Order Qty</th>
                                             <th width="240px">Vendor Name</th>
@@ -278,7 +279,7 @@
                                     </tbody>
                                     <tfoot>
                                     <tr valign="top">
-                                        <td colspan="12" rowspan="10">
+                                        <td colspan="13" rowspan="10">
                                             <table class="table border">
                                                 <tbody id="itemDetailDisplay">
                                                 <tr>
@@ -919,6 +920,7 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
                $("#itemDetailDisplay").html(data.data.html);
                let avlStock = data.data?.inventoryStock.confirmedStocks;
               $(`input[name="components[${rowCount}][avl_stock]"]`).val(Number(avlStock).toFixed(2));
+              $(`input[name="components[${rowCount}][pending_po]"]`).val(Number(data.data.pendingPo).toFixed(2));
             }
          });
       });

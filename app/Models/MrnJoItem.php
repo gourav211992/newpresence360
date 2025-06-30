@@ -21,6 +21,11 @@ class MrnJoItem extends Model
         'mi_item_id',
         'store_id',
         'sub_store_id',
+        'so_id',
+        'item_id',
+        'item_code',
+        'uom_id',
+        'attributes',
         'consumed_qty',
         'inventory_uom_qty',
         'cost_per_unit',
@@ -31,6 +36,11 @@ class MrnJoItem extends Model
     public function miItem()
     {
         return $this->belongsTo(ErpMiItem::class, 'mi_item_id');
+    }
+
+    public function item()
+    {
+        return $this->belongsTo(ErpItem::class, 'jo_item_id');
     }
     public function jobProduct()
     {

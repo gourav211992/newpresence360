@@ -34,6 +34,50 @@ class ErpRouteMasterController extends Controller
         'countries', 'states', 'selectedCountryId'));
     }
 
+      public function getStatesByCountry(Request $request)
+    {
+        $countryId = $request->get('country_id');
+        dd($countryId);
+
+        if (!$countryId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Country ID is required.',
+                'data' => []
+            ], 400);
+        }
+
+        $states = State::where('country_id', $countryId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'status' => true,
+            'data' => $states
+        ]);
+    }
+          public function getCityByState(Request $request)
+    {
+        $stateId = $request->get('state_id');
+
+        if (!$stateId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'State ID is required.',
+                'data' => []
+            ], 400);
+        }
+
+        $cities = City::where('state_id', $stateId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return response()->json([
+            'status' => true,
+            'data' => $cities
+        ]);
+    }
+
     public function store(RouteMasterRequest $request)
     {
         $user = Helper::getAuthenticatedUser();

@@ -174,7 +174,7 @@
 
                                             <div class="col-md-12">
                                                 <div class="table-responsive">
-                                                    <table id="itemTable"  class="table myrequesttablecbox table-striped  newdesignpomrnpad" 
+                                                    <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" 
                                                     data-json-key="components_json"
                                                     data-row-selector="tr[id^='row_']"> 
                                                     
@@ -200,9 +200,11 @@
                                                                 <th>Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th>Vendor</th>
+                                                                <th>Pending PO</th>
+                                                                <th>Avl Stock</th>
                                                                 <th>Qty</th>
                                                                 <th>Rate</th>
+                                                                <th>Vendor</th>
                                                                 <th>Delivery Date</th>
                                                                 <th>Sales Order</th>
                                                                 <th>Location</th>
@@ -211,7 +213,7 @@
                                                                 <th>Remark</th>
                                                             </tr>
                                                         </thead>
-                                                        <tbody>
+                                                        <tbody class="mrntableselectexcel">
 
                                                         </tbody>
                                                     </table>
@@ -536,9 +538,27 @@
                 { data: 'item_name', name: 'item.item_name' },
                 { data: 'attributes', name: 'attributes'},
                 { data: 'uom', name: 'uom.name' },
+                { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
+                    createdCell: function (td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    } 
+                },
+                { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
+                    createdCell: function (td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    } 
+                },
+                { data: 'qty', name: 'qty' ,
+                    createdCell: function (td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', 
+                    createdCell: function (td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    } 
+                },
                 { data: 'vendor_id', name: 'vendor_id'},
-                { data: 'qty', name: 'qty' },
-                { data: 'rate', name: 'rate' },
                 { data: 'delivery_date', name: 'delivery_date' },
                 { data: 'so_doc', name: 'so_doc' },
                 { data: 'store', name: 'store' },

@@ -610,6 +610,7 @@ $(function(){
                     $input.val(itemCode);
                     $("#item_id").val(itemId);
                     // itemCodeChange(itemId);
+                    checkBomInhouse();
                     return false;
                 },
                 change: function(event, ui) {
@@ -630,6 +631,26 @@ $(function(){
     }
 
     initializeAutocomplete1("#item_code");
+
+    function checkBomInhouse() {
+        let itemId = $("#item_id").val();
+        let actionUrl = '{{route("mo.check.bom.inhouse")}}'+'?item_id='+itemId;
+        fetch(actionUrl).then(response => {
+            return response.json().then(data => {
+                if(!data.data.is_bom) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || '',
+                        icon: 'error',
+                    });
+                    $("#item_code").attr('data-name', '');
+                    $("#item_code").attr('data-code', '');
+                    $("#item_code").val('');
+                    $("#item_id").val('');
+                }
+            });
+        });
+    };
 
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
@@ -1125,15 +1146,10 @@ $(document).on('click', '.prSelect', (e) => {
     getPwo();
 });
 
-/*searchPiBtn*/
-$(document).on('click', '.searchSoBtn', (e) => {
-    getPwo();
-});
-
 function openBomRequest()
 {
     initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
-    initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_bom", "book_code", "");
+    initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_pwo", "book_code", "");
     initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "bom_document_qt", "document_number", "");
     // initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "header_item", "item_code", "item_name");
     // initializeAutocompleteQt("department_po", "department_id_po", "department", "name", "");
@@ -1173,6 +1189,7 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
             var $input = $(this);
             $input.val(ui.item.label);
             $("#" + selectorSibling).val(ui.item.id);
+            getPwo();
             return false;
         },
         change: function(event, ui) {
@@ -1184,6 +1201,12 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
     }).focus(function() {
         if (this.value === "") {
             $(this).autocomplete("search", "");
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).val("");
+            $("#" + selectorSibling).val("");
+            getPwo();
         }
     });
 }
@@ -1235,6 +1258,16 @@ function getPwo()
     });
 }
 
+$(document).on('click', '.clearPiFilter', (e) => {
+    $("#book_code_input_qt").val('');
+    $("#book_id_qt_val").val('');
+    $("#document_no_input_qt").val('');
+    $("#document_id_qt_val").val('');
+    $("#customer_code_input_qt").val('');
+    $("#customer_id_qt_val").val('');
+    getPwo();
+});
+
 /*Checkbox for pi item list*/
 $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
   if (e.target.checked) {
@@ -1283,7 +1316,8 @@ $(document).on('click', '.soProcess', (e) => {
     let book_id = $("#book_id").val() || '';
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
     let rowCount = $("#itemTable tbody tr[id*='row_']").length;
-    let actionUrl = '{{ route("mo.process.pwo-item") }}'+'?ids=' + ids+'&type='+type+'&d_date='+d_date+'&book_id='+book_id+'&rowCount='+rowCount;
+    let itemId = $("#item_id").val() || '';
+    let actionUrl = '{{ route("mo.process.pwo-item") }}'+'?ids=' + ids+'&type='+type+'&d_date='+d_date+'&book_id='+book_id+'&rowCount='+rowCount+'&item_id='+itemId;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
             if(data.status == 200) {

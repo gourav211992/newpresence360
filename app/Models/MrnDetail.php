@@ -83,7 +83,7 @@ class MrnDetail extends Model
 
     public function mrnHeader()
     {
-        return $this->belongsTo(MrnHeader::class);
+        return $this->belongsTo(MrnHeader::class, 'mrn_header_id');
     }
 
     public function so()

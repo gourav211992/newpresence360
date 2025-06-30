@@ -106,6 +106,25 @@
                                             </div>
                 
                                             <div class="col-md-9">
+                                                <div class="row align-items-center mb-1"> 
+															<div class="col-md-3"> 
+																<label class="form-label">Act Type <span class="text-danger">*</span></label>  
+															</div> 
+
+															<div class="col-md-8"> 
+														              <div class="demo-inline-spacing">
+                                                                            <div class="form-check form-check-primary mt-25">
+                                                                                <input type="radio" id="company" name="act_type" value="company" class="form-check-input" {{ $data->act_type == 'company'|| $data->act_type == null ? 'checked' : '' }}>
+                                                                                <label class="form-check-label fw-bolder" for="company">Company</label>
+                                                                            </div> 
+                                                                            <div class="form-check form-check-primary mt-25">
+                                                                                <input type="radio" id="income_tax" name="act_type" value="income_tax" class="form-check-input" {{ $data->act_type == 'income_tax' ? 'checked' : '' }}>
+                                                                                <label class="form-check-label fw-bolder" for="income_tax">Income Tax</label>
+                                                                            </div>  
+                                                                        </div>
+                                                                
+															</div>
+														</div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Asset Category <span class="text-danger">*</span></label>
@@ -165,6 +184,16 @@
                                                         <input type="number" class="form-control"
                                                             name="salvage_percentage" required
                                                             value="{{ old('salvage_percentage',$data->salvage_percentage) }}" />
+                                                    </div>
+                                                </div>
+                                                  <div class="row align-items-center mb-1 income_tax">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Dep % <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="number" class="form-control"
+                                                            name="dep_percentage" value="{{$data->dep_percentage}}" required/>
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -463,6 +492,25 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
+        function toggleFields() {
+            if ($('#income_tax').is(':checked')) {
+                if ('{{ $dep_method }}' == "WDV") {
+                    $('.income_tax').removeClass('d-none');
+                    $('#dep_percentage').attr('required', true);
+                } else {
+                    showToast('warning', 'Organization Dep method must be WDV for Income Tax');
+                    $('#company').prop('checked', true);
+                    $('.income_tax').addClass('d-none');
+                    $('#dep_percentage').removeAttr('required');
+                }
+            } else {
+                $('.income_tax').addClass('d-none');
+                $('#dep_percentage').removeAttr('required');
+            }
+        }
+         
+     $('input[name="act_type"]').on('change', toggleFields);
+     toggleFields();
 
           
     </script>

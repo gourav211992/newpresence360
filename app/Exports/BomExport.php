@@ -100,7 +100,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         $rows[] = ['BOM Summary'];
         $rows[] = ['Item Total', $this->bom->total_item_value ?? 0];
         $rows[] = ['Header Overheads', $this->bom->header_overhead_amount ?? 0];
-        $rows[] = ['Grand Total', ($this->bom->total_item_value ?? 0)];
+        $rows[] = ['Grand Total', ($this->bom->total_value  ?? 0)];
 
         return $rows;
     }
@@ -159,7 +159,6 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             $dynamicColumns[] = 'Consumption per unit';
             $dynamicColumns[] = 'Pieces';
             $dynamicColumns[] = 'Std Qty';
-            $dynamicColumns[] = 'Norms';
         }
         // Insert dynamic columns after 'Consumption'
         if ($insertIndex !== false && !empty($dynamicColumns)) {
@@ -195,7 +194,6 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             $dynamicValues[] = $component?->norm?->qty_per_unit ?? 0;
             $dynamicValues[] = $component?->norm?->total_qty ?? 0;
             $dynamicValues[] = $component?->norm?->std_qty ?? 0;
-            $dynamicValues[] = $component?->norm?->norms ?? 0;
         }
         $consumptionIndex = 4;
         array_splice($baseRow, $consumptionIndex + 1, 0, $dynamicValues);

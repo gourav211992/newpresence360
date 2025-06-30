@@ -915,9 +915,9 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+            if (totalCurrentValue != currentValueAsset) {
                 $('.preloader').hide();
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+                showToast('error', 'Total Current Value must equal to Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
                 $('.preloader').hide();
@@ -952,9 +952,9 @@
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
             let totalCurrentValue = parseFloat($('#current_value').val()) || 0;
 
-            if (totalCurrentValue > currentValueAsset) {
+            if (totalCurrentValue != currentValueAsset) {
                 $('.preloader').hide();
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+                showToast('error', 'Total Current Value must equal to Asset Current Value.');
                 return false;
             } else if (totalCurrentValue <= 0) {
                 $('.preloader').hide();
@@ -1362,7 +1362,7 @@
                 const category = $row.find('.category').val()?.trim() || '';
                 const categoryInput = $row.find('.category-input').val()?.trim() || '';
                 const ledger = $row.find('.ledger').val() || '';
-                const ledgerGroup = $row.find('.ledger-group').val() || '';
+                const ledgerGroup = $('#ledger_group').val() || '';
                 const life = $row.find('.life').val()?.trim() || '';
                 const salvagePer = $row.find('.salvage_per').val()?.trim() || '';
                 const depPer = $row.find('.dep_per').val()?.trim() || '';

@@ -223,7 +223,7 @@
                                                     </div>
                                                 </div>
 
-                                                <div @if($buttons['reference']) hidden @endif class="row align-items-center mb-1">
+                                                <div @if($buttons['reference']||$data->mrn_detail_id==null) hidden @endif class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_from">Reference From
                                                             <span class="text-danger">*</span></label>
@@ -534,7 +534,7 @@
                                                                 id="sub_total" value="{{$data->sub_total}}" required readonly />
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-3" @if($data->tax==0) hidden @endif>
                                                         <div class="mb-1">
                                                             <label class="form-label w-100">Tax <span
                                                                     class="text-danger">*</span>

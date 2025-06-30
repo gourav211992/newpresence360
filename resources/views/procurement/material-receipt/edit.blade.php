@@ -950,13 +950,13 @@
         var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        const selectedCostCenterId = @json($mrn->cost_center_id);
+        selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
-        console.log('currentProcessType--->>', currentProcessType);
 
         if(currentProcessType == 'jo')
         {
@@ -2556,58 +2556,6 @@
             }
         }
 
-        function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type:type,
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item.name}`,
-                                    percentage: `${item.percentage}`,
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    var itemName = ui.item.label;
-                    var itemId = ui.item.id;
-                    var itemPercentage = ui.item.percentage;
-
-                    $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
-                    $("#" + nameSelector).val(itemName);
-                    $("#" + percentageVal).val(itemPercentage).trigger('keyup');
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + idSelector).val("");
-                        $("#" + nameSelector).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
-
         // Function to initialize the product section autocomplete
         function initializeStationAutocomplete() {
             $("[name*='store_section']").autocomplete({
@@ -2654,58 +2602,6 @@
                 if (this.value === "") {
                     $(this).closest('td').find("[name*='[store_id]']").val("");
                     $(this).closest('td').find("[name*='[erp_store_code]']").val("");
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
-
-        function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
-            $("#" + selector).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type:type,
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    id: item.id,
-                                    label: `${item.name}`,
-                                    percentage: `${item.percentage}`,
-                                };
-                            }));
-                        },
-                        error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function(event, ui) {
-                    var $input = $(this);
-                    var itemName = ui.item.label;
-                    var itemId = ui.item.id;
-                    var itemPercentage = ui.item.percentage;
-
-                    $input.val(itemName);
-                    $("#" + idSelector).val(itemId);
-                    $("#" + nameSelector).val(itemName);
-                    $("#" + percentageVal).val(itemPercentage).trigger('keyup');
-                    return false;
-                },
-                change: function(event, ui) {
-                    if (!ui.item) {
-                        $(this).val("");
-                        $("#" + idSelector).val("");
-                        $("#" + nameSelector).val("");
-                    }
-                }
-            }).focus(function() {
-                if (this.value === "") {
                     $(this).autocomplete("search", "");
                 }
             });
@@ -2917,13 +2813,14 @@
         });
 
         /*Open Po model*/
+        let poOrderTable;
         $(document).on('click', '.poSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
             if(tableRowCount)
             {
                 let poDetailIds = [];
                 $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
-                    let poDetailId = $(this).find("input[name*='[po_detail_id]']").val();
+                    let poDetailId = $(this).find("input[name*='[purchase_order_id]']").val();
                     if (poDetailId !== undefined) {
                         poDetailIds.push(poDetailId);
                     }
@@ -2932,27 +2829,16 @@
             }
             $("#poModal").modal('show');
             currentProcessType='po';
+            const tableSelector = '#poModal .po-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
             openPurchaseRequest();
             getPurchaseOrders();
-        });
-        $(document).on('click', '.joSelect', (e) => {
-            tableRowCount = $('.mrntableselectexcel tr').length;
-            if(tableRowCount)
-            {
-                let poDetailIds = [];
-                $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
-                    let poDetailId = $(this).find("input[name*='[po_detail_id]']").val();
-                    if (poDetailId !== undefined) {
-                        poDetailIds.push(poDetailId);
-                    }
-                });
-                localStorage.setItem('selectedPoIds', JSON.stringify(poDetailIds));
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    poOrderTable = $(tableSelector).DataTable();
+                    poOrderTable.ajax.reload();
+                }
             }
-
-            $("#joModal").modal('show');
-            currentProcessType='jo';
-            openJobRequest();
-            getJobOrders();
         });
 
         /*searchPiBtn*/
@@ -2963,6 +2849,15 @@
         $(document).on('click', '.searchJoBtn', (e) => {
             getJobOrders();
         });
+
+        function getSelectedPoTypes()
+        {
+            let moduleTypes = [];
+            $('.po_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
+        }
 
         function openPurchaseRequest() {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code",
@@ -3008,106 +2903,131 @@
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
                     return false;
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + selectorSibling).val("");
+                        $('#poModal .po-order-detail').DataTable().ajax.reload();
                     }
                 }
             }).focus(function() {
                 if (this.value === "") {
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
                     $(this).autocomplete("search", "");
+                }
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#poModal .po-order-detail').DataTable().ajax.reload();
                 }
             });
         }
 
-        function openJobRequest() {
-            initializeAutocompleteQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "vendor_code",
-                "company_name");
-            initializeAutocompleteQt("jo_book_code_input_qt", "jo_book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocompleteQt("jo_document_no_input_qt", "jo_document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocompleteQt("jo_item_name_input_qt", "jo_item_id_qt_val", "goods_item_list", "item_code", "item_name");
-        }
-
         window.onload = function () {
+            localStorage.removeItem('selectedPoIds', selectedPoIds);
+            localStorage.removeItem('selectedJoIds', selectedJoIds);
             let selectedPoIds = [];
+            let selectedJoIds = [];
 
-            // @if ($mrn->reference_type == 'po')
-            //     selectedPoIds.push(...@json((array) $mrn->purchase_order_id));
-            // @elseif ($mrn->reference_type == 'jo')
-            //     selectedPoIds.push(...@json((array) $mrn->job_order_id));
-            // @endif
+            @if ($mrn->reference_type == 'po')
+                selectedPoIds = @json(is_array($mrn->purchase_order_id) ? $mrn->purchase_order_id : [$mrn->purchase_order_id]);
+            @elseif ($mrn->reference_type == 'jo')
+                selectedJoIds = @json(is_array($mrn->job_order_id) ? $mrn->job_order_id : [$mrn->job_order_id]);
+            @endif
 
-            localStorage.setItem('selectedPoIds', JSON.stringify(selectedPoIds));
+            localStorage.setItem('selectedPoIds', selectedPoIds);
+            localStorage.setItem('selectedJoIds', selectedJoIds);
         };
-        function getPurchaseOrders() {
-            let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
 
-            selectedPoIds = JSON.parse(selectedPoIds);
-            selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
 
-            let document_date = $("[name='document_date']").val() || '';
-            let header_book_id = $("#book_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let type = 'edit';
-            let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("material-receipt.get.po", ["type" => "edit"]) }}';
-            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_po_ids=${selectedPoIds}
-            &document_date=${document_date}
-            &item_search=${item_search}`;
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #poDataTable").empty().append(data.data.pis);
-                    $('.select2').select2({
-                        dropdownParent: $(
-                            '#poModal') // Ensure dropdown is rendered inside the modal
-                    });
-                });
-            });
+        function renderData(data) {
+            return data ? data : '';
         }
 
-        function getJobOrders() {
-            let selectedJoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-            selectedJoIds = JSON.parse(selectedJoIds);
-            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
-
-            let document_date = $("[name='document_date']").val() || '';
-            let header_book_id = $("#book_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("material-receipt.get.jo", ["type" => "edit"]) }}';
-            let fullUrl = `${actionUrl}&series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_jo_ids=${selectedJoIds}
-            &document_date=${document_date}
-            &item_search=${item_search}`;
-
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #joDataTable").empty().append(data.data.pis);
-                    $('.select2').select2({
-                        dropdownParent: $(
-                            '#joModal') // Ensure dropdown is rendered inside the modal
-                    });
-                });
-            });
+        function getDynamicParams() {
+            if(currentProcessType == 'jo')
+            {
+                selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+            }
+            else
+            {
+                selectedPoIds = localStorage.getItem('selectedJoIds') ?? '[]';
+            }
+            // selectedPoIds = selectedPoIds;
+            // selectedPoIds = JSON.parse(selectedPoIds);
+            // selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+            return {
+                document_date: $("[name='document_date']").val() || '',
+                header_book_id: $("#book_id").val() || '',
+                series_id: $("#book_id_qt_val").val() || '',
+                document_number: $("#document_id_qt_val").val() || '',
+                item_id: $("#item_id_qt_val").val() || '',
+                vendor_id: $("#vendor_id_qt_val").val(),
+                store_id: $("#store_id").val() || '',
+                so_id: $("#po_so_qt_val").val() || '',
+                item_search: $("#item_name_search").val(),
+                selected_po_ids: encodeURIComponent(selectedPoIds)
+            };
         }
+
+        function getPurchaseOrders()
+        {
+            const ajaxUrl = '{{ route("material-receipt.get.po", ["type" => "edit"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'po_doc', name: 'po_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'po_date', name: 'po_date', render: renderData, orderable: false, searchable: false },
+                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#poModal .po-order-detail',
+                ajaxUrl,
+                columns
+            );
+        }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#poModal .po-order-detail').DataTable().ajax.reload();
+        });
 
         /*Checkbox for po/si item list*/
         $(document).on('change', '.po-order-detail > thead .form-check-input', (e) => {
@@ -3156,6 +3076,7 @@
             }
 
             $("[name='po_item_ids']").val(ids);
+            let moduleTypes = getSelectedPoTypes();
             $(".joSelect").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
@@ -3278,6 +3199,7 @@
 
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
+            moduleTypes = JSON.stringify(moduleTypes);
             ids = JSON.stringify(ids);
             let type = 'po'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("material-receipt.process.po-item") }}'
@@ -3291,7 +3213,8 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                        vendorOnChange(data?.data?.vendor?.id);
+                        let poOrder = data?.data?.purchaseOrder;
+                        vendorOnChange(data?.data?.vendor?.id, 'po', poOrder.id);
                         let result = getSelectedPoIDS();
                         let newIds = result.ids;
                         let existingIds = localStorage.getItem('selectedPoIds');
@@ -3309,7 +3232,6 @@
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-                        let poOrder = data?.data?.purchaseOrder;
 
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data
@@ -3324,10 +3246,10 @@
                         $("#vendor_name").prop('readonly', true);
                         $(".editAddressBtn").addClass('d-none');
                         $("#vendor_name").prop('readonly', true);
-                        if (poOrder.type == 'supplier-invoice') {
+                        if(poOrder.type == 'supplier-invoice'){
                             $("[name='supplier_invoice_no']").val(poOrder.document_number);
                             $("[name='supplier_invoice_date']").val(poOrder.document_date);
-                        } else {
+                        } else{
                             $("[name='supplier_invoice_no']").val();
                             $("[name='supplier_invoice_date']").val();
                         }
@@ -3360,8 +3282,7 @@
                                     </tr>`
                             });
 
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row')
-                                .remove();
+                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
                             $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
                             $("#f_header_discount_hidden").removeClass('d-none');
                         } else {
@@ -3440,8 +3361,226 @@
             });
         });
 
+        /*Open Jo model*/
+        let joOrderTable;
+        $(document).on('click', '.joSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
+            if(tableRowCount)
+            {
+                let poDetailIds = [];
+                $(".mrntableselectexcel").find("tr[id^='row_']").each(function() {
+                    let poDetailId = $(this).find("input[name*='[purchase_order_id]']").val();
+                    if (poDetailId !== undefined) {
+                        poDetailIds.push(poDetailId);
+                    }
+                });
+                localStorage.setItem('selectedPoIds', JSON.stringify(poDetailIds));
+            }
+
+            $("#joModal").modal('show');
+            currentProcessType='jo';
+            openJoRequest();
+            const tableSelector = '#joModal .jo-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
+            getJobOrders();
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    joOrderTable = $(tableSelector).DataTable();
+                    joOrderTable.ajax.reload();
+                }
+            }
+        });
+
+        function getSelectedJoTypes()
+        {
+            let moduleTypes = [];
+            $('.jo_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
+        }
+
+        function openJoRequest()
+        {
+            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "jo_vendor_list", "jo_vendor_code", "company_name");
+            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "jo_document_number", "");
+            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "jo_document_number");
+        }
+
+        function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        {
+            let modalType = '#joModal';
+            if (currentProcessType == 'jo')
+                modalType = '#joModal';
+
+            $("#" + selector).autocomplete({
+                source: function(request, resjonse) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: typeVal,
+                            vendor_id : $("#jo_vendor_id_qt_val").val(),
+                            header_book_id : $("#jo_book_id").val(),
+                            store_id : $("#store_id_jo").val() || '',
+                        },
+                        success: function(data) {
+                            resjonse($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                    code: item[labelKey1] || '',
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.resjonseText);
+                        }
+                    });
+                },
+                appendTo : modalType,
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $("#" + selectorSibling).val(ui.item.id);
+                    $('#joModal .jo-order-detail').DataTable().ajax.reload();
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + selectorSibling).val("");
+                        $('#joModal .jo-order-detail').DataTable().ajax.reload();
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#joModal .jo-order-detail').DataTable().ajax.reload();
+                    $(this).autocomplete("search", "");
+                }
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#joModal .jo-order-detail').DataTable().ajax.reload();
+                }
+            })
+        }
+
+        function renderJoData(data) {
+            return data ? data : '';
+        }
+
+        function getJoDynamicParams() {
+            selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
+            selectedJoIds = JSON.parse(selectedJoIds);
+            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
+
+            return {
+                document_date: $("[name='document_date']").val() || '',
+                header_book_id: $("#jo_book_id").val() || '',
+                series_id: $("#jo_book_id_qt_val").val() || '',
+                document_number: $("#jo_document_id_qt_val").val() || '',
+                item_id: $("#jo_item_id_qt_val").val() || '',
+                vendor_id: $("#jo_vendor_id_qt_val").val(),
+                store_id: $("#jo_store_id").val() || '',
+                so_id: $("#jo_so_qt_val").val() || '',
+                item_search: $("#jo_item_name_search").val(),
+                selected_jo_ids: encodeURIComponent(selectedJoIds)
+            };
+        }
+
+        function getJobOrders()
+        {
+            const ajaxUrl = '{{ route("material-receipt.get.jo", ["type" => "edit"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'jo_doc', name: 'jo_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'jo_date', name: 'jo_date', render: renderData, orderable: false, searchable: false },
+                { data: 'si_doc', name: 'si_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'si_date', name: 'si_date', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#joModal .jo-order-detail',
+                ajaxUrl,
+                columns
+            );
+        }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#joModal .jo-order-detail').DataTable().ajax.reload();
+        });
+
+        /*Checkbox for jo/si item list*/
+        $(document).on('change','.jo-order-detail > thead .form-check-input',(e) => {
+            if (e.target.checked) {
+                $(".jo-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',true);
+                });
+            } else {
+                $(".jo-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',false);
+                });
+            }
+        });
+
+        function getSelectedJoIDS()
+        {
+            let ids = [];
+            let referenceNos = [];
+            $('.jo_item_checkbox:checked').each(function() {
+                ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
+            });
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
+        }
+
         $(document).on('click', '.joProcess', (e) => {
-            let result = getSelectedPoIDS();
+            let result = getSelectedJoIDS();
             let ids = result.ids;
             let idsLength = ids.length;
             let referenceNo = result.referenceNos[0];
@@ -3459,6 +3598,7 @@
             $(".poSelect").hide();
             $("#addNewItemBtn").hide();
             $("[name='jo_item_ids']").val(ids);
+            let moduleTypes = getSelectedJoTypes();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
                 $("#reference_number_input").val(referenceNo);
@@ -3581,6 +3721,7 @@
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
             ids = JSON.stringify(ids);
+            moduleTypes = JSON.stringify(moduleTypes);
             let type = 'jo'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("material-receipt.process.jo-item") }}'
             + '?ids=' + encodeURIComponent(ids)
@@ -3594,25 +3735,25 @@
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
-                        vendorOnChange(data?.data?.vendor?.id);
-                        let result = getSelectedPoIDS();
+                        let joOrder = data?.data?.jobOrder;
+                        vendorOnChange(data?.data?.vendor?.id, 'jo', joOrder.id);
+                        let result = getSelectedJoIDS();
                         let newIds = result.ids;
-                        let existingIds = localStorage.getItem('selectedPoIds');
+                        let existingIds = localStorage.getItem('selectedJoIds');
                         if (existingIds) {
                             existingIds = JSON.parse(existingIds);
                             const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-                            localStorage.setItem('selectedPoIds', JSON.stringify(mergedIds));
+                            localStorage.setItem('selectedJoIds', JSON.stringify(mergedIds));
                         } else {
-                            localStorage.setItem('selectedPoIds', JSON.stringify(newIds));
+                            localStorage.setItem('selectedJoIds', JSON.stringify(newIds));
                         }
 
-                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
+                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedJoIds'));
                         $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
 
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-                        let poOrder = data?.data?.purchaseOrder;
 
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data
@@ -3627,10 +3768,10 @@
                         $("#vendor_name").prop('readonly', true);
                         $(".editAddressBtn").addClass('d-none');
                         $("#vendor_name").prop('readonly', true);
-                        if (poOrder.type == 'supplier-invoice') {
-                            $("[name='supplier_invoice_no']").val(poOrder.document_number);
-                            $("[name='supplier_invoice_date']").val(poOrder.document_date);
-                        } else {
+                        if(joOrder.type == 'supplier-invoice'){
+                            $("[name='supplier_invoice_no']").val(joOrder.document_number);
+                            $("[name='supplier_invoice_date']").val(joOrder.document_date);
+                        } else{
                             $("[name='supplier_invoice_no']").val();
                             $("[name='supplier_invoice_date']").val();
                         }
@@ -3742,6 +3883,58 @@
                 });
             });
         });
+
+        function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:type,
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.name}`,
+                                    percentage: `${item.percentage}`,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    var itemName = ui.item.label;
+                    var itemId = ui.item.id;
+                    var itemPercentage = ui.item.percentage;
+
+                    $input.val(itemName);
+                    $("#" + idSelector).val(itemId);
+                    $("#" + nameSelector).val(itemName);
+                    $("#" + percentageVal).val(itemPercentage).trigger('keyup');
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + idSelector).val("");
+                        $("#" + nameSelector).val("");
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
 
         function getLocation(locationId = '')
         {

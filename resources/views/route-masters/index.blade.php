@@ -124,81 +124,164 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ——————————————————————————————————————————————
-    // 2) Autocomplete wiring
-    function bindCountry($row) {
-        $row.querySelector('.country-autocomplete').addEventListener('input', debounce(function () {
-            fetch(`{{ route('logistics.route-master.countries') }}?term=${this.value}`)
-              .then(r => r.json()).then(list => showSuggestions(this, list));
-        }, 300));
-        $row.querySelector('.country-autocomplete').addEventListener('change', function () {
-            // clear downstream
-            $row.querySelector('.country-id').value = this.dataset.selectedId || '';
-            $row.querySelector('.state-autocomplete, .state-id').forEach(el => el.value = '');
-            $row.querySelector('.city-autocomplete, .city-id').forEach(el => el.value = '');
-        });
-    }
-    function bindState($row) {
-        $row.querySelector('.state-autocomplete').addEventListener('input', debounce(function () {
-            const cid = $row.querySelector('.country-id').value;
-            if (!cid) return;
-            fetch(`/logistics/route-master/states/${cid}?term=${this.value}`)
-              .then(r => r.json()).then(list => showSuggestions(this, list));
-        }, 300));
-        $row.querySelector('.state-autocomplete').addEventListener('change', function () {
-            $row.querySelector('.state-id').value = this.dataset.selectedId || '';
-            $row.querySelector('.city-autocomplete, .city-id').forEach(el => el.value = '');
-        });
-    }
-    function bindCity($row) {
-        $row.querySelector('.city-autocomplete').addEventListener('input', debounce(function () {
-            const sid = $row.querySelector('.state-id').value;
-            if (!sid) return;
-            fetch(`/logistics/route-master/cities/${sid}?term=${this.value}`)
-              .then(r => r.json()).then(list => showSuggestions(this, list));
-        }, 300));
-        $row.querySelector('.city-autocomplete').addEventListener('change', function () {
-            $row.querySelector('.city-id').value = this.dataset.selectedId || '';
-        });
-    }
 
-    // Shared helpers
-    function showSuggestions(input, list) {
-        // remove old list
-        let dd = input.nextElementSibling;
-        if (dd && dd.classList.contains('autocomplete-list')) dd.remove();
+const countryCache = @json($countries->map(fn($c) => ['label' => $c->name, 'value' => $c->name, 'id' => $c->id])->values());
+const stateCache = {};
+const cityCache = {};
 
-        // build new dropdown
-        dd = document.createElement('ul');
-        dd.className = 'autocomplete-list list-group position-absolute';
-        list.forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item list-group-item-action';
-            li.textContent = item.label;
-            li.addEventListener('click', () => {
-                input.value = item.label;
-                input.dataset.selectedId = item.id;
-                dd.remove();
-                input.dispatchEvent(new Event('change'));
+$(document).ready(function () {
+
+    // Country Autocomplete
+    $(document).on('focus', '.country-autocomplete', function () {
+        const $input = $(this);
+        const $row = $input.closest('tr');
+
+        if (!$input.data('ui-autocomplete')) {
+            $input.autocomplete({
+                source: countryCache,
+                minLength: 0,
+                select: function (event, ui) {
+                    $input.val(ui.label);
+                    $row.find('.country-id').val(ui.id);
+
+                    // Reset State & City
+                    $row.find('.state-autocomplete').val('');
+                    $row.find('.state-id').val('');
+                    $row.find('.city-autocomplete').val('');
+                    $row.find('.city-id').val('');
+
+                    loadStates(ui.id, function () {
+                        applyStateAutocomplete(ui.id, $row.find('.state-autocomplete'));
+                    });
+
+                    return false;
+                }
+            }).focus(function () {
+                $(this).autocomplete("search", "");
             });
-            dd.append(li);
-        });
-        input.after(dd);
-    }
-    function debounce(fn, delay) {
-        let t;
-        return function() {
-            clearTimeout(t);
-            t = setTimeout(() => fn.apply(this, arguments), delay);
-        };
-    }
-
-    // Bind existing row
-    document.querySelectorAll('#route-rows tr').forEach(tr => {
-        bindCountry(tr);
-        bindState(tr);
-        bindCity(tr);
+        }
     });
+
+    // State Autocomplete
+    $(document).on('focus', '.state-autocomplete', function () {
+        const $input = $(this);
+        const $row = $input.closest('tr');
+        const countryId = $row.find('.country-id').val();
+
+        if (!countryId) return;
+
+        if (stateCache[countryId]) {
+            applyStateAutocomplete(countryId, $input);
+        } else {
+            loadStates(countryId, function () {
+                applyStateAutocomplete(countryId, $input);
+            });
+        }
+    });
+
+    // City Autocomplete
+    $(document).on('focus', '.city-autocomplete', function () {
+        const $input = $(this);
+        const $row = $input.closest('tr');
+        const stateId = $row.find('.state-id').val();
+
+        if (!stateId) return;
+
+        if (cityCache[stateId]) {
+            applyCityAutocomplete(stateId, $input);
+        } else {
+            loadCities(stateId, function () {
+                applyCityAutocomplete(stateId, $input);
+            });
+        }
+    });
+
+});
+
+function loadStates(countryId, callback) {
+    $.ajax({
+        url: "{{ route('logistics.route-master.get-states-by-country') }}",
+        method: "GET",
+        data: { country_id: countryId },
+        success: function (response) {
+            if (response.status) {
+                stateCache[countryId] = response.data.map(state => ({
+                    label: state.name,
+                    value: state.name,
+                    id: state.id
+                }));
+                if (callback) callback();
+            }
+        },
+        error: function () {
+            alert('Error loading states');
+        }
+    });
+}
+
+function loadCities(stateId, callback) {
+    $.ajax({
+        url: "{{ route('logistics.route-master.get-cities-by-state') }}",
+        method: "GET",
+        data: { state_id: stateId },
+        success: function (response) {
+            if (response.status) {
+                cityCache[stateId] = response.data.map(city => ({
+                    label: city.name,
+                    value: city.name,
+                    id: city.id
+                }));
+                if (callback) callback();
+            }
+        },
+        error: function () {
+            alert('Error loading cities');
+        }
+    });
+}
+
+function applyStateAutocomplete(countryId, $input) {
+    const states = stateCache[countryId] || [];
+    const $row = $input.closest('tr');
+
+    $input.autocomplete({
+        source: states,
+        minLength: 0,
+        select: function (e, ui) {
+            $input.val(ui.label);
+            $row.find('.state-id').val(ui.id);
+
+            $row.find('.city-autocomplete').val('');
+            $row.find('.city-id').val('');
+
+            loadCities(ui.id, function () {
+                applyCityAutocomplete(ui.id, $row.find('.city-autocomplete'));
+            });
+
+            return false;
+        }
+    }).focus(function () {
+        $(this).autocomplete("search", "");
+    });
+}
+
+function applyCityAutocomplete(stateId, $input) {
+    const cities = cityCache[stateId] || [];
+    const $row = $input.closest('tr');
+
+    $input.autocomplete({
+        source: cities,
+        minLength: 0,
+        select: function (e, ui) {
+            $input.val(ui.label);
+            $row.find('.city-id').val(ui.id);
+            return false;
+        }
+    }).focus(function () {
+        $(this).autocomplete("search", "");
+    });
+}
+
 
     // ——————————————————————————————————————————————
     // 3) Add Row

@@ -798,7 +798,7 @@ class ErpMaterialIssueController extends Controller
                             $joProduct = JoProduct::find($request -> jo_product_id[$itemDataKey]);
                             if (isset($joProduct)) {
                                 $joProduct -> mi_qty = ($joProduct -> mi_qty - (isset($oldMiItem) ? $oldMiItem -> issue_qty : 0)) + $itemDataValue['issue_qty'];
-                                $miItem -> jo_id = $joItem -> jo_id;
+                                $miItem -> jo_id = $joProduct -> jo_id;
                                 $miItem -> save();
                                 $joProduct -> save();
                             }
@@ -1062,9 +1062,6 @@ class ErpMaterialIssueController extends Controller
             }
         }
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
-        if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
-            InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
-        }
         if(!empty($issueRecords['data']) && count($issueRecords['data']) > 0){
             ErpMiItemLocation::where('material_issue_id', $materialIssue->id)
                 ->whereIn('mi_item_id', $issueDetailIds)
@@ -1106,10 +1103,14 @@ class ErpMaterialIssueController extends Controller
                 $miItem->total_item_amount = floatval($stockLedger->cost);
                 $miItem->save();
             }
-            return true;
+            // return true;
         } else {
             return false;
         }
+        if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
+            InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
+        }
+        return true;
     }
 
     public function revokeMaterialIssue(Request $request)

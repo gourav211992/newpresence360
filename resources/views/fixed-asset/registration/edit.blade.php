@@ -25,10 +25,10 @@
             display: block;
             margin-top: 10px;
         }
-    .code_error {
-    font-size: 12px;
-}
 
+        .code_error {
+            font-size: 12px;
+        }
     </style>
 @endsection
 
@@ -62,14 +62,15 @@
                             <a href="{{ route('finance.fixed-asset.registration.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
-                            @if($data->document_status == 'draft')
-                            <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
-                                <i data-feather="save"></i> Save as Draft
-                            </button>
-                            <button type="submit" form="fixed-asset-registration-form" class="btn btn-primary btn-sm"
-                                id="submit-btn">
-                                <i data-feather="check-circle"></i> Submit
-                            </button>
+                            @if ($data->document_status == 'draft')
+                                <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button"
+                                    id="save-draft-btn">
+                                    <i data-feather="save"></i> Save as Draft
+                                </button>
+                                <button type="submit" form="fixed-asset-registration-form" class="btn btn-primary btn-sm"
+                                    id="submit-btn">
+                                    <i data-feather="check-circle"></i> Submit
+                                </button>
                             @endif
                         </div>
                     </div>
@@ -82,15 +83,18 @@
                 <section id="basic-datatable">
                     <div class="row">
                         <form id="fixed-asset-registration-form" method="POST"
-                            action="{{ route('finance.fixed-asset.registration.update',$data->id) }}" enctype="multipart/form-data">
+                            action="{{ route('finance.fixed-asset.registration.update', $data->id) }}"
+                            enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
 
                             <input type="hidden" name="document_status" id="document_status" value="">
-                            <input type="hidden" name="mrn_detail_id" id="mrn_detail_id" value="{{$data->mrn_detail_id}}">
-                            <input type="hidden" name="mrn_header_id" id="mrn_header_id" value="{{$data->mrn_header_id}}">
+                            <input type="hidden" name="mrn_detail_id" id="mrn_detail_id"
+                                value="{{ $data->mrn_detail_id }}">
+                            <input type="hidden" name="mrn_header_id" id="mrn_header_id"
+                                value="{{ $data->mrn_header_id }}">
                             <input type="hidden" name="page" value="edit">
-                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{$dep_type}}">
+                            <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
                             <input type="hidden" name="days" id="days" value="0">
 
 
@@ -126,7 +130,8 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="book_id" id="book_id" disabled required>
+                                                        <select class="form-select" name="book_id" id="book_id" disabled
+                                                            required>
                                                             @if ($series)
                                                                 @foreach ($series as $index => $ser)
                                                                     <option value="{{ $ser->id }}"
@@ -146,7 +151,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" class="form-control" name="document_number"
-                                                            id="document_number" value="{{ $data->document_number}}"
+                                                            id="document_number" value="{{ $data->document_number }}"
                                                             disabled required>
                                                     </div>
                                                 </div>
@@ -169,10 +174,11 @@
                                                     </div>
 
                                                     <div class="col-md-5">
-                                                        <select id="location" class="form-select"
-                                                            name="location_id" required>
+                                                        <select id="location" class="form-select" name="location_id"
+                                                            required>
                                                             @foreach ($locations as $location)
-                                                                <option value="{{ $location->id }}" {{$data->location_id==$location->id?"selected":""}}>
+                                                                <option value="{{ $location->id }}"
+                                                                    {{ $data->location_id == $location->id ? 'selected' : '' }}>
                                                                     {{ $location->store_name }}</option>
                                                             @endforeach
                                                         </select>
@@ -192,7 +198,7 @@
                                                     </div>
 
                                                 </div>
-                                               
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label" for="reference_no">Reference No.</label>
@@ -262,32 +268,35 @@
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                     <div class="col-md-3">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Category <span
                                                                     class="text-danger">*</span></label>
-                                                             <select class="form-select select2" name="category_id"
-                                                            id="category" required>
-                                                            <option value="" {{ old('category') ? '' : 'selected' }}>
-                                                                Select</option>
-                                                            @foreach ($categories as $category)
-                                                                <option value="{{ $category->id }}"
-                                                                    {{ $data->category_id == $category->id ? 'selected' : '' }}>
-                                                                    {{ $category->name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
+                                                            <select class="form-select select2" name="category_id"
+                                                                id="category" required>
+                                                                <option value=""
+                                                                    {{ old('category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($categories as $category)
+                                                                    <option value="{{ $category->id }}"
+                                                                        data-act-type="{{$category->setup->act_type??"company"}}"
+                                                                        data-dep="{{$category->setup->dep_percentage??null}}"
+                                                                        {{ $data->category_id == $category->id ? 'selected' : '' }}>
+                                                                        {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
                                                         </div>
                                                     </div>
-                                                  
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Asset Name <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_name"
-                                                                id="asset_name"
-                                                                value="{{ $data->asset_name }}" required />
+                                                                id="asset_name" value="{{ $data->asset_name }}"
+                                                                required />
                                                         </div>
                                                     </div>
 
@@ -296,9 +305,11 @@
                                                             <label class="form-label">Asset Code <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="asset_code"
-                                                                id="asset_code" value="{{ $data->asset_code }}" readonly  oninput="this.value = this.value.toUpperCase();"
+                                                                id="asset_code" value="{{ $data->asset_code }}" readonly
+                                                                oninput="this.value = this.value.toUpperCase();"
                                                                 required />
-                                                                 <span class="text-danger code_error" style="font-size:12px"></span>
+                                                            <span class="text-danger code_error"
+                                                                style="font-size:12px"></span>
                                                         </div>
                                                     </div>
 
@@ -308,8 +319,7 @@
                                                             <label class="form-label">Quantity <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="quantity"
-                                                                id="quantity" value="{{ $data->quantity }}"
-                                                                readonly />
+                                                                id="quantity" value="{{ $data->quantity }}" readonly />
                                                         </div>
                                                     </div>
 
@@ -320,7 +330,8 @@
                                                             <select class="form-select select2" name="ledger_id"
                                                                 id="ledger" required>
                                                                 <option value=""
-                                                                    {{ $data->ledger_id ? '' : 'selected' }}>Select</option>
+                                                                    {{ $data->ledger_id ? '' : 'selected' }}>Select
+                                                                </option>
                                                                 @foreach ($ledgers as $ledger)
                                                                     <option value="{{ $ledger->id }}"
                                                                         {{ $data->ledger_id === $ledger->id ? 'selected' : '' }}>
@@ -338,7 +349,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <select class="form-select" name="ledger_group_id"
                                                                 id="ledger_group" required>
-                                                                </select>
+                                                            </select>
                                                         </div>
                                                     </div>
 
@@ -347,7 +358,9 @@
                                                             <label class="form-label">Capitalize Date </label>
                                                             <input type="date" class="form-control"
                                                                 name="capitalize_date" id="capitalize_date"
-                                                                value="{{ $data->capitalize_date }}" min="{{$financialStartDate}}" max="{{$financialEndDate}}"/>
+                                                                value="{{ $data->capitalize_date }}"
+                                                                min="{{ $financialStartDate }}"
+                                                                max="{{ $financialEndDate }}" />
                                                         </div>
                                                     </div>
 
@@ -355,31 +368,48 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Maint. Schedule <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select" name="maintenance_schedule" id="maintenance_schedule" required>
-                                                                        <option value="" {{ old('maintenance_schedule', $data->maintenance_schedule) == '' ? 'selected' : '' }}>Select</option>
-                                                                        <option value="weekly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'weekly' ? 'selected' : '' }}>Weekly</option>
-                                                                        <option value="monthly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                                                        <option value="quarterly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
-                                                                        <option value="semi-annually" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'semi-annually' ? 'selected' : '' }}>Semi-Annually</option>
-                                                                        <option value="annually" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'annually' ? 'selected' : '' }}>Annually</option>
-                                                                    </select>
+                                                            <select class="form-select" name="maintenance_schedule"
+                                                                id="maintenance_schedule" required>
+                                                                <option value=""
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == '' ? 'selected' : '' }}>
+                                                                    Select</option>
+                                                                <option value="weekly"
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == 'weekly' ? 'selected' : '' }}>
+                                                                    Weekly</option>
+                                                                <option value="monthly"
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == 'monthly' ? 'selected' : '' }}>
+                                                                    Monthly</option>
+                                                                <option value="quarterly"
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == 'quarterly' ? 'selected' : '' }}>
+                                                                    Quarterly</option>
+                                                                <option value="semi-annually"
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == 'semi-annually' ? 'selected' : '' }}>
+                                                                    Semi-Annually</option>
+                                                                <option value="annually"
+                                                                    {{ old('maintenance_schedule', $data->maintenance_schedule) == 'annually' ? 'selected' : '' }}>
+                                                                    Annually</option>
+                                                            </select>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep. Method <span class="text-danger">*</span></label>
-                                                            <input readonly type="text" name="depreciation_method" id="depreciation_method" class="form-control" value="{{$data->depreciation_method??$dep_method}}" readonly /> 
+                                                            <label class="form-label">Dep. Method <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input readonly type="text" name="depreciation_method"
+                                                                id="depreciation_method" class="form-control"
+                                                                value="{{ $data->depreciation_method ?? $dep_method }}"
+                                                                readonly />
                                                         </div>
                                                     </div>
-                                                    
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Est. Useful Life (yrs) <span
                                                                     class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" name="useful_life" oninput="updateDepreciationValues()"
-                                                                id="useful_life" value="{{ $data->useful_life }}"
-                                                                required />
+                                                            <input type="number" class="form-control" name="useful_life"
+                                                                oninput="updateDepreciationValues()" id="useful_life"
+                                                                value="{{ $data->useful_life }}" required />
                                                         </div>
                                                     </div>
 
@@ -394,14 +424,21 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Dep % <span class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" value="{{$data->depreciation_percentage}}" id="depreciation_rate" name="depreciation_percentage" readonly /> 
-                                                            <input type="hidden" value="{{$dep_percentage}}" id="depreciation_percentage" /> 
-                                                            <input type="hidden" id="depreciation_rate_year" value="{{$data->depreciation_percentage_year}}" name="depreciation_percentage_year" /> 
-                                                       </div>
-                                                    </div>  
-                                                   
-                                                    
+                                                            <label class="form-label">Dep % <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="number" class="form-control"
+                                                                value="{{ $data->depreciation_percentage }}"
+                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                readonly />
+                                                            <input type="hidden" value="{{ $dep_percentage }}"
+                                                                id="depreciation_percentage" />
+                                                            <input type="hidden" id="depreciation_rate_year"
+                                                                value="{{ $data->depreciation_percentage_year }}"
+                                                                name="depreciation_percentage_year" />
+                                                        </div>
+                                                    </div>
+
+
 
 
                                                     <div class="col-md-3">
@@ -410,13 +447,16 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control"
                                                                 name="current_value" id="current_value"
-                                                                value="{{ $data->current_value}}" readonly />
+                                                                value="{{ $data->current_value }}" readonly />
                                                         </div>
                                                     </div>
-                                                     <div class="col-md-3">
+                                                    <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Total Dep. <span class="text-danger">*</span></label>
-                                                            <input type="text" id="total_depreciation" name="total_depreciation" class="form-control" value="{{$data->total_depreciation}}" readonly /> 
+                                                            <label class="form-label">Total Dep. <span
+                                                                    class="text-danger">*</span></label>
+                                                            <input type="text" id="total_depreciation"
+                                                                name="total_depreciation" class="form-control"
+                                                                value="{{ $data->total_depreciation }}" readonly />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -439,47 +479,53 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select select2" disabled style="pointer-events: none;" id="vendor" required>
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($vendors as $vendor)
-                                                                            <option value="{{ $vendor->id }}" {{ $data->vendor_id==$vendor->id ? 'selected' : '' }}>
-                                                                                {{ $vendor->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                    <input type="hidden" name="vendor_id" id="vendor_id" value="{{$data->vendor_id}}">
+                                                            <select class="form-select select2" disabled
+                                                                style="pointer-events: none;" id="vendor" required>
+                                                                <option value="">Select</option>
+                                                                @foreach ($vendors as $vendor)
+                                                                    <option value="{{ $vendor->id }}"
+                                                                        {{ $data->vendor_id == $vendor->id ? 'selected' : '' }}>
+                                                                        {{ $vendor->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="hidden" name="vendor_id" id="vendor_id"
+                                                                value="{{ $data->vendor_id }}">
 
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
-                                                           <div class="mb-1">
+                                                        <div class="mb-1">
                                                             <label class="form-label">Currency <span
                                                                     class="text-danger">*</span></label>
-                                                                    <select class="form-select" disabled id="currency" required>
-                                                                        <option value="">Select</option>
-                                                                        @foreach ($currencies as $currency)
-                                                                            <option value="{{ $currency->id }}" {{ $currency->id==$data->currency_id ? 'selected' : '' }}>
-                                                                                {{ $currency->name }}
-                                                                            </option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                <input type="hidden" name="currency_id" id="currency_id" value="{{$data->currency_id}}">
+                                                            <select class="form-select" disabled id="currency" required>
+                                                                <option value="">Select</option>
+                                                                @foreach ($currencies as $currency)
+                                                                    <option value="{{ $currency->id }}"
+                                                                        {{ $currency->id == $data->currency_id ? 'selected' : '' }}>
+                                                                        {{ $currency->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="hidden" name="currency_id" id="currency_id"
+                                                                value="{{ $data->currency_id }}">
 
-                                                                     </div>
+                                                        </div>
                                                     </div>
                                                     <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice No. </label>
                                                             <input type="text" class="form-control"
                                                                 name="supplier_invoice_no" id="supplier_invoice_no"
-                                                                value="{{$data->supplier_invoice_no}}" readonly />
+                                                                value="{{ $data->supplier_invoice_no }}" readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3 d-none">
                                                         <div class="mb-1">
                                                             <label class="form-label">Supplier Invoice Date </label>
                                                             <input type="date" class="form-control"
-                                                                name="supplier_invoice_date"  id="supplier_invoice_date" value="{{$data->supplier_invoice_date}}" readonly />
+                                                                name="supplier_invoice_date" id="supplier_invoice_date"
+                                                                value="{{ $data->supplier_invoice_date }}" readonly />
 
                                                         </div>
                                                     </div>
@@ -488,7 +534,8 @@
                                                             <label class="form-label">Sub Total <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control" name="sub_total"
-                                                                id="sub_total" value="{{$data->sub_total}}" required readonly />
+                                                                id="sub_total" value="{{ $data->sub_total }}" required
+                                                                readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -501,7 +548,8 @@
                                                                 </a>
                                                             </label>
                                                             <input type="text" class="form-control" name="tax"
-                                                                id="tax" value="{{$data->tax}}" required readonly />
+                                                                id="tax" value="{{ $data->tax }}" required
+                                                                readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -510,7 +558,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="text" class="form-control"
                                                                 name="purchase_amount" id="purchase_amount"
-                                                                value="{{$data->purchase_amount}}" required readonly />
+                                                                value="{{ $data->purchase_amount }}" required readonly />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -518,7 +566,8 @@
                                                             <label class="form-label">Book Date <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="date" class="form-control" name="book_date"
-                                                                id="book_date" value="{{$data->book_date}}" required readonly />
+                                                                id="book_date" value="{{ $data->book_date }}" required
+                                                                readonly />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -563,111 +612,115 @@
 
 
     <div class="modal fade text-start" id="rescdule" tabindex="-1" aria-labelledby="myModalLabel17"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select Item
-                    </h4>
-                    <p class="mb-0">Select from the below list</p>
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Select Item
+                        </h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row">
+                <div class="modal-body">
+                    <div class="row">
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">GRN No. </label>
-                            <select class="form-select filter" name="grn_no" id="grn_no" >
-                                <option value="">Select</option>
-                                @foreach ($grns->unique('document_number') as $grn)
-                                    <option value="{{ $grn->document_number }}">{{ $grn->document_number }}</option>
-                                @endforeach
-                            </select>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">GRN No. </label>
+                                <select class="form-select filter" name="grn_no" id="grn_no">
+                                    <option value="">Select</option>
+                                    @foreach ($grns->unique('document_number') as $grn)
+                                        <option value="{{ $grn->document_number }}">{{ $grn->document_number }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Code </label>
-                            <select class="form-select filter" name="vendor_code" id="vendor_code">
-                                <option value="">Select</option>
-                                @foreach ($grns->unique('vendor_code') as $grn)
-                                <option value="{{ $grn->vendor_code }}">{{ $grn->vendor_code }}</option>
-                            @endforeach
-                       </select>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Code </label>
+                                <select class="form-select filter" name="vendor_code" id="vendor_code">
+                                    <option value="">Select</option>
+                                    @foreach ($grns->unique('vendor_code') as $grn)
+                                        <option value="{{ $grn->vendor_code }}">{{ $grn->vendor_code }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Vendor Name </label>
-                            <select class="form-select filter" id="vendor_name" name="vendor_name">
-                                <option value="">Select</option>
-                                @foreach ($grns->unique('vendor_id') as $grn)
-                                <option value="{{ $grn->vendor->company_name }}">{{ $grn->vendor->company_name }}</option>
-                            @endforeach
-                            </select>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Vendor Name </label>
+                                <select class="form-select filter" id="vendor_name" name="vendor_name">
+                                    <option value="">Select</option>
+                                    @foreach ($grns->unique('vendor_id') as $grn)
+                                        <option value="{{ $grn->vendor->company_name }}">{{ $grn->vendor->company_name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col">
-                        <div class="mb-1">
-                            <label class="form-label">Item Name </label>
-                            <select class="form-select filter" id="item_name" name="item_name">
-                                <option value="">Select</option>
-                                @foreach ($grn_details->unique('item_id') as $item)
-                                <option value="{{ $item->item->id }}">{{ $item->item->item_name }}</option>
-                            @endforeach
-                            </select>
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name </label>
+                                <select class="form-select filter" id="item_name" name="item_name">
+                                    <option value="">Select</option>
+                                    @foreach ($grn_details->unique('item_id') as $item)
+                                        <option value="{{ $item->item->id }}">{{ $item->item->item_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="col  mb-1">
-                        <label class="form-label">&nbsp;</label><br />
-                        <button class="btn btn-warning btn-sm" id="searchButton"><i data-feather="search"></i> Search</button>
-                    </div>
-
-                    <div class="col-md-12">
-
-
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                            <table id="grn_table" class="mt-1 table myrequesttablecbox table-striped po-order-detail table-hover">
-                                <thead class="sticky-top bg-white">
-                                    <tr>
-                                        <th>
-                                        </th>
-                                        <th>GRN No.</th>
-                                        <th>GRN Date</th>
-                                        <th>Vendor Code</th>
-                                        <th>Vendor Name</th>
-                                        <th>Item</th>
-                                        <th>Qty</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                  
-                                </tbody>
-
-
-                            </table>
+                        <div class="col  mb-1">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button class="btn btn-warning btn-sm" id="searchButton"><i data-feather="search"></i>
+                                Search</button>
                         </div>
+
+                        <div class="col-md-12">
+
+
+                            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                <table id="grn_table"
+                                    class="mt-1 table myrequesttablecbox table-striped po-order-detail table-hover">
+                                    <thead class="sticky-top bg-white">
+                                        <tr>
+                                            <th>
+                                            </th>
+                                            <th>GRN No.</th>
+                                            <th>GRN Date</th>
+                                            <th>Vendor Code</th>
+                                            <th>Vendor Name</th>
+                                            <th>Item</th>
+                                            <th>Qty</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                    </tbody>
+
+
+                                </table>
+                            </div>
+                        </div>
+
+
                     </div>
-
-
                 </div>
-            </div>
-            <div class="modal-footer text-end">
-                <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
-                        data-feather="x-circle"></i> Cancel</button>
-                <button id="submit_grns" class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i data-feather="check-circle"></i>
-                    Process</button>
+                <div class="modal-footer text-end">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
+                            data-feather="x-circle"></i> Cancel</button>
+                    <button id="submit_grns" class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i
+                            data-feather="check-circle"></i>
+                        Process</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
     <div class="modal fade text-start" id="postvoucher" tabindex="-1" aria-labelledby="myModalLabel17"
         aria-hidden="true">
@@ -1126,25 +1179,31 @@
                                 <tr>
                                     <td>1</td>
                                     <td>IGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="igst_per">{{$data->mrnDetail->igst_percentage??0}}</td>
-                                    <td id="igst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->igst_percentage??0))??0}}</td>
+                                    <td class="sub_total">{{ $data->mrnDetail->net_value ?? 0 }}</td>
+                                    <td id="igst_per">{{ $data->mrnDetail->igst_percentage ?? 0 }}</td>
+                                    <td id="igst_tax">
+                                        {{ ($data->mrnDetail->net_value ?? 0) * ($data->mrnDetail->igst_percentage ?? 0) ?? 0 }}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>2</td>
                                     <td>CGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="cgst_per">{{$data->mrnDetail->cgst_percentage??0}}</td>
-                                    <td id="cgst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->cgst_percentage??0))??0}}</td>
+                                    <td class="sub_total">{{ $data->mrnDetail->net_value ?? 0 }}</td>
+                                    <td id="cgst_per">{{ $data->mrnDetail->cgst_percentage ?? 0 }}</td>
+                                    <td id="cgst_tax">
+                                        {{ ($data->mrnDetail->net_value ?? 0) * ($data->mrnDetail->cgst_percentage ?? 0) ?? 0 }}
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>3</td>
                                     <td>SGST</td>
-                                    <td class="sub_total">{{$data->mrnDetail->net_value??0}}</td>
-                                    <td id="sgst_per">{{$data->mrnDetail->sgst_percentage??0}}</td>
-                                    <td id="sgst_tax">{{(($data->mrnDetail->net_value??0)*($data->mrnDetail->sgst_percentage??0))??0}}</td>
-                                 </tr>
-                             </tbody>
+                                    <td class="sub_total">{{ $data->mrnDetail->net_value ?? 0 }}</td>
+                                    <td id="sgst_per">{{ $data->mrnDetail->sgst_percentage ?? 0 }}</td>
+                                    <td id="sgst_tax">
+                                        {{ ($data->mrnDetail->net_value ?? 0) * ($data->mrnDetail->sgst_percentage ?? 0) ?? 0 }}
+                                    </td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -1222,7 +1281,7 @@
 
 @section('scripts')
     <script>
-          let grn_no = $('#grn_no').val();
+        let grn_no = $('#grn_no').val();
         let vendor_code = $('#vendor_code').val();
         let vendor_name = $('#vendor_name').val();
         let item_name = $('#item_name').val();
@@ -1235,28 +1294,28 @@
                 vendor_code: vendor_code,
                 vendor_name: vendor_name,
                 item_name: item_name,
-                grn_id:"{{$data->mrn_detail_id}}"
+                grn_id: "{{ $data->mrn_detail_id }}"
             },
-            success: function (res) {
+            success: function(res) {
                 $('#grn_table tbody').html(res.html);
             },
-            error: function (xhr) {
+            error: function(xhr) {
                 console.error(xhr.responseText);
             }
         });
 
-        $('#rescdule').on('show.bs.modal', function (e) {
-    // $.ajax({
-    //     url: '{{ route("finance.fixed-asset.fetch.grn.data") }}',
-    //     type: 'GET',
-    //     success: function(response) {
-    //         $('#grn_table tbody').html(response.html);
-    //     },
-    //     error: function(xhr) {
-    //         console.log(xhr.responseText);
-    //     }
-    // });
-});
+        $('#rescdule').on('show.bs.modal', function(e) {
+            // $.ajax({
+            //     url: '{{ route('finance.fixed-asset.fetch.grn.data') }}',
+            //     type: 'GET',
+            //     success: function(response) {
+            //         $('#grn_table tbody').html(response.html);
+            //     },
+            //     error: function(xhr) {
+            //         console.log(xhr.responseText);
+            //     }
+            // });
+        });
 
         function resetParametersDependentElements(data) {
             let backDateAllowed = false;
@@ -1355,18 +1414,18 @@
 
         document.getElementById('save-draft-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'draft';
-             if (!($('#asset_code').hasClass('is-invalid'))) {
+            if (!($('#asset_code').hasClass('is-invalid'))) {
                 document.getElementById('fixed-asset-registration-form').submit();
-            }else{
-                showToast('error','Please correct the errors before submitting.');
+            } else {
+                showToast('error', 'Please correct the errors before submitting.');
             }
         });
-                $('#fixed-asset-registration-form').on('submit', function (e) {
-    if ($(this).find('.is-invalid').length > 0) {
-        e.preventDefault(); // Prevent form submission
-        showToast('error','Please correct the errors before submitting.');
-    }
-});
+        $('#fixed-asset-registration-form').on('submit', function(e) {
+            if ($(this).find('.is-invalid').length > 0) {
+                e.preventDefault(); // Prevent form submission
+                showToast('error', 'Please correct the errors before submitting.');
+            }
+        });
 
         document.getElementById('submit-btn').addEventListener('click', function() {
             document.getElementById('document_status').value = 'submitted';
@@ -1394,8 +1453,10 @@
                     groupDropdown.empty(); // Clear previous options
 
                     response.forEach(item => {
-                        let selected = ({{ $data->ledger_group_id ?? 'null' }} === item.id) ? 'selected' : '';
-                        groupDropdown.append(`<option value="${item.id}" ${selected}>${item.name}</option>`);
+                        let selected = ({{ $data->ledger_group_id ?? 'null' }} === item.id) ?
+                            'selected' : '';
+                        groupDropdown.append(
+                            `<option value="${item.id}" ${selected}>${item.name}</option>`);
 
                     });
 
@@ -1406,99 +1467,103 @@
             });
 
         });
-        $('#ledger').val("{{$data->ledger_id}}").trigger('change');
+        $('#ledger').val("{{ $data->ledger_id }}").trigger('change');
 
-        $('#searchButton').on('click', function (e) {
-        e.preventDefault();
+        $('#searchButton').on('click', function(e) {
+            e.preventDefault();
 
-        let grn_no = $('#grn_no').val();
-        let vendor_code = $('#vendor_code').val();
-        let vendor_name = $('#vendor_name').val();
-        let item_name = $('#item_name').val();
+            let grn_no = $('#grn_no').val();
+            let vendor_code = $('#vendor_code').val();
+            let vendor_name = $('#vendor_name').val();
+            let item_name = $('#item_name').val();
 
-        $.ajax({
-            url: "{{ route('finance.fixed-asset.fetch.grn.data') }}",
-            method: "GET",
-            data: {
-                grn_no: grn_no,
-                vendor_code: vendor_code,
-                vendor_name: vendor_name,
-                item_name: item_name
-            },
-            success: function (res) {
-                $('#grn_table tbody').html(res.html);
-            },
-            error: function (xhr) {
-                console.error(xhr.responseText);
-            }
+            $.ajax({
+                url: "{{ route('finance.fixed-asset.fetch.grn.data') }}",
+                method: "GET",
+                data: {
+                    grn_no: grn_no,
+                    vendor_code: vendor_code,
+                    vendor_name: vendor_name,
+                    item_name: item_name
+                },
+                success: function(res) {
+                    $('#grn_table tbody').html(res.html);
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                }
+            });
         });
-    });
-    $('#infoBtn').hide();
-document.addEventListener('DOMContentLoaded', function () {
-    const processButton = document.querySelector('#submit_grns');
-    const radioButtons = document.querySelectorAll('input[name="grn_id"]');
+        $('#infoBtn').hide();
+        document.addEventListener('DOMContentLoaded', function() {
+            const processButton = document.querySelector('#submit_grns');
+            const radioButtons = document.querySelectorAll('input[name="grn_id"]');
 
-    processButton.addEventListener('click', function (event) {
-        // Check if any radio button is selected
-        const selectedRadio = document.querySelector('input[name="grn_id"]:checked');
+            processButton.addEventListener('click', function(event) {
+                // Check if any radio button is selected
+                const selectedRadio = document.querySelector('input[name="grn_id"]:checked');
 
-        if (!selectedRadio) {
-            event.preventDefault(); // Prevent further processing
-            alert('Please select a GRN before proceeding.');
-        } else {
-            // Retrieve and log the data-grn attribute of the selected radio button
-            const grnData = selectedRadio.dataset.grn; // Access the data-grn attribute
-            const nearestTr = selectedRadio.closest('tr'); // Find the nearest <tr>
-                if (nearestTr) {
-                    const tds = nearestTr.querySelectorAll('td'); // Get all <td> elements in the row
-                    if (tds.length > 1) { // Ensure there are at least two columns
-                        $('#asset_name').val(tds[tds.length - 2].textContent); // Get the second last column
-                    }
-                } // Access the data-grn attribute
+                if (!selectedRadio) {
+                    event.preventDefault(); // Prevent further processing
+                    alert('Please select a GRN before proceeding.');
+                } else {
+                    // Retrieve and log the data-grn attribute of the selected radio button
+                    const grnData = selectedRadio.dataset.grn; // Access the data-grn attribute
+                    const nearestTr = selectedRadio.closest('tr'); // Find the nearest <tr>
+                    if (nearestTr) {
+                        const tds = nearestTr.querySelectorAll('td'); // Get all <td> elements in the row
+                        if (tds.length > 1) { // Ensure there are at least two columns
+                            $('#asset_name').val(tds[tds.length - 2]
+                            .textContent); // Get the second last column
+                        }
+                    } // Access the data-grn attribute
 
 
-            // Make sure grnData is available
-            if (grnData) {
-                $('#mrn_detail_id').val(selectedRadio.value);
-                const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
-                $('#mrn_header_id').val(parsedGrnData?.header?.id || '');
-                $('#supplier_invoice_no').val(parsedGrnData?.header?.supplier_invoice_no || '');
-                $('#quantity').val(parsedGrnData?.accepted_qty || 0); // Log the parsed data
-                $('#vendor').val(parsedGrnData?.header?.vendor?.id || '').select2();
-                $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '');
-                $('#vendor_id').val(parsedGrnData?.header?.vendor?.id || '');
-                $('#currency_id').val(parsedGrnData?.header?.vendor?.currency_id || '');
-                $('#sub_total').val(parsedGrnData?.basic_value || 0);
-                //$('.sub_total').html(parsedGrnData?.basic_value || 0);
-                $('#tax').val(parsedGrnData?.tax_value || 0);
-                $('#purchase_amount').val(
-                    (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData?.basic_value || 0)).toFixed(2)
-                );
-                $('#current_value').val(parsedGrnData?.basic_value || 0);
-                const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
-                const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ? invoiceDate.split('T')[0] : '';
-                $('#supplier_invoice_date').val(formattedInvoiceDate);
-                const createdAt = parsedGrnData?.created_at || '';
-                const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt.split('T')[0] : '';
-                $('#book_date').val(formattedCreatedAt);
-                let igstData = parsedGrnData?.igst_value;
-                let cgstData = parsedGrnData?.cgst_value;
-                let sgstData = parsedGrnData?.sgst_value;
-                
-                // $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
-                // $('#sgst_tax').html(sgstData['value']||0);
-                // $('#cgst_tax').html(cgstData['value']||0);
-                // $('#igst_tax').html(igstData['value']||0);
+                    // Make sure grnData is available
+                    if (grnData) {
+                        $('#mrn_detail_id').val(selectedRadio.value);
+                        const parsedGrnData = JSON.parse(grnData); // Parse the JSON data
+                        $('#mrn_header_id').val(parsedGrnData?.header?.id || '');
+                        $('#supplier_invoice_no').val(parsedGrnData?.header?.supplier_invoice_no || '');
+                        $('#quantity').val(parsedGrnData?.accepted_qty || 0); // Log the parsed data
+                        $('#vendor').val(parsedGrnData?.header?.vendor?.id || '').select2();
+                        $('#currency').val(parsedGrnData?.header?.vendor?.currency_id || '');
+                        $('#vendor_id').val(parsedGrnData?.header?.vendor?.id || '');
+                        $('#currency_id').val(parsedGrnData?.header?.vendor?.currency_id || '');
+                        $('#sub_total').val(parsedGrnData?.basic_value || 0);
+                        //$('.sub_total').html(parsedGrnData?.basic_value || 0);
+                        $('#tax').val(parsedGrnData?.tax_value || 0);
+                        $('#purchase_amount').val(
+                            (parseFloat(parsedGrnData?.tax_value || 0) + parseFloat(parsedGrnData
+                                ?.basic_value || 0)).toFixed(2)
+                        );
+                        $('#current_value').val(parsedGrnData?.basic_value || 0);
+                        const invoiceDate = parsedGrnData?.header?.supplier_invoice_date || '';
+                        const formattedInvoiceDate = invoiceDate && invoiceDate !== '0000-00-00' ?
+                            invoiceDate.split('T')[0] : '';
+                        $('#supplier_invoice_date').val(formattedInvoiceDate);
+                        const createdAt = parsedGrnData?.created_at || '';
+                        const formattedCreatedAt = createdAt && createdAt !== '0000-00-00' ? createdAt
+                            .split('T')[0] : '';
+                        $('#book_date').val(formattedCreatedAt);
+                        let igstData = parsedGrnData?.igst_value;
+                        let cgstData = parsedGrnData?.cgst_value;
+                        let sgstData = parsedGrnData?.sgst_value;
 
-                $('#extraAmountsTable').empty();
+                        // $('#igst_per').html(parseFloat((igstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#cgst_per').html(parseFloat((cgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#sgst_per').html(parseFloat((sgstData['value']/parsedGrnData?.basic_value)*100).toFixed(2) || 0);
+                        // $('#sgst_tax').html(sgstData['value']||0);
+                        // $('#cgst_tax').html(cgstData['value']||0);
+                        // $('#igst_tax').html(igstData['value']||0);
 
-// Check if taxes exist and are not empty
-            if (parsedGrnData?.taxes?.length > 0) {
-                let snno = 1;
-                parsedGrnData.taxes.forEach(item => {
-                    $('#extraAmountsTable').append(`
+                        $('#extraAmountsTable').empty();
+
+                        // Check if taxes exist and are not empty
+                        if (parsedGrnData?.taxes?.length > 0) {
+                            let snno = 1;
+                            parsedGrnData.taxes.forEach(item => {
+                                $('#extraAmountsTable').append(`
                         <tr>
                             <td>${snno}</td>
                             <td>${item.ted_name}</td>
@@ -1507,81 +1572,88 @@ document.addEventListener('DOMContentLoaded', function () {
                             <td class="indian-number">${item.ted_amount}</td>
                         </tr>
                     `);
-                    snno++;
-                });
+                                snno++;
+                            });
 
-                // Show info button
-                $('#infoBtn').show();
-            } else {
-                // Hide info button if no taxes
-                $('#infoBtn').hide();
+                            // Show info button
+                            $('#infoBtn').show();
+                        } else {
+                            // Hide info button if no taxes
+                            $('#infoBtn').hide();
+                        }
+                        updateDepreciationValues();
+
+
+                    } else {
+                        console.error('data-grn attribute not found on the selected radio button');
+                    }
+                }
+            });
+        });
+
+        function updateDepreciationValues() {
+            let purchaseDate = document.getElementById("supplier_invoice_date").value;
+            let depreciationType = document.getElementById("depreciation_type").value;
+            let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
+            let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
+            let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
+            let method = document.getElementById("depreciation_method").value;
+
+            // Ensure all required values are provided
+            if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+                return;
             }
-                updateDepreciationValues();
 
 
-            } else {
-                console.error('data-grn attribute not found on the selected radio button');
+            // Determine financial date based on depreciation type
+            let financialDate;
+            let financialEnd = new Date("{{ $financialEndDate }}");
+
+
+            // Extract the financial year-end month and day
+            let financialEndMonth = financialEnd.getMonth();
+            let financialEndDay = financialEnd.getDate();
+            let devidend = 1;
+
+            switch (depreciationType) {
+                case 'half_yearly':
+                    devidend = 2; // Adjust dividend for half-yearly
+                    break;
+
+                case 'quarterly':
+                    devidend = 4; // Adjust dividend for quarterly
+                    break;
+
+                case 'monthly':
+                    devidend = 12; // Adjust dividend for monthly
+                    break;
+
             }
+
+            let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+
+            const actType = $('#category option:selected').data('act-type');
+            const rate = parseFloat($('#category option:selected').data('dep')) || 0;
+
+            let depreciationRate = 0;
+            if (method === "SLM") {
+                depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
+            } else if (method === "WDV") {
+                if (actType == "income_tax")
+                    depreciationRate = rate;
+                else
+                    depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
+            }
+
+            let totalDepreciation = 0;
+            document.getElementById("salvage_value").value = salvageValue;
+            console.log("dep_rate" + depreciationRate + "devidend" + devidend);
+            document.getElementById("depreciation_rate").value = depreciationRate;
+            document.getElementById("depreciation_rate_year").value = depreciationRate;
+            document.getElementById("total_depreciation").value = totalDepreciation;
         }
-    });
-});
-function updateDepreciationValues() {
-    let purchaseDate = document.getElementById("supplier_invoice_date").value;
-    let depreciationType = document.getElementById("depreciation_type").value;
-    let currentValue = parseFloat(document.getElementById("current_value").value) || 0;
-    let depreciationPercentage = parseFloat(document.getElementById("depreciation_percentage").value) || 0;
-    let usefulLife = parseFloat(document.getElementById("useful_life").value) || 0;
-    let method = document.getElementById("depreciation_method").value;
 
-    // Ensure all required values are provided
-    if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-        return;
-    }
-    
-
-    // Determine financial date based on depreciation type
-    let financialDate;
-    let financialEnd = new Date("{{$financialEndDate}}");
-    
-    
-    // Extract the financial year-end month and day
-    let financialEndMonth = financialEnd.getMonth(); 
-    let financialEndDay = financialEnd.getDate();
-    let devidend = 1; 
-
-    switch (depreciationType) {
-       case 'half_yearly':
-            devidend = 2; // Adjust dividend for half-yearly
-            break;
-
-        case 'quarterly':
-            devidend = 4; // Adjust dividend for quarterly
-            break;
-
-        case 'monthly':
-            devidend = 12; // Adjust dividend for monthly
-            break;
-
-    }
-
-    let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
-
-    let depreciationRate = 0;
-    if (method === "SLM") {
-        depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue)*100).toFixed(2);
-    } else if (method === "WDV") {
-        depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife))*100).toFixed(2);
-    }
-
-    let totalDepreciation = 0;
-    document.getElementById("salvage_value").value = salvageValue;
-    console.log("dep_rate"+depreciationRate+"devidend"+devidend);
-    document.getElementById("depreciation_rate").value = depreciationRate;
-    document.getElementById("depreciation_rate_year").value = depreciationRate;
-    document.getElementById("total_depreciation").value = totalDepreciation;
-}
-
-function showToast(icon, title) {
+        function showToast(icon, title) {
             const Toast = Swal.mixin({
                 toast: true,
                 position: "top-end",
@@ -1613,74 +1685,75 @@ function showToast(icon, title) {
             );
         @endif
 
-        $('#category').on('change',function(){
+        $('#category').on('change', function() {
             var category_id = $(this).val();
-            
-            if(category_id){
+
+            if (category_id) {
                 $.ajax({
-                    type:"GET",
-                    url:"{{route('finance.fixed-asset.setup.category')}}?category_id="+category_id,
-                    success:function(res){
-                        if(res){
+                    type: "GET",
+                    url: "{{ route('finance.fixed-asset.setup.category') }}?category_id=" + category_id,
+                    success: function(res) {
+                        if (res) {
                             $('#ledger').val(res.ledger_id);
                             $('#ledger').select2().trigger('change');
                             $('#ledger_group').val(res.ledger_group_id);
                             $('#maintenance_schedule').val(res.maintenance_schedule);
                             $('#useful_life').val(res.expected_life_years);
-                            if(res.salvage_percentage)
-                            $('#depreciation_percentage').val(res.salvage_percentage);
-                        else 
-                            $('#depreciation_percentage').val('{{$dep_percentage}}');
-                            
+                            if (res.salvage_percentage)
+                                $('#depreciation_percentage').val(res.salvage_percentage);
+                            else
+                                $('#depreciation_percentage').val('{{ $dep_percentage }}');
+
                             updateDepreciationValues();
                         }
                     }
                 });
             }
         });
-$('#location').on('change', function () {
-    var locationId = $(this).val();
+        $('#location').on('change', function() {
+            var locationId = $(this).val();
 
-    if (locationId) {
-        // Build the route manually
-        var url = '{{ route("cost-center.get-cost-center", ":id") }}'.replace(':id', locationId);
-        var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
+            if (locationId) {
+                // Build the route manually
+                var url = '{{ route('cost-center.get-cost-center', ':id') }}'.replace(':id', locationId);
+                var selectedCostCenterId = '{{ $data->cost_center_id ?? '' }}'; // Use null coalescing for safety
 
-        $.ajax({
-            url: url,
-            type: 'GET',
-            dataType: 'json',
-            success: function (data) {
-                if(data.length==0){
-                    $('#cost_center').empty(); 
-                $('#cost_center').prop('required', false);
-                $('.cost_center').hide();
-                }
-                else{
-                    $('.cost_center').show();
-                    $('#cost_center').prop('required', true);
-                $('#cost_center').empty(); // Clear previous options
-                $.each(data, function (key, value) {
-                        let selected = (value.id == selectedCostCenterId) ? 'selected' : '';
-                        $('#cost_center').append('<option value="' + value.id + '" ' + selected + '>' + value.name + '</option>');
-                    });
-            }
-            },
-            error: function () {
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(data) {
+                        if (data.length == 0) {
+                            $('#cost_center').empty();
+                            $('#cost_center').prop('required', false);
+                            $('.cost_center').hide();
+                        } else {
+                            $('.cost_center').show();
+                            $('#cost_center').prop('required', true);
+                            $('#cost_center').empty(); // Clear previous options
+                            $.each(data, function(key, value) {
+                                let selected = (value.id == selectedCostCenterId) ? 'selected' :
+                                    '';
+                                $('#cost_center').append('<option value="' + value.id + '" ' +
+                                    selected + '>' + value.name + '</option>');
+                            });
+                        }
+                    },
+                    error: function() {
+                        $('#cost_center').empty();
+                    }
+                });
+            } else {
                 $('#cost_center').empty();
             }
         });
-    } else {
-        $('#cost_center').empty();
-    }
-});
-$('#asset_code').on('input', function() {
+        $('#asset_code').on('input', function() {
             $.ajax({
                 url: '{{ route('finance.fixed-asset.check-code') }}',
                 method: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
-                    edit_id:'{{$data->id}}',
+                    edit_id: '{{ $data->id }}',
                     code: $('#asset_code').val(),
                 },
                 success: function(response) {
@@ -1699,11 +1772,7 @@ $('#asset_code').on('input', function() {
 
         });
 
-$('#location').trigger('change');
-
-
-
-
+        $('#location').trigger('change');
     </script>
 @endsection
 @endsection
