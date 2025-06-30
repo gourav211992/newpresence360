@@ -1764,14 +1764,14 @@ class JoController extends Controller
         $bomExists = Bom::withDefaultGroupCompanyOrg()
         ->where('item_id', $item->id)
         ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
-        ->where('production_type', 'Job Work')
+        ->whereIn('production_type', ['Job Work'])
         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
         ->exists();
 
         return response()->json([
             'data' => ['is_bom' => $bomExists],
             'status' => 200,
-            'message' => $bomExists ? 'Fetched!' : "Select item of bom not exist as job work."
+            'message' => $bomExists ? 'Fetched!' : "Only products with production type Job Work are allowed."
         ]);
     }
 }

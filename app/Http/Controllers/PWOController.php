@@ -39,6 +39,7 @@ use App\Models\Attribute;
 use App\Models\ErpPwoItem;
 use App\Models\ErpPwoItemAttribute;
 use App\Models\ErpSoItemBom;
+use App\Models\ErpStore;
 use App\Models\ProductionRoute;
 use App\Models\PwoBomMapping;
 use App\Models\PwoStationConsumption;
@@ -570,16 +571,17 @@ class PWOController extends Controller
      public function addItemRow(Request $request)
      {
          $componentItem = json_decode($request->component_item,true) ?? [];
-         $itemId = $componentItem['item_id'] ?? null;
-         // $customerId = $request->customer_id ?? null;
          if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
              if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['row_length'] != 0) {
                  return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
              }
          }
          $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
+         $storeId = $request->store_id ?? null;
+         $store = ErpStore::where('id', $storeId)->select('id', 'store_code', 'store_name')->first();
          $html = view('pwo.partials.item-row', [
-             'rowCount' => $rowCount
+             'rowCount' => $rowCount,
+             'store' => $store,
          ])->render();
          return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
      }

@@ -302,6 +302,9 @@ Route::middleware(['user.auth'])->group(function () {
      Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
     Route::get('/report/pending-receipts', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
       Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
+    // Route::get('/report/import', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
+    // Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
+    Route::post('/report/update-cache', [CrDrReportController::class,'updateCacheData'])->name('pending.payment.update.cache');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
     Route::get('vouchers/cancel', [VoucherController::class, 'cancelDocument'])->name('voucher.cancel.document');
@@ -572,6 +575,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
             Route::get('report', 'moReport')->name('report');
             Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
+            Route::get('check-bom-inhouse','checkBomInhouse')->name('check.bom.inhouse');
     });
 
     
@@ -2268,9 +2272,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/logistics/route-master', [ErpRouteMasterController::class, 'index'])->name('logistics.vroute-master.index');
     Route::post('/logistics/vroute-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
     Route::delete('/logistics/route-master/delete-multiple', [ErpRouteMasterController::class, 'deleteMultiple'])->name('logistics.route-master.delete-multiple');
-    Route::get('/logistics/route-master/countries',        [ErpRouteMasterController::class, 'countries'])->name('logistics.route-master.countries');
-    Route::get('/logistics/route-master/states/{country}', [ErpRouteMasterController::class, 'states'   ])->name('logistics.route-master.states');
-    Route::get('/logistics/route-master/cities/{state}',   [ErpRouteMasterController::class, 'cities'   ])->name('logistics.route-master.cities');
+    Route::get('/logistics/route-master/get-states-by-country', [ErpRouteMasterController::class, 'getStatesByCountry'   ])->name('logistics.route-master.get-states-by-country');
+    Route::get('/logistics/route-master/get-cities-by-state',   [ErpRouteMasterController::class, 'getCitiesByState'   ])->name('logistics.route-master.get-cities-by-state');
 
 
 

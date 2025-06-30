@@ -366,8 +366,6 @@
         </div>
     </div>
 </div>
-
-@include('mfgOrder.partials.pwo-modal')
 @endsection
 @section('scripts')
 <script>
@@ -611,11 +609,6 @@ $(document).on('click', '.submit_attribute', (e) => {
     $("#attribute").modal('hide');
 });
 
-/*searchPiBtn*/
-$(document).on('click', '.searchSoBtn', (e) => {
-    getPwo();
-});
-
 function openBomRequest()
 {
     initializeAutocompleteQt("customer_code_input_qt", "customer_id_qt_val", "customer", "customer_code", "company_name");
@@ -702,6 +695,18 @@ function getPwo()
     let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}&document_number=${encodeURIComponent(document_number)}&so_series_id=${encodeURIComponent(so_series_id)}&so_document_number=${encodeURIComponent(so_document_number)}&header_book_id=${encodeURIComponent(header_book_id)}&customer_id=${customerId}&item_id=${itemId}&store_id=${storeId}`;
     fetch(fullUrl).then(response => {
         return response.json().then(data => {
+            if(data.status == 422) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message || '',
+                    icon: 'error',
+                });
+                $("#item_code").attr('data-name', '');
+                $("#item_code").attr('data-code', '');
+                $("#item_code").val('');
+                $("#item_id").val('');
+                return;
+            }
             $("#itemTable .mrntableselectexcel").empty().append(data.data.pis);
             setTimeout(() => {
                 $("#itemTable .mrntableselectexcel tr").each(function(index, item) {

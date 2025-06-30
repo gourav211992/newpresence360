@@ -32,6 +32,11 @@ class PwoBomMapping extends Model
         'attributes' => 'array'
     ];
 
+    public function bomDetail()
+    {
+        return $this->belongsTo(BomDetail::class, 'bom_detail_id');
+    }
+    
     public function item()
     {
         return $this->belongsTo(Item::class,'item_id');

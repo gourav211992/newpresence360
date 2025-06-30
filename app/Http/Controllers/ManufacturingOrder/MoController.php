@@ -1482,6 +1482,8 @@ class MoController extends Controller
             });
         }
         $pwoItems = $pwoItems->with(['pwo', 'item'])->get();
+
+        
         $html = view('mfgOrder.partials.pwo-item-list', ['pwoItems' => $pwoItems, 'station_id' => $stationId])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
@@ -1495,6 +1497,25 @@ class MoController extends Controller
        $soSeriesId = $request->so_series_id ?? null;
        $soSocNumber = $request->so_document_number ?? null;
        $itemId = $request->item_id ?? null;
+        if($itemId) {
+            $bomExists = Bom::withDefaultGroupCompanyOrg()
+                 ->where('item_id', $itemId)
+                 ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                 ->exists();
+             if(!$bomExists) {
+                return response()->json(['data' => ['pis' => ""], 'status' => 422, 'message' => "Bom not exist!"]);
+             }
+            $bomExists = Bom::withDefaultGroupCompanyOrg()
+                         ->where('item_id', $itemId)
+                         ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+                         ->whereIn('production_type', ['In-house'])
+                         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                         ->exists();
+             if (!$bomExists ) {
+                 return response()->json(['data' => ['pis' => ""], 'status' => 422, 'message' => "Only products with production type In-house are allowed."]);
+             }
+        }
        $customerId = $request->customer_id ?? null;
        $headerBookId = $request->header_book_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
@@ -1513,7 +1534,13 @@ class MoController extends Controller
        ->where(function ($query) use ($customerId, $itemId, $soSeriesId, $soSocNumber, $storeId) {
             if($itemId){
                 $query->where('item_id', $itemId);
-            }
+            } 
+            // else {
+            //     $query->whereHas('bom', function ($subQuery) {
+            //         $subQuery->whereIn('production_type', ['In-house'])
+            //             ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+            //     });
+            // }
             $query->where('store_id', $storeId);
             if($soSeriesId) {
                 $query->whereHas('so', function ($soQuery) use ($soSeriesId) {
@@ -1562,10 +1589,25 @@ class MoController extends Controller
         $rowCount = intval($request->rowCount) ? intval($request->rowCount) + 1  : 1;
         $ids = json_decode($request->ids,true) ?? [];
         $pwoItems = PwoSoMapping::whereIn('id', $ids)->get(); 
+        $itemId = $request->item_id ?? null;
+        $bom = Bom::withDefaultGroupCompanyOrg()
+            ->where('item_id', $itemId)
+            ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->first();
+        $machines = collect();
+        if($bom) {
+            $machines = $bom?->productionRoute?->machines()
+            ->withDefaultGroupCompanyOrg()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(); 
+        }
+
         $html = view('mfgOrder.partials.mo-item-pull', [
             'pwoItems' => $pwoItems,
             'is_pull' => true,
-            'rowCount' => $rowCount
+            'rowCount' => $rowCount,
+            'machines' => $machines
             ])->render();
         return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
@@ -1806,5 +1848,46 @@ class MoController extends Controller
         $sheet = $moQty / $machineDetail->no_of_pairs;
         $sheet = ceil($sheet);
         return response()->json(['data' => ['sheet' => $sheet], 'status' => 200, 'message' => "fetched!"]);
+    }
+
+    // Check bom inhouse
+    public function checkBomInhouse(Request $request)
+    {
+        $itemId = $request->item_id ?? null;
+        $item = Item::find($itemId);
+        if (!$item) {
+            return response()->json([
+                'data' => ['is_bom' => false],
+                'status' => 404,
+                'message' => 'Item not found'
+            ], 404);
+        }
+
+        $bomExists = Bom::withDefaultGroupCompanyOrg()
+            ->where('item_id', $item->id)
+            ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            ->exists();
+
+        if(!$bomExists) {
+            return response()->json([
+                'data' => ['is_bom' => false],
+                'status' => 422,
+                'message' => 'Bom not exist!'
+            ]);
+        }
+
+        $bomExists = Bom::withDefaultGroupCompanyOrg()
+        ->where('item_id', $item->id)
+        ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
+        ->whereIn('production_type', ['In-house'])
+        ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+        ->exists();
+
+        return response()->json([
+            'data' => ['is_bom' => $bomExists],
+            'status' => 200,
+            'message' => $bomExists ? 'Fetched!' : "Only products with production type In-house are allowed."
+        ]);
     }
 }

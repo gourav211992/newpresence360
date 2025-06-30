@@ -30,6 +30,7 @@ use App\Models\ErpSoItemBom;
 use App\Models\Unit;
 use App\Models\Vendor;
 use App\Models\Attribute;
+use App\Models\ItemAttribute;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
@@ -842,17 +843,16 @@ class PiController extends Controller
             $alUom = $item->alternateUOMs()->where('uom_id', $uomId)->first();
             $qty = $alUom?->conversion_to_inventory * $qty;
         }
-
         $specifications = $item->specifications()->whereNotNull('value')->get();
-
         $remark = $request->remark ?? null;
         $piItemIds = $request->pi_item_id ? [$request->pi_item_id] : []; 
         $storeId = $request->store_id ?? null;
         $soId = $request->so_id ?? null; 
         $uniqueSoIds = PiItem::whereIn('id',$piItemIds)->whereNotNull('so_id')->pluck('so_id')->toArray();
-        $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item->uom_id, $storeId);
+        $inventoryStock = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttr, $item?->uom_id, $storeId);
+        $pendingPo = InventoryHelper::getPendingPo($item?->id, $item?->uom_id, $selectedAttr, $storeId);
         $html = view('procurement.pi.partials.comp-item-detail',compact('item','selectedAttr','remark','uomName','qty','specifications','inventoryStock'))->render();
-        return response()->json(['data' => ['html' => $html, 'inventoryStock' => $inventoryStock], 'status' => 200, 'message' => 'fetched.']);
+        return response()->json(['data' => ['html' => $html, 'inventoryStock' => $inventoryStock, 'pendingPo' => $pendingPo], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Edit Po

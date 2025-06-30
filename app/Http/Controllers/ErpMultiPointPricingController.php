@@ -74,7 +74,6 @@ class ErpMultiPointPricingController extends Controller
     }
 
     $query->orderByDesc('id');
-
     return DataTables::of($query)
         ->addIndexColumn()
 
@@ -130,7 +129,6 @@ class ErpMultiPointPricingController extends Controller
                     </div>';
         })
 
-        // Filter global search for virtual columns
         ->filterColumn('source', function ($query, $keyword) {
             $query->whereHas('sourceState', fn($q) => $q->where('name', 'like', "%$keyword%"))
                 ->orWhereHas('sourceCity', fn($q) => $q->where('name', 'like', "%$keyword%"));

@@ -54,6 +54,9 @@
     <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][avl_stock]" value="{{$pi_item->getAvlStockForPi()}}">
 </td>
 <td>
+    <input type="number" step="any" class="form-control mw-100 text-end disabled-input"  name="components[{{$rowCount}}][pending_po]" value="{{$pi_item?->pending_po}}">
+</td>
+<td>
     <input type="number" step="any" class="form-control mw-100 text-end"  name="components[{{$rowCount}}][adj_qty]" value="{{$pi_item?->adjusted_qty}}">
 </td>
 <td>

@@ -290,8 +290,16 @@ class JobOrderService
                 ->where('bom_id', $bom->id)
                 ->get();
         }
+        
         $insertData = [];
         foreach ($bomDetails as $bomDetail) {
+            $bomQty = 0;
+            if ($bomDetail instanceof PwoBomMapping) {
+                $bomQty = floatval($bomDetail?->bomDetail?->qty) ?? 0;
+            }
+            if ($bomDetail instanceof BomDetail) {
+                $bomQty = floatval($bomDetail?->qty) ?? 0;
+            }
             $attributes = self::normalizeBomAttributes($bomDetail->attributes);
             $insertData[] = [
                 'jo_id'           => $po->id,
@@ -303,8 +311,8 @@ class JobOrderService
                 'item_code'       => $bomDetail->item_code,
                 'attributes'      => json_encode($attributes),
                 'uom_id'          => $bomDetail->uom_id,
-                'bom_qty'         => (float) $bomDetail->qty,
-                'qty'             => (float) $joProduct->inventory_uom_qty * (float) $bomDetail->qty,
+                'bom_qty'         => (float) $bomQty,
+                'qty'             => (float) $joProduct->inventory_uom_qty * (float) $bomQty,
                 'station_id'      => $bomDetail->station_id,
                 'section_id'      => $bomDetail->section_id,
                 'sub_section_id'  => $bomDetail->sub_section_id,

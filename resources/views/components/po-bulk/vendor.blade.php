@@ -1,4 +1,4 @@
-<select class="form-select vendor-select" name="components[{{$rowCount}}][vendor_id]">
+<select class="form-select vendor-select" style="min-width: 150px" name="components[{{$rowCount}}][vendor_id]">
     @if ($defaultOption)
         <option value=""></option>
     @endif

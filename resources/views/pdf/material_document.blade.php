@@ -104,7 +104,7 @@
                         </tr>
                         <tr>
                             <td style="padding-top: 3px;">GSTIN NO:</td>
-                            <td style="padding-top: 3px;">{{@$organization->compliances->gstin_no}}</td>
+                            <td style="padding-top: 3px;">{{@$organization->gst_number}}</td>
                         </tr>
 
                         <tr>
@@ -122,7 +122,7 @@
                         <tr>
                             <td style="padding-top: 3px;">PAN NO:</td>
                             <td style="padding-top: 3px;">
-                                {{ @$organization?->pan_no }}
+                                {{ @$organization?->pan_number }}
                             </td>
                         </tr>
                         <!-- <tr>
