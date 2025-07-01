@@ -421,6 +421,7 @@
 
                                                                     @php $no = $index + 1;
                                                                     $totalAmount += $voucher['amount'];
+                                                                    dd($voucher);
                                                                     $totalExcAmount += $voucher['amount'];
                                                                     @endphp
 
@@ -481,12 +482,12 @@
                                                                                 </select>
 
                                                                                 <div class="ms-50 flex-shrink-0">
-                                                                                    <button type="button"
+                                                                                    {{-- <button type="button"
                                                                                         class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}"
                                                                                         style="font-size: 10px"
                                                                                         onclick="openInvoice({{ $no }}, {{ $voucher['voucher_id'] }}, {{ $voucher['item_id'] }}, {{ $voucher['settle_amt'] }})">
                                                                                         Invoice
-                                                                                    </button>
+                                                                                    </button> --}}
                                                                                 </div>
                                                                             </div>
                                                                         </td>
