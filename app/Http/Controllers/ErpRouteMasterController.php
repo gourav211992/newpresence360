@@ -29,15 +29,17 @@ class ErpRouteMasterController extends Controller
          $states = $selectedCountryId
         ? State::where('country_id', $selectedCountryId)->get()
         : collect();
+         $status = ConstantHelper::STATUS;
+         $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->get();
        
        return view('route-masters.index', compact(
-        'countries', 'states', 'selectedCountryId'));
+        'countries', 'states', 'selectedCountryId', 'routeMasters', 'status'));
     }
 
       public function getStatesByCountry(Request $request)
     {
         $countryId = $request->get('country_id');
-        dd($countryId);
+     
 
         if (!$countryId) {
             return response()->json([
@@ -56,7 +58,7 @@ class ErpRouteMasterController extends Controller
             'data' => $states
         ]);
     }
-          public function getCityByState(Request $request)
+ public function getCitiesByState(Request $request)
     {
         $stateId = $request->get('state_id');
 
@@ -122,6 +124,7 @@ class ErpRouteMasterController extends Controller
     public function deleteMultiple(Request $request)
     {
         $ids = $request->input('ids', []);
+      
 
         if (empty($ids)) {
             return response()->json([
@@ -131,7 +134,7 @@ class ErpRouteMasterController extends Controller
         }
 
         try {
-            ErpVehicleType::whereIn('id', $ids)->delete();
+            ErpRouteMaster::whereIn('id', $ids)->delete();
 
             return response()->json([
                 'status' => true,

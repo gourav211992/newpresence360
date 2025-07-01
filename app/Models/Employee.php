@@ -131,7 +131,7 @@ class Employee extends Authenticatable
         'company_pf_code_id',
         'reason_id',
         'inactivation_date',
-        'configuration',
+        'configuration'
     ];
 
     // protected $appends = [

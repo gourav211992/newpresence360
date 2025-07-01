@@ -47,10 +47,8 @@ class ErpVehicleController extends Controller
                 $vehicles->where('lorry_no', 'like', '%' . $request->lorry_no . '%');
             }
 
-             if ($request->filled('vehicle_type')) {
-                $vehicles->whereHas('vehicleType', function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->vehicle_type . '%');
-                });
+            if ($request->filled('vehicle_type')) {
+                $vehicles->where('vehicle_type_id', $request->vehicle_type); 
             }
 
             if ($request->filled('chassis_no')) {
@@ -82,7 +80,7 @@ class ErpVehicleController extends Controller
             }
 
             if ($request->filled('fuel_type')) {
-                $vehicles->where('fuel_type', 'like', '%' . $request->fuel_type . '%');
+                $vehicles->where('fuel_type',  $request->fuel_type);
             }
 
             if ($request->filled('purchase_date')) {
@@ -90,13 +88,16 @@ class ErpVehicleController extends Controller
             }
 
             if ($request->filled('ownership')) {
-                $vehicles->where('ownership', 'like', '%' . $request->ownership . '%');
+                $vehicles->where('ownership',  $request->ownership);
             }
 
+           if ($request->filled('status')) {
+                $vehicles->where('status', $request->status);
+            }
+
+
             if ($request->filled('driver_name')) {
-                $vehicles->whereHas('driver', function ($q) use ($request) {
-                    $q->where('name', 'like', '%' . $request->driver_name . '%');
-                });
+                $vehicles->where('driver_id', $request->driver_name);
             }
 
             return DataTables::of($vehicles)

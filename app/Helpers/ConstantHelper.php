@@ -1048,10 +1048,10 @@ class ConstantHelper
     ];
 
      public const FUEL_TYPES = [
-        'diesel'   => 'Diesel',
-        'petrol'   => 'Petrol',
+        'Diesel'   => 'Diesel',
+        'Petrol'   => 'Petrol',
         'CNG'      => 'CNG',
-        'electric' => 'Electric',
+        'Electric' => 'Electric',
     ];
 
       public const OWNERSHIP = [

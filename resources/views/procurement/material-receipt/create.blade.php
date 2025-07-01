@@ -1261,13 +1261,13 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            if(currentProcessType != null)
+            if(currentProcessType && currentProcessType != null)
             {
                 rowCount = tableRowCount;
             }
 
             let mrn_detail_id = "";
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${tableRowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {

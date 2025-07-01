@@ -103,6 +103,10 @@
                                             <option value="unconfirmed_stock">Unconfirmed</option>
                                         </select>
                                     </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <button type="button" class="btn btn-secondary" onclick="toggleFilterSidebar()">Cancel</button>
+                                        <button type="button" class="btn btn-primary" id="applyFiltersBtn">Apply</button>
+                                    </div>
                                 </form>
                             </div>
 
@@ -403,6 +407,39 @@
                 });
             }
 
+            $('#applyFiltersBtn').on('click', function () {
+                let filterData = {};
+
+                const itemId = $('#item').attr('data-id');
+                if (itemId) filterData.item = itemId;
+
+                const storeId = $('#store_id').val();
+                if (storeId) filterData.store_id = storeId;
+
+                const subStoreId = $('#sub_store_id').val();
+                if (subStoreId) filterData.sub_store_id = subStoreId;
+
+                const bookTypeId = $('#book_type_id').val();
+                if (bookTypeId) filterData.book_type_id = bookTypeId;
+
+                const typeOfStockId = $('#type_of_stock_id').val();
+                if (typeOfStockId) filterData.type_of_stock_id = typeOfStockId;
+
+                const stockType = $('#stock_type').val();
+                if (stockType) filterData.stock_type = stockType;
+
+                // Get attribute data
+                filterData.attributes = $('.custnewpo-detail select, .custnewpo-detail input')
+                    .map((_, item) => ({
+                        groupId: $(item).data('attr-group-id'),
+                        val: $(item).val()
+                    }))
+                    .get();
+
+                fetchPurchaseOrders(filterData, startDate, endDate);
+                $('#filterSidebar').css('right', '-300px');
+            });
+
             function formatDate(dateStr) {
                 const date = new Date(dateStr);
                 return date.toLocaleDateString("en-GB");
@@ -612,12 +649,12 @@
                 });
             }
             // Attach change events to filters
-            handleFilterChange('#item', 'item');
-            handleFilterChange('#store_id', 'store_id');
-            handleFilterChange('#sub_store_id', 'sub_store_id');
-            handleFilterChange('#book_type_id', 'book_type_id');
-            handleFilterChange('#type_of_stock_id', 'type_of_stock_id');
-            handleFilterChange('#stock_type', 'stock_type');
+            // handleFilterChange('#item', 'item');
+            // handleFilterChange('#store_id', 'store_id');
+            // handleFilterChange('#sub_store_id', 'sub_store_id');
+            // handleFilterChange('#book_type_id', 'book_type_id');
+            // handleFilterChange('#type_of_stock_id', 'type_of_stock_id');
+            // handleFilterChange('#stock_type', 'stock_type');
             $('#attribute-button').click(function() {
                 filterData.attributes = $('.custnewpo-detail select, .custnewpo-detail input')
                     .map((_, item) => ({
@@ -625,7 +662,7 @@
                         val: $(item).val()
                     }))
                     .get();
-                updateFilterAndFetch();
+                // updateFilterAndFetch();
             });
             async function fetchPurchaseOrders(filterData = {}, startDate, endDate) {
                 try {
@@ -695,7 +732,7 @@
                 let itemValue = $("#item").attr('data-id');
                 getItemAttribute(itemValue);
                 $('.attributeBtn').show();
-                updateFilterAndFetch();
+                // updateFilterAndFetch();
             });
 
             function checkAttribute(itemValue) {

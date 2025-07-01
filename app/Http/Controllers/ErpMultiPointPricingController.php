@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\ErpRouteMaster;
 use App\Models\Organization;
 
 class ErpMultiPointPricingController extends Controller
@@ -31,39 +32,26 @@ class ErpMultiPointPricingController extends Controller
     $countryId = optional($organization->addresses->first())->country_id;
     $states = State::where('country_id', $countryId)->get();
     $status = ConstantHelper::STATUS;
-    $customers = Customer::withDefaultGroupCompanyOrg()->get();
+    $customers = Customer::withDefaultGroupCompanyOrg()->where('status','active')->get();
+    $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
     $multiPoints = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()->get();
 
-   if ($request->ajax()) {
+if ($request->ajax()) {
     $query = ErpLogisticsMultiFixedPricing::with([
-        'sourceState', 'sourceCity',
-        'destinationState', 'destinationCity',
-        'customer', 'locations.city'
+        'sourceRoute', 'destinationRoute',
+        'customer', 'locations.route'
     ])->withDefaultGroupCompanyOrg();
 
     // Filters
-    if($request->filled('source_state_name')) {
-    $query->whereHas('sourceState', function ($q) use ($request) {
-        $q->on('mysql_master') 
-          ->where('name', 'like', '%' . $request->source_state_name . '%');
-    });
-}
-
-    if ($request->filled('source_city_name')) {
-        $query->whereHas('sourceCity', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->source_city_name . '%');
+    if ($request->filled('source_route_name')) {
+        $query->whereHas('sourceRoute', function ($q) use ($request) {
+            $q->where('name', 'like', '%' . $request->source_route_name . '%');
         });
     }
 
-    if ($request->filled('destination_state_name')) {
-        $query->whereHas('destinationState', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->destination_state_name . '%');
-        });
-    }
-
-    if ($request->filled('destination_city_name')) {
-        $query->whereHas('destinationCity', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->destination_city_name . '%');
+    if ($request->filled('destination_route_name')) {
+        $query->whereHas('destinationRoute', function ($q) use ($request) {
+            $q->where('name', 'like', '%' . $request->destination_route_name . '%');
         });
     }
 
@@ -74,28 +62,25 @@ class ErpMultiPointPricingController extends Controller
     }
 
     $query->orderByDesc('id');
+
     return DataTables::of($query)
         ->addIndexColumn()
 
-        // Render custom columns
+        // Render columns
         ->addColumn('source', function ($row) {
-            $state = optional($row->sourceState)->name;
-            $city = optional($row->sourceCity)->name;
-            return $city && $state ? "$city ($state)" : 'N/A';
+            return optional($row->sourceRoute)->name ?? 'N/A';
         })
         ->addColumn('destination', function ($row) {
-            $state = optional($row->destinationState)->name;
-            $city = optional($row->destinationCity)->name;
-            return $city && $state ? "$city ($state)" : 'N/A';
+            return optional($row->destinationRoute)->name ?? 'N/A';
         })
         ->addColumn('customer', function ($row) {
             return optional($row->customer)->company_name ?? '-';
         })
-        ->addColumn('locations', function ($row) {
+       ->addColumn('locations', function ($row) {
             $html = '';
             foreach ($row->locations->take(2) as $location) {
                 $html .= '<span class="badge rounded-pill badge-light-primary">'
-                    . optional($location->city)->name . ': ' . number_format($location->amount, 2) . '</span> ';
+                    . optional($location->route)->name . ': ' . number_format($location->amount, 2) . '</span> ';
             }
             if ($row->locations->count() > 2) {
                 $html .= '<span class="badge rounded-pill badge-light-primary">+'
@@ -103,6 +88,7 @@ class ErpMultiPointPricingController extends Controller
             }
             return $html;
         })
+
         ->addColumn('status', function ($row) {
             $colors = [
                 'active' => 'badge-light-success',
@@ -129,16 +115,21 @@ class ErpMultiPointPricingController extends Controller
                     </div>';
         })
 
+        // Updated search columns
         ->filterColumn('source', function ($query, $keyword) {
-            $query->whereHas('sourceState', fn($q) => $q->where('name', 'like', "%$keyword%"))
-                ->orWhereHas('sourceCity', fn($q) => $q->where('name', 'like', "%$keyword%"));
+            $query->whereHas('sourceRoute', function ($q) use ($keyword) {
+                $q->where('name', 'like', "%$keyword%");
+            });
         })
         ->filterColumn('destination', function ($query, $keyword) {
-            $query->whereHas('destinationState', fn($q) => $q->where('name', 'like', "%$keyword%"))
-                ->orWhereHas('destinationCity', fn($q) => $q->where('name', 'like', "%$keyword%"));
+            $query->whereHas('destinationRoute', function ($q) use ($keyword) {
+                $q->where('name', 'like', "%$keyword%");
+            });
         })
         ->filterColumn('customer', function ($query, $keyword) {
-            $query->whereHas('customer', fn($q) => $q->where('company_name', 'like', "%$keyword%"));
+            $query->whereHas('customer', function ($q) use ($keyword) {
+                $q->where('company_name', 'like', "%$keyword%");
+            });
         })
 
         ->rawColumns(['locations', 'status', 'action'])
@@ -147,7 +138,8 @@ class ErpMultiPointPricingController extends Controller
 
 
 
-    return view('multi-point-pricing.index', compact('customers', 'states', 'multiPoints'));
+
+    return view('multi-point-pricing.index', compact('customers', 'states', 'multiPoints', 'routeMasters'));
   }
 
   public function store(MultiPointPricingRequest $request)
@@ -162,7 +154,7 @@ class ErpMultiPointPricingController extends Controller
     
         foreach ($request->multi_point as $index => $point) {
             if ($insertAll || in_array($index, $selectedIndexes)) {
-            if (empty($point['source_state_id'])) {
+            if (empty($point['source_route_id'])) {
                 continue;
             }
 
@@ -170,8 +162,7 @@ class ErpMultiPointPricingController extends Controller
                     'organization_id'       => $organization->id,
                     'group_id'              => $organization->group_id,
                     'company_id'            => $user->company_id ?? null,
-                    'source_state_id'       => $point['source_state_id'],
-                    'source_city_id'        => $point['source_city_id'],
+                    'source_route_id'       => $point['source_route_id'],
                     'free_point'            => $point['free_point'],
                     'amount'                => $point['amount'],
                     'customer_id'           => $point['customer_id'] ?? null,

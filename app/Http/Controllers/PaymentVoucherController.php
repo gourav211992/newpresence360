@@ -136,7 +136,6 @@ class PaymentVoucherController extends Controller
         $ids = [];
         $group_id = $ledger_group->getAllChildIds();
         $group_id[] = $ledger_group->id;
-        // dd($group_id);
 
        // Determine relation and alias
         $relation = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
@@ -237,7 +236,6 @@ class PaymentVoucherController extends Controller
             $cost_center_ids = null;
             if (!empty($request->cost_center_id)) {
                 $cost_center_ids = $request->cost_center_id ?? null;
-                // dd($cost_center_ids);
             } elseif (!empty($request->cost_group_id)) {
                 $cost_group = CostGroup::withDefaultGroupCompanyOrg()
                     ->with('costCenters')
@@ -246,7 +244,6 @@ class PaymentVoucherController extends Controller
                     ->first();
 
                 $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
-                            // dd($cost_center_ids);
             }
         // Retrieve vouchers based on organization_id and include series with levels
         $data = PaymentVoucher::withDefaultGroupCompanyOrg()
@@ -411,7 +408,6 @@ class PaymentVoucherController extends Controller
 
     public function store(Request $request)
     {
-        // dd($request->all());
         $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> date);
         if (!isset($numberPatternData)) {
             return response()->json([
@@ -431,7 +427,6 @@ class PaymentVoucherController extends Controller
             ->route($request->document_type . '.create', ['token' => $selected_token])
             ->withErrors(['voucher_no' => $request->voucher_no . ' Voucher No. Already Exist!']);
         }
-        // dd($request->all(),$numberPatternData);
 // if($request->reference_no!="" && $request->payment_type === "Bank"){
 // $ref = PaymentVoucher::where('reference_no', $request->reference_no)->exists();
 
@@ -1413,7 +1408,7 @@ class PaymentVoucherController extends Controller
         ]);
         $data = VoucherController::getLedgerVouchers($request);
         $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();
-        return bcsub($voucher->balance, $settle, 2);
+        return \bcsub($voucher->balance, $settle, 2);
     }
     static function getVoucherBalance2($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
     {

@@ -57,29 +57,11 @@
                                                             <label class="form-label">Source <span class="text-danger">*</span></label>  
                                                         </div>  
   
-                                                        <div class="col-md-3 mb-sm-0 mb-1"> 
-                                                        <input type="text"
-                                                                name="source_state_name"
-                                                                class="form-control mw-100 state-autocomplete"
-                                                                placeholder="Start typing source state..."
-                                                                data-type="source" />
-                                                            <input type="hidden"
-                                                                name="source_state_id"
-                                                                class="state-id"
-                                                                data-type="source" />
-                                                        
-                                                        </div>
-														<div class="col-md-3"> 
-                                                            <input type="text"
-                                                                name="source_city_name"
-                                                                class="form-control mw-100 city-autocomplete"
-                                                                placeholder="Start typing source city..."
-                                                                data-type="source" />
-                                                            <input type="hidden"
-                                                                name="source_city_id"
-                                                                class="city-id"
-                                                                data-type="source" />
-                                                          
+                                                        <div class="col-md-4 mb-sm-0 mb-1"> 
+                                                        <input type="text"name="source_route_name"class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typing  locations..."
+                                                                        data-type="source" />
+                                                        <input type="hidden" name="source_route_id"class="route-master-id" data-type="source" />
                                                         </div>
                                                      </div>
                                                     
@@ -88,28 +70,12 @@
                                                             <label class="form-label">Destination <span class="text-danger">*</span></label>  
                                                         </div>  
   
-                                                        <div class="col-md-3 mb-sm-0 mb-1"> 
-                                                             <input type="text"
-                                                                name="destination_state_name"
-                                                                class="form-control mw-100 state-autocomplete"
-                                                                placeholder="Start typing destination state..."
-                                                                data-type="destination" />
-                                                            <input type="hidden"
-                                                                name="destination_state_id"
-                                                                class="state-id"
-                                                                data-type="destination" />
+                                                        <div class="col-md-4 mb-sm-0 mb-1"> 
+                                                        <input type="text" name="destination_route_name" class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typing  locations."
+                                                                        data-type="destination" />
+                                                        <input type="hidden" name="destination_route_id" class="route-master-id" data-type="destination" />
                                                             
-                                                        </div>
-														<div class="col-md-3"> 
-                                                               <input type="text"
-                                                                name="destination_city_name"
-                                                                class="form-control mw-100 city-autocomplete"
-                                                                placeholder="Start typing destination city..."
-                                                                data-type="destination" />
-                                                            <input type="hidden"
-                                                                name="destination_city_id"
-                                                                class="city-id"
-                                                                data-type="destination" />
                                                         </div>
                                                      </div>
                                                     
@@ -118,7 +84,7 @@
                                                             <label class="form-label">Vehicle Type  <span class="text-danger">*</span></label>  
                                                         </div>  
   
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-4"> 
                                                              <select name="vehicle_type_id[]" class="form-control mw-100 select2" multiple>
                                                                 <option value="">Select Vehicle Type</option>
                                                                 @foreach($vehicleTypes as $vehicleType)
@@ -133,7 +99,7 @@
                                                             <label class="form-label">Customer </label>  
                                                         </div>  
   
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-4"> 
                                                               <input type="text"
                                                                     name="customer_name"
                                                                     class="form-control mw-100 customer-autocomplete"
@@ -187,37 +153,25 @@
                                                             <thead>
                                                                  <tr>
                                                                     <th>#</th>
-                                                                    <th width="200">State<span class="text-danger">*</span></th>
-                                                                    <th width="200">City <span class="text-danger">*</span></th>
-                                                                    <th width="200">Rate <span class="text-danger">*</span></th>
+                                                                    <th>Location<span class="text-danger">*</span></th>
+                                                                    <th>Rate <span class="text-danger">*</span></th>
                                                                     <th>Action</th> 
                                                                   </tr>
                                                                 </thead>
                                                                 <tbody id="location-rows"> 
                                                                      <tr>
                                                                         <td>1</td>
-                                                                        <td>
-                                                                        <input type="text"
-                                                                        name="multi_fixed_pricing[0][location_state_name]"
-                                                                        class="form-control mw-100 state-autocomplete"
-                                                                        placeholder="Start typing  state..."
-                                                                        data-type="location" />
+                                                                           <td>
+                                                                    <input type="text"
+                                                                        name="multi_fixed_pricing[0][location_route_name]"
+                                                                        class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typing  locations..."
+                                                                        data-type="source" />
                                                                     <input type="hidden"
-                                                                        name="multi_fixed_pricing[0][location_state_id]"
-                                                                        class="state-id"
-                                                                        data-type="location" />
-                                                                      </td>
-                                                                        <td>
-                                                                     <input type="text"
-                                                                        name="multi_fixed_pricing[0][location_city_name]"
-                                                                        class="form-control mw-100 city-autocomplete"
-                                                                        placeholder="Start typing  city..."
-                                                                        data-type="location" />
-                                                                    <input type="hidden"
-                                                                        name="multi_fixed_pricing[0][location_city_id]"
-                                                                        class="city-id"
-                                                                        data-type="location" />
-                                                                      </td>
+                                                                        name="multi_fixed_pricing[0][location_route_id]"
+                                                                        class="route-master-id"
+                                                                        data-type="source" />
+                                                                    </td>
                                                                         <td>
                                                                             <input type="text" name="multi_fixed_pricing[0][amount]" class="form-control mw-100 amount">
                                                                         </td>
@@ -253,183 +207,116 @@
 @endsection
 @section('scripts')
 <script>
-const states = [
-    @foreach($states as $state)
-        { label: "{{ $state->name }}", value: "{{ $state->name }}", id: {{ $state->id }} },
+const routeMasters = [
+    @foreach($routeMasters as $rm)
+        {
+            label: "{{ $rm->name }}",
+            value: "{{ $rm->name }}",
+            id: {{ $rm->id }}
+        },
     @endforeach
 ];
 
-const cityCache = {}; 
-
-$(document).ready(function () {
-
-    // State Autocomplete
-  $(document).on('focus', '.state-autocomplete', function () {
+$(document).on('focus', '.route-master-autocomplete', function () {
     const $input = $(this);
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: states,
+            source: routeMasters,
             minLength: 0,
             select: function (event, ui) {
                 $input.val(ui.item.label);
 
-                // Detect if inside a table row
-                const $row = $input.closest('tr');
+                // Try to find the matching hidden input by data-type
+                let $container = $input.closest('tr').length
+                    ? $input.closest('tr')        // for multi-row (table)
+                    : $input.closest('.row');     // for single-row inputs
 
-                if ($row.length) {
-                    // Dynamic table row: update only within this row
-                    $row.find('.state-id').val(ui.item.id);
-                    $row.find('.city-autocomplete').val('');
-                    $row.find('.city-id').val('');
-
-                    const $cityInput = $row.find('.city-autocomplete');
-                    loadCities(ui.item.id, null, function () {
-                        applyCityAutocomplete(ui.item.id, null, $cityInput);
-                    });
-
-                } else {
-                    // Static section (source/destination): use data-type
-                    const type = $input.data('type');
-                    $(`.state-id[data-type="${type}"]`).val(ui.item.id);
-                    $(`.city-autocomplete[data-type="${type}"]`).val('');
-                    $(`.city-id[data-type="${type}"]`).val('');
-
-                    const $cityInput = $(`.city-autocomplete[data-type="${type}"]`);
-                    loadCities(ui.item.id, type, function () {
-                        applyCityAutocomplete(ui.item.id, type, $cityInput);
-                    });
-                }
+                $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
 
                 return false;
+            },
+            change: function (event, ui) {
+                if (!ui.item) {
+                    // If item not selected, clear hidden ID
+                    let $container = $input.closest('tr').length
+                        ? $input.closest('tr')
+                        : $input.closest('.row');
+
+                    $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                }
             }
         }).focus(function () {
-            $(this).autocomplete("search", "");
+            $(this).autocomplete('search', '');
         });
     }
 });
-
-
-
-    // City Autocomplete (dynamically binds based on selected state)
-  $(document).on('focus', '.city-autocomplete', function () {
-    const $input = $(this);
-    const $row = $input.closest('tr');
-
-    let stateId;
-
-    if ($row.length) {
-        // From dynamic row
-        stateId = $row.find('.state-id').val();
-    } else {
-        // From static field using data-type
-        const type = $input.data('type');
-        stateId = $(`.state-id[data-type="${type}"]`).val();
-    }
-
-    if (!stateId) {
-        $input.autocomplete({ source: [] });
-        return;
-    }
-
-    if (cityCache[stateId]) {
-        applyCityAutocomplete(stateId, null, $input);
-    } else {
-        loadCities(stateId, null, function () {
-            applyCityAutocomplete(stateId, null, $input);
-        });
-    }
-});
-
-
-});
-
-// Load cities via AJAX
-function loadCities(stateId, type, callback = null) {
-    $.ajax({
-        url: "{{ route('logistics.multi-point-fixed.get-cities-by-state') }}",
-        method: "GET",
-        data: { state_id: stateId },
-        success: function (response) {
-            if (response.status) {
-                cityCache[stateId] = response.data.map(city => ({
-                    label: city.name,
-                    value: city.name,
-                    id: city.id
-                }));
-                if (callback) callback();
-            }
-        },
-        error: function () {
-            alert('Error loading cities');
-        }
-    });
-}
-
-function applyCityAutocomplete(stateId, type, $input) {
-    const cities = cityCache[stateId] || [];
-
-    $input.autocomplete({
-        source: cities,
-        minLength: 0,
-        select: function (event, ui) {
-            $input.val(ui.item.label);
-            const $row = $input.closest('tr');
-
-            if ($row.length) {
-                $row.find('.city-id').val(ui.item.id);
-            } else {
-                const dataType = $input.data('type');
-                $(`.city-id[data-type="${dataType}"]`).val(ui.item.id);
-            }
-
-            return false;
-        }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-}
-
-
 
 //add new row
 
 $(document).on('click', '.add-row', function () {
-    const $lastRow = $('#location-rows tr:last');
-    const stateId = $lastRow.find('.state-id').val();
-    const cityId = $lastRow.find('.city-id').val();
-    const amount = $lastRow.find('.amount').val();
+    const $tbody = $('#location-rows');
+    let incomplete = false;
 
-    if (!stateId || !cityId || !amount || parseFloat(amount) <= 0) {
+    $tbody.find('tr').each(function () {
+        const $row = $(this);
+        const sourceInput = $row.find('.route-master-autocomplete[data-type="source"]');
+        const amountInput = $row.find('input[name*="[amount]"]');
+
+        if (
+            (sourceInput.length && sourceInput.val().trim() === '') ||
+            (amountInput.length && amountInput.val().trim() === '')
+        ) {
+            incomplete = true;
+            return false; // break out of .each loop
+        }
+    });
+
+    if (incomplete) {
         Swal.fire({
             icon: 'warning',
-            title: 'Missing Data',
-            text: 'Please fill state, city, and amount before adding a new row.'
+            title: 'Incomplete Row',
+            text: 'Please fill all required fields in the existing row(s) before adding a new one.',
+            confirmButtonText: 'OK'
         });
         return;
     }
 
-    const rowIndex = $('#location-rows tr').length;
+    const rowIndex = $tbody.find('tr').length;
 
     const newRow = `
         <tr>
             <td>${rowIndex + 1}</td>
             <td>
-                <input type="text" name="multi_fixed_pricing[${rowIndex}][location_state_name]" class="form-control mw-100 state-autocomplete" placeholder="Start typing state..." />
-                <input type="hidden" name="multi_fixed_pricing[${rowIndex}][location_state_id]" class="state-id" />
+                <input type="hidden" name="multi_fixed_pricing[${rowIndex}][id]" value="">
+                <input type="text"
+                    name="multi_fixed_pricing[${rowIndex}][location_route_name]"
+                    class="form-control mw-100 route-master-autocomplete"
+                    placeholder="Start typing locations..."
+                    data-type="source" />
+                <input type="hidden"
+                    name="multi_fixed_pricing[${rowIndex}][location_route_id]"
+                    class="route-master-id"
+                    data-type="source" />
             </td>
             <td>
-                <input type="text" name="multi_fixed_pricing[${rowIndex}][location_city_name]" class="form-control mw-100 city-autocomplete" placeholder="Start typing city..." />
-                <input type="hidden" name="multi_fixed_pricing[${rowIndex}][location_city_id]" class="city-id" />
+                <input type="text"
+                    name="multi_fixed_pricing[${rowIndex}][amount]"
+                    class="form-control mw-100 amount"
+                    placeholder="Enter Amount" />
             </td>
-            <td><input type="text" name="multi_fixed_pricing[${rowIndex}][amount]"  class="form-control mw-100 amount" placeholder="Enter Amount"/></td>
-            <td><a href="javascript:void(0);" class="delete-row text-danger"><i data-feather="trash-2"></i></a></td>
+            <td>
+                <a href="javascript:void(0);" class="delete-row text-danger">
+                    <i data-feather="trash-2"></i>
+                </a>
+            </td>
         </tr>
     `;
 
-    $('#location-rows').append(newRow);
-    feather.replace();
+    $tbody.append(newRow);
+    feather.replace(); // re-initialize icons
 });
+
 
 
 $(document).on('click', '.delete-row', function () {

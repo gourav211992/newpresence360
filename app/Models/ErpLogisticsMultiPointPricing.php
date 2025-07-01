@@ -17,32 +17,21 @@ class ErpLogisticsMultiPointPricing extends Model
         'organization_id',
         'group_id',
         'company_id',
-        'source_state_id',
-        'source_city_id',
+        'source_route_id',
         'free_point',
         'amount',
         'customer_id',
         'status',
     ];
 
-  public function sourceState()
+     public function sourceRoute()
     {
-        return $this->belongsTo(State::class, 'source_state_id');
+        return $this->belongsTo(ErpRouteMaster::class, 'source_route_id');
     }
 
-    public function destinationState()
+    public function destinationRoute()
     {
-        return $this->belongsTo(State::class, 'destination_state_id');
-    }
-
-    public function sourceCity()
-    {
-        return $this->belongsTo(City::class, 'source_city_id');
-    }
-
-    public function destinationCity()
-    {
-        return $this->belongsTo(City::class, 'destination_city_id');
+        return $this->belongsTo(ErpRouteMaster::class, 'destination_route_id');
     }
 
      public function customer()

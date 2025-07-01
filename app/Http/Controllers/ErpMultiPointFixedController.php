@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\ErpRouteMaster;
 use App\Models\Organization;
 
 class ErpMultiPointFixedController extends Controller
@@ -33,9 +34,10 @@ class ErpMultiPointFixedController extends Controller
         $countryId = optional($organization->addresses->first())->country_id;
         $states = State::where('country_id',$countryId)->get();
         $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes','status'));
+        return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes','status', 'routeMasters'));
     }
 
       public function getCityByState(Request $request)
@@ -70,6 +72,7 @@ class ErpMultiPointFixedController extends Controller
     $states = State::where('country_id',$countryId)->get();
     $multiPricing = ErpLogisticsMultiFixedPricing::with('locations')->findOrFail($id);
     $customers = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
     $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
     return view('multi-point-pricing.fixed.edit', [
@@ -77,7 +80,8 @@ class ErpMultiPointFixedController extends Controller
         'vehicleTypes' => $vehicleTypes,
         'customers' => $customers,
         'states' => $states,
-        'status' => $status
+        'status' => $status,
+        'routeMasters' => $routeMasters
     ]);
 }
 
@@ -94,10 +98,8 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->organization_id       = $organization->id;
         $multiPricing->group_id              = $organization->group_id;
         $multiPricing->company_id            = $user->company_id ?? null;
-        $multiPricing->source_state_id       = $request->source_state_id;
-        $multiPricing->source_city_id        = $request->source_city_id;
-        $multiPricing->destination_state_id  = $request->destination_state_id;
-        $multiPricing->destination_city_id   = $request->destination_city_id;
+        $multiPricing->source_route_id       = $request->source_route_id;
+        $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id      = json_encode($request->vehicle_type_id); 
         $multiPricing->customer_id           = $request->customer_id;
         $multiPricing->status                = $request->status;
@@ -107,8 +109,7 @@ class ErpMultiPointFixedController extends Controller
         foreach ($request->multi_fixed_pricing as $location) {
             ErpLogisticsMultiFixedLocation::create([
                 'multi_fixed_pricing_id' => $multiPricing->id,
-                'state_id'   => $location['location_state_id'],
-                'city_id'    => $location['location_city_id'],
+                'location_route_id'   => $location['location_route_id'],
                 'amount'     => $location['amount'] ?? $location["'amount'"], 
             ]);
         }
@@ -143,10 +144,8 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->organization_id       = $organization->id;
         $multiPricing->group_id              = $organization->group_id;
         $multiPricing->company_id            = $user->company_id ?? null;
-        $multiPricing->source_state_id       = $request->source_state_id;
-        $multiPricing->source_city_id        = $request->source_city_id;
-        $multiPricing->destination_state_id  = $request->destination_state_id;
-        $multiPricing->destination_city_id   = $request->destination_city_id;
+        $multiPricing->source_route_id       = $request->source_route_id;
+        $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id       = json_encode($request->vehicle_type_id);
         $multiPricing->customer_id           = $request->customer_id;
         $multiPricing->status                = $request->status;
@@ -156,17 +155,15 @@ class ErpMultiPointFixedController extends Controller
 
         foreach ($request->multi_fixed_pricing as $location) {
             $amount = $location['amount'] ?? null;
-            $stateId = $location['location_state_id'] ?? null;
-            $cityId = $location['location_city_id'] ?? null;
+            $location_routeId = $location['location_route_id'] ?? null;
           
-            if (!$stateId && !$cityId && !$amount) {
+            if (!$location_routeId && !$amount) {
                 continue;
             }
 
             $data = [
                 'multi_fixed_pricing_id' => $multiPricing->id,
-                'state_id'               => $stateId,
-                'city_id'                => $cityId,
+                'location_route_id'      => $location_routeId,
                 'amount'                 => $amount,
             ];
 

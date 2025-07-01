@@ -33,14 +33,11 @@ class RouteMasterRequest extends FormRequest
                 'exists:mysql_master.states,id'
             ],
             'route_master.*.city_id'           => [
-                'nullable',
+                'required',
                 'integer',
                 'exists:mysql_master.cities,id'
             ],
-            'route_master.*.status'            => [
-                'required',
-                Rule::in(['active', 'inactive'])
-            ],
+            'route_master.*.status' => ['required', Rule::in(['active', 'inactive'])],
         ];
     }
 
@@ -63,6 +60,7 @@ class RouteMasterRequest extends FormRequest
             'route_master.*.state_id.integer'          => 'State selection is invalid.',
             'route_master.*.state_id.exists'           => 'Selected state does not exist.',
 
+            'route_master.*.city_id.required'         => 'City is required.',
             'route_master.*.city_id.integer'           => 'City selection is invalid.',
             'route_master.*.city_id.exists'            => 'Selected city does not exist.',
 

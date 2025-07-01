@@ -59,9 +59,9 @@
                                                                     <label class="form-check-label" for="select-all"></label>
                                                                 </div> 
                                                             </th>
-                                                            <th colspan="2">Source <span class="text-danger">*</span></th>
-                                                            <th colspan="2">Destination <span class="text-danger">*</span></th>
-                                                            <th width="100px">Distance (KM)</th>  
+                                                            <th >Source <span class="text-danger">*</span></th>
+                                                            <th >Destination <span class="text-danger">*</span></th>
+                                                            <th width="100px">Distance (KM) <span class="text-danger">*</span></th>  
                                                             <th width="300px">Vehicle Type <span class="text-danger">*</span></th>
                                                             <th width="100px">Freight (Rs) <span class="text-danger">*</span></th>  
                                                             <th width="300px">Customer</th>  
@@ -78,68 +78,40 @@
                                                                     </div>
 
                                                                 </td>
-                                                                <td width="150px">
+                                                                <td>
                                                                     <input type="hidden" name="freight_charges[{{ $rowIndex }}][id]" value="{{ $charges->id ?? '' }}">
                                                                    <input type="text"
-                                                                    name="freight_charges[{{ $rowIndex }}][source_state_name]"
-                                                                    class="form-control mw-100 state-autocomplete"
-                                                                    placeholder="Start typing source state..."
+                                                                    name="freight_charges[{{ $rowIndex }}][source_route_name]"
+                                                                    class="form-control mw-100 route-master-autocomplete"
+                                                                    placeholder="Start typing locations"
                                                                     data-type="source"
-                                                                    value="{{ optional($charges->sourceState)->name ?? '' }}" />
+                                                                    value="{{ optional($charges->sourceRoute)->name ?? '' }}" />
 
                                                                 <input type="hidden"
-                                                                    name="freight_charges[{{ $rowIndex }}][source_state_id]"
-                                                                    class="state-id"
+                                                                    name="freight_charges[{{ $rowIndex }}][source_route_id]"
+                                                                    class="route-master-id"
                                                                     data-type="source"
-                                                                    value="{{ $charges->source_state_id ?? '' }}" />
+                                                                    value="{{ $charges->source_route_id ?? '' }}" />
                                                                  </td>
-                                                                <td width="150px">
-                                                                    <input type="text"
-                                                                        name="freight_charges[{{ $rowIndex }}][source_city_name]"
-                                                                        class="form-control mw-100 city-autocomplete"
-                                                                        placeholder="Start typing source city..."
-                                                                        data-type="source"
-                                                                        value="{{ optional($charges->sourceCity)->name ?? '' }}" />
-
-                                                                    <input type="hidden"
-                                                                        name="freight_charges[{{ $rowIndex }}][source_city_id]"
-                                                                        class="city-id"
-                                                                        data-type="source"
-                                                                        value="{{ $charges->source_city_id ?? '' }}" />
-                                                                </td>
-                                                                <td width="150px">
+                                                               
+                                                                <td>
                                                                 <!-- Destination State Autocomplete -->
                                                                     <input type="text"
-                                                                        name="freight_charges[{{ $rowIndex }}][destination_state_name]"
-                                                                        class="form-control mw-100 state-autocomplete"
-                                                                        placeholder="Start typing destination state..."
+                                                                        name="freight_charges[{{ $rowIndex }}][destination_route_name]"
+                                                                        class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typin locations"
                                                                         data-type="destination"
-                                                                        value="{{ optional($charges->destinationState)->name ?? '' }}" />
+                                                                        value="{{ optional($charges->destinationRoute)->name ?? '' }}" />
 
                                                                     <input type="hidden"
-                                                                        name="freight_charges[{{ $rowIndex }}][destination_state_id]"
-                                                                        class="state-id"
+                                                                        name="freight_charges[{{ $rowIndex }}][destination_route_id]"
+                                                                        class="route-master-id"
                                                                         data-type="destination"
-                                                                        value="{{ $charges->destination_state_id ?? '' }}" />
+                                                                        value="{{ $charges->destination_route_id ?? '' }}" />
 
                                                                </td>
-                                                                <td width="150px">     
-                                                                 <!-- Destination City Autocomplete -->
-                                                                <input type="text"
-                                                                    name="freight_charges[{{ $rowIndex }}][destination_city_name]"
-                                                                    class="form-control mw-100 city-autocomplete"
-                                                                    placeholder="Start typing destination city..."
-                                                                    data-type="destination"
-                                                                    value="{{ optional($charges->destinationCity)->name ?? '' }}" />
-
-                                                                <input type="hidden"
-                                                                    name="freight_charges[{{ $rowIndex }}][destination_city_id]"
-                                                                    class="city-id"
-                                                                    data-type="destination"
-                                                                    value="{{ $charges->destination_city_id ?? '' }}" />
-
-                                                                </td>
-                                                                <td width="100px">
+                                                               
+                                                                <td>
                                                                     <input type="text" name="freight_charges[{{ $rowIndex }}][distance]" class="form-control mw-100" value="{{ $charges->distance ?? 0 }}">
                                                                 </td>
                                                                 <td>
@@ -184,59 +156,34 @@
                                                                 </td>
 
                                                                 {{-- Source State --}}
-                                                                <td width="150px">
+                                                                <td>
                                                                     <input type="text"
-                                                                        name="freight_charges[0][source_state_name]"
-                                                                        class="form-control mw-100 state-autocomplete"
-                                                                        placeholder="Start typing source state..."
+                                                                        name="freight_charges[0][source_route_name]"
+                                                                        class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typing  locations..."
                                                                         data-type="source" />
                                                                     <input type="hidden"
-                                                                        name="freight_charges[0][source_state_id]"
-                                                                        class="state-id"
-                                                                        data-type="source" />
-                                                                </td>
-
-                                                                {{-- Source City --}}
-                                                                <td width="150px">
-                                                                    <input type="text"
-                                                                        name="freight_charges[0][source_city_name]"
-                                                                        class="form-control mw-100 city-autocomplete"
-                                                                        placeholder="Start typing source city..."
-                                                                        data-type="source" />
-                                                                    <input type="hidden"
-                                                                        name="freight_charges[0][source_city_id]"
-                                                                        class="city-id"
+                                                                        name="freight_charges[0][source_route_id]"
+                                                                        class="route-master-id"
                                                                         data-type="source" />
                                                                 </td>
 
                                                                 {{-- Destination State --}}
-                                                                <td width="150px">
+                                                                <td>
                                                                     <input type="text"
-                                                                        name="freight_charges[0][destination_state_name]"
-                                                                        class="form-control mw-100 state-autocomplete"
-                                                                        placeholder="Start typing destination state..."
+                                                                        name="freight_charges[0][destination_route_name]"
+                                                                        class="form-control mw-100 route-master-autocomplete"
+                                                                        placeholder="Start typing locations."
                                                                         data-type="destination" />
                                                                     <input type="hidden"
-                                                                        name="freight_charges[0][destination_state_id]"
-                                                                        class="state-id"
+                                                                        name="freight_charges[0][destination_route_id]"
+                                                                        class="route-master-id"
                                                                         data-type="destination" />
                                                                 </td>
 
-                                                                {{-- Destination City --}}
-                                                                <td width="150px">
-                                                                    <input type="text"
-                                                                        name="freight_charges[0][destination_city_name]"
-                                                                        class="form-control mw-100 city-autocomplete"
-                                                                        placeholder="Start typing destination city..."
-                                                                        data-type="destination" />
-                                                                    <input type="hidden"
-                                                                        name="freight_charges[0][destination_city_id]"
-                                                                        class="city-id"
-                                                                        data-type="destination" />
-                                                                </td>
 
                                                                 {{-- Distance --}}
-                                                                <td width="100px">
+                                                                <td>
                                                                     <input type="text"
                                                                         name="freight_charges[0][distance]"
                                                                         class="form-control mw-100"
@@ -315,11 +262,10 @@
 
         existingRows.forEach(row => {
             const requiredFields = [
-                row.querySelector('.state-autocomplete[data-type="source"]'),
-                row.querySelector('.city-autocomplete[data-type="source"]'),
-                row.querySelector('.state-autocomplete[data-type="destination"]'),
-                row.querySelector('.city-autocomplete[data-type="destination"]'),
+                row.querySelector('.route-master-autocomplete[data-type="source"]'),
+                row.querySelector('.route-master-autocomplete[data-type="destination"]'),
                 row.querySelector('.vehicle-type-autocomplete'),
+                 row.querySelector('input[name*="[distance]"]'),
                 row.querySelector('input[name*="[amount]"]')
             ];
 
@@ -354,52 +300,29 @@
                 </div>
             </td>
 
-            <td width="150px">
+            <td>
                 <input type="hidden" name="freight_charges[${newIndex}][id]" value="">
                 <input type="text"
-                    name="freight_charges[${newIndex}][source_state_name]"
-                    class="form-control mw-100 state-autocomplete"
-                    placeholder="Start typing source state..."
+                    name="freight_charges[${newIndex}][source_route_name]"
+                    class="form-control mw-100 route-master-autocomplete"
+                    placeholder="Start typing  locations..."
                     data-type="source" />
                 <input type="hidden"
-                    name="freight_charges[${newIndex}][source_state_id]"
-                    class="state-id"
-                    data-type="source" />
-            </td>
-
-            <td width="150px">
-                <input type="text"
-                    name="freight_charges[${newIndex}][source_city_name]"
-                    class="form-control mw-100 city-autocomplete"
-                    placeholder="Start typing source city..."
-                    data-type="source" />
-                <input type="hidden"
-                    name="freight_charges[${newIndex}][source_city_id]"
-                    class="city-id"
+                    name="freight_charges[${newIndex}][source_route_id]"
+                    class="route-master-id"
                     data-type="source" />
             </td>
 
-            <td width="150px">
-                <input type="text"
-                    name="freight_charges[${newIndex}][destination_state_name]"
-                    class="form-control mw-100 state-autocomplete"
-                    placeholder="Start typing destination state..."
-                    data-type="destination" />
-                <input type="hidden"
-                    name="freight_charges[${newIndex}][destination_state_id]"
-                    class="state-id"
-                    data-type="destination" />
-            </td>
 
-            <td width="150px">
+            <td>
                 <input type="text"
-                    name="freight_charges[${newIndex}][destination_city_name]"
-                    class="form-control mw-100 city-autocomplete"
-                    placeholder="Start typing destination city..."
+                    name="freight_charges[${newIndex}][destination_route_name]"
+                    class="form-control mw-100 route-master-autocomplete"
+                    placeholder="Start typing  locations..."
                     data-type="destination" />
                 <input type="hidden"
-                    name="freight_charges[${newIndex}][destination_city_id]"
-                    class="city-id"
+                    name="freight_charges[${newIndex}][destination_route_id]"
+                    class="route-master-id"
                     data-type="destination" />
             </td>
 
@@ -445,6 +368,25 @@
         // ✅ Reinitialize any needed JS (autocomplete etc.)
         if (typeof feather !== 'undefined') feather.replace();
     }
+document.addEventListener('input', function (e) {
+    if (e.target.matches('input[name^="freight_charges"][name$="[distance]"]')) {
+        const value = e.target.value;
+
+        // Allow only digits and max 4 characters
+        if (!/^\d{0,4}$/.test(value)) {
+            e.target.value = value.slice(0, 4).replace(/\D/g, ''); 
+            return;
+        }
+
+        const numericValue = parseInt(value);
+
+        // Clear if not in range 1–9999
+        if (numericValue < 1 || numericValue > 9999) {
+            e.target.value = '';
+        }
+    }
+});
+
 </script>
 
 
@@ -563,14 +505,44 @@ const vehicleTypes = [
     }
 });
 
+
+const routeMasters = [
+    @foreach($routeMasters as $rm)
+        {
+            label: "{{ $rm->name }}",
+            value: "{{ $rm->name }}",
+            id: {{ $rm->id }}
+        },
+    @endforeach
+];
+
+$(document).on('focus', '.route-master-autocomplete', function () {
+    const $input = $(this);
+
+    if (!$input.data('ui-autocomplete')) {
+        $input.autocomplete({
+            source: routeMasters,
+            minLength: 0,
+            select: function (event, ui) {
+                $input.val(ui.item.label);
+                $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
+                return false;
+            },
+            change: function (event, ui) {
+                if (!ui.item) {
+                    // Text was typed without selecting — reset ID
+                    $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                }
+            }
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
+    }
+});
+
 </script>
 
 <script>
-const states = [
-    @foreach($states as $state)
-        { label: "{{ addslashes($state->name) }}", value: "{{ addslashes($state->name) }}", id: {{ $state->id }} },
-    @endforeach
-];
 
 const customerList = [
     @foreach($customers as $customer)
@@ -585,58 +557,7 @@ const customerList = [
 const cityCache = {};
 
 $(document).ready(function () {
-    // Initialize city autocomplete for existing state IDs
-    $('.state-id').each(function () {
-        const $this = $(this);
-        const stateId = $this.val();
-        const type = $this.data('type');
-        const $row = $this.closest('tr');
-
-        if (stateId) {
-            loadCitiesForAutocomplete(stateId, $row, type);
-        }
-    });
-
-    // Change on hidden state ID
-    $(document).on('change', '.state-id', function () {
-        const $this = $(this);
-        const stateId = $this.val();
-        const type = $this.data('type');
-        const $row = $this.closest('tr');
-
-        if (stateId) {
-            loadCitiesForAutocomplete(stateId, $row, type);
-        }
-    });
-
-    // State Autocomplete
-    $(document).on('focus', '.state-autocomplete', function () {
-        const $input = $(this);
-
-        if (!$input.data('ui-autocomplete')) {
-            $input.autocomplete({
-                source: states,
-                minLength: 0,
-                select: function (event, ui) {
-                    const $row = $input.closest('tr');
-                    const type = $input.data('type');
-
-                    $input.val(ui.item.label);
-                    $row.find(`.state-id[data-type="${type}"]`).val(ui.item.id);
-
-                    $row.find(`.city-autocomplete[data-type="${type}"]`).val('');
-                    $row.find(`.city-id[data-type="${type}"]`).val('');
-
-                    loadCitiesForAutocomplete(ui.item.id, $row, type);
-                    return false;
-                }
-            }).focus(function () {
-                $(this).autocomplete('search', '');
-            });
-        }
-    });
-
-    // Customer Autocomplete
+      // Customer Autocomplete
     $(document).on('focus', '.customer-autocomplete', function () {
         const $input = $(this);
         if (!$input.data('ui-autocomplete')) {
@@ -655,67 +576,7 @@ $(document).ready(function () {
         }
     });
 });
-
-// City loader based on state
-function loadCitiesForAutocomplete(stateId, $row, type) {
-    const cacheKey = `${type}_${stateId}`;
-
-    if (cityCache[cacheKey]) {
-        applyCityAutocomplete(cityCache[cacheKey], $row, type);
-        return;
-    }
-
-    $.ajax({
-        url: "{{ route('logistics.freight-charges.get-cities-by-state') }}",
-        method: "GET",
-        data: { state_id: stateId },
-        dataType: "json",
-        success: function (response) {
-            if (response.status && Array.isArray(response.data)) {
-                cityCache[cacheKey] = response.data;
-                applyCityAutocomplete(response.data, $row, type);
-            } else {
-                console.warn("Invalid city response:", response);
-            }
-        },
-        error: function () {
-            console.error("City loading failed for state ID:", stateId);
-        }
-    });
-}
-
-// City autocomplete binder
-function applyCityAutocomplete(cities, $row, type) {
-    const cityList = cities.map(city => ({
-        label: city.name,
-        value: city.name,
-        id: city.id
-    }));
-
-    const $input = $row.find(`.city-autocomplete[data-type="${type}"]`);
-    const $hidden = $row.find(`.city-id[data-type="${type}"]`);
-
-    if (!$input.length || !$hidden.length) {
-        console.warn("City input or hidden field not found for type:", type);
-        return;
-    }
-
-    if ($input.data("ui-autocomplete")) {
-        $input.autocomplete("destroy");
-    }
-
-    $input.autocomplete({
-        source: cityList,
-        minLength: 0,
-        select: function (event, ui) {
-            $input.val(ui.item.label);
-            $hidden.val(ui.item.id);
-            return false;
-        }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-}
+    
 </script>
 
 

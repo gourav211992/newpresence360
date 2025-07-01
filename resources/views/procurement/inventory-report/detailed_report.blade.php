@@ -103,6 +103,10 @@
                                             <option value="unconfirmed_stock">Unconfirmed</option>
                                         </select>
                                     </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <button type="button" class="btn btn-secondary" onclick="toggleFilterSidebar()">Cancel</button>
+                                        <button type="button" class="btn btn-primary" id="applyFiltersBtn">Apply</button>
+                                    </div>
                                 </form>
                             </div>
                             <div class="col-md-12" style="min-height: 300px">
@@ -269,65 +273,48 @@
             const urlParams = getURLParams();
             setDropdownValues(urlParams);
 
+            document.getElementById("applyFiltersBtn").addEventListener("click", function () {
+                const queryParams = new URLSearchParams();
+
+                const fields = [
+                    "Period", "item", "store_id", "sub_store_id",
+                    "stock_type", "book_type_id", "type_of_stock_id"
+                ];
+
+                fields.forEach((fieldId) => {
+                    const el = document.getElementById(fieldId);
+                    if (el) {
+                        // Special case for item autocomplete
+                        if (fieldId === "item") {
+                            const itemId = el.getAttribute("data-id");
+                            if (itemId) {
+                                queryParams.set("item", itemId);
+                            }
+                        } else if (el.value) {
+                            queryParams.set(fieldId, el.value);
+                        }
+                    }
+                });
+
+
+                if (filterData.attributes && Array.isArray(filterData.attributes)) {
+                    filterData.attributes.forEach(attr => {
+                        if (attr.groupId && attr.val) {
+                            queryParams.append('attribute_name[]', attr.groupId);
+                            queryParams.append('attribute_value[]', attr.val);
+                        }
+                    });
+                }
+
+                const newUrl = `${window.location.pathname}?${queryParams.toString()}`;
+                window.location.href = newUrl;
+            });
+
             function getURLParams() {
                 const params = new URLSearchParams(window.location.search);
                 let paramObj = {};
                 params.forEach((value, key) => {
-                    if (paramObj[key]) {
-                        if (!Array.isArray(paramObj[key])) {
-                            paramObj[key] = [paramObj[key]];
-                        }
-                        paramObj[key].push(value);
-                    } else {
-                        paramObj[key] = value;
-                    }
-                    if (key == 'item') {
-                        selectedItemId = paramObj[key];
-                        $('#store_id, #sub_store_id, .attributeBtn, #type_of_stock_id, #stock_type').prop(
-                            'disabled', false);
-                    }
-                    if (key === 'store_id') {
-                        if (paramObj[key]) {
-                            $('#store_id').val(paramObj[key]).select2();
-                            var data = {
-                                store_id: paramObj[key],
-                                type : subStoreLocType,
-                            };
-                            $.ajax({
-                                type: 'GET',
-                                data: data,
-                                url: '/sub-stores/store-wise',
-                                success: function(data) {
-                                    $('#sub_store_id').empty();
-                                    $('#sub_store_id').append(
-                                        '<option value="">Select</option>');
-                                    $.each(data.data, function(index, item) {
-                                        $('#sub_store_id').append('<option value="' +
-                                            item.id + '">' + item.name + '</option>'
-                                            );
-                                    });
-                                    $('#sub_store_id').trigger('change');
-                                    if (subStoreId) {
-                                        $('#sub_store_id').val(subStoreId).trigger('change');
-                                    }
-                                }
-                            });
-                        } else {
-                            $('#sub_store_id').empty();
-                            $('#sub_store_id').append('<option value="">Select</option>');
-                            $('#sub_store_id').trigger('change');
-                        }
-                    }
-
-                    if (key === 'sub_store_id') {
-
-                    $('.sub_store_code').val(paramObj[key]).trigger('change');
-                    }
-
-                    if (key === 'stock_type') {
-
-                    $('.stock_types').val(paramObj[key]).trigger('change');
-                    }
+                    paramObj[key] = value;
                 });
                 return paramObj;
             }
@@ -337,69 +324,51 @@
                     let element = document.getElementById(key);
                     if (element) {
                         let paramValue = params[key];
-                        if (paramValue !== null && paramValue !== undefined && paramValue !== "") {
-                            if (key === "item") {
-                                $(element).attr("data-id", paramValue);
-                                var data = {
-                                    item_id: paramValue,
-                                };
-                                $.ajax({
-                                    type: 'GET',
-                                    data: data,
-                                    url: '/inventory-reports/single-item',
-                                    success: function(data) {
-                                        if (data && data.name) {
-                                            element.value = data.name;
-                                        }
-                                    }
-                                });
-                                return;
-                            }
-                            if (key === "store_id") {
-                                storeId = paramValue;
-                            }
-                            if (key === "sub_store_id") {
-                                // var data = {
-                                //     store_id: storeId
-                                // };
-                                // $.ajax({
-                                //     type: 'GET',
-                                //     data: data,
-                                //     url: '/sub-stores/store-wise',
-                                //     success: function(data) {
-                                //         $('#sub_store_id').empty();
-                                //         $('#sub_store_id').append('<option value="">Select</option>');
-                                //         $.each(data.data, function(index, item) {
-                                //             $('#sub_store_id').append('<option value="' + item.id +
-                                //                 '">' + item.name + '</option>');
-                                //         });
-                                //         $('#sub_store_id').trigger('change');
-                                //     }
-                                // });
-                                subStoreId = paramValue;
-                            }
-                            if (Array.isArray(paramValue)) {
-                                Array.from(element.options).forEach(option => {
-                                    option.selected = paramValue.includes(option.value);
-                                });
-                            } else {
-                                if (element.tagName.toLowerCase() === "select") {
-                                    let option = element.querySelector(`option[value="${paramValue}"]`);
-                                    if (option) option.selected = true;
-                                } else {
-                                    element.value = paramValue;
-                                }
-                            }
-                            if ($(element).hasClass("select2")) {
-                                $(element).val(paramValue).trigger('change');
-                            } else {
-                                element.dispatchEvent(new Event('change'));
-                            }
 
-                            // Call external filter handler if needed
-                            if (typeof handleFilterChange === "function") {
-                                handleFilterChange(`#${key}`, key);
-                            }
+                        if (key === "item") {
+                            $(element).attr("data-id", paramValue);
+                            $.ajax({
+                                type: 'GET',
+                                data: { item_id: paramValue },
+                                url: '/inventory-reports/single-item',
+                                success: function (data) {
+                                    if (data && data.name) {
+                                        element.value = data.name;
+                                    }
+                                }
+                            });
+                            return;
+                        }
+
+                        if (key === "store_id") {
+                            storeId = paramValue;
+                            $('#store_id').val(paramValue).trigger('change');
+                            $.ajax({
+                                type: 'GET',
+                                data: { store_id: paramValue, type: subStoreLocType },
+                                url: '/sub-stores/store-wise',
+                                success: function (data) {
+                                    $('#sub_store_id').empty().append('<option value="">Select</option>');
+                                    $.each(data.data, function (index, item) {
+                                        $('#sub_store_id').append(`<option value="${item.id}">${item.name}</option>`);
+                                    });
+                                    if (params['sub_store_id']) {
+                                        $('#sub_store_id').val(params['sub_store_id']).trigger('change');
+                                    }
+                                }
+                            });
+                            return;
+                        }
+
+                        if (element.tagName.toLowerCase() === "select") {
+                            let option = element.querySelector(`option[value="${paramValue}"]`);
+                            if (option) option.selected = true;
+                        } else {
+                            element.value = paramValue;
+                        }
+
+                        if ($(element).hasClass("select2")) {
+                            $(element).val(paramValue).trigger('change');
                         }
                     }
                 });
@@ -423,10 +392,19 @@
                 let closingValue = 0;
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                const beforeStartDate = records.filter(record => new Date(record.document_date) < start);
+
+                const allowedStatuses = ['approved', 'approval_not_required', 'posted'];
+                const beforeStartDate = records.filter(record =>
+                    new Date(record.document_date) < start &&
+                    allowedStatuses.includes(record.document_status)
+                );
                 const beforeEndDate = records.filter(record => {
                     const recordDate = new Date(record.document_date);
-                    return recordDate >= start && recordDate <= end;
+                    return (
+                        recordDate >= start &&
+                        recordDate <= end &&
+                        allowedStatuses.includes(record.document_status)
+                    );
                 });
                 beforeStartDate.forEach((brecord, index) => {
                     if (!before_bal[index]) {

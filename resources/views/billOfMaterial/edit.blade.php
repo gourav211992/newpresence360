@@ -947,8 +947,8 @@ $(function(){
             }
 
        }
-        let reference_from_service = parameters.reference_from_service;
-        if(reference_from_service.length) {
+        let reference_from_service = parameters?.reference_from_service;
+        if(reference_from_service?.length) {
             let c_bom = '{{ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';
             if(reference_from_service.includes(c_bom)) {
                 $("#reference_from").removeClass('d-none');
@@ -1194,16 +1194,25 @@ $(document).on('click','#addNewItemBtn', (e) => {
     let book_id = $("#book_id").val() || '';
 
     let type = '{{ $servicesBooks['services'][0]?->alias }}';
-    let actionUrl = '{{ route("bill.of.material.item.row") }}'
-    + '?count=' + encodeURIComponent(rowsLength)
-    + '&item=' + encodeURIComponent(JSON.stringify(itemObj))
-    + '&component_item=' + encodeURIComponent(JSON.stringify(lastTrObj))
-    + '&comp_attr=' + encodeURIComponent(JSON.stringify(componentAttr))
-    + '&type=' + encodeURIComponent(type)
-    + '&customer_id=' + encodeURIComponent(customerId)
-    + '&d_date=' + encodeURIComponent(d_date)
-    + '&book_id=' + encodeURIComponent(book_id);
-    fetch(actionUrl).then(response => {
+    let actionUrl = '{{ route("bill.of.material.item.row") }}';
+    const formData = new FormData();
+    formData.append('count', rowsLength);
+    formData.append('item', JSON.stringify(itemObj));
+    formData.append('component_item', JSON.stringify(lastTrObj));
+    // formData.append('header_attr', JSON.stringify(headerSelectedAttr));
+    formData.append('comp_attr', JSON.stringify(componentAttr));
+    formData.append('type', type);
+    formData.append('customer_id', customerId);
+    formData.append('d_date', d_date);
+    formData.append('book_id', book_id);
+    fetch(actionUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        body: formData
+    })
+    .then(response => {
         return response.json().then(data => {
             if (data.status == 200) {
                // $("#submit-button").click();
@@ -1385,7 +1394,7 @@ $(document).on('click', '.addOverHeadItemBtn', (e) => {
         });
         return;
    }
-    let rowCount = e.target.getAttribute('data-row-count');
+   let rowCount = $(e.target).closest('button').attr('data-row-count') || 0;
     let td = e.target.closest('td');
     let totalAmnt = 0;
     if ($(td).find('[name*=amnt]').length) {

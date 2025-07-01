@@ -60,7 +60,7 @@
                     <div class="modal-dialog sidebar-sm">
                         <form class="add-new-record modal-content pt-0" id="item-filter-form">
                             <div class="modal-header mb-1">
-                                <h5 class="modal-title" id="exampleModalLabel">Apply Driver Filter</h5>
+                                <h5 class="modal-title" id="exampleModalLabel">Apply Vehicle Filter</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">×</button>
                             </div>
                             <div class="modal-body flex-grow-1">
@@ -121,7 +121,7 @@
                                         <option value="">Select Status</option>
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
-                                        <option value="draft">Draft</option>
+                                        <!-- <option value="draft">Draft</option> -->
                                     </select>
                                 </div>
                             </div>
