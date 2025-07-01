@@ -151,7 +151,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         let shelfId = "";
         let binId = "";
         let typeOfStockId = "";
-        let attrId = [];
+        let attrId = { attribute_name: [], attribute_value: [] };
         try {
             const itemAttributes = JSON.parse(report.item_attributes);
             if (Array.isArray(itemAttributes) && itemAttributes.length > 0) {
@@ -163,9 +163,14 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
                     </span>`;
                 }).join(""); // Join the HTML for all attributes
             }
-            if ($('#attributes').is(':checked')){
+            if ($('#attributes').is(':checked')) {
                 if (Array.isArray(itemAttributes) && itemAttributes.length > 0) {
-                    attrId = itemAttributes;
+                    itemAttributes.forEach(attr => {
+                        if (attr.attr_name && attr.attr_value) {
+                            attrId.attribute_name.push(attr.attr_name);
+                            attrId.attribute_value.push(attr.attr_value);
+                        }
+                    });
                 }
             }
             storeId = $('#store').is(':checked') ? report?.store_id : '';
@@ -177,7 +182,13 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         } catch (error) {
             console.error("Error parsing item_attributes:", error);
         }
-
+        const hiddenInputs = attrId.attribute_name.map((name, index) => {
+            const value = attrId.attribute_value[index] || '';
+            return `
+                <input type="hidden" name="attribute_name[]" value="${name}" />
+                <input type="hidden" name="attribute_value[]" value="${value}" />
+            `;
+        }).join('');
         // Create table data cells based on column visibility
         const cells = [
             `<td>${index + 1}</td>`, // Index
@@ -190,7 +201,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             <input type="hidden" name="sub_store_id" value='${subLocationId ? subLocationId : ''}'/>
             <input type="hidden" name="shelf_id" value='${shelfId ? shelfId : ''}'/>
             <input type="hidden" name="bin_id" value='${binId ? binId : ''}'/>
-            <input type="hidden" name="item_attributes" value='${JSON.stringify(attrId)}'/>
+            ${hiddenInputs}
             <input type="hidden" name="type_of_stock_id" value='${typeOfStockId ? typeOfStockId : ''}'/>
             <button type="submit" style="border: none; background-color: #fff; color: #002bff;">
                 ${

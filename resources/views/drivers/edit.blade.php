@@ -132,7 +132,7 @@
                                                     <label class="form-label">Front Side Of License</label>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <input type="file" name="license_front" class="form-control">
+                                                    <input type="file" name="license_front" class="form-control" onchange="simpleFileValidation(this)">
                                                   @if ($driver->licenseFrontMedia)
                                                     <img src="{{ asset('storage/driver_uploads/' . $driver->licenseFrontMedia->file_name) }}" class="mt-1" width="120" alt="License Front">
                                                  @endif
@@ -143,7 +143,7 @@
                                                     <label class="form-label">Back Side Of License</label>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <input type="file" name="license_back" class="form-control">
+                                                    <input type="file" name="license_back" class="form-control" onchange="simpleFileValidation(this)">
                                                      @if ($driver->licenseBackMedia)
                                                     <img src="{{ asset('storage/driver_uploads/' . $driver->licenseBackMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif
@@ -156,7 +156,7 @@
                                                     <label class="form-label">Front Side Of ID Proof</label>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <input type="file" name="id_proof_front" class="form-control">
+                                                    <input type="file" name="id_proof_front" class="form-control" onchange="simpleFileValidation(this)">
                                                     @if($driver->idProofFrontMedia)
                                                         <img src="{{ asset('storage/driver_uploads/' . $driver->idProofFrontMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif
@@ -166,7 +166,7 @@
                                                     <label class="form-label">Back Side Of ID Proof</label>
                                                 </div>
                                                 <div class="col-md-4">
-                                                    <input type="file" name="id_proof_back" class="form-control">
+                                                    <input type="file" name="id_proof_back" class="form-control" onchange="simpleFileValidation(this)">
                                                     @if($driver->idProofBackMedia)
                                                         <img src="{{ asset('storage/driver_uploads/' . $driver->idProofBackMedia->file_name) }}" class="mt-1" width="120">
                                                     @endif
@@ -227,5 +227,45 @@
         });
     });
 </script>
+<script>
+    const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
+    const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
+    const MAX_FILE_SIZE_SIMPLE = 2048; 
 
+    function simpleFileValidation(element) {
+        const input = element;
+        const files = Array.from(input.files);
+        const dt = new DataTransfer();
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            const fileSize = (file.size / 1024).toFixed(2); 
+
+            if (!ALLOWED_EXTENSIONS_SIMPLE.includes(fileExtension) || !ALLOWED_MIME_TYPES_SIMPLE.includes(file.type)) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Only PDF, JPG, JPEG, PNG files are allowed.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            if (fileSize > MAX_FILE_SIZE_SIMPLE) {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'File size must not exceed 2MB.',
+                    icon: 'error',
+                });
+                input.value = '';
+                return;
+            }
+
+            dt.items.add(file);
+        }
+
+        input.files = dt.files;
+    }
+</script>
 @endsection

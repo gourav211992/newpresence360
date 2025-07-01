@@ -154,7 +154,7 @@ use App\Http\Controllers\PurchaseOrder\PurchaseOrderReportController;
 
 use App\Http\Controllers\PurchaseBillController;
 use App\Http\Controllers\DiscountMasterController;
-use App\Http\Controllers\ExpenseMasterController;   
+use App\Http\Controllers\ExpenseMasterController;
 use App\Http\Controllers\GateEntryController;
 use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\ProductionRouteController;
@@ -578,8 +578,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('check-bom-inhouse','checkBomInhouse')->name('check.bom.inhouse');
     });
 
-    
-    
+
+
 
     Route::prefix('transporter-requests')
         ->name('transporter.')
@@ -642,7 +642,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::put('/{id}', 'update')->name('machine.update');
         Route::get('/attribute/values','attributeValues')->name('machine.attribute.values');
     });
-    
+
     Route::prefix('items')->controller(ItemController::class)->group(function () {
         Route::get('get-cost','getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
@@ -1291,7 +1291,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('store', 'store')->name('store');
             Route::get('change-item-code', 'changeItemCode')->name('item.code');
             Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
-            Route::get('add-item-row', 'addItemRow')->name('item.row');
+            Route::post('add-item-row', 'addItemRow')->name('item.row');
             Route::get('add-instruction-row', 'addInstructionRow')->name('instruction.row');
             Route::get('get-item-detail', 'getItemDetail')->name('get.itemdetail');
             Route::get('get-doc-no', 'getDocNumber')->name('doc.no');
@@ -1323,7 +1323,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('import-save','importSave')->name('import.save');
             Route::get('import-error','importError')->name('import.error');
         });
-        
+
     Route::prefix('quotation-bom')
         ->name('quotation.bom.')
         ->controller(BomImportController::class)
@@ -1493,6 +1493,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/get-stock-ledger-summary-reports', 'summaryReport');
             Route::get('/get-stock-ledger-summary-filter', 'summaryReportFilter')->name('summary.filter');
             Route::post('add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/single-item', 'getSingleItemData')->name('single.item');
         });
 
     // Expense routes
@@ -2245,7 +2246,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('/logistics/vehicle-type/store', [ErpVehicleTypeController::class, 'store'])->name('logistics.vehicle-type.store');
     Route::delete('/logistics/vehicle-type/delete-multiple', [ErpVehicleTypeController::class, 'deleteMultiple'])->name('logistics.vehicle-type.delete-multiple');
 
-  
+
 
     //Freight-Charges
     Route::get('/logistics/freight-charges', [ErpFreightChargesController::class, 'index'])->name('logistics.freight-charges.index');
@@ -2253,11 +2254,11 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::delete('/logistics/freight-charges/delete-multiple', [ErpFreightChargesController::class, 'deleteMultiple'])->name('logistics.freight-charges.delete-multiple');
     Route::get('/logistics/freight-charges/get-cities-by-state', [ErpFreightChargesController::class, 'getCityByState'])->name('logistics.freight-charges.get-cities-by-state');
 
-    //Multi-Point-Pricing 
+    //Multi-Point-Pricing
     Route::get('/logistics/multi-point-pricing', [ErpMultiPointPricingController::class, 'index'])->name('logistics.multi-point-pricing.index');
     Route::post('/logistics/multi-point/store', [ErpMultiPointPricingController::class, 'store'])->name('logistics.multi-point.store');
     Route::delete('/logistics/multi-point/delete-multiple', [ErpMultiPointPricingController::class, 'deleteMultiple'])->name('logistics.multi-point.delete-multiple');
-   
+
 
     //Multi-Point Fixed
     Route::get('/logistics/multi-point-fixed/create', [ErpMultiPointFixedController::class, 'create'])->name('logistics.multi-point-fixed.create');
@@ -2526,7 +2527,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/import', [RegistrationController::class,'import'])->name('finance.fixed-asset.import');
     Route::get('fixed-asset/export-successful', [RegistrationController::class,'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
     Route::get('fixed-asset/export-failed', [RegistrationController::class,'exportFailedItems'])->name('finance.fixed-asset.export.failed');
-    
+
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

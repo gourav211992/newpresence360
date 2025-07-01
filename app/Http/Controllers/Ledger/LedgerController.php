@@ -48,7 +48,7 @@ class LedgerController extends Controller
             $organizationId = $user->organization_id;
 
             if ($request->ajax()) {
-                $organizations = [];
+                $organizations = null;
 
 
                 if ($request->filter_organization && is_array($request->filter_organization)) {
@@ -57,9 +57,9 @@ class LedgerController extends Controller
                         $organizations[] = $value;  // Push each value to $organizations
                     }
                 }
-                if (count($organizations) == 0) {
-                    $organizations[] = $organizationId;
-                }
+                // if (count($organizations) == 0) {
+                //     $organizations[] = $organizationId;
+                // }
 
                 // $ledgers = Ledger::whereIn('organization_id', $organizations)->orderBy('id', 'desc');
                 // $ledgers = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
@@ -76,9 +76,12 @@ class LedgerController extends Controller
                 //     $end = date('Y-m-d', strtotime($dates[1]));
                 //     $ledgers->whereDate('created_at', '>=', $start)->whereDate('created_at', '<=', $end);
                 // }
-                $ledgersQuery = Ledger::withDefaultGroupCompanyOrg()
-                ->whereIn('organization_id', $organizations)->orderBy('id', 'desc');
-
+               $ledgersQuery = Ledger::withDefaultGroupCompanyOrg()
+                ->when(!empty($organizations), function ($query) use ($organizations) {
+                    $query->whereIn('organization_id', $organizations);
+                })
+                ->orderBy('id', 'desc');
+                
                 if ($request->group) {
                     $ledgersQuery->whereJsonContains('ledger_group_id', (string) $request->group)
                                 ->orWhere('ledger_group_id', $request->group);

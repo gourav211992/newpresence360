@@ -357,6 +357,20 @@ class InventoryReportController extends Controller
         if(!empty($attrGroup)) array_filter($attrGroup);
         if(!empty($attrValue)) array_filter($attrValue);
 
+        if (!empty($attrGroup) && !empty($attrValue)) {
+            foreach ($attrGroup as $key => $group) {
+                if (!empty($attrValue[$key])) {
+                    $query->where(function ($subQuery) use ($group, $attrValue, $key) {
+                        $subQuery->whereJsonContains('item_attributes', [
+                            'attr_name' => $group,
+                            'attr_value' => $attrValue[$key]
+                        ]);
+                    });
+                }
+                $hasFilters = true;
+            }
+        }
+
         if($request->has('item_attributes') && !empty($request->item_attributes))
         {
             $attributeGroup = $request->item_attributes;
@@ -563,6 +577,19 @@ class InventoryReportController extends Controller
 
         if(!empty($attrGroup)) array_filter($attrGroup);
         if(!empty($attrValue)) array_filter($attrValue);
+
+        if (!empty($attrGroup) && !empty($attrValue)) {
+            foreach ($attrGroup as $key => $group) {
+                if (!empty($attrValue[$key])) {
+                    $query->where(function ($subQuery) use ($group, $attrValue, $key) {
+                        $subQuery->whereJsonContains('item_attributes', [
+                            'attr_name' => $group,
+                            'attr_value' => $attrValue[$key]
+                        ]);
+                    });
+                }
+            }
+        }
 
         if($request->has('item_attributes') && !empty($request->item_attributes))
         {

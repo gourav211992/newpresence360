@@ -17,10 +17,8 @@ class ErpFreightCharge extends Model
         'organization_id',
         'group_id',
         'company_id',
-        'source_state_id',
-        'source_city_id',
-        'destination_state_id',
-        'destination_city_id',
+        'source_route_id',
+        'destination_route_id',
         'distance',
         'vehicle_type_id',
         'amount',
@@ -28,25 +26,16 @@ class ErpFreightCharge extends Model
         'status'
     ];
 
-    public function sourceState()
+    public function sourceRoute()
     {
-        return $this->belongsTo(State::class, 'source_state_id');
+        return $this->belongsTo(ErpRouteMaster::class, 'source_route_id');
     }
 
-    public function destinationState()
+    public function destinationRoute()
     {
-        return $this->belongsTo(State::class, 'destination_state_id');
+        return $this->belongsTo(ErpRouteMaster::class, 'destination_route_id');
     }
 
-    public function sourceCity()
-    {
-        return $this->belongsTo(City::class, 'source_city_id');
-    }
-
-    public function destinationCity()
-    {
-        return $this->belongsTo(City::class, 'destination_city_id');
-    }
 
     public function vehicleType()
     {

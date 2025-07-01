@@ -116,6 +116,11 @@
                                                                         {{ $selectedType === 'impairement' ? 'checked' : '' }}>
                                                                     <label class="form-check-label fw-bolder" for="Impairement">Impairement</label>
                                                                 </div>  
+                                                                 <div class="form-check form-check-primary mt-25">
+                                                                    <input type="radio" id="Writeoff" disabled name="document_type" value="writeoff" class="form-check-input"
+                                                                        {{ $selectedType === 'writeoff' ? 'checked' : '' }}>
+                                                                    <label class="form-check-label fw-bolder" for="Impairement">Writeoff</label>
+                                                                </div>  
                                                             </div>
                                                         </div>
 
@@ -899,16 +904,24 @@ function getAllAssetIds() {
 
     return assetIds;
 }
-   function updateSelectedRadioLabel() {
-        const selected = document.querySelector('input[name="document_type"]:checked');
-        if (selected) {
-            const label = document.querySelector(`label[for="${selected.id}"]`);
-            if (label) {
-                document.getElementById("selectedRadioText").textContent = label.textContent.trim();
+    function updateSelectedRadioLabel() {
+            const selected = document.querySelector('input[name="document_type"]:checked');
+            if (selected) {
+                const label = document.querySelector(`label[for="${selected.id}"]`);
+                if (label) {
+                    document.getElementById("selectedRadioText").textContent = label.textContent.trim();
+                    if (label.textContent.trim() == "Writeoff") {
+                        $('.revaluate_amount').each(function() {
+                            $(this).val(0).prop('readonly', true);
+                        });
+                    } else {
+                        $('.revaluate_amount').each(function() {
+                            $(this).val(0).prop('readonly', false);
+                        });
+                    }
+                }
             }
         }
-    }
-
     // On radio change
     document.querySelectorAll('input[name="document_type"]').forEach(radio => {
         radio.addEventListener('change', updateSelectedRadioLabel);

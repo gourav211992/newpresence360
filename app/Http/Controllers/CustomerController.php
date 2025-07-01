@@ -35,6 +35,7 @@ use App\Imports\CustomerImport;
 use App\Services\ItemImportExportService;
 use App\Exports\CustomersExport;
 use App\Exports\FailedCustomersExport;
+use App\Models\User;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Mail\ImportComplete;
 use Illuminate\Support\Facades\Mail;
@@ -170,12 +171,22 @@ class CustomerController extends Controller
 
     public function updateOrganization(Request $request)
     {
-        $user = Auth::guard('web')->user();
+        // $user = Auth::guard('web')->user();
+        $user = Helper::getAuthenticatedUser();
         $organizationId = $request->input('organization_id');
         $request->validate([
             'organization_id' => 'required|exists:organizations,id'
         ]);
 
+        // $user->organization_id = $organizationId;
+        // $user->save();
+
+        if($user->authenticable_type == 'employee'){
+            $user = Employee::find($user->id);
+        }else{
+            $user = User::find($user->id);
+        }
+        
         $user->organization_id = $organizationId;
         $user->save();
         return redirect()->back()->with('success', 'Organization updated successfully!');

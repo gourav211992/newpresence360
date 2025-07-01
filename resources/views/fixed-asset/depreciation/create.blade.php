@@ -595,7 +595,22 @@ document.getElementById("process_btn").addEventListener("click", function () {
                         } 
                     //console.log("DepRate:"+asset.depreciation_percentage);
                     //console.log("DiffDays:"+diffDays);
+
                     let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
+                    
+                    if (asset?.category?.setup?.act_type === "income_tax") {
+                        console.log("Income Tax Depreciation"+sub_asset.sub_asset_code);
+                        const capitalizeDate = new Date(sub_asset.capitalize_date);
+                        const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); // October is month 9 (0-indexed)
+                        totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value))).toFixed(4);
+                        if (capitalizeDate>cutoffDate) {
+                            totalDepreciation = totalDepreciation/2;
+                            console.log("half year");
+                        } else {
+                            console.log("full year");
+                        } 
+                     }
+                    
                     let after_dep_value = parseFloat(sub_asset.current_value_after_dep) - totalDepreciation;
                     let salv = parseFloat(sub_asset.salvage_value);
                     let diff = parseFloat(after_dep_value) - salv;

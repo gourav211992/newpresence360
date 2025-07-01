@@ -15,19 +15,15 @@ class ErpLogisticsMultiFixedLocation extends Model
 
     protected $fillable = [
         'multi_fixed_pricing_id',
-        'state_id',
-        'city_id',
+        'location_route_id',
         'amount',
     ];
 
-    public function state()
+    public function route()
     {
-        return $this->belongsTo(State::class, 'state_id');
+        return $this->belongsTo(ErpRouteMaster::class, 'location_route_id');
     }
 
-    public function city()
-    {
-        return $this->belongsTo(City::class, 'city_id');
-    }
+
 
 }

@@ -109,6 +109,11 @@
                                                                         {{ $selectedType === 'impairement' ? 'checked' : '' }}>
                                                                     <label class="form-check-label fw-bolder" for="Impairement">Impairement</label>
                                                                 </div>  
+                                                                <div class="form-check form-check-primary mt-25">
+                                                                    <input type="radio" id="Writeoff" name="document_type" value="writeoff" class="form-check-input"
+                                                                        {{ $selectedType === 'writeoff' ? 'checked' : '' }}>
+                                                                    <label class="form-check-label fw-bolder" for="Impairement">Writeoff</label>
+                                                                </div>  
                                                             </div>
                                                         </div>
                                                 </div>
@@ -648,6 +653,7 @@
                     // Set visible label and hidden ID
                     $(this).val(ui.item.label);
                     row.find('.asset_id').val(ui.item.value);
+                    updateSelectedRadioLabel();
 
                     return false;
                 },
@@ -731,6 +737,7 @@
                     row.find('.quantity').val(1);
                     row.find('.currentvalue').val(sub_asset.current_value_after_dep);
                     row.find('.salvage').val(sub_asset.salvage_value);
+                    updateSelectedRadioLabel();
 
                     return false;
                 },
@@ -999,9 +1006,19 @@
                 const label = document.querySelector(`label[for="${selected.id}"]`);
                 if (label) {
                     document.getElementById("selectedRadioText").textContent = label.textContent.trim();
+                    if (label.textContent.trim() == "Writeoff") {
+                        $('.revaluate_amount').each(function() {
+                            $(this).val(0).prop('readonly', true);
+                        });
+                    } else {
+                        $('.revaluate_amount').each(function() {
+                            $(this).val(0).prop('readonly', false);
+                        });
+                    }
                 }
             }
         }
+
 
         // On radio change
         document.querySelectorAll('input[name="document_type"]').forEach(radio => {
@@ -1039,15 +1056,21 @@
                 } else if (documentType === 'impairement' && (revalVal >= currentVal || revalVal <= salVal)) {
                     isValid = false;
                 }
+                 else if (documentType === 'writeoff' && (revalVal != 0)) {
+                    isValid = false;
+                }
             });
-                if (!isValid) {
-                    $('.preloader').hide();
-                    if (documentType === 'revaluation') 
-                        showToast('error', 'Revaluation amount must be greater than current value.');
-                    else
-                        showToast('error', 'Impairement amount must be less than current value and grater than salvage value.');
-                    }
-
+            if (!isValid) {
+                $('.preloader').hide();
+                if (documentType === 'revaluation')
+                    showToast('error', 'Revaluation amount must be greater than current value.');
+                else if (documentType === 'revaluation')
+                    showToast('error', 'Impairement amount must be less than current value and grater than salvage value.');
+                  else if (documentType === 'Writeoff')
+                    showToast('error', 'WriteOff amount must be 0.');
+                  
+            }
+            
             return isValid;
         }
 

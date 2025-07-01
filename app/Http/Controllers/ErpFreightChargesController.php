@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\ErpRouteMaster;
 use App\Models\Organization;
 
 class ErpFreightChargesController extends Controller
@@ -32,10 +33,11 @@ class ErpFreightChargesController extends Controller
         $status = ConstantHelper::STATUS;
         $customers = Customer::withDefaultGroupCompanyOrg()->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $freightCharges = ErpFreightCharge::withDefaultGroupCompanyOrg()->get();
         
 
-        return view('freight-charges.index', compact('customers', 'vehicleTypes', 'states', 'freightCharges'));
+        return view('freight-charges.index', compact('customers', 'vehicleTypes', 'states', 'freightCharges','routeMasters'));
     }
 
     public function getCityByState(Request $request)
@@ -71,7 +73,7 @@ class ErpFreightChargesController extends Controller
 
         foreach ($request->freight_charges as $index => $charge) {
             if ($insertAll || in_array($index, $selectedIndexes)) {
-            if (empty($charge['source_state_id']) || empty($charge['destination_state_id'])) {
+            if (empty($charge['source_route_id']) || empty($charge['destination_route_id'])) {
                 continue;
             }
 
@@ -79,10 +81,8 @@ class ErpFreightChargesController extends Controller
                     'organization_id'       => $organization->id,
                     'group_id'              => $organization->group_id,
                     'company_id'            => $user->company_id ?? null,
-                    'source_state_id'       => $charge['source_state_id'],
-                    'source_city_id'        => $charge['source_city_id'],
-                    'destination_state_id'  => $charge['destination_state_id'],
-                    'destination_city_id'   => $charge['destination_city_id'],
+                    'source_route_id'       => $charge['source_route_id'],
+                    'destination_route_id'  => $charge['destination_route_id'],
                     'distance'              => $charge['distance'],
                     'vehicle_type_id'       => $charge['vehicle_type_id'],
                     'amount'                => $charge['amount'],

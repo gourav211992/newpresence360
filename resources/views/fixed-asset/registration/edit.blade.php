@@ -409,7 +409,7 @@
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control" name="useful_life"
                                                                 oninput="updateDepreciationValues()" id="useful_life"
-                                                                value="{{ $data->useful_life }}" required />
+                                                                value="{{ (int)$data->useful_life }}" required />
                                                         </div>
                                                     </div>
 

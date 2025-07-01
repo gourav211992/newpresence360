@@ -89,15 +89,15 @@
                                                       <label class="form-check-label" for="select-all"></label>
                                                    </div>
                                                 </th>
-                                                <th colspan="2">Source <span class="text-danger">*</span></th>
-                                                <th width="100px">Free Point <span class="text-danger">*</span></th>
-                                                <th width="150px">Rate <span class="text-danger">*</span></th>
-                                                <th width="250px">Customer</th>
+                                                <th >Source <span class="text-danger">*</span></th>
+                                                <th>Free Point <span class="text-danger">*</span></th>
+                                                <th >Rate <span class="text-danger">*</span></th>
+                                                <th>Customer</th>
                                              </tr>
                                           </thead>
                                           <tbody class="mrntableselectexcel">
                                              @php $rowIndex = 0; @endphp
-                                             @foreach($multiPoints as $charges)
+                                             @foreach($multiPoints as $point)
                                              <tr>
                                                 <td>
                                                     <div class="form-check form-check-primary custom-checkbox">
@@ -105,24 +105,30 @@
                                                       <label class="form-check-label"></label>
                                                    </div>
                                                 </td>
-                                                <td width="150px">
-                                                   <input type="hidden" name="multi_point[{{ $rowIndex }}][id]" value="{{ old("multi_point.$rowIndex.id", $charges->id) }}">
-                                                   <input type="text" name="multi_point[{{ $rowIndex }}][source_state_name]" class="form-control mw-100 state-autocomplete" placeholder="Start typing source state..." data-type="source" value="{{ old("multi_point.$rowIndex.source_state_name", optional($charges->sourceState)->name) }}">
-                                                   <input type="hidden" name="multi_point[{{ $rowIndex }}][source_state_id]" class="state-id" data-type="source" value="{{ old("multi_point.$rowIndex.source_state_id", $charges->source_state_id) }}">
-                                                </td>
-                                                <td width="150px">
-                                                   <input type="text" name="multi_point[{{ $rowIndex }}][source_city_name]" class="form-control mw-100 city-autocomplete" placeholder="Start typing source city..." data-type="source" value="{{ old("multi_point.$rowIndex.source_city_name", optional($charges->sourceCity)->name) }}">
-                                                   <input type="hidden" name="multi_point[{{ $rowIndex }}][source_city_id]" class="city-id" data-type="source" value="{{ old("multi_point.$rowIndex.source_city_id", $charges->source_city_id) }}">
+                                                 <td>
+                                                <input type="hidden" name="multi_point[{{ $rowIndex }}][id]" value="{{ $point->id ?? '' }}">
+                                                <input type="text"
+                                                name="multi_point[{{ $rowIndex }}][source_route_name]"
+                                                class="form-control mw-100 route-master-autocomplete"
+                                                placeholder="Start typing locations"
+                                                data-type="source"
+                                                value="{{ optional($point->sourceRoute)->name ?? '' }}" />
+
+                                            <input type="hidden"
+                                                name="multi_point[{{ $rowIndex }}][source_route_id]"
+                                                class="route-master-id"
+                                                data-type="source"
+                                                value="{{ $point->source_route_id ?? '' }}" />
                                                 </td>
                                                 <td>
-                                                   <input type="number" name="multi_point[{{ $rowIndex }}][free_point]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.free_point", $charges->free_point) }}" max="2">
+                                                   <input type="number" name="multi_point[{{ $rowIndex }}][free_point]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.free_point", $point->free_point) }}" >
                                                 </td>
                                                 <td>
-                                                   <input type="text" name="multi_point[{{ $rowIndex }}][amount]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.amount", $charges->amount) }}">
+                                                   <input type="text" name="multi_point[{{ $rowIndex }}][amount]" class="form-control mw-100" value="{{ old("multi_point.$rowIndex.amount", $point->amount) }}">
                                                 </td>
                                                 <td>
-                                                   <input type="text" name="multi_point[{{ $rowIndex }}][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer..." value="{{ old("multi_point.$rowIndex.customer_name", optional($charges->customer)->company_name) }}">
-                                                   <input type="hidden" name="multi_point[{{ $rowIndex }}][customer_id]" class="customer-id" value="{{ old("multi_point.$rowIndex.customer_id", $charges->customer_id) }}">
+                                                   <input type="text" name="multi_point[{{ $rowIndex }}][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer..." value="{{ old("multi_point.$rowIndex.customer_name", optional($point->customer)->company_name) }}">
+                                                   <input type="hidden" name="multi_point[{{ $rowIndex }}][customer_id]" class="customer-id" value="{{ old("multi_point.$rowIndex.customer_id", $point->customer_id) }}">
                                                 </td>
                                              </tr>
                                              @php $rowIndex++; @endphp
@@ -136,16 +142,18 @@
                                                       <label class="form-check-label"></label>
                                                    </div>
                                                 </td>
-                                                <td width="150px">
-                                                   <input type="hidden" name="multi_point[0][id]" value="">
-                                                   <input type="text" name="multi_point[0][source_state_name]" class="form-control mw-100 state-autocomplete" placeholder="Start typing source state..." data-type="source">
-                                                   <input type="hidden" name="multi_point[0][source_state_id]" class="state-id" data-type="source">
-                                                </td>
-                                                <td width="150px">
-                                                   <input type="text" name="multi_point[0][source_city_name]" class="form-control mw-100 city-autocomplete" placeholder="Start typing source city..." data-type="source">
-                                                   <input type="hidden" name="multi_point[0][source_city_id]" class="city-id" data-type="source">
-                                                </td>
-                                                <td><input type="number" name="multi_point[0][free_point]" class="form-control mw-100" placeholder="Enter Free point" max="2"></td>
+                                              <td>
+                                            <input type="text"
+                                                name="multi_point[0][source_route_name]"
+                                                class="form-control mw-100 route-master-autocomplete"
+                                                placeholder="Start typing  locations..."
+                                                data-type="source" />
+                                            <input type="hidden"
+                                                name="multi_point[0][source_route_id]"
+                                                class="route-master-id"
+                                                data-type="source" />
+                                             </td>             
+                                                <td><input type="number" name="multi_point[0][free_point]" class="form-control mw-100" placeholder="Enter Free point" ></td>
                                                 <td><input type="text" name="multi_point[0][amount]" class="form-control mw-100" placeholder="Enter Amount."></td>
                                                 <td>
                                                    <input type="text" name="multi_point[0][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer...">
@@ -302,146 +310,9 @@ $(document).ready(function () {
 </script>
 
 <script>
-    let multiPointRowIndex = {{ $rowIndex ?? 1 }};
+ let multiPointRowIndex = {{ $rowIndex ?? 1 }};
 
-const states = [
-    @foreach($states as $state)
-        { label: "{{ $state->name }}", value: "{{ $state->name }}", id: {{ $state->id }} },
-    @endforeach
-];
-
-const cityCache = {}; 
-
-$(document).ready(function () {
-
-    // State Autocomplete
-  $(document).on('focus', '.state-autocomplete', function () {
-    const $input = $(this);
-
-    if (!$input.data('ui-autocomplete')) {
-        $input.autocomplete({
-            source: states,
-            minLength: 0,
-            select: function (event, ui) {
-                $input.val(ui.item.label);
-
-                // Detect if inside a table row
-                const $row = $input.closest('tr');
-
-                if ($row.length) {
-                    // Dynamic table row: update only within this row
-                    $row.find('.state-id').val(ui.item.id);
-                    $row.find('.city-autocomplete').val('');
-                    $row.find('.city-id').val('');
-
-                    const $cityInput = $row.find('.city-autocomplete');
-                    loadCities(ui.item.id, null, function () {
-                        applyCityAutocomplete(ui.item.id, null, $cityInput);
-                    });
-
-                } else {
-                    // Static section (source/destination): use data-type
-                    const type = $input.data('type');
-                    $(`.state-id[data-type="${type}"]`).val(ui.item.id);
-                    $(`.city-autocomplete[data-type="${type}"]`).val('');
-                    $(`.city-id[data-type="${type}"]`).val('');
-
-                    const $cityInput = $(`.city-autocomplete[data-type="${type}"]`);
-                    loadCities(ui.item.id, type, function () {
-                        applyCityAutocomplete(ui.item.id, type, $cityInput);
-                    });
-                }
-
-                return false;
-            }
-        }).focus(function () {
-            $(this).autocomplete("search", "");
-        });
-    }
-});
-
-
-
-    // City Autocomplete (dynamically binds based on selected state)
-  $(document).on('focus', '.city-autocomplete', function () {
-    const $input = $(this);
-    const $row = $input.closest('tr');
-
-    let stateId;
-
-    if ($row.length) {
-        // From dynamic row
-        stateId = $row.find('.state-id').val();
-    } else {
-        // From static field using data-type
-        const type = $input.data('type');
-        stateId = $(`.state-id[data-type="${type}"]`).val();
-    }
-
-    if (!stateId) {
-        $input.autocomplete({ source: [] });
-        return;
-    }
-
-    if (cityCache[stateId]) {
-        applyCityAutocomplete(stateId, null, $input);
-    } else {
-        loadCities(stateId, null, function () {
-            applyCityAutocomplete(stateId, null, $input);
-        });
-    }
-});
-
-
-});
-
-// Load cities via AJAX
-function loadCities(stateId, type, callback = null) {
-    $.ajax({
-        url: "{{ route('logistics.multi-point-fixed.get-cities-by-state') }}",
-        method: "GET",
-        data: { state_id: stateId },
-        success: function (response) {
-            if (response.status) {
-                cityCache[stateId] = response.data.map(city => ({
-                    label: city.name,
-                    value: city.name,
-                    id: city.id
-                }));
-                if (callback) callback();
-            }
-        },
-        error: function () {
-            alert('Error loading cities');
-        }
-    });
-}
-
-function applyCityAutocomplete(stateId, type, $input) {
-    const cities = cityCache[stateId] || [];
-
-    $input.autocomplete({
-        source: cities,
-        minLength: 0,
-        select: function (event, ui) {
-            $input.val(ui.item.label);
-            const $row = $input.closest('tr');
-
-            if ($row.length) {
-                $row.find('.city-id').val(ui.item.id);
-            } else {
-                const dataType = $input.data('type');
-                $(`.city-id[data-type="${dataType}"]`).val(ui.item.id);
-            }
-
-            return false;
-        }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-}
-
-    document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
         const selectAll = document.getElementById('select-all');
         if (selectAll) {
             selectAll.addEventListener('change', function () {
@@ -464,8 +335,7 @@ function applyCityAutocomplete(stateId, type, $input) {
 
         tbody.querySelectorAll('tr').forEach(row => {
             const requiredFields = [
-                row.querySelector('.state-autocomplete[data-type="source"]'),
-                row.querySelector('.city-autocomplete[data-type="source"]'),
+                row.querySelector('.route-master-autocomplete[data-type="source"]'),
                 row.querySelector('input[name*="[free_point]"]'),
                 row.querySelector('input[name*="[amount]"]')
             ];
@@ -499,19 +369,20 @@ function applyCityAutocomplete(stateId, type, $input) {
                     <label class="form-check-label"></label>
                 </div>
             </td>
-
-            <td width="150px">
+            <td>
                 <input type="hidden" name="multi_point[${newIndex}][id]" value="">
-                <input type="text" name="multi_point[${newIndex}][source_state_name]" class="form-control mw-100 state-autocomplete" placeholder="Start typing source state..." data-type="source" />
-                <input type="hidden" name="multi_point[${newIndex}][source_state_id]" class="state-id" data-type="source" />
+                <input type="text"
+                    name="multi_point[${newIndex}][source_route_name]"
+                    class="form-control mw-100 route-master-autocomplete"
+                    placeholder="Start typing  locations..."
+                    data-type="source" />
+                 <input type="hidden"
+                    name="multi_point[${newIndex}][source_route_id]"
+                    class="route-master-id"
+                    data-type="source" />
             </td>
 
-            <td width="150px">
-                <input type="text" name="multi_point[${newIndex}][source_city_name]" class="form-control mw-100 city-autocomplete" placeholder="Start typing source city..." data-type="source" />
-                <input type="hidden" name="multi_point[${newIndex}][source_city_id]" class="city-id" data-type="source" />
-            </td>
-
-            <td><input type="number" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" placeholder="Enter Free Point" max="2"/></td>
+            <td><input type="number" name="multi_point[${newIndex}][free_point]" class="form-control mw-100" placeholder="Enter Free Point" /></td>
             <td><input type="text" name="multi_point[${newIndex}][amount]" class="form-control mw-100" placeholder="Enter Amount" /></td>
             <td>
                 <input type="text" name="multi_point[${newIndex}][customer_name]" class="form-control mw-100 customer-autocomplete" placeholder="Start typing customer..." />
@@ -540,8 +411,43 @@ document.addEventListener('input', function (e) {
 </script>
 
 <script>
-    //customer autocomplete search code here
 
+    const routeMasters = [
+    @foreach($routeMasters as $rm)
+        {
+            label: "{{ $rm->name }}",
+            value: "{{ $rm->name }}",
+            id: {{ $rm->id }}
+        },
+    @endforeach
+];
+
+$(document).on('focus', '.route-master-autocomplete', function () {
+    const $input = $(this);
+
+    if (!$input.data('ui-autocomplete')) {
+        $input.autocomplete({
+            source: routeMasters,
+            minLength: 0,
+            select: function (event, ui) {
+                $input.val(ui.item.label);
+                $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
+                return false;
+            },
+            change: function (event, ui) {
+                if (!ui.item) {
+                    // Text was typed without selecting — reset ID
+                    $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                }
+            }
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
+    }
+});
+
+
+    //customer autocomplete search code here
 const customerList = [
     @foreach($customers as $customer)
         {

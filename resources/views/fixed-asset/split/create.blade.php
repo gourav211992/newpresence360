@@ -579,7 +579,8 @@
                                                             <label class="form-label">Dep % <span
                                                                     class="text-danger">*</span></label>
                                                             <input type="number" class="form-control"
-                                                                id="depreciation_rate" readonly />
+                                                                id="depreciation_rate" name="depreciation_percentage"
+                                                                readonly />
                                                             <input type="hidden" value="{{ $dep_percentage }}"
                                                                 id="depreciation_percentage" />
                                                             <input type="hidden" id="depreciation_rate_year"
@@ -721,6 +722,7 @@
 
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
+            applyFixedPrefixToInputs();
         });
 
         function genereateSubAssetRow(code) {
@@ -936,6 +938,11 @@
                 showToast('error', 'Code Already Exist.');
                 return false;
             }
+            if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
+                return false;
+            }
 
 
             document.getElementById('fixed-asset-split-form').submit();
@@ -947,6 +954,10 @@
 
             collectSubAssetDataToJson();
             let isValid = true;
+
+
+
+
             document.getElementById('document_status').value = 'submitted';
 
             let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
@@ -969,6 +980,11 @@
             if (isValid == false) {
                 $('.preloader').hide();
                 showToast('error', 'Code Already Exist.');
+                return false;
+            }
+             if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
                 return false;
             }
 
@@ -1108,6 +1124,7 @@
                     $('#ledger_group').val(asset.ledger_group_id).trigger('change');
                     $('#capitalize_date_old').val(sub_asset.capitalize_date);
 
+
                     $('#last_dep_date')
                         .val('')
                         .removeAttr('min')
@@ -1132,7 +1149,7 @@
                     }
 
                     $('#expiry_date').val(expiryDate);
-                     $('#salvage_value_asset').val(sub_asset.salvage_value);
+                    $('#salvage_value_asset').val(sub_asset.salvage_value);
                     $('.capitalize_date').val(sub_asset.last_dep_date);
                     depCapitalizeDate();
                     $('#depreciation_rate').val(asset.depreciation_percentage);
@@ -1140,7 +1157,7 @@
                     $('#useful_life').val(asset.useful_life);
                     $('#maintenance_schedule').val(asset.maintenance_schedule);
                     $('#current_value_asset').val(sub_asset.current_value_after_dep);
-                   
+
 
                     $('#total_depreciation').val(sub_asset.total_depreciation);
                     add_blank();
@@ -1186,17 +1203,17 @@
         }
 
         @if (session('success'))
-        $('.preloader').hide();
+            $('.preloader').hide();
             showToast("success", "{{ session('success') }}");
         @endif
 
         @if (session('error'))
-        $('.preloader').hide();
+            $('.preloader').hide();
             showToast("error", "{{ session('error') }}");
         @endif
 
         @if ($errors->any())
-        $('.preloader').hide();
+            $('.preloader').hide();
             showToast('error',
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
@@ -1495,6 +1512,7 @@
             $('.mrntableselectexcel').append(blank_row);
             initializeCategoryAutocomplete('.category-input');
             depCapitalizeDate();
+            applyFixedPrefixToInputs();
         }
 
         function loadLocation(selectlocation = null) {
@@ -1540,6 +1558,71 @@
                 depCapitalizeDate();
             }
         });
+
+        function calculateTotals() {
+            let totalQuantity = 0;
+            let totalCurrentValue = 0;
+            let totalSalvageValue = 0;
+            let depreciationType = document.getElementById("depreciation_type").value;
+            let method = document.getElementById("depreciation_method").value;
+
+
+
+            $('.mrntableselectexcel tr').each(function() {
+                const $row = $(this);
+                const $salvageValueInput = $row.find('.salvage-value-input');
+                const old_asset_salvage = parseFloat($('#salvage_value_asset').val()) || 0;
+                const rdv = parseFloat($('#current_value_asset').val()) || 0;
+                const $depRateInput = $row.find('.dep_per');
+                const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
+                const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
+                const depreciationPercentage = parseFloat($row.find('.salvage_per').val()) || 0;
+                const usefulLife = parseFloat($row.find('.life').val()) || 0;
+                const dep_percentage = $('#depreciation_rate').val() || 0;
+                //const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
+                const salvageValue = currentValue * old_asset_salvage / rdv;
+                $salvageValueInput.val(salvageValue);
+                // Ensure all required values are provided
+                if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
+                    return;
+                }
+
+                // let depreciationRate = 0;
+                // if (method === "SLM") {
+                //     depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100)
+                //         .toFixed(2);
+                // } else if (method === "WDV") {
+                //     depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(
+                //         2);
+                // }
+                // //console.log(depreciationRate);
+
+                // $depRateInput.val(depreciationRate);
+
+                $depRateInput.val(dep_percentage);
+
+
+                // Accumulate totals
+                totalSalvageValue += parseFloat(salvageValue);
+                totalQuantity += quantity;
+                totalCurrentValue += currentValue;
+            });
+
+            $('#quantity').val(totalQuantity);
+
+
+            let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
+            if (totalCurrentValue > currentValueAsset) {
+                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
+            }
+
+            $('#current_value').val(totalCurrentValue.toFixed(2));
+            $('#salvage_value').val(totalSalvageValue.toFixed(2));
+
+
+        }
+
+
 
         function initializeCategoryAutocomplete(selector) {
 
@@ -1658,61 +1741,6 @@
             calculateTotals();
         }
 
-        function calculateTotals() {
-            let totalQuantity = 0;
-            let totalCurrentValue = 0;
-            let totalSalvageValue = 0;
-            let depreciationType = document.getElementById("depreciation_type").value;
-            let method = document.getElementById("depreciation_method").value;
-
-
-
-            $('.mrntableselectexcel tr').each(function() {
-                const $row = $(this);
-                const $salvageValueInput = $row.find('.salvage-value-input');
-                const $depRateInput = $row.find('.dep_per');
-                const quantity = parseFloat($row.find('.quantity-input').val()) || 0;
-                const currentValue = parseFloat($row.find('.current-value-input').val()) || 0;
-                const depreciationPercentage = parseFloat($row.find('.salvage_per').val()) || 0;
-                const usefulLife = parseFloat($row.find('.life').val()) || 0;
-                const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
-                $salvageValueInput.val(salvageValue);
-                // Ensure all required values are provided
-                if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
-                    return;
-                }
-
-                let depreciationRate = 0;
-                if (method === "SLM") {
-                    depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100)
-                        .toFixed(2);
-                } else if (method === "WDV") {
-                    depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(
-                        2);
-                }
-                //console.log(depreciationRate);
-
-                $depRateInput.val(depreciationRate);
-
-
-                // Accumulate totals
-                totalSalvageValue += parseFloat(salvageValue);
-                totalQuantity += quantity;
-                totalCurrentValue += currentValue;
-            });
-            $('#quantity').val(totalQuantity);
-
-            let currentValueAsset = parseFloat($('#current_value_asset').val()) || 0;
-            if (totalCurrentValue > currentValueAsset) {
-                showToast('error', 'Total Current Value cannot be greater than Asset Current Value.');
-            }
-
-            $('#current_value').val(totalCurrentValue.toFixed(2));
-            $('#salvage_value').val(totalSalvageValue.toFixed(2));
-
-
-        }
-
 
         initializeCategoryAutocomplete('.category-input');
         const allLedgers = @json($ledgers);
@@ -1758,7 +1786,7 @@
             if ($('#last_dep_date').val() == "") {
                 $('.capitalize_date').attr('min', capitalize_date).attr('max', expiry).prop('readonly', false).prop(
                     'required', true);
-                
+
             } else {
                 let lastDepDate = new Date($('#last_dep_date').val());
                 lastDepDate.setDate(lastDepDate.getDate() + 1);
@@ -1828,7 +1856,7 @@
 
                 var totalYears = years + (months / 12) + (days / 365);
                 $row.find('.life').val(totalYears.toFixed(2));
-                if(startDate == endDate) {
+                if (startDate == endDate) {
                     $row.find('.life').val(0);
                 }
             } else {
@@ -1841,6 +1869,86 @@
                 var $row = $(this).closest('tr');
                 calculateUsefulLife($row);
             });
+        }
+
+        function applyFixedPrefixToInputs() {
+            const selector = '.asset-code-input';
+            let prefix = $('#asset_search_input').val();
+
+            if (!prefix) {
+                return; // Exit if prefix is not set
+            }
+
+            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+            const inputs = document.querySelectorAll(selector);
+
+            inputs.forEach(input => {
+                // Set default value if needed
+                if (!input.value.startsWith(prefix)) {
+                    input.value = prefix;
+                }
+
+                // Enforce prefix and allow only numbers after it
+                input.addEventListener("input", function() {
+                    if (!this.value.startsWith(prefix)) {
+                        this.value = prefix;
+                    }
+
+                    // Extract the numeric part after prefix
+                    let numericPart = this.value.slice(prefix.length).replace(/\D/g, '');
+                    this.value = prefix + numericPart;
+                });
+
+                // Prevent deleting or navigating into the prefix
+                input.addEventListener("keydown", function(e) {
+                    if (
+                        this.selectionStart <= prefix.length &&
+                        (e.key === "Backspace" || e.key === "Delete" || e.key === "ArrowLeft")
+                    ) {
+                        e.preventDefault();
+                    }
+                });
+
+                // Keep cursor after prefix on click
+                input.addEventListener("click", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+
+                // Optional: force cursor after prefix on focus
+                input.addEventListener("focus", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+            });
+        }
+
+        function validateAssetCodes() {
+            const inputs = document.querySelectorAll('.asset-code-input');
+            let prefix = $('#asset_search_input').val();
+
+            if (!prefix) return true; // If no prefix, nothing to validate
+
+            // Trim and extract first word + '#S'
+            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+
+            let allValid = true;
+
+            inputs.forEach(input => {
+                const value = input.value.trim();
+                if (value === prefix) {
+                    allValid = false;
+
+                    // Optional: visually mark invalid input
+                    input.style.border = "1px solid red";
+                } else {
+                    input.style.border = ""; // Reset border if valid
+                }
+            });
+
+            return allValid;
         }
     </script>
     <!-- END: Content-->

@@ -474,6 +474,10 @@ $(document).on('blur change autocompletechange', 'tr.display_overhead_row input,
    $("input[name='orverhead_level_count']").val(overheadLevelCount);
 });
 
+$('#overheadSummaryPopup').on('hidden.bs.modal', function () {
+    let overheadLevelCount = $("tr[id*='sub_total_row_']").length || 1;
+    $("input[name='orverhead_level_count']").val(overheadLevelCount);
+});
 $(document).on('autocompletechange', 'tr.display_overhead_row input', function (e) {
    if(!e.target.value) {
       $(e.target).closest('tr').find("input[name*='[overhead_id]']").val('');
