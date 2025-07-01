@@ -54,7 +54,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Route;
-use Request;
+// use Request;
+use Illuminate\Http\Request;
 use stdClass;
 use Symfony\Component\Mime\Part\Multipart\MixedPart;
 use Illuminate\Support\Str;
@@ -63,6 +64,7 @@ use App\Models\ErpSaleInvoice;
 use App\Models\ErpInvoiceItem;
 use App\Models\PRHeader;
 use App\Models\PRDetail;
+use App\Http\Controllers\VoucherController;
 
 class Helper
 {
@@ -3308,5 +3310,21 @@ return [
             ->filter()
             ->values()
             ->toArray();
+    }
+
+    public static function getVoucherBalance($settle, $voucher_id, $doc_type, $ledger, $group, $id = null)
+    {
+        $request = new Request();
+        $request->merge([
+            'type' => $doc_type,
+            'partyID' => $ledger,
+            'ledgerGroup' => $group,
+            'payment_voucher_id' => $id,
+            'voucher_id' => $voucher_id,
+        ]);
+        $data = VoucherController::getLedgerVouchers($request);
+        $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();
+// dd($voucher);
+        return \bcsub($voucher->balance, $settle, 2);
     }
 }

@@ -22,6 +22,9 @@
                                     </div>
                                     <div
                                         class="col-md-8 text-sm-end pofilterboxcenter mb-0 d-flex flex-wrap align-items-center justify-content-sm-end">
+                                        <a href="{{ route('pending.payment.show.import') }}" class="btn btn-secondary  me-50 btn-sm mb-0">
+                                            <i data-feather="upload"></i> Import
+                                        </a> 
                                         <button data-bs-toggle="modal" data-bs-target="#filter"
                                             class="btn btn-warning me-50 btn-sm mb-0"><i data-feather="filter"></i>
                                             Filter</button>
@@ -214,7 +217,7 @@
                     </div>
                      <div class="mb-1">
                         <label class="form-label">Cost Group</label>
-                        <select id="cost_group_id" class="form-select select2" name="cost_group_id" required>
+                        <select id="cost_group_id" class="form-select select2" name="cost_group_id">
                         </select>
                     </div>
                     <div class="mb-1">
@@ -338,7 +341,7 @@
                             }) + 'Excel',
                             className: 'dropdown-item',
                             exportOptions: {
-                                columns: [3, 4, 5, 6, 7]
+                                columns: [0,1,2,3, 4, 5, 6, 7,8,9,10]
                             }
                         }],
                         init: function(api, node) {
