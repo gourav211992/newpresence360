@@ -3312,19 +3312,16 @@ return [
             ->toArray();
     }
 
-    public static function getVoucherBalance($settle, $voucher_id, $doc_type, $ledger, $group, $id = null)
+    public static function getVoucherBalance($voucher_id=null, $doc_type, $ledger, $group)
     {
         $request = new Request();
         $request->merge([
             'type' => $doc_type,
             'partyID' => $ledger,
             'ledgerGroup' => $group,
-            'payment_voucher_id' => $id,
             'voucher_id' => $voucher_id,
         ]);
         $data = VoucherController::getLedgerVouchers($request);
-        $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();
-// dd($voucher);
-        return \bcsub($voucher->balance, $settle, 2);
+        return $data;
     }
 }
