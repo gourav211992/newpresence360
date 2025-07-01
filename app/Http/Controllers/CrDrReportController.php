@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\PaymentVoucher;
 use App\Models\UploadPendingPaymentMaster;
 use App\Imports\CrDrReportImport;
+use App\Exports\PendingPaymentExport;
+use App\Exports\FailedPendingPaymentExport;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\PaymentVoucherDetails;
@@ -34,6 +36,7 @@ use PDF;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Cookie;
 use App\Exports\DebitorCreditoExcelExport;
+use App\Mail\ImportComplete;
 // use App\Mail\ImportComplete;
 use App\Services\CrDrImportExportService;
 use App\Models\CostGroup;
@@ -43,11 +46,11 @@ use App\Models\CostGroup;
 
 class CrDrReportController extends Controller
 {
-     protected $crdrPendingPaymentImportExportService;
+     protected $PendingPaymentImportExportService;
 
-    public function __construct(CrDrImportExportService $crdrPendingPaymentImportExportService)
+    public function __construct(CrDrImportExportService $PendingPaymentImportExportService)
     {
-        $this->crdrPendingPaymentImportExportService = $crdrPendingPaymentImportExportService;
+        $this->PendingPaymentImportExportService = $PendingPaymentImportExportService;
     }
 
     public function debit(Request $request)
@@ -1846,6 +1849,41 @@ class CrDrReportController extends Controller
 
     public function getInvocies(Request $request)
     {
+        // dd($request->all());
+        $ids = $request->input('ids');
+        // $import = $request->input('import');
+
+        // Step 1: Get the UploadPendingPaymentMaster records by IDs
+        $pendingRecords = UploadPendingPaymentMaster::whereIn('id', $ids)
+        ->where('import_status', 'Success')
+        ->get();
+
+        $dataByLedger = [];
+
+        foreach ($pendingRecords->groupBy('ledger_name') as $ledger_name => $records) {
+            // You may have more than one record per ledger_name
+            // We'll just take the first for group/voucher_no, but you can adapt as needed
+            $first = $records->first();
+
+            // Get Ledger and Group objects
+            $ledger = $this->PendingPaymentImportExportService->checkLedger($first->ledger_name);
+            $group = $this->PendingPaymentImportExportService->checkLedgerGroup($first->ledger_group);
+
+            // Build array of voucher_no, balance, etc., for this ledger
+            $dataByLedger[$ledger->id] = [
+                'ledger' => $ledger,
+                'group' => $group,
+                'voucher_records' => $records->map(function ($r) {
+                    return [
+                        'voucher_no'    => $r->voucher_no,
+                        'balance'       => $r->balance,
+                        'settle_amount' => $r->settle_amount,
+                        'id'            => $r->id,
+                    ];
+                })->values()->all()
+            ];
+        }
+
         $organization_id = [];
         if ($request->organization_id) {
 
@@ -1893,17 +1931,23 @@ class CrDrReportController extends Controller
 
             $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
         }
-        foreach ($ledger_ids as $ledger) {
+        // foreach ($ledger_ids as $ledger) {
+        foreach ($dataByLedger as $ledgerId => $details) {
+            // dd($details);
+             $ledger = $details['ledger'];
+            $group  = $details['group'];
             $ledgerGroupIds = is_array($ledger->ledger_group_id)
             ? $ledger->ledger_group_id
             : json_decode($ledger->ledger_group_id, true);
             $ledgerGroupIds = is_array($ledgerGroupIds)
             ? $ledgerGroupIds
             : [$ledger->ledger_group_id];
+            foreach ($details['voucher_records'] as $rec) {
             $data = Voucher::withDefaultGroupCompanyOrg()->where("organization_id", $organization_id)
                 ->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereIn('location', $locationIds)
+                ->where('voucher_no', $rec['voucher_no'])
                 ->withWhereHas('items', function ($i) use ($ledger, $request,$ledgerGroupIds,$cost_center_ids) {
                     $i->where('ledger_id', $ledger->id)
                     ->whereIn('ledger_parent_id', $ledgerGroupIds);
@@ -1963,7 +2007,7 @@ class CrDrReportController extends Controller
                 ->select('id', 'amount', 'book_id', 'document_date as date', 'created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
                 ->orderBy('id', 'desc')
                 ->get()
-                ->map(function ($voucher) use ($request, $ledger) {
+                ->map(function ($voucher) use ($request, $ledger,$rec) {
                     $voucher->date = date('d/m/Y', strtotime($voucher->date));
                     $voucher->document_date = $voucher->document_date;
 
@@ -1982,6 +2026,7 @@ class CrDrReportController extends Controller
                     $balance = $balance->sum('amount');
                     $voucher->set = $balance;
                     $voucher->balance = $voucher->amount - $balance;
+                    $voucher->settle_amount = $rec['settle_amount'];
 
                     return $voucher;
                 });
@@ -2059,10 +2104,17 @@ class CrDrReportController extends Controller
             }
 
             // Store or collect data per ledger
-  if ($data->isNotEmpty()) {
-        $results = $results->merge($data);
-    }
+            if ($data->isNotEmpty()) {
+                $results = $results->merge($data);
+               $payload = [
+        'rows' => $results->toArray(), // <-- just array!
+        'type' => $request->input('type'),
+    ];
+    $nextRequest = new \Illuminate\Http\Request($payload);
+    return $this->storeCrDrRowData($nextRequest);
+            }
         }
+    }
 
         
         return response()->json(['data' => $results, 'sum' => $advanceSum]);
@@ -2071,12 +2123,20 @@ class CrDrReportController extends Controller
     public function storeCrDrRowData(Request $request)
     {
         $payload = json_decode($request->getContent(), true);
-        if (!isset($payload['rows']) || !is_array($payload['rows'])) {
-            return response()->json(['error' => 'Invalid rows data.'], 422);
+        if($payload)
+        {
+            if (!isset($payload['rows']) || !is_array($payload['rows'])) {
+                return response()->json(['error' => 'Invalid rows data.'], 422);
+            }
+    
+            $rows = $payload['rows'];
+            $type = $payload['type'];
+            
+        }else{
+            
+            $rows = $request['rows'];
+            $type = $request['type'];
         }
-
-        $rows = $payload['rows'];
-        $type = $payload['type'];
 
         // Flatten items
         $flattened = collect($rows)->flatMap(function ($voucher) {
@@ -2194,17 +2254,17 @@ class CrDrReportController extends Controller
             $deleteQuery->delete();
             // dd($rowCount);
 
-        $import = new CrDrReportImport($this->crdrPendingPaymentImportExportService, $user, $request->type);
+        $import = new CrDrReportImport($this->PendingPaymentImportExportService, $user, $request->type);
         Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
             $failedItems = $import->getFailedItems();
             $mailData = [
-                'modelName' => 'Ledgers',
+                'modelName' => 'Pending Payments',
                 'successful_items' => $successfulItems,
                 'failed_items' => $failedItems,
-                'export_successful_url' => route('ledgers.export.successful'),
-                'export_failed_url' => route('ledgers.export.failed'),
+                'export_successful_url' => route('pending.payment.export.successful'),
+                'export_failed_url' => route('pending.payment.export.failed'),
             ];
             if (count($failedItems) > 0) {
                 $message = 'Items import failed.';
@@ -2215,7 +2275,7 @@ class CrDrReportController extends Controller
             }
             if ($user->email) {
                 try {
-                    // Mail::to($user->email)->send(new ImportComplete($mailData));
+                    Mail::to($user->email)->send(new ImportComplete($mailData));
                 } catch (\Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
@@ -2237,6 +2297,22 @@ class CrDrReportController extends Controller
                 'message' => 'Failed to import items: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function exportSuccessfulItems()
+    {
+        $uploadItems = UploadPendingPaymentMaster::where('import_status', 'Success')
+            ->get();
+        // $items = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')
+        //     ->whereIn('code', $uploadItems->pluck('code'))->get();
+        return Excel::download(new PendingPaymentExport($uploadItems, $this->PendingPaymentImportExportService), "successful-items.xlsx");
+    }
+
+    public function exportFailedItems()
+    {
+        $failedItems = UploadPendingPaymentMaster::where('import_status', 'Failed')
+            ->get();
+        return Excel::download(new FailedPendingPaymentExport($failedItems), "failed-items.xlsx");
     }
 
     public function updateCacheData(Request $request)

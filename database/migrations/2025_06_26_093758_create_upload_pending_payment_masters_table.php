@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('ledger_name')->nullable();
             $table->string('ledger_group')->nullable();
             $table->string('voucher_no')->nullable();
-            $table->string('amount')->nullable();
             $table->string('balance')->nullable();
             $table->string('settle_amount')->nullable();
 

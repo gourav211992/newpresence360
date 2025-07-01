@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Helpers\ConstantHelper;
 use App\Models\Ledger;
 use App\Models\UploadLedgerMaster;
+use App\Models\UploadPendingPaymentMaster;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use App\Services\CrDrImportExportService;
@@ -47,16 +48,12 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
     public function onSuccess($row)
     {
         $this->successfulItems[] = [
-            'code' => $row->code,
-            'name' => $row->name,
-            'groups' =>  $row->ledger_groups,
-            'status' => $row->status,
-            'tds_section' => $row->tds_section,
-            'tds_percentage' => $row->tds_percentage,
-            'tcs_section' => $row->tcs_section,
-            'tcs_percentage' => $row->tcs_percentage,
-            'tax_type' => $row->tax_type,
-            'tax_percentage' => $row->tax_percentage,
+            'ledger_name' => $row->ledger_name,
+            'voucher_no' => $row->voucher_no,
+            'ledger_group' =>  $row->ledger_group,
+            'balance' => $row->balance,
+            'settle_amount' => $row->settle_amount,
+            'id' => $row->id,
             'status_check' => 'success',
             'remarks' => 'Success',
         ];
@@ -65,16 +62,12 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
     public function onFailure($uploadedItem)
     {
         $this->failedItems[] = [
-            'code' => $uploadedItem->code ?? null,
-            'name' => $uploadedItem->name ?? null,
-            'groups' => $uploadedItem->ledger_groups ?? null,
-            // 'status' => $uploadedItem->status,
-            'tds_section' => $uploadedItem->tds_section ?? null,
-            'tds_percentage' => $uploadedItem->tds_percentage ?? null,
-            'tcs_section' => $uploadedItem->tcs_section ?? null,
-            'tcs_percentage' => $uploadedItem->tcs_percentage ?? null,
-            'tax_type' => $uploadedItem->tax_type ?? null,
-            'tax_percentage' => $uploadedItem->tax_percentage ?? null,
+           'ledger_name' => $uploadedItem->ledger_name,
+            'voucher_no' => $uploadedItem->voucher_no,
+            'ledger_group' =>  $uploadedItem->ledger_group,
+            'balance' => $uploadedItem->balance,
+            'settle_amount' => $uploadedItem->settle_amount,
+            'id' => $uploadedItem->id,
             'status_check' => 'failed',
             'remarks' => $uploadedItem->import_remarks,
         ];
@@ -89,274 +82,161 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
     {
         return $this->failedItems;
     }
+
     public function model(array $row)
     {
-        $organization = $this->user->organization;
-        // if (
-        //     strtolower(trim($row['code'])) === 'code of ledger' ||
-        //     strtolower(trim($row['name'])) === 'name of ledger'
-        // ) {
-        //     // Skip this row
-        //     return null;
-        // }
         if (collect($row)->filter()->isEmpty()) {
             return null;
         }
-        // dd($row, $this->type);
-        $uploadedItem = null;
-        $validatedData = [];
+        $ledgerName   = isset($row['ledger_name']) ? trim($row['ledger_name']) : null;
+        $ledgerGroup  = isset($row['ledger_group']) ? trim($row['ledger_group']) : null;
+        $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
+        $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
+        $balance      = isset($row['balance']) ? trim($row['balance']) : null;
+
+        $organization = $this->user->organization;
+
+        // Always create pending item first
+        $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null);
+
         $errors = [];
+
         try {
-            $type = $this->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
-            // $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
-            // $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            // if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
-            //     $firstService = $services['services']->first();
-            //     $serviceId = $firstService->service_id;
-            //     $policyData = Helper::getPolicyByServiceId($serviceId);
-            //     if ($policyData && isset($policyData['policyLevelData'])) {
-            //         $policyLevelData = $policyData['policyLevelData'];
-            //         $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
-            //         $validatedData['company_id'] = $policyLevelData['company_id'] ?? null;
-            //         $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
-            //     } else {
-            //         $validatedData['group_id'] = $organization->group_id;
-            //         $validatedData['company_id'] = null;
-            //         $validatedData['organization_id'] = null;
-            //     }
-            // } else {
-            //     $validatedData['group_id'] = $organization->group_id;
-            //     $validatedData['company_id'] = null;
-            //     $validatedData['organization_id'] = null;
-            // }
+            // First, validate required fields (stop if missing)
+            $this->service->validateImportRow($row);
 
-
-            // Validate mandatory fields
-            // $code = isset($row['code']) ? trim($row['code']) : null;
-            // $name = isset($row['name']) ? trim($row['name']) : null;
-            // $group = isset($row['group']) ? trim($row['group']) : null;
-            // $status = 'Success';
-            
-
+            // Now, collect other validation errors but don't stop at first
             try {
-                // $this->service->checkRequiredFields($code, $name, $group);
-            } catch (Exception $e) {
-                Log::error("Error Required fields missing: " . $e->getMessage());
-                $status = 'Failed';
+                $this->service->validateNumericAmounts($row);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
             }
 
-            // try {
-            //     // Check uniqueness
-            //     $this->service->checkLedgerUniqueness('code', $code,$this->user);
-            //     // Validate unique name
-            //     $this->service->checkLedgerUniqueness('name', $name,$this->user);
-            // } catch (Exception $e) {
-            //     Log::error("Error Fields already Exists: " . $e->getMessage());
-            //     $status = 'Failed';
-            // }
+            try {
+                $ledger = $this->service->checkLedger($ledgerName);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
 
-            // // Process group IDs
-            // try {
-            //     $groupData = $this->service->processGroupData($group);
+            try {
+                $group = $this->service->checkLedgerGroup($ledgerGroup);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
 
-            // } catch (\Exception $e) {
-            //         Log::error("group not found: " . $group);
-            //         $status = 'Failed';
-            // }
-            // $groupIds = $groupData['groupIds'];
-            // $groupLower = $groupData['groupLower'];
+             // Only proceed if $ledger and $group were set
+            if (!isset($ledger) || !isset($group)) {
+                $uploadedItem->update([
+                    'import_status' => 'Failed',
+                    'import_remarks' => str_replace(',', '', implode(' ', $errors)),
+                ]);
+                $this->onFailure($uploadedItem);
+                return;
+            }
 
-            // // Clean unnecessary fields
-            // if (!in_array('tds', $groupLower)) {
-            //     $row['tds_section'] = null;
-            //     $row['tds_percentage'] = null;
-            // } else {
-            //     $row['tds_section'] = $this->service->getTdsSectionKeyFromLabel($row['tds_section'] ?? '') ?? null;
-            // }
-            // if (!in_array('tcs', $groupLower)) {
-            //     $row['tcs_section'] = null;
-            //     $row['tcs_percentage'] = null;
-            // } else {
-            //     $row['tcs_section'] = $this->service->getTcsSectionKeyFromLabel($row['tcs_section'] ?? '') ?? null;
-            // }
-            // if (!in_array('gst', $groupLower)) {
-            //     $row['tax_type'] = null;
-            //     $row['tax_percentage'] = null;
-            // } else {
-            //     $row['tax_type'] = $this->service->getTaxTypeSectionKeyFromLabel($row['tax_type'] ?? '') ?? null;
-            // }
-            // $uploadedItem = UploadLedgerMaster::create([
-            //     'code' => $code,
-            //     'name' => $name,
-            //     'ledger_groups' => $group,
-            //     'status' => $row['status'],
-            //     'user_id' => $this->user->id,
-            //     'tds_section' => $row['tds_section'] ?? null,
-            //     'tds_percentage' => $row['tds_percentage'] ?? null,
-            //     'tcs_section' => $row['tcs_section'] ?? null,
-            //     'tcs_percentage' => $row['tcs_percentage'] ?? null,
-            //     'tax_type' => $row['tax_type'] ?? null,
-            //     'tax_percentage' => $row['tax_percentage'] ?? null,
-            //     'group_id' => $validatedData['group_id'],
-            //     'company_id' => $validatedData['company_id'],
-            //     'organization_id' => $validatedData['organization_id'],
-            //     'import_status' => $status,
-            // ]);
-            $ledger_name = $row['ledger_name'];
-            $ledger_group = $row['ledger_group'];
-            $document_no = $row['document_no'];
-            $amount = $row['amount'];
-            $balance = $row['balance'];
-            $settle_amount = $row['settle_amount'];
+            try {
+                $this->service->checkLedgerParentGroup($ledgerGroup, $ledger ?? null);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+           
 
-            // if ($uploadedItem) {
-            //     $this->processItemFromUpload($uploadedItem);
-            // } else {
-            //     throw new Exception("Failed to create item in the database.");
-            // }
-            // return $uploadedItem;
+            // Continue checks only if $ledger and $group exist
+            try {
+                $ledgerGroupIds = $group->id;
+                $voucher = $this->service->checkVoucheNoWithLedger($ledgerGroupIds, $ledger, $voucherNo);
+                // dd($ledgerGroupIds,$voucher);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+
+            // Only proceed if $voucher was set
+            if (!isset($voucher)) {
+                $uploadedItem->update([
+                    'import_status' => 'Failed',
+                    'import_remarks' => str_replace(',', '', implode(' ', $errors)),
+                ]);
+                $this->onFailure($uploadedItem);
+                return;
+            }
+
+            try {
+              $this->service->validateBalanceInVoucher($balance, $settleAmount, $voucher->id, $this->type, $ledger->id, $ledgerGroupIds);
+            //  dd($response);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+
+            try {
+                // dd($settleAmount, $balance);
+                $this->service->validateSettleVsBalance($settleAmount, $balance);
+            } catch (\Exception $e) {
+                $errors[] = $e->getMessage();
+            }
+
+            // If any error collected, store as failed
+            if (!empty($errors)) {
+                $uploadedItem->update([
+                    'import_status' => 'Failed',
+                    'import_remarks' => str_replace(',', '', implode(' ', $errors)),
+                ]);
+                $this->onFailure($uploadedItem);
+                return;
+            }
+
+            // --- SUCCESS: Save with success remarks ---
+            if ($uploadedItem) {
+                $this->onSuccess($uploadedItem);
+            }
 
         } catch (\Exception $e) {
-            Log::error("Error importing item: " . $e->getMessage(), [
-                'error' => $e,
-                'row' => $row
+            // This catches any *unexpected* error in the logic above
+            Log::error("Error importing row: " . $e->getMessage(), ['error' => $e]);
+            $uploadedItem->update([
+                'import_status' => 'Failed',
+                'import_remarks' => str_replace(',', '', $e->getMessage()),
             ]);
-            // if (isset($uploadedItem)) {
-            //     $errorMsg = rtrim("Error importing item: " . $e->getMessage(), '.');
-            //     $uploadedItem->update([
-            //         'import_status' => 'Failed',
-            //         'import_remarks' => $errorMsg,
-            //     ]);
-            // }
-
-            // $this->onFailure($uploadedItem);
-            throw new Exception("Error importing item: " . $e->getMessage());
+            $this->onFailure($uploadedItem);
+            return;
         }
     }
 
 
+    protected function savePendingPaymentImport($row, $user, $organization, $status, $remarks)
+    {
+       return UploadPendingPaymentMaster::create([
+            'ledger_name'      => $row['ledger_name'] ?? null,
+            'ledger_group'     => $row['ledger_group'] ?? null,
+            'voucher_no'       => $row['document_no'] ?? null,
+            'settle_amount'    => $row['settle_amount'] ?? null,
+            'balance'          => $row['balance'] ?? null,
+            'user_id'          => $user->id,
+            'group_id'         => $organization->group_id,
+            'company_id'       => $organization->company_id,
+            'organization_id'  => $organization->id,
+            'import_status'    => $status,
+            'import_remarks'   => $remarks,
+        ]);
+        
 
-    // private function processItemFromUpload(UploadLedgerMaster $uploadedItem)
+    }
+
+    // protected function saveSuccessImport($row, $user, $organization)
     // {
-    //     $errors = [];
-    //     $organizationId = $uploadedItem->organization_id;
-    //     $groupId = $uploadedItem->group_id;
-    //     $companyId = $uploadedItem->company_id;
-    //     $code = $uploadedItem->code;
-    //     $group = $uploadedItem->ledger_groups;
-    //     $name = $uploadedItem->name;
-    //     try {
-    //         $this->service->checkRequiredFields($code, $name, $group);
-    //     } catch (Exception $e) {
-    //         $errors[] = "Error fetching sub-category: " . $e->getMessage();
-    //     }
+    //    return UploadPendingPaymentMaster::create([
+    //         'ledger_name'      => $row['ledger_name'] ?? null,
+    //         'ledger_group'     => $row['ledger_group'] ?? null,
+    //         'voucher_no'       => $row['document_no'] ?? null,
+    //         'settle_amount'    => $row['settle_amount'] ?? null,
+    //         'balance'          => $row['balance'] ?? null,
+    //         'user_id'          => $user->id,
+    //         'group_id'         => $organization->group_id,
+    //         'company_id'       => $organization->company_id,
+    //         'organization_id'  => $organization->id,
+    //         'import_status'    => 'Success',
+    //         'import_remarks'   => 'Success',
+    //     ]);
 
-    //     // try {
-    //     //     // Check uniqueness
-    //     //     $this->service->checkLedgerUniqueness('code', $code,$this->user);
-    //     //     // Validate unique name
-    //     //     $this->service->checkLedgerUniqueness('name', $name,$this->user);
-    //     // } catch (Exception $e) {
-    //     //     $errors[] = $e->getMessage();
-    //     // }
-    //     $groupIds = [];
-    //     try {
-    //             $groupData = $this->service->processGroupData($group);
-    //             $groupIds = $groupData['groupIds'];
-
-    //         } catch (\Exception $e) {
-    //                 // $status = 'Failed';
-    //             $errors[] = $e->getMessage();
-    //             $uploadedItem->update([
-    //                 'import_status' => 'Failed',
-    //                 'import_remarks' => implode(' ', $errors), // Combine all error messages
-    //             ]);
-
-    //             $this->onFailure($uploadedItem);
-    //             return;
-    //         }
-    //     try {
-    //         $item = new Ledger([
-    //             'code' => $uploadedItem->code,
-    //             'name' => $uploadedItem->name,
-    //             'ledger_group_id' => json_encode($groupIds),
-    //             'status' => $this->service->mapStatus($uploadedItem['status'] ?? 1),
-    //             'tds_section' => $uploadedItem->tdssection,
-    //             'tds_percentage' => $uploadedItem->tds_percentage ?? null,
-    //             'tcs_section' => $uploadedItem->tcs_section  ?? null,
-    //             'tcs_percentage' => $uploadedItem->tcs_percentage  ?? null,
-    //             'tax_type' => $uploadedItem->tax_type  ?? null,
-    //             'tax_percentage' => $uploadedItem->tax_percentage ?? null,
-    //             'organization_id' => $uploadedItem->organization_id,
-    //             'company_id' => $uploadedItem->company_id,
-    //             'group_id' => $uploadedItem->group_id,
-    //         ]);
-
-    //         $rules = [
-    //             'code' => ['required', 'string', 'max:255'],
-    //             'name' => ['required', 'string', 'max:255'],
-    //             'tax_type' => ['nullable', 'string', 'max:255'],
-    //             'tax_percentage' => ['nullable', 'int', 'max:255'],
-    //             'tds_section' => ['nullable', 'string', 'max:255'],
-    //             'tds_percentage' => ['nullable', 'numeric', 'max:255'],
-    //             'tcs_section' => ['nullable', 'string', 'max:255'],
-    //             'tcs_percentage' => ['nullable', 'numeric', 'max:255'],
-    //         ];
-
-    //         // Add unified custom rule
-    //         $validator = Validator::make($item->toArray(), $rules);
-
-    //         $validator->after(function ($validator) use ($item) {
-    //             $codeExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-    //                 ->where('code', $item->code)
-    //                 ->exists();
-
-    //             $nameExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-    //                 ->where('name', $item->name)
-    //                 ->exists();
-
-    //             if ($codeExists && $nameExists) {
-    //                 $validator->errors()->add('code_name', 'The code and name have already been taken.');
-    //             } elseif ($codeExists) {
-    //                 $validator->errors()->add('code', 'The code has already been taken.');
-    //             } elseif ($nameExists) {
-    //                 $validator->errors()->add('name', 'The name has already been taken.');
-    //             }
-    //         });
-
-    //         if ($validator->fails()) {
-    //             $flattenedErrors = implode(' ', $validator->errors()->all()); // Join errors with period and space
-
-    //             $errors[] = $flattenedErrors; 
-
-    //             $uploadedItem->update([
-    //                 'import_status' => 'Failed',
-    //                 'import_remarks' => implode(' ', $errors), // Combine all error messages
-    //             ]);
-
-    //             $this->onFailure($uploadedItem);
-    //             return;
-    //         }
-
-    //         $item->save();
-
-    //         $uploadedItem->update([
-    //             'import_status' => 'Success',
-    //             'import_remarks' => 'Successfully imported item.',
-    //         ]);
-
-    //         $this->onSuccess($uploadedItem);
-    //     } catch (Exception $e) {
-    //         Log::error("Error fetching category: " . $e->getMessage(), ['error' => $e]);
-    //         $errorMsg = rtrim("Error fetching: " . $e->getMessage(), '.');
-    //         $uploadedItem->update([
-    //             'import_status' => 'Failed',
-    //             'import_remarks' =>  $errorMsg,
-    //         ]);
-    //         Log::info("Updated uploaded item status to Failed. Remarks: " . $uploadedItem->import_remarks . ". Status: " . $uploadedItem->status); //Check the status here
-    //         $this->onFailure($uploadedItem);
-    //         Log::info("Called onFailure for item code: " . $uploadedItem->code);
-    //         return;
-    //     }
+        
     // }
 }

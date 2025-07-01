@@ -120,21 +120,23 @@
                                 </ul>
                                 <div class="tab-content">
                                     <div class="tab-pane active" id="Succeded">
-                                        {{-- <div class="text-end my-1">
-                                            <button type="button"
-                                                class="btn btn-warning btn-sm mb-50 mb-sm-0 me-50 exportBtn"><i
-                                                    data-feather="download"></i>Export to Excel</button>
-                                        </div> --}}
+                                        <div class="text-end my-1">
+                                           <button type="button" class="btn btn-primary 
+                                           btn-sm mb-50 mb-sm-0 me-50 waves-effect" id="proceedBtn" style="display: none;">
+                                            <i data-feather="check-circle"></i>Proceed
+                                        </button>
+                                        </div>
                                         <div class="table-responsive">
                                             <table
                                                 class="datatables-basic1 datatables-success table  myrequesttablecbox">
                                                 <thead>
                                                     <tr>
-                                                        <th>S.No</th>
-                                                        <th>Code</th>
-                                                        <th>Name</th>
-                                                        <th>Group</th>
-                                                        <th>Status</th>
+                                                        <th>#</th>
+                                                        <th>Ledger</th>
+                                                        <th>Ledger Group</th>
+                                                        <th>Document No.</th>
+                                                        <th>Balance</th>
+                                                        <th>Settle Amount</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -160,9 +162,11 @@
                                                 <thead>
                                                     <tr>
                                                         <th>#</th>
-                                                        <th>Code</th>
-                                                        <th>Name</th>
-                                                        <th>Group</th>
+                                                        <th>Ledger</th>
+                                                        <th>Ledger Group</th>
+                                                        <th>Document No.</th>
+                                                        <th>Balance</th>
+                                                        <th>Settle Amount</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -202,7 +206,7 @@
                             className: 'btn btn-outline-secondary',
                             exportOptions: { columns: [0,1,2,3,4] },
                             action: function (e, dt, node, config) {
-                                    window.location.href = `/ledger/export-failed`;
+                                    window.location.href = `/report/export-failed`;
                                 },
                     init: function (api, node, config) {
                         $(node).removeClass('btn-secondary');
@@ -214,7 +218,7 @@
                     }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
-                    { "orderable": false, "targets": [4] }
+                    { "orderable": false, "targets": [-1]  }
                 ],
                 language: {
                     paginate: {
@@ -243,7 +247,7 @@
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 me-50' }) + 'Excel',
                             className: 'btn btn-outline-secondary',
                             action: function (e, dt, node, config) {
-                                    window.location.href = `/ledger/export-successful`;
+                                    window.location.href = `/report/export-successful`;
                                 },
                     init: function (api, node, config) {
                         $(node).removeClass('btn-secondary');
@@ -255,7 +259,7 @@
                     }],
                 lengthMenu: [7, 10, 25, 50, 75, 100],
                 columnDefs: [
-                    { "orderable": false, "targets": [5] }
+                    { "orderable": false, "targets": [-1] }
                 ],
                 language: {
                     paginate: {
@@ -540,32 +544,33 @@
             table.clear();
 
             const isSuccessTable = tableBodySelector === '#success-table-body';
-
             if (items.length > 0) {
                 items.forEach((item, index) => {
                     const row = [
                         index + 1,
-                        `<span class="fw-bolder text-dark">${item.code}</span>`,
-                        item.name,
-                        item.groups
+                        `<span class="fw-bolder text-dark">${item.ledger_name}</span>`,
+                        item.ledger_group,
+                        item.voucher_no,
+                        item.balance ?? 0,
+                        item.settle_amount ?? 0,
                     ];
 
-                    if (isSuccessTable) {
-                        row.push(
-                            `<span class="badge rounded-pill ${item.status?.toLowerCase() === 'active'
-                                ? 'badge-light-success' : 'badge-light-danger'}">${item.status}</span>`
-                        );
-                     row.push(`<span class="text-success  fw-bold">${item.remarks || ''}</span>`);
-                    } else {
-                        row.push(`<span class="text-danger  fw-bold">${item.remarks || ''}</span>`);
-                    }
+                     if (isSuccessTable) {
+                const idInput = item.id
+                    ? `<input type="hidden" class="upload-item-id" value="${item.id}">`
+                    : '';
+                row.push(`${idInput}<span class="text-success  fw-bold">${item.remarks || ''}</span>`);
+            } else {
+                row.push(`<span class="text-danger  fw-bold">${item.remarks || ''}</span>`);
+            }
                     table.row.add(row);
                 });
             } else {
                 const emptyRow = isSuccessTable
-                    ? ['', '', 'No records found', '', '', '']
-                    : ['', '', 'No records found', '', ''];
+                    ? ['', '', 'No records found', '', '', '','']
+                    : ['', '', 'No records found', '', '','',''];
                 table.row.add(emptyRow);
+                $('#proceedBtn').hide();
             }
 
             table.draw(false);
@@ -584,6 +589,47 @@
 
 
         });
+        $(document).on('click', '#proceedBtn', function () {
+                // Reference to the DataTable instance for the success table
+                const table = $('.datatables-basic1').DataTable();
+                    // Get all hidden ids from the success table
+                    const ids = [];
+                    $('#success-table-body').find('.upload-item-id').each(function () {
+                        ids.push($(this).val());
+                    });
+
+                    if (!ids.length) {
+                        Swal.fire('No records to process.', '', 'warning');
+                        return;
+                    }
+                // Now send AJAX request
+                    $.ajax({
+                        headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    url: '{{ route('getInvocies') }}',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        ids: ids,
+                        type: 'payments',
+                    },
+                    success: function(response) {
+                        console.log(response)
+                    window.location.href = response.redirect;
+                    // $('.preloader').hide();
+                },
+                error: function(xhr) {
+                    $('.preloader').hide();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Failed to submit vouchers. Please try again.'
+                    });
+                }
+                });
+            });
+
         $(document).on('click', '.editbtnNew', function(e) {
             e.preventDefault();
             feather.replace();

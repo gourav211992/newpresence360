@@ -306,6 +306,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
     Route::post('/report/update-cache', [CrDrReportController::class,'updateCacheData'])->name('pending.payment.update.cache');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
+    Route::get('/report/export-successful', [CrDrReportController::class,'exportSuccessfulItems'])->name('pending.payment.export.successful');
+    Route::get('/report/export-failed', [CrDrReportController::class,'exportFailedItems'])->name('pending.payment.export.failed');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
     Route::get('vouchers/cancel', [VoucherController::class, 'cancelDocument'])->name('voucher.cancel.document');
     Route::resource('ledger-groups', GroupController::class)->except(['show']);
