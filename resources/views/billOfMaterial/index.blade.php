@@ -53,9 +53,11 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                  <th>UOM</th>
                                  <th>Production Type</th>
                                  <th>Components</th>
+                                 @if($canView)
                                  <th>Item Cost</th>
                                  <th>Overheads</th>
                                  <th>Total Cost</th>
+                                 @endif
                                  <th>Status</th>
                               </tr>
                            </thead>
@@ -158,11 +160,12 @@ $(document).ready(function() {
         { data: 'uom_name', name: 'uom_name', render: renderData },
         { data: 'production_type', name: 'production_type', render: renderData },
         { data: 'components', name: 'components', render: renderData },
+        @if($canView) 
         { data: 'total_item_value', name: 'total_item_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             },
           
-         },
+         }, 
         { data: 'overhead', name: 'overhead', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             },
@@ -173,6 +176,7 @@ $(document).ready(function() {
             },
            
          },
+         @endif
          { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }

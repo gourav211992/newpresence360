@@ -406,6 +406,7 @@ class GateEntryController extends Controller
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $po_detail_id = null;
+                    $purchaseOrderId = null;
                     $so_id = null;
                     if ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) {
                         if (isset($component['supplier_inv_detail_id']) && $component['supplier_inv_detail_id']) {
@@ -449,7 +450,7 @@ class GateEntryController extends Controller
                         if (isset($component['supplier_inv_detail_id']) && $component['supplier_inv_detail_id']) {
                             $supplierInvDetail =  VendorAsnItem::find($component['supplier_inv_detail_id']);
                             $po_detail_id = $supplierInvDetail->id ?? null;
-                            $purchaseOrderId = $supplierInvDetail?->vendorAsn?->purchase_order_id;
+                            $purchaseOrderId = $supplierInvDetail?->po_id;
                             if ($supplierInvDetail) {
                                 $supplierInvDetail->ge_qty += floatval($component['accepted_qty']);
                                 $supplierInvDetail->save();
@@ -514,7 +515,9 @@ class GateEntryController extends Controller
                     $mrnItemArr[] = [
                         'header_id' => $mrn->id,
                         'purchase_order_item_id' => ($request->all()['reference_type'] == ConstantHelper::PO_SERVICE_ALIAS) ? $po_detail_id : null,
+                        'po_id' => ($request->all()['reference_type'] == ConstantHelper::PO_SERVICE_ALIAS) ? $purchaseOrderId : null,
                         'job_order_item_id' => ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) ? $po_detail_id : null,
+                        'jo_id' => ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) ? $purchaseOrderId : null,                        
                         'so_id' => $so_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
@@ -587,7 +590,9 @@ class GateEntryController extends Controller
                     $GateEntryDetail = new GateEntryDetail;
                     $GateEntryDetail->header_id = $mrnItem['header_id'];
                     $GateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
+                    $GateEntryDetail->po_id = $mrnItem['po_id'];
                     $GateEntryDetail->job_order_item_id = $mrnItem['job_order_item_id'];
+                    $GateEntryDetail->jo_id = $mrnItem['jo_id'];
                     $GateEntryDetail->so_id = $mrnItem['so_id'];
                     $GateEntryDetail->item_id = $mrnItem['item_id'];
                     $GateEntryDetail->item_code = $mrnItem['item_code'];
@@ -2278,8 +2283,11 @@ class GateEntryController extends Controller
                     : ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA');
 
                 $dataCurrentPo = $moduleType === 'suppl-inv'
-                    ? ($row->vendor_asn_id ?? 'null')
+                    ? ($row->po_id ?? 'null')
                     : ($row->purchase_order_id ?? 'null');
+                $dataCurrentAsn = $moduleType === 'suppl-inv'
+                    ? ($row->vendor_asn_id ?? 'null')
+                    : 'null';
                 $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
@@ -2287,7 +2295,7 @@ class GateEntryController extends Controller
                 // $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
 
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' >
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$dataCurrentPo}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-current-asn='{$dataCurrentAsn}' data-existing-po='{$dataExistingPo}' >
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -2407,14 +2415,14 @@ class GateEntryController extends Controller
             if ($poItem->supp_invoice_required == 'yes') {
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
-                    ->whereHas('vendorAsn', function ($query)  {
-                        $query->where('type', 'po');
-                    })
+                    // ->whereHas('vendorAsn', function ($query)  {
+                    //     $query->where('type', 'po');
+                    // })
                     ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
                     ->get();
 
                 foreach ($siItems as $siItem) {
-                    if (in_array($siItem->id, $selected_po_ids)) {
+                    if (in_array($siItem->po_id, $selected_po_ids)) {
                         continue;
                     }
                     $poItemIds[] = $siItem->id;

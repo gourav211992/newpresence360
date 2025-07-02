@@ -3,11 +3,12 @@
         $rowCount = $key + 1;
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
-        <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
         @if($item->po?->type == 'supplier-invoice')
+            <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->po_item?->purchase_order_id}}">
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->po_item?->id}}">
             <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="{{$item->id}}">
         @else
+            <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
             <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
             <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="">
         @endif

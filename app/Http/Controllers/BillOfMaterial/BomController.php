@@ -152,7 +152,7 @@ class BomController extends Controller
                 ->make(true);
         }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
-        return view('billOfMaterial.index', ['servicesBooks' => $servicesBooks]);
+        return view('billOfMaterial.index', ['servicesBooks' => $servicesBooks, 'canView' => $canView]);
     }
 
     # Bill of material Create
@@ -655,7 +655,6 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-
         $item = json_decode($request->item,true) ?? [];
         $componentItem = json_decode($request->component_item,true) ?? [];
         $moduleType = $request->type ?? null;
@@ -779,7 +778,6 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
@@ -871,16 +869,17 @@ class BomController extends Controller
         $servicesAliasParam = $parentUrl == 'quotation-bom' 
             ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS 
             : ConstantHelper::BOM_SERVICE_ALIAS;
-        $canView = true; 
-        // $canView = $servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS
-        //     ? request()->user()?->hasPermission('quotation_bom.item_cost_view')
-        //     : request()->user()?->hasPermission('production_bom.item_cost_view');
-
+        $canView = true;
+        if($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
+        }
+        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
+        }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
-
         $originalBom = Bom::with([
             'bomAttributes',
             'bomOverheadItems',
@@ -1445,7 +1444,6 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
         $itemId = $request->item_id ?? null;
@@ -1496,7 +1494,6 @@ class BomController extends Controller
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-
         $ids = json_decode($request->ids,true) ?? [];
         $bom = Bom::with('uom:id,name')
                 ->whereIn('id', $ids)
@@ -1838,5 +1835,57 @@ class BomController extends Controller
             new BomExport($id),
             $label . now()->format('Ymd_His') . '.xlsx'
         );
+    }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+        try {
+            $bom = Bom::findOrFail($id);
+            if ($bom->document_status !== ConstantHelper::DRAFT) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Document cannot be deleted unless it is in draft status.',
+                ], 422);
+            }
+            if ($bom->revision_number) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Deletion is not allowed. The document has already been reviewed(amend).',
+                ], 422);
+            }
+            // Delete related instructions and their files
+            foreach ($bom->bomInstructions as $bomInstruction) {
+                $bomInstruction->clearExistingDocuments('bom_instruction');
+                $bomInstruction->delete();
+            }
+
+            // Clear documents for the BOM itself
+            $bom->clearExistingDocuments('bom');
+
+            // Delete related data
+            $bom->bomOverheadAllItems()->delete();
+            $bom->dynamic_fields()->delete();
+            $bom->bomNormAllItems()->delete();
+            $bom->bomAllAttributes()->delete();
+            $bom->bomItems()->delete();
+
+            // Finally delete the BOM
+            $bom->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Record deleted successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while deleting the BOM: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

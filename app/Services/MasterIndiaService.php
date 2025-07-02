@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Helpers\ConstantHelper;
+use App\Models\ErpAddress;
 use Carbon\Carbon;
 use App\Models\ErpEinvoiceLog;
 use GuzzleHttp\Client;
@@ -22,6 +24,7 @@ class MasterIndiaService
         $this->requestUid = $requestUid;
         $this->eInvoice = false;
         $this->client = new Client(); // Initialize the HTTP client
+        $this->baseURL = env('MASTER_INDIA_BASE_URL', ''); // Set the base URL
         $this->authDetails = $authDetails; // Set the base URL
     }
 
@@ -42,6 +45,24 @@ class MasterIndiaService
 
     }
 
+    private function createApiLog($endpoint, $method, $payload, $source, $response = null, $isError = false)
+    {
+        if(!$this->requestUid || empty($this->requestUid)){
+            $this->returnResponse("Error: Request id is required");
+        }
+
+        $this->eInvoice = $this->eInvoice ?: new ErpEinvoiceLog();
+        $this->eInvoice->request_uid = $this->requestUid;
+        $this->eInvoice->api_name = $endpoint;
+        $this->eInvoice->source = $source;
+        $this->eInvoice->method = $method;
+        $this->eInvoice->is_error = $isError;
+        $this->eInvoice->request_payload = json_encode($payload);
+        $this->eInvoice->response_payload = $response ? json_encode($response) : null;
+        $this->eInvoice->save();
+        return $this->eInvoice;
+    }
+
     public function getAuthToken(){
         try{
             $userData = array(
@@ -51,31 +72,117 @@ class MasterIndiaService
                 "client_secret"=>env('MASTER_INDIA_CLIENT_SECRET', ''),
                 "grant_type"=>env('MASTER_INDIA_GRANT_TYPE', '')
                 );
-            $tokenUrl =  env('MASTER_INDIA_BASE_URL', '');
+            $endpoint = 'oauth/access_token';
             $requestHeader = array(
                 "Content-Type: application/json"
             );
-            $curl = curl_init();
-            curl_setopt($curl, CURLOPT_URL,$tokenUrl);
-            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($userData));
-            curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeader);
-            $token = curl_exec($curl);
-            $err = curl_error($curl);
-            curl_close($curl);
-            $token = $token ? json_decode($token) : '';
-            return $token->access_token;
-            if($err)
+
+            // Send the HTTP request and return the response as an associative array
+            $response = $this->client->request('POST', $this->baseURL . $endpoint, [
+                'headers' => $requestHeader,
+                'json' => $userData,
+            ]);
+
+            $result =  json_decode($response->getBody(), true);
+            $this->createApiLog($endpoint, 'POST', $userData, ConstantHelper::MASTERINDIA, $result); //Updating API response in eInvoice Log
+
+            if(!isset($result['access_token']))
             {
                 $errorMsg = "ERROR: Error in Master India Auth API: {$e->getMessage()}";
                 return $this->returnResponse($errorMsg);
             }
+
+            return $result['access_token'];
+
         } catch (\Exception $e) {
             $errorMsg = "ERROR: Master India Authentication failed: {$e->getMessage()}";
             return $this->returnResponse($errorMsg);
         }
+    }
+
+    public function generateInvoice(array $invoiceData)
+    {
+        try {
+            $endpoint = "generateEinvoice";
+            $requestHeader = array(
+                    "Accept: application/json",
+                    "Content-Type: application/json"
+            );
+
+            $response = $this->client->request('POST', $this->baseURL . $endpoint, [
+                'headers' => $requestHeader,
+                'json' => $invoiceData,
+            ]);
+
+            $result =  json_decode($response->getBody(), true);
+            $this->createApiLog($endpoint, 'POST', $requestHeader, ConstantHelper::MASTERINDIA, $result);
+            return $result;
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: Invoice generation failed: " . $e->getMessage();
+            return $this->returnResponse($errorMsg);
+
+        }
+    }
+
+    public function generateEwaybillByIRN(array $ewaybillData)
+    {
+        try {
+            $endpoint = 'ewayBillsGenerate';
+
+            $requestHeader = array(
+                "Content-Type:application/json",
+            );
+            $response = $this->client->request('POST', $this->baseURL . $endpoint, [
+                'headers' => $requestHeader,
+                'json' => $ewaybillData,
+            ]);
+
+            $output =  json_decode($response->getBody(), true);
+            $this->createApiLog($endpoint, 'POST', $requestHeader, ConstantHelper::MASTERINDIA, $output);
+            return $output;
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: Waybill generation failed: {$e->getMessage()}";
+            return $this->returnResponse($errorMsg);
+        }
+    }
+
+    public function getDistance($documentHeader, $authToken)
+    {
+        $auth = $authToken;
+        $distance = 0;
+        $fromPincodeData = ErpAddress::find($documentHeader['billing_to']);
+		$toPincodeData = ErpAddress::find($documentHeader['ship_to']);
+        $fromPincode = $fromPincodeData['pincode'];
+        $toPincode = $toPincodeData['pincode'];
+
+		$requestHeader = array(
+			"Content-Type:application/json",
+		);
+
+		$endpoint = "distance?access_token=" . $auth . "&fromPincode=" . $fromPincode . "&toPincode=" . $toPincode;
+
+		$response = $this->client->request('GET', $this->baseURL . $endpoint, [
+                'headers' => $requestHeader,
+                'json' => [],
+            ]);
+
+        $result =  json_decode($response->getBody(), true);
+        $this->createApiLog($endpoint, 'GET', $requestHeader, ConstantHelper::MASTERINDIA, $result);
+        if(isset($result['results']))
+        {
+            $distance = [
+                "status" => "success",
+                "distance" => $result['results']['distance']
+            ];
+        }
+        else
+        {
+            $distance = [
+                "status" => "error",
+                "distance" => $result['error_description']
+            ];
+        }
+        return $distance;
     }
 
 }

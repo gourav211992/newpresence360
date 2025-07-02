@@ -20,6 +20,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     protected $subSectionRequired;
     protected $componentOverheadRequired;
     protected $isNorm;
+    protected $canView;
 
     public function __construct($bomId)
     {
@@ -62,6 +63,14 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         $this->subSectionRequired = $this->isEnabled('sub_section_required');
         $this->componentOverheadRequired = $this->isEnabled('component_overhead_required');
         $this->isNorm = isset($this->parameters->consumption_method) && is_array($this->parameters->consumption_method) && in_array('norms', $this->parameters->consumption_method);
+
+        $parentUrl = request()->segments()[0];
+        $servicesAliasParam = $parentUrl === 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
+        if ($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+            $this->canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
+        } else {
+            $this->canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
+        }
     }
 
     public function title(): string
@@ -97,10 +106,12 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         $rows[] = ['']; // spacing row
 
         // Summary
-        $rows[] = ['BOM Summary'];
-        $rows[] = ['Item Total', $this->bom->total_item_value ?? 0];
-        $rows[] = ['Header Overheads', $this->bom->header_overhead_amount ?? 0];
-        $rows[] = ['Grand Total', ($this->bom->total_value  ?? 0)];
+        if($this->canView) {
+            $rows[] = ['BOM Summary'];
+            $rows[] = ['Item Total', $this->bom->total_item_value ?? 0];
+            $rows[] = ['Header Overheads', $this->bom->header_overhead_amount ?? 0];
+            $rows[] = ['Grand Total', ($this->bom->total_value  ?? 0)];
+        }
 
         return $rows;
     }
@@ -146,12 +157,19 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         if ($this->subSectionRequired) {
             $headers[] = 'Sub Section';
         }   
-        $baseHeaders = [
-            'Item Code', 'Item Name', 'Attributes', 'UOM',
-            'Consumption',
-            'Item Value', 'Overhead Cost',
-            'Total Cost', 'Station', 'Vendor Name', 'Remark'
-        ];
+        if($this->canView) {
+            $baseHeaders = [
+                'Item Code', 'Item Name', 'Attributes', 'UOM',
+                'Consumption',
+                'Item Value', 'Overhead Cost',
+                'Total Cost', 'Station', 'Vendor Name', 'Remark'
+            ];
+        } else {
+            $baseHeaders = [
+                'Item Code', 'Item Name', 'Attributes', 'UOM',
+                'Consumption', 'Station', 'Vendor Name', 'Remark'
+            ];
+        }
         $headers = array_merge($headers, $baseHeaders);
         $insertIndex = array_search('Consumption', $headers);
         $dynamicColumns = [];
@@ -176,19 +194,33 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         if ($this->subSectionRequired) {
             $row[] = $component->sub_section_name ?? '';
         }
-        $baseRow = [
-            optional($component->item)->item_code,
-            optional($component->item)->item_name,
-            $this->formatAttributes($component->attributes),
-            optional($component->uom)->name,
-            $component->qty ?? 0, // 'Consumption'
-            $component->item_value ?? 0,
-            $component->overhead_amount ?? 0,
-            $component->total_amount ?? 0,
-            $component->station_name ?? '',
-            optional($component->vendor)->company_name,
-            $component->remark,
-        ];
+
+        if($this->canView) {
+            $baseRow = [
+                optional($component->item)->item_code,
+                optional($component->item)->item_name,
+                $this->formatAttributes($component->attributes),
+                optional($component->uom)->name,
+                $component->qty ?? 0, // 'Consumption'
+                $component->item_value ?? 0,
+                $component->overhead_amount ?? 0,
+                $component->total_amount ?? 0,
+                $component->station_name ?? '',
+                optional($component->vendor)->company_name,
+                $component->remark,
+            ];
+        } else {
+            $baseRow = [
+                optional($component->item)->item_code,
+                optional($component->item)->item_name,
+                $this->formatAttributes($component->attributes),
+                optional($component->uom)->name,
+                $component->qty ?? 0,
+                $component->station_name ?? '',
+                optional($component->vendor)->company_name,
+                $component->remark,
+            ];
+        }
         $dynamicValues = [];
         if ($this->isNorm) {
             $dynamicValues[] = $component?->norm?->qty_per_unit ?? 0;

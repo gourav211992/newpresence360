@@ -54,7 +54,6 @@ class VoucherController extends Controller
             $accessibleLocations = InventoryHelper::getAccessibleLocations();
             $locationIds = $accessibleLocations->pluck('id')->toArray();
             $ledger_group = (int)$request->ledgerGroup;
-            // dd($ledger_group);
             $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereIn('location', $locationIds)

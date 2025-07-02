@@ -82,7 +82,7 @@ class DepreciationController extends Controller
 
         $locations = InventoryHelper::getAccessibleLocations();
 
-
+        
         return view('fixed-asset.depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'series', 'periods', 'fy', 'dep_type'));
     }
 
@@ -117,7 +117,7 @@ class DepreciationController extends Controller
 
         DB::beginTransaction();
 
-         try {
+        try {
             $insert = FixedAssetDepreciation::create($data);
             $doc = Helper::approveDocument($insert->book_id, $insert->id, $insert->revision_number, "", null, 1, 'submit', 0, get_class($insert));
             $insert->document_status = $doc['approvalStatus'] ?? $insert->document_status;
@@ -289,12 +289,11 @@ class DepreciationController extends Controller
                 $query->whereColumn('expiry_date', '>', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
-            ->whereNotNull('depreciation_percentage_year')
             ->withWhereHas('ledger')
             ->whereNotNull('capitalize_date')
             ->where(function ($query) {
-                    $query->where('document_status', ConstantHelper::POSTED)
-                        ->orWhereNotNull('reference_doc_id');
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category.setup')
             ->get()->values();
@@ -364,14 +363,53 @@ class DepreciationController extends Controller
         }
 
 
-        $depreciationPeriods = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->get()->pluck('period')->toArray();
+
+        $depreciationPeriods = FixedAssetRegistration::withDefaultGroupCompanyOrg()
+            ->withWhereHas('subAsset', function ($query) {
+                $query->where('current_value_after_dep', '>', 0)
+                    ->whereNotNull('expiry_date')
+                    ->whereColumn('expiry_date', '>', 'last_dep_date');
+            })
+            ->whereNotNull('depreciation_percentage')
+            ->withWhereHas('ledger')
+            ->whereNotNull('capitalize_date')
+            ->where(function ($query) {
+                $query->where('document_status', ConstantHelper::POSTED)
+                    ->orWhereNotNull('reference_doc_id');
+            })
+            ->pluck('last_dep_date')
+            ->map(fn($date) => Carbon::parse($date)->format('Y-m-d'))
+            ->unique()
+            ->values()
+            ->toArray();
+
+
 
         $periods = array_filter($periods, function ($period) use ($depreciationPeriods) {
-            return !in_array($period->value, $depreciationPeriods);
+            $parts = explode(' to ', $period->value);
+            $endDateRaw = trim($parts[1] ?? '');
+            $startDateRaw = trim($parts[0] ?? '');
+
+            if (!$endDateRaw || !$startDateRaw) return false;
+
+            try {
+                $endDate = Carbon::createFromFormat('d-m-Y', $endDateRaw)->format('Y-m-d');
+                $startDate = Carbon::createFromFormat('d-m-Y', $startDateRaw)->format('Y-m-d');
+            } catch (\Exception $e) {
+                return false;
+            }
+
+            // Check if ANY depreciation date is LESS than this period's end date
+            foreach ($depreciationPeriods as $depDate) {
+                if ($depDate >= $startDate && $depDate <= $endDate) {
+                    return true;
+                }
+            }
+
+            return false;
         });
-        // Reset keys if needed
-        return array_values($periods);
-    }
+        return $periods;
+       }
     public function documentApproval(Request $request)
     {
         $request->validate([

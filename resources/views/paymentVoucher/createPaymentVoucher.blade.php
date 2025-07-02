@@ -405,12 +405,15 @@
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            @php $totalAmount = 0; $totalExcAmount = 0; $partyVoucher=[]; @endphp
+                                                            @php $totalAmount = 0; $totalExcAmount = 0; @endphp
                                                             @if (isset($selectedRows) && !empty($selectedRows))
                                                                 @foreach ($selectedRows as $index => $voucher)
+                                                                @php $partyVoucher=[]; @endphp
                                                                 @foreach ($voucher['items'] as $i => $item)
+
                                                                  @php
-                                                                    $partyVoucher[] = [
+                                                              
+                                                                $partyVoucher[] = [
                                                                             'party_id' => (string) $item['ledger_id'],
                                                                             'voucher_id' => (string) $item['voucher_id'],
                                                                             'amount' => number_format((float) $item['settle_amt'], 2, '.', ''),
@@ -421,7 +424,6 @@
 
                                                                     @php $no = $index + 1;
                                                                     $totalAmount += $voucher['amount'];
-                                                                    dd($voucher);
                                                                     $totalExcAmount += $voucher['amount'];
                                                                     @endphp
 
@@ -482,12 +484,12 @@
                                                                                 </select>
 
                                                                                 <div class="ms-50 flex-shrink-0">
-                                                                                    {{-- <button type="button"
+                                                                                    <button type="button"
                                                                                         class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}"
                                                                                         style="font-size: 10px"
                                                                                         onclick="openInvoice({{ $no }}, {{ $voucher['voucher_id'] }}, {{ $voucher['item_id'] }}, {{ $voucher['settle_amt'] }})">
                                                                                         Invoice
-                                                                                    </button> --}}
+                                                                                    </button>
                                                                                 </div>
                                                                             </div>
                                                                         </td>

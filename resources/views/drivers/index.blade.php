@@ -44,6 +44,8 @@
                                                 <th>Email</th>
                                                 <th>Mobile No.</th>
                                                 <th>Exp(Yr)</th>
+                                                <th>Created At</th>
+                                                <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                             </tr>
@@ -141,7 +143,9 @@ $(document).ready(function () {
                 { data: 'email', name: 'email', render: renderData },
                 { data: 'mobile_no', name: 'mobile_no', render: renderData },
                 { data: 'experience_years', name: 'experience_years', render: renderData },
-                { data: 'status', name: 'status' },
+                { data: 'created_at', name: 'created_at' , },
+                { data: 'created_by', name: 'created_by' },
+                { data: 'status', name: 'status', orderable: false, searchable: false  },
                 { data: 'action', orderable: false, searchable: false }
             ],
             dom: '<"d-flex justify-content-between align-items-center mx-2 row"' +

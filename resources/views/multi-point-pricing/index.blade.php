@@ -59,6 +59,8 @@
                                                 <th>Destination</th>
                                                 <th>Customer</th>
                                                 <th>Locations</th>
+                                                <th>Created At</th>
+                                                <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                              </tr>
@@ -256,6 +258,10 @@ $(document).ready(function () {
                 { data: 'destination', name: 'destination' },
                 { data: 'customer', name: 'customer' },
                 { data: 'locations', name: 'locations', orderable: false, searchable: false },
+               
+                { data: 'created_at', name: 'created_at' },
+                { data: 'created_by', name: 'created_by' },
+
                 { data: 'status', name: 'status', orderable: false, searchable: false },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],

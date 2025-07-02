@@ -46,6 +46,7 @@
                                                 <th>Fuel Type</th>
                                                 <th>Company Name</th>
                                                 <th>Created On</th>
+                                                <th>Created By</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
                                             </tr>
@@ -173,6 +174,7 @@ $(document).ready(function () {
                 { data: 'fuel_type', render: renderData },
                 { data: 'company_name', render: renderData },
                 { data: 'created_at', name: 'created_at' },
+                { data: 'created_by', name: 'created_by' },
                 { data: 'status' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],

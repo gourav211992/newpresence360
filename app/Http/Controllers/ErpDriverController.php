@@ -70,7 +70,12 @@ class ErpDriverController extends Controller
                     $badge = $colors[$row->status] ?? 'badge-light-secondary';
                     return '<span class="badge rounded-pill ' . $badge . ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
                 })
-                ->editColumn('created_at', fn($row) => $row->created_at?->format('d-m-Y') ?? 'N/A')
+                ->editColumn('created_at', fn($row) => optional($row->created_at)->format('d-m-Y') ?? 'N/A')
+   
+                ->addColumn('created_by', function ($row) {
+                    return optional($row->createdBy)->name ?? '-';
+                })
+
                 ->editColumn('employee_code', fn($row) => $row->employee->employee_code ?? 'N/A')
                 ->addColumn('action', function ($row) {
                     return '
@@ -123,6 +128,7 @@ class ErpDriverController extends Controller
             'experience_years'    => $validated['experience_years'] ?? null,
             'license_no'          => $validated['license_no'],
             'license_expiry_date' => $validated['license_expiry_date'],
+            'created_by'          => $user->id,
             'status'              => $validated['status'],
         ]);
 
@@ -216,6 +222,7 @@ class ErpDriverController extends Controller
                 'experience_years'    => $validated['experience_years'] ?? null,
                 'license_no'          => $validated['license_no'],
                 'license_expiry_date' => $validated['license_expiry_date'],
+                'updated_by'          => $user->id,
                 'status'              => $request->status,
             ]);
 

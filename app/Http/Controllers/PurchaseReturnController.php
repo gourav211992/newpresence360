@@ -63,6 +63,7 @@ use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\GstInvoiceHelper;
 use App\Helpers\FinancialPostingHelper;
+use App\Helpers\MasterIndiaHelper;
 use App\Helpers\ServiceParametersHelper;
 
 use App\Http\Controllers\EInvoiceServiceController;
@@ -73,6 +74,7 @@ use App\Models\Employee;
 use App\Models\ErpItem;
 use App\Models\ErpPrDynamicField;
 use App\Models\ErpVendor;
+use App\Services\MasterIndiaService;
 use App\Services\PRService;
 use Carbon\Carbon;
 use DateTime;
@@ -1634,7 +1636,7 @@ class PurchaseReturnController extends Controller
             'mrn' => $typeId,
             default => $vendorId,
         };
-        
+
         $typeData = match ($type) {
             'mrn' => MrnHeader::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
@@ -1642,11 +1644,11 @@ class PurchaseReturnController extends Controller
             default => Vendor::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId),
-        };  
-        
+        };
+
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-        
+
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
@@ -1679,7 +1681,7 @@ class PurchaseReturnController extends Controller
             ]);
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
-        
+
         $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
         $locationAddress = $store?->address;
@@ -1690,20 +1692,20 @@ class PurchaseReturnController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
-        
+
         return response()->json(
             [
                 'data' => [
-                    'status' => 200, 
-                    'vendor' =>$vendor, 
+                    'status' => 200,
+                    'vendor' =>$vendor,
                     'message' => 'fetched',
-                    'currency' => $currency, 
+                    'currency' => $currency,
                     'org_address' => $orgAddress,
-                    'paymentTerm' => $paymentTerm, 
-                    'vendor_address' => $vendorAddress, 
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
                     'currency_exchange' => $currencyData
-                ], 
-                'delivery_address' => $locationAddress, 
+                ],
+                'delivery_address' => $locationAddress,
             ]
         );
     }
@@ -2892,9 +2894,12 @@ class PurchaseReturnController extends Controller
             $shippingAddress = $documentHeader->shippingAddress;
             $storeAddress = $documentHeader->store_address;
 
-            $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
-            if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
-                $data = EInvoiceHelper::saveGstIn($documentHeader);
+            // $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
+            // if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
+            //     $data = EInvoiceHelper::saveGstIn($documentHeader);
+            $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
+            if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
+                $data = MasterIndiaHelper::saveGstIn($documentHeader);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
                         'status' => 'error',
@@ -2929,20 +2934,29 @@ class PurchaseReturnController extends Controller
 
         try{
             $documentHeader = PRHeader::find($request->id);
-            $data = EInvoiceHelper::generateEwayBill($documentHeader);
-            if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
+            // $data = EInvoiceHelper::generateEwayBill($documentHeader);
+            $data = MasterIndiaHelper::generateEwayBill($documentHeader);
+            if (isset($data) && (isset($data['results']) && ($data['results']['status'] != 'Success'))) {
                 return response()->json([
                     'status' => 'error',
                     'error' => 'error',
-                    'message' => $data['message'],
+                    'message' => $data['results'],
                 ], 500);
             } else{
-                $eInvoice = $documentHeader->irnDetail()->first();
-                $eInvoice->ewb_no = $data['EwbNo'];
-                $eInvoice->ewb_date = date('Y-m-d H:i:s', strtotime($data['EwbDt']));
-                $eInvoice->ewb_valid_till = date('Y-m-d H:i:s', strtotime($data['EwbValidTill']));
-                $eInvoice->save();
+                $message = $data['results']['message'];
 
+                $originalEwbDate = $message['ewayBillDate'];
+                $originalValidUpto = $message['validUpto'];
+                $ewbDateObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalEwbDate);
+                $validUptoObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalValidUpto);
+                $ewb_date = $ewbDateObj ? $ewbDateObj->format('Y-m-d H:i:s') : null;
+                $ewb_valid_till = $validUptoObj ? $validUptoObj->format('Y-m-d H:i:s') : null;
+                $documentHeader->irnDetail()->create([
+                    'ewb_no' => $message['ewayBillNo'],
+                    'ewb_date' => $ewb_date,
+                    'ewb_valid_till' => $ewb_valid_till,
+                    'status' => $data['results']['status']
+                ]);
                 return response() -> json([
                     'status' => 'success',
                     'results' => $data,

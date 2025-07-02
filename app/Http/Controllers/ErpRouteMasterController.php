@@ -12,6 +12,9 @@ use Illuminate\Support\Str;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
+use App\Models\ErpFreightCharge;
+use App\Models\ErpLogisticsMultiFixedPricing;
+use App\Models\ErpLogisticsMultiPointPricing;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
@@ -121,30 +124,48 @@ class ErpRouteMasterController extends Controller
 
 
 
-    public function deleteMultiple(Request $request)
-    {
-        $ids = $request->input('ids', []);
-      
+   public function deleteMultiple(Request $request)
+{
+    $ids = $request->input('ids', []);
 
-        if (empty($ids)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No records selected for deletion.'
-            ], 400);
-        }
-
-        try {
-            ErpRouteMaster::whereIn('id', $ids)->delete();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Selected records deleted successfully.'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error deleting records: ' . $e->getMessage()
-            ], 500);
-        }
+    if (empty($ids)) {
+        return response()->json([
+            'status' => false,
+            'message' => 'No records selected for deletion.'
+        ], 400);
     }
+
+    $usedInFreight = ErpFreightCharge::whereIn('source_route_id', $ids)
+        ->orWhereIn('destination_route_id', $ids)
+        ->exists();
+
+    $usedInMultiFixed = ErpLogisticsMultiFixedPricing::whereIn('source_route_id', $ids)
+        ->orWhereIn('destination_route_id', $ids)
+        ->exists();
+
+    $usedInMultiPoint = ErpLogisticsMultiPointPricing::whereIn('source_route_id', $ids)
+        ->exists();
+
+    if ($usedInFreight || $usedInMultiFixed || $usedInMultiPoint) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Selected  routes are in use in Freight Charges, Multi-Fixed Pricing, or Multi-Point Pricing and cannot be deleted.'
+        ], 400);
+    }
+
+    try {
+        ErpRouteMaster::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Selected records deleted successfully.'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Error deleting records: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
 }

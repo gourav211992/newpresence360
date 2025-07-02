@@ -75,7 +75,7 @@
       @endif
    </div>
    </td>
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
          <input type="number" value="{{isset($itemCost) ? $itemCost : '' }}" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
          @else
@@ -84,11 +84,11 @@
       @endif
    </td>
    @if(isset($supercedeCostRequired) && $supercedeCostRequired)
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <input type="number" value="{{$bomDetail->superceeded_cost}}" name="components[{{$rowCount}}][superceeded_cost]" class="form-control mw-100 text-end" step="any"/>
    </td>
    @endif
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
          <input type="number" value="{{$bomDetail->item_value}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
          @else
@@ -97,15 +97,15 @@
       @endif
    </td>
    @if(isset($componentWasteRequired) && $componentWasteRequired)
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <input type="number" value="{{$bomDetail->waste_perc}}" name="components[{{$rowCount}}][waste_perc]" class="form-control mw-100 text-end" step="any" />
    </td>
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <input type="number" value="{{$bomDetail->waste_amount ?? ''}}" name="components[{{$rowCount}}][waste_amount]" class="form-control mw-100 text-end" step="any" />
    </td>
    @endif
    @if(isset($componentOverheadRequired) && $componentOverheadRequired)
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <div class="position-relative d-flex align-items-center">
          @if($canView)
             <input type="number" value="{{$bomDetail->overhead_amount ?? ''}}" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
@@ -132,7 +132,7 @@
       </div>
    </td>
    @endif
-   <td>  
+   <td class="{{$canView ? '' : 'd-none'}}">  
       @if($canView)
          <input type="text" value="{{$bomDetail->total_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
       @else
