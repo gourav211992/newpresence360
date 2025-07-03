@@ -20,6 +20,7 @@
                 </div>
             </div>
             <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
+                <button class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick ='BulkAction();' ><i data-feather = 'layers'></i> Bulk Posting</button> 
                 <button class="btn btn-warning btn-sm mb-50 mb-sm-0" onclick ='openFiltersModal();' ><i data-feather="filter"></i> Filter</button> 
             </div>
         </div>
@@ -32,7 +33,12 @@
                                 <table class="datatables-basic table myrequesttablecbox">
                                     <thead>
                                         <tr>
-                                            <th>S.No</th>
+                                            <th>
+                                                <div class="form-check form-check-primary custom-checkbox">
+                                                    <input type="checkbox" class="form-check-input" id="select-all-checkbox" value="all" data-id="">
+                                                    <label class="form-check-label" for="select-all-checkbox"></label>
+                                                </div>
+                                            </th>
                                             <th>Doc Type</th>
                                             <th>Date</th>
                                             <th>Series</th>
@@ -55,45 +61,61 @@
     </div>
 </div>
 
-<!-- Filter Modal -->
-<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Apply Filter</h5>
+<!-- Bulk Result Modal -->
+<div class="modal fade" id="bulkResultModal" tabindex="-1" aria-labelledby="bulkResultModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="position: sticky; top: 0; z-index: 1055; background: #fff;">
+                <h5 class="modal-title" id="bulkResultModalLabel">Bulk Action Result</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-1">
-                    <label class="form-label">Select Date</label>
-                    <input type="text" id="fp-range" class="form-control flatpickr-range" placeholder="YYYY-MM-DD to YYYY-MM-DD" />
-                </div>
-                <div class="mb-1">
-                    <label class="form-label">Order No.</label>
-                    <select class="form-select">
-                        <option>Select</option>
-                    </select>
-                </div>
-                <div class="mb-1">
-                    <label class="form-label">Customer Name</label>
-                    <select class="form-select select2">
-                        <option>Select</option>
-                    </select>
-                </div>
-                <div class="mb-1">
-                    <label class="form-label">Status</label>
-                    <select class="form-select">
-                        <option>Select</option>
-                        <option>Open</option>
-                        <option>Close</option>
-                    </select>
+                <ul class="nav nav-tabs" id="bulkResultTabs" role="tablist" style="position: sticky; top: 56px; z-index: 1054; background: #fff;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="success-tab" data-bs-toggle="tab" data-bs-target="#success" type="button" role="tab" aria-controls="success" aria-selected="true">
+                            Success
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="failure-tab" data-bs-toggle="tab" data-bs-target="#failure" type="button" role="tab" aria-controls="failure" aria-selected="false">
+                            Failure
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content mt-2" id="bulkResultTabsContent">
+                    <div class="tab-pane fade show active" id="success" role="tabpanel" aria-labelledby="success-tab">
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-bordered pomrnheadtffotsticky">
+                                <thead>
+                                    <tr>
+                                        <th>Document Type</th>
+                                        <th>Document ID</th>
+                                        <th>Status</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkResultBodySuccess"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="failure" role="tabpanel" aria-labelledby="failure-tab">
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <table class="table table-bordered pomrnheadtffotsticky">
+                                <thead>
+                                    <tr>
+                                        <th>Document Type</th>
+                                        <th>Document ID</th>
+                                        <th>Status</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkResultBodyFailure"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary apply-filter">Apply</button>
-                <button type="reset" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 @endsection
@@ -107,7 +129,7 @@ $(document).ready(function() {
     return data ? data.toString() : 'N/A';
     }
     var columns = [
-        { data: 'DT_RowIndex', orderable: false, searchable: false },
+        { data: 'checkbox', orderable: false, searchable: false },
         { data: 'document_type', name: 'document_type', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
         { data: 'document_date', name: 'document_date', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
         { data: 'book_name', name: 'book_name', render: renderData, createdCell: (td) => $(td).addClass('no-wrap') },
@@ -129,6 +151,74 @@ $(document).ready(function() {
     });
     reportDataTableInstance = initializeDataTable('.datatables-basic',"{{$redirect_url}}" ,columns, filters,'Pending Requests',[0, 1, 2, 3, 4, 5, 6]);
 });
+$('#select-all-checkbox').on('change', function(){
+    var isChecked = $(this).is(':checked');
+    $('.myrequesttablecbox input[type="checkbox"]').prop('checked', isChecked);
+});
+function BulkAction() {
+    var selectedIds = [];
+    $('.myrequesttablecbox input.transaction-select-checkbox:checked').each(function() {
+        selectedIds.push({
+            document_id: $(this).attr('id'),
+            alias: $(this).attr('alias')
+        });
+    });
+    if (selectedIds.length === 0) {
+        alert("Please select at least one item for bulk action.");
+        return;
+    }
+    let actionType = 'post'; // Set the action type for bulk posting
+    $.ajax({
+        url: "{{ route('bulk.postings') }}",
+        type: "POST",
+        data: {
+            ids: selectedIds,
+            actionType: "post",
+            _token: "{{ csrf_token() }}"
+        },
+        success: function(response) {
+            let successRows = '';
+            let failureRows = '';
+            let successCount = 0;
+            let failureCount = 0;
+
+            response.data.forEach(item => {
+            if (item.status === 'success') {
+                successRows += `<tr>
+                <td>${item.document_type}</td>
+                <td>${item.document_id}</td>
+                <td>✅ Success</td>
+                <td>${item.message}</td>
+                </tr>`;
+                successCount++;
+            } else {
+                failureRows += `<tr>
+                <td>${item.document_type}</td>
+                <td>${item.document_id}</td>
+                <td>❌ Failed</td>
+                <td>${item.message}</td>
+                </tr>`;
+                failureCount++;
+            }
+            });
+
+            // Fill the modal tab bodies
+            $('#bulkResultBodySuccess').html(successRows || '<tr><td colspan="4" class="text-center">No Success Records</td></tr>');
+            $('#bulkResultBodyFailure').html(failureRows || '<tr><td colspan="4" class="text-center">No Failure Records</td></tr>');
+
+            // Optionally update tab titles with counts
+            $('#success-tab').html(`Success (${successCount})`);
+            $('#failure-tab').html(`Failure (${failureCount})`);
+
+            $('#select-all-checkbox').prop('checked', false);
+            $('#bulkResultModal').modal('show');
+            $('.datatables-basic').DataTable().ajax.reload();
+        },
+        error: function(xhr) {
+            alert('Bulk ' + actionType + ' failed!');
+        }
+    });
+}
 </script>
 @include('partials.index-filter',$filterArray)
 @endsection

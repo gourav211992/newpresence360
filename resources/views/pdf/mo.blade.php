@@ -151,7 +151,7 @@
                     @php
                         $colspan = 9;
                         $sheet_check = $products->filter(function($prod){
-                                return $prod->number_of_sheets;
+                                return $prod->number_of_sheet;
                             });
                         $machine_check = $products->filter(function($prod){
                                 return $prod->machine_id;
@@ -259,16 +259,16 @@
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{@$val->qty}}
                     </td>
-                    @if(count($sheet_check))
-                        <td
-                            style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                            {{@$val->number_of_sheets}}
-                        </td>
-                    @endif
                     @if(count($machine_check))
                         <td
                             style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                             {{@$val->machine->name}}
+                        </td>
+                    @endif
+                    @if(count($sheet_check))
+                        <td
+                            style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            {{@$val->number_of_sheet}}
                         </td>
                     @endif
                     <td

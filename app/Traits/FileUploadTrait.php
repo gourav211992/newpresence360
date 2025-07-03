@@ -52,15 +52,14 @@ trait FileUploadTrait
             ->where('model_id',$this->id)
             // ->where('collection_name', $collectionName)
             ->get();
-
-        foreach ($existingDocuments as $document) {
-            // Check if the document is in the filesToKeep array
-            if (!in_array($document->file_name, $filesToKeep)) {
-                // Delete the file from storage
-                Storage::delete($document->file_name);
-                // Delete the document record
-                $document->delete();
-            }
+            foreach ($existingDocuments as $document) {
+                // Check if the document is in the filesToKeep array
+                if (!in_array($document->file_name, $filesToKeep)) {
+                    // Delete the file from storage
+                    Storage::delete($document->file_name);
+                    // Delete the document record
+                    $document->delete();
+                }
         }
     }
 

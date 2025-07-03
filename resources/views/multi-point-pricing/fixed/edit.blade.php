@@ -28,6 +28,12 @@
 					</div>
 					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0"> 
                             <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
+                             <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                    data-url="{{ route('logistics.multi-point-fixed.destroy', $multiPricing->id) }}" 
+                                    data-redirect="{{ route('logistics.multi-point-pricing.index') }}"
+                                    data-message="Are you sure you want to delete this multi-fixed-pricing ?">
+                                <i data-feather="trash-2" class="me-50"></i> Delete
+                            </button> 
                             <button type="submit" class="btn btn-primary btn-sm" id="submit-button"><i data-feather="check-circle"></i> Update</button>
 					</div>
 				</div>
@@ -172,7 +178,7 @@
 																			<td>{{ $loop->iteration }}</td>
 																			<td>
 																				<input type="hidden" name="multi_fixed_pricing[{{ $rowIndex }}][id]" value="{{ old("multi_fixed_pricing.$rowIndex.id", $location->id) }}">
-																				<input type="text" name="multi_fixed_pricing[{{ $rowIndex }}][location_route_name]" class="form-control mw-100 route-master-autocomplete" placeholder="Start typing location..." data-type="location" value="{{ old("multi_fixed_pricing.$rowIndex.location_route_name", optional($location->route)->name) }}">
+																				<input type="text" name="multi_fixed_pricing[{{ $rowIndex }}][location_route_name]" class="form-control mw-100 route-master-autocomplete" placeholder="Start typing location..." data-type="source" value="{{ old("multi_fixed_pricing.$rowIndex.location_route_name", optional($location->route)->name) }}">
 																				<input type="hidden" name="multi_fixed_pricing[{{ $rowIndex }}][location_route_id]" class="route-master-id" data-type="source" value="{{ old("multi_fixed_pricing.$rowIndex.location_route_id", $location->location_route_id) }}">
 																			</td>
 																			
@@ -241,7 +247,7 @@
 @section('scripts')
 <script>
 
-const routeMasters = [
+  const routeMasters = [
     @foreach($routeMasters as $rm)
         {
             label: "{{ $rm->name }}",
@@ -253,6 +259,7 @@ const routeMasters = [
 
 $(document).on('focus', '.route-master-autocomplete', function () {
     const $input = $(this);
+    const dataType = $input.data('type');
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
@@ -261,29 +268,49 @@ $(document).on('focus', '.route-master-autocomplete', function () {
             select: function (event, ui) {
                 $input.val(ui.item.label);
 
-                let $container = $input.closest('tr').length
-                    ? $input.closest('tr')        // for multi-row (table)
-                    : $input.closest('.row');     // for single-row inputs
+                // Look for the nearest hidden input with same data-type in same td or parent
+                const $hidden = $input
+                    .closest('td, .col-md-4')
+                    .find('.route-master-id[data-type="' + dataType + '"]');
 
-                $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
-
+                $hidden.val(ui.item.id);
                 return false;
             },
             change: function (event, ui) {
-                if (!ui.item) {
-                    // If item not selected, clear hidden ID
-                    let $container = $input.closest('tr').length
-                        ? $input.closest('tr')
-                        : $input.closest('.row');
+                const text = $input.val().trim();
+                const $hidden = $input
+                    .closest('td, .col-md-4')
+                    .find('.route-master-id[data-type="' + dataType + '"]');
 
-                    $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                if (!ui.item) {
+                    const match = routeMasters.find(item => item.label === text);
+                    if (match) {
+                        $hidden.val(match.id);
+                    } else {
+                        $hidden.val('');
+                    }
                 }
             }
         }).focus(function () {
             $(this).autocomplete('search', '');
         });
     }
+
+    // Pre-bind existing value (for edit)
+    const label = $input.val().trim();
+    if (label !== '') {
+        const match = routeMasters.find(item => item.label === label);
+        const $hidden = $input
+            .closest('td, .col-md-4')
+            .find('.route-master-id[data-type="' + dataType + '"]');
+
+        if (match) {
+            $hidden.val(match.id);
+        }
+    }
 });
+
+
 
 //add new row
 let multiFixedRowIndex = {{ $rowIndex ?? 1 }};
@@ -359,12 +386,6 @@ $(document).on('click', '.delete-row', function () {
         Swal.fire('Warning', 'At least one row is required.', 'info');
     }
 });
-
-$(document).ready(function () {
-    bindAutocomplete($('#location-rows tr'));
-});
-
-
 </script>
 
 

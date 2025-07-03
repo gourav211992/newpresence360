@@ -13,16 +13,17 @@ class ErpEinvoiceLog extends Model
         'organization_id',
         'group_id',
         'company_id',
-        'request_uid', 
-        'api_name', 
-        'method', 
-        'is_error', 
-        'request_payload', 
-        'response_payload', 
-        'status', 
-        'created_by', 
-        'updated_by', 
-        'deleted_by'
+        'request_uid',
+        'api_name',
+        'method',
+        'is_error',
+        'request_payload',
+        'response_payload',
+        'status',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+        'source'
     ];
 
 }

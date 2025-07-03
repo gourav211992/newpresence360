@@ -13,6 +13,7 @@ use App\Helpers\ConstantHelper;
 use Illuminate\Validation\Rule;
 use App\Models\PaymentVoucherDetails;
 use App\Models\ItemDetail;
+use Illuminate\Support\Facades\Log;
 
 
 
@@ -37,6 +38,8 @@ class GroupController extends Controller
             ])
             ->orderBy('id', 'desc')
             ->get();
+        Log::info('Group data result:', $data->toArray());
+        
         $non_editable = ConstantHelper::LEDGER_ACCOUNT_NON_EDITABLE;
 
         return view('ledgers.groups.view_groups', compact('data', 'parentGroup', 'non_editable'));

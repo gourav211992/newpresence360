@@ -33,7 +33,13 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                   <input type="hidden" name="document_status" value="{{$bom->document_status}}" id="document_status">
                   <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                   @if($buttons['draft'])
-                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                        data-url="{{ route('bill.of.material.destroy', $bom->id) }}" 
+                        data-redirect="{{ url($routeAlias) }}"
+                        data-message="Are you sure you want to delete this record?">
+                    <i data-feather="trash-2" class="me-50"></i> Delete
+                    </button>
+                    <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   @endif
                   @if(!intval(request('amendment') ?? 0) && $bom->document_status != ConstantHelper::DRAFT && $bom->document_status != ConstantHelper::SUBMITTED)
                     <a href="{{ route('bill.of.material.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
@@ -295,10 +301,10 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                         <th>Attributes</th>
                                                         <th style="width: 30px;">UOM</th>
                                                         <th>Consumption</th>
-                                                        <th>Cost</th>
-                                                        <th>Item Value</th>
-                                                        <th id="component_overhead_required">Overheads</th>
-                                                        <th>Total Cost</th>
+                                                        <th class="{{$canView ? '' : 'd-none'}}">Cost</th>
+                                                        <th class="{{$canView ? '' : 'd-none'}}">Item Value</th>
+                                                        <th class="{{$canView ? '' : 'd-none'}}" id="component_overhead_required">Overheads</th>
+                                                        <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
                                                         <th style="min-width: 100px;" id="station_required">Station</th>
                                                         <th style="min-width: 100px;">Vendor</th>
                                                         <th style="width: 20px;"></th>
@@ -308,7 +314,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                     @include('billOfMaterial.partials.item-row-edit')
                                                 </tbody>
                                                 <tfoot>
-                                                    <tr class="totalsubheadpodetail">
+                                                    <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
                                                         <td colspan="9"></td>
                                                         <td class="text-end" id="totalItemValue">{{number_format($bom->total_item_value,6)}}</td>
                                                         <td class="text-end" id="totalOverheadAmountValue">{{number_format($bom->item_overhead_amount,2)}}</td>
@@ -317,7 +323,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                         <td></td>
                                                     </tr>
                                                     <tr valign="top">
-                                                        <td colspan="11" rowspan="10">
+                                                        <td @if($canView) colspan="11" @else colspan="15" @endif rowspan="10">
                                                         <table class="table border" id="itemDetailTable">
                                                             <tr>
                                                                 <td class="p-0">
@@ -330,6 +336,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                             </tr>
                                                         </table>
                                                         </td>
+                                                        @if($canView)
                                                         <td colspan="4">
                                                         <table class="table border mrnsummarynewsty">
                                                             <tr>
@@ -366,6 +373,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                             </tr>
                                                         </table>
                                                         </td>
+                                                        @endif
                                                     </tr>
                                                 </tfoot>
                                             </table>

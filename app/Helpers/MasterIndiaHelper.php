@@ -52,7 +52,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Storage;
 
-class EInvoiceHelper
+class MasterIndiaHelper
 {
     public function __construct()
 	{
@@ -114,37 +114,39 @@ class EInvoiceHelper
     public static function generateInvoice($documentHeader, $documentDetails)
     {
         $user = Helper::getAuthenticatedUser();
-        $postData = self::prepareRequestPayload($documentHeader, $documentDetails);
+
         $authCredentials = self::getAuthCredentials();
         $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
-        $response = $eInvoiceService->generateInvoice($postData);
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        $authToken = $masterIndiaService->getAuthToken();
+        $postData = self::prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials);
+        $response = $masterIndiaService->generateInvoice($postData);
         return $response;
     }
 
-    private static function prepareRequestPayload($documentHeader, $documentDetails)
+    private static function prepareRequestPayload($documentHeader, $documentDetails, $authToken, $authCredentials)
     {
         $user = Helper::getAuthenticatedUser();
 
         $invoiceDtls = self::getInvoiceDetail($documentHeader, $documentDetails);
-        // dd($invoiceDtls);
         $invoiceData = [
-            "Version" => '1.1',
-            "TranDtls" => $invoiceDtls['tranDetails'],
-            "DocDtls" => $invoiceDtls['docDetails'],
-            "SellerDtls" => $invoiceDtls['sellerDetails'],
-            "BuyerDtls" => $invoiceDtls['buyerDetails'],
-            "DispDtls" => $invoiceDtls['dispatchDetails'],
-            "ShipDtls" => $invoiceDtls['shipDetails'],
-            "ItemList" => $invoiceDtls['itemList'],
-            "ValDtls" => $invoiceDtls['valDtls'],
-            "PayDtls" => $invoiceDtls['payDtls'],
-            "RefDtls" => $invoiceDtls['payDtls'],
-            "AddlDocDtls" => $invoiceDtls['addlDocDtls'],
-            "ExpDtls" => $invoiceDtls['expDtls'],
-            // "EwbDtls" => $invoiceDtls['ewbDtls'],
+            "access_token" => $authToken,
+            "user_gstin" => $authCredentials['gstin'],
+            "data_source" => "erp",
+            "transaction_details" => $invoiceDtls['tranDetails'],
+            "document_details" => $invoiceDtls['docDetails'],
+            "seller_details" => $invoiceDtls['sellerDetails'],
+            "buyer_details" => $invoiceDtls['buyerDetails'],
+            "dispatch_details" => $invoiceDtls['dispatchDetails'],
+            "ship_details" => $invoiceDtls['shipDetails'],
+            "item_list" => $invoiceDtls['itemList'],
+            "value_details" => $invoiceDtls['valDtls'],
+            "payment_details" => $invoiceDtls['payDtls'],
+            "reference_details" => $invoiceDtls['refDtls'],
+            "additional_document_details" => $invoiceDtls['addlDocDtls'],
+            "export_details" => $invoiceDtls['expDtls'],
+            "ewaybill_details" => $invoiceDtls['ewbDtls'],
         ];
-
         return $invoiceData;
     }
 
@@ -202,7 +204,6 @@ class EInvoiceHelper
                 'successMsg' => '',
                 'checkGstIn' => json_encode($formatted),
             ];
-            // dd($final_response);
             return $final_response;
 
         } catch (\Exception $e) {
@@ -214,12 +215,11 @@ class EInvoiceHelper
         try{
             $gstin = $request->gstin;
             $authCredentials = self::getAuthCredentials();
-            $requestUid = 'GOV-EINVOICE-'.date('dmy').time();;
-            $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
+            $requestUid = '1';
+            $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
 
-            $authToken = $eInvoiceService->getAuthToken();
-            $baseUrl = rtrim(env('MASTER_INDIA_BASE_URL', ''), '/') . '/';
-            $gstinUrl = $baseUrl . 'commonapis/searchgstin?gstin=' . urlencode($gstin);
+            $authToken = $masterIndiaService->getAuthToken();
+            $gstinUrl =  env('GSTIN_BASE_URL', '').$gstin;
             $clientId = env('GSTIN_CLIENT_ID', '');
             $requestHeader = array(
                 'client_id:'.$clientId,
@@ -463,7 +463,7 @@ class EInvoiceHelper
         $totalCGSTValue = 0.00;
         $totalSGSTValue = 0.00;
         $totalIGSTValue = 0.00;
-        $documentNumber = $documentHeader->book_code .'/'. $documentHeader->document_number;
+        $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
 
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -480,76 +480,63 @@ class EInvoiceHelper
         $shipStateCode = self::getStateCode($sellerBillingAddress->state_id);
 
         $tranDetails = (object) [
-            "TaxSch"      =>   "GST",
-            "SupTyp"      =>   "B2B",
-            "RegRev"      =>   "Y",
-            "EcmGstin"    =>   null,
-            "IgstOnIntra" =>   "N"
+            "supply_type" => $documentHeader->gst_invoice_type,
+            "charge_type" => "N",
+            "igst_on_intra" => "N",
+            "ecommerce_gstin" => ""
         ];
 
         $docDetails = (object) [
-            "Typ" =>  'INV',
-            "No"  =>  $documentNumber,
-            "Dt"  =>  date('d/m/Y', strtotime($documentHeader->document_date)),
+            "document_type" => 'INV',
+            "document_number" => $documentNumber,
+            "document_date" => date('d/m/Y', strtotime($documentHeader->document_date)),
         ];
 
         $sellerDetails = (object) [
-            "Gstin" =>  $organization?->gst_number,
-            "LglNm" =>  $organization->name,
-            "TrdNm" =>  null,
-            "Addr1" =>  $organizationAddress->line_1,
-            "Addr2" =>  $organizationAddress->line_2,
-            "Loc"   =>  $organizationAddress?->city?->name,
-            "Pin"   =>  $organizationAddress->postal_code,
-            // "Stcd"  =>  $sellerStateCode,
-            "Stcd"  =>  '7',
-            "Ph"    =>  $organizationAddress->phone,
-            "Em"    =>  $organization?->email
+            "gstin" => $organization?->gst_number,
+            "legal_name" => $organization->name,
+            "trade_name" => null,
+            "address1" => $organizationAddress->line_1,
+            "address2" => $organizationAddress->line_2,
+            "location" => $organizationAddress?->city?->name,
+            "pincode" => $organizationAddress->postal_code,
+            "state_code" => $sellerStateCode->name,
+            "phone_number" => $organizationAddress->phone,
+            "email" => $organization?->email
         ];
 
         $buyerDetails = (object) [
-            "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
-            // "Gstin" =>  '11AAACT5131A2Z9',
-            "LglNm" =>  $documentHeader?->vendor?->company_name,
-            "TrdNm" =>  null,
-            "Pos"   =>  '11',
-            "Addr1" =>  $sellerBillingAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $sellerBillingAddress?->city?->name,
-            "Pin"   =>  @$sellerBillingAddress->pincode,
-            // "Pin"   =>  '737132',
-            "Stcd"  =>  '11',
-            // "Stcd"  =>  $buyerStateCode,
-            "Ph"    =>  $sellerBillingAddress->phone,
-            "Em"    =>  $documentHeader?->vendor?->email
+            "gstin" => $documentHeader?->vendor->compliances->gstin_no,
+            "legal_name" => $documentHeader?->vendor?->company_name,
+            "trade_name" => null,
+            "address1" => $sellerBillingAddress?->address,
+            "address2" => null,
+            "location" => $sellerBillingAddress?->city?->name,
+            "pincode" => $sellerBillingAddress->pincode,
+            "state_code" => $buyerStateCode->name,
+            "place_of_supply" => $buyerStateCode->state_code,
+            "phone_number" => $sellerBillingAddress->phone,
+            "email" => $documentHeader?->vendor?->email
         ];
 
         $dispatchDetails = (object) [
-            "Nm" =>  $documentHeader?->erpStore?->store_name,
-            "Addr1" =>  $buyerAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $buyerAddress?->city?->name,
-            "Pin"   =>  @$buyerAddress->pincode,
-            // "Pin"   =>  '737132',
-            "Stcd"  =>  '7',
-            // "Stcd" => $buyerStateCode,
+            "company_name" => $documentHeader?->erpStore?->store_name,
+            "address1" => $buyerAddress?->address,
+            "address2" => null,
+            "location" => $buyerAddress?->city?->name,
+            "pincode" => $buyerAddress?->pincode,
+            "state_code" => $buyerStateCode->name,
         ];
 
         $shipDetails = (object) [
-            // "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
-            "Gstin" =>  $documentHeader?->vendor->compliances->gstin_no,
-            "LglNm" =>  $documentHeader?->vendor?->company_name,
-            "TrdNm" =>  null,
-            "Pos"   =>  '11',
-            "Addr1" =>  $sellerBillingAddress?->address,
-            "Addr2" =>  null,
-            "Loc"   =>  $sellerBillingAddress?->city?->name,
-            "Pin"   =>  @$sellerBillingAddress->pincode,
-            // "Pin"   =>  '737132',
-            "Stcd"  =>  '11',
-            // "Stcd"  =>  $shipStateCode,
-            "Ph"    =>  $sellerBillingAddress->phone,
-            "Em"    =>  $documentHeader?->vendor?->email
+            "gstin" => "05AAAPG7885R002",
+            "legal_name" => $documentHeader?->vendor?->company_name,
+            "trade_name" => null,
+            "address1" => $sellerBillingAddress?->address,
+            "address2" => null,
+            "location" => $sellerBillingAddress?->city?->name,
+            "pincode" => $sellerBillingAddress->pincode,
+            "state_code" => $buyerStateCode->name,
         ];
 
         foreach($documentDetails as $key => $val){
@@ -576,116 +563,98 @@ class EInvoiceHelper
             $totalIGSTValue += $val->igst_value['value'];
             $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
             $itemList[] = (object) [
-                "SlNo" => (string) $val?->item_id,
-                "PrdDesc" => $val?->item?->item_name,
-                "IsServc" => "N",
-                // "HsnCd" => '39233010',
-                "HsnCd" => $val?->hsn_code,
-                "Barcde" => null,
-                "Qty" => round($orderQty),
-                "FreeQty" => round($orderQty),
-                "Unit" => (string) $uom?->name,
-                "UnitPrice" => round($val?->rate),
-                "TotAmt" => round($orderQty*$val?->rate),
-                "Discount" => round($itemDiscount + $headerDiscount),
-                "PreTaxVal" => round($val?->tax_value),
-                "AssAmt" => round($totalAmt),
-                "GstRt" => 18,
-                "IgstAmt" => $val->igst_value['value'],
-                "CgstAmt" => $val->cgst_value['value'],
-                "SgstAmt" => $val->sgst_value['value'],
-                "CesRt" => 0,
-                "CesAmt" => 0,
-                "CesNonAdvlAmt" => 0,
-                "StateCesRt" => 0,
-                "StateCesAmt" => 0,
-                "StateCesNonAdvlAmt" => 0,
-                "OthChrg" => 0,
-                "TotItemVal" => round($totalItemValue, 2),
-                "OrdLineRef" => null,
-                "OrgCntry" => null,
-                "PrdSlNo" => null,
-                // "BchDtls" => (object)[
-                //     "Nm" => $documentHeader->document_number,
-                //     "ExpDt" => null,
-                //     "WrDt" => null
-                // ],
-                // "AttribDtls" => (object)[]
+                "item_serial_number" => (string) $key,
+				"product_description" => $val?->item?->item_name,
+				"is_service" => "N",
+				"hsn_code" => $val?->hsn_code,
+				"bar_code" => null,
+				"quantity" => round($orderQty),
+				"free_quantity" => round($orderQty),
+				"unit" => (string) $uom?->name,
+				"unit_price" => round($val?->rate),
+				"total_amount" => round($orderQty*$val?->rate),
+				"pre_tax_value" => round($val?->tax_value),
+				"discount" => round($itemDiscount + $headerDiscount),
+				"other_charge" => 0,
+				"assessable_value" => round($totalAmt),
+				"gst_rate" => 5,
+				"igst_amount" => $val->igst_value['value'],
+				"cgst_amount" => $val->cgst_value['value'],
+				"sgst_amount" => $val->sgst_value['value'],
+				"cess_rate" => 0,
+				"cess_amount" => 0,
+				"cess_nonadvol_amount" => 0,
+				"state_cess_rate" => 0,
+				"state_cess_amount" => 0,
+				"state_cess_nonadvol_amount" => 0,
+				"total_item_value" => round($totalItemValue, 2),
+				"country_origin" => null,
+				"order_line_reference" => null,
+				"product_serial_number" => "",
+				"batch_details" => array(
+					"name" => $documentHeader->book_code.'-'.$documentHeader->document_number,
+					"expiry_date" => '',
+					"warranty_date" => ''
+				),
+				"attribute_details" => []
             ];
         }
 
         $valDtls = (object) [
-            "AssVal"       =>  round($documentHeader->taxable_amount,2),
-            "CgstVal"      =>  round($totalCGSTValue, 2),
-            "SgstVal"      =>  round($totalSGSTValue, 2),
-            "IgstVal"      =>  round($totalIGSTValue, 2),
-            "CesVal"       =>  0,
-            "StCesVal"     =>  0,
-            "Discount"     =>  0,
-            "OthChrg"      =>  round($documentHeader->expense_amount, 2),
-            "RndOffAmt"    =>  0,
-            "TotInvVal"    =>  round(($documentHeader->total_amount),2),
-            "TotInvValFc"  =>  0
+            "total_assessable_value" => round($documentHeader->taxable_amount,2),
+            "total_cgst_value" => round($totalCGSTValue, 2),
+            "total_sgst_value" => round($totalSGSTValue, 2),
+            "total_igst_value" => round($totalIGSTValue, 2),
+            "total_cess_value" => 0,
+            "total_discount" => 0,
+            "total_other_charge" => round($documentHeader->expense_amount, 2),
+            "total_invoice_value" => round(($documentHeader->total_amount),2) + round(($totalTaxValue),2),
+            "total_cess_value_of_state" => 0,
+            "round_off_amount" => 0,
+            "total_invoice_value_additional_currency" => 0
         ];
 
         $payDtls = (object) [
-            "Nm"            =>   null,
-            "AccDet"        =>   null,
-            "Mode"          =>   null,
-            "FinInsBr"      =>   null,
-            "PayTerm"       =>   null,
-            "PayInstr"      =>   null,
-            "CrTrn"         =>   null,
-            "DirDr"         =>   null,
-            "CrDay"         =>   0,
-            "PaidAmt"       =>   0,
-            "PaymtDue"      =>   0,
-            "TotInvValFc"   =>   0
+            "bank_account_number" => null,
+            "paid_balance_amount" => null,
+            "credit_days" => null,
+            "credit_transfer" => null,
+            "direct_debit" => null,
+            "branch_or_ifsc" => null,
+            "payment_mode" => null,
+            "payee_name" => null,
+            "outstanding_amount" => null,
+            "payment_instruction" => null,
+            "payment_term" => null
         ];
 
-        // $refDtls = (object) [
-        //     "InvRm" => null,
-        //     "DocPerdDtls" => (object) [
-        //         "InvStDt"   => null,
-        //         "InvEndDt"  => null,
-        //     ],
-        //     "PrecDocDtls" => (object) [
-        //     [
-        //         "InvNo"     => null,
-        //         "InvDt"     => null,
-        //         "OthRefNo"  => null
-        //     ]
-        //     ],
-        //     "ContrDtls" => (object) []
-        // ];
-
-        $addlDocDtls =  [
-            (object)  array(
-                "Url"   => "https://einv-apisandbox.nic.in",
-                "Docs"  => "Test Doc",
-                "Info"  => "Document Test"
-           )
+        $refDtls = (object) [
+            "invoice_remarks" => "",
+            "preceding_document_details" => [],
+            "contract_details" => [],
         ];
+
+        $addlDocDtls =  [];
 
         $expDtls = (object) [
-            "ShipBNo"   => null,
-            "ShipBDt"   => null,
-            "Port"      => null,
-            "RefClm"    => null,
-            "ForCur"    => null,
-            "CntCode"   => null,
-            "ExpDuty"   => null,
+            "ship_bill_number" => null,
+            "ship_bill_date" => null,
+            "country_code" => null,
+            "foreign_currency" => null,
+            "refund_claim" => null,
+            "port_code" => null,
+            "export_duty" => null
         ];
 
         $ewbDtls = (object) [
-            "TransId"       => 'null',
-            "TransName"     => 'null',
-            "Distance"      => 100,
-            "TransDocNo"    => '12345',
-            "TransDocDt"    => '01/03/2025',
-            "VehNo"         => null,
-            "VehType"       => 'R',
-            "TransMode"     => '1',
+            "transporter_id" => "",
+            "transporter_name" => $documentHeader->transportation_name,
+            "transportation_mode" => $documentHeader->transportation_mode,
+            "transportation_distance" => 100,
+            "transporter_document_number" => "12345",
+            "transporter_document_date" => now()->format('d/m/Y'),
+            "vehicle_number" => $documentHeader->vehicle_no,
+            "vehicle_type" => "R"
         ];
 
         $result = [
@@ -700,9 +669,9 @@ class EInvoiceHelper
             'payDtls' => $payDtls,
             'addlDocDtls'  =>  $addlDocDtls,
             'expDtls'  =>  $expDtls,
-            // 'ewbDtls' => $ewbDtls,
+            'ewbDtls' => $ewbDtls,
+            'refDtls' => $refDtls
         ];
-
         return $result;
 
     }
@@ -710,7 +679,7 @@ class EInvoiceHelper
     public static function generateQRCodeBase64($signedQRCode)
     {
         $qrCode = QrCode::create($signedQRCode)
-        ->setMargin(0); // Remove padding
+        ->setMargin(0);
         $writer = new PngWriter();
         $result = $writer->write($qrCode);
 
@@ -789,7 +758,7 @@ class EInvoiceHelper
 
     private static function getStateCode($stateId){
         $stateCode = State::find($stateId);
-        return $stateCode ? $stateCode->state_code : null;
+        return $stateCode ? $stateCode : null;
     }
 
     private  static function generateIrn($docId, $document, $documentType) {
@@ -797,24 +766,35 @@ class EInvoiceHelper
         if($condition){
             $documentHeader = $document;
             $documentDetails = $document -> items;
-            // dd($document->itemstoArray());
-            $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
-            if(isset($generateInvoice['ErrorDetails']) && !empty($generateInvoice['ErrorDetails'])){
-                return $generateInvoice;
+            $generateInvoice = MasterIndiaHelper::generateInvoice($documentHeader, $documentDetails);
+            if (isset($generateInvoice['results']['message']['alert']) && !empty($generateInvoice['results']['message']['alert'])) {
+                return [
+                        'results' => [
+                                    'status' => 'Error',
+                                    'message' => $generateInvoice['results']['message']['alert']
+                                ]
+                        ];
+            }
+            if (isset($generateInvoice['results']['errorMessage']) && !empty($generateInvoice['results']['errorMessage'])) {
+                return [
+                    'results' => [
+                        'status' => 'Error',
+                        'message' => $generateInvoice['results']['errorMessage']
+                    ]
+                ];
             }
             $documentHeader->irnDetail()->create([
-                'ack_no' => $generateInvoice['AckNo'],
-                'ack_date' => $generateInvoice['AckDt'],
-                'irn_number' => $generateInvoice['Irn'],
-                'signed_invoice' => $generateInvoice['SignedInvoice'],
-                'signed_qr_code' => $generateInvoice['SignedQRCode'],
-                'ewb_no' => $generateInvoice['EwbNo'],
-                'ewb_date' => $generateInvoice['EwbDt'],
-                'ewb_valid_till' => $generateInvoice['EwbValidTill'],
-                'status' => $generateInvoice['Status'],
-                'remarks' => $generateInvoice['Remarks']
+                'ack_no' => $generateInvoice['results']['message']['AckNo'],
+                'ack_date' => $generateInvoice['results']['message']['AckDt'],
+                'irn_number' => $generateInvoice['results']['message']['Irn'],
+                'signed_invoice' => $generateInvoice['results']['message']['SignedInvoice'],
+                'signed_qr_code' => $generateInvoice['results']['message']['SignedQRCode'],
+                'ewb_no' => $generateInvoice['results']['message']['EwbNo'],
+                'ewb_date' => $generateInvoice['results']['message']['EwbDt'],
+                'ewb_valid_till' => $generateInvoice['results']['message']['EwbValidTill'],
+                'status' => $generateInvoice['results']['message']['Status'],
+                'remarks' => $generateInvoice['results']['message']['Remarks']
             ]);
-
             return $generateInvoice;
         }
     }
@@ -879,7 +859,7 @@ class EInvoiceHelper
         $serviceAlias = $document ?-> book ?-> service ?-> alias;
         if ($serviceAlias === ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS || $serviceAlias === ConstantHelper::SR_SERVICE_ALIAS ||
         ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) ||
-        ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS)) {
+        ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && !$document -> invoice_required)) {
             return true;
         } else {
             return false;
@@ -890,22 +870,12 @@ class EInvoiceHelper
     {
         $value = self::checkIfGstInShouldGenerate($document, null);
         if ($value) {
-            // Validate GSTIN
-            // $validateGstIn = array();
-            // $validateGstIn = self::validateGstIn($document -> id, $document, null);
-            // if(isset($validateGstIn) && !$validateGstIn['Status']){
-            //     return [
-            //         'status' => 'error',
-            //         'message' => $validateGstIn['errorMsg'],
-            //     ];
-            // }
-
             // Generate Invoice
             $generateInvoice = self::generateIrn($document -> id, $document, null);
-            if(isset($generateInvoice) && !$generateInvoice['Status']){
+            if(isset($generateInvoice['results']) && $generateInvoice['results']['status'] == "Error"){
                 return [
                     'status' => 'error',
-                    'message' => "Error: ". @$generateInvoice['ErrorDetails'][0]['ErrorCode'].' -'.$generateInvoice['ErrorDetails'][0]['ErrorMessage'],
+                    'message' => "Error: ". @$generateInvoice['results']['message'],
                 ];
             } else{
                 return $generateInvoice;
@@ -915,35 +885,116 @@ class EInvoiceHelper
     }
 
     // Generate Eway Bill
-    private  static function generateEwayBillData($document) {
+    public static function generateEwayBillData($document) {
         $user = Helper::getAuthenticatedUser();
-
+        $authCredentials = self::getAuthCredentials();
+        $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        $authToken = $masterIndiaService->getAuthToken();
         $documentHeader = $document;
-        $eInvoice = $documentHeader->irnDetail()->first();
-        $irnNumber = $eInvoice?->irn_number;
-        $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
+        // $eInvoice = $documentHeader->irnDetail()->first();
+        // $irnNumber = $eInvoice?->irn_number;
+        // $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
 
-        $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-
-        $ewbDetails = [
-            "Irn"           => $irnNumber,
-            "TransId"       => $organization?->gst_number,
-            "TransName"     => $organization?->name,
-            "Distance"      => 1521,
-            "TransDocNo"    => $documentNumber,
-            "TransDocDt"    => date('d/m/Y', strtotime($documentHeader->document_date)),
-            "VehNo"         => $documentHeader->vehicle_no,
-            "VehType"       => 'R',
-            "TransMode"     => $documentHeader->transportationMode?->code,
-        ];
-
-        return $ewbDetails;
+        // $organization = Organization::where('id', $user->organization_id)->first();
+        // $organizationAddress = Address::with(['city', 'state', 'country'])
+        //     ->where('addressable_id', $user->organization_id)
+        //     ->where('addressable_type', Organization::class)
+        //     ->first();
+        $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
+        // $distance = $masterIndiaService->getDistance($documentHeader, $authToken);
+        $distance = 100;
+        // dd($distance);
+        $requestData = self::generateHeader($documentHeader, $authToken, $distance);
+        return $requestData;
 
     }
+
+    public static function generateHeader($documentHeader, $authToken, $distance)
+	{
+        $documentDetails = $documentHeader -> items;
+        $data = self::getInvoiceDetail($documentHeader, $documentDetails);
+        $itemData = [];
+        foreach ($data['itemList'] as $key2 => $item) {
+            $itemData = self::generateItems($item);
+        }
+
+		return [
+            'itemList' => $itemData,
+			'access_token' => $authToken,
+			'userGstin' => $data['sellerDetails']->gstin,
+			'supply_type' => "outward",
+			'sub_supply_type' => 'Supply',
+			'sub_supply_description' => '',
+			'document_type' => $data['docDetails']->document_type,
+			'document_number' => $data['docDetails']->document_number,
+			'document_date' => $data['docDetails']->document_date,
+
+			'gstin_of_consignor' => $data['sellerDetails']->gstin,
+			'legal_name_of_consignor' => $data['sellerDetails']->legal_name,
+			'address1_of_consignor' => $data['sellerDetails']->address1,
+			'address2_of_consignor' => $data['sellerDetails']->address2,
+			'place_of_consignor' => $data['sellerDetails']->location,
+			'pincode_of_consignor' => $data['sellerDetails']->pincode,
+			'state_of_consignor' => $data['sellerDetails']->state_code,
+			'actual_from_state_name' => $data['sellerDetails']->state_code,
+
+
+			'gstin_of_consignee' => $data['buyerDetails']->gstin,
+			'legal_name_of_consignee' => $data['buyerDetails']->legal_name,
+			'address1_of_consignee' => $data['buyerDetails']->address1,
+			'address2_of_consignee' => $data['buyerDetails']->address2,
+			'place_of_consignee' => $data['buyerDetails']->location,
+			'pincode_of_consignee' => $data['buyerDetails']->pincode,
+			'state_of_supply' => $data['buyerDetails']->place_of_supply,
+			'actual_to_state_name' => $data['buyerDetails']->state_code,
+
+			'transaction_type' => '',
+			'other_value' => $data['valDtls']->total_other_charge,
+			'total_invoice_value' => $data['valDtls']->total_invoice_value,
+			'taxable_amount' => $data['valDtls']->total_assessable_value,
+			'cgst_amount' => $data['valDtls']->total_cgst_value,
+			'sgst_amount' => $data['valDtls']->total_sgst_value,
+			'igst_amount' => $data['valDtls']->total_igst_value,
+			'cess_amount' => $data['valDtls']->total_cess_value,
+			'cess_nonadvol_value' => '',
+
+
+			'transporter_id' => $data['ewbDtls']->transporter_id,
+			'transporter_name' => $data['ewbDtls']->transporter_name,
+			'transporter_document_number' => $data['ewbDtls']->transporter_document_number,
+			'transporter_document_date' => $data['ewbDtls']->transporter_document_date,
+			'transportation_mode' => $data['ewbDtls']->transportation_mode,
+			'transportation_distance' => $distance,
+			'vehicle_number' => $data['ewbDtls']->vehicle_number,
+			'vehicle_type' => $data['ewbDtls']->vehicle_type,
+			'generate_status' => 1,
+			'data_source' => '',
+			'user_ref' => '',
+			'location_code' => '',
+			'eway_bill_status' => '',
+			'auto_print' => '',
+			'email' => '',
+		];
+	}
+
+	public static function generateItems($item)
+	{
+		return [
+			'product_name' => "",
+			'product_description' => $item->product_description,
+			'hsn_code' => $item->hsn_code,
+			'quantity' => $item->quantity,
+			'unit_of_product' => $item->unit,
+			'cgst_rate' => $item->cgst_amount,
+			'sgst_rate' => $item->sgst_amount,
+			'igst_rate' => $item->igst_amount,
+			'cess_rate' => $item->cess_rate,
+			'cessNonAdvol' => "",
+			'taxable_amount' => $item->total_item_value
+		];
+	}
+
 
     public static function generateEwayBill($documentHeader)
     {
@@ -951,13 +1002,12 @@ class EInvoiceHelper
         $postData = self::generateEwayBillData($documentHeader);
         $authCredentials = self::getAuthCredentials();
         $requestUid = 'GOV-EINVOICE-'.date('dmy').time();
-        $eInvoiceService = new EInvoiceService($authCredentials,$requestUid);
+        $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
         $response = $eInvoiceService->generateEwaybillByIRN($postData);
-        // dd($response);
-        if(isset($response['ErrorDetails']) && !empty($response['ErrorDetails'])){
+        if(isset($response['status']) && $response['status'] != 'Success'){
             return [
                 'status' => 'error',
-                'message' => "Error: ". @$response['ErrorDetails'][0]['ErrorCode'].' -'.$response['ErrorDetails'][0]['ErrorMessage'],
+                'message' => "Error: ". @$response['ErrorMessage'],
             ];
         } else{
             return $response;

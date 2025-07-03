@@ -22,6 +22,8 @@ class ErpLogisticsMultiFixedPricing extends Model
         'vehicle_type_id',
         'customer_id',
         'status',
+         'created_by',
+        'updated_by',
     ];
 
      public function sourceRoute()
@@ -42,6 +44,11 @@ class ErpLogisticsMultiFixedPricing extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+     public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function locations() 

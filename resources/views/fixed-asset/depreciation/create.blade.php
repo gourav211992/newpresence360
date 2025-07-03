@@ -144,8 +144,12 @@
                                                     <div class="col-md-5">
                                                         <select id="period" name="period" class="form-select" required>
                                                             <option value="">Select</option>
-                                                            @if(!empty($periods))
-                                                            <option value="{{ $periods[0]->value }}">{{ $periods[0]->label }}</option>
+                                                                @php
+                                                                $periodCollection = collect($periods);
+                                                            @endphp
+
+                                                            @if ($periodCollection->isNotEmpty())
+                                                                <option value="{{ $periodCollection->first()->value }}">{{ $periodCollection->first()->label }}</option>
                                                             @endif
                                                         </select>
                                                     </div>

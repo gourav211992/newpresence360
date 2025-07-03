@@ -774,7 +774,7 @@ class PaymentVoucherController extends Controller
 
                     $insertData = [];
                     foreach ($partyVouchers as $reference) {
-                        if (self::getVoucherBalance($reference['amount'],$reference['voucher_id'], $request->document_type, $details->ledger_id, $details->ledger_group_id, $id) >= 0) {
+                        if (self::getVoucherBalance($reference['amount'],$reference['voucher_id'], $request->document_type, $details->ledger_id, $details->ledger_group_id, $id)<0) {
                             $insertData[] = [
                                 'payment_voucher_id' => $voucher->id,
                                 'voucher_details_id' => $details->id,
@@ -1408,7 +1408,8 @@ class PaymentVoucherController extends Controller
         ]);
         $data = VoucherController::getLedgerVouchers($request);
         $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();
-        return \bcsub($voucher->balance, $settle, 2);
+        $diff = round($voucher->balance, 2) - round($settle, 2);
+        return $diff;
     }
     static function getVoucherBalance2($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
     {

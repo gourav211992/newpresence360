@@ -248,10 +248,10 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                     <th>Attributes</th>
                                                     <th style="width: 30px;">UOM</th>
                                                     <th>Consumption</th>
-                                                    <th>Cost</th>
-                                                    <th>Item Value</th>
-                                                    <th id="component_overhead_required">Overheads</th>
-                                                    <th>Total Cost</th>
+                                                    <th class="{{$canView ? '' : 'd-none'}}">Cost</th>
+                                                    <th class="{{$canView ? '' : 'd-none'}}">Item Value</th>
+                                                    <th class="{{$canView ? '' : 'd-none'}}" id="component_overhead_required">Overheads</th>
+                                                    <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
                                                     <th style="min-width: 100px;" id="station_required">Station</th>
                                                     <th style="min-width: 100px;">Vendor</th>
                                                     <th style="width: 20px;"></th>
@@ -262,7 +262,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                 
                                             </tbody>
                                             <tfoot>
-                                                <tr class="totalsubheadpodetail">
+                                                <tr class="totalsubheadpodetail {{$canView ? '' : 'd-none'}}">
                                                     <td colspan="9"></td>
                                                     <td class="text-end" id="totalItemValue">0.00</td>
                                                     <td class="text-end" id="totalOverheadAmountValue">0.00</td>
@@ -271,7 +271,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                     <td></td>
                                                 </tr>
                                                 <tr valign="top">
-                                                    <td colspan="11" rowspan="10">
+                                                    <td @if($canView) colspan="11" @else colspan="15" @endif rowspan="10">
                                                     <table class="table border" id="itemDetailTable">
                                                         <tr>
                                                             <td class="p-0">
@@ -286,42 +286,44 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                         </tr>
                                                     </table>
                                                     </td>
-                                                    <td colspan="4">
-                                                    <table class="table border mrnsummarynewsty">
-                                                        <tr>
-                                                            <td colspan="2" class="p-0">
-                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                <strong>BOM Summary</strong>
-                                                                @if($canView)
-                                                                <div class="addmendisexpbtn">
-                                                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
-                                                                </div>
-                                                                @endif
-                                                                </h6>
-                                                            </td>
-                                                        </tr>
-                                                        <tr class="voucher-tab-foot">
-                                                            <td class="text-primary"><strong>Item Total</strong></td>
-                                                            <td>
-                                                                <div class="justify-content-end text-end">
-                                                                <h5 id="footerTotalCost">0.00</h5>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>Header Overheads</strong></td>
-                                                            <td class="text-end" id="footerOverheadHeader">0.00</td>
-                                                        </tr>
-                                                        <tr class="voucher-tab-foot">
-                                                            <td class="text-primary"><strong>Grand Total</strong></td>
-                                                            <td>
-                                                                <div class="quottotal-bg justify-content-end">
-                                                                <h5 id="footerGrandTotal">0.00</h5>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                    </td>
+                                                    @if($canView)
+                                                        <td colspan="4">
+                                                        <table class="table border mrnsummarynewsty">
+                                                            <tr>
+                                                                <td colspan="2" class="p-0">
+                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
+                                                                    <strong>BOM Summary</strong>
+                                                                    @if($canView)
+                                                                    <div class="addmendisexpbtn">
+                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary addOverHeadSummaryBtn"><i data-feather="plus"></i> Overhead</button> 
+                                                                    </div>
+                                                                    @endif
+                                                                    </h6>
+                                                                </td>
+                                                            </tr>
+                                                            <tr class="voucher-tab-foot">
+                                                                <td class="text-primary"><strong>Item Total</strong></td>
+                                                                <td>
+                                                                    <div class="justify-content-end text-end">
+                                                                    <h5 id="footerTotalCost">0.00</h5>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Header Overheads</strong></td>
+                                                                <td class="text-end" id="footerOverheadHeader">0.00</td>
+                                                            </tr>
+                                                            <tr class="voucher-tab-foot">
+                                                                <td class="text-primary"><strong>Grand Total</strong></td>
+                                                                <td>
+                                                                    <div class="quottotal-bg justify-content-end">
+                                                                    <h5 id="footerGrandTotal">0.00</h5>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                        </td>
+                                                    @endif
                                                 </tr>
                                             </tfoot>
                                         </table>

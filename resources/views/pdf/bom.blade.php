@@ -185,6 +185,7 @@
                         Norms
                     </td>
                     @endif
+                    @if($canView)
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; width: 50px;">
                         Cost
                     </td>
@@ -197,6 +198,7 @@
                     <td style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; background: #80808070; text-align: center; width: 70px;">
                         Total Cost
                     </td>
+                    @endif
                 </tr>
             @php
             $item_total = 0;
@@ -242,33 +244,35 @@
                         QPU:{{number_format($bomItem->norm->qty_per_unit ?? 0, 4)}}
                         PCS:{{number_format($bomItem->norm->total_qty ?? 0, 4)}}
                         STD:{{number_format($bomItem->norm->std_qty ?? 0, 4)}}
-                        QTY:{{number_format($bomItem->norm->norms ?? 0, 4)}}
+                        NRM:{{number_format($bomItem->norm->norms ?? 0, 4)}}
                         </td>
                     @endif
 
-
-                    <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                        {{ $canView ? number_format(floatval($bomItem->item_cost), 4, '.', '') : '' }}
-                    </td>
                     @php
                         $total = floatval($bomItem->qty) * floatval($bomItem->item_cost);
                         $total = number_format($total, 4, '.', '');
                     @endphp
-                    <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
-                        {{ $canView ? number_format($total,2) : '0.00' }}
-                    </td>
-                    <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
-                        {{ $canView ? number_format($bomItem->overhead_amount, 2) : '0.00' }}   
-                    </td>
-                    <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
-                        {{ $canView ? number_format($total + $bomItem->overhead_amount , 2) : '0.00' }}   
-                    </td>
+                    @if($canView)
+                        <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
+                            {{ $canView ? number_format(floatval($bomItem->item_cost), 4, '.', '') : '' }}
+                        </td>
+                        <td style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
+                            {{ $canView ? number_format($total,2) : '0.00' }}
+                        </td>
+                        <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
+                            {{ $canView ? number_format($bomItem->overhead_amount, 2) : '0.00' }}   
+                        </td>
+                        <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;word-break: break-word;">
+                            {{ $canView ? number_format($total + $bomItem->overhead_amount , 2) : '0.00' }}   
+                        </td>
+                    @endif
                 </tr>
                 @php
                 $item_total += $total;
                 $over_total += $bomItem->overhead_amount;
                 @endphp 
             @endforeach
+            @if($canView)
             <tr>
                 <td colspan="{{6+$consumption_method}}" style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: 1px solid #000; text-align: center;"></td>
                 <td style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
@@ -281,8 +285,11 @@
                     {{ $canView ? number_format($item_total +  $over_total, 2) : '0.00' }}
                 </td>
             </tr>
+            @endif
         </table>
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+
+            @if($canView)
             <tr>
                 <td style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -361,6 +368,8 @@
                     </table>
                 </td>
             </tr>
+            @endif
+
             @if($bom?->bomInstructions?->count())
             <tr>
                 <td colspan="2"

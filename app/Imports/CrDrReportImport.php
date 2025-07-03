@@ -97,7 +97,7 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
             // First, validate required fields (stop if missing)
             $this->service->validateImportRow($row);
             $row = $this->service->processData($row,$this->type);
-            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null);
+            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null,$this->type);
 
 
             // --- SUCCESS: Save with success remarks ---
@@ -108,7 +108,7 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
         } catch (\Exception $e) {
             // This catches any *unexpected* error in the logic above
             Log::error("Error importing row: " . $e->getMessage(), ['error' => $e]);
-            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null);
+            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null,$this->type);
             $uploadedItem->update([
                 'import_status' => 'Failed',
                 'import_remarks' => str_replace(',', '', $e->getMessage()),
@@ -119,10 +119,11 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
     }
 
 
-    protected function savePendingPaymentImport($row, $user, $organization, $status, $remarks)
+    protected function savePendingPaymentImport($row, $user, $organization, $status, $remarks,$type)
     {
        return UploadPendingPaymentMaster::create([
             'ledger_name'      => $row['ledger_name'] ?? null,
+            'doc_type'=> $type,
             'ledger_group'     => $row['ledger_group'] ?? null,
             'voucher_no'       => $row['document_no'] ?? null,
             'voucher_id'=>  $row['voucher_id']??null,

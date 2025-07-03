@@ -204,6 +204,6 @@ class Bom extends Model
     
     public function dynamic_fields()
     {
-        return $this -> hasMany(ErpSoDynamicField::class, 'header_id');
+        return $this -> hasMany(ErpBomDynamicField::class, 'header_id');
     }
 }

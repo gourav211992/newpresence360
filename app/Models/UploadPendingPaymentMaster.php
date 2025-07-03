@@ -14,6 +14,7 @@ class UploadPendingPaymentMaster extends Model
     protected $fillable = [
         'user_id',
         'ledger_name',
+        'doc_type',
         'ledger_group',
         'voucher_no',
         'voucher_id',

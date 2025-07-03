@@ -13,6 +13,9 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Auth;
 use App\Models\Unit;
+use App\Models\ErpFreightCharge;
+use App\Models\ErpLogisticsMultiFixedPricing;
+use App\Models\ErpVehicle;
 use App\Models\Organization;
 
 class ErpVehicleTypeController extends Controller
@@ -71,31 +74,43 @@ class ErpVehicleTypeController extends Controller
 
 
 
-    public function deleteMultiple(Request $request)
-    {
-        $ids = $request->input('ids', []);
+   public function deleteMultiple(Request $request)
+{
+    $ids = $request->input('ids', []);
 
-        if (empty($ids)) {
-            return response()->json([
-                'status' => false,
-                'message' => 'No records selected for deletion.'
-            ], 400);
-        }
-
-        try {
-            ErpVehicleType::whereIn('id', $ids)->delete();
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Selected records deleted successfully.'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error deleting records: ' . $e->getMessage()
-            ], 500);
-        }
+    if (empty($ids)) {
+        return response()->json([
+            'status' => false,
+            'message' => 'No records selected for deletion.'
+        ], 400);
     }
+
+    // Check dependencies in related tables
+    $usedInFreight = ErpFreightCharge::whereIn('vehicle_type_id', $ids)->exists();
+    $usedInMultiFixed = ErpLogisticsMultiFixedPricing::whereIn('vehicle_type_id', $ids)->exists();
+    $usedInVehicle = ErpVehicle::whereIn('vehicle_type_id', $ids)->exists();
+
+    if ($usedInFreight || $usedInMultiFixed || $usedInVehicle) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Selected vehicle types are in use in Freight Charges, Multi-Fixed Pricing, or Vehicles and cannot be deleted.'
+        ], 400);
+    }
+
+    try {
+        ErpVehicleType::whereIn('id', $ids)->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Selected records deleted successfully.'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Error deleting records: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
 

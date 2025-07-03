@@ -88,6 +88,14 @@ if ($request->ajax()) {
             }
             return $html;
         })
+        ->addColumn('created_at', function ($row) {
+            return optional($row->created_at)->format('d-m-Y h:i A') ?? '-';
+        })
+
+        ->addColumn('created_by', function ($row) {
+            return optional($row->createdBy)->name ?? '-';
+        })
+
 
         ->addColumn('status', function ($row) {
             $colors = [

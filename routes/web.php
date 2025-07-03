@@ -299,10 +299,11 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
     Route::get('/report/getLedgerPrint/{type}/{ledger}/{group}/{bill_type?}', [CrDrReportController::class, 'getLedgerDetailsPrint'])->name('crdr.report.ledger.print');
     Route::post('/crdr/report/add-scheduler', [CrDrReportController::class, 'addScheduler'])->name('crdr.add.scheduler');
-     Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
+    Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
     Route::get('/report/pending-receipts', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
-      Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
-    Route::get('/report/import', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
+    Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
+    Route::get('/report/import/{type}', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
+    Route::get('/report/process-import/{type}', [CrDrReportController::class,'importingProgress'])->name('pending.payment.progress.import');
     Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
     Route::post('/report/update-cache', [CrDrReportController::class,'updateCacheData'])->name('pending.payment.update.cache');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
@@ -1314,6 +1315,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('check-bom-exist', 'checkBomExist')->name('check.bom.exist');
             Route::get('report', 'bomReport')->name('report');
             Route::get('export/{id}', 'export')->name('export');
+            Route::delete('/{id}', 'destroy')->name('destroy');
         });
 
     # Bom Import
@@ -2115,6 +2117,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/pending-requests', [IndexController::class, 'requests'])->name('riv.requests');
     Route::get('/pending-approvals', [IndexController::class, 'approvals'])->name('riv.approvals');
     Route::get('/pending-postings', [IndexController::class, 'postings'])->name('riv.postings');
+     Route::post('/bulk-approvals', [IndexController::class, 'bulkApprovals'])->name('bulk.approvals');
+    Route::post('/bulk-postings', [IndexController::class, 'bulkPostings'])->name('bulk.postings');
+    Route::post('/bulk-requests', [IndexController::class, 'bulkRequests'])->name('bulk.requests');
 
 
 
@@ -2272,12 +2277,20 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 
     //Route-Master
-    Route::get('/logistics/route-master', [ErpRouteMasterController::class, 'index'])->name('logistics.vroute-master.index');
-    Route::post('/logistics/vroute-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
+    Route::get('/logistics/route-master', [ErpRouteMasterController::class, 'index'])->name('logistics.route-master.index');
+    Route::post('/logistics/route-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
     Route::delete('/logistics/route-master/delete-multiple', [ErpRouteMasterController::class, 'deleteMultiple'])->name('logistics.route-master.delete-multiple');
     Route::get('/logistics/route-master/get-states-by-country', [ErpRouteMasterController::class, 'getStatesByCountry'   ])->name('logistics.route-master.get-states-by-country');
     Route::get('/logistics/route-master/get-cities-by-state',   [ErpRouteMasterController::class, 'getCitiesByState'   ])->name('logistics.route-master.get-cities-by-state');
 
+    //Lorry Receipt
+    Route::get('/logistics/lorry-receipt', [ErpLorryReceiptController::class, 'index'])->name('logistics.lorry-receipt.index');
+    Route::get('/logistics/lorry-receipt/create', [ErpLorryReceiptController::class, 'create'])->name('logistics.lorry-receipt.create');
+    Route::post('/logistics/lorry-receipt/store', [ErpLorryReceiptController::class, 'store'])->name('logistics.lorry-receipt.store');
+    Route::put('/logistics/lorry-receipt/update/{id}', [ErpLorryReceiptController::class, 'update'])->name('logistics.lorry-receipt.update');
+    Route::get('/logistics/lorry-receipt/edit/{id}', [ErpLorryReceiptController::class, 'edit'])->name('logistics.lorry-receipt.edit');
+    Route::delete('/logistics/lorry-receipt/{id}', [ErpLorryReceiptController::class, 'destroy'])->name('logistics.lorry-receipt.destroy');
+    Route::get('/logistics/lorry-receipt/get-cities-by-state', [ErpLorryReceiptController::class, 'getCityByState'])->name('logistics.multi-point-fixed.get-cities-by-state');
 
 
      //Production Slip

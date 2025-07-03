@@ -120,6 +120,10 @@ class ConstantHelper
     const REGULAR = 'Regular';
     const CASH = 'Cash';
 
+
+    const MASTERINDIA = 'MasterIndia';
+    const GOV_EINVOICE = 'GovEInvoice';
+
     const BUNDLE = 'Bundle';
 
     const STORAGE_TYPES = [
@@ -1017,7 +1021,7 @@ class ConstantHelper
         'INTRAB2C' => 'Intra - State supplies to unregistered persons'
     ];
 
-    
+
     const FY_CURRENT_STATUS = "current";
     const FY_NEXT_STATUS = "next";
     const FY_PREVIOUS_STATUS = "prev";

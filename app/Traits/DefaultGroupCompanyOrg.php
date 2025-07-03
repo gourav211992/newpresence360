@@ -3,6 +3,7 @@
 namespace App\Traits;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\AuthUser;
 use App\Models\EmployeeBookMapping;
 use App\Models\Organization;
 use App\Models\OrganizationMenu;
@@ -92,13 +93,16 @@ trait DefaultGroupCompanyOrg
 
     public function scopeWithDraftListingLogic($query) 
     {
-        $currentUser = Helper::getAuthenticatedUser();
-        $query->where(function ($query) use ($currentUser) {
-            $query->where('document_status', "!=", ConstantHelper::DRAFT) // Approved orders are visible to all
-                  ->orWhere(function ($query) use ($currentUser) {
-                      // Draft orders visible only to their creator
-                      $query->where('created_by', $currentUser -> auth_user_id);
-                  });
+        $currentUser =  request()->user() ?? Helper::getAuthenticatedUser();
+        if (strtolower($currentUser?->auth_user?->user_type) === strtolower('IAM-SUPER')) {
+            return $query;
+        }
+        return $query->where(function ($query) use ($currentUser) {
+            $query->where('document_status', '!=', ConstantHelper::DRAFT)
+                ->orWhere(function ($query) use ($currentUser) {
+                    $query->where('document_status', ConstantHelper::DRAFT)
+                            ->where('created_by', $currentUser->auth_user_id);
+                });
         });
     }
 }

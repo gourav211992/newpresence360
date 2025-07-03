@@ -8,10 +8,11 @@ use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DynamicFieldsTrait;
 
 class BomHistory extends Model
 {
-    use HasFactory,DateFormatTrait,FileUploadTrait;
+    use HasFactory,DateFormatTrait,FileUploadTrait,DynamicFieldsTrait;
 
     protected $table = 'erp_boms_history';
 
@@ -175,6 +176,11 @@ class BomHistory extends Model
     public function bomItemAttributes()
     {
         return $this->hasMany(BomAttributeHistory::class, 'bom_id')->where('type','D');
+    }
+
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpBomDynamicField::class, 'header_id');
     }
 
 }

@@ -114,6 +114,10 @@ class ErpVehicleController extends Controller
                     return '<span class="badge rounded-pill ' . $badge . ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
                 })
                 ->editColumn('created_at', fn($row) => optional($row->created_at)->format('d-m-Y') ?? 'N/A')
+   
+                ->addColumn('created_by', function ($row) {
+                    return optional($row->createdBy)->name ?? '-';
+                })
                 ->addColumn('driver_name', fn($row) => $row->driver->name ?? 'N/A')
                 ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? 'N/A')
 
@@ -201,6 +205,7 @@ class ErpVehicleController extends Controller
                     'organization_id' => $organization->id,
                     'group_id'        => $organization->group_id,
                     'company_id'      => $user->company_id ?? null,
+                    'created_by'      => $user->id,
                 ]
             ));
 
@@ -235,6 +240,9 @@ class ErpVehicleController extends Controller
 
     public function update(VehicleRequest $request, $id)
     {
+            $user = Helper::getAuthenticatedUser();
+            $organization = $user->organization;
+          
      
         DB::beginTransaction();
 
@@ -256,6 +264,7 @@ class ErpVehicleController extends Controller
                 'fuel_type'      => $request->fuel_type,
                 'purchase_date'  => $request->purchase_date,
                 'ownership'      => $request->ownership,
+                'updated_by'      => $user->id,
                 'status'         => $request->status,
             ]);
 

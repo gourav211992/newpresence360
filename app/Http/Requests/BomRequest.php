@@ -116,8 +116,12 @@ class BomRequest extends FormRequest
         if($sectionRequired) {
             $rules['components.*.sub_section_name'] = $subSectionRequired ? 'required' : 'nullable';
         }
-        $rules['attributes.*.attr_group_id.*.attr_name'] = 'required';
-        $rules['components.*.attr_group_id.*.attr_name'] = 'required';
+        $headItem = Item::find($this->item_id ?? null);
+        
+        if ($headItem && $headItem?->itemAttributes?->count() > 0) {
+            $rules['attributes.*.attr_group_id.*.attr_name'] = 'required';
+        }
+
         $rules['components.*.uom_id'] = 'required';
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
@@ -155,7 +159,7 @@ class BomRequest extends FormRequest
                     $ia = ItemAttribute::where('item_id',$itemId)
                                     ->where('attribute_group_id',@$attr_group[0]['attr_group_id'])
                                     ->first();
-                    $selectedAttributes[] = ['attribute_id' => $ia->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];
+                    $selectedAttributes[] = ['attribute_id' => $ia?->id, 'attribute_value' => intval(@$attr_group[0]['attr_name'])];
                 }
             }
             if($this->action_type !== 'amendment') {

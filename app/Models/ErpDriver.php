@@ -26,9 +26,16 @@ class ErpDriver extends Model
         'license_back',
         'id_proof_front',
         'id_proof_back',
-        'status'
+        'status',
+        'created_by',
+        'updated_by',
     ];
 
+      public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
     public function employee(){
 
         return $this->belongsTo(Employee::class,'user_id');

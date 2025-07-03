@@ -64,7 +64,9 @@
 										<th>Product Name</th>
 										<th>Attributes</th>
 										<th>UOM</th>
+										@if($canView)
 										<th>Cost</th>
+										@endif
 										<th>Customer</th>
 										<th>Series</th>
 										<th>Doc No.</th>

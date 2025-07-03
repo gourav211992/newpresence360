@@ -102,6 +102,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id      = json_encode($request->vehicle_type_id); 
         $multiPricing->customer_id           = $request->customer_id;
+        $multiPricing->created_by            = $user->id;
         $multiPricing->status                = $request->status;
         $multiPricing->save();
 
@@ -148,6 +149,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id       = json_encode($request->vehicle_type_id);
         $multiPricing->customer_id           = $request->customer_id;
+        $multiPricing->updated_by            = $user->id;
         $multiPricing->status                = $request->status;
         $multiPricing->save();
 
@@ -199,5 +201,33 @@ class ErpMultiPointFixedController extends Controller
         ], 500);
     }
 }
+ public function destroy($id)
+{
+    DB::beginTransaction();
+
+    try {
+        $multiFixed = ErpLogisticsMultiFixedPricing::with([
+            'locations',
+        ])->findOrFail($id);
+
+        $multiFixed->delete(); 
+
+        DB::commit();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Record deleted successfully.'
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while deleting the record: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
 
 }

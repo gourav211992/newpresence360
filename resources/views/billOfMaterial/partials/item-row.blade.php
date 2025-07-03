@@ -43,7 +43,7 @@
          </div>
       </div>
    </td>
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
       <input type="number" name="components[{{$rowCount}}][item_cost]" class="form-control mw-100 text-end" step="any" />
       @else
@@ -51,7 +51,7 @@
       <input type="number" value="" name="components[{{$rowCount}}][item_cos_dummy]" value="" class="form-control mw-100 text-end" disabled step="any" />
       @endif
    </td>
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
       <input type="number" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" readonly step="any" />
       @else
@@ -61,7 +61,7 @@
 
    </td>
    @if(isset($componentWasteRequired) && $componentWasteRequired)
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <input type="number" name="components[{{$rowCount}}][waste_perc]" class="form-control mw-100 text-end" step="any" />
       {{-- <select class="form-select mw-100" name="components[{{$rowCount}}][waste_type]">
          @foreach($wasteTypes as $wasteType)
@@ -69,13 +69,13 @@
          @endforeach
       </select> --}}
    </td>
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <input type="number" name="components[{{$rowCount}}][waste_amount]" class="form-control mw-100 text-end" step="any" />
    </td>
    @endif
 
    @if(isset($componentOverheadRequired) && $componentOverheadRequired)
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       <div class="position-relative d-flex align-items-center">
          @if($canView)
             <input type="number" name="components[{{$rowCount}}][overhead_amount]" readonly class="form-control mw-100 text-end" style="width: 70px" step="any" />
@@ -89,7 +89,7 @@
       </div>
    </td>
    @endif
-   <td>
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
          <input type="text" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
       @else

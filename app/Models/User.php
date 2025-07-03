@@ -84,7 +84,10 @@ class User extends Authenticatable
 
     public function hasPermission($permission)
     {
-
+        // Super admin bypass
+        if (strtolower($this->user_type) === strtolower('IAM-SUPER')) {
+            return true;
+        }
         foreach ($this->roles as $role) {
             if ($role->permissions->contains('alias', $permission)) {
                 return true;
