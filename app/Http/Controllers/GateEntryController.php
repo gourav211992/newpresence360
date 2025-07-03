@@ -2274,7 +2274,6 @@ class GateEntryController extends Controller
     public function getPo(Request $request)
     {
         $query = $this->buildPoQuery($request);
-
         return DataTables::of($query)
             ->addColumn('select_checkbox', function ($row) use ($request) {
                 $moduleType = $row?->po?->supp_invoice_required == 'yes' ? 'suppl-inv' : 'p-order';
@@ -2283,10 +2282,10 @@ class GateEntryController extends Controller
                     : ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA');
 
                 $dataCurrentPo = $moduleType === 'suppl-inv'
-                    ? ($row->po_id ?? 'null')
-                    : ($row->purchase_order_id ?? 'null');
+                    ? ($row->purchase_order_id ?? 'null')
+                    : 'null';
                 $dataCurrentAsn = $moduleType === 'suppl-inv'
-                    ? ($row->vendor_asn_id ?? 'null')
+                    ? ($row->vendorAsn->id ?? 'null')
                     : 'null';
                 $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
                     ? ($request->selected_po_ids[0] ?? 'null')
@@ -2295,7 +2294,7 @@ class GateEntryController extends Controller
                 // $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
 
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$dataCurrentPo}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-current-asn='{$dataCurrentAsn}' data-existing-po='{$dataExistingPo}' >
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-current-asn='{$dataCurrentAsn}' data-existing-po='{$dataExistingPo}' >
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -2316,7 +2315,7 @@ class GateEntryController extends Controller
             })
             ->addColumn('inv_order_qty', function ($row) {
                 if ($row?->po?->supp_invoice_required == 'yes') {
-                    return number_format((($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+                    return number_format((($row->balance_qty ?? 0)), 2);
                 }
                 return number_format(0, 2);
             })
@@ -2325,7 +2324,7 @@ class GateEntryController extends Controller
                 $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
                 $geQty = $row->ge_qty ?? 0;
                 if ($row?->po?->supp_invoice_required == 'yes') {
-                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                    $orderQty = ($row->balance_qty ?? 0);
                 }
                 return number_format(($orderQty - $geQty), 2);
             })
@@ -2334,7 +2333,7 @@ class GateEntryController extends Controller
                 $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
                 $geQty = $row->ge_qty ?? 0;
                 if ($row?->po?->supp_invoice_required == 'yes') {
-                    $orderQty = ($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0);
+                    $orderQty = ($row->balance_qty ?? 0);
                 }
                 return number_format(($orderQty - $geQty) * ($row->rate ?? 0), 2);
             })
@@ -2376,7 +2375,7 @@ class GateEntryController extends Controller
             ->whereHas('item', function($item){
                 $item->where('type', 'Goods');
             })
-            ->with(['po', 'item', 'attributes', 'po.book', 'po.vendor'])
+            // ->with(['po', 'item', 'attributes', 'po.book', 'po.vendor'])
             ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
                 $po->withDefaultGroupCompanyOrg();
                 $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
@@ -2410,7 +2409,6 @@ class GateEntryController extends Controller
 
         $poItemIds = [];
         $finalPoItems = [];
-
         foreach ($poItems as $poItem) {
             if ($poItem->supp_invoice_required == 'yes') {
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
@@ -2426,11 +2424,9 @@ class GateEntryController extends Controller
                         continue;
                     }
                     $poItemIds[] = $siItem->id;
-                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
-                    $siItem->po = $siItem->po_item->po;
-                    $siItem->item = $siItem->po_item->item;
-                    $siItem->attributes = $siItem->po_item->attributes;
-                    $finalPoItems[] = $siItem;
+                    $siItem->po_item->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
+                    $siItem->po_item->vendorAsn = $siItem->vendorAsn;
+                    $finalPoItems[] = $siItem->po_item;
                 }
             } else {
                 if (!in_array($poItem->id, $selected_po_ids)) {

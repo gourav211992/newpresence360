@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\refined_index;
 
 use App\Helpers\{ConstantHelper, Helper, RefinedIndex\indexFilterHelper, InventoryHelper};
+use App\Helpers\FinancialPostingHelper;
 use App\Http\Controllers\Controller;
-use App\Models\{AttributeGroup, AuthUser, Book, Category, ErpTransaction, Item, Organization};
+use App\Models\{AttributeGroup, AuthUser, Book, Category, ErpTransaction , Item, Organization};
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
+use Route;
 use Yajra\DataTables\DataTables;
 
 class IndexController extends Controller
@@ -83,22 +85,39 @@ class IndexController extends Controller
         $query = ErpTransaction::withDefaultGroupCompanyOrg()
             ->whereIn('document_status', $documentStatuses)
             ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])
+            ->where(function ($q) use ($accessible_locations) {
+                $q->whereIn('location_id', $accessible_locations)
+                ->orWhereNull('location_id');
+            })
             ->orderBy('created_at', 'desc');
-
-        if ($userFilter) {
-            $query = $userFilter($query, $user);
-        }
+            if ($userFilter) {
+                $query = $userFilter($query,$user);
+            }
 
         if ($excludeOwn) {
             $query = $query->where('created_by', '!=', $user->auth_user_id);
         }
 
         if ($request->ajax()) {
-            return DataTables::of($query)
-                ->addIndexColumn()
+            if (in_array($redirectRoute, ['riv.approvals', 'riv.postings'])) {
+                $dataTable = DataTables::of($query)
+                    ->addColumn('checkbox', function($row) {
+                        static $rowCount = 0;
+                        $rowCount++;
+                        $id = "Email_{$rowCount}";
+                        return "<div class=\"form-check form-check-primary custom-checkbox\">
+                                    <input type=\"checkbox\" class=\"form-check-input transaction-select-checkbox\" id=\"{$row->document_id}\" alias=\"{$row->book->service->service->alias}\" data-id=\"{$row->id}\">
+                                    <label class=\"form-check-label\" ></label>
+                                </div>";
+                    });
+            } else {
+                $dataTable = DataTables::of($query)->addIndexColumn();
+            }
+
+            return $dataTable
                 ->editColumn('document_status', fn($row) => $this->renderStatusWithActions($row))
                 ->addColumn('document_type', fn($row) => ConstantHelper::SERVICE_LABEL[$row->document_type ?? $row->book->service->service->alias] ?? '')
-                ->addColumn('book_name', fn($row) => $row->book_code ?? 'N/A')
+                ->addColumn('book_name', fn($row) => $row->book_code ?? ($row->book->book_code??'N/A'))
                 ->addColumn('document_number', fn($row) => $row->document_number ?: 'N/A')
                 ->editColumn('document_date', fn($row) => $row->document_date ? date('Y-m-d', strtotime($row->document_date)) : 'N/A')
                 ->editColumn('revision_number', fn($row) => strval($row->revision_number ?? '0'))
@@ -106,7 +125,7 @@ class IndexController extends Controller
                 ->addColumn('currency', fn($row) => $row->currency_code ?? Organization::find($row->organization_id)?->currency_code ?? 'NA')
                 ->editColumn('total_amount', fn($row) => number_format($row->total_amount, 2))
                 ->editColumn('submitted_by', fn($row) => AuthUser::find($row->created_by)?->name ?? 'N/A')
-                ->rawColumns(['document_status'])
+                ->rawColumns(['document_status', 'checkbox'])
                 ->make(true);
         }
 
@@ -123,7 +142,9 @@ class IndexController extends Controller
         $alias = $row->book->service->service->alias;
         $routeName = ConstantHelper::SERVICE_ALIAS_VIEW_ROUTE[$alias];
         $documentType = $row->document_type === 'po' ? 'purchase-order' : $row->document_type;
-        $routeParams = [    
+
+        // All available route params
+        $allRouteParams = [
             'id' => $row->document_id,
             'type' => $documentType,
             'payment' => $row->document_id,
@@ -131,7 +152,24 @@ class IndexController extends Controller
             'receipt' => $row->document_id,
         ];
 
+        // Get required parameter names for this route
+        $route = Route::getRoutes()->getByName($routeName);
+        $routeParams = [];
+
+        if ($route) {
+            preg_match_all('/\{(\w+?)\}/', $route->uri(), $matches);
+            $requiredParams = $matches[1]; // ['id', 'type'] for example
+
+            foreach ($requiredParams as $param) {
+                if (array_key_exists($param, $allRouteParams)) {
+                    $routeParams[$param] = $allRouteParams[$param];
+                }
+            }
+        }
+
+        // Generate the route only with required params
         $editRoute = route($routeName, $routeParams);
+
 
         return "
             <div style='text-align:right;'>
@@ -149,5 +187,118 @@ class IndexController extends Controller
                 </div>
             </div>
         ";
+    }
+    public function bulkapprovals(Request $request)
+    {
+        $selectedIds = $request->input('ids', []);
+        $results = [];
+        $modelCheck = [];
+        foreach ($selectedIds as $item) {
+            if (!isset($item['document_id'], $item['alias'])) {
+                continue;
+            }
+            $baseNamespace = 'App\Models\\';
+            $className = ConstantHelper::SERVICE_ALIAS_MODELS[$item['alias']] ?? null;
+            $modelClass = $baseNamespace . $className;
+
+            if ($modelClass && class_exists($modelClass)) {
+                $data = $modelClass::find($item['document_id']);
+                $approveDocument = Helper::approveDocument($data?->book?->id ?? $data->book_id, $item['document_id'], $data->revision_number , '', [], $data->approval_level, $request -> actionType , 0, $modelClass);
+                if ($approveDocument['message']) {
+                    $results[] = [
+                        'document_id' => $item['document_id'],
+                        'message' => $approveDocument['message'],
+                        'status' => 'error'
+                    ];
+                } else {
+                    $results[] = [
+                        'document_id' => $item['document_id'],
+                        'message' => 'Document approved successfully',
+                        'status' => 'success'
+                    ];
+                    $document_status = $approveDocument['approvalStatus'] ?? $data -> document_status;
+                    $data->document_status = $document_status;
+                }
+                $data -> save();
+            }
+        }
+        return response()->json(['data' => $results]);
+    }
+
+    public function bulkpostings(Request $request)
+    {
+        $selectedIds = $request->input('ids', []);
+        $results = [];
+
+        foreach ($selectedIds as $item) {
+            if (!isset($item['document_id'], $item['alias'])) {
+                continue;
+            }
+
+            $baseNamespace = 'App\\Models\\';
+            $className = ConstantHelper::SERVICE_ALIAS_MODELS[$item['alias']] ?? null;
+            $modelClass = $baseNamespace . $className;
+
+            if ($modelClass && class_exists($modelClass)) {
+                $data = $modelClass::find($item['document_id']);
+
+                if ($data) {
+                    $bookId = $data->book_id;
+                    $docId = $data -> id;
+                    $label=ConstantHelper::SERVICE_LABEL[$data->book->service->alias];
+                    $postResult = FinancialPostingHelper::financeVoucherPosting($bookId, $docId, 'post');
+                    if (!empty($postResult['message'])) {
+                        $results[] = [
+                            'document_type' => $label,
+                            'document_id' => $data->book->book_code."-".$data -> document_number,
+                            'message' => $postResult['message'],
+                            'status' => 'error'
+                        ];
+                    } else {
+                        $results[] = [
+                            'document_type' => $label,
+                            'document_id' => $data->book->book_code."-".$data -> document_number,
+                            'message' => 'Document posted successfully',
+                            'status' => 'success'
+                        ];
+                    }
+                } else {
+                    $results[] = [
+                        'document_type' => $label,
+                        'document_id' => $item['document_id'],
+                        'message' => 'Document not found',
+                        'status' => 'error'
+                    ];
+                }
+            } else {
+                $results[] = [
+                    'document_type' => $label,
+                    'document_id' => $item['document_id'],
+                    'message' => 'Model class not found or invalid',
+                    'status' => 'error'
+                ];
+            }
+        }
+
+        return response()->json(['data' => $results]);
+    }
+
+
+    public function bulkrequests(Request $request)
+    {
+        $selectedIds = $request->input('ids', []);
+        $results = [];
+
+        foreach ($selectedIds as $item) {
+            if (!isset($item['document_id'], $item['alias'])) {
+                continue;
+            }
+            $modelClass = ConstantHelper::SERVICE_ALIAS_MODELS[$item['alias']] ?? null;
+            if ($modelClass && class_exists($modelClass)) {
+                $results[] = $modelClass::where('document_id', $item['document_id'])->first();
+            }
+        }
+
+        return response()->json(['data' => $results]);
     }
 }

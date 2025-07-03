@@ -487,7 +487,7 @@
                                                                                     <button type="button"
                                                                                         class="btn p-25 btn-sm btn-outline-secondary invoice{{ $no }}"
                                                                                         style="font-size: 10px"
-                                                                                        onclick="openInvoice({{ $no }}, {{ $voucher['voucher_id'] }}, {{ $voucher['item_id'] }}, {{ $voucher['settle_amt'] }})">
+                                                                                        onclick="openInvoice({{ $no }})">
                                                                                         Invoice
                                                                                     </button>
                                                                                 </div>
@@ -740,8 +740,8 @@
 @section('scripts')
     <script>
         const token = "{{request('token')  }}";
-        let groupedData = @json($selectedRows);
-        let rawItemData = @json($rawItemData ?? []);
+        let groupedData = @json([]);
+        let rawItemData = @json([]);
     </script>
     <script>
         var banks = {!! json_encode($banks) !!};
@@ -867,7 +867,7 @@
             }
         });
 
-        function openInvoice(id,$item = null,$settle = null) {
+        function openInvoice(id) {
             $('#excAmount' + id).attr('readonly', true);
             if ($('#party_id' + id).val() != "") {
                 $('.drop' + id).val('Invoice');

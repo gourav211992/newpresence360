@@ -299,13 +299,16 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('report/creditors/getDetails', [CrDrReportController::class, 'credit_debit_details'])->name('voucher.credit_details.report');
     Route::get('/report/getLedgerPrint/{type}/{ledger}/{group}/{bill_type?}', [CrDrReportController::class, 'getLedgerDetailsPrint'])->name('crdr.report.ledger.print');
     Route::post('/crdr/report/add-scheduler', [CrDrReportController::class, 'addScheduler'])->name('crdr.add.scheduler');
-     Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
+    Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
     Route::get('/report/pending-receipts', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
-      Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
-    // Route::get('/report/import', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
-    // Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
+    Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
+    Route::get('/report/import/{type}', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
+    Route::get('/report/process-import/{type}', [CrDrReportController::class,'importingProgress'])->name('pending.payment.progress.import');
+    Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
     Route::post('/report/update-cache', [CrDrReportController::class,'updateCacheData'])->name('pending.payment.update.cache');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
+    Route::get('/report/export-successful', [CrDrReportController::class,'exportSuccessfulItems'])->name('pending.payment.export.successful');
+    Route::get('/report/export-failed', [CrDrReportController::class,'exportFailedItems'])->name('pending.payment.export.failed');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
     Route::get('vouchers/cancel', [VoucherController::class, 'cancelDocument'])->name('voucher.cancel.document');
     Route::resource('ledger-groups', GroupController::class)->except(['show']);
@@ -2114,6 +2117,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::get('/pending-requests', [IndexController::class, 'requests'])->name('riv.requests');
     Route::get('/pending-approvals', [IndexController::class, 'approvals'])->name('riv.approvals');
     Route::get('/pending-postings', [IndexController::class, 'postings'])->name('riv.postings');
+     Route::post('/bulk-approvals', [IndexController::class, 'bulkApprovals'])->name('bulk.approvals');
+    Route::post('/bulk-postings', [IndexController::class, 'bulkPostings'])->name('bulk.postings');
+    Route::post('/bulk-requests', [IndexController::class, 'bulkRequests'])->name('bulk.requests');
 
 
 

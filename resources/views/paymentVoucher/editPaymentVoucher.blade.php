@@ -591,7 +591,7 @@
                                                                         </div>
                                                                     </td>
                                                                     <td><input type="number"
-                                                                            readonly
+                                                                            @if($item->reference=="Invoice") readonly @endif
                                                                             class="form-control mw-100 text-end amount"
                                                                             name="amount[]"
                                                                             id="excAmount{{ $no }}"

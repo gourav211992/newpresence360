@@ -10,11 +10,11 @@
                 <div class="content-header-left col-md-5 mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <h2 class="content-header-title float-start mb-0">Upload Pending Payment Data</h2>
+                            <h2 class="content-header-title float-start mb-0">Upload Pending {{ucfirst($type)}} Data</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-                                    <li class="breadcrumb-item active">Pending Payment</li>
+                                    <li class="breadcrumb-item active">Pending {{ucfirst($type)}}</li>
                                 </ol>
                             </div>
                         </div>
@@ -49,7 +49,7 @@
                                         <button class="btn btn-primary">DRAG AND DROP HERE OR CHOOSE FILE</button>
                                         <input type="file" name="file" accept=".xlsx, .xls, .csv" class="form-control"
                                             id="fileUpload" />
-                                            <input type="hidden" name="type" id="type" value="payments"/>
+                                            <input type="hidden" name="type" id="type" value="{{$type}}"/>
                                     </div>
 
                                     <div class="drapdroparea drapdroparea-small upload-btn-wrapper text-center"
@@ -491,6 +491,9 @@
                         $('#failed-count').text(`(${res.failed_items.length})`);
                         $('#uploadProgress').hide();
                         $('.hide-this-section').show();
+                        if(res.successful_items.length>0){
+                             $('#proceedBtn').show();
+                        }
                         if (res.failed_items.length > 0) {
                             $('.editbtnNew').show();
                         } else {
@@ -590,44 +593,9 @@
 
         });
         $(document).on('click', '#proceedBtn', function () {
-                // Reference to the DataTable instance for the success table
-                const table = $('.datatables-basic1').DataTable();
-                    // Get all hidden ids from the success table
-                    const ids = [];
-                    $('#success-table-body').find('.upload-item-id').each(function () {
-                        ids.push($(this).val());
-                    });
-
-                    if (!ids.length) {
-                        Swal.fire('No records to process.', '', 'warning');
-                        return;
-                    }
-                // Now send AJAX request
-                    $.ajax({
-                        headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    url: '{{ route('getInvocies') }}',
-                    type: 'POST',
-                    dataType: 'json',
-                    data: {
-                        ids: ids,
-                        type: 'payments',
-                    },
-                    success: function(response) {
-                        console.log(response)
-                    window.location.href = response.redirect;
-                    // $('.preloader').hide();
-                },
-                error: function(xhr) {
-                    $('.preloader').hide();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Failed to submit vouchers. Please try again.'
-                    });
-                }
-                });
+            let type = @json($type);
+             window.location.href = '/report/process-import/'+type;
+                
             });
 
         $(document).on('click', '.editbtnNew', function(e) {

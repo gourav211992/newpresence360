@@ -1350,11 +1350,14 @@ class BomController extends Controller
 
         $canView = true;
 
-        if($bom?->type === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
-            $canView = request()->user()?->hasPermission('quotation_bom.edit') ?? true;
+        $parentUrl = request() -> segments()[0];
+        $canView = true;
+        $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
+        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+            $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
         } 
-        if($bom?->type === ConstantHelper::BOM_SERVICE_ALIAS) {
-            $canView = request()->user()?->hasPermission('production_bom.edit') ?? true;
+        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+            $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
 
         $title = 'Production Bom';
