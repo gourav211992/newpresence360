@@ -774,7 +774,12 @@ class PaymentVoucherController extends Controller
 
                     $insertData = [];
                     foreach ($partyVouchers as $reference) {
-                        if (self::getVoucherBalance($reference['amount'],$reference['voucher_id'], $request->document_type, $details->ledger_id, $details->ledger_group_id, $id)<0) {
+                        $diff = self::getVoucherBalance($reference['amount'],$reference['voucher_id'], $request->document_type, $details->ledger_id, $details->ledger_group_id, $id,$details->id);
+                        if ($diff<0) {
+                            $voucherNo = Voucher::find($reference['voucher_id'])?->voucher_no;
+                            DB::rollBack();
+                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucherNo);
+                     } else {
                             $insertData[] = [
                                 'payment_voucher_id' => $voucher->id,
                                 'voucher_details_id' => $details->id,
@@ -784,10 +789,7 @@ class PaymentVoucherController extends Controller
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ];
-                        } else {
-                            $voucherNo = Voucher::find($reference['voucher_id'])?->voucher_no;
-                            DB::rollBack();
-                            return redirect()->route($request->document_type . '.edit', [$id])->withErrors("The settled amount exceeds the balance amount for Voucher No." . $voucherNo);
+                        
                         }
                     }
 
@@ -1396,7 +1398,7 @@ class PaymentVoucherController extends Controller
 
         return Response::json(['success' => 'Email Send Succesfully!']);
     }
-    public function getVoucherBalance($settle,$voucher_id,$doc_type,$ledger,$group,$id=null)
+    public function getVoucherBalance($settle,$voucher_id,$doc_type,$ledger,$group,$id=null,$dt=null)
     {
        $request = new \Illuminate\Http\Request();
         $request->merge([
@@ -1404,7 +1406,8 @@ class PaymentVoucherController extends Controller
             'partyID' => $ledger,
             'ledgerGroup' => $group,
             'payment_voucher_id' => $id,
-            'voucher_id' => $voucher_id,
+            'voucher_id' =>$voucher_id,
+            'details_id'=>$dt
         ]);
         $data = VoucherController::getLedgerVouchers($request);
         $voucher = collect($data->getData()->data)->where('id', $voucher_id)->first();

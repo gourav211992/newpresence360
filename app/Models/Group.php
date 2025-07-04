@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
+
 use App\Helpers\Helper;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Support\Str;
@@ -12,7 +14,7 @@ class Group extends Model
 {
     protected $table = 'erp_groups';
 
-    use HasFactory, DefaultGroupCompanyOrg;
+    use HasFactory;
 
     protected $fillable = [
         'name',
@@ -23,6 +25,25 @@ class Group extends Model
         'organization_id',
         'prefix',
     ];
+    
+    public function scopeWithDefaultGroupCompanyOrg(Builder $query)
+    {
+        $authUser = Helper::getAuthenticatedUser();
+        $authOrganization = Organization::find($authUser -> organization_id);
+        $companyId = $authOrganization ?-> company_id;
+        $groupId = $authOrganization ?-> group_id;
+        $organizationId = $authOrganization ?-> id;
+         return $query->where('group_id', $groupId) // Always compare group ID 
+        ->where(function ($q) use ($companyId) {
+            // Only compare company_id if it is not null in the database
+            $q->whereNull('company_id')
+              ->orWhere('company_id', $companyId);
+        }) ->where(function ($q) use ($organizationId) {
+            // Only compare organization_id if it is not null in the database
+            $q->whereNull('organization_id')
+              ->orWhere('organization_id', $organizationId);
+        });
+    }
 
     public function ledgers()
     {

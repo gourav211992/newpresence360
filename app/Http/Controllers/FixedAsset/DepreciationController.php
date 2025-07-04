@@ -286,7 +286,7 @@ class DepreciationController extends Controller
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
                 $query->whereNotNull('expiry_date');
-                $query->whereColumn('expiry_date', '>', 'last_dep_date');
+                $query->whereColumn('expiry_date', '!=', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->withWhereHas('ledger')
@@ -296,7 +296,9 @@ class DepreciationController extends Controller
                     ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category.setup')
+            ->orderBy('last_dep_date','asc')
             ->get()->values();
+
         return response()->json($asset_details);
     }
     function getPeriods($startDate, $endDate, $period)

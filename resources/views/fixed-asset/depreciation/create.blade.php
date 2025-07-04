@@ -551,15 +551,18 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 let toDateObj = parseDMY(to_date);
                 let fromDateObjCap = parseDMY(from_date_cap);
 
-                let expiryDate = new Date(sub_asset.expiry_date);
+                //let expiryDate = new Date(sub_asset.expiry_date);
+                let par = sub_asset.expiry_date.split('-'); // ["2025", "07", "04"]
+                let expiryDate = new Date(par[0], par[1] - 1, par[2]); // Months are 0-indexed
                 
 
                
                 // If expiry date > toDate, then toDate = expiry date
                 if (expiryDate <= toDateObj) {
                         // Set toDateObj to one day before expiryDate
-                        toDateObj = new Date(expiryDate);
-                        toDateObj.setDate(toDateObj.getDate());
+                        toDateObj = expiryDate;
+                        console.log('expires'+asset.asset_code);
+                        //toDateObj.setDate(toDateObj.getDate());
 
                         // Format the updated `to_date`
                         let d = toDateObj.getDate().toString().padStart(2, '0');

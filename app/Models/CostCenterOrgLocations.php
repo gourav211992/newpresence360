@@ -9,15 +9,13 @@ use App\Traits\DefaultGroupCompanyOrg;
 
 class CostCenterOrgLocations extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg;
+    use HasFactory;
 
     protected $table = 'erp_cost_center_org_locations';
 
     protected $fillable = [
         'cost_center_id',
         'location_id',
-        'company_id',
-        'group_id',
         'organization_id',
     ];
 

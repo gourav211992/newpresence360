@@ -64,7 +64,7 @@ class CrDrImportExportService
             throw new Exception("Ledger group '{$ledgerGroup}' does not exist.");
         }
         
-        $invoices = Helper::getVoucherBalance($voucherNo,$type,$ledger->id,$group->id);
+        $invoices = Helper::getVoucherBalance(null,$type,$ledger->id,$group->id);
         
         $voucher = collect($invoices->getData()->data)->where('balance','>', 0)
         ->where('voucher_no',$voucherNo)->first();
