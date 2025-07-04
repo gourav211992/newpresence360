@@ -20,6 +20,7 @@ class CrDrImportExportService
             'ledger_name'   => 'Ledger Name',
             'ledger_group'  => 'Ledger Group',
             'document_no'   => 'Voucher No',
+            'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
             'balance'       => 'Balance'
         ];
@@ -38,6 +39,7 @@ class CrDrImportExportService
         $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
         $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
         $balance      = isset($row['balance']) ? trim($row['balance']) : null;
+        $series      = isset($row['series']) ? trim($row['series']) : null;
         
         if (!is_numeric($row['settle_amount'])) {
             throw new Exception("Settle Amount must be a valid number.");
@@ -66,11 +68,27 @@ class CrDrImportExportService
         
         $invoices = Helper::getVoucherBalance($voucherNo,$type,$ledger->id,$group->id);
         
-        $voucher = collect($invoices->getData()->data)->where('balance','>', 0)
-        ->where('voucher_no',$voucherNo)->first();
-        
+        $voucherRows = collect($invoices->getData()->data)
+            ->where('balance', '>', 0)
+            ->where('voucher_no', $voucherNo);
+
+        $voucher = $voucherRows->first();
+
         if (empty($voucher)) {
             throw new Exception("Voucher no# '{$voucherNo}' not valid.");
+        }
+
+        if ($series) {
+            $voucherWithSeries = $voucherRows->first(function ($item) use ($series) {
+                return isset($item->series)
+                    && $item->series
+                    && isset($item->series->book_code)
+                    && $item->series->book_code == $series;
+            });
+
+            if (empty($voucherWithSeries)) {
+                throw new Exception("Series '{$series}' not exist related to the Voucher no# '{$voucherNo}'.");
+            }
         }
         
         $row['voucher_id'] = $voucher->id;

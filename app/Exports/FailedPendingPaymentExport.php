@@ -31,6 +31,7 @@ class FailedPendingPaymentExport implements FromCollection, WithHeadings, WithMa
             'S.No',
             'Ledger Name',
             'Ledger Group',
+            'Series',
             'Document No.',
             'Balance',
             'Settle Amount',
@@ -50,6 +51,7 @@ class FailedPendingPaymentExport implements FromCollection, WithHeadings, WithMa
             $item->voucher_no,
             Helper::formatIndianNumber($item->balance),
             Helper::formatIndianNumber($item->settle_amount),
+            $item->series,
             $item->import_remarks,
         ];
 

@@ -28,6 +28,6 @@ class CostGroup extends Model
 
     public function costCenters()
     {
-        return $this->hasMany(CostCenter::class, 'cost_group_id', 'id');
+        return $this->hasMany(CostCenter::class, 'cost_group_id', 'id')->where('status', 'active');
     }
 }
