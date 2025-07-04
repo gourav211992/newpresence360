@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class OrganizationCompany extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg;
+    use HasFactory;
 
     public function organizations()
     {

@@ -396,6 +396,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/', 'index')->name('vendor.index');
         Route::get('/create', 'create')->name('vendor.create');
         Route::post('/', 'store')->name('vendor.store');
+        Route::post('/revoke', 'revoke')->name('vendor.revoke');
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-vendor-code');
         Route::get('/check-gst', 'checkGst')->name('check-gst');
         Route::get('/search', 'getVendor')->name('vendors.search');
@@ -438,6 +439,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/', 'store')->name('customer.store');
         Route::get('/import', 'showImportForm')->name('customers.import');
         Route::post('/import', 'import')->name('customers.import.post');
+        Route::post('/revoke', 'revoke')->name('customer.revoke');
         Route::get('export-successful-customers','exportSuccessfulCustomers')->name('customers.export.successful');;
         Route::get('export-failed-customers','exportFailedCustomers')->name('customers.export.failed');;
         Route::post('/generate-item-code', 'generateCustomerCode')->name('generate-customer-code');
@@ -651,6 +653,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/', 'index')->name('item.index');
         Route::get('/create', 'create')->name('item.create');
         Route::post('/', 'store')->name('item.store');
+        Route::post('/revoke', 'revoke')->name('item.revoke');
         Route::get('/import','showImportForm')->name('items.show.import');
         Route::get('export-successful-items','exportSuccessfulItems')->name('items.export.successful');;
         Route::get('export-failed-items','exportFailedItems')->name('items.export.failed');
@@ -1355,6 +1358,9 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('production-slip', 'productionSlip')->name('productionSlip');
             Route::post('rate-contract', 'rateContract')->name('rateContract');
             Route::post('packing-list', 'packingList')->name('packingList');
+            Route::post('item', 'item')->name('item');
+            Route::post('vendor', 'vendor')->name('vendor');
+            Route::post('customer', 'customer')->name('customer');
         });
 
     // Material Receipt routes
@@ -1453,6 +1459,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::get('/report/filter', 'getReportFilter')->name('report.filter');
         Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
         Route::get('/order/report', 'gateEntryReport')->name('order.report');
+        Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
 
         /*Remove data*/
         Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -2059,15 +2066,21 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     //Sale Invoice
     Route::get('/sale-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.invoice.index');
     Route::get('/lease-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.leaseInvoice.index');
+    Route::get('/delivery-note', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNote.index');
+    Route::get('/delivery-note-cum-invoice', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNoteCumInvoice.index');
 
 
     Route::get('/sale-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.invoice.create');
     Route::get('/lease-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.leaseInvoice.create');
+    Route::get('/delivery-note/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNote.create');
+    Route::get('/delivery-note-cum-invoice/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNoteCumInvoice.create');
 
     Route::post('/sale-invoices/store', [ErpSaleInvoiceController::class, 'store'])->name('sale.invoice.store');
 
     Route::get('/sale-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.invoice.edit');
     Route::get('/lease-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.leaseInvoice.edit');
+    Route::get('/delivery-note/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNote.edit');
+    Route::get('/delivery-note-cum-invoice/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNoteCumInvoice.edit');
 
     Route::get('/sale-invoices/orders/get', [ErpSaleInvoiceController::class, 'getOrders'])->name('sale.invoice.orders.get');
     Route::get('/sale-invoices/challans/get', [ErpSaleInvoiceController::class, 'getDeliveryChallans'])->name('sale.invoice.challans.get');

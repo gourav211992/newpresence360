@@ -1885,7 +1885,7 @@
             inputs.forEach(input => {
                 // Set default value if needed
                 if (!input.value.startsWith(prefix)) {
-                    input.value = prefix;
+                    input.value = prefix+"01";
                 }
 
                 // Enforce prefix and allow only numbers after it
@@ -1922,6 +1922,7 @@
                         this.setSelectionRange(prefix.length, prefix.length);
                     }
                 });
+                $(selector).trigger('change');
             });
         }
 

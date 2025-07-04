@@ -6,6 +6,7 @@ use App\Helpers\InventoryHelper;
 use App\Http\Requests\SubStoreRequest;
 use App\Models\ErpSubStore;
 use App\Models\ErpSubStoreParent;
+use App\Models\SubStoreType;
 use Exception;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\ErpStore;
@@ -13,6 +14,7 @@ use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Helpers\SubStore\Constants as SubStoreConstants;
 use Illuminate\Support\Facades\DB; 
 
 class SubStoreController extends Controller
@@ -23,7 +25,7 @@ class SubStoreController extends Controller
     {    
         $subStores = ErpSubStore::whereHas('parents', function ($subQuery) {
             $subQuery -> withDefaultGroupCompanyOrg();
-        })->get();    
+        }) -> orderByDesc('id');    
         if ($request->ajax()) {
             return DataTables::of($subStores)
                 ->addIndexColumn()
@@ -32,6 +34,9 @@ class SubStoreController extends Controller
                 })
                 ->addColumn('store_name', function ($subStore) {
                     return $subStore->store_names();
+                })
+                ->addColumn('sub_type_name', function ($subStore) {
+                    return isset(SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type]) ? SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type] : " ";
                 })
                 ->addColumn('status', function ($subStore) {
                     return '<span class="badge rounded-pill badge-light-' . ($subStore->status == 'active' ? 'success' : 'danger') . '">'
@@ -64,7 +69,8 @@ class SubStoreController extends Controller
         $stores=InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $status = ConstantHelper::STATUS;
         $storeLocationType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES; 
-        return view('procurement.subStore.create', compact('status','storeLocationType', 'stores'));
+        $stockStoreTypes = SubStoreConstants::STOCK_STORE_TYPES;
+        return view('procurement.subStore.create', compact('status','storeLocationType', 'stores', 'stockStoreTypes'));
     }
 
     public function store(SubStoreRequest $request)
@@ -82,6 +88,15 @@ class SubStoreController extends Controller
             ];
             $erpSubStore->fill($data);
             $erpSubStore->save();
+            if ($erpSubStore -> type == ConstantHelper::STOCKK) {
+                $stockStoreTypes = $request -> stock_store_types;
+                if ($stockStoreTypes) {
+                    SubStoreType::create([
+                        'sub_store_id' => $erpSubStore -> id,
+                        'type' => $stockStoreTypes,
+                    ]);
+                }
+            }
             foreach ($validatedData['store_id'] as $storeId) {
                 $store = ErpStore::find($storeId);
                 ErpSubStoreParent::create([
@@ -117,13 +132,17 @@ class SubStoreController extends Controller
         $isSubStoreReferenced = !$referencedCheck['status'];
         $stores=InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK, $subStore -> store_id);
         $selectedStoreIds=$subStore->parents->pluck('store_id')->toArray();
+        $stockStoreTypes = SubStoreConstants::STOCK_STORE_TYPES;
+        $selectedStockStoreType = $subStore -> sub_type ?-> type;
         return view('procurement.subStore.edit', [
             'subStore' => $subStore,
             'stores' => $stores,
             'status' => $status,
             'storeLocationType'=>$storeLocationType,
             'isSubStoreReferenced' => $isSubStoreReferenced,
-            'selectedStoreIds' => $selectedStoreIds
+            'selectedStoreIds' => $selectedStoreIds,
+            'stockStoreTypes' => $stockStoreTypes,
+            'selectedStockStoreType' => $selectedStockStoreType
         ]);
     }
     
@@ -148,6 +167,19 @@ class SubStoreController extends Controller
                 'is_warehouse_required'=>isset($request -> is_warehouse_required) ? 1 : 0,
                 'status' => $validatedData['status'],
             ]);
+            if ($subStore -> type == ConstantHelper::STOCKK) {
+                $stockStoreTypes = $request -> stock_store_types;
+                if ($stockStoreTypes) {
+                    SubStoreType::updateOrCreate(
+                        ['sub_store_id' => $subStore->id],
+                        ['type' => $stockStoreTypes]
+                    );
+                } else {
+                    SubStoreType::where('sub_store_id', $subStore -> id) -> delete();
+                }
+            } else {
+                SubStoreType::where('sub_store_id', $subStore -> id) -> delete();
+            }
             $newSelectedStoreIds = [];
             foreach ($validatedData['store_id'] as $storeId) {
                 $store = ErpStore::find($storeId);

@@ -1308,9 +1308,9 @@
                 });
                 let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
                 let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
-                let storeId = $(currentTr).find("[name*='header_store_id']").val() || '';
-                let subStoreId = $(currentTr).find("[name*='sub_store_id']").val() || '';
-
+                let storeId = $('.header_store_id').val() || '';
+                let subStoreId = $('.sub_store_id').val() || '';
+                
                 let actionUrl = '{{route("purchase-return.get.itemdetail")}}'+'?item_id='+itemId+'&mrn_header_id='+mrnHeaderId+'&mrn_detail_id='+mrnDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&store_id='+storeId+'&sub_store_id='+subStoreId;
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {

@@ -10,6 +10,14 @@
             position: absolute;
             top: 38px;
         }
+        .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+        .iteminactive {  left: 24px; color: #999 } 
+        .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+        .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+        .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+        
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
     </style>
     <!-- BEGIN: Content-->
     <form class="ajax-input-form" method="POST" action="{{ route('item.store') }}" data-redirect="{{ route('item.index') }}">
@@ -64,7 +72,18 @@
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
-                                                    <a href="{{route('bill.of.material.index')}}"  target="_blank" class="text-primary add-contactpeontxt mt-50"><i data-feather='file-text'></i> Bill of Material</a>
+                                                  
+                                                    <div>
+                                                        <div class="d-flex align-items-center"> 
+                                                            <a href="{{route(name: 'bill.of.material.index')}}"  target="_blank" class="text-primary add-contactpeontxt mt-25 me-1"><i data-feather='file-text'></i> Bill of Material</a>
+                                                            <div class="form-check form-check-primary form-switch statusactiinactive">
+                                                                <input type="hidden" name="status" id="status_hidden_input" value="inactive">
+                                                                <input type="checkbox" checked class="form-check-input" id="customSwitch3" />
+                                                                <span class="itemactive">Active</span>
+                                                                <span class="itemactive iteminactive">Inactive</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>   
                                             </div>
 
@@ -231,7 +250,7 @@
                                             </div>
                                            </div>
                                             <div class="col-md-3 border-start">
-                                                <div class="row align-items-center mb-2">
+                                                <!-- <div class="row align-items-center mb-2">
                                                     <div class="col-md-12">
                                                         <label class="form-label text-primary"><strong>Status</strong></label>
                                                         <div class="demo-inline-spacing">
@@ -251,7 +270,7 @@
                                                             @endforeach
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </div> -->
                                             </div>
                                         </div>
                                         <div class="mt-2">
@@ -1923,6 +1942,7 @@ $(document).ready(function() {
 });
 </script>
 <script>
+    // storage-uom-start
     $(document).ready(function () {
         function syncStorageFields() {
             const uomName = $('select[name="uom_id"] option:selected').text().trim().toUpperCase();
@@ -1946,8 +1966,9 @@ $(document).ready(function() {
         syncStorageFields();
         $('select[name="uom_id"], select[name="storage_uom_id"]').on('change', syncStorageFields);
     });
-</script>
-<script>
+  //storage-uom-end
+
+  //Capslock-start
     $(document).ready(function() {
         function applyCapsLock() {
             $('input[type="text"], input[type="number"]').each(function() {
@@ -1960,37 +1981,36 @@ $(document).ready(function() {
         }
         applyCapsLock();
     });
- </script>
-
-<script>
-$(document).ready(function () {
-    function toggleAssetTab() {
-        if ($('#assetCheckbox').is(':checked')) {
-            $('#assetTabLink').show();
-        } else {
-            $('#assetTabLink').removeClass('active');
-            $('#Assets').removeClass('active show');
-            $('#assetTabLink').hide();
-        }
-    }
-    toggleAssetTab();
-    $('#assetCheckbox').change(function () {
-        toggleAssetTab();
-    });
-    $('#asset_category').change(function() {
-        var categoryId = $(this).val();
-        $.ajax({
-            url: '/items/get-asset-data/' + encodeURIComponent(categoryId),
-            method: 'GET',
-            success: function(data) {
-                $('#expected_life').val(data.expected_life_years);
-                $('select[name="maintenance_schedule"]').val(data.maintenance_schedule).trigger('change');
+   //Capslock-end
+  // asset-start
+    $(document).ready(function () {
+        function toggleAssetTab() {
+            if ($('#assetCheckbox').is(':checked')) {
+                $('#assetTabLink').show();
+            } else {
+                $('#assetTabLink').removeClass('active');
+                $('#Assets').removeClass('active show');
+                $('#assetTabLink').hide();
             }
+        }
+        toggleAssetTab();
+        $('#assetCheckbox').change(function () {
+            toggleAssetTab();
+        });
+        $('#asset_category').change(function() {
+            var categoryId = $(this).val();
+            $.ajax({
+                url: '/items/get-asset-data/' + encodeURIComponent(categoryId),
+                method: 'GET',
+                success: function(data) {
+                    $('#expected_life').val(data.expected_life_years);
+                    $('select[name="maintenance_schedule"]').val(data.maintenance_schedule).trigger('change');
+                }
+            });
         });
     });
-});
-</script>
-<script>
+   // asset-end
+   // inspection-start
     $(document).ready(function() {
         function toggleInspectionChecklist() {
             var val = $('#is_inspection').val();
@@ -2020,5 +2040,15 @@ $(document).ready(function () {
             toggleShelfLife();
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const switchInput = document.getElementById('customSwitch3');
+        const hiddenInput = document.getElementById('status_hidden_input');
+        hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        switchInput.addEventListener('change', function () {
+            hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        });
+    });
+  // inspection-end
 </script>
 @endsection

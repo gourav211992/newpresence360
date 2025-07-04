@@ -12,7 +12,7 @@
             <div class="content-header pocreate-sticky">
 				<div class="row">
                     @include('layouts.partials.breadcrumb-add-edit', [
-                        'title' => 'Invoice', 
+                        'title' => $typeName, 
                         'menu' => 'Home', 
                         'menu_url' => url('home'),
                         'sub_menu' => 'Add New'
@@ -3743,7 +3743,6 @@
         }
     }
     function getOrders(type = 'so') {
-        console.log("GETTING ORDERS",type);
         const apiUrl = "{{ route('sale.invoice.pull.items') }}";
         if ( type == "land-lease")
         {
@@ -3754,10 +3753,12 @@
             name: 'checkbox',
             orderable: false,
             searchable: false,
-            // doc-id = "${qt?.sale_order?.id}" current-doc-id = "0" document-id = "${qt?.sale_order?.id}" so-item-id = "${JSON.stringify(qt?.so_item_ids)}" detail-id="${qt?.id}"
             render: (row, _, __, meta) => {
-                console.log("ROW", row);
-                const docId = row?.sale_order_id;
+                let docId = row?.sale_order_id;
+                let mainDocId = row?.sale_order_id;
+                if (type === "so") {
+                    docId = row?.header?.customer_id;
+                }
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
                 return `<div class="form-check form-check-inline me-0">
@@ -3768,7 +3769,7 @@
                         oninput="checkQuotation(this);"
                         doc-id="${docId}"
                         current-doc-id="0"
-                        document-id="${docId}"
+                        document-id="${mainDocId}"
                         so-item-id="${soItemId}"
                         balance_qty="${row.balance_qty || 0}"
                         detail-id="${row?.id}">

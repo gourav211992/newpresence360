@@ -210,9 +210,10 @@ class EInvoiceHelper
         }
     }
 
-    public static function validateGstinName(Request $request){
+    public static function validateGstinName(string $gstNumber){
         try{
-            $gstin = $request->gstin;
+          
+            $gstin = $gstNumber;
             $authCredentials = self::getAuthCredentials();
             $requestUid = 'GOV-EINVOICE-'.date('dmy').time();;
             $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
@@ -233,7 +234,7 @@ class EInvoiceHelper
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeader);
-            $result = curl_exec($curl);
+            $result = curl_exec(handle: $curl);
             $decodedResult = json_decode($result, true);
             if (isset($decodedResult['error']) && $decodedResult['error'] === false) {
                 $final_result = EInvoiceHelper::formatGstinResponse($result);

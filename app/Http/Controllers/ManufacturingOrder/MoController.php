@@ -55,8 +55,7 @@ class MoController extends Controller
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
-            $boms = MfgOrder::withDefaultGroupCompanyOrg()
-                    ->withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]);
+            $boms = MfgOrder::withDraftListingLogic()->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]);
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
@@ -126,8 +125,7 @@ class MoController extends Controller
         }
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
         $wasteTypes = ConstantHelper::DISCOUNT_TYPES;
-        $stations = Station::withDefaultGroupCompanyOrg()
-        ->where('status', ConstantHelper::ACTIVE)
+        $stations = Station::where('status', ConstantHelper::ACTIVE)
         ->get();
         $locations = InventoryHelper::getAccessibleLocations();
         return view('mfgOrder.create', [
@@ -207,8 +205,7 @@ class MoController extends Controller
                     ], 422);
                 }
                 $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-                $regeneratedDocExist = MfgOrder::withDefaultGroupCompanyOrg()
-                                    ->where('book_id', $request->book_id)
+                $regeneratedDocExist = MfgOrder::where('book_id', $request->book_id)
                                     ->where('document_number', $document_number)
                                     ->first();
                 //Again check regenerated doc no
@@ -481,8 +478,7 @@ class MoController extends Controller
     # On change item code
     public function changeItemCode(Request $request)
     {
-        $attributeGroups = AttributeGroup::withDefaultGroupCompanyOrg()
-                        ->with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
+        $attributeGroups = AttributeGroup::with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
         $item = Item::find($request->item_id);
         $specifications = collect();
         if($item) {
@@ -665,8 +661,7 @@ class MoController extends Controller
             $view = 'mfgOrder.view';
         }
 
-        $stations = Station::withDefaultGroupCompanyOrg()
-        ->where('status', ConstantHelper::ACTIVE)
+        $stations = Station::where('status', ConstantHelper::ACTIVE)
         ->get();
         $locations = InventoryHelper::getAccessibleLocations();
         $isEdit = $buttons['submit'];
@@ -690,7 +685,6 @@ class MoController extends Controller
         $machines = collect();
         if($productionBom) {
             $machines = $productionBom?->productionRoute?->machines()
-            ->withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get(); 
         }
@@ -1431,8 +1425,7 @@ class MoController extends Controller
        $storeId = $request->store_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
        $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $stationId) {
-                $subQuery->withDefaultGroupCompanyOrg()
-                ->whereIn('book_id', $applicableBookIds)
+                $subQuery->whereIn('book_id', $applicableBookIds)
                 ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                 ->where(function($pwoQuery) use($stationId) {
                     if($stationId) {
@@ -1498,16 +1491,14 @@ class MoController extends Controller
        $soSocNumber = $request->so_document_number ?? null;
        $itemId = $request->item_id ?? null;
         if($itemId) {
-            $bomExists = Bom::withDefaultGroupCompanyOrg()
-                 ->where('item_id', $itemId)
+            $bomExists = Bom::where('item_id', $itemId)
                  ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
                  ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                  ->exists();
              if(!$bomExists) {
                 return response()->json(['data' => ['pis' => ""], 'status' => 422, 'message' => "Bom not exist!"]);
              }
-            $bomExists = Bom::withDefaultGroupCompanyOrg()
-                         ->where('item_id', $itemId)
+            $bomExists = Bom::where('item_id', $itemId)
                          ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
                          ->whereIn('production_type', ['In-house'])
                          ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
@@ -1520,8 +1511,7 @@ class MoController extends Controller
        $headerBookId = $request->header_book_id ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
        $pwoItems = PwoSoMapping::whereHas('pwo', function ($subQuery) use ($applicableBookIds, $docNumber, $seriesId) {
-                $subQuery->withDefaultGroupCompanyOrg()
-               ->whereIn('book_id', $applicableBookIds)
+                $subQuery->whereIn('book_id', $applicableBookIds)
                ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                ->when($seriesId, function ($bookQuery) use ($seriesId) {
                    $bookQuery->where('book_id', $seriesId);
@@ -1566,15 +1556,13 @@ class MoController extends Controller
         });
 
         $pwoItems = $pwoItems->with(['pwo', 'item'])->get();
-        $bom = Bom::withDefaultGroupCompanyOrg()
-            ->where('item_id', $itemId)
+        $bom = Bom::where('item_id', $itemId)
             ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->first();
         $machines = collect();
         if($bom) {
             $machines = $bom?->productionRoute?->machines()
-            ->withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get(); 
         }
@@ -1590,15 +1578,13 @@ class MoController extends Controller
         $ids = json_decode($request->ids,true) ?? [];
         $pwoItems = PwoSoMapping::whereIn('id', $ids)->get(); 
         $itemId = $request->item_id ?? null;
-        $bom = Bom::withDefaultGroupCompanyOrg()
-            ->where('item_id', $itemId)
+        $bom = Bom::where('item_id', $itemId)
             ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->first();
         $machines = collect();
         if($bom) {
             $machines = $bom?->productionRoute?->machines()
-            ->withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->get(); 
         }
@@ -1863,8 +1849,7 @@ class MoController extends Controller
             ], 404);
         }
 
-        $bomExists = Bom::withDefaultGroupCompanyOrg()
-            ->where('item_id', $item->id)
+        $bomExists = Bom::where('item_id', $item->id)
             ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->exists();
@@ -1877,8 +1862,7 @@ class MoController extends Controller
             ]);
         }
 
-        $bomExists = Bom::withDefaultGroupCompanyOrg()
-        ->where('item_id', $item->id)
+        $bomExists = Bom::where('item_id', $item->id)
         ->where('type', ConstantHelper::BOM_SERVICE_ALIAS)
         ->whereIn('production_type', ['In-house'])
         ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)

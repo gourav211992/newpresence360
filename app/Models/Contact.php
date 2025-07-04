@@ -19,6 +19,8 @@ class Contact extends Model
         'email',
         'mobile',
         'phone',
+        'contactable_id',
+        'contactable_type',
         'status',
     ];
 

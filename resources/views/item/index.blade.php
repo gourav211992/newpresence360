@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+    .iteminactive {  left: 24px; color: #999 } 
+    .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+    .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+    .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+</style>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>

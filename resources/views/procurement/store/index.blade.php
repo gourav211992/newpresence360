@@ -35,7 +35,7 @@
                                         <thead>
                                             <tr>
                                                 <th>S.No</th>
-                                                <th>Company</th>
+                                                <th>Organization</th>
                                                 <th>Location Code</th>
                                                 <th>Location Name</th>
                                                 <th>Racks</th>

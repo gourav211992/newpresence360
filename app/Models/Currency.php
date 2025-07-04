@@ -10,7 +10,7 @@ use App\Traits\Deletable;
 
 class Currency extends Model
 {
-    use HasFactory,Deletable,DefaultGroupCompanyOrg;
+    use HasFactory,Deletable;
 
     protected $connection = 'mysql_master';
     protected $table = "currency";

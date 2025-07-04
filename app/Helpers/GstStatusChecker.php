@@ -31,7 +31,7 @@ class GstStatusChecker
             $gstinNo = $compliance->gstin_no;
     
             try {
-                $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
+                $gstValidation = EInvoiceHelper::validateGstinName($gstinNo);
                 $gstDataRaw = $gstValidation['checkGstIn'];
                 $gstData = is_string($gstDataRaw)
                     ? json_decode($gstDataRaw, true)

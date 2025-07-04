@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\JobOrder\JoProduct;
+use App\Models\JobOrder\JobOrder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,6 +18,8 @@ class GateEntryDetail extends Model
         'header_id',
         'purchase_order_item_id',
         'job_order_item_id',
+        'po_id',
+        'jo_id',
         'so_id',
         'item_id',
         'item_code',
@@ -71,6 +74,16 @@ class GateEntryDetail extends Model
     public function so()
     {
         return $this->belongsTo(ErpSaleOrder::class, 'so_id');
+    }
+
+    public function po()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'so_id');
+    }
+
+    public function jo()
+    {
+        return $this->belongsTo(JobOrder::class, 'jo_id');
     }
 
     public function attributes()

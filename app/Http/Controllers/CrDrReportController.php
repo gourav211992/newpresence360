@@ -2086,7 +2086,6 @@ class CrDrReportController extends Controller
 
     public function storeCrDrRowData(Request $request)
     {
-
         $payload = json_decode($request->getContent(), true);
         if ($payload) {
             if (!isset($payload['rows']) || !is_array($payload['rows'])) {
@@ -2159,8 +2158,7 @@ class CrDrReportController extends Controller
                 'settle_amt' => $item['settle_amt'],
             ];
         });
-        dd($grouped);
-
+      
         $token = 'selectedRows_' . uniqid();
         Cache::put($token, [
             'grouped' => $grouped,

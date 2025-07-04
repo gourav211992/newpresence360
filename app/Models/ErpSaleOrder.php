@@ -32,6 +32,7 @@ class ErpSaleOrder extends Model
         'revision_number',
         'revision_date',
         'reference_number',
+        'order_type',
         'store_id',
         'store_code',
         'department_id',

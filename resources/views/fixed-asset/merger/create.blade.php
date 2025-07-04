@@ -745,6 +745,11 @@ $(document).on('keydown', function(e) {
                 return false;
 
             }
+            if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
+                return false;
+            }
 
             document.getElementById('fixed-asset-merger-form').submit();
         });
@@ -784,6 +789,11 @@ $(document).on('keydown', function(e) {
                 showToast('error', 'Code already exist.');
                 return false;
 
+            }
+            if (!validateAssetCodes()) {
+                $('.preloader').hide();
+                showToast('error', 'Invalid Asset Code.');
+                return false;
             }
 
 
@@ -1047,6 +1057,7 @@ $(document).on('keydown', function(e) {
                             showToast('error', 'Failed to load sub-assets.');
                         }
                     });
+                    applyFixedPrefixToInputs();
 
                     return false;
                 },
@@ -1068,6 +1079,7 @@ $(document).on('keydown', function(e) {
                         refreshAssetSelects();
                         updateSum();
                     }
+                    applyFixedPrefixToInputs();
                 }
             }).focus(function() {
                 if (this.value === '') {
@@ -1526,6 +1538,87 @@ $(document).on('keydown', function(e) {
            });
         
         $('.code_error').css('font-size', '12px');
+        
+        
+        function applyFixedPrefixToInputs() {
+            const selector = '#asset_code';
+            let prefix = $('.asset-search-input').first().val();
+            console.log(prefix);
+
+            if (!prefix) {
+                return; // Exit if prefix is not set
+            }
+
+            prefix = prefix.trim().split(/\s+/)[0] + "#M";
+            const inputs = document.querySelectorAll(selector);
+
+            inputs.forEach(input => {
+                // Set default value if needed
+                if (!input.value.startsWith(prefix)) {
+                    input.value = prefix+"01";
+                }
+
+                // Enforce prefix and allow only numbers after it
+                input.addEventListener("input", function() {
+                    if (!this.value.startsWith(prefix)) {
+                        this.value = prefix;
+                    }
+
+                    // Extract the numeric part after prefix
+                    let numericPart = this.value.slice(prefix.length).replace(/\D/g, '');
+                    this.value = prefix + numericPart;
+                });
+
+                // Prevent deleting or navigating into the prefix
+                input.addEventListener("keydown", function(e) {
+                    if (
+                        this.selectionStart <= prefix.length &&
+                        (e.key === "Backspace" || e.key === "Delete" || e.key === "ArrowLeft")
+                    ) {
+                        e.preventDefault();
+                    }
+                });
+
+                // Keep cursor after prefix on click
+                input.addEventListener("click", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+
+                // Optional: force cursor after prefix on focus
+                input.addEventListener("focus", function() {
+                    if (this.selectionStart < prefix.length) {
+                        this.setSelectionRange(prefix.length, prefix.length);
+                    }
+                });
+            });
+             $(selector).trigger('change');
+        }
+        function validateAssetCodes() {
+            let prefix = $('.asset-search-input').first().val();
+            const inputs = document.querySelectorAll('#asset_code');
+            
+            if (!prefix) return true; // If no prefix, nothing to validate
+
+            // Trim and extract first word + '#S'
+            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+
+            let allValid = true;
+
+                const value = inputs.value.trim();
+                if (value === prefix) {
+                    allValid = false;
+                    input.style.border = "1px solid red";
+                } else {
+                    input.style.border = ""; // Reset border if valid
+                }
+            
+
+            return allValid;
+        }
+
+
     </script>
     <!-- END: Content-->
 @endsection

@@ -7,6 +7,7 @@ use App\Models\AuthUser;
 use App\Models\EmployeeBookMapping;
 use App\Models\Organization;
 use App\Models\OrganizationMenu;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use Log;
 
 trait DefaultGroupCompanyOrg
@@ -39,8 +40,23 @@ trait DefaultGroupCompanyOrg
         }
     }
 
+    protected static function bootDefaultGroupCompanyOrg()
+    {
+        static::addGlobalScope(new DefaultGroupCompanyOrgScope);
+    }
+
+    /**
+     * Optional: Disable global scope completely on a query
+     */
+    public function scopeWithoutDefaultGroupCompanyOrg($query)
+    {
+        $query->withoutDefaultGroupCompanyOrgScope = true;
+        return $query;
+    }
+
     public function scopeWithDefaultGroupCompanyOrg($query, $paramAuthUser = null)
     {
+        $query->withoutDefaultGroupCompanyOrgScope = true;
         $authUser = $paramAuthUser ? $paramAuthUser : Helper::getAuthenticatedUser();
         $authOrganization = Organization::find($authUser -> organization_id);
         $companyId = $authOrganization ?-> company_id;

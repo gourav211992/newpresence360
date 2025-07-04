@@ -51,8 +51,7 @@ class ErpProductionSlipController extends Controller
         $typeName = "Production Slip";
         if ($request -> ajax()) {
             try {
-            $docs = ErpProductionSlip::withDefaultGroupCompanyOrg()
-                    ->bookViewAccess($pathUrl)
+            $docs = ErpProductionSlip::bookViewAccess($pathUrl)
                     ->withDraftListingLogic();
             return DataTables::of($docs) ->addIndexColumn()
             ->editColumn('document_status', function ($row) {
@@ -288,7 +287,7 @@ class ErpProductionSlipController extends Controller
                     ], 422);
                 }
                 $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $request -> document_no;
-                $regeneratedDocExist = ErpProductionSlip::withDefaultGroupCompanyOrg() -> where('book_id',$request->book_id)
+                $regeneratedDocExist = ErpProductionSlip::where('book_id',$request->book_id)
                     ->where('document_number',$document_number)->first();
                     //Again check regenerated doc no
                     if (isset($regeneratedDocExist)) {

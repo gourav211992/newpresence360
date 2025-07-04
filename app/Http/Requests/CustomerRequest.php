@@ -140,9 +140,9 @@ class CustomerRequest extends FormRequest
             'bank_info.*.id' => 'nullable|integer|exists:erp_bank_infos,id',
             'bank_info.*.bank_name' => 'nullable|string|max:255',
             'bank_info.*.beneficiary_name' => 'nullable|string|max:255|regex:/^[A-Za-z\s]+$/',
-            'bank_info.*.account_number' => 'nullable|regex:/^\d{9,18}$/',
+            'bank_info.*.account_number' => 'nullable|regex:/^\d{9,25}$/',
             'bank_info.*.re_enter_account_number' => 'nullable|string|max:255|same:bank_info.*.account_number',
-            'bank_info.*.ifsc_code' => 'nullable|string|regex:/^[A-Z]{4}0[A-Z0-9]{6}$/',
+            'bank_info.*.ifsc_code' => 'nullable|string',
             'bank_info.*.cancel_cheque.*' => 'nullable|file|max:2048|mimes:pdf,jpg,jpeg,png',
             'bank_info.*.primary' => 'nullable',
 
@@ -296,7 +296,7 @@ class CustomerRequest extends FormRequest
             'bank_info.*.bank_name.string' => 'The bank name must be a string.',
             'bank_info.*.beneficiary_name.string' => 'The beneficiary name must be a string.',
             'bank_info.*.beneficiary_name.regex' => 'The beneficiary name may only contain letters and spaces.',
-            'bank_info.*.account_number.regex' => 'The account number must contain only digits and be between 9 to 18 digits long.',
+            'bank_info.*.account_number.regex' => 'The account number must contain only digits and be between 9 to 25 digits long.',
             'bank_info.*.re_enter_account_number.same' => 'The re-entered account number does not match.',
             'bank_info.*.ifsc_code.regex' => 'Enter a valid IFSC code like SBIN0001234.',
             'bank_info.*.cancel_cheque.*.mimes' => 'The cancel cheque must be a file of type: pdf, jpg, jpeg, png.',
@@ -369,45 +369,45 @@ class CustomerRequest extends FormRequest
             
         ];
     }
-    // protected function validateGstDetails()
-    // {
-    //     $gstinNo = $this->input('compliance.gstin_no');
-    //     if (empty($gstinNo)) {
-    //         return true; 
-    //     }
-    //     $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
-    //     if ($gstValidation['Status'] === 0) {
-    //         return $gstValidation['errorMsg'] ?? 'Invalid GST Number'; 
-    //     }
-    //     $gstData = json_decode($gstValidation['checkGstIn'], true);
-    //     $deregistrationDate = $gstData['DtDReg'] ?? null;
+    protected function validateGstDetails()
+    {
+        $gstinNo = $this->input('compliance.gstin_no');
+        if (empty($gstinNo)) {
+            return true; 
+        }
+        $gstValidation = EInvoiceHelper::validateGstinName($gstinNo);
+        if ($gstValidation['Status'] === 0) {
+            return $gstValidation['errorMsg'] ?? 'Invalid GST Number'; 
+        }
+        $gstData = json_decode($gstValidation['checkGstIn'], true);
+        $deregistrationDate = $gstData['DtDReg'] ?? null;
 
-    //     if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
-    //         return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
-    //     }
-    //     return true;
-    // }
+        if ($deregistrationDate && $deregistrationDate !== '1900-01-01') {
+            return 'The provided GSTIN is deregistered as of ' . $deregistrationDate . '. It is no longer valid for use.';
+        }
+        return true;
+    }
 
    
-    //  // Helper method to validate GST-related address details
-    //  protected function addAddressValidationErrors($validator, $addresses, $gstData)
-    // {
-    //     $gstnHelper = new GstnHelper();
-    //     foreach ($addresses as $index => $address) {
-    //         if (!empty($address['state_id'])) {
-    //             $stateValidation = $gstnHelper->validateStateCode(
-    //                 $address['state_id'],
-    //                 $gstData['StateCode'] ?? null
-    //             );
-    //             if (!$stateValidation['valid']) {
-    //                 $validator->errors()->add(
-    //                     "addresses.{$index}.state_id", 
-    //                     $stateValidation['message'] ?? 'State does not match GSTIN records'
-    //                 );
-    //             }
-    //         }
-    //     }
-    // }
+     // Helper method to validate GST-related address details
+     protected function addAddressValidationErrors($validator, $addresses, $gstData)
+    {
+        $gstnHelper = new GstnHelper();
+        foreach ($addresses as $index => $address) {
+            if (!empty($address['state_id'])) {
+                $stateValidation = $gstnHelper->validateStateCode(
+                    $address['state_id'],
+                    $gstData['StateCode'] ?? null
+                );
+                if (!$stateValidation['valid']) {
+                    $validator->errors()->add(
+                        "addresses.{$index}.state_id", 
+                        $stateValidation['message'] ?? 'State does not match GSTIN records'
+                    );
+                }
+            }
+        }
+    }
 
     protected function validateBankInfo($validator)
     {
@@ -491,33 +491,33 @@ class CustomerRequest extends FormRequest
               $companyName = $this->input('company_name');
               $gstinRegistrationDate = $this->input('compliance.gstin_registration_date');
               $gstinLegalName = $this->input('compliance.gst_registered_name');
-            //   if ($gstinNo) {
-            //       $gstValidation = EInvoiceHelper::validateGstNumber($gstinNo);
-            //       if ($gstValidation['Status'] == 1) {
-            //           $gstData = json_decode($gstValidation['checkGstIn'], true);
-            //           if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
-            //             $validator->errors()->add(
-            //                 'company_name', 
-            //                 'Company name  does not match GSTIN record.'
-            //             );
-            //             }
-            //             if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
-            //                 $validator->errors()->add(
-            //                     'compliance.gst_registered_name', 
-            //                     'Legal name  does not match GSTIN record.'
-            //                 );
-            //             }
-            //             // Validate GSTIN registration date
-            //             $gstRegistrationDate = $gstData['DtReg'] ?? null; 
-            //             if ($gstRegistrationDate && $gstinRegistrationDate && $gstinRegistrationDate !== $gstRegistrationDate) {
-            //                 $validator->errors()->add(
-            //                     'compliance.gstin_registration_date', 
-            //                     'GSTIN registration date does not match GSTIN records. '
-            //                 );
-            //             }
-            //           $this->addAddressValidationErrors($validator, $addresses, $gstData);
-            //       } 
-            //   }
+              if ($gstinNo) {
+                  $gstValidation = EInvoiceHelper::validateGstinName($gstinNo);
+                  if ($gstValidation['Status'] == 1) {
+                      $gstData = json_decode($gstValidation['checkGstIn'], true);
+                      if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
+                        $validator->errors()->add(
+                            'company_name', 
+                            'Company name  does not match GSTIN record.'
+                        );
+                        }
+                        if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
+                            $validator->errors()->add(
+                                'compliance.gst_registered_name', 
+                                'Legal name  does not match GSTIN record.'
+                            );
+                        }
+                        // Validate GSTIN registration date
+                        $gstRegistrationDate = $gstData['DtReg'] ?? null; 
+                        if ($gstRegistrationDate && $gstinRegistrationDate && $gstinRegistrationDate !== $gstRegistrationDate) {
+                            $validator->errors()->add(
+                                'compliance.gstin_registration_date', 
+                                'GSTIN registration date does not match GSTIN records. '
+                            );
+                        }
+                      $this->addAddressValidationErrors($validator, $addresses, $gstData);
+                  } 
+              }
         });
     }
 

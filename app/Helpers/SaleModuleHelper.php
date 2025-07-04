@@ -39,9 +39,19 @@ use stdClass;
 class SaleModuleHelper  
 { 
     const SALES_RETURN_DEFAULT_TYPE = "sale-return";
-    const SALES_INVOICE_DEFAULT_TYPE = "sale-invoice";
-    const SALES_INVOICE_LEASE_TYPE = "lease-invoice"
-    ;public static function getSoImports(): array
+    const SALES_INVOICE_DEFAULT_TYPE = "si";
+    const SALES_INVOICE_DN_TYPE = "dnote";
+    const SALES_INVOICE_DN_CUM_INV_TYPE = "si-dnote";
+    const SALES_INVOICE_LEASE_TYPE = "lease-invoice";
+    const ORDER_TYPE_DEFAULT = "Order";
+    const ORDER_TYPE_JOB_WORK = "Job Work";
+    const ORDER_TYPE_SUB_CONTRACTING = "Sub Contracting";
+    const ORDER_TYPES = [
+        self::ORDER_TYPE_DEFAULT,
+        self::ORDER_TYPE_JOB_WORK,
+        self::ORDER_TYPE_SUB_CONTRACTING
+    ];
+    public static function getSoImports(): array
     {
         return [
             'v1' => asset('templates/SalesOrderImportV1.xlsx'),
@@ -70,6 +80,10 @@ class SaleModuleHelper
     {
         if ($type === self::SALES_INVOICE_DEFAULT_TYPE) {
             return "Invoice";
+        } else if ($type === self::SALES_INVOICE_DN_TYPE) {
+            return "Delivery Note";
+        } else if ($type === self::SALES_INVOICE_DN_CUM_INV_TYPE) {
+            return "Delivery Note CUM Invoice";
         } else if ($type === self::SALES_INVOICE_LEASE_TYPE) {
             return "Lease Invoice";
         } else {
@@ -459,6 +473,15 @@ class SaleModuleHelper
                 }
             }
             return floatval($sellPrice);
+        }
+    }
+
+    public static function getJoOrderTypeFromSoOrderType(string $soOrderType)
+    {
+        if ($soOrderType === self::ORDER_TYPE_SUB_CONTRACTING) {
+            return ConstantHelper::TYPE_SUBCONTRACTING;
+        } else {
+            return $soOrderType;
         }
     }
 }

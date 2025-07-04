@@ -1,9 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Exceptions\ApiGenericException;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Support\Facades\DB;
 use App\Models\Customer;
+use App\Models\CustomerHistory;
 use App\Models\Category;
 use App\Models\Compliance;
 use App\Models\Currency;
@@ -41,6 +43,7 @@ use App\Mail\ImportComplete;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 use stdClass;
+use Exception;
 use Auth;
 
 class CustomerController extends Controller
@@ -65,7 +68,7 @@ class CustomerController extends Controller
 
         if ($request->ajax()) {
             $query = Customer::with(['salesPerson', 'erpOrganizationType', 'category', 'subcategory', 'sales_person','auth_user'])
-                ->withDefaultGroupCompanyOrg()
+                ->withDraftListingLogic() 
                 ->orderBy('id', 'desc');
 
             if ($request->filled('customer_type')) {
@@ -125,42 +128,37 @@ class CustomerController extends Controller
                 ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                 })
+                
+                ->editColumn('status', function ($row) {
+                    $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT); 
+                    $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$statusKey] ?? 'badge-light-secondary';
+                    
+                    $statusLabel = ucfirst(str_replace('_', ' ', $row->getRawOriginal('status') ?? 'N/A'));
+                    $editRoute = route('customer.edit', ['id' => $row->id]);
 
-                ->addColumn('status_action', function ($row) {
-                    $statusClass = 'badge-light-secondary';
-                    if ($row->status == 'active') {
-                        $statusClass = 'badge-light-success';
-                    } elseif ($row->status == 'inactive') {
-                        $statusClass = 'badge-light-danger';
-                    } elseif ($row->status == 'draft') {
-                        $statusClass = 'badge-light-warning';
-                    }
-    
-                    $status = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
-                        . ucfirst($row->status ?? 'Unknown') . '</span>';
-    
-                    $editUrl = route('customer.edit', $row->id);
-                    $action = '<div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
+                    return "
+                        <div style='text-align:right;'>
+                            <span class='badge rounded-pill {$statusClass} badgeborder-radius'>{$statusLabel}</span>
+                            <div class='dropdown' style='display:inline;'>
+                                <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
+                                    <i data-feather='more-vertical'></i>
                                 </button>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="' . $editUrl . '">
-                                        <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
+                                <div class='dropdown-menu dropdown-menu-end'>
+                                    <a class='dropdown-item' href='{$editRoute}'>
+                                        <i data-feather='edit-3' class='me-50'></i>
+                                        <span>View/ Edit Detail</span>
                                     </a>
                                 </div>
-                            </div>';
-    
-                    return '<div class="d-flex align-items-center justify-content-end">' . $status . $action . '</div>';
+                            </div>
+                        </div>
+                    ";
                 })
-                ->rawColumns(['gst_status','status_action'])
+                ->rawColumns(['gst_status','status'])
                 ->make(true);
         }
 
         $salesPersons = Employee::where('organization_id', $organizationId)->pluck('name', 'id');
-        $categories = Category::withDefaultGroupCompanyOrg()
-            ->where('type', 'Customer')
+        $categories = Category::where('type', 'Customer')
             ->doesntHave('subCategories')
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -206,7 +204,7 @@ class CustomerController extends Controller
         $authUser = Helper::getAuthenticatedUser();
 
         if ($customerId) {
-            $existingCustomer = Customer::withDefaultGroupCompanyOrg()->find($customerId);
+            $existingCustomer = Customer::find($customerId);
             if ($existingCustomer) {
                 $existingCustomerCode = $existingCustomer->customer_code;
                 $currentBaseCode = substr($existingCustomerCode, 0, strlen($baseCode));
@@ -216,8 +214,7 @@ class CustomerController extends Controller
             }
         }
 
-        $lastSimilarCustomer = Customer::withDefaultGroupCompanyOrg() 
-        ->where('customer_code', 'like', "{$baseCode}%")
+        $lastSimilarCustomer = Customer::where('customer_code', 'like', "{$baseCode}%")
         ->orderBy('customer_code', 'desc')
         ->first();
 
@@ -234,9 +231,9 @@ class CustomerController extends Controller
     public function create()
     {
         $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
+        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
-        $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
         $titles = ConstantHelper::TITLES;
         $status = ConstantHelper::STATUS;
         $options = ConstantHelper::STOP_OPTIONS;
@@ -297,7 +294,7 @@ class CustomerController extends Controller
         // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
         $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+        if ($services &&  isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
             $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -310,6 +307,17 @@ class CustomerController extends Controller
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
                 $validatedData['organization_id'] = null;
+            }
+             // Insert Book ID (if current_book exists)
+             if (isset($services['current_book'])) { 
+                $book = $services['current_book'];
+                if ($book) {
+                    $validatedData['book_id'] = $book->id;
+                } else {
+                    $validatedData['book_id'] = null;
+                }
+            } else {
+                $validatedData['book_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
@@ -325,7 +333,7 @@ class CustomerController extends Controller
         }
         $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
         if ($gstnNo) {
-            $gstValidation = EInvoiceHelper::validateGstNumber($gstnNo);
+            $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
             if ($gstValidation['Status'] === 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
                 $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
@@ -343,6 +351,35 @@ class CustomerController extends Controller
             }
         }
         $customer = Customer::create($validatedData);
+
+        if ($request->document_status === 'submitted') {
+            $bookId = $customer->book_id;
+            $docId = $customer->id;
+            $remarks = $request->remarks ?? '';
+            $attachments = $request->file('attachment');
+            $currentLevel = $customer->approval_level ?? 1;
+            $revisionNumber = $customer->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($customer);
+            $totalValue = 0;
+        
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'] ?? $customer->document_status;
+            $customer->document_status = $document_status;
+        
+            $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
+            $customer->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                ? ($submittedStatus === ConstantHelper::INACTIVE ? ConstantHelper::INACTIVE : ConstantHelper::ACTIVE)
+                : $document_status;
+        
+        } else {
+            $document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $customer->document_status = $document_status;
+            $customer->status = $document_status;
+        }
+
+        $customer->save();
+
         $fileConfigs = [
             'pan_attachment' => ['folder' => 'pan_attachments', 'clear_existing' => true],
             'tin_attachment' => ['folder' => 'tin_attachments', 'clear_existing' => true],
@@ -404,7 +441,7 @@ class CustomerController extends Controller
             'message' => 'Record created successfully',
             'data' => $customer,
         ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
 
             DB::rollBack();
             return response()->json([
@@ -420,17 +457,26 @@ class CustomerController extends Controller
         // Implement the logic if needed
     }
 
-    public function edit($id)
+    public function edit(Request $request,$id)
     {
-        $customer = Customer::findOrFail($id);
+        if ($request->has('revisionNumber')) {
+            $customer = CustomerHistory::with(['erpOrganizationType', 'salesPerson','subcategory', 'bankInfos', 'notes', 'contacts', 'addresses', 'compliances', 'approvedItems', 'currency', 'paymentTerm', 'ledgerGroup', 'group', 'company', 'organization', 'ledger', 'contraLedger', 'parentdCustomer'])
+            ->where('source_id', $id)
+            ->where('revision_number', $request->revisionNumber)
+            ->firstOrFail();
+            $ogCustomer = Customer::findOrFail($id);    
+        } else {
+            $customer = Customer::with(['erpOrganizationType', 'salesPerson','subcategory', 'bankInfos', 'notes', 'contacts', 'addresses', 'compliances', 'approvedItems', 'currency', 'paymentTerm', 'ledgerGroup', 'group', 'company', 'organization', 'ledger', 'contraLedger', 'parentdCustomer'])
+            ->findOrFail($id);
+            $ogCustomer = Customer::findOrFail($id);  
+        }
         $gstStateId = $customer->gst_state_id;
         $state = $gstStateId ? State::find($gstStateId) : null;
         $country = $state ? Country::find($state->country_id) : null;
         $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
-        $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
+        $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
-        $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
         $titles = ConstantHelper::TITLES;
         $notificationData = $customer? $customer->notification : [];
         $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -468,10 +514,23 @@ class CustomerController extends Controller
                 }
          }
         }
+        $revision_number = $customer->revision_number;
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay($customer->book_id, $customer->document_status, $customer->id, 1, $customer->approval_level, $customer->created_by ?? 0, $userType['type'], $revision_number);
+        $revNo = $customer->revision_number;
+        if ($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $customer->revision_number;
+        }
+
+        $docValue = 1;
+        $approvalHistory = Helper::getApprovalHistory($ogCustomer->book_id, $ogCustomer->id, $revNo, $docValue, $ogCustomer->created_by);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$customer->document_status] ?? '';
+
         return view('procurement.customer.edit', [
             'customer' => $customer,
             'organizationTypes' => $organizationTypes,
-            'categories' => $categories,
             'subcategories' => $subcategories,
             'titles' => $titles,
             'currencies' => $currencies,
@@ -488,6 +547,10 @@ class CustomerController extends Controller
             'groupOrganizations'=>$groupOrganizations,
             'gstState' => $state,
             'gstCountry' => $country,
+            'revision_number'=>$revision_number,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'docStatusClass' => $docStatusClass,
         ]);
     }
 
@@ -503,7 +566,7 @@ class CustomerController extends Controller
         // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
         $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
             $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -516,6 +579,17 @@ class CustomerController extends Controller
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
                 $validatedData['organization_id'] = null;
+            }
+             // Insert Book ID (if current_book exists)
+             if (isset($services['current_book'])) { 
+                $book = $services['current_book'];
+                if ($book) {
+                    $validatedData['book_id'] = $book->id;
+                } else {
+                    $validatedData['book_id'] = null;
+                }
+            } else {
+                $validatedData['book_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
@@ -531,7 +605,7 @@ class CustomerController extends Controller
         }
         $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
         if ($gstnNo) {
-            $gstValidation = EInvoiceHelper::validateGstNumber($gstnNo);
+            $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
             if ($gstValidation['Status'] === 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
                 $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
@@ -550,7 +624,76 @@ class CustomerController extends Controller
         }
         $customer = Customer::findOrFail($id);
         $validatedData['created_by'] = $customer->created_by ?? $user->auth_user_id;
-        $customer->update($validatedData);
+
+        $currentStatus = $customer->document_status;
+        $actionType = $request->action_type ?? 'submit';
+        $amendRemarks = $request->amend_remarks ?? null;
+        if (($customer->document_status == ConstantHelper::APPROVED || $customer->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
+            && $actionType == 'amendment') {
+                
+            $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'Customer', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'CustomerItem', 'relation_column' => 'customer_id'],
+            ];
+
+            Helper::documentAmendment($revisionData, $customer->id);
+        }
+
+      $customer->update($validatedData);
+
+      if ($request->input('current_status') === ConstantHelper::SUBMITTED) {
+            $bookId = $customer->book_id;
+            $docId = $customer->id;
+            $remarks = '';
+            $attachments = $request->file('attachment');
+            $currentLevel = $customer->approval_level ?? 1;
+            $modelName = get_class($customer);
+            $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
+
+            if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+                $revisionNumber = $customer->revision_number + 1;
+                $totalValue = 0;
+
+                $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $customer->revision_number = $revisionNumber;
+                $customer->approval_level = 1;
+                $customer->revision_date = now();
+                $statusAfterApproval = $approve['approvalStatus'] ?? $customer->document_status;
+                $customer->document_status = $statusAfterApproval;
+                if (in_array($statusAfterApproval, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $customer->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $customer->status = ConstantHelper::ACTIVE;
+                    }
+                } else {
+                    $customer->status = $statusAfterApproval;
+                }
+            } else {
+                $revisionNumber = $customer->revision_number ?? 0;
+                $totalValue = 0;
+                $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $document_status = $approve['approvalStatus'];
+                $customer->document_status = $document_status;
+
+                if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $customer->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $customer->status = ConstantHelper::ACTIVE;
+                    }
+                } else {
+                    $customer->status = $document_status;
+                }
+            }
+
+        } else {
+            $document_status = $request->current_status ?? ConstantHelper::DRAFT;
+            $customer->document_status = $document_status;
+            $customer->status = $document_status;
+        }
+        
+        $customer->save();
        
          $fileConfigs = [
             'pan_attachment' => ['folder' => 'pan_attachments', 'clear_existing' => true],
@@ -643,7 +786,7 @@ class CustomerController extends Controller
             'message' => 'Record updated successfully',
             'data' => $customer,
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
@@ -653,6 +796,37 @@ class CustomerController extends Controller
         }
     }
 
+    public function revoke(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $customer = Customer::find($request->id);
+            if (isset($customer)) {
+                $revoke = Helper::approveDocument($customer->book_id, $customer->id, $customer->revision_number, '', [], 0, ConstantHelper::REVOKE, 0, get_class($customer));
+                if ($revoke['message']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $revoke['message'],
+                    ]);
+                } else {
+                    $customer->document_status = $revoke['approvalStatus'];
+                    $customer->save();
+                    DB::commit();
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Revoked successfully',
+                    ]);
+                }
+            } else {
+                DB::rollBack();
+                throw new ApiGenericException("No Document found");
+            }
+        } catch(Exception $ex) {
+            DB::rollBack();
+            throw new ApiGenericException($ex->getMessage());
+        }
+    }
 
     public function showImportForm()
     {
@@ -725,7 +899,7 @@ class CustomerController extends Controller
             if ($user->email) {
                 try {
                     Mail::to($user->email)->send(new ImportComplete( $mailData)); 
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
             }
@@ -741,7 +915,7 @@ class CustomerController extends Controller
                 'status' => false,
                 'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
             ], 400);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to import customers: ' . $e->getMessage(),
@@ -752,9 +926,8 @@ class CustomerController extends Controller
     public function exportSuccessfulCustomers()
     {
         $user = Helper::getAuthenticatedUser();
-        $uploadCustomers = UploadCustomerMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
-        $customers = Customer::withDefaultGroupCompanyOrg()
-            ->with(['category', 'subcategory', 'currency', 'paymentTerms'])
+        $uploadCustomers = UploadCustomerMaster::where('status', 'Success')->where('user_id', $user->id)->get();
+        $customers = Customer::with(['category', 'subcategory', 'currency', 'paymentTerms'])
             ->whereIn('company_name', $uploadCustomers->pluck('company_name'))
             ->get();
     
@@ -764,7 +937,7 @@ class CustomerController extends Controller
     public function exportFailedCustomers()
     {
         $user = Helper::getAuthenticatedUser();
-        $failedCustomers = UploadCustomerMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
+        $failedCustomers = UploadCustomerMaster::where('status', 'Failed')->where('user_id', $user->id)->get();
         return Excel::download(new FailedCustomersExport($failedCustomers), "failed-customers.xlsx");
     }
 
@@ -784,7 +957,7 @@ class CustomerController extends Controller
                 return response()->json(['status' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -806,7 +979,7 @@ class CustomerController extends Controller
             }
 
             return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -830,7 +1003,7 @@ class CustomerController extends Controller
             }
 
             return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -855,7 +1028,7 @@ class CustomerController extends Controller
             }
 
             return response()->json(['status' => false, 'message' => 'Customer item not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -892,7 +1065,7 @@ class CustomerController extends Controller
                 'message' =>'Record deleted successfully.',
             ], 200);
     
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while deleting the customer: ' . $e->getMessage()
@@ -937,8 +1110,7 @@ class CustomerController extends Controller
     public function getCustomer(Request $request)
     {
         $searchTerm = $request->input('q', '');
-        $customers = Customer::withDefaultGroupCompanyOrg() 
-            ->where(function ($query) use ($searchTerm) {
+        $customers = Customer::where(function ($query) use ($searchTerm) {
                 $query->where('company_name', 'like', "%{$searchTerm}%")
                     ->orWhere('customer_code', 'like', "%{$searchTerm}%");
             })
@@ -946,8 +1118,7 @@ class CustomerController extends Controller
             ->get(['id', 'company_name','customer_code']);
 
         if ($customers->isEmpty()) {
-            $customers = Customer::withDefaultGroupCompanyOrg()
-                ->where('status', ConstantHelper::ACTIVE)
+            $customers = Customer::where('status', ConstantHelper::ACTIVE)
                 ->limit(10)
                 ->get(['id', 'company_name','customer_code']);
         }

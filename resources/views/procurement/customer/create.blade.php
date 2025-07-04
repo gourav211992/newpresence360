@@ -1,6 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .middleinputerror {
+    padding-bottom: 30px;
+    }
+    .middleinputerror span.text-danger {
+        font-size: 12px;
+        position: absolute;
+        top: 38px;
+    }
+    .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+    .iteminactive {  left: 24px; color: #999 } 
+    .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+    .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+    .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+    
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+</style>
     <!-- BEGIN: Content-->
   <form class="ajax-input-form" method="POST" action="{{ route('customer.store') }}" data-redirect="{{ url('/customers') }}"  enctype="multipart/form-data">
    @csrf
@@ -56,10 +74,22 @@
                                    <!--Start customer -->
                                           <div class="row">
                                                 <div class="col-md-12">
-                                                    <div class="newheader border-bottom mb-2 pb-25"> 
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                    <div> 
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p> 
                                                     </div>
+                                                    <div>
+                                                        <div class="d-flex align-items-center"> 
+                                                            <div class="form-check form-check-primary form-switch statusactiinactive">
+                                                                <input type="checkbox" checked class="form-check-input" id="customSwitch3" />
+                                                                <span class="itemactive">Active</span>
+                                                                <span class="itemactive iteminactive">Inactive</span>
+                                                            </div>
+                                                            <input type="hidden" name="status" id="status_hidden_input" value="inactive">
+                                                        </div>
+                                                    </div>
+                                                  </div>
                                                 </div> 
 
                                                 <div class="col-md-9"> 
@@ -158,7 +188,7 @@
                                                 </div>
 
                                                  <div class="col-md-3 border-start">
-                                                    <div class="row align-items-center mb-2">
+                                                    <!-- <div class="row align-items-center mb-2">
                                                         <div class="col-md-12"> 
                                                             <label class="form-label text-primary"><strong>Status</strong></label>   
                                                             <div class="demo-inline-spacing">
@@ -181,7 +211,7 @@
                                                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                                                             @enderror
                                                         </div> 
-                                                    </div> 
+                                                    </div>  -->
 
                                                     <div class="row align-items-center mb-2">
                                                         <div class="col-md-12"> 
@@ -1683,6 +1713,7 @@ $(document).ready(function() {
     });
 </script>
 <script>
+    //related-checkbox-start
     $(document).ready(function() {
         $('#Related').change(function() {
             if ($(this).is(':checked')) {
@@ -1694,8 +1725,8 @@ $(document).ready(function() {
             }
         });
     });
-</script>
-<script>
+     //related-checkbox-end
+    //file-validation-start
     const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
     const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
     const MAX_FILE_SIZE_SIMPLE = 2048; 
@@ -1735,5 +1766,14 @@ $(document).ready(function() {
 
         input.files = dt.files;
     }
+    document.addEventListener('DOMContentLoaded', function () {
+        const switchInput = document.getElementById('customSwitch3');
+        const hiddenInput = document.getElementById('status_hidden_input');
+        hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        switchInput.addEventListener('change', function () {
+            hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        });
+    });
+    //file-validation-end
 </script>
 @endsection

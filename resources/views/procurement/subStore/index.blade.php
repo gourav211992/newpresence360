@@ -38,6 +38,7 @@
                                                 <th>Name</th>
                                                 <th>Alias</th>
                                                 <th>Type</th>
+                                                <th>Sub Type</th>
                                                 <th>Location(s)</th>
                                                 <th>Status</th>
                                                 <th>Action</th>
@@ -77,6 +78,7 @@ $(document).ready(function() {
                 { data: 'name', render: renderData },
                 { data: 'code', render: renderData },
                 { data: 'type', render: renderData },
+                { data: 'sub_type_name', render: renderData },
                 { data: 'store_name', render: renderData },
                 { data: 'status', orderable: false },
                 { data: 'action', orderable: false, searchable: false }

@@ -13,6 +13,8 @@ class Note extends Model
     protected $fillable = [
         'remark',
         'vendor_id',
+        'noteable_id',
+        'noteable_type',
         'created_by_type',
         'created_by', 
     ];

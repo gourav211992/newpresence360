@@ -108,8 +108,7 @@ class BomImportController extends Controller
             # Bom Header save
             $organization = Organization::where('id', $user->organization_id)->first(); 
             foreach($grouped as $groupedData) {   
-                $bomExists = Bom::withDefaultGroupCompanyOrg()
-                            ->where('item_id', $groupedData['product_item_id'])
+                $bomExists = Bom::where('item_id', $groupedData['product_item_id'])
                             ->where('type', $moduleTyle)
                             ->where(function ($query) use ($groupedData,$moduleTyle) {
                                 if ($moduleTyle == 'qbom') {
@@ -169,7 +168,7 @@ class BomImportController extends Controller
                 //     ], 422);
                 // }
                 $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-                // $regeneratedDocExist = Bom::withDefaultGroupCompanyOrg()->where('book_id',$request->book_id)
+                // $regeneratedDocExist = Bom::where('book_id',$request->book_id)
                 //     ->where('document_number',$document_number)->first();
                 // //Again check regenerated doc no
                 // if (isset($regeneratedDocExist)) {

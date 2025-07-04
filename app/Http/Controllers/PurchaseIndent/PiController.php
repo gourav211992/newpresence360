@@ -48,8 +48,7 @@ class PiController extends Controller
         $selectedfyYear = Helper::getFinancialYear(Carbon::now());
 
         if (request()->ajax()) {
-            $pis = PurchaseIndent::withDefaultGroupCompanyOrg()
-                    ->withDraftListingLogic()
+            $pis = PurchaseIndent::withDraftListingLogic()
                     -> whereBetween('document_date',[$selectedfyYear['start_date'],$selectedfyYear['end_date']])
                     ->with('vendor')
                     ->latest();
@@ -230,7 +229,7 @@ class PiController extends Controller
                 ], 422);
             }
             $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-            $regeneratedDocExist = PurchaseIndent::withDefaultGroupCompanyOrg() -> where('book_id',$request->book_id)
+            $regeneratedDocExist = PurchaseIndent::where('book_id',$request->book_id)
                 ->where('document_number',$document_number)->first();
                 //Again check regenerated doc no
                 if (isset($regeneratedDocExist)) {
@@ -987,8 +986,7 @@ class PiController extends Controller
     //        });
     //    })
     //    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber) {
-    //        $subQuery->withDefaultGroupCompanyOrg()
-    //            ->whereIn('book_id', $applicableBookIds)
+    //        $subQuery->whereIn('book_id', $applicableBookIds)
     //            -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
     //            ->when($request->customer_id, function ($custQuery) use ($request) {
     //                $custQuery->where('customer_id', $request->customer_id);
@@ -1030,8 +1028,7 @@ class PiController extends Controller
         })
         ->whereColumn('invoice_qty', '<', 'order_qty')
         ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber) {
-            $subQuery->withDefaultGroupCompanyOrg()
-                ->whereIn('book_id', $applicableBookIds)
+            $subQuery->whereIn('book_id', $applicableBookIds)
                 ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                 ->when($request->customer_id, function ($q) use ($request) {
                     $q->where('customer_id', $request->customer_id);
@@ -1486,7 +1483,7 @@ class PiController extends Controller
     {
         $pathUrl = route('pi.index');
         $orderType = [ConstantHelper::PI_SERVICE_ALIAS];
-        $puchaseIndents = PurchaseIndent::with('items')-> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> orderByDesc('id');
+        $puchaseIndents = PurchaseIndent::with('items')-> withDraftListingLogic() -> orderByDesc('id');
         //Vendor Filter
         $puchaseIndents = $puchaseIndents -> when($request -> vendor_id, function ($vendorQuery) use($request) {
             $vendorQuery -> where('vendor_id', $request -> vendor_id);

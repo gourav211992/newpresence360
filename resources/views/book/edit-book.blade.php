@@ -143,16 +143,16 @@
                                                                 <a class="nav-link {{$serviceType === 'transaction' ? 'active' : 'd-none'}}" data-bs-toggle="tab"
                                                                     href="#Pattern">Numbering Pattern</a>
                                                             </li>
-                                                            <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}">
-                                                                <a class="nav-link" data-bs-toggle="tab"
+                                                            <li class="nav-item">
+                                                                <a class="nav-link {{$serviceType === 'transaction' ? '' : 'active'}}" data-bs-toggle="tab"
                                                                     href="#Approval">Approval</a>
                                                             </li>
-                                                            <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}">
+                                                            <li class="nav-item">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Amendment">Amendment</a>
                                                             </li>
                                                             <li class="nav-item">
-                                                                <a class="nav-link {{$serviceType === 'transaction' ? '' : 'active'}}" data-bs-toggle="tab"
+                                                                <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Configuration">Common Parameters</a>
                                                             </li>
                                                             <li class="nav-item {{$serviceType === 'transaction' ? '' : 'd-none'}}" id = "gl_param_tab_header" style = "display:none;">
@@ -365,7 +365,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'd-none'}}" id="Approval">
+                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'active'}}" id="Approval">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -477,7 +477,7 @@
                                                                                                 value="{{ $user->id }}|{{ $user->type }}"
                                                                                                 data-fixed = "{{(isset($users) && in_array($user->id, $users) && !$workflowGroup -> allow_change) ? 'true' : 'false'}}"
                                                                                                 @if (isset($users) && in_array($user->id, $users)) selected  @endif>
-                                                                                                {{ $user->name }}
+                                                                                                {{ $user->name . " (" . $user->email . ")" }}
                                                                                             </option>
                                                                                         @endforeach
                                                                                         @endif
@@ -666,7 +666,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'd-none'}}" id="Amendment">
+                                                        <div class="tab-pane" id="Amendment">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -728,7 +728,7 @@
                                                                                                 <option
                                                                                                     value="{{ $user->id }}|{{ $user->type }}"
                                                                                                     @if (isset($amendUsers) && in_array($user->id, $amendUsers)) selected @endif>
-                                                                                                    {{ $user->name }}
+                                                                                                    {{  $user->name . " (" . $user->email . ")" }}
                                                                                                 </option>
                                                                                             @endforeach
                                                                                         </select>
@@ -825,7 +825,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane {{$serviceType === 'transaction' ? '' : 'active'}}" id="Configuration">
+                                                        <div class="tab-pane" id="Configuration">
                                                             @forelse ($book -> common_parameters as $serviceParamKey => $serviceParam)
                                                             {!! $serviceParam->param_array_html !!}
                                                             @empty
@@ -1064,11 +1064,9 @@
                 success: function(data) {
                     if (data.data && data.data.length > 0) {
                         $.map(data.data, function(item) {
-                            innerHTMLVal += `<option value='${item.id}'>${item.name}</option>`
+                            innerHTMLVal += `<option value='${item.id}'>${item.name + " (" + item.email + ")"}</option>`
                         });
-                        console.log(innerHTMLVal, "HTML DATA");
                         if (userElement) {
-                            console.log("HERE IT IS COMING");
                             userElement.innerHTML = innerHTMLVal;
                         }
                     }
@@ -1484,11 +1482,9 @@ $(document).on('input', '.amendment_organizations', function (e) {
         success: function(data) {
             if (data.data && data.data.length > 0) {
                 $.map(data.data, function(item) {
-                    innerHTMLVal += `<option value='${item.id}'>${item.name}</option>`
+                    innerHTMLVal += `<option value='${item.id}'>${item.name + " (" + item.email + ")"}</option>`
                 });
-                console.log(innerHTMLVal, "HTML DATA");
                 if (userElement) {
-                    console.log("HERE IT IS COMING");
                     userElement.innerHTML = innerHTMLVal;
                 }
             }

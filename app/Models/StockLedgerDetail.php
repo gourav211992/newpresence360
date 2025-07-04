@@ -2,14 +2,13 @@
 namespace App\Models;
 
 use App\Traits\DateFormatTrait;
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StockLedgerDetail extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, DefaultGroupCompanyOrg;
+    use HasFactory, SoftDeletes, DateFormatTrait;
 
     protected $table = 'stock_ledger_details';
 

@@ -2,11 +2,23 @@
 
 @section('content')
     <!-- BEGIN: Content-->
- <form class="ajax-input-form" method="POST" action="{{ route('customer.update', $customer->id) }}" data-redirect="{{ url('/customers') }}" enctype="multipart/form-data">
+<style>
+    .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+    .iteminactive {  left: 24px; color: #999 } 
+    .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+    .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+    .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+    
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+</style>
+ <form class="ajax-input-form" method="POST" action="{{ route('customer.update', $customer->id) }}" data-redirect="{{ url('/customers') }}" id="customer_form" enctype="multipart/form-data">
         @csrf
         @method('PUT') 
     @php
-      $isEditable = isset($item) && $item->status === 'draft';
+      $isEditable = isset($customer) && $customer->status === 'draft';
+      $statusValue = isset($customer) && $customer->status =='Active' ? 'active' : 'inactive';
+      $isChecked = $statusValue == 'active' ? 'checked' : '';
     @endphp
     <input type="hidden" name="customer_id" value="{{ $customer->id ?? '' }}">
     <input type="hidden" name="customer_code_type" value="{{ $customerCodeType }}">
@@ -33,26 +45,60 @@
 						</div>
 					</div>
                     <div class="content-header-right text-end col-md-6 col-6 mb-2 mb-sm-0">
-                        <div class="form-group breadcrumb-right">
-                            <a href="{{ route('customer.index') }}" class="btn btn-secondary btn-sm">
-                              <i data-feather="arrow-left-circle"></i> Back
-                            </a>
-                            <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                    data-url="{{ route('customer.destroy', $customer->id) }}" 
-                                    data-redirect="{{ route('customer.index') }}"
-                                    data-message="Are you sure you want to delete this record?">
-                                <i data-feather="trash-2" class="me-50"></i> Delete
-                            </button>
-                            <input type="hidden" id="document_status" name="document_status" value="{{ $customer->status ?? '' }}">
-                            @if($customer->status === 'draft') 
-                                <button type="submit" name="action" class="btn btn-warning btn-sm submit-button" value="draft">
-                                    <i data-feather="save"></i> Save as Draft
-                                </button>
-                             @endif
-                            <button type="submit" name="action" class="btn btn-primary btn-sm submit-button" value="submitted">
-                                <i data-feather="check-circle"></i> Submit
-                            </button>
-                          
+                        <div class="form-group breadcrumb-right" id="buttonsDiv">
+                                <a href="{{ route('customer.index') }}" class="btn btn-secondary btn-sm">
+                                    <i data-feather="arrow-left-circle"></i> Back
+                                </a>
+                                @if(auth()->check() && $customer->created_by == auth()->user()->auth_user_id)
+                                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                            data-url="{{ route('customer.destroy', $customer->id) }}"
+                                            data-redirect="{{ route('customer.index') }}"
+                                            data-message="Are you sure you want to delete this record?">
+                                        <i data-feather="trash-2" class="me-50"></i> Delete
+                                    </button>
+                                @endif
+
+                                @if(!isset(request()->revisionNumber))
+                                    @if (isset($customer))
+                                        @if($buttons['draft'])
+                                            <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
+                                                <i data-feather='save'></i> Save as Draft
+                                            </button>
+                                        @endif
+                                        @if($buttons['submit'])
+                                            <button type="submit" value="submitted" class="btn btn-primary btn-sm submit-button">
+                                                <i data-feather="check-circle"></i> Submit
+                                            </button>
+                                        @endif
+                                        @if($buttons['approve'])
+                                            <button type="button" id="reject-button" data-bs-toggle="modal" data-bs-target="#approveModal" onclick="setReject();" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                                </svg>
+                                                Reject
+                                            </button>
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#approveModal" onclick="setApproval();">
+                                                <i data-feather="check-circle"></i> Approve
+                                            </button>
+                                        @endif
+                                        @if($buttons['amend'])
+                                            <button type="button" id="amendShowButton" onclick="openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                                <i data-feather='edit'></i> Amendment
+                                            </button>
+                                        @endif
+                                        @if($buttons['revoke'])
+                                            <button type="button" id="revokeButton" onclick="revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                                <i data-feather='rotate-ccw'></i> Revoke
+                                            </button>
+                                        @endif
+                                    @else
+                                        <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"></i> Save as Draft</button>
+                                        <button type="submit" value="submitted" class="btn btn-primary btn-sm submit-button"></i> Submit</button>
+                                    @endif
+                                @endif
+                            <input type="hidden" value="draft" name="current_status" id="document_status"/>
                         </div>
                     </div>
 				</div>
@@ -67,10 +113,28 @@
                                 <!-- Start Customer -->
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div class="newheader border-bottom mb-2 pb-25"> 
-                                                    <h4 class="card-title text-theme">Basic Information</h4>
-                                                    <p class="card-text">Fill the details</p> 
-                                                </div>
+                                               <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                        <div>
+                                                            <h4 class="card-title text-theme">Basic Information</h4>
+                                                            <p class="card-text">Fill the details</p>
+                                                        </div>
+                                                        <div>
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="form-check form-check-primary form-switch statusactiinactive me-1">
+                                                                     <input type="hidden" name="status" id="status_hidden_input" value="{{ $statusValue ??''}}">
+                                                                     <input type="checkbox" class="form-check-input" id="customSwitch3" {{ $isChecked }}>
+                                                                     <span class="itemactive">Active</span>
+                                                                     <span class="itemactive iteminactive">Inactive</span>
+                                                                </div>
+                                                                 @if (isset($customer) && isset($docStatusClass))
+                                                                    <span class="badge rounded-pill badge-light-secondary forminnerstatus">
+                                                                        Status : <span class="{{$docStatusClass}}">{{$customer->display_status}}</span>
+                                                                    </span>
+                                                                @endif 
+                                                            </div>
+                                                        </div>
+                                                      
+                                                    </div>  
                                             </div>
 
                                             <div class="col-md-9">
@@ -83,7 +147,7 @@
                                                         </div>
                                                     </div>
                                                         <!-- Customer Type -->
-                                                        <div class="row align-items-center mb-1"> 
+                                                    <div class="row align-items-center mb-1"> 
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Customer Type <span class="text-danger">*</span></label>  
                                                         </div>
@@ -166,32 +230,9 @@
                                                     </div>
                                                     <p class="mb-0" style="color: red;"><b>Note*:</b> File must be 2MB max | Formats: pdf, jpg, jpeg, png</p>
                                                 </div>
+                                            
 
                                                 <div class="col-md-3 border-start">
-                                                    <!-- Status -->
-                                                    <div class="row align-items-center mb-2">
-                                                        <div class="col-md-12">
-                                                            <label class="form-label text-primary"><strong>Status</strong></label>
-                                                            <div class="demo-inline-spacing">
-                                                                @foreach ($status as $statusOption)
-                                                                    <div class="form-check form-check-primary mt-25">
-                                                                        <input
-                                                                            type="radio"
-                                                                            id="status_{{ $statusOption }}"
-                                                                            name="status"
-                                                                            value="{{ ucfirst($statusOption) }}"
-                                                                            class="form-check-input"
-                                                                            {{ $customer->status == $statusOption ? 'checked' : '' }}
-                                                                        />
-                                                                        <label class="form-check-label fw-bolder" for="status_{{ $statusOption }}">
-                                                                            {{ ucfirst($statusOption) }}
-                                                                        </label>
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
                                                     <!-- Stop Billing -->
                                                     <div class="row align-items-center mb-2">
                                                         <div class="col-md-12">
@@ -213,8 +254,72 @@
                                                                     </div>
                                                                 @endforeach
                                                             </div>
-                                                        </div>
+                                                        </div> 
                                                     </div>
+                                                     @if(isset($customer) && ($customer->document_status !== "draft"))
+                                                        @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($customer->revision_number))
+                                                            <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                                <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                                    <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                                    @if(!isset(request()->revisionNumber) && $customer->document_status !== 'draft')
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
+                                                                            <select class="form-select" id="revisionNumber">
+                                                                                @for($i=$customer->revision_number; $i >= 0; $i--)
+                                                                                    <option value="{{$i}}" {{request('revisionNumber', $customer->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
+                                                                                @endfor
+                                                                            </select>
+                                                                        </strong>
+                                                                    @else
+                                                                        @if ($customer->document_status !== 'draft')
+                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                                Rev. No. {{ request()->revisionNumber }}
+                                                                            </strong>
+                                                                        @endif
+                                                                    @endif
+                                                                </h5>
+                                                                <ul class="timeline ms-50 newdashtimline ">
+                                                                    @foreach($approvalHistory as $approvalHist)
+                                                                        <li class="timeline-item">
+                                                                            <span class="timeline-point timeline-point-indicator"></span>
+                                                                            <div class="timeline-event">
+                                                                                <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                                    <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
+                                                                                    @if($approvalHist->approval_type == 'approve')
+                                                                                        <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'submit')
+                                                                                        <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'reject')
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @else
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @if($approvalHist->approval_date)
+                                                                                    <h6>
+                                                                                        {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
+                                                                                    </h6>
+                                                                                @endif
+                                                                                @if($approvalHist->remarks)
+                                                                                    <p>{!! $approvalHist->remarks !!}</p>
+                                                                                @endif
+                                                                                @if ($approvalHist->media && count($approvalHist->media) > 0)
+                                                                                    @foreach ($approvalHist->media as $mediaFile)
+                                                                                        <p><a href="{{ $mediaFile->file_url }}" target="_blank">
+                                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
+                                                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                                                                </svg>
+                                                                                            </a></p>
+                                                                                    @endforeach
+                                                                                @endif
+                                                                            </div>
+                                                                        </li>
+                                                                    @endforeach
+                                                                </ul>
+                                                            </div>
+                                                        @endif
+                                                    @endif
                                                 </div>
                                             </div>
                                            <!-- End Customer -->
@@ -1170,7 +1275,114 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend
+                        {{request() -> type === 'customer' ? 'Customer' : 'Customer'}}
+                    </h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <input type="hidden" name="action_type" id="action_type_main">
+
+                </div>
+                <div class="modal-body pb-2">
+                    <div class="row mt-1">
+                    <div class="col-md-12">
+                        <div class="mb-1">
+                            <label class="form-label">Remarks</label>
+                            <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
+                        </div>
+                        <div class = "row">
+                            <div class = "col-md-8">
+                                <div class="mb-1">
+                                    <label class="form-label">Upload Document</label>
+                                    <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                                </div>
+                            </div>
+                            <div class = "col-md-4" style = "margin-top:19px;">
+                                <div class="row" id = "amend_files_preview">
+                                </div>
+                            </div>
+                        </div>
+                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                    </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">  
+                    <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+                    <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
  </form>
+ <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.customer') }}" data-redirect="{{ route('customer.index') }}" enctype='multipart/form-data'>
+          @csrf
+          <input type="hidden" name="action_type" id="action_type">
+          <input type="hidden" name="id" value="{{isset($customer) ? $customer -> id : ''}}">
+          <input type="hidden" name="status" id="hidden_status" value="">
+         <div class="modal-header">
+            <div>
+               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
+               </h4>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         </div>
+         <div class="modal-body pb-2">
+            <div class="row mt-1">
+               <div class="col-md-12">
+                  <div class="mb-1">
+                     <label class="form-label">Remarks</label>
+                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
+                  </div>
+                  <div class="row">
+                    <div class = "col-md-8">
+                        <div class="mb-1">
+                            <label class="form-label">Upload Document</label>
+                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                        </div>
+                    </div>
+                    <div class = "col-md-4" style = "margin-top:19px;">
+                        <div class = "row" id = "approval_files_preview">
+
+                        </div>
+                    </div>
+                  </div>
+                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                  
+               </div>
+            </div>
+         </div>
+         <div class="modal-footer justify-content-center">  
+            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+            <button type="submit" class="btn btn-primary">Submit</button>
+         </div>
+       </form>
+      </div>
+   </div>
+</div>
+<div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header p-0 bg-transparent">
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body alertmsg text-center warning">
+              <i data-feather='alert-circle'></i>
+              <h2>Are you sure?</h2>
+              <p>Are you sure you want to <strong>Amend</strong> this <strong>{{request() -> type == "customer" ? "Customer" : "Customer"}}</strong>?</p>
+              <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
+          </div> 
+      </div>
+  </div>
+</div>
     <!-- END: Content-->
 @endsection
 @section('scripts')
@@ -2102,6 +2314,7 @@
     });
 </script>
 <script>
+    // File-Validation-Start
     const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
     const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
     const MAX_FILE_SIZE_SIMPLE = 2048; 
@@ -2141,5 +2354,283 @@
 
         input.files = dt.files;
     }
+    // File-Validation-End
+    var currentRevNo = $("#revisionNumber").val();
+     $(document).on('change', '#revisionNumber', function (e) {
+        e.preventDefault();
+        const selectedRev = e.target.value;
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('revisionNumber', selectedRev);
+        $("#revisionNumber").val(currentRevNo);
+        window.open(currentUrl.toString(), '_blank');
+    });
+    // Approval-Start
+    $(document).on('submit', '.ajax-submit-2', function (e) {
+        e.preventDefault();
+        var submitButton = (e.originalEvent && e.originalEvent.submitter)
+                            || $(this).find(':submit');
+        var submitButtonHtml = submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+        submitButton.disabled = true;
+        var method = $(this).attr('method');
+        var url = $(this).attr('action');
+        var redirectUrl = $(this).data('redirect');
+        var status = $('#hidden_status').val();
+        var data = new FormData($(this)[0]);
+        data.append('status', $('#status_hidden_input').val());
+
+        var formObj = $(this);
+    
+        $.ajax({
+            url,
+            type: method,
+            data,
+            contentType: false,
+            processData: false,
+            success: function (res) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = submitButtonHtml;
+                $('.ajax-validation-error-span').remove();
+                $(".is-invalid").removeClass("is-invalid");
+                $(".help-block").remove();
+                $(".waves-ripple").remove();
+                Swal.fire({
+                    title: 'Success!',
+                    text: res.message,
+                    icon: 'success',
+                });
+                setTimeout(() => {
+                    if (res.store_id) {
+                        location.href = `/stores/${res.store_id}/edit`;
+                    } else if (redirectUrl) {
+                        location.href = redirectUrl;
+                    } else {
+                        location.reload();
+                    }
+                }, 1500);
+            
+            },
+            error: function (error) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = submitButtonHtml;
+                $('.ajax-validation-error-span').remove();
+                $(".is-invalid").removeClass("is-invalid");
+                $(".help-block").remove();
+                $(".waves-ripple").remove();
+                let res = error.responseJSON || {};
+                if (error.status === 422 && res.errors) {
+                    if (
+                        Object.size(res) > 0 &&
+                        Object.size(res.errors) > 0
+                    ) {
+                        show_validation_error(res.errors);
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: res.message || 'An unexpected error occurred.',
+                        icon: 'error',
+                    });
+                }
+            }
+        });
+    });
+    $('input[name="status"]').on('change', function() {
+        $('#hidden_status').val($(this).val());
+    });
+
+    function setApproval()
+    {
+        document.getElementById('action_type').value = "approve";
+        document.getElementById('approve_reject_heading_label').textContent = "Approve Item";
+
+    }
+    function setReject()
+    {
+        document.getElementById('action_type').value = "reject";
+        document.getElementById('approve_reject_heading_label').textContent = "Reject Item";
+    }
+    function revokeDocument() {
+    const customerId = "{{ isset($customer) ? $customer->id : null }}"; 
+    if (customerId) {
+        $.ajax({
+            url: "{{ route('customer.revoke') }}", 
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                id: customerId 
+            },
+            success: function(data) {
+                if (data.status == 'success') {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: data.message,
+                        icon: 'success',
+                    });
+                    location.reload();
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message,
+                        icon: 'error',
+                    });
+                    window.location.href = "{{ route('customer.index') }}"; 
+                }
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Some internal error occured',
+                    icon: 'error',
+                });
+            }
+        });
+    }
+}
+    function openModal(id)
+    {
+        $('#' + id).modal('show');
+    }
+    function amendConfirm()
+{
+    const amendButton = document.getElementById('amendShowButton');
+    if (amendButton) {
+        amendButton.style.display = "none";
+    }
+    const buttonParentDiv = document.getElementById('buttonsDiv');
+    const newSubmitButton = document.createElement('button');
+    newSubmitButton.type = "button";
+    newSubmitButton.id = "amend-submit-button";
+    newSubmitButton.className = "btn btn-primary btn-sm mb-50 mb-sm-0 submit-button";
+    newSubmitButton.value = "submitted"; 
+    newSubmitButton.innerHTML = `<i data-feather="check-circle"></i> Submit`;
+    newSubmitButton.onclick = function() {
+        openAmendConfirmModal();
+    };
+
+    if (buttonParentDiv) {
+        buttonParentDiv.appendChild(newSubmitButton);
+    }
+
+    if (feather) {
+        feather.replace({
+            width: 14,
+            height: 14
+        });
+    }
+
+
+}
+
+    function openAmendConfirmModal()
+    {
+        $("#amendConfirmPopup").modal("show");
+    }
+
+    function submitAmend()
+    {
+        let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
+        $("#action_type_main").val("amendment");
+        $("#amendConfirmPopup").modal('hide');
+        $("#customer_form").submit();
+    }
+
+    function addFiles(element, previewElementId) {
+        const input = element;
+        const allowedMaxFilesCount = Number(element.getAttribute('max_file_count') ? element.getAttribute('max_file_count') : 1);
+        const files = Array.from(input.files); // Convert new FileList to array
+        const dt = new DataTransfer();
+        const inputId = input.name.replace('[]','');
+        // Initialize storage for this input if not already initialized
+        if (!fileInputData[inputId]) {
+            fileInputData[inputId] = [];
+            addedFilesCount = 0;
+        } else {
+            addedFilesCount = fileInputData[inputId].length;
+        }
+
+        if ((files.length + fileInputData[inputId].length) > allowedMaxFilesCount) 
+        {
+            Swal.fire({
+                title: 'Error!',
+                text: "Maximum " + allowedMaxFilesCount + " files are allowed",
+                icon: 'error',
+            });
+            let prevAllFiles = fileInputData[inputId] ? fileInputData[inputId] : [];
+            let tempDt = new DataTransfer();
+            prevAllFiles.forEach((fileElement) => {
+                tempDt.items.add(fileElement);
+            });
+            input.files = tempDt.files;
+            return;
+        }
+
+        // Combine old and new files
+        let allFiles = [...fileInputData[inputId], ...files];
+        var invalidFile = {};
+
+        // Validate files
+        for (let i = 0; i < allFiles.length; i++) {
+            const file = allFiles[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+                invalidFile.message = 'Please select valid files';
+                break;
+            }
+            const fileSize = (file.size / 1024).toFixed(2);
+            if (fileSize > MAX_FILE_SIZE) {
+                invalidFile.message = 'Please select files with size not more than 5MB';
+                break;
+            }
+        }
+
+        // Stop if there's an invalid file
+        if (invalidFile && invalidFile.message) {
+            Swal.fire({
+                title: 'Error!',
+                text: invalidFile.message,
+                icon: 'error',
+            });
+            element.value = ''; // Reset file input
+            return;
+        } else {
+            // Add all files to DataTransfer and rebuild the preview
+            allFiles.forEach((file, i) => {
+                dt.items.add(file);
+                if (!fileInputData[inputId].some(f => f.name === file.name && f.size === file.size)) {
+                    const fileUrl = URL.createObjectURL(file);
+                    appendFilePreviews(fileUrl, previewElementId, i);
+                }
+            });
+
+            // Update the global object for this input
+            fileInputData[inputId] = allFiles.reduce((unique, file) => {
+                if (!unique.some(f => f.name === file.name && f.size === file.size)) {
+                    unique.push(file);
+                }
+                return unique;
+            }, []);
+
+            // Update the file input's FileList
+            input.files = dt.files;
+
+            // Reset and re-render SVG icons (if applicable)
+            feather.replace({
+                width: 20,
+                height: 20,
+            });
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        const switchInput = document.getElementById('customSwitch3');
+        const hiddenInput = document.getElementById('status_hidden_input');
+        hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        switchInput.addEventListener('change', function () {
+            hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        });
+    });
+// Approval-Start-End
 </script>
 @endsection

@@ -82,15 +82,21 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
             $redirectUrl = route('sale.invoice.index');
             $createRoute = route('sale.invoice.create');
-        }
-        if ($pathUrl === 'lease-invoices') {
+        } else if ($pathUrl === 'delivery-note') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
+            $redirectUrl = route('sale.deliveryNote.index');
+            $createRoute = route('sale.deliveryNote.create');
+        } else if ($pathUrl === 'delivery-note-cum-invoice') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
+            $redirectUrl = route('sale.deliveryNoteCumInvoice.index');
+            $createRoute = route('sale.deliveryNoteCumInvoice.create');
+        } else if ($pathUrl === 'lease-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $createRoute = route('sale.leaseInvoice.create');
         }
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         request() -> merge(['type' => $orderType]);
-        // $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type ?? '');
         $autoCompleteFilters = self::getBasicFilters();
         if ($request -> ajax()) {
             try {
@@ -98,7 +104,7 @@ class ErpSaleInvoiceController extends Controller
             $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
             //Date Filters
             $dateRange = $request -> date_range ??  null;
-            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> bookViewAccess($pathUrl) ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> whereIn('store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
+            $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg() -> where('document_type', $orderType) -> withDraftListingLogic() -> bookViewAccess($pathUrl) ->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']]) -> whereIn('store_id',$accessible_locations) ->  when($request -> customer_id, function ($custQuery) use($request) {
                 $custQuery -> where('customer_id', $request -> customer_id);
             }) -> when($request -> book_id, function ($bookQuery) use($request) {
                 $bookQuery -> where('book_id', $request -> book_id);
@@ -153,6 +159,12 @@ class ErpSaleInvoiceController extends Controller
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE) {
                     $editRoute = route('sale.invoice.edit', ['id' => $row->id]);
                 }
+                if ($orderType == SaleModuleHelper::SALES_INVOICE_DN_TYPE) {
+                    $editRoute = route('sale.deliveryNote.edit', ['id' => $row->id]);
+                }
+                if ($orderType == SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE) {
+                    $editRoute = route('sale.deliveryNoteCumInvoice.edit', ['id' => $row->id]);
+                }
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_LEASE_TYPE) {
                     $editRoute = route('sale.leaseInvoice.edit', ['id' => $row->id]);
                 }      
@@ -172,9 +184,6 @@ class ErpSaleInvoiceController extends Controller
                         </div>
                     </div>
                 ";
-            })
-            ->addColumn('document_type', function ($row) {
-                return SaleModuleHelper::getServiceName($row -> book_id);
             })
             ->addColumn('book_name', function ($row) {
                 return $row->book_code ? $row->book_code : 'N/A';
@@ -218,20 +227,6 @@ class ErpSaleInvoiceController extends Controller
             ->editColumn('is_ewb_generated', function ($row) {
                 return ucfirst($row->total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT && $row -> irnDetail ? ($row -> is_ewb_generated ? 'Generated' : 'Pending') : '');
             })
-            // ->addColumn('action', function ($row) use($type) {
-            //     return '
-            //         <div class="dropdown">
-            //             <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-            //                 <i data-feather="more-vertical"></i>
-            //             </button>
-            //             <div class="dropdown-menu dropdown-menu-end">
-            //                 <a class="dropdown-item" href="' . route('sale.invoice.edit', ['id' => $row->id, 'type' => $type]) . '">
-            //                     <i data-feather="edit-3" class="me-50"></i>
-            //                     <span>View/ Edit Detail</span>
-            //                 </a>
-            //             </div>
-            //         </div>';
-            // })
             ->rawColumns(['document_status'])
             ->make(true);
             }
@@ -285,8 +280,15 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
             $redirectUrl = route('sale.invoice.index');
             $locationVisiblity = true;
-        }
-        if ($parentURL === 'lease-invoices') {
+        } else if ($parentURL === 'delivery-note') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
+            $redirectUrl = route('sale.deliveryNote.index');
+            $locationVisiblity = true;
+        } else if ($parentURL === 'delivery-note-cum-invoice') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
+            $redirectUrl = route('sale.deliveryNoteCumInvoice.index');
+            $locationVisiblity = true;
+        } else if ($parentURL === 'lease-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $locationVisiblity = false;
@@ -297,18 +299,10 @@ class ErpSaleInvoiceController extends Controller
         $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type ?? '');
         $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
         $request -> merge(['type' => $type]);
-        $typeName = 'Sales Invoice';
-        if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-            $typeName = "Delivery Note";
-        } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-            $typeName = "Delivery Note CUM Invoice";
-        } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
-            $typeName = "Lease Invoice";
-        }
+        $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($type);
         $books = [];
         $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-        $organization = Organization::where('id', $user->organization_id)->first();
         $transportationModes = EwayBillMaster::where('status', 'active')
             ->where('type', '=', 'transportation-mode')
             ->orderBy('id', 'ASC')
@@ -340,8 +334,13 @@ class ErpSaleInvoiceController extends Controller
             if ($parentUrl === 'sale-invoices') {
                 $locationVisiblity = true;
                 $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
-            }
-            if ($parentUrl === 'lease-invoices') {
+            } else if ($parentUrl === 'delivery-note') {
+                $locationVisiblity = true;
+                $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
+            } else if ($parentUrl === 'delivery-note-cum-invoice') {
+                $locationVisiblity = true;
+                $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
+            } else if ($parentUrl === 'lease-invoices') {
                 $locationVisiblity = false;
                 $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             }
@@ -1896,15 +1895,31 @@ class ErpSaleInvoiceController extends Controller
                 $modelName = null;
             }
             if (isset($modelName)) {
-                $decoded = is_array($request->items_id[0]) ? $request->items_id[0] : json_decode($request->items_id[0], true); // decode as associative array
-                $currentIds = is_array($decoded) ? $decoded : [$decoded]; 
+                // $decoded = is_array($request->items_id[0]) ? $request->items_id[0] : json_decode($request->items_id[0], true); // decode as associative array
+                $decoded = $request->items_id; // decode as associative array
+               $currentIds = [];
+               foreach ($decoded as $dec) {
+                $decArray =  json_decode($request->items_id[0]);
+                if (isset($decArray) && is_array($decArray)) {
+                    foreach ($decArray as $decValue) {
+                        array_push($currentIds, $decValue);
+                    }
+                } else {
+                    array_push($currentIds, $dec);
+
+                }
+               }
                 $headers = $modelName::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
                     $sQuery -> with(['currency', 'payment_terms']);
                 }) -> with('items', function ($itemQuery) use($currentIds) {
-                    $itemQuery -> whereIn('id', $currentIds) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
+                    $itemQuery -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
                     }]);
                 }) -> whereIn('id', $request -> order_id) -> get();
+                $headers = $headers->map(function ($header) use ($currentIds) {
+                    $header->items = $header->items->whereIn('id', $currentIds);
+                    return $header;
+                }) -> values();
                 foreach ($headers as $header) {
                     if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
                         $saleOrderItems = $header -> sale_order_items();

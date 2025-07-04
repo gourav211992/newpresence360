@@ -7,10 +7,10 @@ use App\Helpers\GstStatusChecker;
 use App\Helpers\StoreHelper;
 use App\Models\ErpStore;
 use App\Models\VendorLocation;
-use Exception;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use App\Models\Vendor;
+use App\Models\VendorHistory;
 use App\Models\Customer;
 use App\Models\Category;
 use App\Models\Compliance;
@@ -56,6 +56,7 @@ use App\Models\AuthUser;
 use Carbon\Carbon;
 use stdClass;
 use Auth;
+use Exception;
 use Illuminate\Support\Facades\Hash;
 
 
@@ -83,7 +84,7 @@ class VendorController extends Controller
         
             if ($request->ajax()) {
                 $query = Vendor::with(relations: ['erpOrganizationType', 'category', 'subcategory','auth_user'])
-                ->withDefaultGroupCompanyOrg()
+                ->withDraftListingLogic() 
                 ->orderBy('id', 'desc');
         
                 if ($request->has('vendor_type') && !empty($request->vendor_type)) {
@@ -141,40 +142,36 @@ class VendorController extends Controller
                     ->editColumn('updated_at', function ($row) {
                         return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                     })
-                    ->addColumn('status_action', function ($row) {
-                        $statusClass = 'badge-light-secondary';
-                        if ($row->status == 'active') {
-                            $statusClass = 'badge-light-success';
-                        } elseif ($row->status == 'inactive') {
-                            $statusClass = 'badge-light-danger';
-                        } elseif ($row->status == 'draft') {
-                            $statusClass = 'badge-light-warning';
-                        }
-        
-                        $status = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
-                            . ucfirst($row->status ?? 'Unknown') . '</span>';
-        
-                        $action = '
-                            <div class="dropdown">
-                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                    <i data-feather="more-vertical"></i>
-                                </button>
-                                <div class="dropdown-menu dropdown-menu-end">
-                                    <a class="dropdown-item" href="' . route('vendor.edit', $row->id) . '">
-                                        <i data-feather="edit-3" class="me-50"></i>
-                                        <span>Edit</span>
-                                    </a>
+    
+                    ->editColumn('status', function ($row) {
+                        $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT); 
+                        $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$statusKey] ?? 'badge-light-secondary';
+                        
+                        $statusLabel = ucfirst(str_replace('_', ' ', $row->getRawOriginal('status') ?? 'N/A'));
+                        $editRoute = route('vendor.edit', ['id' => $row->id]);
+
+                        return "
+                            <div style='text-align:right;'>
+                                <span class='badge rounded-pill {$statusClass} badgeborder-radius'>{$statusLabel}</span>
+                                <div class='dropdown' style='display:inline;'>
+                                    <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
+                                        <i data-feather='more-vertical'></i>
+                                    </button>
+                                    <div class='dropdown-menu dropdown-menu-end'>
+                                        <a class='dropdown-item' href='{$editRoute}'>
+                                            <i data-feather='edit-3' class='me-50'></i>
+                                            <span>View/ Edit Detail</span>
+                                        </a>
+                                    </div>
                                 </div>
-                            </div>';
-        
-                        return '<div class="d-flex align-items-center justify-content-end">' . $status . $action . '</div>';
+                            </div>
+                        ";
                     })
-                    ->rawColumns(['gst_status','status_action'])
+                    ->rawColumns(['gst_status','status'])
                     ->make(true);
             }
         
-            $categories = Category::withDefaultGroupCompanyOrg()
-                ->where('type', 'Vendor')
+            $categories = Category::where('type', 'Vendor')
                 ->doesntHave('subCategories')
                 ->where('status', ConstantHelper::ACTIVE)
                 ->get();
@@ -194,7 +191,7 @@ class VendorController extends Controller
             $authUser = Helper::getAuthenticatedUser();
             
             if ($vendorId) {
-                $existingVendor = Vendor::withDefaultGroupCompanyOrg()->find($vendorId);
+                $existingVendor = Vendor::find($vendorId);
                 if ($existingVendor) {
                     $existingVendorCode = $existingVendor->vendor_code;
                     $currentBaseCode = substr($existingVendorCode, 0, strlen($baseCode));
@@ -204,8 +201,7 @@ class VendorController extends Controller
                 }
             }
 
-            $lastSimilarVendor = Vendor::withDefaultGroupCompanyOrg() 
-            ->where('vendor_code', 'like', "{$baseCode}%")
+            $lastSimilarVendor = Vendor::where('vendor_code', 'like', "{$baseCode}%")
             ->orderBy('vendor_code', 'desc')
             ->first();
     
@@ -223,9 +219,9 @@ class VendorController extends Controller
         public function create()
         {
             $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-            $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
+            $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
-            $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+            $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
             $titles = ConstantHelper::TITLES;
             $status = ConstantHelper::STATUS;
             $options = ConstantHelper::STOP_OPTIONS;
@@ -299,7 +295,7 @@ class VendorController extends Controller
             // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
                 $firstService = $services['services']->first();
                 $serviceId = $firstService->service_id;
                 $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -312,6 +308,17 @@ class VendorController extends Controller
                     $validatedData['group_id'] = $organization->group_id;
                     $validatedData['company_id'] = null;
                     $validatedData['organization_id'] = null;
+                }
+                // Insert Book ID (if current_book exists)
+                if (isset($services['current_book'])) { 
+                    $book = $services['current_book'];
+                    if ($book) {
+                        $validatedData['book_id'] = $book->id;
+                    } else {
+                        $validatedData['book_id'] = null;
+                    }
+                } else {
+                    $validatedData['book_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
@@ -327,7 +334,7 @@ class VendorController extends Controller
             }
             $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
             if ($gstnNo) {
-                $gstValidation = EInvoiceHelper::validateGstNumber($gstnNo);
+                $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
                 if ($gstValidation['Status'] === 1) {
                     $gstData = json_decode($gstValidation['checkGstIn'], true);
                     $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
@@ -345,6 +352,24 @@ class VendorController extends Controller
                 }
             }
             $vendor = Vendor::create($validatedData);
+            if ($request->document_status === 'submitted') {
+                $approveDocument = Helper::approveDocument($vendor->book_id, $vendor->id, $vendor->revision_number ?? 0, $request->remarks ?? '', $request->file('attachment'), $vendor->approval_level ?? 1, 'submit', 0, get_class($vendor));
+                $document_status = $approveDocument['approvalStatus'] ?? $vendor->document_status;
+                $vendor->document_status = $document_status;
+            
+                $submittedStatus = $validatedData['status'] ?? ConstantHelper::ACTIVE;
+            
+                $vendor->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    ? ($submittedStatus === ConstantHelper::INACTIVE ? ConstantHelper::INACTIVE : ConstantHelper::ACTIVE)
+                    : $document_status;
+            
+            } else {
+                $document_status = $request->document_status ?? ConstantHelper::DRAFT;
+                $vendor->document_status = $document_status;
+                $vendor->status = $document_status;
+            }
+            $vendor->save();
+
             $fileConfigs = [
                 'pan_attachment' => ['folder' => 'pan_attachments', 'clear_existing' => true],
                 'tin_attachment' => ['folder' => 'tin_attachments', 'clear_existing' => true],
@@ -432,7 +457,7 @@ class VendorController extends Controller
             }
 
             //Sync Vendor Locations
-            $storeIds = isset($request -> store_ids) && $request -> store_ids ? $request -> store_ids : [];
+            $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
             $locationSyncStatus = $vendor -> syncLocations($storeIds);
             if (!$locationSyncStatus['status']) {
                 DB::rollBack();
@@ -449,7 +474,7 @@ class VendorController extends Controller
             'message' => 'Record created successfully',
             'data' => $vendor,
         ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
 
                 return response()->json([
@@ -465,18 +490,26 @@ class VendorController extends Controller
         //
         }
 
-        public function edit($id)
+        public function edit(Request $request,$id)
         {
-            $vendor = Vendor::findOrFail($id);
+            if ($request->has('revisionNumber')) {
+                $vendor = VendorHistory::where('source_id', $id)
+                    ->where('revision_number', $request->revisionNumber)
+                    ->firstOrFail();
+                 $ogVendor = Vendor::findOrFail($id);
+            } else {
+                $vendor = Vendor::findOrFail($id);
+                $ogVendor = Vendor::findOrFail($id);    
+            }
             $gstStateId = $vendor->gst_state_id;
             // Fetch State and Country details
             $state = $gstStateId ? State::find($gstStateId) : null;
             $country = $state ? Country::find($state->country_id) : null;
             $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-            $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->withDefaultGroupCompanyOrg()->get();
-            $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->withDefaultGroupCompanyOrg()->get();
+            $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
+            $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
-            $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+            $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
             $titles = ConstantHelper::TITLES;
             $notificationData = $vendor? $vendor->notification : [];
             $notifications = is_array($notificationData) ? $notificationData : json_decode($notificationData, true);
@@ -506,7 +539,7 @@ class VendorController extends Controller
             ->where('id', '!=', $organization->id)
             ->get();
             $selectedStoreIds = $vendor ?-> locations() -> pluck('store_id') -> toArray();
-            $stores = StoreHelper::getAvailableStoresForVendor($selectedStoreIds, $vendor -> id);
+            $stores = $vendor -> locations;
             $vendorCodeType = 'Manual';
             if ($services && $services['current_book']) {
                 if (isset($services['current_book'])) {
@@ -523,6 +556,20 @@ class VendorController extends Controller
                     }
              }
             }
+            $revision_number = $vendor->revision_number;
+            $userType = Helper::userCheck();
+            $buttons = Helper::actionButtonDisplay($vendor->book_id, $vendor->document_status, $vendor->id, 1, $vendor->approval_level, $vendor->created_by ?? 0, $userType['type'], $revision_number);
+            $revNo = $vendor->revision_number;
+            if ($request->has('revisionNumber')) {
+                $revNo = intval($request->revisionNumber);
+            } else {
+                $revNo = $vendor->revision_number;
+            }
+
+            $docValue = 1;
+            $approvalHistory = Helper::getApprovalHistory($ogVendor->book_id, $ogVendor->id, $revNo, $docValue, $ogVendor->created_by);
+            $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$vendor->document_status] ?? '';
+
             return view('procurement.vendor.edit', [
                 'vendor' => $vendor,
                 'organizationTypes' => $organizationTypes,
@@ -541,13 +588,17 @@ class VendorController extends Controller
                 'supplierUsers' => $supplierUsers,
                 'ledgerGroups' => $ledgerGroups,
                 'books' => $books,
-                'stores' => $stores,
+                'vendorStores' => $stores,
                 'selectedStoreIds' => $selectedStoreIds,
                 'vendorCodeType'=>$vendorCodeType,
                 'organization'=>$organization,
                 'groupOrganizations'=>$groupOrganizations,
                 'gstState' => $state,
                 'gstCountry' => $country,
+                'revision_number'=>$revision_number,
+                'buttons' => $buttons,
+                'approvalHistory' => $approvalHistory,
+                'docStatusClass' => $docStatusClass,
             ]);
         }
 
@@ -565,7 +616,7 @@ class VendorController extends Controller
             // $validatedData['on_account_required'] = isset($validatedData['on_account_required']) ? '1' : '0';
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
                 $firstService = $services['services']->first();
                 $serviceId = $firstService->service_id;
                 $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -579,6 +630,14 @@ class VendorController extends Controller
                     $validatedData['company_id'] = null;
                     $validatedData['organization_id'] = null;
                 }
+                // Insert Book ID (if current_book exists)
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    $validatedData['book_id'] = $book ? $book->id : null;  
+                } else {
+                    $validatedData['book_id'] = null;
+                }
+                
             } else {
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = null;
@@ -595,7 +654,7 @@ class VendorController extends Controller
             }
             $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
             if ($gstnNo) {
-                $gstValidation = EInvoiceHelper::validateGstNumber($gstnNo);
+                $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
                 if ($gstValidation['Status'] === 1) {
                     $gstData = json_decode($gstValidation['checkGstIn'], true);
                     $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
@@ -612,7 +671,78 @@ class VendorController extends Controller
                     }
                 }
             }
-            $vendor->update($validatedData);
+
+
+            $currentStatus = $vendor->document_status;
+            $actionType = $request->action_type ?? 'submit';
+            $amendRemarks = $request->amend_remarks ?? null;
+            
+            if (($vendor->document_status == ConstantHelper::APPROVED || $vendor->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
+                && $actionType == 'amendment') {
+
+                $revisionData = [
+                    ['model_type' => 'header', 'model_name' => 'Vendor', 'relation_column' => ''],
+                    ['model_type' => 'detail', 'model_name' => 'VendorItem', 'relation_column' => 'vendor_id'],
+                    ['model_type' => 'detail', 'model_name' => 'VendorPortalBook', 'relation_column' => 'vendor_id'],
+                    ['model_type' => 'detail', 'model_name' => 'VendorPortalUser', 'relation_column' => 'vendor_id'],
+                    ['model_type' => 'detail', 'model_name' => 'VendorLocation', 'relation_column' => 'vendor_id'],
+                ];
+
+                Helper::documentAmendment($revisionData, $vendor->id);
+            }
+
+             $vendor->update($validatedData);
+           // Document approval logic for vendor
+            if ($request->input('current_status') === ConstantHelper::SUBMITTED) {
+                $bookId = $vendor->book_id;
+                $docId = $vendor->id;
+                $attachments = $request->file('attachment');
+                $currentLevel = $vendor->approval_level ?? 1;
+                $modelName = get_class($vendor);
+                $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
+                
+                if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+                    $revisionNumber = $vendor->revision_number + 1;
+                    $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+                    $vendor->revision_number = $revisionNumber;
+                    $vendor->approval_level = 1;
+                    $vendor->revision_date = now();
+                    $statusAfterApproval = $approve['approvalStatus'] ?? $vendor->document_status;
+                    $vendor->document_status = $statusAfterApproval;
+                    if (in_array($statusAfterApproval, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                        if ($submittedStatus === ConstantHelper::INACTIVE) {
+                            $vendor->status = ConstantHelper::INACTIVE;
+                        } else {
+                            $vendor->status = ConstantHelper::ACTIVE;
+                        }
+                    } else {
+                        $vendor->status = $statusAfterApproval;
+                    }
+
+                } else {
+                    $revisionNumber = $vendor->revision_number ?? 0;
+                    $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, '', $attachments, $currentLevel, $actionType, 0, $modelName);
+                    $document_status = $approve['approvalStatus'] ;
+                    $vendor->document_status = $document_status;
+                    if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                        if ($submittedStatus === ConstantHelper::INACTIVE) {
+                            $vendor->status = ConstantHelper::INACTIVE;
+                        } else {
+                            $vendor->status = ConstantHelper::ACTIVE;
+                        }
+                    } else {
+                        $vendor->status = $document_status;
+                    }
+                }
+
+            } else {
+                $document_status = $request->current_status ?? ConstantHelper::DRAFT;
+                $vendor->document_status = $document_status;
+                $vendor->status = $document_status;
+            }
+            
+
+            $vendor->save();
 
             $fileConfigs = [
                 'pan_attachment' => ['folder' => 'pan_attachments', 'clear_existing' => true],
@@ -653,7 +783,6 @@ class VendorController extends Controller
                 $newItems = [];
                 foreach ($request->input('vendor_item') as $vendorItemData) {
                     if (!empty($vendorItemData['item_code']) && !empty($vendorItemData['item_name'])) {
-                       
                         if (isset($vendorItemData['id']) && !empty($vendorItemData['id'])) {
                             $existingItem = $vendor->approvedItems()->where('id', $vendorItemData['id'])->first();
                             if ($existingItem) {
@@ -729,7 +858,7 @@ class VendorController extends Controller
               }
 
             //Sync Vendor Locations
-            $storeIds = isset($request -> store_ids) && $request -> store_ids ? $request -> store_ids : [];
+            $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
             $locationSyncStatus = $vendor -> syncLocations($storeIds);
             if (!$locationSyncStatus['status']) {
                 DB::rollBack();
@@ -746,7 +875,7 @@ class VendorController extends Controller
                   'message' => 'Record updated successfully',
                   'data' => $vendor,
               ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 return response()->json([
                     'status' => false,
@@ -756,6 +885,38 @@ class VendorController extends Controller
             }
         }
 
+        public function revoke(Request $request)
+        {
+            DB::beginTransaction();
+            try {
+                $vendor = Vendor::find($request->id);
+                if (isset($vendor)) {
+                    $revoke = Helper::approveDocument($vendor->book_id, $vendor->id, $vendor->revision_number, '', [], 0, ConstantHelper::REVOKE, 0, get_class($vendor));
+                    if ($revoke['message']) {
+                        DB::rollBack();
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => $revoke['message'],
+                        ]);
+                    } else {
+                        $vendor->document_status = $revoke['approvalStatus'];
+                        $vendor->save();
+                        DB::commit();
+                        return response()->json([
+                            'status' => 'success',
+                            'message' => 'Revoked successfully',
+                        ]);
+                    }
+                } else {
+                    DB::rollBack();
+                    throw new ApiGenericException("No Document found");
+                }
+            } catch(Exception $ex) {
+                DB::rollBack();
+                throw new ApiGenericException($ex->getMessage());
+            }
+        }
+    
         public function showImportForm()
         {
             return view('procurement.vendor.import'); 
@@ -828,7 +989,7 @@ class VendorController extends Controller
                 if ($user->email) {
                     try {
                         Mail::to($user->email)->send(new ImportComplete( $mailData)); 
-                    } catch (\Exception $e) {
+                    } catch (Exception $e) {
                         $message .= " However, there was an error sending the email notification.";
                     }
                 }
@@ -845,7 +1006,7 @@ class VendorController extends Controller
                     'status' => false,
                     'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
                 ], 400);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to import vendors: ' . $e->getMessage(),
@@ -856,9 +1017,8 @@ class VendorController extends Controller
         public function exportSuccessfulVendors()
         {
             $user = Helper::getAuthenticatedUser();
-            $uploadVendors = UploadVendorMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
-            $vendors = Vendor::withDefaultGroupCompanyOrg()
-                ->with(['category', 'subcategory', 'currency', 'paymentTerms', 'erpOrganizationType', 'addresses', 'compliances', 'ledgerGroup', 'ledger'])
+            $uploadVendors = UploadVendorMaster::where('status', 'Success')->where('user_id', $user->id)->get();
+            $vendors = Vendor::with(['category', 'subcategory', 'currency', 'paymentTerms', 'erpOrganizationType', 'addresses', 'compliances', 'ledgerGroup', 'ledger'])
                 ->whereIn('company_name', $uploadVendors->pluck('company_name'))
                 ->get();
         
@@ -868,7 +1028,7 @@ class VendorController extends Controller
         public function exportFailedVendors()
         {
             $user = Helper::getAuthenticatedUser();
-            $failedVendors = UploadVendorMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
+            $failedVendors = UploadVendorMaster::where('status', 'Failed')->where('user_id', $user->id)->get();
             return Excel::download(new FailedVendorsExport($failedVendors), "failed-vendors.xlsx");
         }
         public function checkGst()
@@ -876,7 +1036,7 @@ class VendorController extends Controller
             try {
                 GstStatusChecker::checkInvalidGst();
                 return response()->json(['message' => 'GST number(s) verified successfully!']);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 \Log::error('Error while verifying GST: ' . $e->getMessage());
         
                 return response()->json([
@@ -902,7 +1062,7 @@ class VendorController extends Controller
                     return response()->json(['status' => true, 'message' => 'Record deleted successfully']);
                 }
                 return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
             }
@@ -924,7 +1084,7 @@ class VendorController extends Controller
                 }
 
                 return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
             }
@@ -949,7 +1109,7 @@ class VendorController extends Controller
                 }
 
                 return response()->json(['status' => false, 'message' => 'Vendor item not found'], 404);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
             }
@@ -974,7 +1134,7 @@ class VendorController extends Controller
                 }
 
                 return response()->json(['status' => false, 'message' => 'Record not found'], 404);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 DB::rollBack();
                 return response()->json(['status' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
             }
@@ -1009,7 +1169,7 @@ class VendorController extends Controller
                     'message' => 'Record deleted successfully.',
                 ], 200);
         
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 return response()->json([
                     'status' => false,
                     'message' => 'An error occurred while deleting the vendor: ' . $e->getMessage()
@@ -1021,8 +1181,7 @@ class VendorController extends Controller
         public function getVendor(Request $request)
         {
             $searchTerm = $request->input('q', '');
-            $vendors = Vendor::withDefaultGroupCompanyOrg() 
-            ->where(function ($query) use ($searchTerm) {
+            $vendors = Vendor::where(function ($query) use ($searchTerm) {
                     $query->where('company_name', 'like', "%{$searchTerm}%")
                         ->orWhere('vendor_code', 'like', "%{$searchTerm}%");  
                 })
@@ -1030,8 +1189,7 @@ class VendorController extends Controller
                 ->limit(10)
                 ->get(['id', 'company_name','vendor_code']);
             if ($vendors->isEmpty()) {
-                $vendors = Vendor::withDefaultGroupCompanyOrg()
-                    ->where('status', ConstantHelper::ACTIVE)
+                $vendors = Vendor::where('status', ConstantHelper::ACTIVE)
                     ->limit(10)
                     ->get(['id', 'company_name','vendor_code']);
             }
@@ -1078,7 +1236,7 @@ class VendorController extends Controller
         public function getUOM(Request $request)
         {
             $itemId = $request->get('item_id');
-            $item = Item::withDefaultGroupCompanyOrg()->find($itemId);
+            $item = Item::find($itemId);
         
             if (!$item) {
                 return response()->json(['error' => 'Item not found'], 404);
@@ -1086,7 +1244,7 @@ class VendorController extends Controller
             $itemUOM = $item->uom_id;
             $alternateUOMs = $item->alternateUOMs;
             $uoms = collect([$itemUOM])->merge($alternateUOMs->pluck('uom_id'))->unique();
-            $uomDetails = Unit::withDefaultGroupCompanyOrg()->whereIn('id', $uoms)->get();
+            $uomDetails = Unit::whereIn('id', $uoms)->get();
             $response = [
                 'uom_id' => $itemUOM,
                 'uom_name' => $item->uom->name,

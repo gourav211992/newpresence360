@@ -59,8 +59,7 @@ class BomController extends Controller
         if (request()->ajax()) {
             $search = $request->get('search')['value'] ?? '';
             $type = $request->type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-            $boms = Bom::withDefaultGroupCompanyOrg()
-                    ->where('type',$type)
+            $boms = Bom::where('type',$type)
                     ->where('bom_type',ConstantHelper::FIXED)
                     ->withDraftListingLogic()
                     ->latest();
@@ -173,8 +172,7 @@ class BomController extends Controller
         }
         $productionTypes = ['In-house','Job Work'];
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
-        $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
-                                ->where('status', ConstantHelper::ACTIVE)
+        $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
                                 ->get();
         $customizables = ['yes','no'];
         return view('billOfMaterial.create', [
@@ -263,7 +261,7 @@ class BomController extends Controller
                 ], 422);
             }
             $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-            $regeneratedDocExist = Bom::withDefaultGroupCompanyOrg()->where('book_id',$request->book_id)
+            $regeneratedDocExist = Bom::where('book_id',$request->book_id)
                 ->where('document_number',$document_number)->first();
                 //Again check regenerated doc no
                 if (isset($regeneratedDocExist)) {
@@ -563,8 +561,7 @@ class BomController extends Controller
     # On change item code
     public function changeItemCode(Request $request)
     {
-        $attributeGroups = AttributeGroup::withDefaultGroupCompanyOrg()
-                        ->with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
+        $attributeGroups = AttributeGroup::with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
         $item = Item::find($request->item_id);
         $specifications = collect();
         $moduleType = $request->type ?? 'bom';
@@ -782,7 +779,7 @@ class BomController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
-        $bom = Bom::find($id);
+        $bom = Bom::findOrFail($id);
         $createdBy = $bom->created_by; 
         $revision_number = $bom->revision_number;
         $books = Helper::getBookSeriesNew($servicesAliasParam,$parentUrl, true)->get();
@@ -822,8 +819,7 @@ class BomController extends Controller
         $componentWasteRequired = false;
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
         $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
-        $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
-                                ->where('status', ConstantHelper::ACTIVE)
+        $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
                                 ->get();
         $customizables = ['yes','no'];
         $isEdit = $buttons['submit'];
@@ -888,8 +884,7 @@ class BomController extends Controller
 
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
         $productionTypes = ['In-house', 'Job Work'];
-        $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
-                                ->where('status', ConstantHelper::ACTIVE)
+        $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
                                 ->get();
 
         $customizables = ['yes','no'];
@@ -952,7 +947,7 @@ class BomController extends Controller
             $allStations = array_unique($allStations);
             $productionStationIds = [];
             $productionRouteId = $request->production_route_id;
-            $productionRoute = ProductionRoute::find($productionRouteId);
+            $productionRoute = ProductionRoute::findOrFail($productionRouteId);
             if($productionRoute) {
                 $productionStationIds = $productionRoute->details()->where('consumption','yes')->pluck('station_id')->toArray(); 
             }
@@ -972,7 +967,7 @@ class BomController extends Controller
 
        DB::beginTransaction();
         try {
-            $bom = Bom::find($id);
+            $bom = Bom::findOrFail($id);
             $currentStatus = $bom->document_status;
             $actionType = $request->action_type;
             $bom->bom_type = ConstantHelper::FIXED;
@@ -1062,7 +1057,7 @@ class BomController extends Controller
 
             if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $quote_bom_id = $request->quote_bom_id;
-                $quoteBom = Bom::find($quote_bom_id);
+                $quoteBom = Bom::findOrFail($quote_bom_id);
                 if($quoteBom) {
                     Bom::where('production_bom_id', $bom->id)->update(['production_bom_id' => null]);
                     $quoteBom->production_bom_id = $bom->id;
@@ -1407,7 +1402,7 @@ class BomController extends Controller
     {
         DB::beginTransaction();
         try {
-            $bom = Bom::find($request->id);
+            $bom = Bom::findOrFail($request->id);
             if (isset($bom)) {
                 $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, $bom->total_value, get_class($bom));
                 if ($revoke['message']) {
@@ -1458,7 +1453,6 @@ class BomController extends Controller
                         $query->whereHas('item');
                         $query->whereNull('production_bom_id');
                         $query->where('type',ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS);
-                        $query->withDefaultGroupCompanyOrg();
                         $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
                         if($seriesId) {
                             $query->where('book_id',$seriesId);
@@ -1549,8 +1543,7 @@ class BomController extends Controller
     public function addOverheadLevel(Request $request)
     {
         $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::withDefaultGroupCompanyOrg()
-                    ->when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
                         $overheadQuery->whereNotIn('id', $selectedIds);
                     })
                     -> where('status', ConstantHelper::ACTIVE)
@@ -1568,8 +1561,7 @@ class BomController extends Controller
     public function addOverheadRow(Request $request)
     {
         $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::withDefaultGroupCompanyOrg()
-                    ->when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
                         $overheadQuery->whereNotIn('id', $selectedIds);
                     })
                     -> where('status', ConstantHelper::ACTIVE)
@@ -1587,8 +1579,7 @@ class BomController extends Controller
     public function addOverheadItemRow(Request $request)
     {
         $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::withDefaultGroupCompanyOrg()
-                    ->when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
                         $overheadQuery->whereNotIn('id', $selectedIds);
                     })
                     -> where('status', ConstantHelper::ACTIVE)
@@ -1829,7 +1820,7 @@ class BomController extends Controller
 
     public function export(Request $request, $id)
     {
-        $bom = Bom::find($id);
+        $bom = Bom::findOrFail($id);
         if (!$bom) {
             return '';
         }

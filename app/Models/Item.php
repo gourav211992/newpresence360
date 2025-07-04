@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Deletable;
+use App\Helpers\ConstantHelper;
+
 
 class Item extends Model
 {
@@ -64,6 +66,10 @@ class Item extends Model
         'service_type',
         'storage_type',
         'status',
+        'document_status',
+        'approver_level', 
+        'revision_number',
+        'revision_date',
         'created_by'
     ];
 
@@ -141,10 +147,10 @@ class Item extends Model
         return $this->hasOne(VendorItem::class)->latest();
     }
 
-    public function attributes()
-    {
-        return $this->hasMany(ErpAttribute::class);
-    }
+    // public function attributes()
+    // {
+    //     return $this->hasMany(ErpAttribute::class);
+    // }
 
     public function itemAttributes()
     {
@@ -248,6 +254,24 @@ class Item extends Model
         });
     }
 
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
+   public function getStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->attributes['status'] ?? '');
+        return ucwords($status);
+    }
     public function getSelectedAttributeData(array $selectedAttrIds)
     {
         $attrData = collect();

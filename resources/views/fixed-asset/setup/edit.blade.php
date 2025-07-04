@@ -234,6 +234,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" name="maintenance_schedule">
+                                                            <option value="weekly" {{ old('maintenance_schedule', $data->maintenance_schedule) == '' ? 'selected' : '' }}>Select</option>
                                                             <option value="weekly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'weekly' ? 'selected' : '' }}>Weekly</option>
                                                             <option value="monthly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'monthly' ? 'selected' : '' }}>Monthly</option>
                                                             <option value="quarterly" {{ old('maintenance_schedule', $data->maintenance_schedule) == 'quarterly' ? 'selected' : '' }}>Quarterly</option>

@@ -11,7 +11,7 @@ class GstValidationController extends Controller
     public function validateGstNumber(Request $request)
     {
         $gstNumber = $request->input('gstNumber');
-        $gstValidationResult = EInvoiceHelper::validateGstNumber($gstNumber);
+        $gstValidationResult = EInvoiceHelper::validateGstinName($gstNumber);
         return response()->json($gstValidationResult);
     }
 }

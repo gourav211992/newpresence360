@@ -147,9 +147,18 @@
                                                         </div> 
                                                      </div> 
 
-                                                     
-                                                     
-
+                                                     <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Type <span class="text-danger">*</span></label>  
+                                                        </div>
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select disable_on_edit" id = "order_type_input" name = "sale_order_type">
+                                                                @foreach ($orderTypes as $orderType)
+                                                                    <option value = "{{$orderType}}" {{isset($order) ? ($order -> order_type == $orderType ? 'selected' : '') : ''}}>{{$orderType}}</option> 
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>   
                                                      <div class="row align-items-center mb-1">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Location<span class="text-danger">*</span></label>  
@@ -1759,10 +1768,11 @@
                         class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                             <thead>
                                 <tr>
-                                    <th>Item Code</th>
+                                    <th style = "width:180px;">Item Code</th>
                                     <th>Item Name</th>
                                     <th>UOM</th>
                                     <th>Attributes</th>
+                                    <th>Qty</th>
                                 </tr>
                             </thead>
                             <tbody id="bom-details">
@@ -3885,9 +3895,9 @@
                 });
                 document.getElementById('uom_dropdown_' + itemIndex).innerHTML = itemUomsHTML;
                 getItemTax(itemIndex);
+                const currentDocId = document.getElementById('dynamic_bom_div_' + itemIndex);
+                currentDocId.style.removeProperty('display');
                 if (item.custom_bom_details && item.custom_bom_details.length > 0) { // Custom Bom is set
-                    const currentDocId = document.getElementById('dynamic_bom_div_' + itemIndex);
-                    currentDocId.style.removeProperty('display');
                     let bomDetailAttribute = [];
                     item.custom_bom_details.forEach((bomDetail) => {
                         bomDetailAttribute.push({
@@ -4797,6 +4807,11 @@
                             }
 
                         const mainTableItem = document.getElementById('item_header');
+                        let fullLock = false;
+                        if (docType === 'jo' || docType === 'po')
+                        {
+                            fullLock = true;
+                        }
 
                         currentOrder.items.forEach((item, itemIndex) => {
                             const itemRemarks = item.remarks ? item.remarks : '';
@@ -4816,13 +4831,13 @@
                             if (docType == "po") {
                                 pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "po_item_ids[]"/>`;
                             } else if (docType == 'jo') {
-                                pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "jo_item_ids[]"/>`;
+                                pullUiTag = `<input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "jo_product_ids[]"/>`;
                             }
                             mainTableItem.innerHTML += `
                             <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');" data-index = "${currentOrderIndexVal}">
                                 <td class="customernewsection-form">
                                    <div class="form-check form-check-primary custom-checkbox">
-                                       <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}">
+                                       <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}" ${fullLock ? 'disabled' : ''}>
                                        <label class="form-check-label" for="item_row_check_${currentOrderIndexVal}"></label>
                                    </div> 
                                                                         </td>
@@ -4852,8 +4867,8 @@
 
                                    </select> 
                                     </td>
-                                    <td><input type="text" data-index = '${currentOrderIndexVal}' id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" onchange = "itemQtyChange(this, '${currentOrderIndexVal}')" value = "${item?.quotation_balance_qty}" class="form-control mw-100 text-end item_qty_input" onblur = "setFormattedNumericValue(this);" max = "${item?.quotation_balance_qty}" /></td>
-                                    <td><input type="text" id = "item_rate_${currentOrderIndexVal}" onkeydown = "openDeliveryScheduleFromTab(${currentOrderIndexVal})" name = "item_rate[${currentOrderIndexVal}]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td> 
+                                    <td><input type="text" data-index = '${currentOrderIndexVal}' id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" onchange = "itemQtyChange(this, '${currentOrderIndexVal}')" value = "${item?.quotation_balance_qty}" class="form-control mw-100 text-end item_qty_input" onblur = "setFormattedNumericValue(this);" max = "${item?.quotation_balance_qty}" ${fullLock ? 'readonly' : ''} /></td>
+                                    <td><input type="text" id = "item_rate_${currentOrderIndexVal}" onkeydown = "openDeliveryScheduleFromTab(${currentOrderIndexVal})" name = "item_rate[${currentOrderIndexVal}]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${fullLock ? 'readonly' : ''} /></td> 
                                     <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.quotation_balance_qty ? item?.quotation_balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
                                     <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "${item?.header_discount_amount}" ></input>
                                     <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "${item?.header_expense_amount}"></input>
@@ -4861,7 +4876,7 @@
                                    <div class="position-relative d-flex align-items-center">
                                        <input type="text" id = "item_discount_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_discounts_input" style="width: 70px" value = "${discountAmtPrev}"/>
                                        <div class="ms-50">
-                                           <button type = "button" onclick = "onDiscountClick('item_value_${currentOrderIndexVal}', '${currentOrderIndexVal}')" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Add</button>
+                                           <button ${fullLock ? 'disabled' : ''} type = "button" onclick = "onDiscountClick('item_value_${currentOrderIndexVal}', '${currentOrderIndexVal}')" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Add</button>
                                        </div>
                                    </div>
                                 </td>
@@ -4911,10 +4926,14 @@
                             }
                             itemUomsHTML = ``;
                             if (item.item.uom && item.item.uom.id) {
-                                itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
+                                if (item.item.uom.id == item.uom_id) {
+                                    itemUomsHTML += `<option value = '${item.item.uom.id}' selected >${item.item.uom.alias}</option>`;
+                                }
                             }
                             item.item.alternate_uoms.forEach(singleUom => {
-                                    itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
+                                if (singleUom.uom.id == item.uom_id) {
+                                    itemUomsHTML += `<option value = '${singleUom.uom.id}' selected >${singleUom.uom?.alias}</option>`;
+                                }  
                             });
                             document.getElementById('uom_dropdown_' + currentOrderIndexVal).innerHTML = itemUomsHTML;
                             getItemTax(currentOrderIndexVal);
@@ -5001,7 +5020,8 @@
                 document_id : document_id,
                 item_id : item_id,
                 header_book_id : header_book_id,
-                doc_type : type
+                doc_type : type,
+                order_type : $("#order_type_input").val()
             },
             success: function(data) {
                 if (Array.isArray(data.data) && data.data.length > 0) {
@@ -5114,7 +5134,7 @@
             initializeAutocompleteQt("book_code_input_jo", "book_id_jo_val", "book_sq", "book_code", "");
             initializeAutocompleteQt("document_no_input_jo", "document_id_jo_val", "sale_order_document_jo", "document_number", "");
             initializeAutocompleteQt("item_name_input_jo", "item_id_jo_val", "sale_module_items", "item_code", "item_name");
-            getQuotations("po");
+            getQuotations("jo");
         }
         
     }
@@ -5558,12 +5578,12 @@ document.addEventListener('input', function (e) {
                     item_attributes : [],
                 },
                 success: function(data) {
-                    if (data.data.customizable == "yes") {
+                    // if (data.data.customizable == "yes") {
                         bomContentDiv.style.removeProperty('display');
                         getCustomizableBOM(itemIndex, true, openPopUp);
-                    } else {
-                        bomContentDiv.style.display = 'none';
-                    }
+                    // } else {
+                    //     bomContentDiv.style.display = 'none';
+                    // }
                     if (data.data.status == 'item_not_found' || data.data.status == 'bom_not_exists') {
                         document.getElementById('item_qty_' + itemIndex).value = 0;
                         itemRowCalculation(itemIndex);
@@ -5715,8 +5735,7 @@ document.addEventListener('input', function (e) {
             dataType: 'json',
             data: {
                 menu_alias: "{{request() -> segments()[0]}}",
-                service_alias: element.value,
-                book_id : reset ? null : "{{isset($order) ? $order -> book_id : null}}"
+                service_alias: "so",
             },
             success: function(data) {
                 if (data.status == 'success') {
@@ -5915,7 +5934,11 @@ document.addEventListener('input', function (e) {
         renderIcons();
         disableHeader();
         setItemAttributes('items_dropdown_' + newIndex, newIndex);
-        assignBomConditions(newIndex, false);
+        let itemQtyElement = document.getElementById('item_qty_' + newIndex);
+        if (itemQtyElement) {
+        let dataIndexForBom = itemQtyElement.getAttribute('data-index');
+        checkBomCondition(dataIndexForBom, false);
+        }
         currentSelectedItemIndex = newIndex;
     }
 
@@ -5971,6 +5994,7 @@ document.addEventListener('input', function (e) {
             },
             success: function(data) {
                 if (data.data.levels && data.data.levels.length > 0) {
+                    let letActualEditable = data.data.customizable ? (isEditable) : false;
                     const datatable = document.getElementById('bom-details');
                     let dataTableHTML = ``;
                     data.data.levels.forEach((dataLevel, index) => {
@@ -6001,7 +6025,7 @@ document.addEventListener('input', function (e) {
                                 ${bomAttribute.group_name}
                                 </div>
                                 <div class = "col">
-                                <select ${isEditable ? '' : 'disabled' } class="form-select select2" style="max-width:100% !important;" oninput = "bomAttributeChange(this, ${itemIndex}, ${bomItem.id}, ${bomAttribute.id});">
+                                <select ${letActualEditable ? '' : 'disabled' } class="form-select select2" style="max-width:100% !important;" oninput = "bomAttributeChange(this, ${itemIndex}, ${bomItem.id}, ${bomAttribute.id});">
                                     ${bomAttributeSelectionHTML}
                                 </select>
                                 </div>
@@ -6028,6 +6052,8 @@ document.addEventListener('input', function (e) {
                             <td>${bomItem.uom_name}</td>
                             <td>
                             ${currentBomAttributes}
+                            </td>
+                            <td>${bomItem.qty}</td>
                             </div>
                             </td>
                             </tr>
@@ -6035,7 +6061,7 @@ document.addEventListener('input', function (e) {
                         });
                         dataTableHTML += `
                         <tr class="approvlevelflow level-row">
-                            <td colspan="4">
+                            <td colspan="5">
                                 <h6 class="mb-0 fw-bolder text-dark levelText">${dataLevel.name}</h6>
                             </td>
                         </tr>
@@ -6043,7 +6069,7 @@ document.addEventListener('input', function (e) {
                         `
                     });
                     datatable.innerHTML = dataTableHTML;
-                    if (!bomIcon.getAttribute('bom_details')) {
+                    if (!bomIcon.getAttribute('bom_details') && data.data.customizable) {
                         bomIcon.setAttribute('bom_details', JSON.stringify(bomDetailsAttribute));
                     }
                     if (openPopUp) {
@@ -6502,7 +6528,7 @@ $('#attribute').on('hidden.bs.modal', function () {
         const itemId = document.getElementById('items_dropdown_' + itemIndex + '_value').value;
         const locationId = document.getElementById('store_id_input').value;
         let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemIndex}`).getAttribute('attribute-array'));
-        viewDetailedStocks(itemId, locationId, itemAttributes);
+        viewDetailedStocks(itemId, itemAttributes);
     }
     </script>
 @endsection

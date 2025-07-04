@@ -11,7 +11,7 @@
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
                             <h2 class="content-header-title float-start mb-0">
-                                Invoice
+                                {{$typeName}}
                             </h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
@@ -51,7 +51,6 @@
                                              <tr>
                                                 <th>S.No</th>
                                                 <th>Date</th>
-                                                <th>Doc Type</th>
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
@@ -133,10 +132,6 @@
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
         { data: 'document_date', name: 'document_date', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
-        { data: 'document_type', name: 'document_type', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
