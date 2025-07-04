@@ -59,8 +59,7 @@ class PWOController extends Controller
      {
          $parentUrl = request()->segments()[0];
          if (request()->ajax()) {
-             $boms = ErpProductionWorkOrder::withDefaultGroupCompanyOrg()
-                     ->withDraftListingLogic();
+             $boms = ErpProductionWorkOrder::withDraftListingLogic();
              return DataTables::of($boms)
                  ->addIndexColumn()
                  ->editColumn('document_status', function ($row) {
@@ -159,8 +158,7 @@ class PWOController extends Controller
                  ], 422);
              }
              $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-             $regeneratedDocExist = ErpProductionWorkOrder::withDefaultGroupCompanyOrg()
-                                 ->where('book_id', $request->book_id)
+             $regeneratedDocExist = ErpProductionWorkOrder::where('book_id', $request->book_id)
                                  ->where('document_number', $document_number)
                                  ->first();
                  //Again check regenerated doc no
@@ -415,8 +413,7 @@ class PWOController extends Controller
      # On change item code
      public function changeItemCode(Request $request)
      {
-         $attributeGroups = AttributeGroup::withDefaultGroupCompanyOrg()
-                         ->with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
+         $attributeGroups = AttributeGroup::with('attributes')->where('status', ConstantHelper::ACTIVE)->get();
          $item = Item::find($request->item_id);
          $specifications = collect();
          if($item) {
@@ -1335,8 +1332,7 @@ class PWOController extends Controller
                   ->whereIn('erp_boms.document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
         })
         ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber, $customerId, $storeId) {
-                 $subQuery->withDefaultGroupCompanyOrg()
-                ->whereIn('book_id', $applicableBookIds)
+                 $subQuery->whereIn('book_id', $applicableBookIds)
                 ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                 ->when($request->book_id, function ($bookQuery) use ($request) {
                     $bookQuery->where('book_id', $request->book_id);

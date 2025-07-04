@@ -171,7 +171,7 @@
         </td>
     </tr>
 @endif
-@if($mrn && $mrn->reference_type == 'jo')
+@if($mrn && ($mrn->reference_type == 'jo'))
     <tr>
         <td class="poprod-decpt">
             <span class="badge rounded-pill badge-light-primary text-wrap"><strong>Item Cost</strong>:{{number_format(($totalCost ?? 0.00), 2)}}</span>

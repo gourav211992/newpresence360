@@ -146,6 +146,10 @@ class JobOrder extends Model
     {
         return $this->hasMany(JoProduct::class, 'jo_id');
     }
+    public function items() //For SO PULL only
+    {
+        return $this->hasMany(JoProduct::class, 'jo_id');
+    }
     public function joItems()
     {
         return $this->hasMany(JoItem::class, 'jo_id');
@@ -246,6 +250,10 @@ class JobOrder extends Model
     {
         return $this->hasMany(JobOrderTed::class,'jo_id')->where('ted_level', 'H')->where('ted_type','Discount');
     }
+    public function discount_ted()
+    {
+        return $this->hasMany(JobOrderTed::class,'jo_id')->where('ted_level', 'H')->where('ted_type','Discount');
+    }
     public function itemDiscount()
     {
         return $this->hasMany(JobOrderTed::class,'jo_id')->where('ted_level', 'D')->where('ted_type','Discount');
@@ -261,6 +269,10 @@ class JobOrder extends Model
         return $this->headerDiscount()->sum('ted_amount');
     }
     public function headerExpenses()
+    {
+        return $this->hasMany(JobOrderTed::class,'jo_id')->where('ted_type','Expense')->where('ted_level','H');
+    }
+    public function expense_ted()
     {
         return $this->hasMany(JobOrderTed::class,'jo_id')->where('ted_type','Expense')->where('ted_level','H');
     }

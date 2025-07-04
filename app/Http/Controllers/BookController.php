@@ -502,31 +502,32 @@ class BookController extends Controller
                         $bookPattern->allow_change_message = "";
                     }
                 }
-                foreach ($book -> levels as $approvalLevel => &$approver) {
-                    $levelEmployees = Helper::getOrgWiseUserAndEmployees($approver -> organization_id);
-                    $serviceAlias = $book ?-> service ?-> alias;
-                    $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
-                    if (isset($modelName)) {
-                        $model = resolve('App\\Models\\' . $modelName);
-                        $pendingDocs = $model::whereIn('document_status', [ConstantHelper::PARTIALLY_APPROVED, ConstantHelper::SUBMITTED])->where('approval_level', $approver->level)->get();
-                        if (isset($pendingDocs) && count($pendingDocs) > 0) {
-                            $approver->allow_change = false;
-                            $approver->allow_change_message = "Pending Document Exists, Change is not allowed";
-                        } else {
-                            $approver->allow_change = true;
-                            $approver->allow_change_message = "";
-                        }
+            }
+            foreach ($book -> levels as $approvalLevel => &$approver) {
+                $levelEmployees = Helper::getOrgWiseUserAndEmployees($approver -> organization_id);
+                $serviceAlias = $book ?-> service ?-> alias;
+                $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
+                if (isset($modelName)) {
+                    $model = resolve('App\\Models\\' . $modelName);
+                    $pendingDocs = $model::whereIn('document_status', [ConstantHelper::PARTIALLY_APPROVED, ConstantHelper::SUBMITTED])->where('approval_level', $approver->level)->get();
+                    if (isset($pendingDocs) && count($pendingDocs) > 0) {
+                        $approver->allow_change = false;
+                        $approver->allow_change_message = "Pending Document Exists, Change is not allowed";
                     } else {
                         $approver->allow_change = true;
                         $approver->allow_change_message = "";
                     }
-                    $approver -> employees = $levelEmployees;
+                } else {
+                    $approver->allow_change = true;
+                    $approver->allow_change_message = "";
                 }
-                foreach ($book -> amendments as &$amendment) {
-                    $amendEmployees = Helper::getOrgWiseUserAndEmployees($amendment -> organization_id);
-                    $amendment -> employees = $amendEmployees;
-                }
+                $approver -> employees = $levelEmployees;
             }
+            foreach ($book -> amendments as &$amendment) {
+                $amendEmployees = Helper::getOrgWiseUserAndEmployees($amendment -> organization_id);
+                $amendment -> employees = $amendEmployees;
+            }
+            
             foreach ($book->common_parameters as $bookParamKey => &$bookParam) {
                 if ($bookParam->parameter_name === ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM) {
                     $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest() -> first();

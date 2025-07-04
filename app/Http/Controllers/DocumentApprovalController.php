@@ -12,6 +12,8 @@ use App\Models\ErpTransporterRequest;
 use App\Models\ErpTransporterRequestBid;
 use App\Models\PackingList;
 use App\Models\Vendor;
+use App\Models\Item;
+use App\Models\Customer;
 use DB;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
@@ -330,8 +332,7 @@ class DocumentApprovalController extends Controller
                         if (isset($siItem)) {
                             $siItem->srn_qty -= $items->order_qty;
                             $siItem->dnote_qty += $items->order_qty;
-                            if ($siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS || 
-                                    $siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                            if ($siItem->header->invoice_required) {
                                 $siItem->invoice_qty += $items->order_qty;
                             }
                             $siItem->save();
@@ -342,8 +343,7 @@ class DocumentApprovalController extends Controller
                                     $soItem->srn_qty -= $items->order_qty;
                                     $soItem->dnote_qty += $items->order_qty;
                                     $soItem->order_qty += $items->order_qty;
-                                    if ($siItem->header->document_type === ConstantHelper::SI_SERVICE_ALIAS || 
-                                            $siItem->header->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                                    if ($siItem->header->invoice_required) {
                                         $soItem->invoice_qty += $items->order_qty;
                                     }
                                 }
@@ -879,6 +879,154 @@ class DocumentApprovalController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType mrn document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function item(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $item = Item::find($request->id);
+            $bookId = $item->book_id;
+            $docId = $item->id;
+            $docValue = 0; 
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $item->approval_level;
+            $revisionNumber = $item->revision_number ?? 0;
+            $actionType = $request->action_type; 
+            $modelName = get_class($item);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $item->approval_level = $approveDocument['nextLevel'];
+            $document_status = $approveDocument['approvalStatus'];
+            $status = $request->status; 
+            $item->document_status = $document_status;
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                if ($status === ConstantHelper::INACTIVE) {
+                    $item->status = ConstantHelper::INACTIVE;
+                } else {
+                    $item->status = ConstantHelper::ACTIVE;
+                }
+            } else {
+                $item->status = $document_status;
+            }
+
+            $item->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $item,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType item document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function vendor(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $vendor = Vendor::find($request->id);
+            $bookId = $vendor->book_id;
+            $docId = $vendor->id;
+            $docValue = 0; 
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $vendor->approval_level ?? 1; 
+            $revisionNumber = $vendor->revision_number ?? 0; 
+            $actionType = $request->action_type;
+            $modelName = get_class($vendor);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $vendor->approval_level = $approveDocument['nextLevel'] ?? 1; 
+            $approvalStatus = $approveDocument['approvalStatus'];
+            $status = $request->status; 
+            $vendor->document_status = $approvalStatus;
+            
+            if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                if ($status === ConstantHelper::INACTIVE) {
+                    $vendor->status = ConstantHelper::INACTIVE;
+                } else {
+                    $vendor->status = ConstantHelper::ACTIVE;
+                }
+            } else {
+                $vendor->status = $approvalStatus;
+            }
+            $vendor->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Vendor document $actionType successfully!",
+                'data' => $vendor,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType vendor document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function customer(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $customer = Customer::find($request->id);
+            $bookId = $customer->book_id;
+            $docId = $customer->id;
+            $docValue = 0;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $customer->approval_level ?? 1;
+            $revisionNumber = $customer->revision_number ?? 0;
+            $actionType = $request->action_type;
+            $modelName = get_class($customer);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+
+            $customer->approval_level = $approveDocument['nextLevel'] ?? 1;
+            $approvalStatus = $approveDocument['approvalStatus']; 
+            $status = $request->status; 
+            $customer->document_status = $approvalStatus;
+
+            if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                if ($status === ConstantHelper::INACTIVE) {
+                    $customer->status = ConstantHelper::INACTIVE;
+                } else {
+                    $customer->status = ConstantHelper::ACTIVE;
+                }
+            } else {
+                $customer->status = $approvalStatus;
+            }
+            $customer->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Customer document $actionType successfully!",
+                'data' => $customer,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType customer document.",
                 'error' => $e->getMessage(),
             ], 500);
         }

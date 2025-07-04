@@ -32,6 +32,8 @@ use App\Models\ErpInvoiceItem;
 use App\Models\ErpSaleOrderHistory;
 use App\Models\ErpSoDynamicField;
 use App\Models\ErpSoItemBom;
+use App\Models\ErpSoJobWorkItem;
+use App\Models\ErpSoJobWorkItemAttribute;
 use App\Models\ErpSoMedia;
 use App\Models\ErpStore;
 use App\Models\Item;
@@ -42,6 +44,9 @@ use App\Models\ErpSoItem;
 use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemDelivery;
 use App\Models\ItemSpecification;
+use App\Models\JobOrder\JoBomMapping;
+use App\Models\JobOrder\JobOrder;
+use App\Models\JobOrder\JoProduct;
 use App\Models\Organization;
 use App\Models\OrganizationGroup;
 use App\Models\PoItem;
@@ -274,7 +279,7 @@ class ErpSaleOrderController extends Controller
                         ->where('status', ConstantHelper::ACTIVE)
                         ->get();
         $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
-        // $orderTypes = SaleModuleHelper::ORDER_TYPES;
+        $orderTypes = SaleModuleHelper::ORDER_TYPES;
         $data = [
             'series' => $books,
             'countries' => $countries,
@@ -286,7 +291,7 @@ class ErpSaleOrderController extends Controller
             'selectedService'  => $firstService ?-> id ?? null,
             'redirectUrl' => $redirectUrl,
             'itemImportFile' => $itemImportFile,
-            // 'orderTypes' => $orderTypes
+            'orderTypes' => $orderTypes
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -394,7 +399,7 @@ class ErpSaleOrderController extends Controller
         }
         $dynamicFieldsUI = $order -> dynamicfieldsUi();
         $itemImportFile = asset('templates/SalesOrderItemImport.xlsx');
-        // $orderTypes = SaleModuleHelper::ORDER_TYPES;
+        $orderTypes = SaleModuleHelper::ORDER_TYPES;
         $data = [
             'user' => $user,
             'series' => $books,
@@ -413,7 +418,7 @@ class ErpSaleOrderController extends Controller
             'redirectUrl' => $redirectUrl,
             'itemImportFile' => $itemImportFile,
             'dynamicFieldsUi' => $dynamicFieldsUI,
-            // 'orderTypes' => $orderTypes
+            'orderTypes' => $orderTypes
         ];
         return view('salesOrder.create_edit', $data);
     }
@@ -612,6 +617,15 @@ class ErpSaleOrderController extends Controller
                                 $poItem -> save();
                             }
                         }
+                        //If this item is pulled from another org JO
+                        if ($soItem -> jo_product_id) {
+                            $joProduct = JoProduct::find($soItem -> jo_product_id);
+                            if (isset($joProduct)) {
+                                //Subtract the value utilized
+                                $joProduct -> inter_org_so_qty -= $soItem -> order_qty;
+                                $joProduct -> save();
+                            }
+                        }
                         #Bom remove
                         $soItem->custom_bom_details()->delete();
                         $soItem->teds()->delete();
@@ -641,6 +655,7 @@ class ErpSaleOrderController extends Controller
                     'document_date' => $request -> document_date,
                     'revision_number' => 0,
                     'revision_date' => null,
+                    'order_type' => $request -> sale_order_type ?? SaleModuleHelper::ORDER_TYPE_DEFAULT,
                     'reference_number' => $request -> reference_no,
                     'store_id' => $request -> store_id ?? null,
                     'store_code' => $store ?-> store_name ?? null,
@@ -956,6 +971,53 @@ class ErpSaleOrderController extends Controller
                                 $poItem -> save();
                                 $soItem -> po_item_id = $poItem -> id;
                                 $soItem -> save();
+                            }
+                        }
+                        if ($request -> jo_product_ids && isset($request -> jo_product_ids[$itemDataKey])) {
+                            $joProduct = JoProduct::find($request -> jo_product_ids[$itemDataKey]);
+                            if (isset($joProduct)) {
+                                $joProduct -> inter_org_so_qty = ($joProduct -> inter_org_so_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                $joProduct -> save();
+                                $soItem -> jo_product_id = $joProduct -> id;
+                                $soItem -> save();
+                                //Save the item
+                                //Only Save in case of create
+                                if (!$request -> sale_order_id && $saleOrder -> order_type === SaleModuleHelper::ORDER_TYPE_SUB_CONTRACTING) {
+                                    $joBomMapping = JoBomMapping::where('jo_product_id', $joProduct -> id) -> get();
+                                    foreach ($joBomMapping as $joBomMapping) {
+                                        # code...
+                                        $jobWorkItem = ErpSoJobWorkItem::updateOrCreate([
+                                            'sale_order_id' => $saleOrder -> id,
+                                            'so_item_id' => $soItem -> id,
+                                            'bom_detail_id' => $joBomMapping -> bom_detail_id,
+                                            'station_id' => $joBomMapping -> station_id,
+                                            'rm_type' => $joBomMapping -> rm_type,
+                                            'item_id' => $joBomMapping -> item_id,
+                                            'item_code' => $joBomMapping -> item_code,
+                                            'uom_id' => $joBomMapping -> uom_id,
+                                            'qty' => $joBomMapping -> qty,
+                                            'inventory_uom_id' => $joBomMapping ?-> item ?-> uom_id,
+                                            'inventory_uom_code' => $joBomMapping ?-> item ?-> uom ?-> name,
+                                            'inventory_uom_qty' => ItemHelper::convertToBaseUom($joBomMapping -> item_id, $joBomMapping -> uom_id, $joBomMapping -> qty) 
+                                        ]);
+                                        foreach ($joBomMapping -> attributes as $joBomMappingAttribute) {
+                                            $attribute = AttributeGroup::find($joBomMappingAttribute['attribute_name']);
+                                            $attributeValue = Attribute::find($joBomMappingAttribute['attribute_value']);
+                                            ErpSoJobWorkItemAttribute::updateOrCreate([
+                                                'sale_order_id' => $saleOrder -> id,
+                                                'job_work_item_id' => $jobWorkItem -> id,
+                                                'item_id' => $jobWorkItem -> item_id,
+                                                'item_code' => $jobWorkItem -> item_code,
+                                                'item_attribute_id' => $joBomMappingAttribute['attribute_id'],
+                                                'attribute_name' => $attribute ?-> name,
+                                                'attr_name' => $attribute ?-> id,
+                                                'attribute_value' => $attributeValue ?-> value,
+                                                'attr_value' => $attributeValue ?-> id
+                                            ]);
+                                        }
+                                    }
+                                }
+                                
                             }
                         }
                         //TED Data (DISCOUNT)
@@ -1586,6 +1648,41 @@ class ErpSaleOrderController extends Controller
                         $orderItem->quotation_balance_qty = $orderItem->inter_org_so_bal_qty;
                     }
                 }
+            } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
+                $pathUrl = route('jo.index');
+                $quotation = JobOrder::with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
+                    $subQuery->whereIn('id', $request->items_id);
+                })->with('items', function ($itemQuery) use ($request) {
+                    $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted'])->with([
+                        'item' => function ($itemQuery) {
+                            $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }
+                    ]);
+                }) -> bookViewAccess($pathUrl) -> whereIn('id', $request->quotation_id)->get();
+                foreach ($quotation as &$header) {
+                    $customer = Customer::with(['payment_terms', 'currency']) -> withDefaultGroupCompanyOrg() 
+                    -> where('related_party', 'Yes') -> where('enter_company_org_id', $header -> organization_id)
+                    -> first();
+                    $header -> customer = $customer;
+                    $header -> customer_id = $customer ?-> id;
+                    $header -> customer_code = $customer ?-> customer_code;
+                    $header -> customer_phone_no = $customer ?-> mobile;
+                    $header -> customer_email = $customer ?-> email;
+                    $header -> customer_gstin = $customer ?-> compliances ?-> gstin_no;
+    
+                    // $customerShipping = $customer ?-> addresses() -> whereIn('type', ['shipping', 'both']) -> with(['city', 'state', 'country']) -> first();
+                    $customerShipping = $header -> store_address() -> with(['city', 'state', 'country']) -> first();
+                    // $customerBilling = $customer ?-> addresses() -> whereIn('type', ['billing', 'both']) -> with(['city', 'state', 'country']) -> first();
+                    $customerBilling = $header -> bill_address_details() -> with(['city', 'state', 'country']) -> first();    
+                    $header -> billing_address_details = $customerBilling;
+                    $header -> billing_address = $customerBilling ?-> id;
+                    $header -> shipping_address_details = $customerShipping;
+                    $header -> shipping_address = $customerShipping ?-> id;
+                    foreach ($header->items as &$orderItem) {
+                        $orderItem->item_attributes_array = $orderItem->item_attributes_array();
+                        $orderItem->quotation_balance_qty = $orderItem->inter_org_so_bal_qty;
+                    }
+                }
             } else {
                 $pathUrl = route('sale.quotation.index');
                 $quotation = ErpSaleOrder::with(['discount_ted', 'expense_ted', 
@@ -1646,6 +1743,32 @@ class ErpSaleOrderController extends Controller
                     $qt -> customer = $customer;
                 }
             } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
+                $joOrderType = SaleModuleHelper::getJoOrderTypeFromSoOrderType($request -> order_type);
+                $quotation = JoProduct::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl, $orgId, $joOrderType) {
+                    $subQuery->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ->where('job_order_type', $joOrderType)
+                    ->whereIn('book_id', $applicableBookIds)->when($request->book_id, function ($bookQuery) use ($request) {
+                        $bookQuery->where('book_id', $request->book_id);
+                    })->when($request->document_id, function ($docQuery) use ($request) {
+                        $docQuery->where('id', $request->document_id);
+                    })
+                    ->where('organization_id', '!=', $orgId)
+                    -> whereHas('vendor', function ($vendorQuery) use($orgId) {
+                        $vendorQuery -> where('related_party', 'Yes') -> where('enter_company_org_id', $orgId);
+                    });
+                })-> with('attributes') -> with('uom') -> whereRaw('(order_qty - short_close_qty) > inter_org_so_qty');
+    
+                if ($request->item_id) {
+                    $quotation = $quotation->where('item_id', $request->item_id);
+                }
+    
+                $quotation = $quotation->get();
+                foreach ($quotation as $qt) {
+                    $customer = Customer::with(['payment_terms', 'currency']) -> withDefaultGroupCompanyOrg() ->
+                     where('related_party', 'Yes') -> where('enter_company_org_id', $qt ?-> header ?-> organization_id)-> 
+                     first();
+                    $qt -> customer = $customer;
+                }
+            } else {
                 $quotation = ErpSoItem::whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl) {
                     $subQuery->where('document_type', ConstantHelper::SQ_SERVICE_ALIAS)->
                     whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
@@ -1928,7 +2051,8 @@ class ErpSaleOrderController extends Controller
             //Get the Item BOM
             $bomDetails = ItemHelper::checkItemBomExists($itemId, $attributes);
             if (isset($bomDetails['bom_id'])) {
-                if ($bomDetails['customizable'] == "yes") { //Only check for customizable BOM
+                // if ($bomDetails['customizable'] == "yes") { //Only check for customizable BOM
+                    $customizable = $bomDetails['customizable'] == "yes" ? true : false;
                     $bom = Bom::find($bomDetails['bom_id']);
                     if (isset($bom)) {
                         //Bom found
@@ -1948,6 +2072,7 @@ class ErpSaleOrderController extends Controller
                                 $bomDetail -> item_name = $bomDetail -> item ?-> item_name;
                                 $bomDetail -> uom_name = $bomDetail -> uom ?-> name;
                                 $bomDetail -> item_attributes_array = $bomDetail -> item_attributes_array();
+                                $bomDetail -> qty = $bomDetail -> qty;
                                 //If request has BOM attributes -> check for the selected value
                                 if (isset($bomAttributes) && count($bomAttributes) > 0)
                                 //Get the current BOM from the request
@@ -1981,7 +2106,8 @@ class ErpSaleOrderController extends Controller
                             'status' => 'success',
                             'message' => '',
                             'data' => array(
-                                'levels' => $processedData
+                                'levels' => $processedData,
+                                'customizable' => $customizable
                             )
                         ]);
                     } else {
@@ -1992,14 +2118,14 @@ class ErpSaleOrderController extends Controller
                             'data' => []
                         ]);
                     }
-                } else {
-                    //Customizable Bom not found
-                    return response() -> json([
-                        'status' => 'success',
-                        'message' => 'No Customizable BOM found',
-                        'data' => []
-                    ]);
-                }
+                // } else {
+                //     //Customizable Bom not found
+                //     return response() -> json([
+                //         'status' => 'success',
+                //         'message' => 'No Customizable BOM found',
+                //         'data' => []
+                //     ]);
+                // }
             } else {
                 //Bom id not found
                 return response() -> json([
@@ -2546,18 +2672,21 @@ class ErpSaleOrderController extends Controller
     {
         try {
             $itemId = $request -> item_id ?? null;
-            $locationId = $request -> location_id ?? null;
+            $locationId = $request -> loc_id ?? null;
+            $organizationId = $request -> org_id ?? null;
+            $subStoreId = $request -> sub_store_id ?? null;
             $selectedAttributes = $request -> item_attributes ?? [];
+            $filterItemIds = $request -> filter_item_ids ?? [];
             $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
-            $location = ErpStore::where('id', $locationId) -> first();
-            if (!$item || !$location) {
+            // $location = ErpStore::where('id', $locationId) -> first();
+            if (!$item) {
                 return response() -> json([
                     'status' => 'error',
-                    'message' => 'Item Or Location Not Found',
+                    'message' => 'Item Not Found',
                 ], 422);
             }
             $uomId = $item -> uom_id;
-            $processedItems = ItemHelper::generateOrgLocStoreWiseItemStock($item, $selectedAttributes, $uomId, $location);
+            $processedItems = ItemHelper::generateOrgLocStoreWiseItemStock($item, $selectedAttributes, $uomId, $organizationId, $locationId, $subStoreId, $filterItemIds);
             return view('components.inventory.partials.item_stock_details', [
                 'processedItems' => $processedItems
             ]);

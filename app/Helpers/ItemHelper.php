@@ -13,6 +13,7 @@ use App\Models\VendorItem;
 use App\Models\Vendor;
 use App\Models\ErpAddress;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\SubStore\Constants as SubStoreConstants;
 use App\Models\Currency;
 use App\Models\Customer;
 use App\Models\Organization;
@@ -528,7 +529,7 @@ class ItemHelper
         return $safetyBuffer;
     }
 
-    private static function processItemAndBOM(Collection &$processedItems, Item $item, array $itemAttributes, int $uomId, ErpStore $location, ?ErpSubStore $subStore)
+    private static function processItemAndBOM(Collection &$processedItems, Item $item, array $itemAttributes, int $uomId, $organizationId = null, $locationId = null, $subStoreId = null, $filterItemIds = [])
     {
         $selectedAttributes = [];
         $attributesUI = "";
@@ -538,30 +539,82 @@ class ItemHelper
             $attributesUI .= "<span class='badge rounded-pill badge-light-primary'>$itemAttr[attribute_name] : $itemAttr[attribute_value]</span>";
         }
 
-        $totalStocks = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttributes, $uomId, $location->id, $subStore?->id ?? 0);
-        $confirmedStocks = $totalStocks['confirmedStocks'] ?? 0.00;
-        $unconfirmedStocks = $totalStocks['pendingStocks'] ?? 0.00;
+        //Repeatedly add Stock to every Organization, Location and Store
+        $authUser = Helper::getAuthenticatedUser();
+        $orgIds = [];
+        if ($organizationId) {
+            $orgIds[] = $organizationId;
+        } else {
+            $orgIds = $authUser -> access_rights_org -> pluck('organization_id') -> toArray();
+            array_push($orgIds, $authUser -> organization_id);
+        }
+        //Retrieve all Organizations
+        $orgs = Organization::select('id', 'name') -> whereIn('id', $orgIds) -> get();
+        $orgIds = $orgs -> pluck('id') -> toArray();
+        //Retrieve all locations
+        $locations = [];
+        $locationIds = [];
+        if ($locationId) {
+            $allLocations = ErpStore::where('id', $locationId) -> withWhereHas('subStores', function ($subStoreQuery) {
+                        $subStoreQuery -> whereHas('sub_type', function ($subTypeQuery) {
+                            $subTypeQuery -> where('type', SubStoreConstants::MAIN_STORE_VALUE);
+                        });
+                }) -> where('status', ConstantHelper::ACTIVE) -> get();
+        } else {
+            $allLocations = ErpStore::whereIn('organization_id', $orgIds)
+                ->when(($authUser->authenticable_type == "employee"), function ($locationQuery) use($authUser) { // Location with same country and state
+                    $locationQuery->whereHas('employees', function ($employeeQuery) use ($authUser) {
+                        $employeeQuery->where('employee_id', $authUser->id);
+                    });
+                }) -> withWhereHas('subStores', function ($subStoreQuery) {
+                        $subStoreQuery -> whereHas('sub_type', function ($subTypeQuery) {
+                            $subTypeQuery -> where('type', SubStoreConstants::MAIN_STORE_VALUE);
+                        });
+                }) -> where('status', ConstantHelper::ACTIVE) -> get();
+        }
+        $locationIds = $allLocations -> pluck('id') -> toArray();
+        foreach ($orgs as $org) {
+            $locations = $allLocations -> where('organization_id', $org -> id);
+            foreach($locations as $location) {
+                $subStores = [];
+                if ($subStoreId) {
+                    $subStores = ErpSubStore::where('id', $subStoreId) -> get();
+                } else {
+                    $subStores = $location -> subStores;
+                }
+                foreach ($subStores as $subStore) {
+                    if (count($filterItemIds) > 0) {
+                        if (!in_array($item -> id, $filterItemIds)) {
+                            continue;
+                        }
+                    }
+                    $totalStocks = InventoryHelper::totalInventoryAndStock($item->id, $selectedAttributes, $uomId, $location->id, $subStore?->id ?? 0);
+                    $confirmedStocks = $totalStocks['confirmedStocks'] ?? 0.00;
+                    $unconfirmedStocks = $totalStocks['pendingStocks'] ?? 0.00;
 
-        $processedItems->push([
-            'item_id' => $item->id,
-            'item_code' => $item->item_code,
-            'item_name' => $item->item_name,
-            'group_id' => $item->group_id,
-            'company_id' => $item->company_id,
-            'company_name' => $item->company?->name,
-            'organization_id' => $item->organization_id,
-            'organization_name' => $item->organization?->name,
-            'uom_id' => $item->uom_id,
-            'uom_name' => $item->uom?->alias,
-            'attributes_ui' => $attributesUI,
-            'location_id' => $location->id,
-            'location_name' => $location->store_name,
-            'sub_store_id' => $subStore?->id,
-            'sub_store_name' => $subStore?->name,
-            'confirmed_stocks' => number_format($confirmedStocks, 2),
-            'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
-            'selected_attributes' => $selectedAttributes
-        ]);
+                    $processedItems->push([
+                        'item_id' => $item->id,
+                        'item_code' => $item->item_code,
+                        'item_name' => $item->item_name,
+                        'group_id' => $item->group_id,
+                        'company_id' => $item->company_id,
+                        'company_name' => $item->company?->name,
+                        'organization_id' => $org -> id,
+                        'organization_name' => $org?->name,
+                        'uom_id' => $item->uom_id,
+                        'uom_name' => $item->uom?->alias,
+                        'attributes_ui' => $attributesUI,
+                        'location_id' => $location->id,
+                        'location_name' => $location->store_name,
+                        'sub_store_id' => $subStore?->id,
+                        'sub_store_name' => $subStore?->name,
+                        'confirmed_stocks' => number_format($confirmedStocks, 2),
+                        'unconfirmed_stocks' => number_format($unconfirmedStocks, 2),
+                        'selected_attributes' => $selectedAttributes
+                    ]);
+                }
+            }
+        }
 
         // Recursively handle BOM items
         $itemBom = ItemHelper::checkItemBomExists($item->id, []);
@@ -585,17 +638,16 @@ class ItemHelper
                 ];
             }
 
-            self::processItemAndBOM($processedItems, $bomItem->item, $itemAttributesForChild, $uomId, $location, $subStore);
+            self::processItemAndBOM($processedItems, $bomItem->item, $itemAttributesForChild, $uomId, $organizationId, $locationId, $subStoreId, $filterItemIds);
         }
     }
 
 
-    public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, ErpStore $location)
+    public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, $orgId, $locId, $subStoreId, $filterItemIds = [])
     {
+        
         $processedItems = new Collection();
-        $subStores = InventoryHelper::getAccesibleSubLocations($location->id);
-        $firstSubStore = $subStores->first();
-        self::processItemAndBOM($processedItems, $item, $itemAttributes, $uomId, $location, $firstSubStore);
+        self::processItemAndBOM($processedItems, $item, $itemAttributes, $uomId, $orgId, $locId, $subStoreId, $filterItemIds);
         return $processedItems;
     }
 

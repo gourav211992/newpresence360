@@ -56,7 +56,8 @@ class JoProduct extends Model
         'cgst_value',
         'sgst_value',
         'igst_value',
-        'mi_balance_qty'
+        'mi_balance_qty',
+        'inter_org_so_bal_qty'
     ];
 
     public function jo()
@@ -136,6 +137,10 @@ class JoProduct extends Model
     {
         return $this->hasOne(JobOrderTed::class,'jo_product_id')->where('ted_type','Tax')->latest();
     }
+    public function tax_ted()
+    {
+        return $this->hasOne(JobOrderTed::class,'jo_product_id')->where('ted_type','Tax')->latest();
+    }
 
     public function productDelivery()
     {
@@ -147,7 +152,10 @@ class JoProduct extends Model
     {
         return $this->hasMany(JobOrderTed::class,'jo_product_id')->where('ted_level', 'D')->where('ted_type','Discount');
     }
-
+    public function discount_ted()
+    {
+        return $this->hasMany(JobOrderTed::class,'jo_product_id')->where('ted_level', 'D')->where('ted_type','Discount');
+    }
     /*Header Level Discount*/
     public function headerDiscount()
     {
@@ -306,6 +314,10 @@ class JoProduct extends Model
     public function miItems()
     {
         return $this->hasMany(ErpMiItem::class, 'jo_product_id');
+    }
+    public function getInterOrgSoBalQtyAttribute()
+    {
+        return ($this->order_qty - $this->inter_org_so_qty);
     }
 
 }

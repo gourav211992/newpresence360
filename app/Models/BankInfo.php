@@ -23,6 +23,8 @@ class BankInfo extends Model
         'primary',
         'cancel_cheque_status',
         'cancel_cheque',
+        'morphable_id',
+        'morphable_type',
         'status',
     ];
 

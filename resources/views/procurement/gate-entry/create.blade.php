@@ -55,7 +55,7 @@
 @section('content')
     <form class="ajax-input-form" method="POST" action="{{ route('gate-entry.store') }}" data-redirect="/gate-entries" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
-        <input type="hidden" name="bill_to_follow" id="bill_to_follow" value="">
+        <!-- <input type="hidden" name="bill_to_follow" id="bill_to_follow" value=""> -->
         @csrf
         <div class="app-content content ">
             <div class="content-overlay"></div>
@@ -174,13 +174,26 @@
                                                         </button>
                                                     </div>
                                                 </div>
+                                                <!-- <div class="row align-items-center mb-1 asn-container">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">ASN Number</label>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="text" name="asn_number" class="form-control asn_number" placeholder="Enter ASN Number">
+                                                    </div>
+                                                    <div class="col-md-2 action-button">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 asn_process" disabled>
+                                                            Process
+                                                        </button>
+                                                    </div>
+                                                </div> -->
                                                 <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
-                                                        <input type="hidden" name="reference_type" class="form-control" id="reference_type_input" readonly>
+                                                        <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1104,6 +1117,7 @@
                         $(".joSelect").hide();
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
+                        $(".module_type").val('direct');
                     } else if(data.status == 422) {
                         Swal.fire({
                             title: 'Error!',
@@ -1327,6 +1341,7 @@
         });
 
         function getItemDetail(currentTr, type=null) {
+            
             let pName = $(currentTr).find("[name*='component_item_name']").val();
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
@@ -1335,7 +1350,8 @@
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
             }
-
+            console.log('type', type, itemId);
+            
             if (itemId) {
                 let selectedAttr = [];
                 $(currentTr).find("[name*='attr_name']").each(function(index, item) {
@@ -1633,9 +1649,14 @@
         function getSelectedPoIDS()
         {
             let ids = [];
+            let asnIds = [];
+            let asnItemIds = [];
             let referenceNos = [];
+
             $('.po_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                asnIds.push($(this).attr('data-current-asn'));
+                asnItemIds.push($(this).attr('data-current-asn-item'));
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
                     referenceNos.push(referenceNo);
@@ -1643,6 +1664,8 @@
             });
             return {
                 ids: ids,
+                asnIds: asnIds,
+                asnItemIds: asnItemIds,
                 referenceNos: referenceNos
             };
         }
@@ -1650,6 +1673,8 @@
         $(document).on('click', '.poProcess', (e) => {
             let result = getSelectedPoIDS();
             let ids = result.ids;
+            let asnIds = result.asnIds;
+            let asnItemIds = result.asnItemIds;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'po';
             if (!ids.length) {
@@ -1784,11 +1809,15 @@
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
             ids = JSON.stringify(ids);
+            asnIds = JSON.stringify(asnIds);
+            asnItemIds = JSON.stringify(asnItemIds);
             moduleTypes = JSON.stringify(moduleTypes);
             let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("gate-entry.process.po-item") }}'
             .replace(':type', type)
             + '?ids=' + encodeURIComponent(ids)
+            + '&asnIds=' + encodeURIComponent(asnIds)
+            + '&asnItemIds=' + encodeURIComponent(asnItemIds)
             + '&moduleTypes=' + moduleTypes
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
@@ -1799,6 +1828,8 @@
                 return response.json().then(data => {
                     if(data.status == 200) {
                         let poOrder = data?.data?.purchaseOrder;
+                        let vendorAsn = data?.data?.vendorAsn;
+                        let moduleType = data?.data?.moduleType;
                         vendorOnChange(data?.data?.vendor?.id, 'po', poOrder.id);
                         let result = getSelectedPoIDS();
                         let newIds = result.ids;
@@ -1814,11 +1845,10 @@
                         let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
                         $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
 
-                        let module_type = data?.data?.moduleType || '';
+                        module_type = 'po';
                         let vendor = data?.data?.vendor || '';
-                        let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
-
+                        
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                         } else {
@@ -1831,80 +1861,62 @@
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                         $("#vendor_name").prop('readonly',true);
-                        if(poOrder.type == 'supplier-invoice'){
-                            $("[name='supplier_invoice_no']").val(poOrder.document_number);
-                            $("[name='supplier_invoice_date']").val(poOrder.document_date);
+                        if(moduleType == 'suppl-inv'){
+                            $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
+                            $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
+                            $("[name='consignment_no']").val(vendorAsn.consignment_no);
+                            $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
+                            $("[name='transporter_name']").val(vendorAsn.transporter_name);
+                            $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
                         } else{
                             $("[name='supplier_invoice_no']").val();
                             $("[name='supplier_invoice_date']").val();
+                            $("[name='consignment_no']").val();
+                            $("[name='eway_bill_no']").val();
+                            $("[name='transporter_name']").val();
+                            $("[name='vehicle_no']").val();
                         }
-
+                        
                         $(".module_type").val(module_type);
                         let locationId = $("[name='header_store_id']").val();
                         // getLocation(locationId);
 
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`
-                            });
+                        // For expense summary
+                        if (finalExpenses.length) {
+                            let $expenseTableBody = $("#summaryExpTable tbody");
+                            $expenseTableBody.find('.display_summary_exp_row').remove(); // Clear old rows
 
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
-
-                        if(finalExpenses.length) {
                             let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
+                            finalExpenses.forEach(function(item, index) {
+                                index += 1;
+                                rows += `<tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                        <input type="hidden" value="${item.id}" name="exp_summary[${index}][e_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                    </td>
+                                    <td class="text-end">${item.ted_perc ?? 0}
+                                        <input type="hidden" value="${item.ted_perc ?? 0}" name="exp_summary[${index}][e_perc]">
+                                        <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                    </td>
+                                    <td class="text-end">
                                         <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`;
-
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>`;
                             });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+
+                            $expenseTableBody.find('#expSummaryFooter').before(rows);
+                            $("#f_header_expense_hidden").removeClass('d-none');
+                        } else {
+                            $("#f_header_expense_hidden").addClass('d-none');
                         }
+
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
@@ -2307,10 +2319,10 @@
                         let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedJoIds'));
                         $("[name='jo_item_ids']").val(existingIdsUpdate.join(','));
 
-                        let module_type = data?.data?.moduleType || '';
+                        let module_type = data?.data?.moduleType || 'jo';
                         let vendor = data?.data?.vendor || '';
-                        let finalDiscounts = data?.data?.finalDiscounts;
-                        let finalExpenses = data?.data?.finalExpenses;
+                        let joFinalDiscounts = data?.data?.finalDiscounts;
+                        let joFinalExpenses = data?.data?.finalExpenses;
 
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
@@ -2336,72 +2348,72 @@
                         let locationId = $("[name='header_store_id']").val();
                         // getLocation(locationId);
 
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`
-                            });
+                        // if(joFinalDiscounts.length) {
+                        //     let rows = '';
+                        //     joFinalDiscounts.forEach(function(item,index) {
+                        //         index = index + 1;
+                        //         rows+= `<tr class="display_summary_discount_row">
+                        //                 <td>${index}</td>
+                        //                 <td>${item.ted_name}
+                        //                     <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
+                        //                     <input type="hidden" value="" name="disc_summary[${index}][d_id]">
+                        //                     <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
+                        //                 </td>
+                        //                 <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                        //                     <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
+                        //                     <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
+                        //                 </td>
+                        //                 <td class="text-end">
+                        //                 <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
+                        //                 </td>
+                        //                 <td>
+                        //                     <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
+                        //                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        //                     </a>
+                        //                 </td>
+                        //             </tr>`
+                        //     });
 
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
+                        //     $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                        //     $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
+                        //     $("#f_header_discount_hidden").removeClass('d-none');
+                        // } else {
+                        //     $("#f_header_discount_hidden").addClass('d-none');
+                        // }
 
-                        if(finalExpenses.length) {
-                            let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`;
+                        // if(joFinalExpenses.length) {
+                        //     let rows = '';
+                        //     joFinalExpenses.forEach(function(item,index) {
+                        //         index = index + 1;
+                        //         rows+=`<tr class="display_summary_exp_row">
+                        //                 <td>${index}</td>
+                        //                 <td>${item.ted_name}
+                        //                     <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                        //                     <input type="hidden" value="" name="exp_summary[${index}][e_id]">
+                        //                     <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                        //                 </td>
+                        //                 <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                        //                     <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
+                        //                     <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                        //                 </td>
+                        //                 <td class="text-end">
+                        //                 <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                        //                 </td>
+                        //                 <td>
+                        //                     <a href="javascript:;" class="text-danger deleteExpRow">
+                        //                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                        //                     </a>
+                        //                 </td>
+                        //             </tr>`;
 
-                            });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        }
+                        //     });
+                        //     $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
+                        //     $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                        // }
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTablePOJOCalculation();
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                                 let currentIndex = index + 1;
                                 setAttributesUIHelper(currentIndex,"#itemTable");

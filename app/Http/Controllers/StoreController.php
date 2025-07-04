@@ -73,9 +73,11 @@ class StoreController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
+      
         $useRole = AuthUser::where('id', $user->auth_user_id)->first();
         if ($useRole->user_type === 'IAM-SUPER') {
-            $allOrganizations = Organization::where('status', 'active')
+            $allOrganizations = Organization::where('group_id', $user->group_id)
+            ->where('status', 'active')
                 ->with('addresses')
                 ->get();
         } else {

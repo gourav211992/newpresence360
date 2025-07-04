@@ -8,6 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
+use App\Helpers\SubStore\Constants as SubStoreConstants;
 use Auth;
 
 class SubStoreRequest extends FormRequest
@@ -51,6 +52,11 @@ class SubStoreRequest extends FormRequest
                     'required', 
                     'string',  
                     Rule::in(ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES), 
+                ],
+            'stock_store_types' => [
+                    'required',
+                    'string',  
+                    Rule::in(SubStoreConstants::STOCK_STORE_TYPES_VALUES), 
                 ],
             'description' => 'nullable|string|max:255'
         ];

@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+    .iteminactive {  left: 24px; color: #999 } 
+    .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+    .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+    .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+    
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+    .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+</style>
     <!-- BEGIN: Content-->
   <form class="ajax-input-form" method="POST" action="{{ route('vendor.store') }}" data-redirect="{{ url('/vendors') }}"  enctype="multipart/form-data">
     @csrf
@@ -56,9 +66,21 @@
                                    <!--Start Vendor -->
                                             <div class="row">
                                                 <div class="col-md-12">
-                                                    <div class="newheader border-bottom mb-2 pb-25"> 
+                                                 <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                    <div> 
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p> 
+                                                    </div>
+                                                    <div>
+                                                        <div class="d-flex align-items-center"> 
+                                                            <div class="form-check form-check-primary form-switch statusactiinactive">
+                                                                <input type="checkbox" checked class="form-check-input" id="customSwitch3" />
+                                                                <span class="itemactive">Active</span>
+                                                                <span class="itemactive iteminactive">Inactive</span>
+                                                            </div>
+                                                            <input type="hidden" name="status" id="status_hidden_input" value="inactive">
+                                                        </div>
+                                                    </div>
                                                     </div>
                                                 </div> 
 
@@ -160,31 +182,6 @@
                                                 </div>
 
                                                 <div class="col-md-3 border-start">
-                                                    <div class="row align-items-center mb-2">
-                                                        <div class="col-md-12"> 
-                                                            <label class="form-label text-primary"><strong>Status</strong></label>   
-                                                            <div class="demo-inline-spacing">
-                                                                @foreach ($status as $option)
-                                                                    <div class="form-check form-check-primary mt-25">
-                                                                        <input
-                                                                            type="radio"
-                                                                            id="status_{{ strtolower($option) }}"
-                                                                            name="status"
-                                                                            value="{{ $option }}"
-                                                                            class="form-check-input"
-                                                                            {{ $option == 'active' ? 'checked' : '' }} >
-                                                                            <label class="form-check-label fw-bolder" for="status_{{ strtolower($option) }}">
-                                                                                {{ucfirst($option)}}
-                                                                            </label>
-                                                                    </div>
-                                                                @endforeach
-                                                            </div>
-                                                            @error('status')
-                                                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                                                            @enderror
-                                                        </div> 
-                                                    </div> 
-
                                                     <div class="row align-items-center mb-2">
                                                         <div class="col-md-12"> 
                                                             <label class="form-label text-primary"><strong>Stop Purchasing</strong></label>   
@@ -986,12 +983,41 @@
                                                             <div class="col-md-2"> 
                                                                 <label for="user" class="form-label">Stores</label>  
                                                             </div>  
-                                                            <div class="col-md-5"> 
-                                                                <select name="store_ids[]" multiple class="form-select select2">
-                                                                    @foreach($stores as $store)
-                                                                        <option value="{{$store->id}}">{{$store->name}}</option>
-                                                                    @endforeach
-                                                                </select>
+                                                        </div>
+                                                         <div class="row align-items-center mb-1">
+                                                         <div class="table-responsive"> 
+                                                                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border"> 
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>S.NO</th>
+                                                                            <th>Organization<span class="text-danger">*</span></th>
+                                                                            <th>Location<span class="text-danger">*</span></th>
+                                                                            <th>Store<span class="text-danger">*</span></th>
+                                                                            <th>Action</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody id="vendor-stores-table-body">
+                                                                        <tr class="stores-row" data-index="0">
+                                                                            <td class="index">1</td>
+                                                                            <td>
+                                                                                <input type="text" class="form-control mw-100 vendor-store-org-input" name="vendor_store[0][organization]" placeholder="Search Organization">
+                                                                                <input type="hidden" name="vendor_store[0][organization_id]" class="vendor-store-org-id">
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="text" class="form-control mw-100 vendor-store-location-input" name="vendor_store[0][location]" placeholder="Search Location">
+                                                                                <input type="hidden" name="vendor_store[0][location_id]" class="vendor-store-location-id">
+                                                                            </td>
+                                                                            <td>
+                                                                                <input type="text" class="form-control mw-100 vendor-store-store-input" name="vendor_store[0][store]" placeholder="Search Store">
+                                                                                <input type="hidden" name="vendor_store[0][store_id]" class="vendor-location-store-id">
+                                                                            </td>
+                                                                            <td>
+                                                                                <a href="#" class="text-primary add-vendor-store"><i data-feather="plus-square" class="me-50"></i></a>
+                                                                                <a href="#" class="text-danger delete-vendor-store"><i data-feather="trash-2" class="me-50"></i></a>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </tbody>
+                                                                </table>
                                                             </div> 
                                                         </div>
                                                     </div>
@@ -1445,9 +1471,121 @@
             }).focus(function() {
                 $(this).autocomplete("search", "");
             });
+
+            //Vendor Org Autocomplete
+            $row.find('.vendor-store-org-input').autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'stock_orgs'
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item['name'],
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching Organization data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    $(this).val(ui.item.label);  
+                    $(this).closest('tr').find('input[name*="[organization_id]"]').val(ui.item.id);  
+                    return false;
+                }
+            }).focus(function() {
+                $(this).autocomplete("search", "");
+            });
+
+            $row.find('.vendor-store-location-input').autocomplete({
+                source: function(request, response) {
+                    const orgId = $(this.element).closest('tr').find('.vendor-store-org-id').val();
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'stock_locations',
+                            organization_id : orgId
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item['store_name'],
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching Organization data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    $(this).val(ui.item.label);  
+                    $(this).closest('tr').find('input[name*="[location_id]"]').val(ui.item.id);  
+                    return false;
+                }
+            }).focus(function() {
+                $(this).autocomplete("search", "");
+            });
+
+            $row.find('.vendor-store-store-input').autocomplete({
+                source: function(request, response) {
+                    const orgId = $(this.element).closest('tr').find('.vendor-store-org-id').val();
+                    const locationId = $(this.element).closest('tr').find('.vendor-store-location-id').val();
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: 'stock_sub_locations',
+                            organization_id : orgId,
+                            location_id : locationId,
+                            store_types : ['Vendor']
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: item['name'],
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching Organization data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    $(this).val(ui.item.label);  
+                    $(this).closest('tr').find('input[name*="[store_id]"]').val(ui.item.id);  
+                    return false;
+                }
+            }).focus(function() {
+                $(this).autocomplete("search", "");
+            });
         }
 
         $('#address-table-body .address-row').each(function() {
+            initializeAutocomplete($(this));
+        });
+
+        //Vendor Stores Initialization
+        $('#vendor-stores-table-body .stores-row').each(function() {
             initializeAutocomplete($(this));
         });
 
@@ -1484,11 +1622,30 @@
             applyCapsLock();
         });
 
+        $(document).on('click', '.add-vendor-store', function(e) {
+            e.preventDefault();
+            const $lastRow = $('#vendor-stores-table-body .stores-row').last();
+            const index = $lastRow.data('index') + 1;
+            const $newRow = $lastRow.clone().attr('data-index', index);
+            $newRow.find('input').val('');
+            $('#vendor-stores-table-body').append($newRow);
+            initializeAutocomplete($newRow);
+            updateRowIndexesForVendorStores();
+        });
+
         $(document).on('click', '.delete-address', function(e) {
             e.preventDefault();
             if ($('#address-table-body .address-row').length > 1) {
                 $(this).closest('.address-row').remove();
                 updateRowIndexes();
+            }
+        });
+
+        $(document).on('click', '.delete-vendor-store', function(e) {
+            e.preventDefault();
+            if ($('#vendor-stores-table-body .stores-row').length > 1) {
+                $(this).closest('.stores-row').remove();
+                updateRowIndexesForVendorStores();
             }
         });
 
@@ -1508,7 +1665,25 @@
                 }  
             });
         }
+
+        function updateRowIndexesForVendorStores() {
+            var $rows = $('#vendor-stores-table-body tr'); 
+            $('#vendor-stores-table-body .stores-row').each(function(index) {
+                $(this).find('.index').text(index + 1);
+                $(this).find('input, select').each(function() {
+                    $(this).attr('name', $(this).attr('name').replace(/\[\d+\]/, `[${index}]`));
+                });
+                if ($rows.length === 1) {
+                    $(this).find('.delete-vendor-store').hide(); 
+                    $(this).find('.add-vendor-store').show(); 
+                } else {
+                    $(this).find('.delete-vendor-store').show(); 
+                    $(this).find('.add-vendor-store').toggle(index === 0); 
+                }  
+            });
+        }
         updateRowIndexes();
+        updateRowIndexesForVendorStores();
         applyCapsLock();
     });
 </script>
@@ -1783,6 +1958,7 @@ $(document).ready(function() {
     });
  </script>
  <script>
+    //related-checkbox-start
     $(document).ready(function() {
         $('#Related').change(function() {
             if ($(this).is(':checked')) {
@@ -1794,9 +1970,9 @@ $(document).ready(function() {
             }
         });
     });
-</script>
+    //related-checkbox-end
 
-<script>
+    //file-validation-start
     const ALLOWED_EXTENSIONS_SIMPLE = ['pdf', 'jpg', 'jpeg', 'png'];
     const ALLOWED_MIME_TYPES_SIMPLE = ['application/pdf', 'image/jpeg', 'image/png'];
     const MAX_FILE_SIZE_SIMPLE = 2048; 
@@ -1836,5 +2012,15 @@ $(document).ready(function() {
 
         input.files = dt.files;
     }
+    
+    document.addEventListener('DOMContentLoaded', function () {
+        const switchInput = document.getElementById('customSwitch3');
+        const hiddenInput = document.getElementById('status_hidden_input');
+        hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        switchInput.addEventListener('change', function () {
+            hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
+        });
+    });
+    //file-validation-end
 </script>
 @endsection

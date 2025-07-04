@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class VendorAsnItem extends Model
 {
-    use HasFactory, DateFormatTrait, DynamicFieldsTrait ,FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, DynamicFieldsTrait ,FileUploadTrait;
 
     protected $table = 'erp_vendor_asn_items';
     

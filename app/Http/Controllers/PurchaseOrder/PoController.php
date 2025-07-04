@@ -69,7 +69,7 @@ class PoController extends Controller
     {
         $type = $this->type;
         if (request()->ajax()) {
-            $pos = PurchaseOrder::ofType($type)->withDefaultGroupCompanyOrg()
+            $pos = PurchaseOrder::ofType($type)
                     ->withDraftListingLogic()
                     ->with('vendor')
                     ->latest();
@@ -154,8 +154,7 @@ class PoController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
-        $termsAndConditions = TermsAndCondition::withDefaultGroupCompanyOrg()
-                            ->where('status',ConstantHelper::ACTIVE)->get();
+        $termsAndConditions = TermsAndCondition::where('status',ConstantHelper::ACTIVE)->get();
         $title = '';
         $menu = 'Home';
         $menu_url = url('/');
@@ -330,8 +329,7 @@ class PoController extends Controller
     public function getAddress(Request $request)
     {
         $vendorId = $request?->id ?? null;
-        $vendor = Vendor::withDefaultGroupCompanyOrg()
-                ->with(['currency:id,name', 'paymentTerms:id,name'])
+        $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId);
         $currency = $vendor?->currency;
         $paymentTerm = $vendor?->paymentTerms;
@@ -433,7 +431,7 @@ class PoController extends Controller
                 ], 422);
             }
             $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-            $regeneratedDocExist = PurchaseOrder::withDefaultGroupCompanyOrg() -> where('book_id',$request->book_id)
+            $regeneratedDocExist = PurchaseOrder::where('book_id',$request->book_id)
                 ->where('document_number',$document_number)->first();
                 //Again check regenerated doc no
                 if (isset($regeneratedDocExist)) {
@@ -1793,8 +1791,7 @@ class PoController extends Controller
             $revNo = $po->revision_number;
         }
         $approvalHistory = Helper::getApprovalHistory($po->book_id, $po->id, $revNo, $totalValue,$createdBy);
-        $termsAndConditions = TermsAndCondition::withDefaultGroupCompanyOrg()
-                            ->where('status',ConstantHelper::ACTIVE)->get();
+        $termsAndConditions = TermsAndCondition::where('status',ConstantHelper::ACTIVE)->get();
         $view = 'procurement.po.edit';
         if($request->has('revisionNumber') && $request->revisionNumber != $po->revision_number) {
             $po = $po->source()->where('revision_number', $request->revisionNumber)->first();
@@ -2045,7 +2042,6 @@ class PoController extends Controller
                         $query->whereHas('item');
                         $query->whereHas('po', function($pi) use ($seriesId,$applicableBookIds,$vendorId, $departmentId) {
                             $pi->where('type','po');
-                            $pi->withDefaultGroupCompanyOrg();
                             $pi->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
                             if($seriesId) {
                                 $pi->where('book_id',$seriesId);
@@ -2078,7 +2074,6 @@ class PoController extends Controller
                         $query->whereNotIn('id',$selected_pi_ids);
                     }
                     $query->whereHas('pi', function($pi) use ($seriesId,$applicableBookIds,$departmentId,$storeId,$subStoreId,$indentId,$requesterId) {
-                        $pi->withDefaultGroupCompanyOrg();
                         $pi->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
                         // if($seriesId) {
                         //     $pi->where('book_id',$seriesId);
@@ -2420,8 +2415,7 @@ class PoController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
-        $termsAndConditions = TermsAndCondition::withDefaultGroupCompanyOrg()
-                            ->where('status',ConstantHelper::ACTIVE)->get();
+        $termsAndConditions = TermsAndCondition::where('status',ConstantHelper::ACTIVE)->get();
         $title = '';
         $menu = 'Home';
         $menu_url = url('/');
@@ -2667,8 +2661,7 @@ class PoController extends Controller
                     ], 422);
                 }
                 $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-                $regeneratedDocExist = PurchaseOrder::withDefaultGroupCompanyOrg() 
-                                        ->where('book_id', $bookId)
+                $regeneratedDocExist = PurchaseOrder::where('book_id', $bookId)
                                         ->where('document_number', $document_number)
                                         ->first();
                 //Again check regenerated doc no
@@ -2978,7 +2971,7 @@ class PoController extends Controller
         $pathUrl = route('po.index', ['type' => request()->route('type')]);
         $orderType = ConstantHelper::PO_SERVICE_ALIAS;
         $poItems = PoItem::whereHas('po', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            $headerQuery -> where('type', $orderType)-> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
+            $headerQuery -> where('type', $orderType) -> withDraftListingLogic();
             //Vendor Filter
             $headerQuery = $headerQuery -> when($request -> vendor_id, function ($custQuery) use($request) {
                 $custQuery -> where('vendor_id', $request -> vendor_id);

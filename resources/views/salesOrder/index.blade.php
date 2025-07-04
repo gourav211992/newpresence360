@@ -48,6 +48,7 @@
                                                 <th>Date</th>
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
+                                                <th>Type</th>
                                                 <th>Location</th>
                                                 <th>Rev No</th>
                                                 <th>Ref No</th>
@@ -133,6 +134,10 @@
             }
         },
         { data: 'document_number', name: 'document_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'order_type', name: 'order_type', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },

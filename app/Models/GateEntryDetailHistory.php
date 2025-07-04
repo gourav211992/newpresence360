@@ -21,6 +21,8 @@ class GateEntryDetailHistory extends Model
         'hsn_id',
         'hsn_code',
         'uom_id',
+        'po_id',
+        'jo_id',
         'uom_code',
         'store_id',
         'order_qty',

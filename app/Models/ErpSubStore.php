@@ -6,6 +6,7 @@ use App\Traits\Deletable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Helpers\SubStore\Constants as SubStoreConstants;
 
 class ErpSubStore extends Model
 {
@@ -42,5 +43,9 @@ class ErpSubStore extends Model
     public function employees()
     {
         return $this->belongsToMany(Employee::class, 'erp_employee_sub_store', 'location_id', 'employee_id');
+    }
+    public function sub_type()
+    {
+        return $this -> hasOne(SubStoreType::class, 'sub_store_id');
     }
 }

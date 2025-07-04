@@ -976,7 +976,13 @@ class MaterialReceiptController extends Controller
                         ], 422);
                     }
                 }
-
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -1708,6 +1714,24 @@ class MaterialReceiptController extends Controller
 
             if($mrn){
                 $invoiceLedger = self::maintainStockLedger($mrn);
+                if($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS)
+                {
+                    $errorStatus = self::checkRawMaterial($mrn);
+                    if ($errorStatus) {
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => $errorStatus,
+                            'error' => ''
+                        ], 422);
+                    }
+                }
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -3522,9 +3546,9 @@ class MaterialReceiptController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $detailIds = $mrn->items->pluck('id')->toArray();
-        InventoryHelper::settlementOfInventoryAndStock($mrn->id, $detailIds, ConstantHelper::MRN_SERVICE_ALIAS, $mrn->document_status);
+        $data = InventoryHelper::settlementOfInventoryAndStock($mrn->id, $detailIds, ConstantHelper::MRN_SERVICE_ALIAS, $mrn->document_status);
 
-        return true;
+        return $data;
     }
 
     // Update Po Qty
@@ -4513,6 +4537,7 @@ class MaterialReceiptController extends Controller
     {
         try {
             $errorMessage = '';
+            $storeMrnJo = [];
             $joType = $mrn->jobOrder->job_order_type;
             $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
             foreach ($mrnData as $detail) {
@@ -4555,7 +4580,11 @@ class MaterialReceiptController extends Controller
                             $errorMessage = 'Available stock for item ' .$detail->item_code. ' is less than required.';
                             break;
                         }
-                        self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
+                        $storeMrnJo = self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
+                        if($storeMrnJo['status'] == 'error') {
+                            $errorMessage = $storeMrnJo['message'] ?? '';
+                            break;
+                        }
                     }
 
                 } if($joType === ConstantHelper::TYPE_JOB_ORDER) {
@@ -4581,13 +4610,19 @@ class MaterialReceiptController extends Controller
                         'qty'           => $detail->accepted_qty
                     ];
 
-                    self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
+                    $storeMrnJo = self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
+                    if($storeMrnJo['status'] == 'error') {
+                        $errorMessage = $storeMrnJo['message'] ?? '';
+                        break;
+                    }
                 }
             }
 
             return $errorMessage; // No error
         } catch (\Exception $e) {
-            return $e->getMessage(); // Return error message
+            Log::error('Error in settlementOfInventoryAndStock: ' . $e->getMessage());
+            $errorMessage = 'Error in settlementOfInventoryAndStock: ' . $e->getMessage();
+            return $errorMessage;  // Return error message
         }
     }
 

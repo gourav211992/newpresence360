@@ -142,11 +142,11 @@
                                                                 <a class="nav-link active" data-bs-toggle="tab"
                                                                     href="#Pattern">Numbering Pattern</a>
                                                             </li>
-                                                            <li class="nav-item transaction_service_tab">
+                                                            <li class="nav-item">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Approval">Approval</a>
                                                             </li>
-                                                            <li class="nav-item transaction_service_tab">
+                                                            <li class="nav-item">
                                                                 <a class="nav-link" data-bs-toggle="tab"
                                                                     href="#Amendment">Amendment</a>
                                                             </li>
@@ -268,7 +268,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane transaction_service_tab" id="Approval">
+                                                        <div class="tab-pane" id="Approval">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -405,7 +405,7 @@
                                                                 </table>
                                                             </div>
                                                         </div>
-                                                        <div class="tab-pane transaction_service_tab" id="Amendment">
+                                                        <div class="tab-pane" id="Amendment">
                                                             <div class="table-responsive-md">
                                                                 <table
                                                                     class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border">
@@ -817,11 +817,9 @@
                 success: function(data) {
                     if (data.data && data.data.length > 0) {
                         $.map(data.data, function(item) {
-                            innerHTMLVal += `<option value='${item.id}'>${item.name}</option>`
+                            innerHTMLVal += `<option value='${item.id}'>${item.name + " (" + item.email + ")"}</option>`
                         });
-                        console.log(innerHTMLVal, "HTML DATA");
                         if (userElement) {
-                            console.log("HERE IT IS COMING");
                             userElement.innerHTML = innerHTMLVal;
                         }
                     }
@@ -1220,11 +1218,9 @@ $(document).on('input', '.amendment_organizations', function (e) {
         success: function(data) {
             if (data.data && data.data.length > 0) {
                 $.map(data.data, function(item) {
-                    innerHTMLVal += `<option value='${item.id}'>${item.name}</option>`
+                    innerHTMLVal += `<option value='${item.id}'>${item.name + " (" + item.email + ")"}</option>`
                 });
-                console.log(innerHTMLVal, "HTML DATA");
                 if (userElement) {
-                    console.log("HERE IT IS COMING");
                     userElement.innerHTML = innerHTMLVal;
                 }
             }

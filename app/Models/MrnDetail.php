@@ -7,6 +7,7 @@ use App\Models\PO\PoDetail;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Models\JobOrder\JoProduct;
+use App\Models\JobOrder\JobOrder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,9 @@ class MrnDetail extends Model
         'purchase_order_item_id',
         'gate_entry_detail_id',
         'job_order_item_id',
+        'po_id',
+        'jo_id',
+        'ge_id',
         'so_id',
         'item_id',
         'item_code',
@@ -89,6 +93,23 @@ class MrnDetail extends Model
     public function so()
     {
         return $this->belongsTo(ErpSaleOrder::class, 'so_id');
+    }
+
+
+
+    public function po()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'so_id');
+    }
+
+    public function jo()
+    {
+        return $this->belongsTo(JobOrder::class, 'jo_id');
+    }
+
+    public function ge()
+    {
+        return $this->belongsTo(GateEntryHeader::class, 'ge_id');
     }
 
     public function header()

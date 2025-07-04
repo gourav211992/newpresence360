@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
+use App\Helpers\ConstantHelper;
 
 
 
@@ -19,6 +20,8 @@ class Customer  extends Model
      protected $fillable = [
         'organization_type_id',
         'category_id',
+        'book_id',
+        'book_code',
         'item_id',
         'subcategory_id',
         'customer_code',
@@ -59,6 +62,10 @@ class Customer  extends Model
         'on_account_required',
         'interest_percent',
         'status',
+        'document_status',
+        'approver_level', 
+        'revision_number',
+        'revision_date',
         'created_by',
         'stop_billing',
         'stop_purchasing',
@@ -248,6 +255,25 @@ class Customer  extends Model
                 });
             }
         });
+    }
+
+  public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
+    public function getStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->attributes['status'] ?? '');
+        return ucwords($status);
     }
 
 }

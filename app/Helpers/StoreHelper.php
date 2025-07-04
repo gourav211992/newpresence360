@@ -22,11 +22,13 @@ class StoreHelper
             $storeQuery -> where('status', ConstantHelper::ACTIVE);
         }
         //Only show free (non used) vendor stores
-        $stores = $storeQuery -> whereDoesntHave('vendor_stores', function ($vendorQuery) use($vendorId) {
-            $vendorQuery -> when($vendorId, function ($subVendorQuery) use($vendorId) {
-                $subVendorQuery -> whereNot('vendor_id', $vendorId);
-            });
-        }) -> get();
+        $stores = $storeQuery 
+        // -> whereDoesntHave('vendor_stores', function ($vendorQuery) use($vendorId) {
+        //     $vendorQuery -> when($vendorId, function ($subVendorQuery) use($vendorId) {
+        //         $subVendorQuery -> whereNot('vendor_id', $vendorId);
+        //     });
+        // }) 
+        -> get();
         return $stores;
     }
 }

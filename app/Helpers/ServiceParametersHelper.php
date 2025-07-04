@@ -187,8 +187,8 @@ class ServiceParametersHelper
     const SO_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SQ_SERVICE_ALIAS, ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],

@@ -25,7 +25,12 @@
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
                     <div class = "row">
-                        <div class = "col-md-8">
+                        <div class = "col-md text-center">
+                            <h2 class="text-center mt-2" id="shareProjectTitle">{{$title}}</h2>
+                        </div>
+                    </div>
+                    <div class = "row">
+                        <div class = "col-md">
                             <div class = "row">
                                 <div class = "col mb-1">
                                     <label class = "form-label">Organization</label>
@@ -42,11 +47,13 @@
                                     <input type="text" id="stock_sub_store_name_input_main" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input cannot_disable" autocomplete="off">
                                     <input type = "hidden" id = "stock_sub_store_name_input_main_id" ></input>
                                 </div>
+                                <div class = "col mb-1">
+                                    <label class = "form-label">Item</label>
+                                    <input type="text" id="stock_item_name_input_main" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input cannot_disable" autocomplete="off">
+                                    <input type = "hidden" id = "stock_item_name_input_main_id" ></input>
+                                </div>
                             </div>
                         
-                        </div>
-                        <div class = "col-md-4">
-                            <h2 class="text-center mt-2" id="shareProjectTitle">{{$title}}</h2>
                         </div>
                     </div>
 
@@ -78,13 +85,14 @@
 
     <script>
 
-    function viewDetailedStocks(itemId, locationId, itemAttributes)
+    function viewDetailedStocks(itemId, itemAttributes)
     {
         const modalId = "inventoryItemStockDetails";
         const modalTableId = "item-stock-details";
         const modal = new bootstrap.Modal(document.getElementById(modalId));
         modal.show();
-        document.getElementById(modalTableId).innerHTML = `
+        let modalBodyElement = document.getElementById(modalTableId);
+        modalBodyElement.innerHTML = `
         <tr>
         <td colspan = "9" class="text-center p-3">
             <div class="spinner-border text-primary" role="status"></div>
@@ -92,6 +100,8 @@
         </td>
         </tr>
         `;
+        modalBodyElement.setAttribute('item-id', itemId);
+        modalBodyElement.setAttribute('item-attributes', JSON.stringify(itemAttributes));
         // const itemId = document.getElementById('items_dropdown_' + itemIndex + '_value').value;
         // const locationId = document.getElementById('store_id_input').value;
         // const uomId = document.getElementById('uom_dropdown_' + itemIndex).value;
@@ -115,7 +125,6 @@
             type: 'POST',
             data : {
                 item_id : itemId,
-                location_id : locationId,
                 item_attributes : attributesArray
             },
             beforeSend: function () {
@@ -125,6 +134,13 @@
             success: function (response) {
                 if (response) {
                     document.getElementById(modalTableId).innerHTML = response;
+
+                    let itemsElement = document.getElementsByClassName('stock_items');
+                    let selectedItemId = [];
+                    for (let index = 0; index < itemsElement.length; index++) {
+                        selectedItemId.push(itemsElement[index].value);
+                    }
+                    modalBodyElement.setAttribute('all-item-ids', JSON.stringify(selectedItemId));
 
                     $("#stock_org_name_input_main").val($("#stock_org_name_input_0").val());
                     $("#stock_org_name_input_main_id").val($("#stock_org_name_input_id_0").val());
@@ -143,6 +159,7 @@
                     initializeAutoCompleteStockMain("stock_org_name_input_main", "stock_orgs", "name"); 
                     initializeAutoCompleteStockMain("stock_location_name_input_main", "stock_locations", "store_name"); 
                     initializeAutoCompleteStockMain("stock_sub_store_name_input_main", "stock_sub_locations", "name");
+                    initializeAutoCompleteStockMain("stock_item_name_input_main", "stock_items", "item_name");
 
                 } else {
                     document.getElementById(modalTableId).innerHTML = "";
@@ -270,6 +287,7 @@
                         organization_id : $("#stock_org_name_input_main_id").val(),
                         location_id : $("#stock_location_name_input_main_id").val(),
                         sub_store_id : $("#stock_sub_store_name_input_main_id").val(),
+                        item_ids : JSON.parse($("#item-stock-details").attr('all-item-ids'))
                     },
                     success: function(data) {
                         response($.map(data, function(item) {
@@ -319,10 +337,11 @@
                     $('.stock_sub_store_name_id').val(ui.item.id);
                     $('.stock_sub_store_name_input').val(ui.item.label);
                 }
-                let totalOrgsElement = document.getElementsByClassName('stock_org_name_input');
-                for (let index = 0; index < totalOrgsElement.length; index++) {
-                    updateStocks(totalOrgsElement[index].getAttribute('index'));
-                }
+                // let totalOrgsElement = document.getElementsByClassName('stock_org_name_input');
+                // for (let index = 0; index < totalOrgsElement.length; index++) {
+                //     updateStocks(totalOrgsElement[index].getAttribute('index'));
+                // }
+                reRenderStocks($("#stock_org_name_input_main_id").val(), $("#stock_location_name_input_main_id").val(), $("#stock_sub_store_name_input_main_id").val())
                 return false;
             },
             change: function(event, ui) {
@@ -359,10 +378,8 @@
                         $('.stock_sub_store_name_id').val("");
                         $('.stock_sub_store_name_input').val("");
                     }
-                    let totalOrgsElement = document.getElementsByClassName('stock_org_name_input');
-                    for (let index = 0; index < totalOrgsElement.length; index++) {
-                        updateStocks(totalOrgsElement[index].getAttribute('index'));
-                    }
+                    reRenderStocks($("#stock_org_name_input_main_id").val(), $("#stock_location_name_input_main_id").val(), $("#stock_sub_store_name_input_main_id").val())
+
                 }
             }
         }).focus(function() {
@@ -425,6 +442,76 @@
                 currentUnconfirmedStock.textContent = "0.00";
                 currentUnconfirmedStock.style.color = "red";
                 console.log(errorResponse?.message ? errorResponse?.message : 'Some internal error occured, Please try again after some time.');
+            },
+            complete: function () {
+                //LOG
+            }
+        });
+    }
+
+    function reRenderStocks(organizationId, locationId, subStoreId)
+    {
+        const modalId = "inventoryItemStockDetails";
+        const modalTableId = "item-stock-details";
+        let modalBodyElement = document.getElementById(modalTableId);
+        modalBodyElement.innerHTML = `
+        <tr>
+        <td colspan = "9" class="text-center p-3">
+            <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2">Loading...</p>
+        </td>
+        </tr>
+        `;
+        let itemId = modalBodyElement.getAttribute('item-id');
+        let itemAttributes = JSON.parse(modalBodyElement.getAttribute('item-attributes') ? modalBodyElement.getAttribute('item-attributes') : '[]');
+        let attributesArray = [];
+        itemAttributes.forEach(attr => {
+            attr.values_data.forEach(attrVal => {
+                if (attrVal.selected) {
+                    attributesArray.push({
+                        attribute_group_id : attr.attribute_group_id,
+                        attribute_name : attr.group_name,
+                        attribute_value_id : attrVal.id,
+                        attribute_value : attrVal.value
+                    });
+                }
+            });
+        });
+        $.ajax({
+            url: "{{ route('item.stock.details') }}",
+            type: 'POST',
+            data : {
+                item_id : itemId,
+                org_id : organizationId,
+                loc_id : locationId,
+                sub_store_id : subStoreId,
+                item_attributes : attributesArray,
+                filter_item_ids : $("#stock_item_name_input_main_id").val() ? [$("#stock_item_name_input_main_id").val()] : []
+            },
+            beforeSend: function () {
+                //Loader
+                // document.getElementById('erp-overlay-loader').style.display = "flex";
+            },
+            success: function (response) {
+                if (response) {
+                    document.getElementById(modalTableId).innerHTML = response;
+                } else {
+                    document.getElementById(modalTableId).innerHTML = "";
+                    Swal.fire({
+                        title: 'Error!',
+                        text: response.message ? response.message : 'Some internal error occured, Please try again after some time.',
+                        icon: 'error',
+                    });
+                }
+            },
+            error: function (xhr) {
+                let errorResponse = xhr.responseJSON;
+                document.getElementById(modalTableId).innerHTML = "";
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorResponse?.message ? errorResponse?.message : 'Some internal error occured, Please try again after some time.',
+                    icon: 'error',
+                });
             },
             complete: function () {
                 //LOG

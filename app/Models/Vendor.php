@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
+use App\Helpers\ConstantHelper;
 
 class Vendor extends Model
 {
@@ -17,6 +18,8 @@ class Vendor extends Model
         'organization_type_id',
         'category_id',
         'subcategory_id',
+        'book_id',
+        'book_code',
         'vendor_code',
         'vendor_type',
         'vendor_sub_type',
@@ -63,6 +66,10 @@ class Vendor extends Model
         'other_documents', 
         'enter_company_org_id',
         'status',
+        'document_status',
+        'approver_level', 
+        'revision_number',
+        'revision_date',
         'created_by'
     ];
     protected $dates = ['created_at', 'updated_at'];
@@ -251,24 +258,23 @@ class Vendor extends Model
 
     public function syncLocations(array $storeIds)
     {
-        VendorLocation::where('vendor_id', $this -> id) -> whereNotIn('store_id', $storeIds) -> delete();
-        $referencedStore = VendorLocation::whereNot('vendor_id', $this -> id)
-                -> whereIn('store_id', $storeIds) -> get();
-        if (count($referencedStore) > 0) {
-            $storeNames = '';
-            foreach ($referencedStore as $refStoreKey => $refStore) {
-                $storeNames .= (($refStoreKey == 0 ? '' : ',') . $refStore ?-> store ?-> store_name);
-            }
-            return array(
-                'status' => false,
-                'message' => $storeNames . ' already used'
-            );
-        }
+        $orgIds = [];
+        $locIds = [];
+        $subLocIds = [];
         foreach ($storeIds as $storeId) {
             VendorLocation::updateOrCreate([
-                'vendor_id' => $this -> id, 'store_id' => $storeId
+                'vendor_id' => $this -> id,
+                'organization_id' => $storeId['organization_id'],
+                'location_id' => $storeId['location_id'],
+                'store_id' => $storeId['store_id'],
             ]);
+            array_push($orgIds, $storeId['organization_id']);
+            array_push($locIds, $storeId['location_id']);
+            array_push($subLocIds, $storeId['store_id']);
         }
+        VendorLocation::where('vendor_id', $this -> id) -> whereNotIn('organization_id', $orgIds) 
+        -> whereNotIn('location_id', $locIds) -> whereNotIn('store_id', $subLocIds) -> delete();
+
         return array(
             'status' => true,
             'message' => ''
@@ -291,6 +297,25 @@ class Vendor extends Model
                 });
             }
         });
+    }
+
+    public function getDocumentStatusAttribute()
+    {
+        if ($this->attributes['document_status'] == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            return ConstantHelper::APPROVED;
+        }
+        return $this->attributes['document_status'];
+    }
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
+    public function getStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->attributes['status'] ?? '');
+        return ucwords($status);
     }
 
 }

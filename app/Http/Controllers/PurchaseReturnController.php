@@ -751,6 +751,13 @@ class PurchaseReturnController extends Controller
             $pb->save();
             if($pb->qty_return_type == 'accepted'){
                 $invoiceLedger = self::maintainStockLedger($pb);
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -2865,24 +2872,29 @@ class PurchaseReturnController extends Controller
         $user = Helper::getAuthenticatedUser();
         $detailIds = $pr->items->pluck('id')->toArray();
         $data = InventoryHelper::settlementOfInventoryAndStock($pr->id, $detailIds, ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS, $pr->document_status);
-        if(!empty($data['records'])){
-            $itemLocations = PRItemLocation::where('header_id', $pr->id)
-                ->whereIn('detail_id', $detailIds)
-                ->delete();
-
-            foreach($data['records'] as $key => $val){
-                $itemLocation = new PRItemLocation;
-                $itemLocation->header_id = @$val->issuedBy->document_header_id;
-                $itemLocation->detail_id = @$val->issuedBy->document_detail_id;
-                $itemLocation->store_id = @$val->store_id;
-                $itemLocation->rack_id = @$val->rack_id;
-                $itemLocation->shelf_id = @$val->shelf_id;
-                $itemLocation->bin_id = @$val->bin_id;
-                $itemLocation->quantity = @$val->total_receipt_qty;
-                $itemLocation->inventory_uom_qty = @$val->total_receipt_qty;
-                $itemLocation->save();
+        if($data['status'] == 'success'){
+            if(!empty($data['records'])){
+                $itemLocations = PRItemLocation::where('header_id', $pr->id)
+                    ->whereIn('detail_id', $detailIds)
+                    ->delete();
+    
+                foreach($data['records'] as $key => $val){
+                    $itemLocation = new PRItemLocation;
+                    $itemLocation->header_id = @$val->issuedBy->document_header_id;
+                    $itemLocation->detail_id = @$val->issuedBy->document_detail_id;
+                    $itemLocation->store_id = @$val->store_id;
+                    $itemLocation->rack_id = @$val->rack_id;
+                    $itemLocation->shelf_id = @$val->shelf_id;
+                    $itemLocation->bin_id = @$val->bin_id;
+                    $itemLocation->quantity = @$val->total_receipt_qty;
+                    $itemLocation->inventory_uom_qty = @$val->total_receipt_qty;
+                    $itemLocation->save();
+                }
             }
         }
+
+        return $data;
+        
     }
 
     public function generateEInvoice(Request $request)

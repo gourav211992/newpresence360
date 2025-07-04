@@ -64,6 +64,10 @@ use App\Models\ErpSaleInvoice;
 use App\Models\ErpInvoiceItem;
 use App\Models\PRHeader;
 use App\Models\PRDetail;
+use App\Models\Contact;
+use App\Models\BankInfo;
+use App\Models\Note;
+use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
 
 class Helper
@@ -2316,7 +2320,8 @@ return [
             }) -> orWhere(function ($userQuery) use($userIds) {
                 $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
             });
-        })->where('organization_id', $organizationId)->get();
+        })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER]) 
+        -> where('organization_id', $organizationId)->get();
         return $employees;
     }
 
@@ -2529,6 +2534,7 @@ return [
                 $ModelName = $modelOb ? get_class($modelOb) : '';
                 $HistoryModel = $ModelName . 'History';
                 $HistoryModelInstance = resolve($HistoryModel);
+               
 
                 if (isset($modelData['attachment']) && empty($modelData['attachment'])) {
                     $modelData['attachment'] = json_encode([]);
@@ -2536,6 +2542,7 @@ return [
                     $modelData['attachment'] = json_encode($modelData['attachment']);
                 }
                 $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
+             
                 array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
 
                 /*Media backup*/
@@ -2571,6 +2578,83 @@ return [
                             'fax_number' => $address->fax_number,
                             'is_billing' => $address->is_billing,
                             'is_shipping' => $address->is_shipping
+                        ]);
+                    }
+                }
+
+                  //compliances
+                  if (method_exists($modelOb, 'compliances') && $modelOb->compliances()->exists()) {
+                    $compliance = $modelOb->compliances; 
+
+                    Compliance::create([
+                        'morphable_id' => $insertedHistoryId,
+                        'morphable_type' => $HistoryModelInstance::class,
+                        'country_id' => $compliance->country_id,
+                        'tds_applicable' => $compliance->tds_applicable,
+                        'wef_date' => $compliance->wef_date,
+                        'tds_certificate_no' => $compliance->tds_certificate_no,
+                        'tds_tax_percentage' => $compliance->tds_tax_percentage,
+                        'tds_category' => $compliance->tds_category,
+                        'tds_value_cab' => $compliance->tds_value_cab,
+                        'tan_number' => $compliance->tan_number,
+                        'gst_applicable' => $compliance->gst_applicable,
+                        'gstin_no' => $compliance->gstin_no,
+                        'gst_registered_name' => $compliance->gst_registered_name,
+                        'gstin_registration_date' => $compliance->gstin_registration_date,
+                        'msme_registered' => $compliance->msme_registered,
+                        'msme_no' => $compliance->msme_no,
+                        'msme_type' => $compliance->msme_type,
+                        'gst_certificate' => $compliance->gst_certificate,
+                        'msme_certificate' => $compliance->msme_certificate,
+                        'status' => $compliance->status,
+                    ]);
+                }
+                //bank Info
+                if (method_exists($modelOb, 'bankInfos') && $modelOb->bankInfos()->exists()) {
+                    $bankInfos = $modelOb->bankInfos; 
+                
+                    foreach ($bankInfos as $bankInfo) {
+                        BankInfo::create([
+                            'morphable_id' => $insertedHistoryId,
+                            'morphable_type' => $HistoryModelInstance::class,
+                            'bank_name' => $bankInfo->bank_name ?? null,
+                            'beneficiary_name' => $bankInfo->beneficiary_name ?? null,
+                            'account_number' => $bankInfo->account_number ?? null,
+                            're_enter_account_number' => $bankInfo->re_enter_account_number ?? null,
+                            'ifsc_code' => $bankInfo->ifsc_code ?? null,
+                            'primary' => $bankInfo->primary ?? null,
+                            'cancel_cheque' => $bankInfo->cancel_cheque ?? null,
+                            'status' => $bankInfo->status ?? null,
+                        ]);
+                    }
+                }
+                
+                //contact
+                if (method_exists($modelOb, 'contacts') && $modelOb->contacts()->count()) {
+                    foreach ($modelOb->contacts as $contact) {
+                        Contact::create([
+                            'contactable_id' => $insertedHistoryId,
+                            'contactable_type' => $HistoryModelInstance::class,
+                            'primary' => $contact->primary,
+                            'salutation' => $contact->salutation,
+                            'name' => $contact->name,
+                            'email' => $contact->email,
+                            'mobile' => $contact->mobile,
+                            'phone' => $contact->phone,
+                            'status' => $contact->status,
+                        ]);
+                    }
+                }
+             
+                 //Note
+                 if (method_exists($modelOb, 'notes') && $modelOb->notes()->count()) {
+                    foreach ($modelOb->notes as $note) {
+                      $note=  Note::create([
+                            'noteable_id' => $insertedHistoryId,
+                            'noteable_type' => $HistoryModelInstance::class,
+                            'remark' => $note->remark,
+                            'created_by_type' => $note->created_by_type,
+                            'created_by' => $note->created_by,
                         ]);
                     }
                 }
@@ -3259,13 +3343,12 @@ return [
 
         public static function getGroupsQuery($organizations=[])
         {
-            $groups = Group::where('status', 'active')
-        ->where(function ($q) {
-        $q->withDefaultGroupCompanyOrg()
-          ->orWhere('edit', 0);
-    });
+            $groups = Group::where(function ($q) {
+                $q->withDefaultGroupCompanyOrg()
+                ->orWhere('edit', 0);
+            })->where('status', 'active');
 
-    return $groups;
+            return $groups;
         }
 
         public static function getCurrentFy($date = null)

@@ -31,6 +31,8 @@ class Compliance extends Model
         'msme_type',
         'gst_certificate',
         'msme_certificate',
+        'morphable_id' ,
+        'morphable_type',
         'status',
     ];
 

@@ -1,21 +1,21 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Exceptions\ApiGenericException;
 use App\Models\ItemSubType;
 use Yajra\DataTables\DataTables;
 use App\Http\Requests\ItemRequest;
 use App\Models\Item;
+use App\Models\ItemHistory;
 use App\Models\SubType;
 use App\Models\Hsn;
 use App\Models\Unit;
 use App\Models\Category;
-use App\Models\SubCategory;
 use App\Models\Vendor;
 use App\Models\Customer;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
-use App\Models\Attribute;
 use App\Models\Currency;
 use App\Models\AttributeGroup;
 use App\Models\AlternateUOM;
@@ -39,10 +39,10 @@ use Carbon\Carbon;
 use App\Mail\ImportComplete;
 use Illuminate\Support\Facades\Mail;
 use App\Models\FixedAssetSetup;
-use App\Models\InspectionChecklist;
 use App\Models\OrganizationGroup;
 use Auth;
 use stdClass;
+use Exception;
 
 
 class ItemController extends Controller
@@ -64,7 +64,7 @@ class ItemController extends Controller
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
         if (request()->ajax()) {
-            $query = Item::WithDefaultGroupCompanyOrg()
+            $query = Item::withDraftListingLogic() 
                 ->with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
                 ->orderBy('id', 'desc');
                 
@@ -135,44 +135,40 @@ class ItemController extends Controller
                 ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
                 })
-                ->addColumn('status_action', function ($row) {
-                    $statusClass = 'badge-light-secondary';
-                    if ($row->status == 'active') {
-                        $statusClass = 'badge-light-success';
-                    } elseif ($row->status == 'inactive') {
-                        $statusClass = 'badge-light-danger';
-                    } elseif ($row->status == 'draft') {
-                        $statusClass = 'badge-light-warning';
-                    }
-    
-                    $status = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">'
-                        . ucfirst($row->status ?? 'Unknown') . '</span>';
-    
-                    $action = '
-                        <div class="dropdown">
-                            <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                                <i data-feather="more-vertical"></i>
+
+              ->editColumn('status', function ($row) {
+                $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT); 
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$statusKey] ?? 'badge-light-secondary';
+                
+                $statusLabel = ucfirst(str_replace('_', ' ', $row->getRawOriginal('status') ?? 'N/A'));
+                $editRoute = route('item.edit', ['id' => $row->id]);
+
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill {$statusClass} badgeborder-radius'>{$statusLabel}</span>
+                        <div class='dropdown' style='display:inline;'>
+                            <button type='button' class='btn btn-sm dropdown-toggle hide-arrow py-0 p-0' data-bs-toggle='dropdown'>
+                                <i data-feather='more-vertical'></i>
                             </button>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <a class="dropdown-item" href="' . route('item.edit', $row->id) . '">
-                                    <i data-feather="edit-3" class="me-50"></i>
-                                    <span>Edit</span>
+                            <div class='dropdown-menu dropdown-menu-end'>
+                                <a class='dropdown-item' href='{$editRoute}'>
+                                    <i data-feather='edit-3' class='me-50'></i>
+                                    <span>View/ Edit Detail</span>
                                 </a>
                             </div>
-                        </div>';
-                    return '<div class="d-flex align-items-center justify-content-end">' . $status . $action . '</div>';
-                })
-                ->rawColumns(['status_action'])
-                ->make(true);
+                        </div>
+                    </div>
+                ";
+            })
+            ->rawColumns(['status'])
+            ->make(true);
 
         }
         $subtypes = SubType::where('status', 'active')->get();
-        $hsns = Hsn::withDefaultGroupCompanyOrg()
-            ->where('status', ConstantHelper::ACTIVE)
+        $hsns = Hsn::where('status', ConstantHelper::ACTIVE)
             ->get();
     
-        $categories = Category::withDefaultGroupCompanyOrg()
-            ->where('type', 'Product')
+        $categories = Category::where('type', 'Product')
             ->doesntHave('subCategories')
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
@@ -189,23 +185,23 @@ class ItemController extends Controller
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
         $subTypes = SubType::where('status', ConstantHelper::ACTIVE)->get();
-        $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $units = Unit::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
+        $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->get();
+        $units = Unit::where('status', ConstantHelper::ACTIVE)->get();
         $organizations = Organization::where('status', ConstantHelper::ACTIVE)->get();
-        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->WithDefaultGroupCompanyOrg()->get();
-        $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $customers = Customer::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $attributeGroups = AttributeGroup::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $allItems = Item::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
+        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
+        $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
+        $customers = Customer::where('status', ConstantHelper::ACTIVE)->get();
+        $attributeGroups = AttributeGroup::where('status', ConstantHelper::ACTIVE)->get();
+        $allItems = Item::where('status', ConstantHelper::ACTIVE)->get();
         $types = ConstantHelper::ITEM_TYPES;
         $storageTypes = ConstantHelper::STORAGE_TYPES;
         $status = ConstantHelper::STATUS;
         $service = ConstantHelper::IS_SERVICE;
         $options = ConstantHelper::STOP_OPTIONS;
-        $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
+        $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->select('id', 'asset_category_id')->get();
+        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $itemCodeType ='Manual';
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
@@ -259,7 +255,7 @@ class ItemController extends Controller
         $authUser = Helper::getAuthenticatedUser();
         $organizationId = $authUser->organization_id;
         if ($itemId) {
-            $existingItem = Item::withDefaultGroupCompanyOrg()->find($itemId);
+            $existingItem = Item::find($itemId);
             if ($existingItem) {
                 $existingItemCode = $existingItem->item_code;
                 $currentBaseCode = substr($existingItemCode, 0, strlen($baseCode));
@@ -268,8 +264,7 @@ class ItemController extends Controller
                 }
             }
         }
-        $lastSimilarItem = Item::withDefaultGroupCompanyOrg()
-           ->where('item_code', 'like', "{$baseCode}%")
+        $lastSimilarItem = Item::where('item_code', 'like', "{$baseCode}%")
             ->orderBy('item_code', 'desc')->first();
     
         $nextSuffix = '001';
@@ -298,7 +293,7 @@ class ItemController extends Controller
         $orgGroup = OrganizationGroup::find($organization->group_id);
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
             $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -312,18 +307,58 @@ class ItemController extends Controller
                 $validatedData['company_id'] = null;
                 $validatedData['organization_id'] = null;
             }
+            // Insert Book ID (if current_book exists)
+            if (isset($services['current_book'])) { 
+                $book = $services['current_book'];
+                if ($book) {
+                    $validatedData['book_id'] = $book->id;
+                } else {
+                    $validatedData['book_id'] = null;
+                }
+            } else {
+                $validatedData['book_id'] = null;
+            }
         } else {
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
             $validatedData['organization_id'] = null;
         }
-        if ($request->document_status === 'submitted') {
-            $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 
-        } else {
-            $validatedData['status'] = ConstantHelper::DRAFT;
-        }
-    
+
         $item = Item::create($validatedData);
+
+        if ($request->document_status === ConstantHelper::SUBMITTED) {
+            $bookId = $item->book_id;
+            $docId = $item->id;
+            $remarks = $request->remarks; 
+            $attachments = $request->file('attachment');
+            $currentLevel = $item->approval_level ?? 1;
+            $revisionNumber = $item->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($item);
+            $totalValue = 0;
+        
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $item->document_status = $document_status;
+            $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                if ($submittedStatus === ConstantHelper::INACTIVE) {
+                    $item->status = ConstantHelper::INACTIVE;
+                } else {
+                    $item->status = ConstantHelper::ACTIVE;
+                }
+            } else {
+                $item->status = $document_status;
+            }
+            
+        } else {
+            $document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $item->document_status = $document_status;
+            $item->status = $document_status;
+        }
+        
+         $item->save();
+    
         if ($request->has('sub_types')) {
             // $item->subTypes()->attach($request->input('sub_types'));
             // $item->subTypesData()->attach($request->input('sub_types'));
@@ -436,7 +471,7 @@ class ItemController extends Controller
             'message' => 'Record created successfully',
             'data' => $item,
         ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Failed to create record',
@@ -517,7 +552,7 @@ class ItemController extends Controller
             if ($user->email) {
                 try {
                     Mail::to($user->email)->send(new ImportComplete( $mailData)); 
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
             }
@@ -533,7 +568,7 @@ class ItemController extends Controller
                 'status' => false,
                 'message' => 'Invalid file format or file size. Please upload a valid .xlsx or .xls file with a maximum size of 30MB.',
             ], 400);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'status' => false,
                 'message' => 'Failed to import items: ' . $e->getMessage(),
@@ -544,8 +579,8 @@ class ItemController extends Controller
     public function exportSuccessfulItems()
     {
         $user = Helper::getAuthenticatedUser();
-        $uploadItems = UploadItemMaster::withDefaultGroupCompanyOrg()->where('status', 'Success')->where('user_id', $user->id)->get();
-        $items = Item::withDefaultGroupCompanyOrg()->with(['category', 'subTypes', 'subcategory', 'hsn', 'uom', 'itemAttributes', 'specifications', 'alternateUOMs'])->whereIn('item_code', $uploadItems->pluck('item_code'))->get();
+        $uploadItems = UploadItemMaster::where('status', 'Success')->where('user_id', $user->id)->get();
+        $items = Item::with(['category', 'subTypes', 'subcategory', 'hsn', 'uom', 'itemAttributes', 'specifications', 'alternateUOMs'])->whereIn('item_code', $uploadItems->pluck('item_code'))->get();
         return Excel::download(new ItemsExport($items, $this->itemImportExportService), "successful-items.xlsx");
     }
     
@@ -553,16 +588,27 @@ class ItemController extends Controller
     public function exportFailedItems()
     {
         $user = Helper::getAuthenticatedUser();
-        $failedItems = UploadItemMaster::withDefaultGroupCompanyOrg()->where('status', 'Failed')->where('user_id', $user->id)->get();
+        $failedItems = UploadItemMaster::where('status', 'Failed')->where('user_id', $user->id)->get();
         return Excel::download(new FailedItemsExport($failedItems), "failed-items.xlsx");
     }
 
-    public function edit($id)
+    public function edit(Request $request,$id)
     {
+        if ($request->has('revisionNumber')) {
+            $item = ItemHistory::with(['subTypes.subType'])
+                ->where('source_id', $id)
+                ->where('revision_number', $request->revisionNumber)
+                ->firstOrFail();
+            $ogItem = Item::with(['subTypes.subType'])
+            ->findOrFail($id);
+        } else {
+            $item = Item::with(['subTypes.subType'])
+                ->findOrFail($id);
+            $ogItem = $item;
+        }
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
-        $item = Item::findOrFail($id);
         $subTypes = $item->subTypes; 
         $subtypeNames = $subTypes->map(function ($itemSubType) {
             return optional($itemSubType->subType)->name;
@@ -591,11 +637,11 @@ class ItemController extends Controller
             $attributeTablesToCheck = $defaultAttributeTables;
         }
         
-        $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $units = Unit::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $categories = Category::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->whereNull('parent_id')  ->get();
-        $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $customers = Customer::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
+        $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->get();
+        $units = Unit::where('status', ConstantHelper::ACTIVE)->get();
+        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')  ->get();
+        $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
+        $customers = Customer::where('status', ConstantHelper::ACTIVE)->get();
         $types = ConstantHelper::ITEM_TYPES;
         $storageTypes = ConstantHelper::STORAGE_TYPES;
         $status = ConstantHelper::STATUS;
@@ -603,10 +649,10 @@ class ItemController extends Controller
         $service = ConstantHelper::IS_SERVICE;
         $organizations = Organization::where('status', ConstantHelper::ACTIVE)->get();
         $subTypes = SubType::where('status', ConstantHelper::ACTIVE)->get();
-        $attributeGroups = AttributeGroup::with('attributes')->WithDefaultGroupCompanyOrg()->get();
-        $allItems = Item::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->WithDefaultGroupCompanyOrg()->get();
-        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->select('id', 'asset_category_id')->get();
+        $attributeGroups = AttributeGroup::with('attributes')->get();
+        $allItems = Item::where('status', ConstantHelper::ACTIVE)->get();
+        $specificationGroups = ProductSpecification::where('status', ConstantHelper::ACTIVE)->get();
+        $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $bomCheckResult = ItemHelper::checkItemBomExists($item->id, [], 'bom', null);
@@ -627,6 +673,18 @@ class ItemController extends Controller
                 }
          }
         }
+        $revision_number = $item->revision_number;
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay($item->book_id,$item->document_status , $item->id, 1, $item->approval_level, $item -> created_by ?? 0, $userType['type'], $revision_number);
+        $revNo = $item->revision_number;
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $item->revision_number;
+        }
+        $docValue =1;
+        $approvalHistory = Helper::getApprovalHistory($ogItem->book_id, $ogItem->id, $revNo, $docValue, $ogItem -> created_by);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$item->document_status] ?? '';
         return view('procurement.item.edit', [
             'item' => $item,
             'hsns' => $hsns,
@@ -651,6 +709,10 @@ class ItemController extends Controller
             'currencies'=>$currencies,
             'isBomExists'=>$isBomExists,
             'fixedAssetCategories'=>$fixedAssetCategories,
+            'revision_number'=>$revision_number,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'docStatusClass' => $docStatusClass,
         ]);
     }
 
@@ -665,6 +727,7 @@ class ItemController extends Controller
             return response()->json(['error' => 'Item not found'], 404);
         }
         $validatedData = $request->validated();
+        
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;
         }
@@ -674,7 +737,7 @@ class ItemController extends Controller
         $orgGroup = OrganizationGroup::find($organization->group_id);
         
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
             $serviceId = $firstService->service_id;
             $policyData = Helper::getPolicyByServiceId($serviceId);
@@ -688,19 +751,101 @@ class ItemController extends Controller
                 $validatedData['company_id'] = null;
                 $validatedData['organization_id'] = null;
             }
+            if (isset($services['current_book'])) { 
+                $book = $services['current_book'];
+                 if ($book) {
+                     $validatedData['book_id'] = $book->id;
+                 } else {
+                     $validatedData['book_id'] = null;
+                 }
+             } else {
+                 $validatedData['book_id'] = null;
+             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
             $validatedData['company_id'] = null;
             $validatedData['organization_id'] = null;
         }
-        if ($request->input('document_status') === 'submitted') {
-            $validatedData['status'] = $validatedData['status'] ?? ConstantHelper::ACTIVE; 
-        } else {
-            $validatedData['status'] = ConstantHelper::DRAFT;
+
+        $currentStatus = $item->document_status;
+        $actionType = $request->action_type ?? 'submit'; 
+        $amendRemarks = $request->amend_remarks ?? null;
+      
+        if (($item->document_status == ConstantHelper::APPROVED || $item->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
+            && $actionType == 'amendment') {
+                
+            $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'Item', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'ItemSubType', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'AlternateUOM', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'AlternateItem', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'ItemAttribute', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'ItemSpecification', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'VendorItem', 'relation_column' => 'item_id'],
+                ['model_type' => 'detail', 'model_name' => 'CustomerItem', 'relation_column' => 'item_id'],
+             
+            ];
+
+            Helper::documentAmendment($revisionData, $item->id);
         }
-    
         $item->fill($validatedData);
         $item->save();
+        // Document Approval Logic
+        if ($request->input('current_status') === ConstantHelper::SUBMITTED ) {
+            $bookId = $item->book_id;
+            $docId = $item->id;
+            $remarks = $item->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $item->approval_level ?? 1;
+            $modelName = get_class($item);
+            $submittedStatus = $request->input('status');
+    
+            if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+                $revisionNumber = $item->revision_number + 1;
+                $totalValue = 0; 
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $item->revision_number = $revisionNumber;
+                $item->approval_level = 1;
+                $item->revision_date = now();
+        
+                $statusAfterApproval = $approveDocument['approvalStatus'] ?? $item->document_status;
+
+                $item->document_status = $statusAfterApproval;
+            
+                if (in_array($statusAfterApproval, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $item->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $item->status = ConstantHelper::ACTIVE;
+                    }
+                } else {
+                    $item->status = $statusAfterApproval;
+                }
+            } else {
+                $revisionNumber = $item->revision_number ?? 0;
+                $totalValue = 0;
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $document_status = $approveDocument['approvalStatus'];
+                $item->document_status = $document_status;
+               if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $item->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $item->status = ConstantHelper::ACTIVE;
+                    }
+                } else {
+                    $item->status = $document_status;
+                }
+            }
+        
+        } else {
+            $document_status = $request->current_status ?? ConstantHelper::DRAFT;
+            $item->document_status = $document_status;
+            $item->status = $document_status;
+        }
+        
+        $item->save(); 
+    
         if ($request->type === 'Goods') {
             $previousSubTypes = $item -> subTypes -> pluck('sub_type_id') -> toArray();
             $requestSubTypes = $request->sub_types ? $request->sub_types : [];
@@ -954,12 +1099,44 @@ class ItemController extends Controller
       
         DB::commit();
         return response()->json(['message' => 'Record updated successfully']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Failed to update item',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    public function revoke(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $item = Item::find($request -> id);
+            if (isset($item)) {
+                $revoke = Helper::approveDocument($item -> book_id, $item -> id, $item -> revision_number, '', [], 0, ConstantHelper::REVOKE, $item -> cost_price, get_class($item));
+                if ($revoke['message']) {
+                    DB::rollBack();
+                    return response() -> json([
+                        'status' => 'error',
+                        'message' => $revoke['message'],
+                    ]);
+                } else {
+                    $item -> document_status = $revoke['approvalStatus'];
+                    $item -> save();
+                    DB::commit();
+                    return response() -> json([
+                        'status' => 'success',
+                        'message' => 'Revoked succesfully',
+                    ]);
+                }
+            } else {
+                DB::rollBack();
+                throw new ApiGenericException("No Document found");
+            }
+        } catch(Exception $ex) {
+            DB::rollBack();
+            throw new ApiGenericException($ex -> getMessage());
         }
     }
 
@@ -982,7 +1159,7 @@ class ItemController extends Controller
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['success' => false, 'message' => 'UOM not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -1004,7 +1181,7 @@ class ItemController extends Controller
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['success' => false, 'message' => 'Approved customer not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -1025,7 +1202,7 @@ class ItemController extends Controller
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['success' => false, 'message' => 'Approved vendor not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -1046,7 +1223,7 @@ class ItemController extends Controller
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['success' => false, 'message' => 'Attribute not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -1067,7 +1244,7 @@ class ItemController extends Controller
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
             }
             return response()->json(['success' => false, 'message' => 'Alternate item not found'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
@@ -1103,7 +1280,7 @@ class ItemController extends Controller
                 'message' => 'Record deleted successfully'
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
@@ -1115,14 +1292,12 @@ class ItemController extends Controller
     public function getItem(Request $request)
     {
         $searchTerm = $request->input('term', ''); 
-        $items = Item::withDefaultGroupCompanyOrg() 
-            ->where('item_name', 'like', "%{$searchTerm}%")
+        $items = Item::where('item_name', 'like', "%{$searchTerm}%")
             ->where('status', ConstantHelper::ACTIVE)
             ->limit(10)
             ->get(['id', 'item_name', 'item_code']);
         if ($items->isEmpty()) {
-            $items = Item::withDefaultGroupCompanyOrg()
-                ->where('status', ConstantHelper::ACTIVE)
+            $items = Item::where('status', ConstantHelper::ACTIVE)
                 ->limit(10)
                 ->get(['id', 'item_name', 'item_code']);
         }

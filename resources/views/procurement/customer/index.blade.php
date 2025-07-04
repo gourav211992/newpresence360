@@ -185,39 +185,10 @@
                     return data ?data  : 'N/A'; 
                 }},
                 {
-                    data: null, 
-                    name: 'status_action',
+                    data: 'status',
+                    name: 'status',
                     orderable: false,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        let statusClass = 'badge-light-secondary';
-                        if (row.status == 'active') {
-                            statusClass = 'badge-light-success';
-                        } else if (row.status == 'inactive') {
-                            statusClass = 'badge-light-danger';
-                        } else if (row.status == 'draft') {
-                            statusClass = 'badge-light-warning';
-                        }
-
-                        const status = `<span class="badge rounded-pill ${statusClass} badgeborder-radius">
-                                        ${row.status ? row.status.charAt(0).toUpperCase() + row.status.slice(1) : 'Unknown'}
-                                      </span>`;
-
-                        const editUrl = "{{ url('customers') }}/" + row.id + "/edit";
-                        const action = `<div class="dropdown">
-                                          <button type="button" class="btn btn-sm dropdown-toggle hide-arrow p-0" data-bs-toggle="dropdown">
-                                              <i data-feather="more-vertical"></i>
-                                          </button>
-                                          <div class="dropdown-menu">
-                                              <a class="dropdown-item" href="${editUrl}">
-                                                  <i data-feather="edit-3" class="me-50"></i>
-                                                  <span>Edit</span>
-                                              </a>
-                                          </div>
-                                        </div>`;
-
-                        return '<td class="text-nowrap"><div class="d-flex align-items-center justify-content-end">' + status + action + '</div></td>';
-                    }
+                    searchable: false
                 },
             ],
             dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -232,35 +203,35 @@
                             text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7,8,9,10,11] }
                         },
                         {
                             extend: 'csv',
                             text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11] }
                         },
                         {
                             extend: 'excel',
                             text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11] }
                         },
                         {
                             extend: 'pdf',
                             text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11] }
                         },
                         {
                             extend: 'copy',
                             text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
                             className: 'dropdown-item',
                             title: 'Customer Master',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11,12] }
+                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6 ,7,8,9,10,11] }
                         }
                     ],
                     init: function(api, node, config) {

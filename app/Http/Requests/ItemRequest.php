@@ -102,7 +102,7 @@ class ItemRequest extends FormRequest
             'so_positive_tolerance' => 'nullable|numeric|gt:0|max:100',
             'so_negative_tolerance' => 'nullable|numeric|gt:0|max:100',
             'status' => 'nullable',
-
+            'document_status' => 'nullable',
             'alternate_uoms' => 'nullable|array',
             'alternate_uoms.*.id' => 'nullable',
             'alternate_uoms.*.uom_id' => 'nullable|exists:erp_units,id',
