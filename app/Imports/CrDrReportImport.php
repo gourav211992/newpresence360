@@ -127,7 +127,7 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
             'ledger_name'      => $row['ledger_name'] ?? null,
             'doc_type'=> $type,
             'ledger_group'     => $row['ledger_group'] ?? null,
-            'voucher_no'       => $row['document_no'] ?? null,
+            'voucher_no'       => $row['voucher_no'] ?? null,
             'voucher_id'=>  $row['voucher_id']??null,
             'ledger_id'=>   $row['ledger_id']??null,
             'ledger_group_id'=>   $row['ledger_group_id']??null,
@@ -150,7 +150,7 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
     //    return UploadPendingPaymentMaster::create([
     //         'ledger_name'      => $row['ledger_name'] ?? null,
     //         'ledger_group'     => $row['ledger_group'] ?? null,
-    //         'voucher_no'       => $row['document_no'] ?? null,
+    //         'voucher_no'       => $row['voucher_no'] ?? null,
     //         'settle_amount'    => $row['settle_amount'] ?? null,
     //         'balance'          => $row['balance'] ?? null,
     //         'user_id'          => $user->id,

@@ -3391,6 +3391,7 @@ return [
                 ] : null;
             })
             ->filter()
+            ->unique('id')
             ->values()
             ->toArray();
     }

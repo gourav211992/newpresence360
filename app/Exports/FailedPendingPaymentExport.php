@@ -32,7 +32,7 @@ class FailedPendingPaymentExport implements FromCollection, WithHeadings, WithMa
             'Ledger Name',
             'Ledger Group',
             'Series',
-            'Document No.',
+            'Voucher No.',
             'Balance',
             'Settle Amount',
             'Remarks',

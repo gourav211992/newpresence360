@@ -19,7 +19,7 @@ class CrDrImportExportService
         $requiredFields = [
             'ledger_name'   => 'Ledger Name',
             'ledger_group'  => 'Ledger Group',
-            'document_no'   => 'Voucher No',
+            'voucher_no'   => 'Voucher No',
             'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
             'balance'       => 'Balance'
@@ -36,7 +36,7 @@ class CrDrImportExportService
     public function processData(array $row,$type){
         $ledgerName   = isset($row['ledger_name']) ? trim($row['ledger_name']) : null;
         $ledgerGroup  = isset($row['ledger_group']) ? trim($row['ledger_group']) : null;
-        $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
+        $voucherNo    = isset($row['voucher_no']) ? trim($row['voucher_no']) : null;
         $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
         $balance      = isset($row['balance']) ? trim($row['balance']) : null;
         $series      = isset($row['series']) ? trim($row['series']) : null;

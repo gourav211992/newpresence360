@@ -282,8 +282,6 @@
 
 
         function loadCostGroupsByLocation(locationId) {
-        const costCenter = $('#cost_center_id');
-        costCenter.val(@json(request('cost_center_id')) || "");
         const filteredCenters = costCenters.filter(center => {
             if (!center.location) return false;
             const locationArray = Array.isArray(center.location)
@@ -311,15 +309,7 @@
         const costCenter = $('#cost_center_id');
         costCenter.empty();
 
-        const filteredCenters = costCenters.filter(center => {
-            if (!center.location || center.cost_group_id !== groupId) return false;
-
-            const locationArray = Array.isArray(center.location)
-                ? center.location.flatMap(loc => loc.split(','))
-                : [];
-
-            return locationArray.includes(String(locationId));
-        });
+        const filteredCenters = costCenters.filter(center => center.cost_group_id === groupId);
 
         if (filteredCenters.length === 0) {
             costCenter.prop('required', false);
@@ -352,9 +342,9 @@
         $('#location_id').on('change', function() {
             const locationId = $(this).val();
             if (!locationId) {
-                $('#cost_center_id').empty().append('<option value="">Select</option>');
-                  $('#cost_center_id').prop('required', false);
-                $('.cost_center').hide();
+                // $('#cost_center_id').empty().append('<option value="">Select</option>');
+                //   $('#cost_center_id').prop('required', false);
+                // $('.cost_center').hide();
                 // $('.cost_center').hide(); // Optional: hide the section if needed
                 return;
             }
