@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\BillOfMaterial;
 
-use App\Exports\BomExport;
+use App\Exports\DynamicExport;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
@@ -19,14 +19,11 @@ use App\Models\BomAttribute;
 use App\Models\BomDetail;
 use App\Models\BomMedia;
 use App\Models\BomOverhead;
-use App\Models\Book;
 use App\Models\Item;
-use App\Models\NumberPattern;
 use App\Models\ErpBomDynamicField;
 use App\Models\Organization;
 use App\Models\ItemAttribute;
 use App\Models\BomNormsCalculation;
-use Auth;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
@@ -39,8 +36,7 @@ use App\Models\BomInstruction;
 use App\Models\Overhead;
 use App\Models\ProductionRoute;
 use App\Models\Station;
-use Excel;
-use PHPUnit\TextUI\Configuration\Constant;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 class BomController extends Controller
 {
@@ -1820,17 +1816,13 @@ class BomController extends Controller
 
     public function export(Request $request, $id)
     {
-        $bom = Bom::findOrFail($id);
-        if (!$bom) {
-            return '';
-        }
-        $label = $bom->type === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? 'Quotation_Bom_' : 'Production_Bom_';
-        return Excel::download(
-            new BomExport($id),
-            $label . now()->format('Ymd_His') . '.xlsx'
-        );
+        $exportData1 = app(\App\Services\BomExportService::class)->getExportData($id);
+        $parentUrl = request()->segments()[0];
+        $label = $parentUrl == 'quotation-bom' ? 'Quotation_Bom_' : 'Production_Bom_';
+        $title = $label . now()->format('Ymd_His') . '.xlsx';
+        return Excel::download(new DynamicExport($exportData1), $title);
     }
-
+    
     public function destroy($id)
     {
         DB::beginTransaction();

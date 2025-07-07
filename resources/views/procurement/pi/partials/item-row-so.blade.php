@@ -77,7 +77,7 @@
 </td>
 @endif
 <td>
-    <input type="text" name="components[{{$rowCount}}][remark]" class="form-control mw-100 mb-25"/>
+    <input type="text" name="components[{{$rowCount}}][remark]" value="{{$so_item['remark'] ?? ''}}" class="form-control mw-100 mb-25"/>
 </td>
 <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{@$so_item['so_id']}}">
 <input type="hidden" name="components[{{$rowCount}}][so_pi_mapping_item_id]" value="{{@$so_item['item_id']}}">

@@ -87,7 +87,11 @@ class WhmJob
                 ];
             }
 
-            ErpItemUniqueCode::insert($records);
+            foreach (array_chunk($records, 500) as $chunk) {
+                ErpItemUniqueCode::insert($chunk);
+            }
+
+            // ErpItemUniqueCode::insert($records);
 
         } elseif ($qty < $existingCount) {
             $diff = $existingCount - $qty;

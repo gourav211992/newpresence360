@@ -12,6 +12,12 @@ class ErpService extends Model
 
     protected $connection = 'mysql_master';
 
+    public function __construct(array $attributes = [])
+    {
+        $this->table = config('database.connections.mysql_master.database') .'.'.$this->table;
+        parent::__construct($attributes);
+    }
+
 
     protected $fillable = [
         'name',
@@ -19,9 +25,4 @@ class ErpService extends Model
         'icon',
         'status'
     ];
-
-        public function getConnectionName()
-    {
-        return "mysql_master";
-    }
 }

@@ -2482,99 +2482,123 @@ class CrDrReportController extends Controller
 
         return response()->json(['status' => 'Cache updated']);
     }
-    public function importingProgress($type)
-    {
-       if(!($type=="payments" || $type=="receipts"))
+    public function importingProgress(Request $request, $type)
+{
+    if (!($type == "payments" || $type == "receipts")) {
+        if ($request->ajax()) {
+            return response()->json(['error' => 'Invalid type'], 422);
+        }
         return back();
-        $user = Helper::getAuthenticatedUser()->id;
-        $data = UploadPendingPaymentMaster::where('user_id', $user)
-        ->where('import_status', 'Success')->where('doc_type',$type)->get()->toArray();
-        $grouped = collect($data)->groupBy('ledger_id');
-        $data = $grouped->toArray();
-        $flattened = collect($data)->flatMap(function ($voucher) use($type)  {
-            return collect($voucher)->map(function ($item) use($type)  {
-            $ledger = Ledger::find($item['ledger_id']);
+    }
+
+    $user = Helper::getAuthenticatedUser()->id;
+    $data = UploadPendingPaymentMaster::where('user_id', $user)
+        ->where('import_status', 'Success')
+        ->where('doc_type', $type)
+        ->get()->toArray();
+    $grouped = collect($data)->groupBy('ledger_id');
+    $data = $grouped->toArray();
+
+    $validationErrors = [];
+    $reportedLedgers = [];
+
+    $flattened = collect($data)->flatMap(function ($voucher) use ($type, &$validationErrors, &$reportedLedgers) {
+        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers) {
+            $ledger = Ledger::with('customer', 'vendor')->find($item['ledger_id']);
             $group = Group::find($item['ledger_group_id']);
-        //     if($type=="payments"){
-        //     $it = ItemDetail::where('voucher_id',$item['voucher_id'])
-        //     ->where('ledger_id',$ledger->id)
-        //     ->where('credit_amt_org','>',0)->first();
-        // }
-        //     else {
-        //         $it = ItemDetail::where('voucher_id',$item['voucher_id'])
-        //     ->where('ledger_id',$ledger->id)
-        //     //->where('debit_amt_org','>',0)
-        //     ->get();
-        //     dd($it);
-        // }
-                $org = Voucher::find($item['voucher_id'])?->organization?->name;
+            $relation = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
+            $ledgerName = $ledger ? $ledger->name : ($item['ledger_name'] ?? 'Unknown Ledger');
 
-            
-        
-                return [
-                    'voucher_id' => $item['voucher_id'],
-                    'item_id' => null,
-                    'ledger_id' => $ledger->id,
-                    'ledger_code' => $ledger->code ?? '-',
-                    'ledger_name' => $ledger->name ?? '-',
-                    'ledger_group_name' => $group->name ?? '-',
-                    'ledger_parent_id' => $group->id ?? null,
-                    'amount' => null,
-                    'settle_amt' => $item['settle_amount'] ?? 0,
-                    'organization' => $org??'-',
-                ];
-            });
-        });
+            // Relation missing
+            if (!$ledger || !$ledger->{$relation}) {
+                if (!in_array($ledgerName, $reportedLedgers)) {
+                    $validationErrors[] = "{$ledgerName}'s {$relation} is missing";
+                    $reportedLedgers[] = $ledgerName;
+                }
+            }
 
-        // Grouped by ledger_id
-        $grouped = $flattened
-            ->groupBy('ledger_id')
-            ->map(function ($items, $ledgerId) {
-                $first = $items->first();
+            // Credit days check
+            $creditDays = $ledger->{$relation}->credit_days ?? null;
+            if ($creditDays === null || $creditDays === '' || $creditDays == 0) {
+                if (!in_array($ledgerName, $reportedLedgers)) {
+                    $validationErrors[] = "{$ledgerName}'s {$relation} has no credit days set";
+                    $reportedLedgers[] = $ledgerName;
+                }
+            }
 
-                // Group by item_id within the current ledger_id group
-                $itemGroups = $items->groupBy('item_id');
+            $org = Voucher::find($item['voucher_id'])?->organization?->name;
 
-                // Sum of settle_amt per item_id, then total of all
-                $settleAmtSumByItem = $itemGroups->map(function ($itemGroup) {
-                    return $itemGroup->sum('settle_amt');
-                });
-
-                return [
-                    'ledger_id' => $ledgerId,
-                    'ledger_code' => $first['ledger_code'],
-                    'ledger_name' => $first['ledger_name'],
-                    'ledger_group_name' => $first['ledger_group_name'],
-                    'ledger_parent_id' => $first['ledger_parent_id'],
-                    'amount' => $settleAmtSumByItem->sum(), // ← Use summed settle_amt per item_id
-                    'settle_amt' => $items->sum('settle_amt'),  // ← You can also keep this for reference
-                    'voucher_id' => $first['voucher_id'],
-                    'item_id' => $first['item_id'],
-                    'items' => $items,
-                    'organization' => $first['organization'],
-                ];
-            })->values();
-
-        $raw = $flattened->map(function ($item) {
             return [
-                'ledger_id' => $item['ledger_id'],
                 'voucher_id' => $item['voucher_id'],
-                'item_id' => $item['item_id'],
-                'settle_amt' => $item['settle_amt'],
+                'item_id' => null,
+                'ledger_id' => $ledger->id,
+                'ledger_code' => $ledger->code ?? '-',
+                'ledger_name' => $ledger->name ?? '-',
+                'ledger_group_name' => $group->name ?? '-',
+                'ledger_parent_id' => $group->id ?? null,
+                'amount' => null,
+                'settle_amt' => $item['settle_amount'] ?? 0,
+                'organization' => $org ?? '-',
             ];
         });
-        $token = 'selectedRows_' . uniqid();
-        Cache::put($token, [
-            'grouped' => $grouped,
-            'raw' => $raw,
-        ], 3600);
+    });
 
-          $route = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS
-            ? route('receipts.create', ['token' => $token])
-            : route('payments.create', ['token' => $token]);
+    if (!empty($validationErrors)) {
+        if ($request->ajax()) {
+            // return JSON error with 422 status
+            return response()->json(['errors' => $validationErrors], 422);
+        }
+        return back()->withErrors($validationErrors)->withInput();
+    }
 
-        return redirect($route);
- }
+
+    $grouped = $flattened
+        ->groupBy('ledger_id')
+        ->map(function ($items, $ledgerId) {
+            $first = $items->first();
+            $itemGroups = $items->groupBy('item_id');
+            $settleAmtSumByItem = $itemGroups->map(function ($itemGroup) {
+                return $itemGroup->sum('settle_amt');
+            });
+            return [
+                'ledger_id' => $ledgerId,
+                'ledger_code' => $first['ledger_code'],
+                'ledger_name' => $first['ledger_name'],
+                'ledger_group_name' => $first['ledger_group_name'],
+                'ledger_parent_id' => $first['ledger_parent_id'],
+                'amount' => $settleAmtSumByItem->sum(),
+                'settle_amt' => $items->sum('settle_amt'),
+                'voucher_id' => $first['voucher_id'],
+                'item_id' => $first['item_id'],
+                'items' => $items,
+                'organization' => $first['organization'],
+            ];
+        })->values();
+
+    $raw = $flattened->map(function ($item) {
+        return [
+            'ledger_id' => $item['ledger_id'],
+            'voucher_id' => $item['voucher_id'],
+            'item_id' => $item['item_id'],
+            'settle_amt' => $item['settle_amt'],
+        ];
+    });
+    $token = 'selectedRows_' . uniqid();
+    Cache::put($token, [
+        'grouped' => $grouped,
+        'raw' => $raw,
+    ], 3600);
+
+    $route = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS
+        ? route('receipts.create', ['token' => $token])
+        : route('payments.create', ['token' => $token]);
+
+    if ($request->ajax()) {
+        return response()->json(['redirect' => $route]);
+    }
+    return redirect($route);
+}
+
     
 
 }

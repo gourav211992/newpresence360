@@ -42,9 +42,16 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                   @endif
                   @if(!intval(request('amendment') ?? 0) && $bom->document_status != ConstantHelper::DRAFT && $bom->document_status != ConstantHelper::REJECTED)
+                  @if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS)
                     <a href="{{ route('bill.of.material.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                         <i data-feather="file-text"></i> Export
                     </a>
+                  @else
+                    <a href="{{ route('quotation-bom.export', $bom->id) }}" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                        <i data-feather="file-text"></i> Export
+                    </a>
+                  @endif
+                    
                     <a href="{{ route('bill.of.material.generate-pdf', $bom->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                         <i data-feather="printer"></i> Print
                     </a>

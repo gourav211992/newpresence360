@@ -497,8 +497,8 @@ class GateEntryController extends Controller
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
                     $inventoryUom = Unit::find($item->uom_id ?? null);
-                    $inventory_uom_id = $inventoryUom->id;
-                    $inventory_uom_code = $inventoryUom->name;
+                    $inventory_uom_id = $inventoryUom->id ?? null;
+                    $inventory_uom_code = $inventoryUom->name ?? null;
                     if(@$component['uom_id'] == $item->uom_id) {
                         $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00 ;
                     } else {
@@ -831,9 +831,9 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            // if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
-            //     (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
-            // }
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
+            }
 
             DB::commit();
 

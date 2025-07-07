@@ -1590,6 +1590,7 @@ class AutocompleteController extends Controller
                             ->orWhere('alias', 'LIKE', '%' . $term . '%');
                         });
                     })
+                    ->orderByDesc('id')
                     ->limit(10)
                     ->get();
             } else if ($type === 'vendor_company_list') {

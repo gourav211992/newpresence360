@@ -12,12 +12,14 @@ class Service extends Model
 
     protected $table = 'erp_services';
 
+    public function __construct(array $attributes = [])
+    {
+        $this->table = config('database.connections.mysql_master.database') .'.'.$this->table;
+        parent::__construct($attributes);
+    }
+
     public function parameters()
     {
         return $this -> hasMany(ServiceParameter::class);
-    }
-    public function getConnectionName()
-    {
-        return "mysql_master";
     }
 }
