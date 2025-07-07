@@ -20,6 +20,7 @@ class CrDrImportExportService
             'ledger_name'   => 'Ledger Name',
             'ledger_group'  => 'Ledger Group',
             'document_no'   => 'Voucher No',
+            'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
             'balance'       => 'Balance'
         ];
@@ -38,6 +39,7 @@ class CrDrImportExportService
         $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
         $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
         $balance      = isset($row['balance']) ? trim($row['balance']) : null;
+        $series      = isset($row['series']) ? trim($row['series']) : null;
         
         if (!is_numeric($row['settle_amount'])) {
             throw new Exception("Settle Amount must be a valid number.");
@@ -65,12 +67,27 @@ class CrDrImportExportService
         }
         
         $invoices = Helper::getVoucherBalance($voucherNo,$type,$ledger->id,$group->id);
-        
-        $voucher = collect($invoices->getData()->data)->where('balance','>', 0)
-        ->where('voucher_no',$voucherNo)->first();
-        
-        if (empty($voucher)) {
-            throw new Exception("Voucher no# '{$voucherNo}' not valid.");
+        $voucher = collect($invoices->getData()->data)
+            ->first(function ($item) use ($voucherNo, $series) {
+                // balance & voucher must match
+                if ($item->balance <= 0 || $item->voucher_no !== $voucherNo) {
+                    return false;
+                }
+
+                // if a series is required, check it
+                if ($series) {
+                    return isset($item->series?->book_code) &&
+                        $item->series->book_code === $series;
+                }
+                return true;
+            });
+
+        if (!$voucher) {
+            throw new Exception(
+                $series
+                    ? "Series '{$series}' not exist related to the Voucher no# '{$voucherNo}'."
+                    : "Voucher no# '{$voucherNo}' not valid."
+            );
         }
         
         $row['voucher_id'] = $voucher->id;

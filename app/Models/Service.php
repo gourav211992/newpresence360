@@ -16,4 +16,8 @@ class Service extends Model
     {
         return $this -> hasMany(ServiceParameter::class);
     }
+    public function getConnectionName()
+    {
+        return "mysql_master";
+    }
 }

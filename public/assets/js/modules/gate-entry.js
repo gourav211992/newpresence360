@@ -3,6 +3,7 @@ $(document).on('click', '.summaryTaxBtn', (e) => {
     getTaxSummary();
 });
 
+
 /*Approve modal*/
 $(document).on('click', '#approved-button', (e) => {
     let actionType = 'approve';
@@ -296,7 +297,6 @@ $(document).on('click', '.addDiscountBtn', (e) => {
 // Set Each Row Item Calculation
 function setTableCalculation() {
     const reference_type = $('.reference_type').val();
-    console.log('reference_type', reference_type);
     
     let totalItemValue = 0;
     let totalItemDiscount = 0;
@@ -310,7 +310,6 @@ function setTableCalculation() {
     let poItemIds = [];
     let poIds = [];
     let itemQtys = {}; // <-- make this an object
-
     
     $("#itemTable [id*='row_']").each(function (index, item) {
         let rowCount = Number($(item).attr('data-index'));
@@ -627,13 +626,13 @@ function setTableCalculation() {
         }
 
         
-        $("#expSummaryFooter #total")
-            .attr('amount',totalHeaderExp.toFixed(2))
-            .text(totalHeaderExp.toFixed(2))
-            .attr('style', totalHeaderExp < 0 ? 'color: red !important;' : '');
-        $("#f_exp")
-            .text(totalHeaderExp.toFixed(2))
-            .css('color', totalHeaderExp < 0 ? 'red' : '');
+        // $("#expSummaryFooter #total")
+        //     .attr('amount',totalHeaderExp.toFixed(2))
+        //     .text(totalHeaderExp.toFixed(2))
+        //     .attr('style', totalHeaderExp < 0 ? 'color: red !important;' : '');
+        // $("#f_exp")
+        //     .text(totalHeaderExp.toFixed(2))
+        //     .css('color', totalHeaderExp < 0 ? 'red' : '');
 
         /*Bind header Expenses*/
 
@@ -1511,48 +1510,57 @@ function getSelectedItemAmount(poItemIds, poIds, tedId, callback) {
     .catch(() => callback(0));
 }
 
-// // Dynamically bind input event to any .asn_number input
-// $(document).on('input', '.asn_number', function () {
-//     const container = $(this).closest('.asn-container');
-//     const value = $(this).val().trim();
-//     container.find('.asn_process').prop('disabled', value.length === 0);
-// });
+// Dynamically bind input event to any .asn_number input
+$(document).on('input', '.asn_number', function () {
+    const container = $(this).closest('.asn-container');
+    const value = $(this).val().trim();
+    container.find('.asn_process').prop('disabled', value.length === 0);
+});
 
-// // Handle the click of "Process" button
-// $(document).on('click', '.asn_process', function () {
-//     const container = $(this).closest('.asn-container');
-//     const asnInput = container.find('.asn_number');
-//     const asnNumber = asnInput.val().trim();
+// Handle the click of "Process" button
+$(document).on('click', '.asn_process', function () {
+    const container = $(this).closest('.asn-container');
+    const asnInput = container.find('.asn_number');
+    const asnNumber = asnInput.val().trim();
 
-//     if (!asnNumber) {
-//         alert('Please enter a valid ASN number.');
-//         return;
-//     }
-
-//     $.ajax({
-//         url: '/validate-asn', // 🔁 Update to actual route
-//         type: 'POST',
-//         data: {
-//             _token: $('meta[name="csrf-token"]').attr('content'),
-//             asn_number: asnNumber
-//         },
-//         beforeSend: function () {
-//             container.find('.asn_process').prop('disabled', true).text('Processing...');
-//         },
-//         success: function (response) {
-//             if (response.status === 200) {
-//                 alert('ASN processed successfully!');
-//                 // Optionally update DOM or emit event
-//             } else {
-//                 alert(response.message || 'Error processing ASN.');
-//             }
-//         },
-//         error: function () {
-//             alert('Server error. Please try again.');
-//         },
-//         complete: function () {
-//             container.find('.asn_process').prop('disabled', false).text('Process');
-//         }
-//     });
-// });
+    $.ajax({
+        url: '/gate-entries/validate-asn', // 🔁 Update to actual route
+        type: 'POST',
+        data: {
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            asn_number: asnNumber,
+            module_type: 'suppl-inv',
+        },
+        beforeSend: function () {
+            container.find('.asn_process').prop('disabled', true).text('Processing...');
+        },
+        success: function (response) {
+            console.log('response', response);
+            
+            if (response.status === 200) {
+                console.log('response', response.data);
+                let asnData = response.data;
+                asnProcess(asnData);
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: response.message,
+                    icon: 'error',
+                });
+                return false;
+            }
+        },
+        error: function () {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Server error. Please try again.',
+                icon: 'error',
+            });
+            return false;
+        },
+        complete: function () {
+            container.find('.asn_process').prop('disabled', false).text('Process');
+        }
+    });
+});
 

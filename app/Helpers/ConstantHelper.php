@@ -82,7 +82,7 @@ class ConstantHelper
 
     const DOCUMENT_STATUS_CSS_WO_TEXT = [self::DRAFT => 'warning', self::SUBMITTED => 'primary', self::APPROVAL_NOT_REQUIRED => 'success', self::PARTIALLY_APPROVED => 'warning', self::APPROVED => 'success', self::REJECTED => 'danger', self::POSTED => 'info'];
 
-    const DOCUMENT_STATUS_CSS_LIST = [self::DRAFT => 'badge-light-warning', self::SUBMITTED => 'badge-light-primary', self::APPROVAL_NOT_REQUIRED => 'badge-light-success', self::PARTIALLY_APPROVED => 'badge-light-warning', self::APPROVED => 'badge-light-success',self::CONFIRMED => 'badge-light-success', self::REJECTED => 'badge-light-danger',self::POSTED => 'badge-light-info',self::COMPLETED => 'badge-light-warning', self::CLOSED => 'badge-light-info',self::SHORTLISTED => 'badge-light-primary'];
+    const DOCUMENT_STATUS_CSS_LIST = [self::DRAFT => 'badge-light-warning', self::SUBMITTED => 'badge-light-primary', self::APPROVAL_NOT_REQUIRED => 'badge-light-success', self::PARTIALLY_APPROVED => 'badge-light-warning', self::APPROVED => 'badge-light-success',self::CONFIRMED => 'badge-light-success', self::REJECTED => 'badge-light-danger',self::POSTED => 'badge-light-info',self::COMPLETED => 'badge-light-warning', self::CLOSED => 'badge-light-info',self::SHORTLISTED => 'badge-light-primary',self::ACTIVE => 'badge-light-success',self::INACTIVE => 'badge-light-danger'];
     // Error Message
     const DUPLICATE_DOCUMENT_NUMBER = "Document number already exists.";
 

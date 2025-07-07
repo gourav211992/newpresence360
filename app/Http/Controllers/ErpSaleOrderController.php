@@ -2677,7 +2677,7 @@ class ErpSaleOrderController extends Controller
             $subStoreId = $request -> sub_store_id ?? null;
             $selectedAttributes = $request -> item_attributes ?? [];
             $filterItemIds = $request -> filter_item_ids ?? [];
-            $item = Item::withDefaultGroupCompanyOrg() -> where('id', $itemId) -> first();
+            $item = Item::where('id', $itemId) -> first();
             // $location = ErpStore::where('id', $locationId) -> first();
             if (!$item) {
                 return response() -> json([

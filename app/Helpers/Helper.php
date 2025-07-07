@@ -1071,6 +1071,7 @@ class Helper
         $submit = false;
         $approve = false;
         $amend = false;
+        $delete = false;
         $post = false;
         $voucher = false;
         $revoke = false;
@@ -1082,8 +1083,13 @@ class Helper
         $currUser = Helper::userCheck();
 
         if ($docStatus == ConstantHelper::DRAFT || $docStatus == ConstantHelper::REJECTED) {
-            $draft = true;
-            $submit = true;
+            if ($user -> auth_user_id === $createdBy) {
+                $draft = true;
+                $submit = true;
+            }
+            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+                $delete = true;
+            }
         }
         if ($docStatus == ConstantHelper::SUBMITTED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
@@ -1182,6 +1188,7 @@ class Helper
             'draft' => $draft,
             'submit' => $submit,
             'approve' => $approve,
+            'delete' => $delete,
             'amend' => $amend,
             'post' => $post,
             'voucher' => $voucher,
@@ -1675,7 +1682,15 @@ class Helper
             $approvalRequired = Helper::checkAfterAmendApprovalRequired($bookId);
             //Approval is required after amendment
             if (isset($approvalRequired->approval_required) && $approvalRequired->approval_required) {
-                $approvalStatus = ConstantHelper::SUBMITTED;
+                $approvalWorkflow = ApprovalWorkflow::where('book_id', $book->id)
+                ->where('organization_id', $user->organization_id)
+                ->whereHas('level')->get();
+                if (count($approvalWorkflow) == 0) {
+                    $approvalStatus = ConstantHelper::APPROVAL_NOT_REQUIRED;
+                } else {
+                  $approvalStatus = ConstantHelper::SUBMITTED;
+                }
+               
             }
         }
 
@@ -2320,7 +2335,8 @@ return [
             }) -> orWhere(function ($userQuery) use($userIds) {
                 $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
             });
-        })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER]) 
+        })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER])
+        -> where('status', ConstantHelper::ACTIVE) 
         -> where('organization_id', $organizationId)->get();
         return $employees;
     }
@@ -3391,6 +3407,7 @@ return [
                 ] : null;
             })
             ->filter()
+            ->unique('id')
             ->values()
             ->toArray();
     }

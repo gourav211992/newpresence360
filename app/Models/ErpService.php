@@ -19,4 +19,9 @@ class ErpService extends Model
         'icon',
         'status'
     ];
+
+        public function getConnectionName()
+    {
+        return "mysql_master";
+    }
 }

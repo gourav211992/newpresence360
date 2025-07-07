@@ -174,9 +174,9 @@
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1 asn-container">
+                                                <div class="row align-items-center mb-1 asn-container">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">ASN Number</label>
+                                                        <label class="form-label">ASN Code</label>
                                                     </div>
                                                     <div class="col-md-4">
                                                         <input type="text" name="asn_number" class="form-control asn_number" placeholder="Enter ASN Number">
@@ -186,7 +186,7 @@
                                                             Process
                                                         </button>
                                                     </div>
-                                                </div> -->
+                                                </div>
                                                 <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Reference No <span class="text-danger">*</span></label>
@@ -1112,7 +1112,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
+                        
                         $(".poSelect").hide();
                         $(".joSelect").hide();
                         $("#vendor_name").prop('readonly',true);
@@ -1566,20 +1566,76 @@
         }
 
         function getDynamicParams() {
-            let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-            selectedPoIds = JSON.parse(selectedPoIds);
-            selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+            let document_date = '',
+                header_book_id = '',
+                series_id = '',
+                document_number = '',
+                item_id = '',
+                vendor_id = '',
+                store_id = '',
+                so_id = '',
+                item_search = '',
+                selected_po_ids = '';
+
+            if(currentProcessType === 'po')
+            {
+                let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+                selectedPoIds = JSON.parse(selectedPoIds);
+                selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+                document_date = $("[name ='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#document_id_qt_val").val() || '',
+                item_id = $("#item_id_qt_val").val() || '',
+                vendor_id = $("#vendor_id_qt_val").val(),
+                store_id = $("#store_id").val() || '',
+                so_id = $("#po_so_qt_val").val() || '',
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedPoIds)
+            }
+            if(currentProcessType === 'jo')
+            {
+                let selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
+                selectedJoIds = JSON.parse(selectedJoIds);
+                selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
+                document_date = $("[name='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#jo_document_id_qt_val").val() || '',
+                item_id = $("#jo_item_id_qt_val").val() || '',
+                vendor_id = $("#jo_vendor_id_qt_val").val(),
+                store_id = $("#jo_store_id").val() || '',
+                so_id = $("#jo_so_qt_val").val() || '',
+                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedJoIds)
+            }
+            if(currentProcessType === 'so')
+            {
+                let selectedSoIds = localStorage.getItem('selectedSoIds') ?? '[]';
+                selectedSoIds = JSON.parse(selectedSoIds);
+                selectedSoIds = encodeURIComponent(JSON.stringify(selectedSoIds));
+                document_date = $("[name='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#so_document_id_qt_val").val() || '',
+                item_id = $("#so_item_id_qt_val").val() || '',
+                vendor_id = $("#so_vendor_id_qt_val").val(),
+                store_id = $("#so_store_id").val() || '',
+                so_id = $("#so_so_qt_val").val() || '',
+                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedSoIds)
+            }
             return {
-                document_date: $("[name='document_date']").val() || '',
-                header_book_id: $("#book_id").val() || '',
-                series_id: $("#book_id_qt_val").val() || '',
-                document_number: $("#document_id_qt_val").val() || '',
-                item_id: $("#item_id_qt_val").val() || '',
-                vendor_id: $("#vendor_id_qt_val").val(),
-                store_id: $("#store_id").val() || '',
-                so_id: $("#po_so_qt_val").val() || '',
-                item_search: $("#item_name_search").val(),
-                selected_po_ids: encodeURIComponent(selectedPoIds)
+                document_date: document_date,
+                header_book_id: header_book_id,
+                series_id: series_id,
+                document_number: document_number,
+                item_id: item_id,
+                vendor_id: vendor_id,
+                store_id: store_id,
+                so_id: so_id,
+                item_search: item_search,
+                selected_po_ids: selected_po_ids
             };
         }
 
@@ -1918,7 +1974,8 @@
                         }
 
                         initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
+                        
+                        // focusAndScrollToLastRowInput();
                         setTimeout(() => {
                             setTableCalculation();
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
@@ -2054,24 +2111,6 @@
             return data ? data : '';
         }
 
-        function getJoDynamicParams() {
-            let selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
-            selectedJoIds = JSON.parse(selectedJoIds);
-            selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
-            return {
-                document_date: $("[name='document_date']").val() || '',
-                header_book_id: $("#jo_book_id").val() || '',
-                series_id: $("#jo_book_id_qt_val").val() || '',
-                document_number: $("#jo_document_id_qt_val").val() || '',
-                item_id: $("#jo_item_id_qt_val").val() || '',
-                vendor_id: $("#jo_vendor_id_qt_val").val(),
-                store_id: $("#jo_store_id").val() || '',
-                so_id: $("#jo_so_qt_val").val() || '',
-                item_search: $("#jo_item_name_search").val(),
-                selected_jo_ids: encodeURIComponent(selectedJoIds)
-            };
-        }
-
         function getJobOrders()
         {
             const ajaxUrl = '{{ route("gate-entry.get.jo", ["type" => "create"]) }}';
@@ -2118,7 +2157,7 @@
             );
         }
 
-        $(document).on('keyup', '#item_name_search', (e) => {
+        $(document).on('keyup', '#jo_item_name_search', (e) => {
             $('#joModal .jo-order-detail').DataTable().ajax.reload();
         });
 
@@ -2138,9 +2177,13 @@
         function getSelectedJoIDS()
         {
             let ids = [];
+            let asnIds = [];
+            let asnItemIds = [];
             let referenceNos = [];
             $('.jo_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                asnIds.push($(this).attr('data-current-asn'));
+                asnItemIds.push($(this).attr('data-current-asn-item'));
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
                     referenceNos.push(referenceNo);
@@ -2148,6 +2191,8 @@
             });
             return {
                 ids: ids,
+                asnIds: asnIds,
+                asnItemIds: asnItemIds,
                 referenceNos: referenceNos
             };
         }
@@ -2155,6 +2200,8 @@
         $(document).on('click', '.joProcess', (e) => {
             let result = getSelectedJoIDS();
             let ids = result.ids;
+            let asnIds = result.asnIds;
+            let asnItemIds = result.asnItemIds;
             let referenceNo = result.referenceNos[0];
             currentProcessType = 'jo';
             if (!ids.length) {
@@ -2289,11 +2336,15 @@
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
             ids = JSON.stringify(ids);
+            asnIds = JSON.stringify(asnIds);
+            asnItemIds = JSON.stringify(asnItemIds);
             moduleTypes = JSON.stringify(moduleTypes);
             let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
             let actionUrl = '{{ route("gate-entry.process.jo-item") }}'
             .replace(':type', type)
             + '?ids=' + encodeURIComponent(ids)
+            + '&asnIds=' + encodeURIComponent(asnIds)
+            + '&asnItemIds=' + encodeURIComponent(asnItemIds)
             + '&moduleTypes=' + moduleTypes
             + '&currency_id=' + encodeURIComponent(currencyId)
             + '&d_date=' + encodeURIComponent(transactionDate)
@@ -2304,6 +2355,8 @@
                 return resjonse.json().then(data => {
                     if(data.status == 200) {
                         let joOrder = data?.data?.jobOrder;
+                        let vendorAsn = data?.data?.vendorAsn;
+                        let moduleType = data?.data?.moduleType;
                         vendorOnChange(data?.data?.vendor?.id, 'jo', joOrder.id);
                         let result = getSelectedJoIDS();
                         let newIds = result.ids;
@@ -2319,11 +2372,8 @@
                         let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedJoIds'));
                         $("[name='jo_item_ids']").val(existingIdsUpdate.join(','));
 
-                        let module_type = data?.data?.moduleType || 'jo';
+                        let module_type = 'jo';
                         let vendor = data?.data?.vendor || '';
-                        let joFinalDiscounts = data?.data?.finalDiscounts;
-                        let joFinalExpenses = data?.data?.finalExpenses;
-
                         if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                             $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
                         } else {
@@ -2336,84 +2386,65 @@
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                         $("#vendor_name").prop('readonly',true);
-                        if(joOrder.type == 'supplier-invoice'){
-                            $("[name='supplier_invoice_no']").val(joOrder.document_number);
-                            $("[name='supplier_invoice_date']").val(joOrder.document_date);
+                        if(moduleType == 'suppl-inv'){
+                            $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
+                            $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
+                            $("[name='consignment_no']").val(vendorAsn.consignment_no);
+                            $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
+                            $("[name='transporter_name']").val(vendorAsn.transporter_name);
+                            $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
                         } else{
                             $("[name='supplier_invoice_no']").val();
                             $("[name='supplier_invoice_date']").val();
+                            $("[name='consignment_no']").val();
+                            $("[name='eway_bill_no']").val();
+                            $("[name='transporter_name']").val();
+                            $("[name='vehicle_no']").val();
                         }
 
                         $(".module_type").val(module_type);
                         let locationId = $("[name='header_store_id']").val();
-                        // getLocation(locationId);
+                        // For expense summary
+                        let joFinalExpenses = data?.data?.finalExpenses;
+                        if (joFinalExpenses.length) {
+                            let $expenseTableBody = $("#summaryExpTable tbody");
+                            $expenseTableBody.find('.display_summary_exp_row').remove(); // Clear old rows
 
-                        // if(joFinalDiscounts.length) {
-                        //     let rows = '';
-                        //     joFinalDiscounts.forEach(function(item,index) {
-                        //         index = index + 1;
-                        //         rows+= `<tr class="display_summary_discount_row">
-                        //                 <td>${index}</td>
-                        //                 <td>${item.ted_name}
-                        //                     <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                        //                     <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                        //                     <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                        //                 </td>
-                        //                 <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                        //                     <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-                        //                     <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
-                        //                 </td>
-                        //                 <td class="text-end">
-                        //                 <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                        //                 </td>
-                        //                 <td>
-                        //                     <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                        //                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                        //                     </a>
-                        //                 </td>
-                        //             </tr>`
-                        //     });
+                            let rows = '';
+                            joFinalExpenses.forEach(function(item, index) {
+                                index += 1;
+                                rows += `<tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                        <input type="hidden" value="${item.id}" name="exp_summary[${index}][e_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                    </td>
+                                    <td class="text-end">${item.ted_perc ?? 0}
+                                        <input type="hidden" value="${item.ted_perc ?? 0}" name="exp_summary[${index}][e_perc]">
+                                        <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>`;
+                            });
 
-                        //     $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                        //     $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                        //     $("#f_header_discount_hidden").removeClass('d-none');
-                        // } else {
-                        //     $("#f_header_discount_hidden").addClass('d-none');
-                        // }
-
-                        // if(joFinalExpenses.length) {
-                        //     let rows = '';
-                        //     joFinalExpenses.forEach(function(item,index) {
-                        //         index = index + 1;
-                        //         rows+=`<tr class="display_summary_exp_row">
-                        //                 <td>${index}</td>
-                        //                 <td>${item.ted_name}
-                        //                     <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                        //                     <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                        //                     <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                        //                 </td>
-                        //                 <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                        //                     <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                        //                     <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
-                        //                 </td>
-                        //                 <td class="text-end">
-                        //                 <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                        //                 </td>
-                        //                 <td>
-                        //                     <a href="javascript:;" class="text-danger deleteExpRow">
-                        //                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><jolyline joints="3 6 5 6 21 6"></jolyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                        //                     </a>
-                        //                 </td>
-                        //             </tr>`;
-
-                        //     });
-                        //     $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                        //     $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        // }
+                            $expenseTableBody.find('#expSummaryFooter').before(rows);
+                            $("#f_header_expense_hidden").removeClass('d-none');
+                        } else {
+                            $("#f_header_expense_hidden").addClass('d-none');
+                        }
+                        
                         initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
+                        
                         setTimeout(() => {
-                            setTablePOJOCalculation();
+                            setTableCalculation();
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                                 let currentIndex = index + 1;
                                 setAttributesUIHelper(currentIndex,"#itemTable");
@@ -2592,5 +2623,160 @@
             let storeId = ui?.item?.id || '';
             initializeAutocompleteJoQt("sub_store_jo", "sub_store_id_jo", "sub_store", "name", "");
         });
+
+        // ASN Process
+        function asnProcess(asnData) {
+            const current_row_count = $("tbody tr[id*='row_']").length;
+
+            const ids = JSON.stringify(asnData.ids);
+            const asnIds = JSON.stringify(asnData.asnIds);
+            const asnItemIds = JSON.stringify(asnData.asnItemIds);
+            const moduleTypes = JSON.stringify(asnData.module_type);
+            const moduleType = asnData.module_type?.[0] ?? 'po';
+            const processType = asnData.type;
+
+
+            const currencyId = $("[name='currency_id']").val();
+            const transactionDate = $("[name='document_date']").val();
+            const type = $("meta[name='route-type']").attr("content"); // blade->meta
+
+            const baseRoute = processType === 'jo'
+                ? '{{ route("gate-entry.process.jo-item") }}'
+                : '{{ route("gate-entry.process.po-item") }}';
+
+            const actionUrl = baseRoute
+                .replace(':type', type)
+                + '?ids=' + encodeURIComponent(ids)
+                + '&asnIds=' + encodeURIComponent(asnIds)
+                + '&asnItemIds=' + encodeURIComponent(asnItemIds)
+                + '&moduleTypes=' + moduleTypes
+                + '&currency_id=' + encodeURIComponent(currencyId)
+                + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&current_row_count=' + current_row_count;
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 200) return handleAsnError(data.message);
+
+                    const {
+                        vendor,
+                        finalExpenses,
+                        pos,
+                        moduleType,
+                        vendorAsn
+                    } = data.data;
+
+                    const modelType = processType === 'jo' ? 'jo' : 'po';
+                    const order = modelType === 'jo' ? data.data.jobOrder : data.data.purchaseOrder;
+
+                    vendorOnChange(vendor?.id, modelType, order.id);
+
+                    const getSelectedIdsFn = modelType === 'jo' ? getSelectedJoIDS : getSelectedPoIDS;
+                    const hiddenFieldName = modelType === 'jo' ? 'jo_item_ids' : 'po_item_ids';
+                    const localStorageKey = modelType === 'jo' ? 'selectedJoIds' : 'selectedPoIds';
+
+                    const newIds = getSelectedIdsFn().ids;
+                    const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                    localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
+                    $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
+
+                    $(".module_type").val(modelType);
+                    $("#itemTable .mrntableselectexcel").append(pos);
+                    initializeAutocomplete2(".comp_item_code");
+
+                    $("#poModal, #joModal").modal('hide');
+                    $("#reference_from").addClass('d-none');
+                    $('.asn_process').prop('disabled', true);
+
+                    // UI Locks
+                    $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
+                    $("#vendor_name").prop('readonly', true);
+                    $(".editAddressBtn").addClass('d-none');
+
+                    // Supplier details
+                    if (moduleType === 'suppl-inv' && vendorAsn) {
+                        $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
+                        $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
+                        $("[name='consignment_no']").val(vendorAsn.consignment_no);
+                        $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
+                        $("[name='transporter_name']").val(vendorAsn.transporter_name);
+                        $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
+                    } else {
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                    }
+
+                    // Expenses
+                    const $expBody = $("#summaryExpTable tbody");
+                    $expBody.find('.display_summary_exp_row').remove();
+
+                    if (finalExpenses.length) {
+                        let rows = '';
+                        finalExpenses.forEach((item, i) => {
+                            const index = i + 1;
+                            rows += `
+                                <tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
+                                    </td>
+                                    <td class="text-end">${item.ted_perc ?? 0}
+                                        <input type="hidden" name="exp_summary[${index}][e_perc]" value="${item.ted_perc ?? 0}">
+                                        <input type="hidden" name="exp_summary[${index}][hidden_e_perc]" value="${item.ted_perc}">
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>`;
+                        });
+                        $expBody.find('#expSummaryFooter').before(rows);
+                        $("#f_header_expense_hidden").removeClass('d-none');
+                    } else {
+                        $("#f_header_expense_hidden").addClass('d-none');
+                    }
+
+                    
+
+                    setTimeout(() => {
+                        setTableCalculation();
+                        $("#itemTable .mrntableselectexcel tr").each((index, item) => {
+                            setAttributesUIHelper(index + 1, "#itemTable");
+                        });
+                    }, 500);
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An unexpected error occurred while processing ASN.',
+                        icon: 'error'
+                    });
+                });
+        }
+
+        function handleAsnError(message = 'Invalid data') {
+            $(".editAddressBtn").removeClass('d-none');
+            $("#vendor_name").val('').prop('readonly', false);
+            $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $(".shipping_detail, .billing_detail").text('-');
+            $("#reference_from").removeClass('d-none');
+            $('.asn_process').prop('disabled', false);
+
+            Swal.fire({
+                title: 'Error!',
+                text: message,
+                icon: 'error'
+            });
+        }
+
+
     </script>
 @endsection

@@ -4,10 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\DefaultGroupCompanyOrg;
 class PwoStationConsumptionHistory extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg;
+    use HasFactory;
 
     protected $table = 'erp_pwo_station_consumptions_history';
 

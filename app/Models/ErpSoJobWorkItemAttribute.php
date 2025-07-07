@@ -21,4 +21,31 @@ class ErpSoJobWorkItemAttribute extends Model
         'attribute_value',
         'attr_value'
     ];
+
+    public $referencingRelationships = [
+        'item' => 'item_id',
+        'itemAttribute' => 'item_attribute_id',
+        'headerAttribute' => 'attribute_name',
+        'headerAttributeValue' => 'attribute_value'
+    ];
+
+    public function item()
+    {
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+
+    public function itemAttribute()
+    {
+        return $this->belongsTo(ItemAttribute::class, 'item_attribute_id');
+    }
+
+    public function headerAttribute()
+    {
+        return $this->hasOne(AttributeGroup::class,'id' ,'attr_name');
+    }
+
+    public function headerAttributeValue()
+    {
+        return $this->hasOne(Attribute::class,'id','attr_value');
+    }
 }

@@ -28,13 +28,13 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
 {
     protected $bookId;
     protected $documentDate;
-    protected $moduleTyle;
+    protected $moduleType;
 
-    public function __construct($bookId, $documentDate, $moduleTyle)
+    public function __construct($bookId, $documentDate, $moduleType)
     {
         $this->bookId = $bookId;
         $this->documentDate = $documentDate;
-        $this->moduleTyle = $moduleTyle;
+        $this->moduleType = $moduleType;
     }
 
     public function collection(Collection $rows)
@@ -60,17 +60,42 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     $productAttributes = [];
                     # Need to valid item attribute length
                     if($productItem?->itemAttributes?->count()) {
-                        for ($i = 1; $i <= 5; $i++) {
-                            $result = $this->validateAttribute($productItem, $row, $i,'Product');
-                            if (!empty($result['error'])) {
-                                $errors[] = $result['error'];
+                        $attributesString = $row['product_attributes'] ?? null;
+                        if (!$attributesString) {
+                            $attrOne = ItemAttribute::where('item_id', $productItem->id)
+                                        ->where('all_checked',1)
+                                        ->exists();
+                            $attrTwo = false;
+                            if(!$attrOne) {
+                                $attrTwo = ItemAttribute::where('item_id', $productItem->id)
+                                ->whereRaw('JSON_LENGTH(attribute_id) > 1')
+                                ->exists();
                             }
-                            if (!empty($result['attribute'])) {
-                                $productAttributes[] = $result['attribute'];
+                            if($attrTwo) {
+                                $errors[] = "Product Attributes not specified";
+                            } else {
+                                foreach($productItem?->itemAttributes as $itemAttrOne) {
+                                    $productAttributes[] = [
+                                        'item_attribute_id' => $itemAttrOne?->id,
+                                        'attribute_name_id' => $itemAttrOne?->attribute_group_id,
+                                        'attribute_value_id' => intval($itemAttrOne->attribute_id[0]) ?? 0,
+                                    ];
+                                }
                             }
-                        }
-                        if($productItem?->itemAttributes?->count() != count($productAttributes)) {
-                            $errors[] = "Product Attribute length not match";
+                        } else {
+                            $prodAttributes = isset($row['product_attributes']) && $row['product_attributes'] ? explode(',' ,$row['product_attributes']) : [];
+                            if ($productItem?->itemAttributes?->count() !== count($prodAttributes)) {
+                                $errors[] = "All Attributes of product not specified";
+                            }
+                            foreach($prodAttributes as $i => $prodAttribute) {
+                                $result = $this->validateAttribute($productItem, $prodAttribute, $i,'Product');
+                                if (!empty($result['error'])) {
+                                    $errors[] = $result['error'];
+                                }
+                                if (!empty($result['attribute'])) {
+                                    $productAttributes[] = $result['attribute'];
+                                }
+                            }
                         }
                     }
                     $productCode = $productItem?->item_code; 
@@ -87,7 +112,6 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                         $errors[] = "Production route not found";
                     }
                     $productionRouteId = $productionRoute?->id;
-
                     $stationName = $row['station'] ?? ''; 
                     $station = Station::where('name', $stationName)->first();
                     if(!$station) {
@@ -100,31 +124,30 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                         $errors[] = "Vendor not found";
                     }
                     $vendorId = $vendor?->id;
-                    $customercode = $row['customer_code'] ?? ''; 
-                    $customer = Customer::where('customer_code', $customercode)->first();
-                    if($this->moduleTyle == 'qbom') {
-                        if(!$vendor) {
+                    $customerId = null;
+                    if($this->moduleType == 'qbom') {
+                        $customercode = $row['customer_code'] ?? ''; 
+                        $customer = Customer::where('customer_code', $customercode)->first();
+                        if(!$customer) {
                             $errors[] = "Customer not found";
                         }
+                        $customerId = $customer?->id;
                     }
-                    $customerId = $customer?->id;
                     $sectionName = $row['section'] ?? ''; 
                     $section = ProductSection::where('name', $sectionName)->first();
                     if(!$section) {
                         $errors[] = "Section not found";
                     }
                     $sectionId = $section?->id;
-
                     $subSectionName = $row['sub_section'] ?? ''; 
                     $subSection = ProductSectionDetail::where('name', $subSectionName)->first();
                     if(!$subSection) {
                         $errors[] = "Sub section not found";
                     }
                     $subSectionId = $subSection?->id;
-
                     $checkStationMapped = null;
                     if($productionRouteId && $stationId) {
-                       $checkStationMapped = $productionRoute->details()->where('station_id',$stationId)->first();
+                        $checkStationMapped = $productionRoute->details()->where('station_id',$stationId)->first();
                     } 
                     if(!$checkStationMapped) {
                         $errors[] = "Station not mapped with Production route";
@@ -144,17 +167,42 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     $itemAttributes = [];
                     # Need to valid item attribute length
                     if($item?->itemAttributes?->count()) {
-                        for ($i = 1; $i <= 5; $i++) {
-                            $result = $this->validateAttribute($item, $row, $i, 'Item');
-                            if (!empty($result['error'])) {
-                                $errors[] = $result['error'];
+                        $attrString = $row['item_attributes'] ?? null;
+                        if (!$attrString) {
+                            $attrOne = ItemAttribute::where('item_id', $item->id)
+                                        ->where('all_checked',1)
+                                        ->exists();
+                            $attrTwo = false;
+                            if(!$attrOne) {
+                                $attrTwo = ItemAttribute::where('item_id', $item->id)
+                                ->whereRaw('JSON_LENGTH(attribute_id) > 1')
+                                ->exists();
                             }
-                            if (!empty($result['attribute'])) {
-                                $itemAttributes[] = $result['attribute'];
+                            if($attrTwo) {
+                                $errors[] = "Item Attributes not specified";
+                            } else {
+                                foreach($item?->itemAttributes as $itemAttrTwo) {
+                                    $itemAttributes[] = [
+                                        'item_attribute_id' => $itemAttrTwo?->id,
+                                        'attribute_name_id' => $itemAttrTwo?->attribute_group_id,
+                                        'attribute_value_id' => intval($itemAttrTwo->attribute_id[0]) ?? 0,
+                                    ];
+                                }
                             }
-                        }
-                        if($item?->itemAttributes?->count() != count($itemAttributes)) {
-                            $errors[] = "Item Attribute length not match";
+                        } else {
+                            $itAttributes = isset($row['item_attributes']) && $row['item_attributes'] ? explode(',' ,$row['item_attributes']) : [];
+                            if ($item?->itemAttributes?->count() !== count($itAttributes)) {
+                                $errors[] = "All Attributes of product not specified";
+                            }
+                            foreach($itAttributes as $i => $iAttribute) {
+                                $result = $this->validateAttribute($item, $iAttribute, $i,'Item');
+                                if (!empty($result['error'])) {
+                                    $errors[] = $result['error'];
+                                }
+                                if (!empty($result['attribute'])) {
+                                    $itemAttributes[] = $result['attribute'];
+                                }
+                            }
                         }
                     }
                     $consumptionQty = $row['consumption_qty'] ?? 0; 
@@ -220,7 +268,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     }
                     BomUpload::create(
                         [
-                            'type' => 'bom',
+                            'type' => $this->moduleType ?? 'bom',
                             'production_route_id' => $productionRouteId,
                             'production_route_name' => @$row['production_route'],
                             'product_item_id' => $productId,
@@ -235,29 +283,9 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             'item_code' => $itemCode,
                             'item_uom_id' => $itemUomId,
                             'item_uom_code' => $itemUomCode,
-                            'item_attributes' => $itemAttributes,
+                            'item_attributes' => $itemAttributes ?? [],
                             'product_attributes' => $productAttributes ?? [],
                             'reason' => $errors,
-                            'product_attribute_name_1' => @$row['product_attribute_name_1'],
-                            'product_attribute_value_1' => @$row['product_attribute_value_1'],
-                            'product_attribute_name_2' => @$row['product_attribute_name_2'],
-                            'product_attribute_value_2' => @$row['product_attribute_value_2'],
-                            'product_attribute_name_3' => @$row['product_attribute_name_3'],
-                            'product_attribute_value_3' => @$row['product_attribute_value_3'],
-                            'product_attribute_name_4' => @$row['product_attribute_name_4'],
-                            'product_attribute_value_4' => @$row['product_attribute_value_4'],
-                            'product_attribute_name_5' => @$row['product_attribute_name_5'],
-                            'product_attribute_value_5' => @$row['product_attribute_value_5'],
-                            'attribute_name_1' => @$row['attribute_name_1'],
-                            'attribute_value_1' => @$row['attribute_value_1'],
-                            'attribute_name_2' => @$row['attribute_name_2'],
-                            'attribute_value_2' => @$row['attribute_value_2'],
-                            'attribute_name_3' => @$row['attribute_name_3'],
-                            'attribute_value_3' => @$row['attribute_value_3'],
-                            'attribute_name_4' => @$row['attribute_name_4'],
-                            'attribute_value_4' => @$row['attribute_value_4'],
-                            'attribute_name_5' => @$row['attribute_name_5'],
-                            'attribute_value_5' => @$row['attribute_value_5'],
                             'consumption_qty' => $consumptionQty,
                             'consumption_per_unit' => $component_per_unit,
                             'pieces' => $pieces,
@@ -345,35 +373,34 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 }
             }
     }
-    private function validateAttribute($item, $row, int $index, $label): array
+    
+    private function validateAttribute($item, $prodAttribute, int $index, $label): array
     {
         $attribute = null;
-        if($label == 'Product') {
-            $groupName = $row["product_attribute_name_{$index}"] ?? null;
-            $valueName = $row["product_attribute_value_{$index}"] ?? null;
-        } else {
-            $groupName = $row["attribute_name_{$index}"] ?? null;
-            $valueName = $row["attribute_value_{$index}"] ?? null;
-        }
+        $prodAttributeArr = explode(':', $prodAttribute) ?? [];
+        $groupName = $prodAttributeArr[0] ?? null;
+        $valueName = $prodAttributeArr[1] ?? null;
         if (!$groupName) return [];
-        $group = AttributeGroup::withDefaultGroupCompanyOrg()->where('name', $groupName)->first();
+        $group = AttributeGroup::whereRaw('LOWER(name) = ?', [strtolower(trim($groupName))])->first();
         if (!$group) {
-            return ['error' => "Attr {$index} group not found"];
+            return ['error' => "{$label} Attribute group {$groupName}  not found"];
         }
-        $attr = Attribute::where('value', $valueName)->where('attribute_group_id', $group->id)->first();
+        $attr = Attribute::whereRaw('LOWER(value) = ?', [strtolower(trim($valueName))])
+                ->where('attribute_group_id', $group->id)
+                ->first();
         if (!$attr) {
-            return ['error' => "{$label} Attr {$index} value not found"];
+            return ['error' => "{$label} Attribute  value {$valueName} not found"];
         }
         if ($item && $group) {
             $itemAttr = ItemAttribute::where('item_id', $item->id)->where('attribute_group_id', $group->id)->first();
             if (!$itemAttr) {
-                return ['error' => "{$label} Attr {$index} not mapped to item"];
+                return ['error' => "{$label} Attribute {$groupName} not mapped to item"];
             }
             $attrIds = $itemAttr->all_checked
                 ? Attribute::where('attribute_group_id', $group->id)->pluck('id')->toArray()
                 : (array) $itemAttr->attribute_id;
             if (!in_array($attr->id, $attrIds)) {
-                return ['error' => "{$label} Attr {$index} value not mapped with item"];
+                return ['error' => "{$label} Attribute value {$valueName} not mapped with item"];
             }
             $attribute = [
                 'item_attribute_id' => $itemAttr->id,

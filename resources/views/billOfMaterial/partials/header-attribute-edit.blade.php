@@ -33,10 +33,6 @@ $headerAttribute = $bom->bomAttributes()->where('attribute_name',$attribute->att
             <option value="{{ $value->id }}" selected>
                 {{ $value->value }}
             </option>
-         @else
-         <option value="{{ $value->id }}">
-                {{ $value->value }}
-            </option>
          @endif
          @endforeach
       </select>

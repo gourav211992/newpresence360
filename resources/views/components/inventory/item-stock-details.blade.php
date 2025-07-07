@@ -57,10 +57,10 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive-md">
+                    <div class="table-responsive-md" style = "max-height: 400px !important; overflow-y: scroll">
                         <table
                         class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                            <thead>
+                            <thead style = "position:sticky; top:0;">
                                 <tr>
                                     <th>Item Code</th>
                                     <th>Item Name</th>
@@ -69,8 +69,8 @@
                                     <th>Organization</th>
                                     <th>Location</th>
                                     <th>Store</th>
-                                    <th>Confirmed Stocks</th>
-                                    <th>Unconfirmed Stocks</th>
+                                    <th class = "numeric-alignment">Confirmed Stock</th>
+                                    <th class = "numeric-alignment">Unconfirmed Stock</th>
                                 </tr>
                             </thead>
                             <tbody id="item-stock-details">

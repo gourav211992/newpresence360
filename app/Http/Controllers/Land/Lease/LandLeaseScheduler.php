@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +9,7 @@ use Carbon\Carbon;
 
 class LandLeaseScheduler extends Model
 {
-    use HasFactory, DefaultGroupCompanyOrg, Deletable;
+    use HasFactory, Deletable;
 
     protected $table = "erp_land_lease_schedulers";
 

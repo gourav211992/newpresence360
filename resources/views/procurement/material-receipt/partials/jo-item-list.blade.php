@@ -6,7 +6,7 @@
         $geQty = 0.00;
         $grnQty = 0.00;
         $balanceQty = 0.00;
-        $moduleType = 'p-order';
+        $moduleType = 'j-order';
         $ref_no = ($joDetail->jo?->book?->book_code ?? 'NA') . '-' . ($joDetail->jo?->document_number ?? 'NA');
         if($joDetail->gateEntryHeader){
             $orderQty = (($joDetail->gateEntryHeader ? $joDetail?->joItem?->order_qty : 0.00) - ($joDetail->gateEntryHeader ? $joDetail?->joItem?->short_close_qty : 0.00));
@@ -23,7 +23,7 @@
             $grnQty = $joDetail->jo_item?->grn_qty ?? 0.00;
             $balanceQty = ($invOrderQty - $grnQty);
         } else{
-            $moduleType = 'p-order';
+            $moduleType = 'j-order';
             $orderQty = (($joDetail->order_qty ?? 0.00) - ($joDetail->short_close_qty ?? 0.00));
             $invOrderQty = 0.00;
             $geQty = 0.00;

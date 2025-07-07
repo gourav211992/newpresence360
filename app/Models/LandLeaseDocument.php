@@ -6,13 +6,12 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\Deletable;
 
 class LandLeaseDocument extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg,Deletable;
+    use HasFactory,Deletable;
 
     protected $table = "erp_land_lease_documents";
 

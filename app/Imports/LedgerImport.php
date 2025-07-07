@@ -6,6 +6,7 @@ use App\Helpers\Helper;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\Validator;
 use App\Helpers\ConstantHelper;
+use App\Http\Controllers\Ledger\LedgerController;
 use App\Models\Ledger;
 use App\Models\UploadLedgerMaster;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,9 @@ use App\Services\LedgerImportExportService;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithStartRow;
+use Illuminate\Http\Request;
+use App\Helpers\ServiceParametersHelper;
+use stdClass;
 use Exception;
 class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithStartRow
 {
@@ -21,16 +25,18 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
     protected $failedItems = [];
     protected $service;
     protected $user;
+    protected $code_type;
 
     public function chunkSize(): int
     {
         return 500;
     }
 
-    public function __construct(LedgerImportExportService $service, $user)
+    public function __construct(LedgerImportExportService $service, $user,$code_type)
     {
         $this->service = $service;
         $this->user = $user;
+        $this->code_type = $code_type;
     }
     public function startRow(): int
     {
@@ -74,7 +80,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             'tax_type' => $uploadedItem->tax_type ?? null,
             'tax_percentage' => $uploadedItem->tax_percentage ?? null,
             'status_check' => 'failed',
-            'remarks' => $uploadedItem->import_remarks,
+            'remarks' => $uploadedItem->import_remarks??null,
         ];
     }
 
@@ -91,7 +97,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
     {
         $organization = $this->user->organization;
         if (
-            strtolower(trim($row['code'])) === 'code of ledger' ||
+            strtolower(trim($row['code']??"")) === 'code of ledger' ||
             strtolower(trim($row['name'])) === 'name of ledger'
         ) {
             // Skip this row
@@ -134,16 +140,15 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $status = 'Success';
 
             try {
-                $this->service->checkRequiredFields($code, $name, $group);
+                $this->service->checkRequiredFields($code, $name, $group,$this->code_type);
             } catch (Exception $e) {
                 Log::error("Error Required fields missing: " . $e->getMessage());
                 $status = 'Failed';
             }
 
             try {
-                // Check uniqueness
+                if($this->code_type=="Manual")
                 $this->service->checkLedgerUniqueness('code', $code,$this->user);
-                // Validate unique name
                 $this->service->checkLedgerUniqueness('name', $name,$this->user);
             } catch (Exception $e) {
                 Log::error("Error Fields already Exists: " . $e->getMessage());
@@ -180,6 +185,9 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             // } else {
             //     $row['tax_type'] = $this->service->getTaxTypeSectionKeyFromLabel($row['tax_type'] ?? '') ?? null;
             // }
+            if($this->code_type!="Manual"){
+                $code = LedgerController::generateLedgerCodeIm($group);
+            }
             $uploadedItem = UploadLedgerMaster::create([
                 'code' => $code,
                 'name' => $name,
@@ -199,7 +207,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             ]);
 
             if ($uploadedItem) {
-                $this->processItemFromUpload($uploadedItem);
+                $this->processItemFromUpload($uploadedItem,$this->code_type);
             } else {
                 throw new Exception("Failed to create item in the database.");
             }
@@ -225,7 +233,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
 
 
 
-    private function processItemFromUpload(UploadLedgerMaster $uploadedItem)
+    private function processItemFromUpload(UploadLedgerMaster $uploadedItem,$code_type)
     {
         $errors = [];
         $organizationId = $uploadedItem->organization_id;
@@ -235,7 +243,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
         $group = $uploadedItem->ledger_groups;
         $name = $uploadedItem->name;
         try {
-            $this->service->checkRequiredFields($code, $name, $group);
+            $this->service->checkRequiredFields($code, $name, $group,$code_type);
         } catch (Exception $e) {
             $errors[] = "Error fetching sub-category: " . $e->getMessage();
         }
@@ -265,8 +273,9 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
                 return;
             }
         try {
+            $code = $uploadedItem->code;
             $item = new Ledger([
-                'code' => $uploadedItem->code,
+                'code' => $code,
                 'name' => $uploadedItem->name,
                 'ledger_group_id' => json_encode($groupIds),
                 'status' => $this->service->mapStatus($uploadedItem['status'] ?? 1),

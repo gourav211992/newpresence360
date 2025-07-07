@@ -21,6 +21,7 @@ class MrnHeader extends Model
 {
     use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
     protected $table = 'erp_mrn_headers';
+    public bool $disableDefaultGroupCompanyOrgScope = true;
     protected $fillable = [
         'organization_id',
         'group_id',

@@ -21,6 +21,7 @@ class GateEntryDetail extends Model
         'po_id',
         'jo_id',
         'so_id',
+        'sale_order_item_id',
         'item_id',
         'item_code',
         'item_name',
@@ -124,6 +125,11 @@ class GateEntryDetail extends Model
     public function joItem()
     {
         return $this->belongsTo(JoProduct::class, 'job_order_item_id');
+    }
+
+    public function soItem()
+    {
+        return $this->belongsTo(ErpSoJobWorkItem::class, 'sale_order_item_id');
     }
 
     public function po_item()

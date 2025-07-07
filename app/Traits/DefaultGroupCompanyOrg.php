@@ -114,9 +114,9 @@ trait DefaultGroupCompanyOrg
             return $query;
         }
         return $query->where(function ($query) use ($currentUser) {
-            $query->where('document_status', '!=', ConstantHelper::DRAFT)
+            $query->whereNotIn('document_status', [ConstantHelper::DRAFT, ConstantHelper::REJECTED])
                 ->orWhere(function ($query) use ($currentUser) {
-                    $query->where('document_status', ConstantHelper::DRAFT)
+                    $query->whereIn('document_status', [ConstantHelper::DRAFT, ConstantHelper::REJECTED])
                             ->where('created_by', $currentUser->auth_user_id);
                 });
         });

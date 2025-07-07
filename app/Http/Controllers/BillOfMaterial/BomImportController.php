@@ -64,8 +64,12 @@ class BomImportController extends Controller
             $uploads = BomUpload::where('migrate_status', 0)
                     ->where('created_by', $user->auth_user_id)
                     ->get();
-            $grouped = $uploads->groupBy(function ($item) {
-                return $item->product_item_id . '-' . $item->product_item_code . '-' . $item->uom_id;
+            $grouped = $uploads->groupBy(function ($item) use($moduleTyle) {
+                if($moduleTyle == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+                    return $item->product_item_id . '-' . $item->product_item_code . '-' . $item->uom_id . '-' . $item->customer_id;
+                } else {
+                    return $item->product_item_id . '-' . $item->product_item_code . '-' . $item->uom_id;
+                }
             })->map(function ($group) {
                 $first = $group->first();
                 return [
@@ -77,7 +81,8 @@ class BomImportController extends Controller
                     'product_item_code' => $first->product_item_code,
                     'uom_id' => $first->uom_id,
                     'uom_code' => $first->uom_code,
-                    'product_attributes' => $item->product_attributes ?? [],
+                    'customer_id' => $first->customer_id ?? null,
+                    'product_attributes' => $first->product_attributes ?? [],
                     'items' => $group->map(function ($item) {
                         return [
                             'item_id' => $item->item_id,
@@ -98,7 +103,6 @@ class BomImportController extends Controller
                             'sub_section_name' => $item->sub_section_name,
                             'sub_section_id' => $item->sub_section_id,
                             'vendor_id' => $item->vendor_id,
-                            'customer_id' => $item->customer_id,
                             'reason' => $item->reason,
                             'remark' => $item->remark,
                         ];
@@ -107,7 +111,7 @@ class BomImportController extends Controller
             })->values();
             # Bom Header save
             $organization = Organization::where('id', $user->organization_id)->first(); 
-            foreach($grouped as $groupedData) {   
+            foreach($grouped as $groupedData) {
                 $bomExists = Bom::where('item_id', $groupedData['product_item_id'])
                             ->where('type', $moduleTyle)
                             ->where(function ($query) use ($groupedData,$moduleTyle) {
@@ -141,7 +145,6 @@ class BomImportController extends Controller
                 $bom = new Bom;
                 $bom->type = $moduleTyle; 
                 $bom->bom_type = ConstantHelper::FIXED; 
-                // $bom->type = $request->type ?? ConstantHelper::BOM_SERVICE_ALIAS; 
                 $bom->organization_id = $organization->id;
                 $bom->group_id = $organization->group_id;
                 $bom->company_id = $organization->company_id;
@@ -271,7 +274,7 @@ class BomImportController extends Controller
                     $actionType = 'submit';
                     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 }
-                if ($request->document_status == 'submitted') {
+                if ($request->document_status == ConstantHelper::SUBMITTED) {
                     $bom->document_status = $approveDocument['approvalStatus'] ?? $request->document_status;
                 } else {
                     $bom->document_status = $request->document_status ?? ConstantHelper::DRAFT;

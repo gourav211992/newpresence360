@@ -134,7 +134,8 @@
                                                         <th>#</th>
                                                         <th>Ledger</th>
                                                         <th>Ledger Group</th>
-                                                        <th>Document No.</th>
+                                                        <th>Series</th>
+                                                        <th>Voucher No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
                                                         <th>Remarks</th>
@@ -164,7 +165,8 @@
                                                         <th>#</th>
                                                         <th>Ledger</th>
                                                         <th>Ledger Group</th>
-                                                        <th>Document No.</th>
+                                                        <th>Series</th>
+                                                        <th>Voucher No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
                                                         <th>Remarks</th>
@@ -553,6 +555,7 @@
                         index + 1,
                         `<span class="fw-bolder text-dark">${item.ledger_name}</span>`,
                         item.ledger_group,
+                        item.series ?? null,
                         item.voucher_no,
                         item.balance ?? 0,
                         item.settle_amount ?? 0,
@@ -570,8 +573,8 @@
                 });
             } else {
                 const emptyRow = isSuccessTable
-                    ? ['', '', 'No records found', '', '', '','']
-                    : ['', '', 'No records found', '', '','',''];
+                    ? ['', '', '','No records found', '', '', '','']
+                    : ['', '','', 'No records found', '', '','',''];
                 table.row.add(emptyRow);
                 $('#proceedBtn').hide();
             }

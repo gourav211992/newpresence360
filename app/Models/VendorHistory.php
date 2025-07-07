@@ -74,6 +74,7 @@ class VendorHistory extends Model
         'enter_company_org_id',
         'organization_id',
         'created_by',
+        'book_codes', 
     ];
     
 
