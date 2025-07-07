@@ -7,7 +7,6 @@ use App\Models\Organization;
 use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,7 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class WhDetail extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait, DefaultGroupCompanyOrg, Deletable;
+    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait, Deletable;
     protected $table = 'erp_wh_details';
     protected $fillable = [
         'name', 

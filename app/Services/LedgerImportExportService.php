@@ -9,11 +9,18 @@ use Exception;
 
 class LedgerImportExportService
 {
-    public function checkRequiredFields($code, $name, $group)
+    public function checkRequiredFields($code, $name, $group,$code_type)
     {
+        if($code_type=="Manual"){
         if (!$code || !$name || !$group) {
             throw new Exception("Code, Name & group are required.");
         }
+    }else{
+        if (!$code || !$name || !$group) {
+            throw new Exception("Name & group are required.");
+        }
+
+    }
         return true;
     }
 

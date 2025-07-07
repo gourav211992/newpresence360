@@ -21,7 +21,7 @@
     <td>
     {{ $item['sub_store_name'] }}
     </td>
-    <td id = "stock_confirmed_qty_{{$itemIndex}}" style = "{{$item['confirmed_stocks'] > 0 ? '' : 'color:red;'}}">{{ $item['confirmed_stocks'] }}</td>
-    <td id = "stock_unconfirmed_qty_{{$itemIndex}}" style = "{{$item['unconfirmed_stocks'] > 0 ? '' : 'color:red;'}}">{{ $item['unconfirmed_stocks'] }}</td>
+    <td class = "numeric-alignment" id = "stock_confirmed_qty_{{$itemIndex}}" style = "{{$item['confirmed_stocks'] > 0 ? '' : 'color:red;'}}">{{ $item['confirmed_stocks'] }}</td>
+    <td class = "numeric-alignment" id = "stock_unconfirmed_qty_{{$itemIndex}}" style = "{{$item['unconfirmed_stocks'] > 0 ? '' : 'color:red;'}}">{{ $item['unconfirmed_stocks'] }}</td>
 </tr>
 @endforeach

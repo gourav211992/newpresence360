@@ -27,7 +27,7 @@
     @method('PUT')
     @php
         $isEditable = isset($item) && $item->status === 'draft';
-        $statusValue = isset($item) && $item->status == 'Active' ? 'active' : 'inactive';
+        $statusValue = isset($item) && ($item->status == 'Active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
         $tables=$tablesToCheck;
         $matchedAttributeIds = []; 
@@ -55,18 +55,19 @@
                     <div class="content-header-right text-end col-md-6 col-6 mb-2 mb-sm-0">
                         <div class="form-group breadcrumb-right" id="buttonsDiv">
                                 <a href="{{ route('item.index') }}" class="btn btn-secondary btn-sm">
-                                <i data-feather="arrow-left-circle"></i> Back
+                                 <i data-feather="arrow-left-circle"></i> Back
                                 </a>
-                                @if(auth()->check() && $item->created_by == optional(auth()->user())->auth_user_id)
-                                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                            data-url="{{ route('item.destroy', $item->id) }}" 
-                                            data-redirect="{{ route('item.index') }}"
-                                            data-message="Are you sure you want to delete this record?">
-                                        <i data-feather="trash-2" class="me-50"></i> Delete
-                                    </button>
-                                @endif
+                              
                                 @if(!isset(request()->revisionNumber))
                                     @if (isset($item))
+                                       @if($buttons['delete'])
+                                            <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                                data-url="{{ route('item.destroy', $item->id) }}" 
+                                                data-redirect="{{ route('item.index') }}"
+                                                data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                            </button>
+                                        @endif
                                         @if($buttons['draft'])
                                             <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
                                                 <i data-feather='save'></i> Save as Draft
@@ -129,15 +130,10 @@
                                                         <a href="{{route('bill.of.material.index')}}"  target="_blank" class="text-primary add-contactpeontxt mt-25 me-1"><i data-feather='file-text'></i> Bill of Material</a>
                                                         <div class="form-check form-check-primary form-switch statusactiinactive me-1">
                                                             <input type="hidden" name="status" id="status_hidden_input" value="{{ $statusValue ??''}}">
-                                                            <input type="checkbox" class="form-check-input" id="customSwitch3" {{ $isChecked }}>
+                                                            <input type="checkbox" class="form-check-input" id="customSwitch3" {{ $isChecked }} {{ $isItemReferenced ? 'disabled' : '' }} >
                                                             <span class="itemactive">Active</span>
                                                             <span class="itemactive iteminactive">Inactive</span>
                                                         </div>
-                                                        @if (isset($item) && isset($docStatusClass)) 
-                                                            <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                                Status : <span class="{{$docStatusClass}}">{{$item->display_status}}</span>
-                                                            </span> 
-                                                        @endif
                                                     </div>    
                                                 </div>
                                             </div>
@@ -194,7 +190,8 @@
                                                 <div class="col-md-9"> 
                                                     <div class="demo-inline-spacing">
                                                         @foreach ($subTypes as $subType)
-                                                            <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                
                                                                 <input type="checkbox" 
                                                                     class="form-check-input subTypeCheckbox" 
                                                                     id="subType{{ $subType->id }}"
@@ -229,7 +226,7 @@
                                                         </label>
                                                     </div>
                                                     <div class="col-md-5 mb-1 mb-sm-0">
-                                                        <input type="text" name="item_name" class="form-control item-name-autocomplete" value="{{ old('item_name', $item->item_name ?? '') }}"/>
+                                                        <input type="text" name="item_name" class="form-control item-name-autocomplete" value="{{ old('item_name', $item->item_name ?? '') }}" {{ $isItemReferenced ? 'readonly' : '' }}/>
                                                     </div>
                                                     <div class="col-md-2" >
                                                         <label class="form-label">
@@ -324,28 +321,6 @@
                                             </div>
                                         </div>
                                         <div class="col-md-3 border-start">
-                                            <!-- <div class="row align-items-center mb-2">
-                                                <div class="col-md-12">
-                                                    <label class="form-label text-primary"><strong>Status</strong></label>
-                                                    <div class="demo-inline-spacing">
-                                                        @foreach ($status as $option)
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input
-                                                                    type="radio"
-                                                                    id="status_{{ strtolower($option) }}"
-                                                                    name="status"
-                                                                    value="{{ $option }}"
-                                                                    class="form-check-input"
-                                                                    {{ $item->status == $option ? 'checked' : '' }}>
-                                                                <label class="form-check-label fw-bolder" for="status_{{ strtolower($option) }}">
-                                                                    {{ ucfirst($option) }}
-                                                                </label>
-                                                            </div>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                            </div> -->
-                                            <!-- @include('partials.approval-history', ['document_status' => $item->document_status, 'revision_number' => $revision_number])  -->
                                             @if(isset($item) && ($item->document_status !== "draft"))
                                                 @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($item->revision_number))
                                                         <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
@@ -2948,44 +2923,76 @@
     {
         $('#' + id).modal('show');
     }
-    function amendConfirm()
-{
-    const amendButton = document.getElementById('amendShowButton');
-    if (amendButton) {
-        amendButton.style.display = "none";
-    }
-    const buttonParentDiv = document.getElementById('buttonsDiv');
-    const newSubmitButton = document.createElement('button');
-    newSubmitButton.type = "button";
-    newSubmitButton.id = "amend-submit-button";
-    newSubmitButton.className = "btn btn-primary btn-sm mb-50 mb-sm-0 submit-button";
-    newSubmitButton.innerHTML = `<i data-feather="check-circle"></i> Submit`;
-    newSubmitButton.value = "submitted"; 
-    newSubmitButton.onclick = function() {
-        openAmendConfirmModal();
-    };
-
-    if (buttonParentDiv) {
-        buttonParentDiv.appendChild(newSubmitButton);
-    }
-
-    if (feather) {
-        feather.replace({
-            width: 14,
-            height: 14
+    function enableAmendmentFields() {
+        const fieldsToEnable = [        
+            'category_name',    
+            'item_name',       
+            'item_initial',   
+            'hsn_name',
+           
+        ];
+        fieldsToEnable.forEach(fieldName => {
+            const fields = document.querySelectorAll(`[name="${fieldName}"]`);
+            fields.forEach(field => {
+                field.disabled = false;
+                field.readOnly = false;
+            });
         });
+
+        const checkbox = document.getElementById('customSwitch3');
+        if (checkbox) {
+            checkbox.disabled = false;
+        }
+        let isBomExists = @json($isBomExists);
+        if (isBomExists) {
+            $('#attributesTable').css({
+                'pointer-events': '',
+                'opacity': '',
+                'cursor': ''
+            });
+        }
     }
 
+    function amendConfirm()
+    {
+        const amendButton = document.getElementById('amendShowButton');
+        if (amendButton) {
+            amendButton.style.display = "none";
+        }
+        const buttonParentDiv = document.getElementById('buttonsDiv');
+        const newSubmitButton = document.createElement('button');
+        newSubmitButton.type = "button";
+        newSubmitButton.id = "amend-submit-button";
+        newSubmitButton.className = "btn btn-primary btn-sm mb-50 mb-sm-0 submit-button";
+        newSubmitButton.innerHTML = `<i data-feather="check-circle"></i> Submit`;
+        newSubmitButton.value = "submitted"; 
+        newSubmitButton.onclick = function() {
+            openAmendConfirmModal();
+        };
 
-}
+        if (buttonParentDiv) {
+            buttonParentDiv.appendChild(newSubmitButton);
+        }
+
+        if (feather) {
+            feather.replace({
+                width: 14,
+                height: 14
+            });
+        }
+
+
+    }
 
     function openAmendConfirmModal()
     {
+        enableAmendmentFields();
         $("#amendConfirmPopup").modal("show");
     }
 
     function submitAmend()
     {
+        enableAmendmentFields();
         let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
         $("#action_type_main").val("amendment");
         $("#amendConfirmPopup").modal('hide');

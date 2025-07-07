@@ -55,6 +55,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('bank')
                 ->namespace('App\Http\Controllers\Bank')
                 ->group(base_path('routes/bank.php'));
+
+            Route::middleware(['web'])
+                ->prefix('whm')
+                ->namespace('App\Http\Controllers\WHM')
+                ->group(base_path('routes/whm.php'));
         });
     }
 }

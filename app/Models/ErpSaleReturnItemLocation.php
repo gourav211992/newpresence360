@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Traits\DateFormatTrait;
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpSaleReturnItemLocation extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, DateFormatTrait;
+    use HasFactory, SoftDeletes, DateFormatTrait;
 
     protected $fillable = [
         'sale_return_id',

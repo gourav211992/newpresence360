@@ -19,7 +19,7 @@ class CrDrImportExportService
         $requiredFields = [
             'ledger_name'   => 'Ledger Name',
             'ledger_group'  => 'Ledger Group',
-            'voucher_no'   => 'Voucher No',
+            'document_no'   => 'Voucher No',
             'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
             'balance'       => 'Balance'
@@ -36,7 +36,7 @@ class CrDrImportExportService
     public function processData(array $row,$type){
         $ledgerName   = isset($row['ledger_name']) ? trim($row['ledger_name']) : null;
         $ledgerGroup  = isset($row['ledger_group']) ? trim($row['ledger_group']) : null;
-        $voucherNo    = isset($row['voucher_no']) ? trim($row['voucher_no']) : null;
+        $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
         $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
         $balance      = isset($row['balance']) ? trim($row['balance']) : null;
         $series      = isset($row['series']) ? trim($row['series']) : null;
@@ -67,28 +67,27 @@ class CrDrImportExportService
         }
         
         $invoices = Helper::getVoucherBalance($voucherNo,$type,$ledger->id,$group->id);
-        
-        $voucherRows = collect($invoices->getData()->data)
-            ->where('balance', '>', 0)
-            ->where('voucher_no', $voucherNo);
+        $voucher = collect($invoices->getData()->data)
+            ->first(function ($item) use ($voucherNo, $series) {
+                // balance & voucher must match
+                if ($item->balance <= 0 || $item->voucher_no !== $voucherNo) {
+                    return false;
+                }
 
-        $voucher = $voucherRows->first();
-
-        if (empty($voucher)) {
-            throw new Exception("Voucher no# '{$voucherNo}' not valid.");
-        }
-
-        if ($series) {
-            $voucherWithSeries = $voucherRows->first(function ($item) use ($series) {
-                return isset($item->series)
-                    && $item->series
-                    && isset($item->series->book_code)
-                    && $item->series->book_code == $series;
+                // if a series is required, check it
+                if ($series) {
+                    return isset($item->series?->book_code) &&
+                        $item->series->book_code === $series;
+                }
+                return true;
             });
 
-            if (empty($voucherWithSeries)) {
-                throw new Exception("Series '{$series}' not exist related to the Voucher no# '{$voucherNo}'.");
-            }
+        if (!$voucher) {
+            throw new Exception(
+                $series
+                    ? "Series '{$series}' not exist related to the Voucher no# '{$voucherNo}'."
+                    : "Voucher no# '{$voucherNo}' not valid."
+            );
         }
         
         $row['voucher_id'] = $voucher->id;

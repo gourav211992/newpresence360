@@ -68,6 +68,7 @@ class ItemHistory extends Model
         'company_id',
         'organization_id',
         'status',
+        'production_route_id',
         'document_status',
         'approval_level',
         'revision_number',

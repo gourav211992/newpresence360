@@ -1,0 +1,222 @@
+<?php
+
+namespace App\Http\Controllers\WHM;
+
+use App\Exceptions\ApiGenericException;
+use App\Helpers\CommonHelper;
+use App\Helpers\Helper;
+use App\Http\Controllers\Controller;
+use App\Http\Resources\WHM\UnloadingResource;
+use App\Lib\Services\WHM\WhmJob;
+use App\Models\GateEntryAttribute;
+use App\Models\ItemAttribute;
+use App\Models\WHM\ErpItemUniqueCode;
+use App\Models\WHM\ErpWhmJob;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+class UnloadingTaskController extends Controller
+{
+    public function index(Request $request){
+        $search = $request->input('search');
+        $location = $request->input('store_id');
+        $jobs = ErpWhmJob::with('morphable.book', 'morphable.items')
+                    ->where('morphable_type', 'App\Models\GateEntryHeader')
+                    ->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($search, $location) {
+                    if ($search) {
+                        $q->where(function($q2) use ($search) {
+                            $q2->where('document_number', 'like', "%{$search}%")
+                            ->orWhere('consignment_no', 'like', "%{$search}%")
+                            ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
+                            ->orWhereHas('book', function ($bookQuery) use ($search) {
+                                $bookQuery->where('book_code', 'like', "%{$search}%");
+                            });
+                        });
+                    }
+                    if ($location) {
+                        $q->where('store_id', $location);
+                    }
+                })
+                ->when($location, function ($query) use ($location) {
+                    $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
+                        $q->where('store_id', $location);
+                    });
+                })
+                ->where('status',CommonHelper::PENDING)
+                ->paginate(CommonHelper::PAGE_LENGTH_10);
+        $jobResources = UnloadingResource::collection($jobs->getCollection());
+
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => [
+                'records' => $jobResources,
+                'pagination' => [
+                    'current_page' => $jobs->currentPage(),
+                    'last_page' => $jobs->lastPage(),
+                    'per_page' => $jobs->perPage(),
+                    'total' => $jobs->total(),
+                    'from' => $jobs->firstItem(),
+                    'to' => $jobs->lastItem(),
+                ],
+            ],
+        ];
+    }
+
+    public function pendingTasks(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required']
+        ],[
+            'job_id.required' => 'Job id is required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $pendingTasks = ErpItemUniqueCode::with(['vendor' => function ($q) {
+            $q->select('id', 'vendor_code', 'company_name');
+        }])
+        ->where('job_id',$request->job_id)
+        ->where('status',CommonHelper::PENDING)
+        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id')
+        ->get();
+
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => $pendingTasks,
+        ];
+
+    }
+
+    public function scannedPackets(Request $request){
+        $validator = Validator::make($request->all(),[
+            'id' => ['required'],
+        ],[
+            'id.required' => 'Id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        \DB::beginTransaction();
+        try {
+            // Fetch Scanned Packets
+            $scannedPackets = ErpItemUniqueCode::with(['vendor' => function ($q) {
+                $q->select('id', 'vendor_code', 'company_name');
+            }])
+            ->where('job_id',$request->id)
+            ->where('status',CommonHelper::SCANNED)
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id')
+            ->get();
+
+            \DB::commit();
+            return [
+                'data' => $scannedPackets
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    public function saveAsDraft(Request $request){
+        $validator = Validator::make($request->all(),[
+            'id' => ['required'],
+            'packet_ids' => ['required', 'array'],
+        ],[
+            'id.required' => 'Id is required',
+            'packet_ids.required' => 'Packet IDs are required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->id)
+            ->whereIn('uid', $request->packet_ids)
+            ->where('status', CommonHelper::SCANNED)
+            ->pluck('uid')
+            ->toArray();
+
+        if (!empty($alreadyScanned)) {
+            throw ValidationException::withMessages([
+                'packet_ids' => ['Some packets are already scanned: ' . implode(', ', $alreadyScanned)],
+            ]);
+        }
+
+        \DB::beginTransaction();
+        try {
+            // Get Login User
+            $user = Helper::getAuthenticatedUser();
+            
+            // Update Job Status
+            ErpWhmJob::where('id',$request->id)
+            ->update([
+                'status' => CommonHelper::IN_PROGRESS
+            ]);
+
+            // Update Task Status
+            ErpItemUniqueCode::where('job_id',$request->id)
+            ->whereIn('uid',$request->packet_ids)
+            ->update([
+                'status' => 'scanned',
+                'action_by' => $user->id,
+                'action_at' => now()
+            ]);
+
+            \DB::commit();
+            return [
+                'message' => 'Task saved in draft'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    public function closeJob(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'deviation' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $alreadyClosed = ErpWhmJob::where('id',$request->job_id)->whereNotNull('job_closed_at')->first();
+        if (!empty($alreadyClosed)) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job already closed.'],
+            ]);
+        }
+
+
+        \DB::beginTransaction();
+        try {
+
+            $job = ErpWhmJob::find($request->job_id);
+            $job->status = CommonHelper::CLOSED;
+            $job->job_closed_at = now();
+            if($request->deviation > 0){
+                $job->deviation_qty = $request->deviation;
+                $job->status = CommonHelper::DEVIATION;
+            }
+            $job->save();
+
+            \DB::commit();
+            return [
+                'message' => 'Job closed successfully.'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+}

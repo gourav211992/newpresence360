@@ -9,6 +9,7 @@ use App\Models\ErpRateContract;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\Item;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\VendorItem;
 use App\Models\Vendor;
 use App\Models\ErpAddress;
@@ -555,19 +556,19 @@ class ItemHelper
         $locations = [];
         $locationIds = [];
         if ($locationId) {
-            $allLocations = ErpStore::where('id', $locationId) -> withWhereHas('subStores', function ($subStoreQuery) {
+            $allLocations = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->where('id', $locationId) -> withWhereHas('subStores', function ($subStoreQuery) {
                         $subStoreQuery -> whereHas('sub_type', function ($subTypeQuery) {
                             $subTypeQuery -> where('type', SubStoreConstants::MAIN_STORE_VALUE);
                         });
                 }) -> where('status', ConstantHelper::ACTIVE) -> get();
         } else {
-            $allLocations = ErpStore::whereIn('organization_id', $orgIds)
+            $allLocations = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->whereIn('organization_id', $orgIds)
                 ->when(($authUser->authenticable_type == "employee"), function ($locationQuery) use($authUser) { // Location with same country and state
                     $locationQuery->whereHas('employees', function ($employeeQuery) use ($authUser) {
                         $employeeQuery->where('employee_id', $authUser->id);
                     });
                 }) -> withWhereHas('subStores', function ($subStoreQuery) {
-                        $subStoreQuery -> whereHas('sub_type', function ($subTypeQuery) {
+                        $subStoreQuery -> withoutGlobalScope(DefaultGroupCompanyOrgScope::class) -> whereHas('sub_type', function ($subTypeQuery) {
                             $subTypeQuery -> where('type', SubStoreConstants::MAIN_STORE_VALUE);
                         });
                 }) -> where('status', ConstantHelper::ACTIVE) -> get();
@@ -578,7 +579,7 @@ class ItemHelper
             foreach($locations as $location) {
                 $subStores = [];
                 if ($subStoreId) {
-                    $subStores = ErpSubStore::where('id', $subStoreId) -> get();
+                    $subStores = ErpSubStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class) ->where('id', $subStoreId) -> get();
                 } else {
                     $subStores = $location -> subStores;
                 }

@@ -961,7 +961,31 @@ $(document).on('keydown', function(e) {
         }
 
         function initializeAssetAutocomplete(selector) {
+            $(selector).on('keydown', function (e) {
+                if (e.key === 'Backspace' || e.key === 'Delete') {
+                    const row = $(this).closest('tr');
+                    if (row.find('.asset_id').val() !== '') {
+                          const row = $(this).closest('tr');
+                    let subAssetSelect = row.find('.sub_asset_id');
+                        subAssetSelect.empty();
+                        row.find('.sub_asset_id').empty();
+                        row.find('.ledger').val('');
+                        renderLedgerSelects();
+
+                        row.find('.asset_id').val('');
+                        row.find('.quantity').val('');
+                        row.find('.currentvalue').val('');
+                        row.find('.salvagevalue').val('');
+                        row.find('.last_dep_date').val('');
+                        refreshAssetSelects();
+                        updateSum();
+                        applyFixedPrefixToInputs();
+                        
+                    }
+                }
+            });
             $(selector).autocomplete({
+              
                 source: function(request, response) {
                     $.ajax({
                         headers: {
@@ -1085,6 +1109,7 @@ $(document).on('keydown', function(e) {
                 if (this.value === '') {
                     $(this).autocomplete('search');
                 }
+                return false;
             });
         }
 
@@ -1597,7 +1622,7 @@ $(document).on('keydown', function(e) {
         }
         function validateAssetCodes() {
             let prefix = $('.asset-search-input').first().val();
-            const inputs = document.querySelectorAll('#asset_code');
+            const inputs = document.getElementById('asset_code');
             
             if (!prefix) return true; // If no prefix, nothing to validate
 
@@ -1606,12 +1631,12 @@ $(document).on('keydown', function(e) {
 
             let allValid = true;
 
-                const value = inputs.value.trim();
+                const value = inputs.value;
                 if (value === prefix) {
                     allValid = false;
-                    input.style.border = "1px solid red";
+                    inputs.style.border = "1px solid red";
                 } else {
-                    input.style.border = ""; // Reset border if valid
+                    inputs.style.border = ""; // Reset border if valid
                 }
             
 

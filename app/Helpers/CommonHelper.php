@@ -43,6 +43,9 @@ class CommonHelper
     const PAYMENTS = 'payments';
     const RECEIPTS = 'receipts';
     const IAM_VENDOR = 'IAM-VENDOR';
+    const SCANNED = 'scanned';
+    const IN_PROGRESS = 'in_progress';
+    const DEVIATION = 'deviation';
 
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,

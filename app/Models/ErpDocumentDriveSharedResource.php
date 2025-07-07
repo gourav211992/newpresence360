@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpDocumentDriveSharedResource extends Model
 {
-    use HasFactory,SoftDeletes,Deletable,DefaultGroupCompanyOrg;
+    use HasFactory,SoftDeletes,Deletable;
 
     protected $table = 'erp_document_drive_shared_resources';
 

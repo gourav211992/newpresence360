@@ -5,14 +5,13 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Traits\DateFormatTrait;
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpSaleReturnItem extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, DateFormatTrait;
+    use HasFactory, SoftDeletes, DateFormatTrait;
 
     protected $fillable = [
         'sale_return_id',

@@ -60,6 +60,7 @@ class FixedAssetSplit extends Model
     public static function makeRegistration($id)
     {
         $request = FixedAssetSplit::find($id);
+        $old = FixedAssetSub::find((int)$request->sub_asset_id);
         $book = Book::find($request->book_id);
         $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
         if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
@@ -162,6 +163,7 @@ class FixedAssetSplit extends Model
 
             // Step 2: Create sub-assets under main asset
             foreach ($items as $subAsset) {
+                
                 FixedAssetSub::create([
                     'parent_id' => $mainAsset->id,
                     'sub_asset_code' => $subAsset->sub_asset_id,
@@ -173,13 +175,14 @@ class FixedAssetSplit extends Model
                     'cost_center_id' => $request->cost_center_id,
                     'capitalize_date' => $subAsset->capitalize_date,
                     'last_dep_date' => $subAsset->capitalize_date,
-                    'expiry_date' => $subAsset->expiry_date?? null,
+                    'expiry_date' => $old->expiry_date?? null,
                 ]);
             }
         }
 
+        
         //delete_old
-        $old = FixedAssetSub::find((int)$request->sub_asset_id);
+       
         if ($old){
             if($old->last_dep_date!=$old->capitalize_date){
                 $old->expiry_date = Carbon::parse($request->capitalize_date)->subDay()->format('Y-m-d');

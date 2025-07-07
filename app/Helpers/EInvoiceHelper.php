@@ -212,16 +212,16 @@ class EInvoiceHelper
 
     public static function validateGstinName(string $gstNumber){
         try{
-          
+
             $gstin = $gstNumber;
             $authCredentials = self::getAuthCredentials();
             $requestUid = 'GOV-EINVOICE-'.date('dmy').time();;
             $eInvoiceService = new MasterIndiaService($authCredentials,$requestUid);
 
             $authToken = $eInvoiceService->getAuthToken();
-            $baseUrl = rtrim(env('MASTER_INDIA_BASE_URL', ''), '/') . '/';
+            $baseUrl = config('app.masterindia.base_url');
             $gstinUrl = $baseUrl . 'commonapis/searchgstin?gstin=' . urlencode($gstin);
-            $clientId = env('GSTIN_CLIENT_ID', '');
+            $clientId = config('app.masterindia.gstin_client_id');
             $requestHeader = array(
                 'client_id:'.$clientId,
                 'Authorization:Bearer '.$authToken,

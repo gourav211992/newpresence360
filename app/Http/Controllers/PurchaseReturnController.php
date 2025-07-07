@@ -2903,7 +2903,7 @@ class PurchaseReturnController extends Controller
 
         try{
             $documentHeader = PRHeader::find($request->id);
-            $shippingAddress = $documentHeader->shippingAddress;
+            $shippingAddress = $documentHeader->billingAddress;
             $storeAddress = $documentHeader->store_address;
 
             // $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
@@ -2912,6 +2912,7 @@ class PurchaseReturnController extends Controller
             $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
             if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
                 $data = MasterIndiaHelper::saveGstIn($documentHeader);
+                dd($data);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
                         'status' => 'error',

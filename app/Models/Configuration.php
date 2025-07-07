@@ -3,7 +3,6 @@ namespace App\Models;
 
 use App\Helpers\Helper;
 use App\Helpers\ServiceParametersHelper;
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,7 +11,7 @@ class Configuration extends Model
 
     protected $table = 'configurations';
 
-    use HasFactory, DefaultGroupCompanyOrg;
+    use HasFactory;
     public $log_module_name = 'Master';
     public $log_source = null;
 
