@@ -92,30 +92,24 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
         }
         $organization = $this->user->organization;
 
-        // Always create pending item first
-
-
         try {
-            // First, validate required fields (stop if missing)
             $this->service->validateImportRow($row);
-            $row = $this->service->processData($row,$this->type);
-            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null,$this->type);
+            $result = $this->service->processData($row, $this->type);
 
-
-            // --- SUCCESS: Save with success remarks ---
-            if ($uploadedItem) {
+            if ($result['status']) {
+                $uploadedItem = $this->savePendingPaymentImport(
+                    $result['row'], $this->user, $organization, 'Success', 'Success', $this->type
+                );
                 $this->onSuccess($uploadedItem);
+            } else {
+                $uploadedItem = $this->savePendingPaymentImport(
+                    $result['row'], $this->user, $organization, 'Failed', $result['error'], $this->type
+                );
+                $this->onFailure($uploadedItem);
             }
-
         } catch (\Exception $e) {
-            // This catches any *unexpected* error in the logic above
-            Log::error("Error importing row: " . $e->getMessage(), ['error' => $e]);
-            $uploadedItem = $this->savePendingPaymentImport($row, $this->user, $organization, 'Success', null,$this->type);
-            $uploadedItem->update([
-                'import_status' => 'Failed',
-                'import_remarks' => str_replace(',', '', $e->getMessage()),
-            ]);
-            $this->onFailure($uploadedItem);
+            // Only logs unexpected errors, doesn't try to save anything
+            \Log::error("Unexpected error importing row: " . $e->getMessage(), ['row' => $row, 'exception' => $e]);
             return;
         }
     }
