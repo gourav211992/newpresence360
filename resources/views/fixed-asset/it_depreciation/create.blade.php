@@ -9,7 +9,7 @@
                 <div class="content-header-left col-md-6  mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <h2 class="content-header-title float-start mb-0">Depreciation</h2>
+                            <h2 class="content-header-title float-start mb-0">IT Act Depreciation</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
                                     <li class="breadcrumb-item"><a href="{{route('/')}}">Home</a></li> 
@@ -22,7 +22,7 @@
 				<div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">  
                         <a href="{{route('finance.fixed-asset.depreciation.index')}}" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
-                        <button type="submit" form="fixed-asset-depreciation-form" class="btn btn-primary btn-sm"
+                        <button type="submit" hidden form="fixed-asset-depreciation-form" class="btn btn-primary btn-sm"
                             id="submit-btn">
                             <i data-feather="check-circle"></i> Submit
                         </button>
@@ -32,8 +32,7 @@
             <div class="content-body"> 
                  <section id="basic-datatable">
                     <div class="row">
-                        <form id="fixed-asset-depreciation-form" method="POST"
-                        action="{{ route('finance.fixed-asset.depreciation.store') }}"
+                        <form id="fixed-asset-depreciation-form"
                         enctype="multipart/form-data"
                         @csrf
                         <input type="hidden" name="asset_details" id="asset_json" value="">
@@ -71,39 +70,6 @@
 
 
                                             <div class="col-md-8">
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label for="book_id" class="form-label">Series <span class="text-danger">*</span></label>
-                                                    </div>
-                                            
-                                                    <div class="col-md-5">
-                                                        <select id="book_id" name="book_id" class="form-select" required>
-                                                            @foreach($series as $book)
-                                                                <option value="{{ $book->id }}">{{ $book->book_code }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label for="document_number" class="form-label">Document No <span class="text-danger">*</span></label>
-                                                    </div>
-                                            
-                                                    <div class="col-md-5">
-                                                        <input type="text" id="document_number" name="document_number" class="form-control" required>
-                                                    </div>
-                                                </div>
-                                            
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label for="document_date" class="form-label">Date <span class="text-danger">*</span></label>
-                                                    </div>
-                                            
-                                                    <div class="col-md-5">
-                                                        <input type="date" id="document_date" name="document_date" class="form-control" value="{{date('Y-m-d')}}" required>
-                                                    </div>
-                                                </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
@@ -208,12 +174,12 @@
                                                                     <th>Asset Code</th>
                                                                     <th>Sub Asset Code</th>
                                                                     <th>Asset Name</th>
-                                                                    <th>Ledger Name</th>
+                                                                    <th class="d-none">Ledger Name</th>
                                                                     <th>FY</th>
                                                                     <th>From Date</th>
                                                                     <th>To Date</th>
-                                                                    <th>Posted Days</th>
-                                                                    <th>Days</th>
+                                                                    <th class="d-none">Posted Days</th>
+                                                                    <th class="d-none">Days</th>
                                                                     <th hidden class="text-end">Current Value</th>
                                                                     <th class="text-end">Return Down Value</th>
                                                                     <th class="text-end">Dep. Amount</th>
@@ -225,7 +191,7 @@
                                                                 </tbody>
                                                                 <tfoot>
                                                                     <tr>
-                                                                        <td colspan="11" class="text-center">Grand Total</td>
+                                                                        <td colspan="8" class="text-center">Grand Total</td>
                                                                         <td hidden id="grand_total_current" class="text-end"></td>
                                                                         <td id="grand_total_current_after_dep" class="text-end"></td>
                                                                         <td id="grand_total_dep" class="text-end"></td>
@@ -412,7 +378,7 @@
 
             if (today < startDate || today > endDate) {
                 resultDate = endDate;
-                $('#submit-btn').show();
+                $('#submit-btn').hide();
             } else {
                 resultDate = today;
                 $('#submit-btn').hide();
@@ -514,7 +480,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
 
     // Example: Fetch data from the backend using AJAX (replace with actual data source)
-    fetch(`{{route('finance.fixed-asset.depreciation.assets')}}?date_range=${period}`)
+    fetch(`{{route('finance.fixed-asset.it.dep.assets')}}?date_range=${period}`)
         .then(response => response.json())
         .then(data => {
             let tableBody = document.getElementById("assetTableBody");
@@ -559,41 +525,25 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
               
                 if(diffDays>0){
-                    let depType = asset.depreciation_method;
+                    let depType = "WDV";
                     //console.log("dep_method"+depType);
                     let fy = @json($fy);
 
                         // Determine which asset value to use based on $dep_type
                         let value;
-                        //console.log()
-                        if (depType === "SLM") {
-                            value = sub_asset.current_value;
-                            //console.log("selected_method SLM");
-                        } else {
-                            let isCurrent = isDateInRange(sub_asset.capitalize_date,"{{$financialStartDate}}","{{$financialEndDate}}");
+                        let isCurrent = isDateInRange(sub_asset.capitalize_date,"{{$financialStartDate}}","{{$financialEndDate}}");
                             if(isCurrent)
                                 value = sub_asset.current_value;
                             else
                             value = sub_asset.current_value_after_dep;
-                        
+                     
+                        let totalDepreciation = ((parseFloat(asset.it_category.setup.dep_percentage/100)*parseFloat(value)));
+                        const capitalizeDate = new Date(sub_asset.capitalize_date);
+                        const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); // October is month 9 (0-indexed)
+                        if (capitalizeDate>cutoffDate) {
+                            totalDepreciation = totalDepreciation/2;
                         } 
-                    //console.log("DepRate:"+asset.depreciation_percentage);
-                    //console.log("DiffDays:"+diffDays);
-
-                    let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365);
-                    
-                    // if (asset?.category?.setup?.act_type === "income_tax") {
-                    //     //console.log("Income Tax Depreciation"+sub_asset.sub_asset_code);
-                    //     const capitalizeDate = new Date(sub_asset.capitalize_date);
-                    //     const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); // October is month 9 (0-indexed)
-                    //     totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)));
-                    //     if (capitalizeDate>cutoffDate) {
-                    //         totalDepreciation = totalDepreciation/2;
-                    //         //console.log("half year");
-                    //     } else {
-                    //         //console.log("full year");
-                    //     } 
-                    //  }
+                     
                     
                     let after_dep_value = parseFloat(sub_asset.current_value_after_dep) - totalDepreciation;
                     let salv = parseFloat(sub_asset.salvage_value);
@@ -623,7 +573,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
 
                     let assetData = {
                         asset_id: asset.id,
-                        category: asset.category.name,
+                        category: asset.it_category.name,
                         asset_code: asset.asset_code,
                         sub_asset_code: sub_asset.sub_asset_code,
                         sub_asset_id: sub_asset.id,
@@ -647,8 +597,8 @@ document.getElementById("process_btn").addEventListener("click", function () {
                                 <td class="text-dark fw-bolder">
                                     <input type="hidden" name="assets[]" value="${asset.id}">
                                     <input type="hidden" name="sub_assets[]" value="${sub_asset.id}">
-                                    <input type="hidden" name="category[]" value="${asset.category.name}">
-                                    ${asset.category.name}
+                                    <input type="hidden" name="category[]" value="${asset.it_category.name}">
+                                    ${asset.it_category.name}
                                 </td>
                                 <td>
                                     <input type="hidden" name="asset_code[]" value="${asset.asset_code}">
@@ -662,7 +612,7 @@ document.getElementById("process_btn").addEventListener("click", function () {
                                     <input type="hidden" name="asset_name[]" value="${asset.asset_name}">
                                     ${asset.asset_name}
                                 </td>
-                                <td>
+                                <td class="d-none">
                                     <input type="hidden" name="ledger_name[]" value="${asset.ledger_name}">
                                     ${asset.ledger.name}
                                 </td>
@@ -678,11 +628,11 @@ document.getElementById("process_btn").addEventListener("click", function () {
                                     <input type="hidden" name="to_date[]" value="${to_date}">
                                     ${to_date}
                                 </td>
-                                 <td>
+                                 <td class="d-none">
                                     <input type="hidden" name="posted_days[]" value="${posted_days}">
                                     ${posted_days}
                                 </td>
-                                <td>
+                                <td class="d-none">
                                     <input type="hidden" name="days[]" value="${diffDays}">
                                     ${diffDays}
                                 </td>
@@ -717,9 +667,8 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 totalAfterDepValue += parseFloat(after_dep_value);
 
             }else{
-            // console.log("DIFFF"+diffDays,toDateObj,fromDateObj);
-            // console.log("COde"+asset.asset_code);
-            }
+            console.log("DIFFF"+diffDays,toDateObj,fromDateObj);
+            console.log("COde"+asset.asset_code);}
                 });
             }
             });

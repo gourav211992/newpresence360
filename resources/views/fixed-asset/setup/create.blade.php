@@ -148,13 +148,13 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Ledger <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="ledger_id" id="ledger"
+                                                        <select class="form-select select2 company-field" name="ledger_id" id="ledger"
                                                             required>
                                                             <option value="" {{ old('ledger') ? '' : 'selected' }}>
                                                                 Select</option>
@@ -168,26 +168,26 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Ledger Group <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="ledger_group_id" id="ledger_group"
+                                                        <select class="form-select company-field" name="ledger_group_id" id="ledger_group"
                                                             required>
                                                         </select>
 
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Salvage % <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control"
-                                                            name="salvage_percentage" required
+                                                        <input type="number" class="form-control company-field"
+                                                            name="salvage_percentage" id="salvage_percentage" required min=1 max=100
                                                             value="{{ $dep_percentage }}" />
                                                     </div>
                                                 </div>
@@ -197,18 +197,18 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control" name="dep_percentage" id="dep_percentage"
+                                                        <input type="number" class="form-control income_field" name="dep_percentage" id="dep_percentage" min=1 max=100
                                                             required />
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Expected Life in Yrs. <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control"
+                                                        <input type="number" class="form-control company-field"
                                                             name="expected_life_years" required
                                                             value="{{ old('expected_life_years') }}" />
                                                     </div>
@@ -216,12 +216,12 @@
 
 
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Maintenance Schedule</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="maintenance_schedule">
+                                                        <select class="form-select company-field" name="maintenance_schedule">
                                                             <option value=""
                                                                 {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>
                                                                 Select</option>
@@ -244,13 +244,13 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Dep. Ledger <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="dep_ledger_id"
+                                                        <select class="form-select select2 company-field" name="dep_ledger_id"
                                                             id="dep_ledger" required>
                                                             <option value="" {{ old('ledger') ? '' : 'selected' }}>
                                                                 Select</option>
@@ -264,13 +264,13 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Dep. Ledger Group <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="dep_ledger_group_id"
+                                                        <select class="form-select company-field" name="dep_ledger_group_id"
                                                             id="dep_ledger_group" required>
                                                         </select>
 
@@ -278,7 +278,7 @@
                                                 </div>
 
 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Revaluation Ledger </label>
                                                     </div>
@@ -308,7 +308,7 @@
 
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Impairement Ledger </label>
                                                     </div>
@@ -337,7 +337,7 @@
 
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Writeoff Ledger </label>
                                                     </div>
@@ -367,7 +367,7 @@
                                                     </div>
                                                 </div>
                                                 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Sales Ledger </label>
                                                     </div>
@@ -548,18 +548,17 @@
 
         function toggleFields() {
             if ($('#income_tax').is(':checked')) {
-                if ('{{ $dep_method }}' == "WDV") {
                     $('.income_tax').removeClass('d-none');
-                    $('#dep_percentage').attr('required', true);
-                } else {
-                    showToast('warning', 'Organization Dep method must be WDV for Income Tax');
-                    $('#company').prop('checked', true);
-                    $('.income_tax').addClass('d-none');
-                    $('#dep_percentage').attr('required', false);
-                }
+                     $('.company').addClass('d-none');
+                    $('.company-field').removeAttr('required').val('');
+                    $('.income-field').attr('required', true);
+                    $('#salvage_percentage').val('');
             } else {
                 $('.income_tax').addClass('d-none');
-                 $('#dep_percentage').attr('required', false);
+                $('.company').removeClass('d-none');
+                $('.company-field').attr('required', true);
+                $('.income-field').removeAttr('required').val('');
+                $('#salvage_percentage').val('{{$dep_percentage}}');
             }
         }
         $('input[name="act_type"]').on('change', toggleFields);

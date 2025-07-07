@@ -42,6 +42,7 @@ use App\Http\Controllers\FixedAsset\RevImpController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
+use App\Http\Controllers\FixedAsset\ITDepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
@@ -2606,6 +2607,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.depreciation.edit',
         'update' => 'finance.fixed-asset.depreciation.update',
         'destroy' => 'finance.fixed-asset.depreciation.destroy',
+    ]);
+    Route::get('fixed-asset/it-dep/assets', [ITDepreciationController::class, 'getAssets'])->name('finance.fixed-asset.it.dep.assets');
+    Route::resource('fixed-asset/it-dep', ITDepreciationController::class)->names([
+        'index' => 'finance.fixed-asset.it.dep.index',
     ]);
     Route::resource('fixed-asset/split', SplitController::class)->names([
         'index' => 'finance.fixed-asset.split.index',
