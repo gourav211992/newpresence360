@@ -8,7 +8,6 @@ use App\Helpers\ConstantHelper;
 use App\Models\JobOrder\JoProduct;
 
 use App\Traits\DateFormatTrait;
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
 use App\Traits\FileUploadTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

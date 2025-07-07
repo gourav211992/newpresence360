@@ -4,14 +4,12 @@ namespace App\Models;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
-
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class LandLeaseOtherCharges extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg,Deletable;
+    use HasFactory,Deletable;
 
     protected $table = "erp_land_lease_other_charges";
     protected $fillable = [

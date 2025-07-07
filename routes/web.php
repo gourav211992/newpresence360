@@ -1395,8 +1395,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
             Route::get('get-purchase-orders', 'getPo')->name('get.po');
             Route::get('get-job-orders', 'getJo')->name('get.jo');
+            Route::get('get-sale-orders', 'getSo')->name('get.so');
             Route::get('process-po-item', 'processPoItem')->name('process.po-item');
             Route::get('process-jo-item', 'processJoItem')->name('process.jo-item');
+            Route::get('process-so-item', 'processSoItem')->name('process.so-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postMrn')->name('post');
             Route::get('revoke-document','revokeDocument')->name('revoke.document');
@@ -1461,6 +1463,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
         Route::get('/order/report', 'gateEntryReport')->name('order.report');
         Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
+        Route::post('/validate-asn', 'processAsn')->name('validate-asn');
 
         /*Remove data*/
         Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');

@@ -358,10 +358,12 @@ class VendorController extends Controller
                 $vendor->document_status = $document_status;
             
                 $submittedStatus = $validatedData['status'] ?? ConstantHelper::ACTIVE;
-            
-                $vendor->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                    ? ($submittedStatus === ConstantHelper::INACTIVE ? ConstantHelper::INACTIVE : ConstantHelper::ACTIVE)
-                    : $document_status;
+
+                if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                    $vendor->status = ConstantHelper::ACTIVE;
+                } else {
+                    $vendor->status = $document_status;
+                }
             
             } else {
                 $document_status = $request->document_status ?? ConstantHelper::DRAFT;
@@ -457,16 +459,16 @@ class VendorController extends Controller
             }
 
             //Sync Vendor Locations
-            $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
-            $locationSyncStatus = $vendor -> syncLocations($storeIds);
-            if (!$locationSyncStatus['status']) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => $locationSyncStatus['message'],
-                    'error' => '',
-                ], 422);
-            }
+            // $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
+            // $locationSyncStatus = $vendor -> syncLocations($storeIds);
+            // if (!$locationSyncStatus['status']) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'status' => false,
+            //         'message' => $locationSyncStatus['message'],
+            //         'error' => '',
+            //     ], 422);
+            // }
             DB::commit();
 
         return response()->json([
@@ -725,11 +727,7 @@ class VendorController extends Controller
                     $document_status = $approve['approvalStatus'] ;
                     $vendor->document_status = $document_status;
                     if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                        if ($submittedStatus === ConstantHelper::INACTIVE) {
-                            $vendor->status = ConstantHelper::INACTIVE;
-                        } else {
-                            $vendor->status = ConstantHelper::ACTIVE;
-                        }
+                         $vendor->status = ConstantHelper::ACTIVE;
                     } else {
                         $vendor->status = $document_status;
                     }
@@ -858,16 +856,16 @@ class VendorController extends Controller
               }
 
             //Sync Vendor Locations
-            $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
-            $locationSyncStatus = $vendor -> syncLocations($storeIds);
-            if (!$locationSyncStatus['status']) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => false,
-                    'message' => $locationSyncStatus['message'],
-                    'error' => '',
-                ], 422);
-            }  
+            // $storeIds = isset($request -> vendor_store) && is_array($request -> vendor_store) ? $request -> vendor_store : [];
+            // $locationSyncStatus = $vendor -> syncLocations($storeIds);
+            // if (!$locationSyncStatus['status']) {
+            //     DB::rollBack();
+            //     return response()->json([
+            //         'status' => false,
+            //         'message' => $locationSyncStatus['message'],
+            //         'error' => '',
+            //     ], 422);
+            // }  
               DB::commit();
 
               return response()->json([
@@ -900,6 +898,7 @@ class VendorController extends Controller
                         ]);
                     } else {
                         $vendor->document_status = $revoke['approvalStatus'];
+                        $vendor->status = $revoke['approvalStatus'];
                         $vendor->save();
                         DB::commit();
                         return response()->json([

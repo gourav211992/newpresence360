@@ -368,9 +368,12 @@ class CustomerController extends Controller
             $customer->document_status = $document_status;
         
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
-            $customer->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                ? ($submittedStatus === ConstantHelper::INACTIVE ? ConstantHelper::INACTIVE : ConstantHelper::ACTIVE)
-                : $document_status;
+
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+               $customer->status = ConstantHelper::ACTIVE;
+            } else {
+                $customer->status = $document_status;
+            }
         
         } else {
             $document_status = $request->document_status ?? ConstantHelper::DRAFT;
@@ -677,11 +680,7 @@ class CustomerController extends Controller
                 $customer->document_status = $document_status;
 
                 if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    if ($submittedStatus === ConstantHelper::INACTIVE) {
-                        $customer->status = ConstantHelper::INACTIVE;
-                    } else {
-                        $customer->status = ConstantHelper::ACTIVE;
-                    }
+                    $customer->status = ConstantHelper::ACTIVE;
                 } else {
                     $customer->status = $document_status;
                 }
@@ -811,6 +810,7 @@ class CustomerController extends Controller
                     ]);
                 } else {
                     $customer->document_status = $revoke['approvalStatus'];
+                    $customer->status = $revoke['approvalStatus'];
                     $customer->save();
                     DB::commit();
                     return response()->json([

@@ -6,13 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use App\Helpers\Helper;
 use Exception;
-use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\Deletable;
 
 class LandLeaseAction extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg,Deletable;
+    use HasFactory,Deletable;
     protected $table = 'erp_land_leases_actions';
 
     public $referencingRelationships = [

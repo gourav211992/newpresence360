@@ -19,7 +19,7 @@
     @method('PUT') 
     @php
         $isEditable = isset($vendor) && $vendor->status === 'draft';
-        $statusValue = isset($vendor) && $vendor->status == 'Active' ? 'active' : 'inactive';
+        $statusValue = isset($vendor) && ($vendor->status == 'Active') && ($vendor->document_status == 'approval_not_required' || $vendor->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
     @endphp
     <div class="app-content content ">
@@ -49,18 +49,16 @@
                             <a href="{{ route('vendor.index') }}" class="btn btn-secondary btn-sm">
                                 <i data-feather="arrow-left-circle"></i> Back
                             </a>
-
-                          @if(auth()->check() && $vendor->created_by == auth()->user()->auth_user_id)
-                                <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                        data-url="{{ route('vendor.destroy', $vendor->id) }}"
-                                        data-redirect="{{ route('vendor.index') }}"
-                                        data-message="Are you sure you want to delete this record?">
-                                    <i data-feather="trash-2" class="me-50"></i> Delete
-                                </button>
-                            @endif
-
                             @if(!isset(request()->revisionNumber))
                                 @if (isset($vendor))
+                                   @if($buttons['delete'])
+                                       <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                            data-url="{{ route('vendor.destroy', $vendor->id) }}"
+                                            data-redirect="{{ route('vendor.index') }}"
+                                            data-message="Are you sure you want to delete this record?">
+                                           <i data-feather="trash-2" class="me-50"></i> Delete
+                                        </button>
+                                    @endif
                                     @if($buttons['draft'])
                                         <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
                                             <i data-feather='save'></i> Save as Draft
@@ -127,11 +125,6 @@
                                                                     <span class="itemactive">Active</span>
                                                                     <span class="itemactive iteminactive">Inactive</span>
                                                                 </div>
-                                                                 @if (isset($vendor) && isset($docStatusClass)) 
-                                                                    <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                                        Status : <span class="{{$docStatusClass}}">{{$vendor->display_status}}</span>
-                                                                    </span>
-                                                                @endif 
                                                             </div>
                                                         </div>
                                                       

@@ -6,7 +6,9 @@ use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
+use App\Helpers\Helper;
 use App\Models\Bom;
+use App\Models\Organization;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -21,6 +23,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     protected $componentOverheadRequired;
     protected $isNorm;
     protected $canView;
+    protected $orgName;
 
     public function __construct($bomId)
     {
@@ -71,6 +74,12 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         } else {
             $this->canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
+
+        $user = request()->user() ?? Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user?->organization_id)->first();
+        $orgName = $organization?->name ?? ''; 
+
+        $this->orgName = $orgName; 
     }
 
     public function title(): string
@@ -82,9 +91,11 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     {
         $rows = [];
         // Header Section
-        $rows[] = ['BOM Header'];
+        $rows[] = ['BOM Export'];
+        $rows[] = [$this->orgName];
+        $rows[] = [''];
         $rows = array_merge($rows, $this->getHeaderRows());
-        $rows[] = ['']; // spacing row
+        $rows[] = [''];
 
         // Components Section
         $rows[] = ['Components'];
@@ -107,7 +118,7 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
 
         // Summary
         if($this->canView) {
-            $rows[] = ['BOM Summary'];
+            $rows[] = ['Summary'];
             $rows[] = ['Item Total', $this->bom->total_item_value ?? 0];
             $rows[] = ['Header Overheads', $this->bom->header_overhead_amount ?? 0];
             $rows[] = ['Grand Total', ($this->bom->total_value  ?? 0)];
@@ -123,28 +134,56 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             ['BOM No:', $this->bom->document_number],
             ['Product Code:', optional($this->bom->item)->item_code],
             ['Product Name:', optional($this->bom->item)->item_name],
-            ['UOM:', optional($this->bom->uom)->name],
         ];
 
-        if ($this->bom->bomAttributes->isNotEmpty()) {
-            $rows[] = ['Specifications', $this->formatSpecifications($this?->bom?->item?->specifications)];
-        }
+        // Attributes - break into separate rows
+        // $attributes = $this->bom->bomAttributes ?? collect();
+        // if ($attributes->isNotEmpty()) {
+        //     $rows[] = ['Attributes:'];
+        //     foreach ($attributes as $attr) {
+        //         $name = optional($attr->headerAttribute)->name;
+        //         $value = optional($attr->headerAttributeValue)->value;
+        //         if ($name && $value) {
+        //             $rows[] = ["- {$name}", $value];
+        //         }
+        //     }
+        // }
+
+        // if ($this->bom->bomAttributes->isNotEmpty()) {
+        //     $rows[] = ['Specifications', $this->formatSpecifications($this?->bom?->item?->specifications)];
+        // }
 
         if ($this->bom->bomAttributes->isNotEmpty()) {
-            $rows[] = ['Attributes', $this->formatAttributes($this->bom->bomAttributes)];
+            $rows[] = ['Attributes:', $this->formatAttributes($this->bom->bomAttributes)];
         }
+        $rows[] = ['UOM:', optional($this->bom->uom)->name];
+        // Specifications - break into separate rows
+        $specs = $this->bom->item->specifications ?? [];
+        if (!empty($specs)) {
+            foreach ($specs as $spec) {
+                $name = $spec?->specification_name;
+                $value = $spec?->value;
+                if ($name && $value) {
+                    $rows[] = ["{$name}:", $value];
+                }
+            }
+        }
+
         if($this?->bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
-            $rows[] = ['Production Type :', $this->bom->production_type];
+            $rows[] = ['Production Type:', $this->bom->production_type];
         }
         if($this?->bom?->customer) {
-            $rows[] = ['Customer Code :', optional($this->bom->customer)->customer_code];
-            $rows[] = ['Customer Name :', optional($this->bom->customer)->company_name];
+            $rows[] = ['Customer Code:', optional($this->bom->customer)->customer_code];
+            $rows[] = ['Customer Name:', optional($this->bom->customer)->company_name];
         }
-        $rows[] = ['Production Route :', optional($this->bom->productionRoute)->name];
-        $rows[] = ['Safety Buffer :', $this->bom->safety_buffer_perc];
-        $rows[] = ['Customizable :', ucfirst($this->bom->customizable ?? 'no')];
-        $rows[] = ['Description:', $this->bom->remarks];
+        $rows[] = ['Production Route:', optional($this->bom->productionRoute)->name];
 
+        $saftyb = $this->bom->safety_buffer_perc ? $this->bom->safety_buffer_perc : $this->bom?->productionRoute?->safety_buffer_perc;
+        if($saftyb) {
+            $rows[] = ['Safety Buffer:', $saftyb];
+        }
+        $rows[] = ['Customizable:', ucfirst($this->bom->customizable ?? 'no')];
+        $rows[] = ['Remarks:', $this->bom->remarks];
         return $rows;
     }
 
@@ -157,10 +196,12 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         if ($this->subSectionRequired) {
             $headers[] = 'Sub Section';
         }   
+
+        $qtyLebel = $this->isNorm ? 'Norms' : 'Consumption';
         if($this->canView) {
             $baseHeaders = [
                 'Item Code', 'Item Name', 'Attributes', 'UOM',
-                'Consumption',
+                $qtyLebel,
                 'Item Value', 'Overhead Cost',
                 'Total Cost', 'Station', 'Vendor Name', 'Remark'
             ];
@@ -171,10 +212,10 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             ];
         }
         $headers = array_merge($headers, $baseHeaders);
-        $insertIndex = array_search('Consumption', $headers);
+        $insertIndex = array_search($qtyLebel, $headers);
         $dynamicColumns = [];
         if ($this->isNorm) {
-            $dynamicColumns[] = 'Consumption per unit';
+            $dynamicColumns[] = 'Component per unit';
             $dynamicColumns[] = 'Pieces';
             $dynamicColumns[] = 'Std Qty';
         }
@@ -199,7 +240,8 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
             $baseRow = [
                 optional($component->item)->item_code,
                 optional($component->item)->item_name,
-                $this->formatAttributes($component->attributes),
+                $this->formatComponentAttributes($component->attributes ?? []),
+                // $this->formatAttributes($component->attributes),
                 optional($component->uom)->name,
                 $component->qty ?? 0, // 'Consumption'
                 $component->item_value ?? 0,
@@ -260,10 +302,27 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
         return $row;
     }
 
+    private function formatComponentAttributes($attributes): string
+    {
+        if (empty($attributes)) {
+            return '';
+        }
+        $lines = [];
+        foreach ($attributes as $attr) {
+            $name = optional($attr->headerAttribute)->name;
+            $value = optional($attr->headerAttributeValue)->value;
+            if ($name && $value) {
+                $lines[] = "{$name}: {$value}";
+            }
+        }
+        // Join each attribute on a new line
+        return implode("\n", $lines);
+    }
+
     /**
      * Format attributes as a string like: Color: Red, Size: 1
      */
-    private function formatAttributes($attributes): string
+    private function formatAttributes($attributes) : string
     {
         $formatted = [];
         foreach ($attributes as $attribute) {
@@ -279,18 +338,18 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     /**
      * Format attributes as a string like: Color: Red, Size: 1
      */
-    private function formatSpecifications($attributes): string
-    {
-        $formatted = [];
-        foreach ($attributes as $attribute) {
-            $name = $attribute?->specification_name;
-            $value = $attribute?->value;
-            if ($name && $value) {
-                $formatted[] = "{$name}: {$value}";
-            }
-        }
-        return implode(', ', $formatted);
-    }
+    // private function formatSpecifications($attributes): string
+    // {
+    //     $formatted = [];
+    //     foreach ($attributes as $attribute) {
+    //         $name = $attribute?->specification_name;
+    //         $value = $attribute?->value;
+    //         if ($name && $value) {
+    //             $formatted[] = "{$name}: {$value}";
+    //         }
+    //     }
+    //     return implode(', ', $formatted);
+    // }
 
     /**
      * Check if a parameter is enabled
@@ -305,10 +364,22 @@ class BomExport implements FromArray, WithTitle, WithStyles, WithColumnWidths
     public function styles(Worksheet $sheet)
     {
         $boldRows = [];
-        $titlesToBold = ['BOM Header', 'Components', 'Instructions', 'BOM Summary'];
+        $titlesToBold = ['BOM Export'];
         foreach ($sheet->toArray() as $rowNumber => $rowContent) {
             if (!empty($rowContent[0]) && in_array($rowContent[0], $titlesToBold)) {
                 $boldRows[$rowNumber + 1] = ['font' => ['bold' => true, 'size' => 14]];
+            }
+        }
+        $subtTitlesToBold = ['Components', 'Instructions', 'Summary', $this->orgName];
+        foreach ($sheet->toArray() as $rowNumber => $rowContent) {
+            if (!empty($rowContent[0]) && in_array($rowContent[0], $subtTitlesToBold)) {
+                $boldRows[$rowNumber + 1] = ['font' => ['bold' => true, 'size' => 12]];
+            }
+        }
+
+        foreach ($sheet->toArray() as $rowNumber => $rowContent) {
+            if (!empty($rowContent[0]) && in_array($rowContent[0], $this->getComponentHeaders())) {
+                $boldRows[$rowNumber + 1] = ['font' => ['bold' => true]];
             }
         }
         return $boldRows;

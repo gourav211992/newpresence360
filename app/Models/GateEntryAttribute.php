@@ -41,4 +41,14 @@ class GateEntryAttribute extends Model
     {
         return $this->belongsTo(ItemAttribute::class);
     }
+
+    public function attributeName()
+    {
+        return $this->belongsTo(ErpAttributeGroup::class, 'attr_name');
+    }
+
+    public function attributeValue()
+    {
+        return $this->belongsTo(ErpAttribute::class, 'attr_value');
+    }
 }

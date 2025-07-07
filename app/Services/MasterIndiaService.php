@@ -24,7 +24,7 @@ class MasterIndiaService
         $this->requestUid = $requestUid;
         $this->eInvoice = false;
         $this->client = new Client(); // Initialize the HTTP client
-        $this->baseURL = env('MASTER_INDIA_BASE_URL', ''); // Set the base URL
+        $this->baseURL = config('app.masterindia.base_url'); // Set the base URL
         $this->authDetails = $authDetails; // Set the base URL
     }
 
@@ -66,11 +66,11 @@ class MasterIndiaService
     public function getAuthToken(){
         try{
             $userData = array(
-                "username"=> env('MASTER_INDIA_USERNAME', ''),
-                "password"=> env('MASTER_INDIA_PASSWORD', ''),
-                "client_id"=>env('MASTER_INDIA_CLIENT_ID', ''),
-                "client_secret"=>env('MASTER_INDIA_CLIENT_SECRET', ''),
-                "grant_type"=>env('MASTER_INDIA_GRANT_TYPE', '')
+                "username"=> config('app.masterindia.user_name'),
+                "password"=> config('app.masterindia.password'),
+                "client_id"=> config('app.masterindia.client_id'),
+                "client_secret"=> config('app.masterindia.client_secret'),
+                "grant_type"=> config('app.masterindia.grant_type')
                 );
             $endpoint = 'oauth/access_token';
             $requestHeader = array(

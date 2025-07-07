@@ -163,6 +163,7 @@ class InventoryHelper
                 DB::rollBack();
                 $data = self::errorResponse($documentDetail['message']);
             }
+            DB::commit();
             return $data;
         } catch (\Exception $e) {
             dd($e->getLine(), $e->getMessage());
@@ -171,8 +172,8 @@ class InventoryHelper
 
             $data = self::errorResponse($e->getMessage());
             return $data;
-        }    
-        
+        }
+
         // $data = self::successResponse($message, $records);
     }
 
@@ -309,7 +310,7 @@ class InventoryHelper
             }])
             ->having('matched_attr_count', '=', $selectedAttr->count());
         })
-        ->value('pending_order_qty'); 
+        ->value('pending_order_qty');
         return $pendingOrderQty ?? 0;
     }
 
@@ -1112,7 +1113,7 @@ class InventoryHelper
             \Log::error('Error in insertStockLedger: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
-            
+
             return [
                 'status' => 'error',
                 'message' => 'Error inserting stock ledger: ' . $e->getMessage(),
@@ -1136,7 +1137,7 @@ class InventoryHelper
             if($issueQty && ($issueQty > $inventoryUomQty)){
                 $balanceQty = $issueQty - $inventoryUomQty;
                 $response = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
-                
+
                 $message = $response['message'];
                 $status = $response['status'];
                 $stockLedger = $response['stockLedger'];
@@ -1201,10 +1202,10 @@ class InventoryHelper
                                 $stockLedger->utilized_id = $invoiceLedger->id;
                                 $stockLedger->utilized_date = $invoiceLedger->created_at->format('Y-m-d');
                                 $stockLedger->save();
-    
+
                                 $stockLedger->receipt_qty = $invoiceLedger->issue_qty;
                                 $stockLedger->save();
-    
+
                             } else{
                                 if ($stockLedger->receipt_qty < $balanceQty) {
                                     $receiptQty = $stockLedger->receipt_qty;
@@ -1220,11 +1221,11 @@ class InventoryHelper
                                 $stockLedger->utilized_date = $invoiceLedger->created_at->format('Y-m-d');
                                 $stockLedger->save();
                             }
-    
+
                             $stockLedger->total_cost = round(($stockLedger->cost_per_unit*$stockLedger->receipt_qty), 2);
                             $stockLedger->save();
                             self::updateStockCost($stockLedger);
-    
+
                             if(isset($stockReservation) && ($stockReservation == 'yes')){
                                 $soItem = ErpSoItem::find($documentItemLocation->so_item_id);
                                 $stockReservation = StockLedgerReservation::where('stock_ledger_id', $stockLedger->id)
@@ -1232,13 +1233,13 @@ class InventoryHelper
                                 ->where('so_item_id', $documentItemLocation->so_item_id)
                                 ->first();
                                 // dd($stockReservation);
-    
+
                                 if($stockReservation){
                                     $stockReservation->quantity -= $invoiceLedger->issue_qty;
                                     $stockReservation->save();
                                 }
                             }
-    
+
                             if(isset($stockReservation) && ($stockReservation == 'yes')){
                                 // Handle extra quantity by creating a new stock ledger entry
                                 if ($extraQty > 0) {
@@ -1249,7 +1250,7 @@ class InventoryHelper
                                     $newStockLedger->utilized_id = null;
                                     $newStockLedger->utilized_date = null;
                                     $newStockLedger->save();
-    
+
                                     $newStockLedger->total_cost = round(($newStockLedger->cost_per_unit*$newStockLedger->receipt_qty), 2);
                                     $newStockLedger->save();
                                     self::updateStockCost($newStockLedger);
@@ -1263,26 +1264,26 @@ class InventoryHelper
                                     $newStockLedger->utilized_id = null;
                                     $newStockLedger->utilized_date = null;
                                     $newStockLedger->save();
-    
+
                                     if($stockLedger->hold_qty > 0){
                                         $newStockLedger->hold_qty = $stockLedger->hold_qty;
                                         $newStockLedger->save();
                                         $stockLedger->hold_qty = 0;
                                         $stockLedger->save();
                                     }
-    
+
                                     $newStockLedger->total_cost = round(($newStockLedger->cost_per_unit*$newStockLedger->receipt_qty), 2);
                                     $newStockLedger->save();
                                     self::updateStockCost($newStockLedger);
                                 }
                             }
-    
+
                             // Stop the loop if the balance has been fully issued
                             if ($balanceQty <= 0) {
                                 break;
                             }
                         }
-                        
+
                         if($transactionType == 'issue'){
                             self::updateIssueCost($invoiceLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $mrnJoItemId);
                         }
@@ -1306,14 +1307,14 @@ class InventoryHelper
             \Log::error('Error in updateStockLedger: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
-            
+
             return [
                 'status' => 'error',
                 'message' => 'Error updating stock ledger: ' . $e->getMessage(),
                 'invoiceLedger' => ''
             ];
 
-        }     
+        }
     }
 
     // Update Issue Cost
@@ -1529,7 +1530,7 @@ class InventoryHelper
             \Log::error('Error in updateIssueStockForLessQty: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
-            
+
             return [
                 'status' => 'error',
                 'message' => 'Error updating issue stock for less quantity: ' . $e->getMessage(),
@@ -2255,10 +2256,10 @@ class InventoryHelper
         $invoiceLedger = '';
         $transactionType = 'receipt';
         $documentItemLocations = MrnDetail::where('mrn_header_id',$documentHeaderId)
-            ->with('mrnHeader',
+            ->with(['mrnHeader',
                 'item',
                 'attributes',
-            )
+            ])
             ->get();
         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
             ->where('document_header_id',$documentHeaderId)
@@ -2296,7 +2297,7 @@ class InventoryHelper
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
             }
         }
-        
+
         return $invoiceLedger;
     }
 
@@ -2426,7 +2427,7 @@ class InventoryHelper
                 }
                 $issueQty = $invoiceLedger['invoiceLedger']->issue_qty;
                 $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger['invoiceLedger'], $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
-                return $updatedInvoiceLedger;   
+                return $updatedInvoiceLedger;
             }
         }
     }
@@ -2986,6 +2987,7 @@ class InventoryHelper
                 DB::rollBack();
                 $data = self::errorResponse($documentDetail['message']);
             }
+            DB::commit();
             return $data;
         } catch (\Exception $e) {
             dd($e->getLine(), $e->getMessage());

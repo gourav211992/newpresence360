@@ -25,6 +25,7 @@ class ErpSaleOrder extends Model
         'document_number',
         'doc_number_type',
         'doc_reset_pattern',
+        'vendor_id',
         'doc_prefix',
         'doc_suffix',
         'doc_no',
@@ -68,7 +69,7 @@ class ErpSaleOrder extends Model
         'total_amount'
     ];
 
-    
+
     public $referencingRelationships = [
         'customer' => 'customer_id',
         'currency' => 'currency_id',
@@ -78,9 +79,9 @@ class ErpSaleOrder extends Model
     public function getFullDocumentNumberAttribute()
     {
         $fdn = strtoupper($this->book_code) . '-' . $this->document_number;
-        return $fdn;  
+        return $fdn;
     }
-    
+
     public function media()
     {
         return $this->morphMany(ErpSoMedia::class, 'model');
@@ -103,7 +104,7 @@ class ErpSaleOrder extends Model
     {
         return $this -> hasOne(ErpCurrency::class, 'id', 'currency_id');
     }
-    
+
     public function payment_terms()
     {
         return $this -> hasOne(ErpPaymentTerm::class, 'id', 'payment_term_id');
@@ -111,6 +112,11 @@ class ErpSaleOrder extends Model
     public function items()
     {
         return $this -> hasMany(ErpSoItem::class, 'sale_order_id');
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class,'vendor_id');
     }
 
     public function expense_ted()

@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 
 class LandLeaseAddress extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg,Deletable;
+    use HasFactory,Deletable;
 
 
     protected $table = "land_lease_addresses";

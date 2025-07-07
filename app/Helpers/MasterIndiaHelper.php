@@ -219,8 +219,9 @@ class MasterIndiaHelper
             $masterIndiaService = new MasterIndiaService($authCredentials,$requestUid);
 
             $authToken = $masterIndiaService->getAuthToken();
-            $gstinUrl =  env('GSTIN_BASE_URL', '').$gstin;
-            $clientId = env('GSTIN_CLIENT_ID', '');
+            $baseUrl = config('app.masterindia.base_url');
+            $gstinUrl = $baseUrl . 'commonapis/searchgstin?gstin=' . urlencode($gstin);
+            $clientId = config('app.masterindia.gstin_client_id');
             $requestHeader = array(
                 'client_id:'.$clientId,
                 'Authorization:Bearer '.$authToken,
@@ -470,14 +471,10 @@ class MasterIndiaHelper
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $shippingAddress = $documentHeader->shippingAddress;
-        $storeAddress = $documentHeader->store_address;
         $buyerAddress = $documentHeader?->location_address_details;
-        $sellerShippingAddress = $documentHeader->latestShippingAddress();
         $sellerBillingAddress = $documentHeader->latestBillingAddress();
         $sellerStateCode = self::getStateCode($organizationAddress->state_id);
         $buyerStateCode = self::getStateCode($sellerBillingAddress->state_id);
-        $shipStateCode = self::getStateCode($sellerBillingAddress->state_id);
 
         $tranDetails = (object) [
             "supply_type" => $documentHeader->gst_invoice_type,

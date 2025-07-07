@@ -342,11 +342,7 @@ class ItemController extends Controller
             $item->document_status = $document_status;
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                if ($submittedStatus === ConstantHelper::INACTIVE) {
-                    $item->status = ConstantHelper::INACTIVE;
-                } else {
-                    $item->status = ConstantHelper::ACTIVE;
-                }
+                $item->status = ConstantHelper::ACTIVE;
             } else {
                 $item->status = $document_status;
             }
@@ -828,11 +824,7 @@ class ItemController extends Controller
                 $document_status = $approveDocument['approvalStatus'];
                 $item->document_status = $document_status;
                if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    if ($submittedStatus === ConstantHelper::INACTIVE) {
-                        $item->status = ConstantHelper::INACTIVE;
-                    } else {
-                        $item->status = ConstantHelper::ACTIVE;
-                    }
+                    $item->status = ConstantHelper::ACTIVE;
                 } else {
                     $item->status = $document_status;
                 }
@@ -1123,6 +1115,7 @@ class ItemController extends Controller
                     ]);
                 } else {
                     $item -> document_status = $revoke['approvalStatus'];
+                    $item->status = $revoke['approvalStatus'];
                     $item -> save();
                     DB::commit();
                     return response() -> json([

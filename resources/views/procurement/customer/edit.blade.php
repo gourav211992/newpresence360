@@ -17,7 +17,7 @@
         @method('PUT') 
     @php
       $isEditable = isset($customer) && $customer->status === 'draft';
-      $statusValue = isset($customer) && $customer->status =='Active' ? 'active' : 'inactive';
+      $statusValue = isset($customer) && ($customer->status == 'Active') && ($customer->document_status == 'approval_not_required' || $customer->document_status == 'approved') ? 'active' : 'inactive';
       $isChecked = $statusValue == 'active' ? 'checked' : '';
     @endphp
     <input type="hidden" name="customer_id" value="{{ $customer->id ?? '' }}">
@@ -49,17 +49,16 @@
                                 <a href="{{ route('customer.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </a>
-                                @if(auth()->check() && $customer->created_by == auth()->user()->auth_user_id)
-                                    <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                                            data-url="{{ route('customer.destroy', $customer->id) }}"
-                                            data-redirect="{{ route('customer.index') }}"
-                                            data-message="Are you sure you want to delete this record?">
-                                        <i data-feather="trash-2" class="me-50"></i> Delete
-                                    </button>
-                                @endif
-
                                 @if(!isset(request()->revisionNumber))
                                     @if (isset($customer))
+                                       @if($buttons['delete'])
+                                            <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                                data-url="{{ route('customer.destroy', $customer->id) }}"
+                                                data-redirect="{{ route('customer.index') }}"
+                                                data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                            </button>
+                                        @endif
                                         @if($buttons['draft'])
                                             <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
                                                 <i data-feather='save'></i> Save as Draft
@@ -126,11 +125,6 @@
                                                                      <span class="itemactive">Active</span>
                                                                      <span class="itemactive iteminactive">Inactive</span>
                                                                 </div>
-                                                                 @if (isset($customer) && isset($docStatusClass))
-                                                                    <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                                        Status : <span class="{{$docStatusClass}}">{{$customer->display_status}}</span>
-                                                                    </span>
-                                                                @endif 
                                                             </div>
                                                         </div>
                                                       

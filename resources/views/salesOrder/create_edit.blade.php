@@ -1773,6 +1773,7 @@
                                     <th>UOM</th>
                                     <th>Attributes</th>
                                     <th>Qty</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody id="bom-details">
@@ -6054,6 +6055,7 @@ document.addEventListener('input', function (e) {
                             ${currentBomAttributes}
                             </td>
                             <td>${bomItem.qty}</td>
+                            <td><span class = "remove_bom_item text-danger"><i data-feather="trash-2"></i> </span></td>
                             </div>
                             </td>
                             </tr>
@@ -6063,6 +6065,9 @@ document.addEventListener('input', function (e) {
                         <tr class="approvlevelflow level-row">
                             <td colspan="5">
                                 <h6 class="mb-0 fw-bolder text-dark levelText">${dataLevel.name}</h6>
+                            </td>
+                            <td colspan="1">
+                                <span class = "add_bom_item text-primary"><i data-feather="plus-square"></i> </span>
                             </td>
                         </tr>
                         ${currentBomItems}
@@ -6075,6 +6080,7 @@ document.addEventListener('input', function (e) {
                     if (openPopUp) {
                         $("#BOM").modal("show");
                     }
+                    renderIcons();
                 } else {
                     // Swal.fire({
                     //     title: 'Error!',
