@@ -137,6 +137,7 @@
                                                         <th>Document No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
+                                                        <th>Series</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -167,6 +168,7 @@
                                                         <th>Document No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
+                                                        <th>Series</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -493,6 +495,7 @@
                         $('.hide-this-section').show();
                         if(res.successful_items.length>0){
                              $('#proceedBtn').show();
+                             $('a[href="#Succeded"]').tab('show');
                         }
                         if (res.failed_items.length > 0) {
                             $('.editbtnNew').show();
@@ -556,6 +559,7 @@
                         item.voucher_no,
                         item.balance ?? 0,
                         item.settle_amount ?? 0,
+                        item.series ?? null,
                     ];
 
                      if (isSuccessTable) {
@@ -570,8 +574,8 @@
                 });
             } else {
                 const emptyRow = isSuccessTable
-                    ? ['', '', 'No records found', '', '', '','']
-                    : ['', '', 'No records found', '', '','',''];
+                    ? ['', '', '','No records found', '', '', '','']
+                    : ['', '','', 'No records found', '', '','',''];
                 table.row.add(emptyRow);
                 $('#proceedBtn').hide();
             }

@@ -29,5 +29,6 @@ class UploadPendingPaymentMaster extends Model
         'import_remarks',
         'status',
         'import_status',
+        'series',
     ];
 }

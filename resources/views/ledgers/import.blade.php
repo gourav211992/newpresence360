@@ -26,10 +26,17 @@
                         <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                             <i data-feather="arrow-left-circle"></i> Back
                         </a>
+                        @if($itemCodeType=="Manual")
                         <a href="{{ asset('templates/ledger_sample_template.xlsx') }}" class="btn btn-primary btn-sm"
                             id="download-template-btn" download>
                             <i data-feather="download"></i> Download Template
                         </a>
+                        @else
+                        <a href="{{ asset('templates/ledger_sample_template_auto.xlsx') }}" class="btn btn-primary btn-sm"
+                            id="download-template-btn" download>
+                            <i data-feather="download"></i> Download Template
+                        </a>
+                        @endif
                     </div>
                 </div>
 

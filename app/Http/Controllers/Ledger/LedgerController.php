@@ -238,7 +238,25 @@ class LedgerController extends Controller
 
     public function showImportForm()
     {
-        return view('ledgers.import');
+        $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $itemCodeType = 'Manual';
+        if ($services && $services['current_book']) {
+            if (isset($services['current_book'])) {
+                $book = $services['current_book'];
+                if ($book) {
+                    $parameters = new stdClass();
+                    foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                        $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                        $parameters->{$paramName} = $param;
+                    }
+                    if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                        $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                    }
+                }
+            }
+        }
+        return view('ledgers.import',compact('itemCodeType'));
     }
 
     public function import(Request $request)
@@ -280,8 +298,26 @@ class LedgerController extends Controller
             }
             $deleteQuery = UploadLedgerMaster::where('user_id', $user->id);
             $deleteQuery->delete();
+            $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+            $itemCodeType = 'Manual';
+            if ($services && $services['current_book']) {
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    if ($book) {
+                        $parameters = new stdClass();
+                        foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                            $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                            $parameters->{$paramName} = $param;
+                        }
+                        if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                            $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                        }
+                    }
+                }
+            }
 
-            $import = new LedgerImport($this->ledgerImportExportService, $user);
+            $import = new LedgerImport($this->ledgerImportExportService, $user,$itemCodeType);
             Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
@@ -321,7 +357,7 @@ class LedgerController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'Failed to import items: ' . $e->getMessage(),
+                'message' => 'Failed to import items: ',
             ], 500);
         }
     }
@@ -830,7 +866,7 @@ class LedgerController extends Controller
         }
     }
 
-    public function generateLedgerCode(Request $request)
+    public static function generateLedgerCode(Request $request)
     {
         if(!$request->has('group_id') || $request->group_id=="")
         return "";
@@ -868,5 +904,39 @@ class LedgerController extends Controller
         }
 
         return response()->json(['code' => $finalItemCode,'prefix'=>$baseCode]);
+    }
+    public static function generateLedgerCodeIm($group)
+    {
+        $groupIds = [];
+        if (empty($group))
+        return null;
+            $groupParts = array_map('trim', explode(',', $group));
+            $groupLower = array_map('strtolower', $groupParts);
+
+            $existingGroups = Helper::getGroupsQuery()
+                ->whereIn('name', $groupParts)
+                ->pluck('name', 'id')
+            ->toArray();
+
+            $groupIds = array_keys($existingGroups);
+            if(empty($groupIds))
+            return null;
+
+        $group_id = $groupIds[0];    
+        $itemInitials = Group::getPrefix($group_id);
+        $baseCode =  $itemInitials;
+        $nextSuffix = '001';
+        $finalItemCode = $baseCode . $nextSuffix;
+
+        while (
+            Ledger::withDefaultGroupCompanyOrg()
+            ->where('code', $finalItemCode)
+            ->exists()
+        ) {
+            $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
+            $finalItemCode = $baseCode . $nextSuffix;
+        }
+
+        return $finalItemCode;
     }
 }

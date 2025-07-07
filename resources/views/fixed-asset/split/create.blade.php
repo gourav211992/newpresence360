@@ -1581,7 +1581,7 @@
                 const dep_percentage = $('#depreciation_rate').val() || 0;
                 //const salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
                 const salvageValue = currentValue * old_asset_salvage / rdv;
-                $salvageValueInput.val(salvageValue);
+                $salvageValueInput.val(parseFloat(salvageValue).toFixed(2));
                 // Ensure all required values are provided
                 if (!depreciationType || !currentValue || !depreciationPercentage || !usefulLife || !method) {
                     return;
@@ -1669,7 +1669,7 @@
                         // Option is excluded, so clear the selection or do something else
                         row.find('.ledger').val('').trigger('change');
                     }
-                    row.find('.life').val(ui.item.life);
+                    //row.find('.life').val(ui.item.life);
                     row.find('.salvage_per').val(ui.item.salvage);
                     syncInputAcrossSameAssets(this);
                     syncInputAcrossSameAssets($('.life'));

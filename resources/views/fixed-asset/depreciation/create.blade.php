@@ -427,7 +427,7 @@
             let month = String(resultDates.getMonth() + 1).padStart(2, '0'); // Months are zero-based
             let year = resultDates.getFullYear();
 
-            let formatted = `${day}-${month}-${year}`;
+            let formatted = `${year}-${month}-${day}`;
 
             // Use this date as needed (e.g., set to an input field)
             $('#to_date_param').val(formatted);
@@ -530,56 +530,33 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 let expire = false;
                 if (asset.sub_asset && asset.sub_asset.length > 0) {
                 asset.sub_asset.forEach((sub_asset, index) => {
-                let to_date = $('#to_date_param').val(); // e.g., "30-04-2025"
-                let inputDate = sub_asset.last_dep_date;   // e.g., "2025-04-25"
-
-                // Convert inputDate (Y-m-d) to d-m-Y
-                let parts = inputDate.split("-"); // ["2025", "04", "25"]
-                let from_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
-                
-                
-                let partsc = sub_asset.capitalize_date.split("-"); // ["2025", "04", "25"]
-                let from_date_cap = `${partsc[2]}-${partsc[1]}-${partsc[0]}`;
-
-                // Convert both dates to Date objects
-                function parseDMY(dateStr) {
-                    let [day, month, year] = dateStr.split("-");
-                    return new Date(`${year}-${month}-${day}`); // Convert to ISO format
+                function parseYMD(dateStr) {
+                    return new Date(`${dateStr}`); // Convert to ISO format
+                }
+                function formatDate(DateObj){
+                        let d = DateObj.getDate().toString().padStart(2, '0');
+                        let m = (DateObj.getMonth()+1).toString().padStart(2, '0');
+                        let y = DateObj.getFullYear();
+                        return `${d}-${m}-${y}`;
                 }
 
-                let fromDateObj = parseDMY(from_date);
-                let toDateObj = parseDMY(to_date);
-                let fromDateObjCap = parseDMY(from_date_cap);
-
-                //let expiryDate = new Date(sub_asset.expiry_date);
-                let par = sub_asset.expiry_date.split('-'); // ["2025", "07", "04"]
-                let expiryDate = new Date(par[0], par[1] - 1, par[2]); // Months are 0-indexed
+                let fromDateObj = parseYMD(sub_asset.last_dep_date);
+                let toDateObj = parseYMD($('#to_date_param').val());
+                let fromDateObjCap = parseYMD(sub_asset.capitalize_date);
+                let expiryDate = parseYMD(sub_asset.expiry_date); // Months are 0-indexed
+                let to_date = formatDate(toDateObj);
+                let from_date = formatDate(fromDateObj);
                 
-
-               
-                // If expiry date > toDate, then toDate = expiry date
                 if (expiryDate <= toDateObj) {
-                        // Set toDateObj to one day before expiryDate
                         toDateObj = expiryDate;
-                        console.log('expires'+asset.asset_code);
-                        //toDateObj.setDate(toDateObj.getDate());
-
-                        // Format the updated `to_date`
-                        let d = toDateObj.getDate().toString().padStart(2, '0');
-                        let m = (toDateObj.getMonth() + 1).toString().padStart(2, '0');
-                        let y = toDateObj.getFullYear();
-                        to_date = `${d}-${m}-${y}`;
+                        to_date = formatDate(expiryDate);
                         expire = true;
-
-                        // Optional debug log
-                        // console.log("Adjusted To Date:", to_date);
-                }
-                // Calculate difference in milliseconds
+                  }
                 let diffTime = toDateObj - fromDateObj;
-                
-
-                // Convert to days
                 let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))+1;
+
+              
+
               
                 if(diffDays>0){
                     let depType = asset.depreciation_method;
@@ -603,18 +580,18 @@ document.getElementById("process_btn").addEventListener("click", function () {
                     //console.log("DepRate:"+asset.depreciation_percentage);
                     //console.log("DiffDays:"+diffDays);
 
-                    let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365).toFixed(4);
+                    let totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)) * diffDays / 365);
                     
                     if (asset?.category?.setup?.act_type === "income_tax") {
-                        console.log("Income Tax Depreciation"+sub_asset.sub_asset_code);
+                        //console.log("Income Tax Depreciation"+sub_asset.sub_asset_code);
                         const capitalizeDate = new Date(sub_asset.capitalize_date);
                         const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); // October is month 9 (0-indexed)
-                        totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value))).toFixed(4);
+                        totalDepreciation = ((parseFloat(asset.depreciation_percentage/100)*parseFloat(value)));
                         if (capitalizeDate>cutoffDate) {
                             totalDepreciation = totalDepreciation/2;
-                            console.log("half year");
+                            //console.log("half year");
                         } else {
-                            console.log("full year");
+                            //console.log("full year");
                         } 
                      }
                     
@@ -624,15 +601,8 @@ document.getElementById("process_btn").addEventListener("click", function () {
                     
                     if(expire && (diff>0.0) && (depType === "WDV"))
                     {
-                        console.log("Code:"+sub_asset.sub_asset_code);
-                        console.log("After Dep Cal:"+after_dep_value);
-                        console.log("Total Dep Cal:"+totalDepreciation);
-                        console.log("Salv:"+salv);
-                        console.log("Diff:"+diff);
                         totalDepreciation = parseFloat(totalDepreciation) + parseFloat(diff);  
-                        console.log("Total Dep New:"+totalDepreciation);
                         after_dep_value = parseFloat(sub_asset.current_value_after_dep) - totalDepreciation;
-                        console.log("After Dep New:"+after_dep_value);
                     }
                     
                     
@@ -746,21 +716,23 @@ document.getElementById("process_btn").addEventListener("click", function () {
                 totalDepAmount += parseFloat(totalDepreciation);
                 totalAfterDepValue += parseFloat(after_dep_value);
 
-            }
+            }else{
+            console.log("DIFFF"+diffDays,toDateObj,fromDateObj);
+            console.log("COde"+asset.asset_code);}
                 });
             }
             });
         }
 
             // Update Grand Total
-            document.getElementById("grand_total_current_value_after_dep").value =  totalAfterDepCurrent.toFixed(2);
-            document.getElementById("grand_total_current_value").value =  totalCurrentValue.toFixed(2);
-            document.getElementById("grand_total_dep_amount").value = totalDepAmount.toFixed(2);
-            document.getElementById("grand_total_after_dep_value").value = totalAfterDepValue.toFixed(2);
-            document.getElementById("grand_total_current").textContent = formatIndianNumber(totalCurrentValue.toFixed(2));
-            document.getElementById("grand_total_current_after_dep").textContent = formatIndianNumber(totalAfterDepCurrent.toFixed(2));
-            document.getElementById("grand_total_dep").textContent = formatIndianNumber(totalDepAmount.toFixed(2));
-            document.getElementById("grand_total_after_dep").textContent = formatIndianNumber(totalAfterDepValue.toFixed(2));
+            document.getElementById("grand_total_current_value_after_dep").value =  totalAfterDepCurrent;
+            document.getElementById("grand_total_current_value").value =  totalCurrentValue;
+            document.getElementById("grand_total_dep_amount").value = totalDepAmount;
+            document.getElementById("grand_total_after_dep_value").value = totalAfterDepValue;
+            document.getElementById("grand_total_current").textContent = formatIndianNumber(totalCurrentValue);
+            document.getElementById("grand_total_current_after_dep").textContent = formatIndianNumber(totalAfterDepCurrent);
+            document.getElementById("grand_total_dep").textContent = formatIndianNumber(totalDepAmount);
+            document.getElementById("grand_total_after_dep").textContent = formatIndianNumber(totalAfterDepValue);
             document.getElementById("asset_json").value = JSON.stringify(assetDataArray);
             
         })
