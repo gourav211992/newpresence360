@@ -51,10 +51,10 @@ class PendingPaymentExport implements FromCollection, WithHeadings, WithMapping,
             $index++,
             $item->ledger_name,
             $item->ledger_group,
+            $item->series,
             $item->voucher_no,
             Helper::formatIndianNumber($item->balance),
             Helper::formatIndianNumber($item->settle_amount),
-            $item->series,
             $item->remarks ?? 'Success',
         ];
 

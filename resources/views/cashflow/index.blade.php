@@ -831,17 +831,17 @@
         });
     });
 
-    // $('#cost_group_id').on('change', function () {
-    //     const locationId = $('#location_id').val();
-    //     const groupId = parseInt($(this).val());
+    $('#cost_group_id').on('change', function () {
+        const locationId = $('#location_id').val();
+        const groupId = parseInt($(this).val());
 
-    //     if (!locationId || !groupId) {
-    //         $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
-    //         return;
-    //     }
+        if (!locationId || !groupId) {
+            $('#cost_center_id').empty().append('<option value="">Select Cost Center</option>');
+            return;
+        }
 
-    //     loadCostCentersByGroup(locationId, groupId);
-    // });
+        loadCostCentersByGroup(locationId, groupId);
+    });
 
 
     $(document).ready(function() {
