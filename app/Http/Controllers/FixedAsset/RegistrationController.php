@@ -62,7 +62,7 @@ class RegistrationController extends Controller
 
         $parentURL = "fixed-asset_registration";
 
-        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        $data = FixedAssetRegistration::orderBy('id', 'desc');
 
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {
@@ -89,9 +89,9 @@ class RegistrationController extends Controller
             $end = $fyear['end_date'];
         }
         $data = $data->get();
-        $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->get();
-        $ledgers = FixedAssetRegistration::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
+        $assetCodes = FixedAssetRegistration::get();
+        $ledgers = FixedAssetRegistration::pluck('ledger_id')->unique();
+        $ledgers = Ledger::whereIn('id', $ledgers)->get();
         return view('fixed-asset.registration.index', compact('data', 'assetCodes', 'ledgers'));
     }
 
@@ -115,7 +115,7 @@ class RegistrationController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -144,7 +144,7 @@ class RegistrationController extends Controller
             $q->where('is_asset', 1);
         })->where('basic_value', '>', 0)->doesntHave('asset')->get();
 
-        $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
+        $vendors = Vendor::select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
@@ -152,8 +152,7 @@ class RegistrationController extends Controller
 
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', '!=', 'income_tax')
@@ -163,8 +162,7 @@ class RegistrationController extends Controller
             })
             ->select('id', 'name')
             ->get();
-        $it_categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $it_categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
@@ -194,7 +192,7 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
-        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->first();
+        $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->first();
 
         if ($existingAsset) {
             return redirect()
@@ -256,7 +254,7 @@ class RegistrationController extends Controller
             $data = FixedAssetRegistrationHistory::where('source_id', $id)
                 ->where('revision_number', $currNumber)->first();
         } else {
-            $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetRegistration::findorFail($id);
         }
 
 
@@ -289,7 +287,7 @@ class RegistrationController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -302,7 +300,7 @@ class RegistrationController extends Controller
         $grn_details = MrnDetail::withwhereHas('header', function ($query) {
             $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->get();
-        $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
+        $vendors = Vendor::select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
         $sub_assets = FixedAssetSub::where('parent_id', $id)->get();
         $revNo = $data->revision_number;
@@ -333,8 +331,7 @@ class RegistrationController extends Controller
                 }
             }
         }
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', '!=', 'income_tax')
@@ -344,8 +341,7 @@ class RegistrationController extends Controller
             })
             ->select('id', 'name')
             ->get();
-        $it_categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $it_categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
@@ -371,7 +367,7 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $data = FixedAssetRegistration::withDefaultGroupCompanyOrg()->findorFail($id);
+        $data = FixedAssetRegistration::findorFail($id);
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 
@@ -380,7 +376,7 @@ class RegistrationController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -393,14 +389,13 @@ class RegistrationController extends Controller
         $grn_details = MrnDetail::with('header')->whereHas('header', function ($query) {
             $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
         })->get();
-        $vendors = Vendor::withDefaultGroupCompanyOrg()->select('id', 'display_name as name')->get();
+        $vendors = Vendor::select('id', 'display_name as name')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'short_name as name')->get();
         $sub_assets = FixedAssetSub::where('parent_id', $id)->get();
         $dep_method = $organization->dep_method;
         $dep_percentage = $organization->dep_percentage;
         $dep_type = $organization->dep_type;
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', '!=', 'income_tax')
@@ -410,8 +405,7 @@ class RegistrationController extends Controller
             })
             ->select('id', 'name')
             ->get();
-        $it_categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $it_categories = ErpAssetCategory::where('status', 1)
             ->whereHas('setup', function ($q) {
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
@@ -448,7 +442,7 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
-        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->where('id', '!=', $id)->first();
+        $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->where('id', '!=', $id)->first();
 
         if ($existingAsset) {
             redirect()
@@ -718,8 +712,7 @@ class RegistrationController extends Controller
             $oldAssets = FixedAssetSub::oldSubAssets(null, $request->split);
         }
 
-        $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
+        $query = FixedAssetRegistration::where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             })
@@ -766,16 +759,16 @@ class RegistrationController extends Controller
     public function categorySearch(Request $request)
     {
         $q = $request->input('q');
-        $query = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->withWhereHas('setup')
+        $query = ErpAssetCategory::where('status', 1)->withWhereHas('setup')
             ->where('name', 'like', "%$q%");
         return $query->limit(20)->get();
     }
     public function checkCode(Request $request)
     {
         if ($request->edit_id)
-            $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->where('id', '!=', $request->edit_id)->exists();
+            $exists = FixedAssetRegistration::where('asset_code', $request->code)->where('id', '!=', $request->edit_id)->exists();
         else
-            $exists = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->code)->exists();
+            $exists = FixedAssetRegistration::where('asset_code', $request->code)->exists();
 
         return response()->json(['exists' => $exists]);
     }
@@ -824,8 +817,7 @@ class RegistrationController extends Controller
     }
     public function getCategories(Request $request)
     {
-        $query = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
+        $query = FixedAssetRegistration::where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             });
@@ -857,8 +849,7 @@ class RegistrationController extends Controller
     public function getLocations(Request $request)
     {
         $categoryId = $request->input('category_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
+        $locationIds = FixedAssetRegistration::where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             })
@@ -876,15 +867,14 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationId = $request->input('location_id');
-        $locationIds = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where(function ($query) {
+        $locationIds = FixedAssetRegistration::where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             })
             ->where('category_id', $categoryId)
             ->where('location_id', $locationId)
             ->pluck('cost_center_id')->unique()->toArray();
-        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->whereIn('id', $locationIds)
+        $costCenters = CostCenter::whereIn('id', $locationIds)
             ->where('status', 'active')
             ->get(['id', 'name']);
 
@@ -893,8 +883,6 @@ class RegistrationController extends Controller
     public function export(Request $request)
     {
         $data = FixedAssetSub::whereHas('asset', function ($query) use ($request) {
-            $query->withDefaultGroupCompanyOrg();
-
             if ($request->filled('filter_asset')) {
                 $query->where('id', $request->filter_asset);
             }
@@ -931,7 +919,6 @@ class RegistrationController extends Controller
         $codes = $uploadItems->pluck('asset_code') ?? [];
 
         $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
-            $query->withDefaultGroupCompanyOrg();
             $query->whereIn('asset_code', $codes);
             $query->orderBy('document_date', 'desc');
         });

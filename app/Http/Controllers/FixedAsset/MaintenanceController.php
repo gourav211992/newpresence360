@@ -27,9 +27,9 @@ class MaintenanceController extends Controller
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-        $query=FixedAssetMaintenance::withDefaultGroupCompanyOrg()->orderBy('id','desc');
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereNotNull('asset_code')
+        $query=FixedAssetMaintenance::orderBy('id','desc');
+        $assets = FixedAssetRegistration::
+        whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
 
@@ -77,12 +77,12 @@ class MaintenanceController extends Controller
             })->orWhere('organization_id', $organization_id);
         })->get();
 
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::
+        whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.maintenance.create',compact('assets','employees','locations','categories'));
     }
 
@@ -117,12 +117,12 @@ class MaintenanceController extends Controller
     public function show(string $id)
     {
         $data = FixedAssetMaintenance::findorFail($id);
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::
+        whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.maintenance.show',compact('assets','data','locations','categories'));
     }
 
@@ -132,12 +132,12 @@ class MaintenanceController extends Controller
     public function edit(string $id)
     {
         $data = FixedAssetMaintenance::findorFail($id);
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::
+        whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.maintenance.edit',compact('assets','data','locations','categories'));
     }
 

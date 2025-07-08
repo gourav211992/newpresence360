@@ -43,8 +43,7 @@ class ITDepreciationController extends Controller
             }
         }
         $asset_details = [];
-        $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('last_dep_date', '<', $endDate)
+        $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
                 $query->whereNotNull('expiry_date');

@@ -142,14 +142,11 @@
                     <div class="mb-1">
                         <label class="form-label">Category</label>
                         <select class="form-select">
-                            <option>Select</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-1">
-                        <label class="form-label">Dep. Method</label>
-                        <select class="form-select">
-                            <option>Select</option>
+                             <option value="">Select</option>
+                            @foreach($categories as $cat)
+                            <option value="{{$cat->id}}">{{$cat->name}}</option>
+                            @endforeach
+                     
                         </select>
                     </div>
 

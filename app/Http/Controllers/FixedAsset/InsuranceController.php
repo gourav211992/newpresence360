@@ -24,9 +24,8 @@ class InsuranceController extends Controller
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-        $query = FixedAssetInsurance::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereNotNull('asset_code')
+        $query = FixedAssetInsurance::orderBy('id', 'desc');
+        $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
 
@@ -70,12 +69,11 @@ class InsuranceController extends Controller
          if (count($servicesBooks['services']) == 0) {
             return redirect() -> route('/');
         }
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
         $locations = InventoryHelper::getAccessibleLocations();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.create', compact('assets','locations','categories'));
     }
 
@@ -103,24 +101,22 @@ class InsuranceController extends Controller
     {
         $data = FixedAssetInsurance::findorFail($id);
 
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.show', compact('assets', 'data','locations','categories'));
     }
 
     public function edit(string $id)
     {
         $data = FixedAssetInsurance::findorFail($id);
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->whereNotNull('asset_code')
+        $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
         $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.edit', compact('assets', 'data','locations','categories'));
     }
 

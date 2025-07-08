@@ -25,8 +25,8 @@ class SetupController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $query =  FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+        $query =  FixedAssetSetup::orderBy('id', 'desc');
+        $categories = ErpAssetCategory::where('status', 'active')->get();
 
 
         // Apply filters based on the request
@@ -65,7 +65,7 @@ class SetupController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->whereDoesntHave('setup')
+        $categories = ErpAssetCategory::whereDoesntHave('setup')
             ->where('status', 'active')
             ->get();
 
@@ -85,8 +85,7 @@ class SetupController extends Controller
 
         $allChildIds = array_unique($allChildIds); // optional, to avoid duplicates
 
-        $dep_ledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($allChildIds) {
+        $dep_ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
@@ -100,7 +99,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -114,7 +113,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $sales_exp_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $sales_exp_ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -128,7 +127,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $sur_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $sur_ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -143,8 +142,8 @@ class SetupController extends Controller
        
 
         
-        $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->where('act_type','company')->first()?->dep_ledger_id;
-        $dep_ledger_group_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
+        $dep_ledger_id = FixedAssetSetup::orderBy('updated_at', 'desc')->where('act_type','company')->first()?->dep_ledger_id;
+        $dep_ledger_group_id = FixedAssetSetup::orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
         return view('fixed-asset.setup.create', compact('dep_method','categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers','dep_percentage'))
             ->with('services', $servicesBooks['services'])
             ->with('parentURL', $parentURL);
@@ -159,7 +158,7 @@ class SetupController extends Controller
         $asset_category_id = $request->asset_category_id;
 
         if ($asset_category_id == null) {
-            $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->withDefaultGroupCompanyOrg()->first();
+            $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->first();
             $validatedData = Helper::prepareValidatedDataWithPolicy();
 
 
@@ -173,7 +172,7 @@ class SetupController extends Controller
                     'company_id' => $validatedData['company_id'],
                     'organization_id' => $validatedData['organization_id'],
                 ]);
-                $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->withDefaultGroupCompanyOrg()->first()->id;
+                $asset_category_id = ErpAssetCategory::where('name', $request->asset_category)->first()->id;
             }
         }
         $validatedData = Helper::prepareValidatedDataWithPolicy();
@@ -212,9 +211,8 @@ class SetupController extends Controller
     public function show(string $id)
     {
         $data = FixedAssetSetup::findorFail($id);
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 'active')->get();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
+        $categories = ErpAssetCategory::where('status', 'active')->get();
+        $ledgers = Ledger::get();
         $ledgerGroups = json_decode(self::getLedgerGroups($data->ledger_id)->content());
         $ledgerGroupsDep = json_decode(self::getLedgerGroups($data->dep_ledger_id)->content());
 
@@ -227,8 +225,7 @@ class SetupController extends Controller
     public function edit(string $id)
     {
         $data = FixedAssetSetup::findorFail($id);
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('status', 'active')->get();
+        $categories = ErpAssetCategory::where('status', 'active')->get();
         $group_names = [ConstantHelper::INDIRECT_EXPENSES, ConstantHelper::DIRECT_EXPENSES];
 
 // Get all matching groups
@@ -244,8 +241,7 @@ class SetupController extends Controller
 
         $allChildIds = array_unique($allChildIds); // optional, to avoid duplicates
 
-        $dep_ledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($allChildIds) {
+        $dep_ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
@@ -259,7 +255,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -274,7 +270,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $sales_exp_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $sales_exp_ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -288,7 +284,7 @@ class SetupController extends Controller
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $sur_ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $sur_ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
