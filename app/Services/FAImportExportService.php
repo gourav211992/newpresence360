@@ -175,7 +175,7 @@ class FAImportExportService
             throw new \Exception("Asset category setup not found for category: {$data['category']}");
         }
 
-        $dep_percetage = $setup->salvage_percentage ?? $org->dep_percetage ?? null;
+        $dep_percetage = $setup->salvage_percentage ?? $org->dep_percentage ?? null;
         if (empty($dep_percetage)) {
             throw new \Exception("Depreciation percentage not found for category: {$data['category']}");
         }
@@ -224,7 +224,7 @@ class FAImportExportService
             'depreciation_method' => $method,
             'useful_life' => $usefulLife,
             'salvage_value' => $salvageValue,
-            'depreciation_percentage' => $depreciationPercentage,
+            'depreciation_percentage' => $depreciationRate,
             'depreciation_percentage_year' => $depreciationRate,
             'dep_type' => $depreciationType,
             'total_depreciation' => 0,

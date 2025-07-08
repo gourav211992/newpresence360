@@ -235,11 +235,11 @@
                                                         <div class="col-md-5">
                                                             <input type="text" name="reference_number"
                                                                 class="form-control" id="reference_number_input"
-                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn->purchaseOrder->book_code }} - {{ $mrn->purchaseOrder->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn->jobOrder->book_code }} - {{ $mrn->jobOrder->document_number }} @endif"
+                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn?->purchaseOrder?->book_code }} - {{ $mrn?->purchaseOrder?->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn?->jobOrder?->book_code }} - {{ $mrn?->jobOrder?->document_number }} @endif"
                                                                 readonly>
 
                                                             <input type="hidden" name="reference_type"
-                                                                class="form-control" id="reference_type_input"
+                                                                class="form-control reference_type" id="reference_type_input"
                                                                 value="{{ $mrn->reference_type }}" readonly>
                                                             <input type="hidden" name="purchase_order_id" class="form-control"
                                                             value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
@@ -1129,7 +1129,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
+                        setTableCalculation(true);
                     }
                     if (data.status == 404) {
                         $("#book_code").val('');
@@ -1557,7 +1557,7 @@
                 $("#itemTable > thead .form-check-input").prop('checked', false);
                 // $(".prSelect").prop('disabled',false);
             }
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Check attrubute*/
@@ -1855,7 +1855,7 @@
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
                 });
             }
-            setTableCalculation();
+            setTableCalculation(true);
             if (!$("#itemTable [id*=row_]").length) {
                 $("th .form-check-input").prop('checked', false);
                 $('#vendor_name').prop('readonly', false);
@@ -2359,7 +2359,7 @@
             });
             $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
             $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Remove item level discount*/
@@ -2396,7 +2396,7 @@
                 }
             });
             summaryDisTotal();
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
 
@@ -2438,7 +2438,7 @@
             });
 
             summaryExpTotal();
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Amendment modal open*/
@@ -3270,7 +3270,7 @@
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTableCalculation(true);
                             $("#itemTable .mrntableselectexcel tr").each(function(index,
                                 item) {
                                 let currentIndex = index + 1;
@@ -3662,7 +3662,7 @@
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTableCalculation(true);
                             $("#itemTable .mrntableselectexcel tr").each(function(index,
                                 item) {
                                 let currentIndex = index + 1;

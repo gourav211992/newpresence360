@@ -29,6 +29,7 @@ class MrnHeader extends Model
         'vendor_id',
         'purchase_order_id',
         'job_order_id',
+        'sale_order_id',
         'cost_center_id',
         'mrn_date',
         'document_date',
@@ -161,6 +162,11 @@ class MrnHeader extends Model
     public function jobOrder()
     {
         return $this->belongsTo(JobOrder::class, 'job_order_id');
+    }
+
+    public function saleOrder()
+    {
+        return $this->belongsTo(ErpSaleOrder::class, 'sale_order_id');
     }
 
     public function group()

@@ -143,7 +143,7 @@ class SetupController extends Controller
        
 
         
-        $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_id;
+        $dep_ledger_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->where('act_type','company')->first()?->dep_ledger_id;
         $dep_ledger_group_id = FixedAssetSetup::withDefaultGroupCompanyOrg()->orderBy('updated_at', 'desc')->first()?->dep_ledger_group_id;
         return view('fixed-asset.setup.create', compact('dep_method','categories', 'ledgers', 'dep_ledger_id', 'dep_ledger_group_id', 'dep_ledgers', 'sur_ledgers', 'sales_exp_ledgers','dep_percentage'))
             ->with('services', $servicesBooks['services'])

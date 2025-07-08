@@ -14,6 +14,8 @@ class MrnExtraAmount extends Model
     protected $fillable = [
         'mrn_header_id', 
         'mrn_detail_id', 
+        'po_id',
+        'jo_id',
         'ted_type', 
         'ted_level', 
         'ted_id',

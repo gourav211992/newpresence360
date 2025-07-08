@@ -14,6 +14,8 @@ class GateEntryTed extends Model
     protected $fillable = [
         'header_id',
         'detail_id',
+        'po_id',
+        'jo_id',
         'ted_id',
         'ted_type',
         'ted_level',

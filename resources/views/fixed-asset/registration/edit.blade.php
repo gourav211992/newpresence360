@@ -279,10 +279,26 @@
                                                                     Select</option>
                                                                 @foreach ($categories as $category)
                                                                     <option value="{{ $category->id }}"
-                                                                        data-act-type="{{$category->setup->act_type??"company"}}"
-                                                                        data-dep="{{$category->setup->dep_percentage??null}}"
                                                                         {{ $data->category_id == $category->id ? 'selected' : '' }}>
                                                                         {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">IT Act Category <span
+                                                                    class="text-danger"></span></label>
+                                                            <select class="form-select select2" name="it_category_id"
+                                                                id="it_category">
+                                                                <option value=""
+                                                                    {{ old('it_category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($it_categories as $it_category)
+                                                                    <option value="{{ $it_category->id }}"
+                                                                        {{ $data->it_category_id == $it_category->id ? 'selected' : '' }}>
+                                                                        {{ $it_category->name }}
                                                                     </option>
                                                                 @endforeach
                                                             </select>
@@ -1632,17 +1648,12 @@
 
             let salvageValue = (currentValue * (depreciationPercentage / 100)).toFixed(2);
 
-            const actType = $('#category option:selected').data('act-type');
-            const rate = parseFloat($('#category option:selected').data('dep')) || 0;
 
             let depreciationRate = 0;
             if (method === "SLM") {
                 depreciationRate = ((((currentValue - salvageValue) / usefulLife) / currentValue) * 100).toFixed(2);
             } else if (method === "WDV") {
-                if (actType == "income_tax")
-                    depreciationRate = rate;
-                else
-                    depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
+                depreciationRate = ((1 - Math.pow(salvageValue / currentValue, 1 / usefulLife)) * 100).toFixed(2);
             }
 
             let totalDepreciation = 0;

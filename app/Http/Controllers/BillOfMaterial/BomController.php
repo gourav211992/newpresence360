@@ -970,14 +970,14 @@ class BomController extends Controller
             $bom->customizable = $request->customizable ?? 'no';
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
             {
-                $revisionData = [
-                    ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
-                    ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomAttribute', 'relation_column' => 'bom_detail_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomOverhead', 'relation_column' => 'bom_detail_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomNormsCalculation', 'relation_column' => 'bom_detail_id']
-                ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $revisionData = [
+                //     ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
+                //     ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomAttribute', 'relation_column' => 'bom_detail_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomOverhead', 'relation_column' => 'bom_detail_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomNormsCalculation', 'relation_column' => 'bom_detail_id']
+                // ];
+                // $a = Helper::documentAmendment($revisionData, $id);
             }
 
             $keys = ['deletedHeaderOverheadIds', 'deletedItemOverheadIds', 'deletedBomItemIds', 'deletedAttachmentIds', 'deletedProdItemIds', 'deletedInstructionItemIds'];
@@ -1030,7 +1030,6 @@ class BomController extends Controller
             $bom->remarks = $request->remarks;
             # Extra Column
             $bom->save();
-            
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
                 foreach($request->all()['instructions'] as $index => $instruction) {
@@ -1053,7 +1052,7 @@ class BomController extends Controller
 
             if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $quote_bom_id = $request->quote_bom_id;
-                $quoteBom = Bom::findOrFail($quote_bom_id);
+                $quoteBom = Bom::find($quote_bom_id);
                 if($quoteBom) {
                     Bom::where('production_bom_id', $bom->id)->update(['production_bom_id' => null]);
                     $quoteBom->production_bom_id = $bom->id;

@@ -16,6 +16,8 @@ class MrnExtraAmountHistory extends Model
         'mrn_detail_history_id',
         'mrn_header_id', 
         'mrn_detail_id', 
+        'po_id',
+        'jo_id',
         'mrn_extra_amount_id', 
         'ted_type', 
         'ted_level', 

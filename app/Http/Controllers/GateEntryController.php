@@ -63,6 +63,7 @@ use App\Models\ErpItem;
 use App\Models\ErpVendor;
 use App\Models\JobOrder\JobOrder;
 use App\Models\JobOrder\JoProduct;
+use App\Models\JobOrder\JobOrderTed;
 use App\Services\MrnService;
 use Carbon\Carbon;
 use DateTime;
@@ -221,7 +222,6 @@ class GateEntryController extends Controller
         $user = Helper::getAuthenticatedUser();
         \DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -406,22 +406,25 @@ class GateEntryController extends Controller
                 $itemTotalHeaderDiscount = 0;
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
+                // dd($request->all()['reference_type']);
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $po_detail_id = null;
                     $purchaseOrderId = null;
                     $so_id = null;
                     if ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) {
-                        if (isset($component['supplier_inv_detail_id']) && $component['supplier_inv_detail_id']) {
-                            $supplierInvDetail =  JoProduct::find($component['supplier_inv_detail_id']);
-                            $po_detail_id = $supplierInvDetail->id ?? null;
-                            $purchaseOrderId = $supplierInvDetail->jo_id;
+                        if (isset($component['vendor_asn_dtl_id']) && $component['vendor_asn_dtl_id']) {
+                            $supplierInvDetail =  VendorAsnItem::find($component['vendor_asn_dtl_id']);
+                            $po_detail_id = $supplierInvDetail->jo_prod_id ?? null;
+                            $asn_detail_id = $supplierInvDetail->id ?? null;
+                            $purchaseOrderId = $supplierInvDetail?->jo_id;
+                            $asnId = $supplierInvDetail?->vendor_asn_id;
                             if ($supplierInvDetail) {
                                 $supplierInvDetail->ge_qty += floatval($component['accepted_qty']);
                                 $supplierInvDetail->save();
                             }
-                            if ($supplierInvDetail->po_item_id) {
-                                $poDetail =  JoProduct::find($supplierInvDetail->po_item_id);
+                            if ($supplierInvDetail->jo_prod_id) {
+                                $poDetail =  JoProduct::find($supplierInvDetail->jo_prod_id);
                                 $po_detail_id = $poDetail->id ?? null;
                                 if ($poDetail) {
                                     $so_id = $poDetail->so_id;
@@ -430,8 +433,8 @@ class GateEntryController extends Controller
                                 }
                             }
                         } else {
-                            if (isset($component['po_detail_id']) && $component['po_detail_id']) {
-                                $poDetail =  JoProduct::find($component['po_detail_id']);
+                            if (isset($component['jo_detail_id']) && $component['jo_detail_id']) {
+                                $poDetail =  JoProduct::find($component['jo_detail_id']);
                                 $po_detail_id = $poDetail->id ?? null;
                                 $purchaseOrderId = $poDetail->jo_id;
                                 if ($poDetail) {
@@ -539,7 +542,7 @@ class GateEntryController extends Controller
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
+                        'expense_amount' => floatval($component['exp_amount_header']) ?? 0.00,
                         'tax_value' => 0.00,
                         'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
                         'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
@@ -588,9 +591,11 @@ class GateEntryController extends Controller
                 unset($mrnItem);
 
                 foreach($mrnItemArr as $_key => $mrnItem) {
-                    $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
+                    // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    // dd('itemPriceAterBothDis', $itemPriceAterBothDis, $totalAfterTax, $totalHeaderExpense, $itemHeaderExp);
+                    $itemHeaderExp = floatval($mrnItem['expense_amount']);
 
                     $GateEntryDetail = new GateEntryDetail;
                     $GateEntryDetail->header_id = $mrnItem['header_id'];
@@ -690,6 +695,7 @@ class GateEntryController extends Controller
                             $ted = new GateEntryTed;
                             $ted->header_id = $mrn->id;
                             $ted->detail_id = null;
+                            $ted->detail_id = null;
                             $ted->ted_type = 'Discount';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_d_id'] ?? null;
@@ -705,12 +711,16 @@ class GateEntryController extends Controller
 
                 /*Header level save discount*/
                 if(isset($request->all()['exp_summary'])) {
+                    // dd($request->all()['exp_summary']);
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
                             $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                            // dd($totalAfterTax);
                             $ted = new GateEntryTed;
                             $ted->header_id = $mrn->id;
                             $ted->detail_id = null;
+                            $ted->po_id = $dis['e_purch_id'] ?? null;
+                            $ted->jo_id = $dis['e_job_id'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -727,6 +737,7 @@ class GateEntryController extends Controller
                 /*Update total in main header MRN*/
                 $mrn->total_item_amount = $itemTotalValue ?? 0.00;
                 $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
+                // dd($itemTotalValue, $totalDiscValue);
                 if($itemTotalValue < $totalDiscValue){
                     DB::rollBack();
                     return response()->json([
@@ -1195,7 +1206,7 @@ class GateEntryController extends Controller
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
+                        'expense_amount' => floatval($component['exp_amount_header']) ?? 0.00,
                         'tax_value' => 0.00,
                         'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
                         'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
@@ -1245,9 +1256,10 @@ class GateEntryController extends Controller
                 foreach($mrnItemArr as $_key => $mrnItem) {
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
-                    $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    $itemHeaderExp = floatval($mrnItem['expense_amount']);
+                    // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
+                    // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
 
                     # Gate Entry Detail Save
                     $GateEntryDetail = GateEntryDetail::find($component['detail_id'] ?? null) ?? new GateEntryDetail;
@@ -2288,7 +2300,7 @@ class GateEntryController extends Controller
 
                 $dataCurrentPo = $moduleType === 'suppl-inv'
                     ? ($row->purchase_order_id ?? 'null')
-                    : 'null';
+                    : ($row->purchase_order_id ?? 'null');
                 $dataCurrentAsn = $moduleType === 'suppl-inv'
                     ? ($row->vendorAsn->id ?? 'null')
                     : 'null';
@@ -2461,7 +2473,7 @@ class GateEntryController extends Controller
         $asnItemIds = json_decode($request->asnItemIds, true) ?? [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
         $vendor = null;
-
+        // dd($moduleTypes, $request->all());
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
             return response()->json([
@@ -2553,6 +2565,7 @@ class GateEntryController extends Controller
 
                 $finalExpenses[] = [
                     'id' => $expense->id,
+                    'ref_type' => 'po',
                     'purchase_order_id' => $poId,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
@@ -2876,7 +2889,8 @@ class GateEntryController extends Controller
 
                 $finalExpenses[] = [
                     'id' => $expense->id,
-                    'purchase_order_id' => $joId,
+                    'ref_type' => 'jo',
+                    'job_order_id' => $joId,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
@@ -3501,53 +3515,85 @@ class GateEntryController extends Controller
     // Get Selected Item Amount
     public function getSelectedItemAmount(Request $request)
     {
-        $poItemIds = $request->po_item_ids ?? [];
-        $poIds = $request->po_ids ?? [];
+        try{
+        $poItemIds = array_filter($request->po_item_ids ?? [], 'is_numeric');
+        $poIds = array_filter($request->po_ids ?? [], 'is_numeric');
         $itemQtys = $request->itemQtys ?? [];
-        $tedId = $request->ted_id ?? null;
+        $tedId = $request->ted_id;
+        $edit = $request->edit;
+        $refType = strtolower($request->reference_type);
 
-        if (empty($poItemIds) || empty($poIds) || !$tedId) {
+        if (empty($poItemIds) || empty($poIds) || !$tedId || !$refType) {
             return response()->json(['status' => 422, 'message' => 'Invalid input.']);
         }
-        $poTed = PurchaseOrderTed::find($tedId);
-        if( !$poTed) {
-            return response()->json(['status' => 404, 'message' => 'TED not found.']);
-        }
-        // Validate PO Item IDs and PO IDs
-        $poItemIds = array_filter($poItemIds, 'is_numeric');
-        $poIds = array_filter($poIds, 'is_numeric');
-        if (empty($poItemIds) || empty($poIds)) {
-            return response()->json(['status' => 422, 'message' => 'Invalid PO Item IDs or PO IDs.']);
+
+        // Determine TED and associated ID
+        if ($refType === 'po') {
+            if($edit){
+                $poTed = GateEntryTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->po_id;
+            } else{
+                $poTed = PurchaseOrderTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->purchase_order_id;
+            }
+            
+            $items = PoItem::whereIn('id', $poItemIds)
+                ->where('purchase_order_id', $relatedId)
+                ->get();
+        } elseif ($refType === 'jo') {
+            if($edit){
+                $poTed = GateEntryTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->jo_id;
+            } else{
+                $poTed = JobOrderTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->job_order_id;
+            }
+            $relatedId = $poTed->job_order_id ?? $poTed->jo_id;
+            $items = JoProduct::whereIn('id', $poItemIds)
+                ->where('job_order_id', $relatedId)
+                ->get();
+        } else {
+            return response()->json(['status' => 422, 'message' => 'Invalid reference type.']);
         }
 
-        $items = PoItem::whereIn('id', $poItemIds)
-            ->where('purchase_order_id', $poTed->purchase_order_id)
-            ->get();
-
-        $poItemValue = 0;
-        foreach($items as $item ) {
-            // Check if a custom quantity was sent via JS using the item ID as key
+        // Calculate value
+        $poItemValue = $items->reduce(function ($carry, $item) use ($itemQtys) {
             $qty = isset($itemQtys[$item->id]) ? floatval($itemQtys[$item->id]) : floatval($item->order_qty);
             $rate = floatval($item->rate);
-            $poItemValue += ($qty * $rate);
-        }
+            return $carry + ($qty * $rate);
+        }, 0);
 
         return response()->json([
             'status' => 200,
             'message' => 'Success',
             'data' => [
-                'poItemValue' => round($poItemValue, 2)
-            ]
+                'poItemValue' => round($poItemValue, 2),
+            ],
         ]);
+        } catch(\Exception $e){
+            dd($e);
+        }
     }
+
 
     // Process ASN
     public function processAsn(Request $request)
     {
         $ids = [];
-        $asnNumber = $request->asn_number;
+        $asnNumber = (int)$request->asn_number;
         $moduleType = [$request->module_type];
-
         $asnData = VendorAsn::find($asnNumber);
         if (!$asnData) {
             return response()->json([
