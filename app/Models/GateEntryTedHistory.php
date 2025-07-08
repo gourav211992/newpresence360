@@ -16,6 +16,8 @@ class GateEntryTedHistory extends Model
         'source_id',
         'header_id',
         'detail_id',
+        'po_id',
+        'jo_id',
         'ted_id',
         'ted_type',
         'ted_level',

@@ -193,6 +193,24 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/finance-table.js')}}"></script>
     <script>
+         function showToast(icon, title) {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                },
+            });
+            Toast.fire({
+                icon,
+                title
+            });
+        }
+
          $('.datatables-basic').DataTable({
                 processing: true,
                 scrollX: true,
@@ -599,11 +617,43 @@
 
 
         });
-        $(document).on('click', '#proceedBtn', function () {
-            let type = @json($type);
-             window.location.href = '/report/process-import/'+type;
+        // $(document).on('click', '#proceedBtn', function () {
+        //     let type = @json($type);
+        //      window.location.href = '/report/process-import/'+type;
                 
+        //     });
+        $(document).on('click', '#proceedBtn', function (e) {
+            e.preventDefault();
+            let type = @json($type); // this must be set in your blade, e.g.,  $type = request()->route('type') etc.
+
+            $.ajax({
+                url: '/report/process-import/' + type,
+                method: 'GET',
+                success: function (response) {
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    }
+                },
+                error: function (xhr) {
+                    // $('.import-errors').remove();
+
+                    if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                        let errors = xhr.responseJSON.errors;
+                        // let $errorList = $('<ul class="import-errors" style="color: red;"></ul>');
+                        $.each(errors, function (idx, error) {
+                                    showToast("error", error);
+                            // $errorList.append('<li>' + error + '</li>');
+                        });
+                        // $('#your-form-id-or-section').prepend($errorList);
+                    } else if (xhr.responseJSON && xhr.responseJSON.error) {
+                        showToast("error",xhr.responseJSON.error);
+                    } else {
+                        showToast("error",'An unexpected error occurred.');
+                    }
+                }
             });
+        });
+
 
         $(document).on('click', '.editbtnNew', function(e) {
             e.preventDefault();

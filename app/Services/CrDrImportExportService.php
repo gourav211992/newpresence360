@@ -19,10 +19,10 @@ class CrDrImportExportService
         $requiredFields = [
             'ledger_name'   => 'Ledger Name',
             'ledger_group'  => 'Ledger Group',
-            'document_no'   => 'Voucher No',
+            'voucher_no'   => 'Voucher No',
             'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
-            'balance'       => 'Balance'
+            // 'balance'       => 'Balance'
         ];
 
         foreach ($requiredFields as $key => $label) {
@@ -33,29 +33,34 @@ class CrDrImportExportService
         }
         return true;
     }
-    public function processData(array $row,$type){
+   public function processData(array $row, $type)
+{
+    try {
         $ledgerName   = isset($row['ledger_name']) ? trim($row['ledger_name']) : null;
         $ledgerGroup  = isset($row['ledger_group']) ? trim($row['ledger_group']) : null;
-        $voucherNo    = isset($row['document_no']) ? trim($row['document_no']) : null;
-        $settleAmount = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
-        $balance      = isset($row['balance']) ? trim($row['balance']) : null;
-        $series      = isset($row['series']) ? trim($row['series']) : null;
-        
-        if (!is_numeric($row['settle_amount'])) {
-            throw new Exception("Settle Amount must be a valid number.");
+        $voucherNo    = isset($row['voucher_no']) ? trim($row['voucher_no']) : null;
+        $series       = isset($row['series']) ? trim($row['series']) : null;
+        $settleAmountRaw = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
+        $settleAmount = Helper::removeCommas($settleAmountRaw);
+
+        if (!is_numeric($settleAmount)) {
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => "Settle Amount must be a valid number. Found: '{$settleAmountRaw}'"
+            ];
         }
-        
-        if (!is_numeric($row['balance'])) {
-            throw new Exception("Balance must be a valid number.");
-        }
-        
-        
+
         $ledger = Ledger::withDefaultGroupCompanyOrg()
             ->where('name', $ledgerName)
             ->first();
 
         if (empty($ledger)) {
-            throw new Exception("Ledger '{$ledgerName}' does not exist.");
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => "Ledger '{$ledgerName}' does not exist."
+            ];
         }
         
         $group = Helper::getGroupsQuery()
@@ -63,18 +68,19 @@ class CrDrImportExportService
             ->first();
 
         if (empty($group)) {
-            throw new Exception("Ledger group '{$ledgerGroup}' does not exist.");
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => "Ledger group '{$ledgerGroup}' does not exist."
+            ];
         }
         
-        $invoices = Helper::getVoucherBalance($voucherNo,$type,$ledger->id,$group->id);
+        $invoices = Helper::getVoucherBalance($voucherNo, $type, $ledger->id, $group->id);
         $voucher = collect($invoices->getData()->data)
             ->first(function ($item) use ($voucherNo, $series) {
-                // balance & voucher must match
                 if ($item->balance <= 0 || $item->voucher_no !== $voucherNo) {
                     return false;
                 }
-
-                // if a series is required, check it
                 if ($series) {
                     return isset($item->series?->book_code) &&
                         $item->series->book_code === $series;
@@ -83,31 +89,54 @@ class CrDrImportExportService
             });
 
         if (!$voucher) {
-            throw new Exception(
-                $series
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => $series
                     ? "Series '{$series}' not exist related to the Voucher no# '{$voucherNo}'."
                     : "Voucher no# '{$voucherNo}' not valid."
-            );
+            ];
         }
-        
-        $row['voucher_id'] = $voucher->id;
-        $row['ledger_id']=$ledger->id;
-        $row['ledger_group_id']=$group->id;
-        
-        $voucherBalance = $voucher->balance;
-        if($balance!=$voucherBalance){
-             throw new Exception("Balance not match expected balance ".$voucherBalance.' found '.$balance);
-        }
-        
-        $balance = Helper::removeCommas($balance);
+
+        $row['voucher_id']      = $voucher->id;
+        $row['ledger_id']       = $ledger->id;
+        $row['ledger_group_id'] = $group->id;
+        $row['settle_amount']   = $settleAmount;
+        $voucherBalance         = $voucher->balance;
+        $row['balance']         = $voucherBalance;
+
+        $balance      = Helper::removeCommas($row['balance']);
         $settleAmount = Helper::removeCommas($settleAmount);
 
         if ($balance == 0) {
-            throw new Exception("Balance must not be zero.");
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => "Balance must not be zero."
+            ];
         }
         if ($settleAmount > $balance) {
-            throw new Exception("Settle Amount ({$settleAmount}) cannot be greater than Balance ({$balance}).");
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => "Settle Amount ({$settleAmount}) cannot be greater than Balance ({$voucherBalance})."
+            ];
         }
-        return $row;
-    }    
+
+        // Success!
+        return [
+            'status' => true,
+            'row' => $row,
+            'error' => null
+        ];
+    } catch (\Exception $e) {
+        // Unexpected error, also return what we have.
+        return [
+            'status' => false,
+            'row' => $row,
+            'error' => 'Unexpected error: ' . $e->getMessage()
+        ];
+    }
+}
+  
 }

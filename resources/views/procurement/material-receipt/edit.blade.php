@@ -209,7 +209,7 @@
                                                                 readonly>
 
                                                             <input type="hidden" name="reference_type"
-                                                                class="form-control" id="reference_type_input"
+                                                                class="form-control reference_type" id="reference_type_input"
                                                                 value="{{ $mrn->reference_type }}" readonly>
                                                             <input type="hidden" name="purchase_order_id" class="form-control"
                                                             value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
@@ -1059,7 +1059,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
+                        setTableCalculation(true);
                         // checkWarehouseSetup(storeId, subStoreId);
                     }
                     if(data.status == 404) {
@@ -1481,7 +1481,7 @@
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 // $(".prSelect").prop('disabled',false);
             }
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Check attrubute*/
@@ -1824,7 +1824,7 @@
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
                 });
             }
-            setTableCalculation();
+            setTableCalculation(true);
             if(!$("#itemTable [id*=row_]").length) {
                 $("th .form-check-input").prop('checked',false);
                 $('#vendor_name').prop('readonly',false);
@@ -2318,7 +2318,7 @@
             });
             $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
             $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Remove item level discount*/
@@ -2354,7 +2354,7 @@
                 }
             });
             summaryDisTotal();
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
 
@@ -2395,7 +2395,7 @@
             });
 
             summaryExpTotal();
-            setTableCalculation();
+            setTableCalculation(true);
         });
 
         /*Amendment modal open*/
@@ -2783,7 +2783,7 @@
                         getSubStores(locationId, item='');
                         updateImportItemData(data.status);
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTableCalculation(true);
                         },500);
 
                     }
@@ -3325,7 +3325,7 @@
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTableCalculation(true);
                             if(idsLength > 1)
                             {
                                 $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
@@ -3848,7 +3848,7 @@
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
                         setTimeout(() => {
-                            setTableCalculation();
+                            setTableCalculation(true);
                             if(idsLength > 1)
                             {
                                 $("#itemTable .mrntableselectexcel tr").each(function(index, item) {

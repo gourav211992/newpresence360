@@ -116,8 +116,11 @@ class InventoryHelper
                 $stockReservation = 'yes';
                 $documentDetail = self::settlementForSaleInvoice($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $stockReservation);
             }
-            else if($bookType == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME){
+            else if($bookType == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME && $transactionType == 'issue'){
                 $documentDetail = self::settlementForMIForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
+            }
+            else if($bookType == ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME && $transactionType == 'receipt'){
+                $documentDetail = self::settlementForMIForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
             }
             else if($bookType == ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME){
                 $documentDetail = self::settlementForMRForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
@@ -130,7 +133,6 @@ class InventoryHelper
                     'invoiceLedger' => ''
                 ];
             }
-
             if (($documentDetail['status'] == 'success') && empty($records)) {
                 if($transactionType == 'issue'){
                     $invoiceIds = StockLedger::withDefaultGroupCompanyOrg()
@@ -2573,7 +2575,7 @@ class InventoryHelper
     public static function settlementForMIForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
-
+        $updatedInvoiceLedger = [];
         try{
             $documentItems = ErpMiItem::where('material_issue_id',$documentHeaderId)
                 ->with('header',
@@ -2596,7 +2598,7 @@ class InventoryHelper
                         $utilizedQty = 0;
                         $issueQty = $stockLedger->issue_qty;
                         $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
-                        $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
+                        $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger['invoiceLedger'], $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
                     }
                 }
             }
@@ -2606,7 +2608,7 @@ class InventoryHelper
 
         }
         $message = 'success';
-        return $message;
+        return $updatedInvoiceLedger;
     }
     // Settlement For Psv For Issue
     private static function settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
@@ -2652,7 +2654,7 @@ class InventoryHelper
     private static function settlementForMRForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
-
+        $invoiceLedger = [];
         try{
             $documentItems = ErpMrItem::where('material_return_id',$documentHeaderId)
                 ->with('header',
@@ -2685,15 +2687,15 @@ class InventoryHelper
 
         }
         $message = 'success';
-        return $message;
+        return $invoiceLedger;
     }
 
     // Settlement For Material Issue For Receive
     private static function settlementForMIForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
-
-        try{
+        $invoiceLedger = [];
+        // try{
             $documentItemLocations = ErpMiItemLocation::where('material_issue_id',$documentHeaderId)
                 ->whereIn('mi_item_id',$documentDetailId)
                 ->where('type', 'to')
@@ -2746,13 +2748,13 @@ class InventoryHelper
                     // }
                 }
             }
-        } catch (\Exception $e) {
-            $errorMsg = "ERROR: " . $e->getMessage();
-            return self::errorResponse($errorMsg);
+        // } catch (\Exception $e) {
+        //     $errorMsg = "ERROR: " . $e->getMessage();
+        //     return self::errorResponse($errorMsg);
 
-        }
+        // }
         $message = 'success';
-        return $message;
+        return $invoiceLedger;
     }
     private static function settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {

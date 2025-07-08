@@ -2262,6 +2262,7 @@ class PoController extends Controller
                         'erp_pi_items.so_id',
                         'erp_pi_items.item_id',
                         'erp_pi_items.uom_id',
+                        'erp_pi_items.remarks',
                         DB::raw("GROUP_CONCAT(
                             CONCAT(erp_pi_item_attributes.item_attribute_id, ':', erp_pi_item_attributes.attribute_value)
                             ORDER BY erp_pi_item_attributes.item_attribute_id SEPARATOR ', '
@@ -2277,6 +2278,7 @@ class PoController extends Controller
                 'so_id',
                 'uom_id',
                 DB::raw("IFNULL(attributes, '') as attributes"),
+                DB::raw("MIN(remarks) as remarks"),
                 DB::raw("SUM(indent_qty - order_qty) as total_qty"),
                 DB::raw("GROUP_CONCAT(pi_item_id ORDER BY pi_item_id SEPARATOR ',') as pi_item_ids")
             )

@@ -102,10 +102,12 @@ use App\Models\ErpSoJobWorkItem;
 use App\Models\ErpSubStoreParent;
 use App\Models\JobOrder\JoBomMapping;
 use App\Models\JobOrder\JobOrder;
+use App\Models\JobOrder\JobOrderTed;
 use App\Models\JobOrder\JoItem;
 use App\Models\JobOrder\JoProduct;
 use App\Models\MrnJoItem;
 use App\Models\VendorLocation;
+use App\Models\PurchaseOrderTed;
 
 class MaterialReceiptController extends Controller
 {
@@ -146,7 +148,8 @@ class MaterialReceiptController extends Controller
                     'costCenters',
                     'currency',
                     'po',
-                    'jobOrder'
+                    'jobOrder',
+                    'saleOrder'
                 ]
             )
             ->withDefaultGroupCompanyOrg()
@@ -183,7 +186,9 @@ class MaterialReceiptController extends Controller
                         return $row->po ? $row->po->book_code . ' - ' . $row->po->document_number : 'N/A';
                     } elseif ($row->reference_type == 'jo') {
                         return $row->jobOrder ? $row->jobOrder->book_code . ' - ' . $row->jobOrder->document_number : 'N/A';
-                    } else {
+                    } elseif ($row->reference_type == 'so') {
+                        return $row->saleOrder ? $row->saleOrder->book_code . ' - ' . $row->saleOrder->document_number : 'N/A';
+                    }else {
                         return '';
                     }
                 })
@@ -718,7 +723,7 @@ class MaterialReceiptController extends Controller
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval(@$component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
+                        'expense_amount' => floatval($component['exp_amount_header']) ?? 0.00,
                         'tax_value' => 0.00,
                         'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
                         'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
@@ -771,16 +776,16 @@ class MaterialReceiptController extends Controller
                 unset($mrnItem);
 
                 foreach($mrnItemArr as $_key => $mrnItem) {
-                    $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-
+                    // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
+                    // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    $itemHeaderExp = floatval($mrnItem['expense_amount']);
                     $mrnDetail = new MrnDetail;
                     $mrnDetail->mrn_header_id = $mrnItem['mrn_header_id'];
                     $mrnDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
                     $mrnDetail->gate_entry_detail_id = $mrnItem['gate_entry_detail_id'];
                     $mrnDetail->job_order_item_id = $mrnItem['job_order_item_id'];
-                    $mrnDetail->sale_order_item_id = $mrnItem['sale_order_item_id'];
+                    // $mrnDetail->sale_order_item_id = $mrnItem['sale_order_item_id'];
                     $mrnDetail->so_id = $mrnItem['so_id'];
                     $mrnDetail->item_id = $mrnItem['item_id'];
                     $mrnDetail->item_code = $mrnItem['item_code'];
@@ -931,6 +936,8 @@ class MaterialReceiptController extends Controller
                             $ted = new MrnExtraAmount;
                             $ted->mrn_header_id = $mrn->id;
                             $ted->mrn_detail_id = null;
+                            $ted->po_id = $dis['e_purch_id'] ?? null;
+                            $ted->jo_id = $dis['e_job_id'] ?? null;
                             $ted->ted_type = 'Expense';
                             $ted->ted_level = 'H';
                             $ted->ted_id = $dis['ted_e_id'] ?? null;
@@ -1153,6 +1160,7 @@ class MaterialReceiptController extends Controller
             'costCenters',
             'purchaseOrder',
             'jobOrder',
+            'saleOrder'
         ])
         ->findOrFail($id);
 
@@ -1514,9 +1522,10 @@ class MaterialReceiptController extends Controller
                 foreach($mrnItemArr as $_key => $mrnItem) {
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
-                    $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
+                    // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
+                    // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
+                    $itemHeaderExp = floatval($mrnItem['expense_amount']);
 
                     # Mrn Detail Save
                     $mrnDetail = MrnDetail::find($component['mrn_detail_id'] ?? null) ?? new MrnDetail;
@@ -2783,41 +2792,53 @@ class MaterialReceiptController extends Controller
     public function getPo(Request $request)
     {
         $query = $this->buildPoQuery($request);
-
+        // dd($query);
         return DataTables::of($query)
             ->addColumn('select_checkbox', function ($row) use ($request) {
                 $this->moduleType = match (true) {
-                    $row?->po?->supp_invoice_required === 'yes' => 'suppl-inv',
                     $row?->po?->gate_entry_required === 'yes' => 'gate-entry',
+                    $row?->po?->supp_invoice_required === 'yes' => 'suppl-inv',
                     default => 'p-order',
                 };
-
                 $ref_no = match ($this->moduleType) {
-                    'suppl-inv'  => ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA'),
                     'gate-entry' => ($row?->gateEntryHeader?->book?->book_code ?? 'NA') . '-' . ($row?->gateEntryHeader?->document_number ?? 'NA'),
+                    'suppl-inv'  => ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA'),
                     default      => ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA'),
                 };
-
                 $dataCurrentPo = match ($this->moduleType) {
-                    'suppl-inv'  => $row->vendor_asn_id ?? 'null',
-                    'gate-entry' => $row->purchase_order_id ?? 'null',
+                    'gate-entry' => $row->po_id ?? 'null',
+                    'suppl-inv'  => $row->po_id ?? 'null',
                     default      => $row->purchase_order_id ?? 'null',
                 };
-
-                $ref_no = $this->moduleType === 'suppl-inv'
-                    ? ($row?->vendorAsn?->book_code ?? 'NA') . '-' . ($row?->vendorAsn?->document_number ?? 'NA')
-                    : ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA');
-
-                $dataCurrentPo = $this->moduleType === 'suppl-inv'
-                    ? ($row->vendor_asn_id ?? 'null')
-                    : ($row->purchase_order_id ?? 'null');
+                $dataCurrentAsn = match ($this->moduleType) {
+                    'gate-entry' => 'null',
+                    'suppl-inv'  => ($row->asn_item_id ?? 'null'),
+                    default      => 'null',
+                };
+                $dataCurrentAsnItem = match ($this->moduleType) {
+                    'gate-entry' => 'null',
+                    'suppl-inv'  => ($row->vendorAsn->id ?? 'null'),
+                    default      => 'null',
+                };
+                $dataCurrentGe = match ($this->moduleType) {
+                    'gate-entry' => ($row->gateEntryHeader->id ?? 'null'),
+                    'suppl-inv'  => 'null',
+                    default      => 'null',
+                };
+                $dataCurrentGeItem = match ($this->moduleType) {
+                    'gate-entry' => ($row->id ?? 'null'),
+                    'suppl-inv'  => 'null',
+                    default      => 'null',
+                };
                 $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
                     ? ($request->selected_po_ids[0] ?? 'null')
                     : 'null';
-                // $disabled = ($dataExistingPo !== 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
-
+                
                 return "<div class='form-check form-check-inline me-0'>
-                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}'>
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$this->moduleType}' 
+                            data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}'
+                            data-current-asn='{$dataCurrentAsn}' data-current-asn-item='{$dataCurrentAsnItem}'
+                            data-current-ge='{$dataCurrentGe}' data-current-ge-item='{$dataCurrentGeItem}'>
                             <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
                         </div>";
             })
@@ -2893,7 +2914,6 @@ class MaterialReceiptController extends Controller
             ])
             ->make(true);
     }
-
 
     # This for both bulk and single po
     protected function buildPoQuery($request)
@@ -2971,29 +2991,12 @@ class MaterialReceiptController extends Controller
             $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
         }
 
-        $poItems = $poItems->get();
+        $poItems = $poItems->orderBy('erp_purchase_orders.document_number', 'desc')->get();
         $poItemIds = [];
         $finalPoItems = [];
 
         foreach ($poItems as $poItem) {
-            if ($poItem->supp_invoice_required == 'yes') {
-                $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
-                    ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
-                    ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
-                    ->get();
-
-                foreach ($siItems as $siItem) {
-                    if (in_array($siItem->id, $selected_po_ids)) {
-                        continue;
-                    }
-                    $poItemIds[] = $siItem->id;
-                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
-                    $siItem->po = $siItem->po_item->po;
-                    $siItem->item = $siItem->po_item->item;
-                    $siItem->attributes = $siItem->po_item->attributes;
-                    $finalPoItems[] = $siItem;
-                }
-            } elseif ($poItem->gate_entry_required == 'yes') {
+            if ($poItem->gate_entry_required == 'yes') {
                 // Fetch Gate Entry Details
                 $geItems = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
                     ->whereRaw('(accepted_qty > mrn_qty)')
@@ -3011,6 +3014,23 @@ class MaterialReceiptController extends Controller
                     $geItem->attributes = $geItem->po_item->attributes;
                     $finalPoItems[] = $geItem;
                 }
+            } elseif ($poItem->supp_invoice_required == 'yes') {
+                $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
+                    ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
+                    ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
+                    ->get();
+
+                foreach ($siItems as $siItem) {
+                    if (in_array($siItem->id, $selected_po_ids)) {
+                        continue;
+                    }
+                    $poItemIds[] = $siItem->id;
+                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
+                    $siItem->po = $siItem->po_item->po;
+                    $siItem->item = $siItem->po_item->item;
+                    $siItem->attributes = $siItem->po_item->attributes;
+                    $finalPoItems[] = $siItem;
+                }
             } else {
                 if (!in_array($poItem->id, $selected_po_ids)) {
                     $finalPoItems[] = $poItem;
@@ -3021,8 +3041,192 @@ class MaterialReceiptController extends Controller
         return $finalPoItems;
     }
 
-    # Submit PI Item list
+    // Process PO Item
     public function processPoItem(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $type = 'po';
+        $ids = json_decode($request->ids, true) ?? [];
+        $asnIds = json_decode($request->asnIds, true) ?? [];
+        $asnItemIds = json_decode($request->asnItemIds, true) ?? [];
+        $geIds = json_decode($request->geIds, true) ?? [];
+        $geItemIds = json_decode($request->geItemIds, true) ?? [];
+        $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
+        $vendor = null;
+        // Ensure all module types are the same
+        if (count(array_unique($moduleTypes)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "Multiple different module types are not allowed."
+            ]);
+        }
+
+        $vendorAsn = null;
+        $moduleType = $moduleTypes[0] ?? null;
+        $tableRowCount = $request->tableRowCount ?: 0;
+
+        // Determine module type
+        $moduleType = $moduleTypes[0] ?? null;
+
+        if ($moduleType === 'gate-entry') {
+            $filteredGeIds = array_filter($geIds);
+            $uniqueGeIds = array_unique($filteredGeIds);
+
+            if (count($uniqueGeIds) > 1) {
+                return response()->json([
+                    'data' => ['pos' => ''],
+                    'status' => 422,
+                    'message' => "Multiple Gate Entry are not allowed."
+                ]);
+            }
+            $geHeader = GateEntryHeader::whereIn('id', $uniqueGeIds)->first();
+
+            $gateEntryItems = GateEntryDetail::whereIn('id', $geItemIds)
+                ->with(['gateEntryHeader', 'po_item.item', 'po_item.attributes'])
+                ->get();
+
+            $poItems = $gateEntryItems->map(function ($geItem) {
+                $poItem = $geItem->po_item;
+                if ($poItem) {
+                    $poItem->avail_order_qty = $geItem->order_qty;
+                    $poItem->balance_qty = $geItem->accepted_qty;
+                    $poItem->ge_id = $geItem->header_id;
+                    $poItem->ge_item_id = $geItem->id;
+                    $poItem->available_qty = (($geItem->accepted_qty ?? 0) - ($geItem->mrn_qty ?? 0));
+                    $poItem->gateEntryHeader = $geItem->gateEntryHeader;
+                }
+                return $poItem;
+            })->filter()->values();
+
+            $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
+        } elseif($moduleType === 'suppl-inv'){
+            $filteredAsnIds = array_filter($asnIds);
+            $uniqueAsnIds = array_unique($filteredAsnIds);
+
+            if (count($uniqueAsnIds) > 1) {
+                return response()->json([
+                    'data' => ['pos' => ''],
+                    'status' => 422,
+                    'message' => "Multiple ASN are not allowed."
+                ]);
+            }
+            $vendorAsn = VendorAsn::whereIn('id', $uniqueAsnIds)->first();
+
+            $vendorAsnItems = VendorAsnItem::whereIn('id', $asnItemIds)
+                ->with(['vendorAsn', 'po_item.item', 'po_item.attributes'])
+                ->get();
+
+            $poItems = $vendorAsnItems->map(function ($asnItem) {
+                $poItem = $asnItem->po_item;
+                if ($poItem) {
+                    $poItem->avail_order_qty = $asnItem->order_qty;
+                    $poItem->balance_qty = $asnItem->balance_qty;
+                    $poItem->asn_id = $asnItem->vendor_asn_id;
+                    $poItem->asn_item_id = $asnItem->id;
+                    $poItem->available_qty = ((($asnItem->supplied_qty) - ($asnItem->short_close_qty ?? 0)) - ($asnItem->ge_qty ?? 0));
+                    $poItem->vendorAsn = $asnItem->vendorAsn;
+                }
+                return $poItem;
+            })->filter()->values();
+
+            $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
+        } else {
+            $poItems = PoItem::whereIn('id', $ids)->get();
+            foreach ($poItems as $poItem) {
+                $poItem->avail_order_qty = $poItem->order_qty ?? 0;
+                $poItem->available_qty = ((($poItem->order_qty ?? 0) - ($poItem->short_close_qty ?? 0)) - ($poItem->ge_qty ?? 0));
+            }
+            $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
+        }
+
+        $locations = InventoryHelper::getAccessibleLocations('stock');
+        $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->get();
+
+        $purchaseData = PurchaseOrder::whereIn('id', $uniquePoIds)
+            ->with(['items' => function ($query) use ($ids) {
+                $query->whereIn('id', $ids);
+            }])
+            ->get();
+
+        $purchaseOrder = PurchaseOrder::whereIn('id', $uniquePoIds)->first();
+
+        $finalExpenses = [];
+        $poExpenses = PurchaseOrder::whereIn('id', $uniquePoIds)
+            ->with(['headerExpenses' => function ($query) {
+                $query->where('ted_level', 'H');
+            }])
+            ->get()
+            ->keyBy('id');
+
+        $selectedPoItemValues = PoItem::whereIn('id', $ids)
+            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
+            ->groupBy('purchase_order_id')
+            ->pluck('total', 'purchase_order_id');
+
+        $poValues = PoItem::whereIn('purchase_order_id', $uniquePoIds)
+            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
+            ->groupBy('purchase_order_id')
+            ->pluck('total', 'purchase_order_id');
+
+        foreach ($poExpenses as $poId => $po) {
+            $poValue = $poValues[$poId] ?? 0;
+            $selectedPoItemValue = $selectedPoItemValues[$poId] ?? 0;
+
+            foreach ($po->headerExpenses as $expense) {
+                $perc = $poValue > 0 ? ($expense->ted_amount / $poValue) * 100 : 0;
+                $amount = number_format(($selectedPoItemValue * $perc / 100), 2);
+
+                $finalExpenses[] = [
+                    'id' => $expense->id,
+                    'ref_type' => 'po',
+                    'purchase_order_id' => $poId,
+                    'ted_id' => $expense->ted_id,
+                    'ted_name' => $expense->ted_name,
+                    'ted_amount' => $amount,
+                    'ted_perc' => round($perc, 4),
+                ];
+            }
+        }
+
+        $vendorId = $pos->pluck('vendor_id')->unique();
+        if ($vendorId->count() > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "You can not select multiple vendors of PO items at a time."
+            ]);
+        } else {
+            $vendor = Vendor::find($vendorId->first());
+        }
+
+        $html = view('procurement.material-receipt.partials.po-item-row', [
+            'pos' => $pos,
+            'type' => $type,
+            'poItems' => $poItems,
+            'locations' => $locations,
+            'moduleType' => $moduleType,
+            'purchaseData' => $purchaseData,
+            'tableRowCount' => $tableRowCount
+        ])->render();
+
+        return response()->json([
+            'data' => [
+                'pos' => $html,
+                'vendor' => $vendor,
+                'vendorAsn' => $vendorAsn,
+                'moduleType' => $moduleType,
+                'finalExpenses' => $finalExpenses,
+                'purchaseOrder' => $purchaseOrder,
+            ],
+            'status' => 200,
+            'message' => "fetched!"
+        ]);
+    }
+
+
+    # Submit PI Item list
+    public function processPoBackupItem(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
 
@@ -5121,6 +5325,81 @@ class MaterialReceiptController extends Controller
         );
 
         return $response;
+    }
+
+    // Get Selected Item Amount
+    public function getSelectedItemAmount(Request $request)
+    {
+        try{
+        $poItemIds = array_filter($request->po_item_ids ?? [], 'is_numeric');
+        $poIds = array_filter($request->po_ids ?? [], 'is_numeric');
+        $itemQtys = $request->itemQtys ?? [];
+        $tedId = $request->ted_id;
+        $edit = $request->edit;
+        $refType = strtolower($request->reference_type);
+
+        if (empty($poItemIds) || empty($poIds) || !$tedId || !$refType) {
+            return response()->json(['status' => 422, 'message' => 'Invalid input.']);
+        }
+
+        // Determine TED and associated ID
+        if ($refType === 'po') {
+            if($edit){
+                $poTed = MrnExtraAmount::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->po_id;
+            } else{
+                $poTed = PurchaseOrderTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->purchase_order_id;
+            }
+            
+            $items = PoItem::whereIn('id', $poItemIds)
+                ->where('purchase_order_id', $relatedId)
+                ->get();
+        } elseif ($refType === 'jo') {
+            if($edit){
+                $poTed = MrnExtraAmount::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->jo_id;
+            } else{
+                $poTed = JobOrderTed::find($tedId);
+                if(!$poTed){
+                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                }
+                $relatedId = $poTed->job_order_id;
+            }
+            $relatedId = $poTed->job_order_id ?? $poTed->jo_id;
+            $items = JoProduct::whereIn('id', $poItemIds)
+                ->where('job_order_id', $relatedId)
+                ->get();
+        } else {
+            return response()->json(['status' => 422, 'message' => 'Invalid reference type.']);
+        }
+
+        // Calculate value
+        $poItemValue = $items->reduce(function ($carry, $item) use ($itemQtys) {
+            $qty = isset($itemQtys[$item->id]) ? floatval($itemQtys[$item->id]) : floatval($item->order_qty);
+            $rate = floatval($item->rate);
+            return $carry + ($qty * $rate);
+        }, 0);
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'Success',
+            'data' => [
+                'poItemValue' => round($poItemValue, 2),
+            ],
+        ]);
+        } catch(\Exception $e){
+            dd($e);
+        }
     }
 
 }

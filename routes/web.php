@@ -1415,6 +1415,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
+            Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');

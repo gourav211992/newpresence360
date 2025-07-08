@@ -232,7 +232,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
-                                                        <input type="hidden" name="reference_type" class="form-control" id="reference_type_input" readonly>
+                                                        <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1854,9 +1854,18 @@
         function getSelectedPoIDS()
         {
             let ids = [];
+            let asnIds = [];
+            let asnItemIds = [];
+            let geIds = [];
+            let geItemIds = [];
             let referenceNos = [];
+
             $('.po_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                asnIds.push($(this).attr('data-current-asn'));
+                asnItemIds.push($(this).attr('data-current-asn-item'));
+                geIds.push($(this).attr('data-current-ge'));
+                geItemIds.push($(this).attr('data-current-ge-item'));
                 referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
                 if (referenceNo) {
                     referenceNos.push(referenceNo);
@@ -1864,6 +1873,10 @@
             });
             return {
                 ids: ids,
+                geIds: geIds,
+                asnIds: asnIds,
+                geItemIds: geItemIds,
+                asnItemIds: asnItemIds,
                 referenceNos: referenceNos
             };
         }
@@ -1871,6 +1884,10 @@
         $(document).on('click', '.poProcess', (e) => {
             let result = getSelectedPoIDS();
             let ids = result.ids;
+            let geIds = result.geIds;
+            let asnIds = result.asnIds;
+            let geItemIds = result.geItemIds;
+            let asnItemIds = result.asnItemIds;
             let referenceNo = result.referenceNos[0];
             let idsLength = ids.length;
             currentProcessType = 'po';
@@ -2006,164 +2023,17 @@
 
             groupItems = JSON.stringify(groupItems);
             let current_row_count = $("tbody tr[id*='row_']").length;
-            ids = JSON.stringify(ids);
-            moduleTypes = JSON.stringify(moduleTypes);
-            let type = 'po'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route("material-receipt.process.po-item") }}'
-            + '?ids=' + encodeURIComponent(ids)
-            + '&type=' + type
-            + '&moduleTypes=' + moduleTypes
-            + '&tableRowCount=' + tableRowCount
-            + '&currency_id=' + encodeURIComponent(currencyId)
-            + '&d_date=' + encodeURIComponent(transactionDate)
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.status == 200) {
-                        let poOrder = data?.data?.purchaseOrder;
-                        vendorOnChange(data?.data?.vendor?.id, 'po', poOrder.id);
-                        let result = getSelectedPoIDS();
-                        let newIds = result.ids;
-                        let existingIds = localStorage.getItem('selectedPoIds');
-                        if (existingIds) {
-                            existingIds = JSON.parse(existingIds);
-                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-                            localStorage.setItem('selectedPoIds', JSON.stringify(mergedIds));
-                        } else {
-                            localStorage.setItem('selectedPoIds', JSON.stringify(newIds));
-                        }
+            let processData = {
+                ids: ids,
+                type: 'po',
+                geIds: geIds,
+                asnIds: asnIds,
+                geItemIds: geItemIds,
+                asnItemIds: asnItemIds,
+                module_type: moduleTypes,
+            };
 
-                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
-                        $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
-
-                        let module_type = data?.data?.moduleType || '';
-                        let vendor = data?.data?.vendor || '';
-                        let finalDiscounts = data?.data?.finalDiscounts;
-                        let finalExpenses = data?.data?.finalExpenses;
-
-                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
-                        } else {
-                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        }
-                        initializeAutocomplete2(".comp_item_code");
-                        $("#poModal").modal('hide');
-                        $("select[name='currency_id']").prop('disabled', true);
-                        $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
-                        $(".editAddressBtn").addClass('d-none');
-                        $("#vendor_name").prop('readonly',true);
-                        if(poOrder.type == 'supplier-invoice'){
-                            $("[name='supplier_invoice_no']").val(poOrder.document_number);
-                            $("[name='supplier_invoice_date']").val(poOrder.document_date);
-                        } else{
-                            $("[name='supplier_invoice_no']").val();
-                            $("[name='supplier_invoice_date']").val();
-                        }
-
-                        $(".module_type").val(module_type);
-                        let locationId = $("[name='header_store_id']").val();
-                        // getLocation(locationId);
-
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`
-                            });
-
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
-
-                        if(finalExpenses.length) {
-                            let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`;
-                            });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        }
-                        initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
-                        setTimeout(() => {
-                            setTableCalculation();
-                            if(idsLength > 1)
-                            {
-                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                    if(tableRowCount>0)
-                                    {
-                                        currentIndex = tableRowCount + 1;
-                                    }
-                                    let currentIndex = index + 1;
-                                    setAttributesUIHelper(currentIndex,"#itemTable");
-                                });
-                            }
-                            currentIndex = tableRowCount + 1;
-                            setAttributesUIHelper(currentIndex,"#itemTable");
-                        },500);
-                    }
-                    if(data.status == 422) {
-                        $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $(".shipping_detail").text('-');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
-            });
+            asnProcess(processData, 'po-process');
         });
 
         /*Open Jo model*/
@@ -3491,5 +3361,176 @@
             let storeId = ui?.item?.id || '';
             initializeAutocompleteJoQt("sub_store_jo", "sub_store_id_jo", "sub_store", "name", "");
         });
+
+        // ASN Process
+        function asnProcess(asnData, moduleProcess) {
+            const current_row_count = $("tbody tr[id*='row_']").length;
+
+            const ids = JSON.stringify(asnData.ids);
+            const asnIds = JSON.stringify(asnData.asnIds);
+            const asnItemIds = JSON.stringify(asnData.asnItemIds);
+            const geIds = JSON.stringify(asnData.geIds);
+            const geItemIds = JSON.stringify(asnData.geItemIds);
+            const moduleTypes = JSON.stringify(asnData.module_type);
+            const moduleType = asnData.module_type?.[0] ?? 'po';
+            const processType = asnData.type;
+            let idsLength = ids.length;
+
+            const currencyId = $("[name='currency_id']").val();
+            const transactionDate = $("[name='document_date']").val();
+            const type = $("meta[name='route-type']").attr("content"); // blade->meta
+
+            const baseRoute = processType === 'jo'
+                ? '{{ route("material-receipt.process.jo-item") }}'
+                : '{{ route("material-receipt.process.po-item") }}';
+
+            const actionUrl = baseRoute
+                .replace(':type', type)
+                + '?ids=' + encodeURIComponent(ids)
+                + '&asnIds=' + encodeURIComponent(asnIds)
+                + '&asnItemIds=' + encodeURIComponent(asnItemIds)
+                + '&geIds=' + encodeURIComponent(geIds)
+                + '&geItemIds=' + encodeURIComponent(geItemIds)
+                + '&moduleTypes=' + moduleTypes
+                + '&currency_id=' + encodeURIComponent(currencyId)
+                + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&current_row_count=' + current_row_count;
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 200) return handleAsnError(data.message);
+
+                    const {
+                        vendor,
+                        finalExpenses,
+                        pos,
+                        moduleType,
+                        vendorAsn
+                    } = data.data;
+
+                    const modelType = processType === 'jo' ? 'jo' : 'po';
+                    const order = modelType === 'jo' ? data.data.jobOrder : data.data.purchaseOrder;
+
+                    vendorOnChange(vendor?.id, modelType, order.id);
+
+                    const getSelectedIdsFn = modelType === 'jo' ? getSelectedJoIDS : getSelectedPoIDS;
+                    const hiddenFieldName = modelType === 'jo' ? 'jo_item_ids' : 'po_item_ids';
+                    const localStorageKey = modelType === 'jo' ? 'selectedJoIds' : 'selectedPoIds';
+
+                    const newIds = getSelectedIdsFn().ids;
+                    const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                    localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
+                    $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
+
+                    $(".module_type").val(modelType);
+                    $("#itemTable .mrntableselectexcel").append(pos);
+                    initializeAutocomplete2(".comp_item_code");
+                    
+                    $("#poModal, #joModal").modal('hide');
+                    $('.asn_process').prop('disabled', true);
+
+                    switch (moduleProcess) {
+                        case 'asn-process':
+                            $("#reference_from").addClass('d-none');
+                            $(".asn-container").removeClass('d-none');
+                            // $('.asn_process').prop('disabled', true);
+                            break;
+
+                        case 'po-process':
+                            $(".joSelect").addClass('d-none');
+                            $(".poSelect").removeClass('d-none');
+                            $(".asn-container").addClass('d-none');
+                            break;
+
+                        default:
+                            $(".poSelect").addClass('d-none');
+                            $(".joSelect").removeClass('d-none');
+                            $(".asn-container").addClass('d-none');
+                            break;
+                    }
+                    
+                    // UI Locks
+                    $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
+                    $("#vendor_name").prop('readonly', true);
+                    $(".editAddressBtn").addClass('d-none');
+
+                    // Supplier details
+                    if (moduleType === 'suppl-inv' && vendorAsn) {
+                        $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
+                        $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
+                        $("[name='consignment_no']").val(vendorAsn.consignment_no);
+                        $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
+                        $("[name='transporter_name']").val(vendorAsn.transporter_name);
+                        $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
+                    } else {
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                    }
+
+                    // Expenses
+                    const $expBody = $("#summaryExpTable tbody");
+                    $expBody.find('.display_summary_exp_row').remove();
+
+                    if (finalExpenses.length) {
+                        let rows = '';
+                        finalExpenses.forEach((item, i) => {
+                            const index = i + 1;
+                            rows += `
+                                <tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" name="exp_summary[${index}][ted_e_id]" value="${item.ted_id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_id]" value="${item.id}">
+                                        <input type="hidden" name="exp_summary[${index}][e_name]" value="${item.ted_name}">
+                                    </td>
+                                    <td class="text-end">${item.ted_perc ?? 0}
+                                        <input type="hidden" name="exp_summary[${index}][e_perc]" value="${item.ted_perc ?? 0}">
+                                        <input type="hidden" name="exp_summary[${index}][hidden_e_perc]" value="${item.ted_perc}">
+                                        <input type="hidden" name="exp_summary[${index}][e_purch_id]" value="${item.purchase_order_id ?? null}">
+                                        <input type="hidden" name="exp_summary[${index}][e_job_id]" value="${item.job_order_id ?? null}">
+                                        <input type="hidden" name="exp_summary[${index}][e_ref_type]" value="${item.ref_type ?? null}">
+                                    </td>
+                                    <td class="text-end">
+                                        <input type="hidden" name="exp_summary[${index}][e_amnt]" value="">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>`;
+                        });
+                        $expBody.find('#expSummaryFooter').before(rows);
+                        $("#f_header_expense_hidden").removeClass('d-none');
+                    } else {
+                        $("#f_header_expense_hidden").addClass('d-none');
+                    }
+
+                    setTimeout(() => {
+                        setTableCalculation();
+                        if(idsLength > 1)
+                        {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                if(tableRowCount>0)
+                                {
+                                    currentIndex = tableRowCount + 1;
+                                }
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        }
+                        currentIndex = tableRowCount + 1;
+                        setAttributesUIHelper(currentIndex,"#itemTable");
+                    }, 500);
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An unexpected error occurred while processing ASN.',
+                        icon: 'error'
+                    });
+                });
+        }
     </script>
 @endsection

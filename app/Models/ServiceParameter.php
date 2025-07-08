@@ -15,6 +15,12 @@ class ServiceParameter extends Model
 
     protected $table = 'erp_service_parameters';
 
+    public function __construct(array $attributes = [])
+    {
+        $this->table = config('database.connections.mysql_master.database') .'.'.$this->table;
+        parent::__construct($attributes);
+    }
+
     protected $fillable = [
         'service_id',
         'name',

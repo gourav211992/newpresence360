@@ -1012,12 +1012,20 @@ class PiController extends Controller
     //    })
     //    ->with(['header', 'item']);
         $soItems = ErpSoItem::where(function ($query) {
-            $query->whereNotExists(function ($subQuery2) {
-                $subQuery2->select(DB::raw(1))
-                    ->from('erp_pi_so_mapping')
-                    ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
-                    ->whereRaw('erp_pi_so_mapping.pi_item_qty > 0');
-            });
+
+            $query->whereDoesntHave('soItemMapping') // No mapping at all
+              ->orWhereHas('soItemMapping', function ($subQuery) {
+                  $subQuery->select(DB::raw('SUM(pi_item_qty)'))
+                      ->groupBy('so_item_id')
+                      ->havingRaw('SUM(pi_item_qty) < SUM(qty)');
+              });
+
+            // $query->whereNotExists(function ($subQuery2) {
+            //     $subQuery2->select(DB::raw(1))
+            //         ->from('erp_pi_so_mapping')
+            //         ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
+            //         ->whereRaw('erp_pi_so_mapping.pi_item_qty > 0');
+            // });
             // $query->whereHas('soItemMapping', function ($q) {
             //     $q->where(function ($q) {
             //         $q->whereRaw('ROUND(erp_pi_so_mapping.qty,2) > ROUND(erp_pi_so_mapping.pi_item_qty,2)');
@@ -1084,18 +1092,23 @@ class PiController extends Controller
        } 
        $soItems = ErpSoItem::whereIn('id', $ids)
                    ->where(function($query) {
-                       $query->whereNotExists(function ($subQuery) {
-                           $subQuery->select(DB::raw(1))
-                               ->from('erp_pi_so_mapping')
-                               ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
-                               ->whereRaw('erp_pi_so_mapping.qty <= erp_pi_so_mapping.pi_item_qty')
-                               ->whereColumn('erp_pi_so_mapping.order_qty', '>=', 'erp_so_items.order_qty');
-                       });
+                    //    $query->whereNotExists(function ($subQuery) {
+                    //        $subQuery->select(DB::raw(1))
+                    //            ->from('erp_pi_so_mapping')
+                    //            ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
+                    //            ->whereRaw('erp_pi_so_mapping.qty <= erp_pi_so_mapping.pi_item_qty')
+                    //            ->whereColumn('erp_pi_so_mapping.order_qty', '>=', 'erp_so_items.order_qty');
+                    //    });
+                    $query->whereDoesntHave('soItemMapping') // No mapping at all
+                        ->orWhereHas('soItemMapping', function ($subQuery) {
+                            $subQuery->select(DB::raw('SUM(pi_item_qty)'))
+                                ->groupBy('so_item_id')
+                                ->havingRaw('SUM(pi_item_qty) < SUM(qty)');
+                        });
                    })
                    ->get();
        $soItemIdArr = [];
        $createdBy = $user?->auth_user_id;
-
        DB::beginTransaction();
        if($procurementType == 'rm') {
         // This for the RM
@@ -1181,7 +1194,7 @@ class PiController extends Controller
                 ->havingRaw('total_qty > 0')
                 ->get();
             }
-
+            // dd($soProcessItems);
             $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
 
         } else {
@@ -1434,7 +1447,32 @@ class PiController extends Controller
                 $soItems = $decoded;
             }
         }
-       $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false;
+        $soTrackingRequired = strtolower($request->so_tracking_required) == 'yes' ? true : false;
+        if($soTrackingRequired) {
+            foreach($soItems as &$piSoItemMapping) {
+                $attributes = array_map(function($item) {
+                    return ['attribute_id' => $item['id'], 'attribute_value' => $item['values_data'][0]['id'] ?? null];
+                },$piSoItemMapping['attributes'] ?? []);
+                
+                $datas = PiSoMapping::where('item_id', $piSoItemMapping['item_id'])
+                                        ->when(count($attributes),function($query) use($attributes) {
+                                            $query->whereJsonContains('attributes', $attributes);
+                                        })
+                                        ->where(function($query) use($piSoItemMapping) {
+                                            if($piSoItemMapping['so_id']) {
+                                                $query->where('so_id', $piSoItemMapping['so_id']);
+                                            }
+                                            if($piSoItemMapping['vendor_id']) {
+                                                $query->where('vendor_id', $piSoItemMapping['vendor_id']);
+                                            }
+                                        })
+                                        ->first();
+                if($datas?->bomDetail) {
+                    $piSoItemMapping['remark'] = $datas?->bomDetail?->remark; 
+                }
+                unset($piSoItemMapping);
+            }
+        }
        $html = view('procurement.pi.partials.item-row-so', ['soItems' => $soItems, 'soTrackingRequired' => $soTrackingRequired, 'storeId' => $storeId])->render();
        return response()->json(['data' => ['pos' => $html], 'status' => 200, 'message' => "fetched!"]);
    }

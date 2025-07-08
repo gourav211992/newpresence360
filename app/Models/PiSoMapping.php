@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -140,4 +141,13 @@ class PiSoMapping extends Model
         }
         return collect($processedData);
     }
+
+    // public function getPendingPoAttribute()
+    // {   
+    //     $itemId       = $this->item_id;
+    //     $selectedAttr = $this->attributes()->get();
+    //     $uomId        = $this->uom_id;
+    //     $storeId      = $this?->pi?->store_id;
+    //     return InventoryHelper::getPendingPo($itemId, $uomId, $selectedAttr, $storeId);
+    // }
 }

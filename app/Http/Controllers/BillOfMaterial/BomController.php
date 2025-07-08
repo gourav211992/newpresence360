@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\BillOfMaterial;
 
-use App\Exports\BomExport;
+use App\Exports\DynamicExport;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
@@ -19,14 +19,11 @@ use App\Models\BomAttribute;
 use App\Models\BomDetail;
 use App\Models\BomMedia;
 use App\Models\BomOverhead;
-use App\Models\Book;
 use App\Models\Item;
-use App\Models\NumberPattern;
 use App\Models\ErpBomDynamicField;
 use App\Models\Organization;
 use App\Models\ItemAttribute;
 use App\Models\BomNormsCalculation;
-use Auth;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
@@ -39,8 +36,7 @@ use App\Models\BomInstruction;
 use App\Models\Overhead;
 use App\Models\ProductionRoute;
 use App\Models\Station;
-use Excel;
-use PHPUnit\TextUI\Configuration\Constant;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
 class BomController extends Controller
 {
@@ -974,14 +970,14 @@ class BomController extends Controller
             $bom->customizable = $request->customizable ?? 'no';
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
             {
-                $revisionData = [
-                    ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
-                    ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomAttribute', 'relation_column' => 'bom_detail_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomOverhead', 'relation_column' => 'bom_detail_id'],
-                    ['model_type' => 'sub_detail', 'model_name' => 'BomNormsCalculation', 'relation_column' => 'bom_detail_id']
-                ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $revisionData = [
+                //     ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
+                //     ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomAttribute', 'relation_column' => 'bom_detail_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomOverhead', 'relation_column' => 'bom_detail_id'],
+                //     ['model_type' => 'sub_detail', 'model_name' => 'BomNormsCalculation', 'relation_column' => 'bom_detail_id']
+                // ];
+                // $a = Helper::documentAmendment($revisionData, $id);
             }
 
             $keys = ['deletedHeaderOverheadIds', 'deletedItemOverheadIds', 'deletedBomItemIds', 'deletedAttachmentIds', 'deletedProdItemIds', 'deletedInstructionItemIds'];
@@ -1034,7 +1030,6 @@ class BomController extends Controller
             $bom->remarks = $request->remarks;
             # Extra Column
             $bom->save();
-            
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
                 foreach($request->all()['instructions'] as $index => $instruction) {
@@ -1057,7 +1052,7 @@ class BomController extends Controller
 
             if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $quote_bom_id = $request->quote_bom_id;
-                $quoteBom = Bom::findOrFail($quote_bom_id);
+                $quoteBom = Bom::find($quote_bom_id);
                 if($quoteBom) {
                     Bom::where('production_bom_id', $bom->id)->update(['production_bom_id' => null]);
                     $quoteBom->production_bom_id = $bom->id;
@@ -1820,17 +1815,13 @@ class BomController extends Controller
 
     public function export(Request $request, $id)
     {
-        $bom = Bom::findOrFail($id);
-        if (!$bom) {
-            return '';
-        }
-        $label = $bom->type === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? 'Quotation_Bom_' : 'Production_Bom_';
-        return Excel::download(
-            new BomExport($id),
-            $label . now()->format('Ymd_His') . '.xlsx'
-        );
+        $exportData1 = app(\App\Services\BomExportService::class)->getExportData($id);
+        $parentUrl = request()->segments()[0];
+        $label = $parentUrl == 'quotation-bom' ? 'Quotation_Bom_' : 'Production_Bom_';
+        $title = $label . now()->format('Ymd_His') . '.xlsx';
+        return Excel::download(new DynamicExport($exportData1), $title);
     }
-
+    
     public function destroy($id)
     {
         DB::beginTransaction();

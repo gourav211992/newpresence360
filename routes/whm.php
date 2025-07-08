@@ -21,6 +21,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/save-as-draft', 'saveAsDraft')->name('whm.save-as-draft');
         Route::get('/scanned-packets', 'scannedPackets')->name('whm.scanned-packets');
         Route::post('/close-job', 'closeJob')->name('whm.close-job');
+        Route::post('/update-status/packet', 'updateStatus')->name('whm.update-status');
 
     });
     
