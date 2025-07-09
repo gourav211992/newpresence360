@@ -36,7 +36,7 @@ class SplitController extends Controller
             return redirect()->route('/');
         }
 
-        $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        $data = FixedAssetSplit::orderBy('id', 'desc');
         if ($request->filter_asset)
             $data = $data->where('asset_id', $request->filter_asset);
         if ($request->filter_ledger)
@@ -64,10 +64,10 @@ class SplitController extends Controller
 
 
         $data = $data->get();
-        $assetCodes = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('asset_id')->unique();
-        $assetCodes = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('id', $assetCodes)->get();
-        $ledgers = FixedAssetSplit::withDefaultGroupCompanyOrg()->pluck('ledger_id')->unique();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->whereIn('id', $ledgers)->get();
+        $assetCodes = FixedAssetSplit::pluck('asset_id')->unique();
+        $assetCodes = FixedAssetRegistration::whereIn('id', $assetCodes)->get();
+        $ledgers = FixedAssetSplit::pluck('ledger_id')->unique();
+        $ledgers = Ledger::whereIn('id', $ledgers)->get();
 
         return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers',));
     }
@@ -86,14 +86,14 @@ class SplitController extends Controller
         }
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->whereHas('assets')->select('id', 'name')->get();
-        $new_categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->whereHas('assets')->select('id', 'name')->get();
+        $new_categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -122,7 +122,7 @@ class SplitController extends Controller
         $user = Helper::getAuthenticatedUser();
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
         foreach ($grouped as $assetCode => $items) {
-            $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
+            $existingAsset = FixedAssetRegistration::where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
                 return redirect()
@@ -187,7 +187,7 @@ class SplitController extends Controller
             $data = FixedAssetSplitHistory::where('source_id',$id)
             ->where('revision_number',$currNumber)->first();
         } else {
-            $data = FixedAssetSplit::withDefaultGroupCompanyOrg()->with(['subAsset' => function ($query) {
+            $data = FixedAssetSplit::with(['subAsset' => function ($query) {
                 $query->withTrashed();
             }])->findorFail($id);
         }
@@ -211,13 +211,13 @@ class SplitController extends Controller
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
         $locations = InventoryHelper::getAccessibleLocations();
 
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -254,13 +254,13 @@ class SplitController extends Controller
         }
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -296,7 +296,7 @@ class SplitController extends Controller
         $data = array_merge($request->all(), $additionalData);
         $grouped = collect(json_decode($request->sub_assets))->groupBy('asset_code');
         foreach ($grouped as $assetCode => $items) {
-            $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
+            $existingAsset = FixedAssetRegistration::where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
                 return redirect()
