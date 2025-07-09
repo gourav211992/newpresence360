@@ -1,39 +1,26 @@
 @foreach($poItems as $key => $item)
     @php
-        $rowCount = $key + 1;
-        $item_disc_key = '';
-        $suppInvId = null;
-        $suppInvItemId = null;
-        $geId = null;
-        $geItemId = null;
-        $poQty = $item->avail_order_qty ?? 0.00;
-        $availableQty = $item->available_qty ?? 0.00;
-        if($moduleType === 'gate-entry') {
-            $geId = $item->ge_id;
-            $geItemId = $item->ge_item_id;
-            $suppInvId = $item->vendor_asn_id;
-            $suppInvItemId = $item->vendor_asn_item_id;
+        $rowCount = $tableRowCount + $key + 1;
+        $orderQty = 0.00;
+        $moduleType = 'p-order';
+        if($item->po && ($item->po->gate_entry_required == 'yes')){
+            $moduleType = 'gate-entry';
+            $orderQty = ($item->ge_qty - $item->grn_qty);
+        } else{
+            $moduleType = 'p-order';
+            $orderQty = (($item->order_qty - $item->short_close_qty) - $item->grn_qty);
         }
-        if($moduleType === 'suppl-inv') {
-            $suppInvId = $item->asn_id;
-            $suppInvItemId = $item->asn_item_id;
-        }
-        $grossItemValue = $availableQty * $item->rate;
-        $itemDisc = $item->item_discount_amount;
-        $headerDiscAmount = $item->header_discount_amount;
-        $headerExpAmount = $item->expense_amount;
-        $itemDiscPercentage = $grossItemValue > 0 ? ($itemDisc / $grossItemValue) * 100 : 0;
-        $headerDiscPercentage = $grossItemValue > 0 ? ($headerDiscAmount / $grossItemValue) * 100 : 0;
-        $headerExpPercentage = $grossItemValue > 0 ? ($headerExpAmount / $grossItemValue) * 100 : 0;
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][ref_type]" value="{{$type}}">
         <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
-        <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
-        <input type="hidden" name="components[{{$rowCount}}][vendor_asn_dtl_id]" value="{{$suppInvItemId}}">
-        <input type="hidden" name="components[{{$rowCount}}][vendor_asn_id]" value="{{$suppInvId}}">
-        <input type="hidden" name="components[{{$rowCount}}][gate_entry_detail_id]" value="{{$geItemId}}">
-        <input type="hidden" name="components[{{$rowCount}}][gate_entry_header_id]" value="{{$geId}}">
+        @if($item->po?->type == 'supplier-invoice')
+            <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->po_item?->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="{{$item->id}}">
+        @else
+            <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
+            <input type="hidden" name="components[{{$rowCount}}][supplier_inv_detail_id]" value="">
+        @endif
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">
                 <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -83,26 +70,24 @@
             </select>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$poQty}}" step="any" readonly />
+            <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item->order_qty}}" step="any" readonly />
         </td>
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
             <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]"
-            value="{{$availableQty}}" step="any" {{ ($item?->po?->partial_delivery == 'no') ? 'readonly' : '' }} {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="{{$orderQty}}" step="any" {{ ($item?->po?->partial_delivery == 'no') ? 'readonly' : '' }} {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{($item?->item?->is_inspection == 0) ? $availableQty : 0.00}}" step="any" {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="{{($item?->item?->is_inspection == 0) ? $orderQty : 0.00}}" step="any" {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"
             {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
         </td>
+        <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" /></td>
         <td>
-            <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
-        </td>
-        <td>
-            <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{$availableQty*$item->rate}}" class="form-control text-end mw-100 basic_value checkNegativeVal" readonly step="any" />
+            <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->order_qty - $item->grn_qty)*$item->rate}}"  class="form-control text-end mw-100 basic_value checkNegativeVal" readonly step="any" />
         </td>
         <td>
             <div class="position-relative d-flex align-items-center">
@@ -122,36 +107,9 @@
                     <input type="hidden" value="{{$tedPerc}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][hidden_dis_perc]">
                     <input type="hidden" value="{{$itemDiscount->ted_amount}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][dis_amount]">
                 @endforeach
-
-                @if(!empty($item->po->headerDiscount))
-                    @php
-                        $poId = $item->purchase_order_id;
-                        $poValue = \DB::table('erp_po_items')
-                            ->select(\DB::raw('SUM(order_qty * rate) as total'))
-                            ->where('purchase_order_id', $poId)
-                            ->value('total');
-                        $baseIndex = count($item->itemDiscount); // Offset for header discounts
-                    @endphp
-                    @foreach($item->po->headerDiscount as $headDis_key => $headDiscount)
-                        @php
-                            $discPerc = ($poValue > 0) ? ($headDiscount->ted_amount / $poValue) * 100 : 0;
-                            $discAmt = number_format(($grossItemValue * $discPerc / 100), 2);
-                            $index = $baseIndex + $headDis_key + 1;
-                        @endphp
-                        <input type="hidden" value="" name="components[{{ $rowCount }}][discounts][{{ $index }}][id]">
-                        <input type="hidden" value="{{ $headDiscount->ted_id }}" name="components[{{ $rowCount }}][discounts][{{ $index }}][ted_id]">
-                        <input type="hidden" value="{{ $headDiscount->ted_name }}" name="components[{{ $rowCount }}][discounts][{{ $index }}][dis_name]">
-                        <input type="hidden" value="{{ $discPerc }}" name="components[{{ $rowCount }}][discounts][{{ $index }}][dis_perc]">
-                        <input type="hidden" value="{{ $discPerc }}" name="components[{{ $rowCount }}][discounts][{{ $index }}][hidden_dis_perc]">
-                        <input type="hidden" value="{{ $discAmt }}" name="components[{{ $rowCount }}][discounts][{{ $index }}][dis_amount]">
-                    @endforeach
-                @endif
-                <input type="number" readonly name="components[{{$rowCount}}][discount_amount]" class="form-control mw-100 text-end" style="width: 70px" value="{{$item->item_discount_amount + $item->header_discount_amount}}" step="any" />
+                <input type="number" readonly name="components[{{$rowCount}}][discount_amount]" class="form-control mw-100 text-end" style="width: 70px" value="{{$item->item_discount_amount}}" step="any" />
                 <input type="hidden" name="components[{{$rowCount}}][discount_amount_header]" value="{{$item->header_discount_amount}}"/>
                 <input type="hidden" name="components[{{$rowCount}}][exp_amount_header]" value="{{$item->expense_amount}}" />
-                <input type="hidden" name="components[{{$rowCount}}][item_disc_per]" value="{{$itemDiscPercentage}}" />
-                <input type="hidden" name="components[{{$rowCount}}][header_disc_per]" value="{{$headerDiscPercentage}}"/>
-                <input type="hidden" name="components[{{$rowCount}}][header_exp_per]" value="{{$headerExpPercentage}}" />
                 <div class="ms-50">
                     <button type="button" data-row-count="{{$rowCount}}" class="btn p-25 btn-sm btn-outline-secondary addDiscountBtn" style="font-size: 10px">Add</button>
                 </div>

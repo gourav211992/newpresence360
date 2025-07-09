@@ -38,7 +38,7 @@ class DepreciationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-        $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        $data = FixedAssetDepreciation::orderBy('id', 'desc');
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
@@ -167,9 +167,9 @@ class DepreciationController extends Controller
     {
         $currNumber = $r->revisionNumber;
         if ($currNumber) {
-            $data = FixedAssetDepreciationHistory::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetDepreciationHistory::findorFail($id);
         } else {
-            $data = FixedAssetDepreciation::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetDepreciation::findorFail($id);
         }
         $parentURL = "fixed-asset_depreciation";
         $organization = Helper::getAuthenticatedUser()->organization;
@@ -225,8 +225,7 @@ class DepreciationController extends Controller
         $formattedStartDate = \Carbon\Carbon::createFromFormat('d-m-Y', $fromDateRaw)->format('Y-m-d');
 
         // Fetch all depreciation records where the period is before the start date
-        $olderRecords = FixedAssetDepreciation::withDefaultGroupCompanyOrg()
-            ->whereRaw("STR_TO_DATE(period, '%d-%m-%Y') < ?", [$formattedStartDate])
+        $olderRecords = FixedAssetDepreciation::whereRaw("STR_TO_DATE(period, '%d-%m-%Y') < ?", [$formattedStartDate])
             ->get();
 
         // Disable the post button if any older record is not posted
@@ -281,12 +280,11 @@ class DepreciationController extends Controller
             }
         }
         $asset_details = [];
-        $asset_details = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('last_dep_date', '<', $endDate)
+        $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0);
                 $query->whereNotNull('expiry_date');
-                $query->whereColumn('expiry_date', '>', 'last_dep_date');
+                $query->whereColumn('expiry_date', '!=', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->withWhereHas('ledger')
@@ -296,7 +294,9 @@ class DepreciationController extends Controller
                     ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category.setup')
+            ->orderBy('last_dep_date','asc')
             ->get()->values();
+
         return response()->json($asset_details);
     }
     function getPeriods($startDate, $endDate, $period)
@@ -364,8 +364,7 @@ class DepreciationController extends Controller
 
 
 
-        $depreciationPeriods = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->withWhereHas('subAsset', function ($query) {
+        $depreciationPeriods = FixedAssetRegistration::withWhereHas('subAsset', function ($query) {
                 $query->where('current_value_after_dep', '>', 0)
                     ->whereNotNull('expiry_date')
                     ->whereColumn('expiry_date', '>', 'last_dep_date');

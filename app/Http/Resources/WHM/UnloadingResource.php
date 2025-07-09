@@ -22,7 +22,7 @@ class UnloadingResource extends JsonResource
             'group_id' => $this->group_id,
             'company_id' => $this->company_id,
             'organization_id' => $this->organization_id,
-            'status' => $this->status,
+            'status' => $this->status ? ucwords(str_replace('_',' ',$this->status)) : '',
             'header_id' => $this->morphable_id,
             'store_id' => optional($morphable)->store_id,
             'doc_no' => optional($morphable)->document_number,

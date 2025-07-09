@@ -58,6 +58,10 @@ class FixedAssetRegistration extends Model
     {
         return $this->belongsTo(ErpAssetCategory::class, 'category_id');
     }
+    public function it_category()
+    {
+        return $this->belongsTo(ErpAssetCategory::class, 'it_category_id');
+    }
     public function mrnHeader()
     {
         return $this->belongsTo(MrnHeader::class, 'mrn_header_id');

@@ -1004,11 +1004,11 @@ class ErpMaterialIssueController extends Controller
                         $mediaFiles = $materialIssue->uploadDocuments($singleFile, 'material_issue', false);
                     }
                 }
-                $status = self::maintainStockLedger($materialIssue);
-                if (!$status) {     
+                $errorMessage = self::maintainStockLedger($materialIssue);
+                if ($errorMessage) {     
                     DB::rollBack();
                     return response() -> json([
-                        'message' => 'Stock not available'
+                        'message' => $errorMessage
                     ], 422);
                 }
                 DB::commit();
@@ -1062,7 +1062,7 @@ class ErpMaterialIssueController extends Controller
             }
         }
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $issueDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'issue');
-        if(!empty($issueRecords['data']) && count($issueRecords['data']) > 0){
+        if(isset($issueRecords['data']) && count($issueRecords['data']) > 0){
             ErpMiItemLocation::where('material_issue_id', $materialIssue->id)
                 ->whereIn('mi_item_id', $issueDetailIds)
                 ->where('type', 'from')
@@ -1103,14 +1103,18 @@ class ErpMaterialIssueController extends Controller
                 $miItem->total_item_amount = floatval($stockLedger->cost);
                 $miItem->save();
             }
-            // return true;
         } else {
-            return false;
+            return $issueRecords['message'];
         }
         if ($materialIssue -> issue_type == "Location Transfer" || $materialIssue -> issue_type == "Sub Location Transfer" || $materialIssue -> issue_type == "Sub Contracting" || $materialIssue -> issue_type == ConstantHelper::TYPE_JOB_ORDER) { //Only in case of location transfer
-            InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
+            $issueRecords = InventoryHelper::settlementOfInventoryAndStock($materialIssue->id, $receiptDetailIds, ConstantHelper::MATERIAL_ISSUE_SERVICE_ALIAS_NAME, $materialIssue->document_status, 'receipt');
+            if ($issueRecords['status'] == 'error') {
+                return $issueRecords['message'];
+            } else {
+                return "";
+            }
         }
-        return true;
+        return "";
     }
 
     public function revokeMaterialIssue(Request $request)

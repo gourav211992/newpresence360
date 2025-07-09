@@ -35,11 +35,11 @@ class RevImpController extends Controller
             return redirect()->route('/');
         }
 
-        $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        $data = FixedAssetRevImp::orderBy('id', 'desc');
         
         if ($request->filter_status)
             $data = $data->where('document_status', $request->filter_status);
-        $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+        $data = FixedAssetRevImp::orderBy('id', 'desc');
         
         if ($request->filter_status)
             $data = $data->where('document_status', $request->filter_status);
@@ -75,7 +75,7 @@ class RevImpController extends Controller
 
 
         $data = $data->orderby('document_date','desc')->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.revaluation-impairement.index', compact('data', 'categories'));
     }
 
@@ -93,14 +93,14 @@ class RevImpController extends Controller
         }
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
 
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
+        $group = Group::where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
@@ -185,7 +185,7 @@ class RevImpController extends Controller
             $data = FixedAssetRevImpHistory::where('source_id',$id)
             ->where('revision_number',$currNumber)->first();
         } else {
-            $data = FixedAssetRevImp::withDefaultGroupCompanyOrg()->findorFail($id);
+            $data = FixedAssetRevImp::findorFail($id);
         }
         $revision_number = $data->revision_number;
 
@@ -207,7 +207,7 @@ class RevImpController extends Controller
         $revNo = $data->revision_number;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, 0, $data->created_by);
 
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
 
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -228,16 +228,16 @@ class RevImpController extends Controller
         }
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        $assets = FixedAssetRegistration::withDefaultGroupCompanyOrg()->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-        $categories = ErpAssetCategory::withDefaultGroupCompanyOrg()->where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         $group_name = ConstantHelper::FIXED_ASSETS;
 
 
-        $group = Group::withDefaultGroupCompanyOrg()->where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
+        $group = Group::where('name', $group_name)->first() ?: Group::where('edit', 0)->where('name', $group_name)->first();
 
         $allChildIds = $group->getAllChildIds();
         $allChildIds[] = $group->id;
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+        $ledgers = Ledger::where(function ($query) use ($allChildIds) {
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {

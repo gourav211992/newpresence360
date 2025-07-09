@@ -42,6 +42,7 @@ use App\Http\Controllers\FixedAsset\RevImpController;
 use App\Http\Controllers\CrDrReportController;
 use App\Http\Controllers\FixedAsset\SetupController;
 use App\Http\Controllers\FixedAsset\DepreciationController;
+use App\Http\Controllers\FixedAsset\ITDepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
@@ -1414,6 +1415,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/warehouse/item-uom-info', 'warehouseItemUomInfo')->name('warehouse-item-uom-info');
             Route::get('/{id}/print-labels', 'printLabels')->name('print-labels');
             Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
+            Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1843,6 +1845,8 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::get('/create', 'create')->name('create');
             Route::get('/edit/{id}', 'edit')->name('edit');
             Route::get('copy/{id}', 'copy')->name('copy');
+            
+            Route::get('export/{id}', 'export')->name('export');
         });
 
     // Production Work Order routes
@@ -2609,6 +2613,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         'edit' => 'finance.fixed-asset.depreciation.edit',
         'update' => 'finance.fixed-asset.depreciation.update',
         'destroy' => 'finance.fixed-asset.depreciation.destroy',
+    ]);
+    Route::get('fixed-asset/it-dep/assets', [ITDepreciationController::class, 'getAssets'])->name('finance.fixed-asset.it.dep.assets');
+    Route::resource('fixed-asset/it-dep', ITDepreciationController::class)->names([
+        'index' => 'finance.fixed-asset.it.dep.index',
     ]);
     Route::resource('fixed-asset/split', SplitController::class)->names([
         'index' => 'finance.fixed-asset.split.index',

@@ -1071,6 +1071,7 @@ class Helper
         $submit = false;
         $approve = false;
         $amend = false;
+        $amendDelete = false;
         $delete = false;
         $post = false;
         $voucher = false;
@@ -1137,6 +1138,9 @@ class Helper
                     $post = $isPostingRequired;
                 }
             }
+            if ($revisionNumber == 0 && $user -> auth_user_id === $createdBy) {
+                $amendDelete = true;
+            }
             $print = true;
         }
         if ($docStatus == ConstantHelper::PARTIALLY_APPROVED) {
@@ -1190,6 +1194,7 @@ class Helper
             'approve' => $approve,
             'delete' => $delete,
             'amend' => $amend,
+            'amendDelete' => $amendDelete,
             'post' => $post,
             'voucher' => $voucher,
             'revoke' => $revoke,
@@ -3215,12 +3220,12 @@ return [
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
 

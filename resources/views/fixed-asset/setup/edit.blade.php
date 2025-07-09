@@ -142,12 +142,12 @@
                                                     </div>
                                                 </div>
                 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Ledger <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="ledger_id" id="ledger" required>
+                                                        <select class="form-select select2 company-field" name="ledger_id" id="ledger" required>
                                                             <option value="" {{ old('ledger_id', $data->ledger_id) ? '' : 'selected' }}>Select</option>
                                                             @foreach ($ledgers as $ledger)
                                                                 <option value="{{ $ledger->id }}" 
@@ -159,12 +159,12 @@
                                                     </div>
                                                 </div>
                 
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Ledger Group <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" name="ledger_group_id" id="ledger_group" required>
+                                                        <select class="form-select company-field" name="ledger_group_id" id="ledger_group" required>
                                                             <option value="" {{ old('ledger_group_id', $data->ledger_group_id) ? '' : 'selected' }}>Select</option>
                                                             @foreach ($ledgerGroups as $group)
                                                                 <option value="{{ $group->id }}" 
@@ -175,13 +175,13 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Salvage % <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control"
+                                                        <input type="number" class="form-control company-field"
                                                             name="salvage_percentage" required
                                                             value="{{ old('salvage_percentage',$data->salvage_percentage) }}" />
                                                     </div>
@@ -192,16 +192,16 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control"
+                                                        <input type="number" class="form-control income_field"
                                                             name="dep_percentage" id="dep_percentage" value="{{$data->dep_percentage}}" required/>
                                                     </div>
                                                 </div>
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Expected Life in Yrs. <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control" name="expected_life_years" required 
+                                                        <input type="number" class="form-control company-field" name="expected_life_years" required 
                                                                value="{{ old('expected_life_years', $data->expected_life_years) }}" />
                                                     </div>
                                                 </div>
@@ -228,7 +228,7 @@
                                                     </div>
                                                 </div>
                  --}}
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Maintenance Schedule</label>
                                                     </div>
@@ -244,12 +244,12 @@
                                                     </div>
                                                 </div>
                                             
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Dep. Ledger <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select class="form-select select2" name="dep_ledger_id" id="dep_ledger" required>
+                                                    <select class="form-select select2 company-field" name="dep_ledger_id" id="dep_ledger" required>
                                                         <option value="" {{ old('dep_ledger_id', $data->dep_ledger_id) ? '' : 'selected' }}>Select</option>
                                                         @foreach ($dep_ledgers as $ledger)
                                                             <option value="{{ $ledger->id }}" 
@@ -261,12 +261,12 @@
                                                 </div>
                                             </div>
             
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Dep. Ledger Group <span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select class="form-select" name="dep_ledger_group_id" id="dep_ledger_group" required>
+                                                    <select class="form-select company-field" name="dep_ledger_group_id" id="dep_ledger_group" required>
                                                         <option value="" {{ old('dep_ledger_group_id', $data->dep_ledger_group_id) ? '' : 'selected' }}>Select</option>
                                                         @foreach ($ledgerGroupsDep as $group)
                                                             <option value="{{ $group->id }}" 
@@ -277,7 +277,7 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                                                                    <div class="row align-items-center mb-1">
+                                                                                    <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Revaluation Ledger </label>
                                                 </div>
@@ -296,7 +296,7 @@
                                              </div>
                                             </div>
                                     
-                                            <div class="row align-items-center mb-1 d-none">
+                                            <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Revaluation Ledger Group <span class="text-danger">*</span></label>
                                                 </div>
@@ -307,7 +307,7 @@
                                             
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Impairement Ledger </label>
                                                 </div>
@@ -337,7 +337,7 @@
                                             
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Writeoff Ledger </label>
                                                     </div>
@@ -367,7 +367,7 @@
                                                     </div>
                                                 </div>
                                                 
-                                            <div class="row align-items-center mb-1">
+                                            <div class="row align-items-center mb-1 company">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Sales Ledger </label>
                                                 </div>
@@ -524,20 +524,19 @@
                 "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach"
             );
         @endif
-        function toggleFields() {
+         function toggleFields() {
             if ($('#income_tax').is(':checked')) {
-                if ('{{ $dep_method }}' == "WDV") {
                     $('.income_tax').removeClass('d-none');
-                    $('#dep_percentage').attr('required', true);
-                } else {
-                    showToast('warning', 'Organization Dep method must be WDV for Income Tax');
-                    $('#company').prop('checked', true);
-                    $('.income_tax').addClass('d-none');
-                    $('#dep_percentage').removeAttr('required');
-                }
+                     $('.company').addClass('d-none');
+                    $('.company-field').removeAttr('required').val('');
+                    $('.income-field').attr('required', true);
+                    $('#salvage_percentage').val('');
             } else {
                 $('.income_tax').addClass('d-none');
-                $('#dep_percentage').removeAttr('required');
+                $('.company').removeClass('d-none');
+                $('.company-field').attr('required', true);
+                $('.income-field').removeAttr('required').val('');
+                $('#salvage_percentage').val('{{$data->dep_percentage??null}}');
             }
         }
          
