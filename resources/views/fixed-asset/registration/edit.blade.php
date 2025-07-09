@@ -1297,6 +1297,32 @@
 
 @section('scripts')
     <script>
+         $(document).ready(function () {
+            let typingTimer;
+            const doneTypingInterval = 500; // ms
+
+            $('#asset_name').on('keyup', function () {
+                clearTimeout(typingTimer);
+                const assetName = $(this).val();
+                if (assetName.length > 2) {
+                    typingTimer = setTimeout(function () {
+                        $.ajax({
+                            url: "{{route('finance.fixed-asset.asset-code')}}", // Replace with your actual route
+                            method: 'POST',
+                            data: { asset_name: assetName,
+                                    asset_id:'{{$data->id}}',
+                             },
+                            success: function (response) {
+                                $('#asset_code').val(response); // Fill in the code
+                            },
+                            error: function () {
+                                $('#asset_code').val('');
+                            }
+                        });
+                    }, doneTypingInterval);
+                }
+            });
+        });
         let grn_no = $('#grn_no').val();
         let vendor_code = $('#vendor_code').val();
         let vendor_name = $('#vendor_name').val();
@@ -1530,7 +1556,7 @@
                         const tds = nearestTr.querySelectorAll('td'); // Get all <td> elements in the row
                         if (tds.length > 1) { // Ensure there are at least two columns
                             $('#asset_name').val(tds[tds.length - 2]
-                            .textContent); // Get the second last column
+                            .textContent).trigger('keyup'); // Get the second last column
                         }
                     } // Access the data-grn attribute
 

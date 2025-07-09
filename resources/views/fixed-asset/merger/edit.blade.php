@@ -1223,7 +1223,7 @@ $(document).on('keydown', function(e) {
                         row.find('.last_dep_date').val('');
                         refreshAssetSelects();
                         updateSum();
-                        applyFixedPrefixToInputs();
+                        //applyFixedPrefixToInputs();
                         
                     }
                 }
@@ -1328,7 +1328,7 @@ $(document).on('keydown', function(e) {
                             showToast('error', 'Failed to load sub-assets.');
                         }
                     });
-                     applyFixedPrefixToInputs();
+                     //applyFixedPrefixToInputs();
 
                     return false;
                 },
@@ -1349,7 +1349,7 @@ $(document).on('keydown', function(e) {
                         refreshAssetSelects();
                         updateSum();
                     }
-                     applyFixedPrefixToInputs();
+                     //applyFixedPrefixToInputs();
                 }
             }).focus(function() {
                 if (this.value === '') {
@@ -1406,6 +1406,7 @@ $(document).on('keydown', function(e) {
                 $('#quantity_' + row).val(0);
                 updateSum();
             }
+            applyFixedPrefixToInputs();
         });
 
         $('#location').on('change', function() {
@@ -1584,9 +1585,9 @@ $(document).on('keydown', function(e) {
             updateSum();
             updateDepreciationValues();
            });
-                   function applyFixedPrefixToInputs() {
+        function applyFixedPrefixToInputs() {
             const selector = '#asset_code';
-            let prefix = $('.asset-search-input').first().val();
+            let prefix = $('.sub_asset_id').first().find('option:selected').first().text();
             console.log(prefix);
 
             if (!prefix) {
@@ -1640,13 +1641,12 @@ $(document).on('keydown', function(e) {
              $(selector).trigger('change');
         }
        function validateAssetCodes() {
-            let prefix = $('.asset-search-input').first().val();
+            let prefix = $('.sub_asset_id').first().find('option:selected').first().text();
             const inputs = document.getElementById('asset_code');
             
-            if (!prefix) return true; // If no prefix, nothing to validate
+            if (!prefix) return true; 
 
-            // Trim and extract first word + '#S'
-            prefix = prefix.trim().split(/\s+/)[0] + "#S";
+            prefix = prefix.trim().split(/\s+/)[0] + "#M";
 
             let allValid = true;
 
@@ -1655,7 +1655,7 @@ $(document).on('keydown', function(e) {
                     allValid = false;
                     inputs.style.border = "1px solid red";
                 } else {
-                    inputs.style.border = ""; // Reset border if valid
+                    inputs.style.border = ""; 
                 }
             
 

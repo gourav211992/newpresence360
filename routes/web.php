@@ -2562,7 +2562,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/import', [RegistrationController::class,'import'])->name('finance.fixed-asset.import');
     Route::get('fixed-asset/export-successful', [RegistrationController::class,'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
     Route::get('fixed-asset/export-failed', [RegistrationController::class,'exportFailedItems'])->name('finance.fixed-asset.export.failed');
-
+    Route::post('fixed-asset/get-code', [RegistrationController::class, 'generateAssetCode'])->name('finance.fixed-asset.asset-code');
+    
+    
+    
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

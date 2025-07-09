@@ -52,6 +52,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Asset Category</th>
+                                                <th>Act Type</th>
                                                 <th>Ledger</th>
                                                 <th>Ledger Group</th>
                                                 <th>Expected Life</th>
@@ -67,11 +68,12 @@
                                             @foreach($data as $index => $asset)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
-                                                <td class="fw-bolder text-dark">{{ $asset->assetCategory->name ?? 'N/A' }}</td>
-                                                <td>{{ $asset->ledger->name ?? 'N/A' }}</td>
-                                                <td>{{ $asset->ledgerGroup->name ?? 'N/A' }}</td>
+                                                <td class="fw-bolder text-dark">{{ $asset->assetCategory->name ?? '-' }}</td>
+                                                <td>{{ $asset->act_type=="income_tax"?"Income Tax":"Company" }}</td>
+                                                <td>{{ $asset->ledger->name ?? '-' }}</td>
+                                                <td>{{ $asset->ledgerGroup->name ?? '-' }}</td>
                                                 <td>{{ $asset->expected_life_years }}</td>
-                                                <td>{{ $asset->salvage_percentage??'N/A' }}</td>
+                                                <td>{{ $asset->salvage_percentage??'-' }}</td>
                                                 {{-- <td><span class="badge rounded-pill badge-light-secondary badgeborder-radius">{{ $asset->depreciation_method }}</span></td>
                                                 <td>{{ $asset->depreciation_percentage }}</td>
                                                 <td>{{ $asset->maintenance_schedule }}</td> --}}
