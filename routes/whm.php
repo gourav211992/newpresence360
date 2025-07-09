@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
+    Route::controller(IndexController::class)->group(function () {
+        Route::get('/stores', 'stores')->name('whm.stores');
+        Route::get('/sub-stores', 'subStores')->name('whm.sub-stores');
+        Route::get('/storage-points', 'storagePoints')->name('whm.storage-points');
+        // Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');
+    });
+
     Route::controller(UnloadingTaskController::class)->group(function () {
         Route::get('/unloading-tasks', 'index')->name('whm.unloading-tasks');
         Route::get('/pending-tasks', 'pendingTasks')->name('whm.pending-tasks');
@@ -24,9 +31,14 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::post('/update-status/packet', 'updateStatus')->name('whm.update-status');
 
     });
+
+    Route::controller(PutawayTaskController::class)->group(function () {
+        Route::get('/putaway/tasks', 'index')->name('whm.putaway.tasks');
+        Route::post('/putaway/save-as-draft', 'saveAsDraft')->name('whm.putaway.save-as-draft');
+
+    });
     
-    Route::get('/stores', 'IndexController@stores')->name('whm.stores');
-    Route::get('/sub-stores', 'IndexController@subStores')->name('whm.sub-stores');
+    
 });
 
 

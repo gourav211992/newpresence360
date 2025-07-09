@@ -24,6 +24,8 @@ class MrnDetail extends Model
         'po_id',
         'jo_id',
         'ge_id',
+        'vendor_asn_id',
+        'vendor_asn_item_id',
         'so_id',
         'item_id',
         'item_code',
@@ -95,11 +97,19 @@ class MrnDetail extends Model
         return $this->belongsTo(ErpSaleOrder::class, 'so_id');
     }
 
+    public function vendorAsnDetail()
+    {
+        return $this->belongsTo(VendorAsnItem::class, 'vendor_asn_item_id');
+    }
 
+    public function vendorAsn()
+    {
+        return $this->belongsTo(VendorAsn::class, 'vendor_asn_id');
+    }
 
     public function po()
     {
-        return $this->belongsTo(PurchaseOrder::class, 'so_id');
+        return $this->belongsTo(PurchaseOrder::class, 'po_id');
     }
 
     public function jo()

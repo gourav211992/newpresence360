@@ -602,7 +602,7 @@
                             $("#itemDetailDisplay").html(data.data.html);
 
                             // ✅ Fill storage_points hidden input
-                            const hiddenInput = $row.find("input[name*='[storage_points]']");
+                            const hiddenInput = $(currentTr).find("input[name*='[storage_points]']");
                             if (hiddenInput.length) {
                                 hiddenInput.val(JSON.stringify(storagePoints));
                             }

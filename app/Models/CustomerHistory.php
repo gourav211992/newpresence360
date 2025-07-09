@@ -73,6 +73,7 @@ class CustomerHistory extends Model
         'lead_status', 
         'sales_figure', 
         'city', 
+        'contact_person',
         'stop_billing',
         'stop_purchasing',
         'stop_payment',

@@ -2,6 +2,7 @@
 
 namespace App\Lib\Services\WHM;
 
+use App\Helpers\CommonHelper;
 use App\Models\GateEntryDetail;
 use App\Models\GateEntryHeader;
 use App\Models\WHM\ErpItemUniqueCode;
@@ -12,7 +13,7 @@ class WhmJob
 {
     public function createJob($id, $namespace)
     {
-        // Step 1: Get Gate Entry Header
+        // Step 1: Get Header
         $header = app($namespace)::findOrFail($id);
 
         // Step 2: Get or Create Job (prevents duplicate job on edit)
@@ -47,13 +48,19 @@ class WhmJob
     private function generateUniqueQRCodes($header, $job, $namespace, $detail)
     {
         $qty = intval($detail->accepted_qty);
-        $existingCount = ErpItemUniqueCode::where('job_id', $job->id)
-            ->where('item_id', $detail->id)
-            ->count();
-
         $attributes = $this->getAttributes($detail);
         $itemUid = $this->generateUniqueItemUid(); // safe UID
 
+        // Check if this is MrnDetail and has gate_entry_detail_id
+        if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
+            $this->copyQRCodesFromGateEntryDetail($detail, $header, $job, $namespace, $attributes, $qty, $itemUid);
+            return; // exit after copying
+        }
+
+        // ❗ Fresh creation logic (same as before)
+        $existingCount = ErpItemUniqueCode::where('job_id', $job->id)
+            ->where('item_id', $detail->id)
+            ->count();
         if ($qty > $existingCount) {
             $diff = $qty - $existingCount;
             $records = [];
@@ -102,6 +109,53 @@ class WhmJob
                 ->orderBy('id', 'desc')
                 ->limit($diff)
                 ->delete();
+        }
+    }
+
+    private function copyQRCodesFromGateEntryDetail($detail, $header, $job, $namespace, $attributes, $qty, $itemUid)
+    {
+        $gateDetailId = $detail->gate_entry_detail_id;
+        $existingGateQRCodes = ErpItemUniqueCode::where('morphable_type', GateEntryDetail::class)
+            ->where('morphable_id', $gateDetailId)
+            ->where('status', CommonHelper::SCANNED)
+            ->limit($qty)
+            ->get();
+
+        $records = [];
+        foreach ($existingGateQRCodes as $code) {
+            $records[] = [
+                'uid' => $this->generateUniqueUid(),
+                'job_id' => $job->id,
+                'organization_id' => $header->organization_id,
+                'group_id' => $header->group_id,
+                'company_id' => $header->company_id,
+                'morphable_type' => $namespace,
+                'morphable_id' => $detail->id,
+                'doc_type' => $header->doc_number_type ?? null,
+                'doc_no' => $header->document_number ?? null,
+                'doc_date' => $header->document_date ?? null,
+                'book_id' => $header->book_id ?? null,
+                'store_id' => $header->store_id ?? null,
+                'book_code' => $header->book_code ?? null,
+                'item_attributes' => json_encode($attributes),
+                'item_id' => $detail->item_id,
+                'item_name' => $detail->item->item_name,
+                'item_code' => $detail->item_code,
+                'vendor_id' => $header->vendor_id,
+                'item_uid' => $itemUid, 
+                'utilized_id' => $code->uid,
+                'type' => 'qr',
+                'qty' => 1,
+                'status' => CommonHelper::PENDING,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        if (!empty($records)) {
+            foreach (array_chunk($records, 500) as $chunk) {
+                ErpItemUniqueCode::insert($chunk);
+            }
         }
     }
 

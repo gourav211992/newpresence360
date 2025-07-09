@@ -44,11 +44,19 @@ class StoragePointHelper
         $data = array();
         try{
             // Step 1: Try to find mapping by item_id
-            $records = \DB::table('erp_wh_item_mappings')
-                ->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [$itemId])
-                ->where('store_id', $locationId)
-                ->where('sub_store_id', $subLocationId)
-                ->get();
+            $query = \DB::table('erp_wh_item_mappings')
+            ->where('store_id', $locationId);
+
+            if($itemId){
+                $query->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [$itemId]);
+            }
+
+            if($subLocationId){
+                $query->where('sub_store_id', $subLocationId);
+            }
+                
+            $records = $query->get();
+            
             // Step 2: If no records found → try sub_category_id, then category_id
             if ($records->isEmpty()) {
                 // Get item's category and sub-category

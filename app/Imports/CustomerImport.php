@@ -96,12 +96,12 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                     $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
 
@@ -323,7 +323,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'sales_person_id' => $salesPersonId ?? null,
                 'credit_limit' => $uploadedCustomer->credit_limit ?? null,
                 'credit_days' => $uploadedCustomer->credit_days ?? null,
-                'status' => 'active',
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedCustomer->group_id ?? null,
                 'company_id' => $uploadedCustomer->company_id ?? null,
@@ -346,8 +345,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'address' => $uploadedCustomer->address,
             ];
         
-            $customer = new Customer($customerData);
-
             $rules = [
                 'organization_type_id' => 'nullable|exists:erp_organization_types,id',
                 'customer_code' => [
@@ -586,6 +583,48 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 $this->onFailure($uploadedCustomer);
                 return; 
              }
+
+            $customer = new Customer($customerData);
+
+            $customer->document_status = ConstantHelper::DRAFT;
+            $customer->status = ConstantHelper::DRAFT;
+
+            $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS; 
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+            
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    $customer->book_id = $book->id ?? null;
+                } else {
+                    $customer->book_id = null;
+                }
+            } else {
+                $customer->book_id = null;
+            }
+
+            $customer->save();
+
+            $bookId = $customer->book_id;
+            $docId = $customer->id;
+            $remarks = null; 
+            $attachments = null; 
+            $currentLevel = $customer->approval_level ?? 1;
+            $revisionNumber = $customer->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($customer);
+            $totalValue = 0;
+
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+
+            $document_status = $approveDocument['approvalStatus'];
+            $customer->document_status = $document_status;
+
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $customer->status = ConstantHelper::ACTIVE;
+            } else {
+                $customer->status = $document_status;
+            }
 
             $customer->save();
             $customer->compliances()->create([

@@ -173,6 +173,16 @@ class PurchaseOrderHistory extends Model
         return $this->belongsTo(ErpAddress::class,'billing_address');
     }
 
+    public function bill_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'billing');
+    }
+    
+    public function ship_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id')->where('type', 'shipping')->with(['city', 'state', 'country']);
+    }
+
     public function billingAddress()
     {
         return $this->belongsTo(ErpAddress::class, 'billing_to');
@@ -250,9 +260,24 @@ class PurchaseOrderHistory extends Model
         return $this->addresses()->where('type', 'shipping')->latest()->first();
     }
 
+    public function latestDeliveryAddress()
+    {
+        return $this->addresses()->where('type', 'location')->latest()->first();
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
+    }
+
     public function department()
     {
         return $this->belongsTo(Department::class);
+    }
+    
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpPoDynamicField::class, 'header_id');
     }
     
 }

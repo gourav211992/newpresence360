@@ -96,6 +96,7 @@ use App\Exports\MaterialReceiptExport;
 use App\Exports\TransactionItemsExport;
 use App\Services\ItemImportExportService;
 use App\Exports\FailedTransactionItemsExport;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\ErpMiItem;
 use App\Models\ErpSoItem;
 use App\Models\ErpSoJobWorkItem;
@@ -182,13 +183,33 @@ class MaterialReceiptController extends Controller
                     return $row->book ? $row->book?->book_name : 'N/A';
                 })
                 ->addColumn('reference_number', function ($row) {
-                    if ($row->reference_type == 'po') {
-                        return $row->po ? $row->po->book_code . ' - ' . $row->po->document_number : 'N/A';
-                    } elseif ($row->reference_type == 'jo') {
-                        return $row->jobOrder ? $row->jobOrder->book_code . ' - ' . $row->jobOrder->document_number : 'N/A';
-                    } elseif ($row->reference_type == 'so') {
-                        return $row->saleOrder ? $row->saleOrder->book_code . ' - ' . $row->saleOrder->document_number : 'N/A';
-                    }else {
+                    if ($row->reference_type === 'jo') {
+                        // Multiple POs from related items
+                        $joReferences = collect($row->items)
+                            ->filter(function ($item) {
+                                return isset($item->jo) && $item->jo; // only if jo exists
+                            })
+                            ->map(function ($item) {
+                                return $item->jo->book_code . '-' . $item->jo->document_number;
+                            })
+                            ->unique() // avoid duplicates
+                            ->implode(', '); // convert to comma-separated string
+                
+                        return $joReferences ?: 'N/A';
+                    } elseif ($row->reference_type === 'po') {
+                        // Multiple POs from related items
+                        $joReferences = collect($row->items)
+                            ->filter(function ($item) {
+                                return isset($item->po) && $item->po; // only if po exists
+                            })
+                            ->map(function ($item) {
+                                return $item->po->book_code . '-' . $item->po->document_number;
+                            })
+                            ->unique() // avoid duplicates
+                            ->implode(', '); // convert to comma-separated string
+                
+                        return $joReferences ?: 'N/A';
+                    } else {
                         return '';
                     }
                 })
@@ -278,6 +299,7 @@ class MaterialReceiptController extends Controller
 
         DB::beginTransaction();
         try {
+            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -463,7 +485,11 @@ class MaterialReceiptController extends Controller
                     $balanceQty = 0.00;
                     $availableQty = 0.00;
                     $po_detail_id = null;
+                    $purchaseOrderId = null;
+                    $jo_detail_id = null;
+                    $jobOrderId = null;
                     $gate_entry_detail_id = null;
+                    $gateEntryHeaderId = null;
                     $supplier_inv_detail_id = null;
                     $so_id = null;
                     if($component['is_inspection'] == 1){
@@ -474,9 +500,9 @@ class MaterialReceiptController extends Controller
                             $gateEntryDetail =  GateEntryDetail::find($component['gate_entry_detail_id']);
                             $gate_entry_detail_id = $gateEntryDetail->id ?? null;
                             $gateEntryHeaderId = $gateEntryDetail->header_id;
-                            $poDetail =  JoProduct::find($component['po_detail_id']);
-                            $po_detail_id = $poDetail->id ?? null;
-                            $purchaseOrderId = $poDetail->jo_id;
+                            $joDetail =  JoProduct::find($component['po_detail_id']);
+                            $jo_detail_id = $joDetail->id ?? null;
+                            $jobOrderId = $joDetail->jo_id;
                             if($gateEntryDetail){
                                 $inputQty = ($component['order_qty'] ?? 0);
                                 $balanceQty = ($gateEntryDetail->accepted_qty - ($gateEntryDetail->mrn_qty ?? 0.00));
@@ -489,8 +515,8 @@ class MaterialReceiptController extends Controller
                                 $gateEntryDetail->mrn_qty += floatval($inputQty);
                                 $gateEntryDetail->save();
 
-                                $so_id = $poDetail->so_id;
-                                $updatePoQty = self::updatePoQty($item, $poDetail, $inputQty, 'gate-entry');
+                                $so_id = $joDetail->so_id;
+                                $updatePoQty = self::updatePoQty($item, $joDetail, $inputQty, 'gate-entry');
                                 if($updatePoQty !== true) {
                                     return $updatePoQty;
                                 }
@@ -504,9 +530,9 @@ class MaterialReceiptController extends Controller
                             $supplierInvDetail =  JoProduct::find($component['supplier_inv_detail_id']);
                             $supplier_inv_detail_id = $supplierInvDetail->id ?? null;
                             $supplierInvHeaderId = $supplierInvDetail->jo_id;
-                            $poDetail =  JoProduct::find($component['po_detail_id']);
-                            $po_detail_id = $poDetail->id ?? null;
-                            $purchaseOrderId = $poDetail->jo_id;
+                            $joDetail =  JoProduct::find($component['po_detail_id']);
+                            $jo_detail_id = $joDetail->id ?? null;
+                            $jobOrderId = $joDetail->jo_id;
                             if($supplierInvDetail){
                                 $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
                                 $balanceQty = ($supplierInvDetail->order_qty - ($gateEntryDetail->grn_qty ?? 0.00));
@@ -518,8 +544,8 @@ class MaterialReceiptController extends Controller
                                 }
                                 $supplierInvDetail->grn_qty += floatval($inputQty);
                                 $supplierInvDetail->save();
-                                $so_id = $poDetail->so_id;
-                                $updatePoQty = self::updatePoQty($item, $poDetail, $inputQty, 'supplier-invoice');
+                                $so_id = $joDetail->so_id;
+                                $updatePoQty = self::updatePoQty($item, $joDetail, $inputQty, 'supplier-invoice');
                                 if($updatePoQty !== true) {
                                     return $updatePoQty;
                                 }
@@ -534,11 +560,11 @@ class MaterialReceiptController extends Controller
                                 $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
                                 $balanceQty = 0.00;
                                 $availableQty = 0.00;
-                                $poDetail =  JoProduct::find($component['po_detail_id']);
-                                $po_detail_id = $poDetail->id ?? null;
-                                $purchaseOrderId = $poDetail->jo_id;
-                                $so_id = $poDetail->so_id;
-                                $updatePoQty = self::updatePoQty($item, $poDetail, $inputQty, 'job-order');
+                                $joDetail =  JoProduct::find($component['po_detail_id']);
+                                $jo_detail_id = $joDetail->id ?? null;
+                                $jobOrderId = $joDetail->jo_id;
+                                $so_id = $joDetail->so_id;
+                                $updatePoQty = self::updatePoQty($item, $joDetail, $inputQty, 'job-order');
                                 if($updatePoQty !== true) {
                                     return $updatePoQty;
                                 }
@@ -698,11 +724,15 @@ class MaterialReceiptController extends Controller
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $mrnItemArr[] = [
                         'mrn_header_id' => $mrn->id,
-                        'purchase_order_item_id' => ($request->all()['reference_type'] == ConstantHelper::PO_SERVICE_ALIAS) ? $po_detail_id : null,
-                        'job_order_item_id' => ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) ? $po_detail_id : null,
-                        'sale_order_item_id' => ($request->all()['reference_type'] == ConstantHelper::SO_SERVICE_ALIAS) ? $po_detail_id : null,
-                        'gate_entry_detail_id' => $gate_entry_detail_id,
-                        'so_id' => $so_id,
+                        'purchase_order_item_id' => $po_detail_id ?? null,
+                        'po_id' => $purchaseOrderId ?? null,
+                        'job_order_item_id' => $jo_detail_id ?? null,
+                        'jo_id' => $jobOrderId ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
+                        'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
+                        'gate_entry_detail_id' => $gate_entry_detail_id ?? null,
+                        'ge_id' => $gateEntryHeaderId ?? null,
+                        'so_id' => $so_id ?? null,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'item_name' => $component['item_name'] ?? null,
@@ -785,6 +815,12 @@ class MaterialReceiptController extends Controller
                     $mrnDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
                     $mrnDetail->gate_entry_detail_id = $mrnItem['gate_entry_detail_id'];
                     $mrnDetail->job_order_item_id = $mrnItem['job_order_item_id'];
+                    $mrnDetail->vendor_asn_id = $mrnItem['vendor_asn_id'];
+                    $mrnDetail->vendor_asn_item_id = $mrnItem['vendor_asn_item_id'];
+                    $mrnDetail->gate_entry_detail_id = $mrnItem['gate_entry_detail_id'];
+                    $mrnDetail->po_id = $mrnItem['po_id'];
+                    $mrnDetail->jo_id = $mrnItem['jo_id'];
+                    $mrnDetail->ge_id = $mrnItem['ge_id'];
                     // $mrnDetail->sale_order_item_id = $mrnItem['sale_order_item_id'];
                     $mrnDetail->so_id = $mrnItem['so_id'];
                     $mrnDetail->item_id = $mrnItem['item_id'];
@@ -1086,6 +1122,10 @@ class MaterialReceiptController extends Controller
                     'message' => $status['message'],
                     'error' => ''
                 ], 422);
+            }
+            
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
 
             DB::commit();
@@ -2806,18 +2846,18 @@ class MaterialReceiptController extends Controller
                     default      => ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA'),
                 };
                 $dataCurrentPo = match ($this->moduleType) {
-                    'gate-entry' => $row->po_id ?? 'null',
-                    'suppl-inv'  => $row->po_id ?? 'null',
+                    'gate-entry' => $row->purchase_order_id ?? 'null',
+                    'suppl-inv'  => $row->purchase_order_id ?? 'null',
                     default      => $row->purchase_order_id ?? 'null',
                 };
                 $dataCurrentAsn = match ($this->moduleType) {
                     'gate-entry' => 'null',
-                    'suppl-inv'  => ($row->asn_item_id ?? 'null'),
+                    'suppl-inv'  => ($row->vendorAsn->id ?? 'null'),
                     default      => 'null',
                 };
                 $dataCurrentAsnItem = match ($this->moduleType) {
                     'gate-entry' => 'null',
-                    'suppl-inv'  => ($row->vendorAsn->id ?? 'null'),
+                    'suppl-inv'  => ($row->asn_item_id ?? 'null'),
                     default      => 'null',
                 };
                 $dataCurrentGe = match ($this->moduleType) {
@@ -2826,7 +2866,7 @@ class MaterialReceiptController extends Controller
                     default      => 'null',
                 };
                 $dataCurrentGeItem = match ($this->moduleType) {
-                    'gate-entry' => ($row->id ?? 'null'),
+                    'gate-entry' => ($row->ge_item_id ?? 'null'),
                     'suppl-inv'  => 'null',
                     default      => 'null',
                 };
@@ -2858,7 +2898,7 @@ class MaterialReceiptController extends Controller
             })
             ->addColumn('order_qty', function ($row) {
                 if ($this->moduleType === 'gate-entry') {
-                    return number_format(($row?->po_item?->order_qty ?? 0), 2);
+                    return number_format(($row->order_qty ?? 0), 2);
                 } elseif ($this->moduleType === 'suppl-inv') {
                     return number_format(($row->order_qty ?? 0), 2);
                 } else {
@@ -2867,47 +2907,29 @@ class MaterialReceiptController extends Controller
             })
             ->addColumn('inv_order_qty', function ($row) {
                 if ($this->moduleType === 'gate-entry') {
-                    return number_format((($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+                    return number_format(($row->supplied_qty ?? 0), 2);
                 } elseif ($this->moduleType === 'suppl-inv') {
-                    return number_format((($row->supplied_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+                    return number_format(($row->supplied_qty ?? 0), 2);
                 } else {
                     return number_format(0, 2);
                 }
             })
             ->addColumn('ge_qty', function ($row) {
                 if ($this->moduleType === 'gate-entry') {
-                    return number_format((($row->accepted_qty ?? 0)), 2);
+                    return number_format((($row->gate_entry_qty ?? 0)), 2);
                 } elseif ($this->moduleType === 'suppl-inv') {
                     return number_format(0, 2);
                 } else {
                     return number_format(0, 2);
                 }
             })
-            ->addColumn('grn_qty', fn($row) => number_format(($row->grn_qty ?? 0), 2))
+            ->addColumn('grn_qty', fn($row) => number_format(($row->mrn_qty ?? 0), 2))
             ->addColumn('balance_qty', function ($row) {
-                $orderQty = 0;
-                $grnQty = $row->grn_qty ?? $row->mrn_qty;
-                if ($this->moduleType === 'gate-entry') {
-                    $orderQty = ($row->accepted_qty ?? 0);
-                } elseif ($this->moduleType === 'suppl-inv') {
-                    $orderQty = ($row->supplied_qty ?? 0);
-                } else {
-                    $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
-                }
-                return number_format(($orderQty - $grnQty), 2);
+                return number_format(($row->balance_qty ?? 0), 2);
             })
             ->addColumn('rate', fn($row) => number_format(($row->rate ?? 0), 2))
             ->addColumn('total_amount', function ($row) {
-                $orderQty = 0;
-                $grnQty = $row->grn_qty ?? $row->mrn_qty;
-                if ($this->moduleType === 'gate-entry') {
-                    $orderQty = ($row->accepted_qty ?? 0);
-                } elseif ($this->moduleType === 'suppl-inv') {
-                    $orderQty = ($row->supplied_qty ?? 0);
-                } else {
-                    $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
-                }
-                return number_format(($orderQty - $grnQty) * ($row->rate ?? 0), 2);
+                return number_format(($row->balance_qty ?? 0) * ($row->rate ?? 0), 2);
             })
             ->rawColumns([
                 'select_checkbox', 'attributes', 'vendor', 'po_doc', 'po_date', 'si_doc', 'si_date', 'ge_doc', 'ge_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'grn_qty', 'balance_qty', 'rate', 'total_amount'
@@ -2991,54 +3013,73 @@ class MaterialReceiptController extends Controller
             $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
         }
 
-        $poItems = $poItems->orderBy('erp_purchase_orders.document_number', 'desc')->get();
+        $poItems = $poItems->orderBy('po_id', 'desc')->get();
         $poItemIds = [];
-        $finalPoItems = [];
+        $poItemMap = [];
 
         foreach ($poItems as $poItem) {
-            if ($poItem->gate_entry_required == 'yes') {
-                // Fetch Gate Entry Details
+            if ($poItem->gate_entry_required === 'yes') {
                 $geItems = GateEntryDetail::where('purchase_order_item_id', $poItem->id)
                     ->whereRaw('(accepted_qty > mrn_qty)')
-                    ->with(['gateEntryHeader'])
+                    ->with(['gateEntryHeader', 'po_item']) // ensure po_item is loaded
                     ->get();
-
+        
                 foreach ($geItems as $geItem) {
-                    if (in_array($geItem->id, $selected_po_ids)) {
-                        continue;
+                    $poItemKey = $geItem->purchase_order_item_id . '+' . $geItem->header_id;
+        
+                    if (!isset($poItemMap[$poItemKey])) {
+                        $item = clone $geItem->po_item; // Clone to avoid overwriting references
+                        $item->balance_qty = 0;
+                        $item->gateEntryHeader = $geItem->gateEntryHeader;
+                        $item->vendorAsn = $geItem->vendorAsn ?? null;
+                        $item->ge_item_id = $geItem->id;
+                        $item->mrn_qty = $geItem->mrn_qty ?? 0;
+                        $item->supplied_qty = 0;
+                        $item->gate_entry_qty = $geItem->accepted_qty ?? 0;
+        
+                        $poItemMap[$poItemKey] = $item;
                     }
-                    $poItemIds[] = $geItem->id;
-                    $geItem->balance_qty = $geItem->accepted_qty - $geItem->mrn_qty;
-                    $geItem->po = $geItem->po_item->po; // Keep reference to PO
-                    $geItem->item = $geItem->po_item->item;
-                    $geItem->attributes = $geItem->po_item->attributes;
-                    $finalPoItems[] = $geItem;
+        
+                    $poItemMap[$poItemKey]->balance_qty += ($geItem->accepted_qty - $geItem->mrn_qty);
                 }
-            } elseif ($poItem->supp_invoice_required == 'yes') {
+            } elseif ($poItem->supp_invoice_required === 'yes') {
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
                     ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
                     ->get();
-
+        
                 foreach ($siItems as $siItem) {
-                    if (in_array($siItem->id, $selected_po_ids)) {
-                        continue;
+                    $poItemKey = $siItem->po_item_id . '+' . $siItem->vendor_asn_id;
+        
+                    if (!isset($poItemMap[$poItemKey])) {
+                        $item = clone $siItem->po_item;
+                        $item->balance_qty = 0;
+                        $item->vendorAsn = $siItem->vendorAsn;
+                        $item->mrn_qty = $siItem->grn_qty ?? 0;
+                        $item->supplied_qty = $siItem->supplied_qty ?? 0;
+                        $item->gate_entry_qty = $siItem->ge_qty ?? 0;
+                        $item->asn_item_id = $siItem->id;
+        
+                        $poItemMap[$poItemKey] = $item;
                     }
-                    $poItemIds[] = $siItem->id;
-                    $siItem->balance_qty = ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
-                    $siItem->po = $siItem->po_item->po;
-                    $siItem->item = $siItem->po_item->item;
-                    $siItem->attributes = $siItem->po_item->attributes;
-                    $finalPoItems[] = $siItem;
+        
+                    $poItemMap[$poItemKey]->balance_qty += ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->grn_qty;
                 }
             } else {
-                if (!in_array($poItem->id, $selected_po_ids)) {
-                    $finalPoItems[] = $poItem;
-                    $poItemIds[] = $poItem->id;
+                $poItemKey = $poItem->id;
+        
+                if (!isset($poItemMap[$poItemKey])) {
+                    $item = clone $poItem;
+                    $item->mrn_qty = $poItem->grn_qty ?? 0;
+                    $item->gate_entry_qty = $poItem->ge_qty ?? 0;
+                    $item->supplied_qty = ($poItem->order_qty - $poItem->short_close_qty) - $poItem->asn_qty;
+                    $item->balance_qty = ($poItem->order_qty - $poItem->short_close_qty) - $poItem->grn_qty;
+        
+                    $poItemMap[$poItemKey] = $item;
                 }
             }
         }
-        return $finalPoItems;
+        return $poItemMap;
     }
 
     // Process PO Item
@@ -3063,11 +3104,9 @@ class MaterialReceiptController extends Controller
         }
 
         $vendorAsn = null;
-        $moduleType = $moduleTypes[0] ?? null;
-        $tableRowCount = $request->tableRowCount ?: 0;
-
         // Determine module type
         $moduleType = $moduleTypes[0] ?? null;
+        $tableRowCount = $request->tableRowCount ?: 0;
 
         if ($moduleType === 'gate-entry') {
             $filteredGeIds = array_filter($geIds);
@@ -3093,12 +3132,14 @@ class MaterialReceiptController extends Controller
                     $poItem->balance_qty = $geItem->accepted_qty;
                     $poItem->ge_id = $geItem->header_id;
                     $poItem->ge_item_id = $geItem->id;
+                    $poItem->vendor_asn_id = $geItem->vendor_asn_id;
+                    $poItem->vendor_asn_item_id = $geItem->vendor_asn_item_id;
                     $poItem->available_qty = (($geItem->accepted_qty ?? 0) - ($geItem->mrn_qty ?? 0));
                     $poItem->gateEntryHeader = $geItem->gateEntryHeader;
                 }
                 return $poItem;
             })->filter()->values();
-
+            
             $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
         } elseif($moduleType === 'suppl-inv'){
             $filteredAsnIds = array_filter($asnIds);
@@ -3122,8 +3163,8 @@ class MaterialReceiptController extends Controller
                 if ($poItem) {
                     $poItem->avail_order_qty = $asnItem->order_qty;
                     $poItem->balance_qty = $asnItem->balance_qty;
-                    $poItem->asn_id = $asnItem->vendor_asn_id;
-                    $poItem->asn_item_id = $asnItem->id;
+                    $poItem->vendor_asn_id = $asnItem->vendor_asn_id;
+                    $poItem->vendor_asn_item_id = $asnItem->id;
                     $poItem->available_qty = ((($asnItem->supplied_qty) - ($asnItem->short_close_qty ?? 0)) - ($asnItem->ge_qty ?? 0));
                     $poItem->vendorAsn = $asnItem->vendorAsn;
                 }
@@ -3209,12 +3250,13 @@ class MaterialReceiptController extends Controller
             'purchaseData' => $purchaseData,
             'tableRowCount' => $tableRowCount
         ])->render();
-
+        
         return response()->json([
             'data' => [
                 'pos' => $html,
                 'vendor' => $vendor,
-                'vendorAsn' => $vendorAsn,
+                'vendorAsn' => $vendorAsn ?? null,
+                'geHeader' => $geHeader ?? null,
                 'moduleType' => $moduleType,
                 'finalExpenses' => $finalExpenses,
                 'purchaseOrder' => $purchaseOrder,

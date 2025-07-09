@@ -100,12 +100,12 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                     $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
             if ($services && isset($services['current_book'])) {
@@ -352,7 +352,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'storage_uom_id' => $uomId ?? null,
                 'storage_uom_conversion' => 1,
                 'storage_uom_count' =>1,
-                'status' => 'active',
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedItem->group_id ?? null,
                 'company_id' => $uploadedItem->company_id ?? null,
@@ -369,7 +368,22 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'item_remarks' => $uploadedItem->remarks ?? null,
             ]);
 
-    
+            $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
+            $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    if ($book) {
+                        $item->book_id = $book->id;
+                    } else {
+                        $item->book_id = null;
+                    }
+                } else {
+                    $item->book_id = null;
+                }
+            }
+
             $rules = [
                 'type' => 'required|string|in:Goods,Service',
                 'hsn_id' => 'required|exists:erp_hsns,id',
@@ -440,6 +454,29 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 return;
             }
      
+            $item->document_status = ConstantHelper::DRAFT; 
+            $item->status = ConstantHelper::DRAFT; 
+            $item->save();
+             //Approval workflow
+            $bookId = $item->book_id;
+            $docId = $item->id;
+            $remarks = null; 
+            $attachments = null; 
+            $currentLevel = $item->approval_level ?? 1;
+            $revisionNumber = $item->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($item);
+            $totalValue = 0;
+
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $item->document_status = $document_status;
+            
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $item->status = ConstantHelper::ACTIVE;
+            } else {
+                $item->status = $document_status;
+            }
             $item->save();
 
             $this->service->createItemAttributes($item, $attributes);

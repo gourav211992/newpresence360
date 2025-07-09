@@ -3220,12 +3220,12 @@ return [
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
 

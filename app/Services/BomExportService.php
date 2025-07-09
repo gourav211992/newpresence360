@@ -48,7 +48,6 @@ class BomExportService
         $response = BookHelper::fetchBookDocNoAndParameters($bom->book_id, $bom->document_date);
         $parameters = data_get($response, 'data.parameters', []);
         $isNorm = isset($parameters->consumption_method) && is_array($parameters->consumption_method) && in_array('norms', $parameters->consumption_method);
-
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl === 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
 
@@ -195,13 +194,12 @@ class BomExportService
     private function getComponentHeaders($parameters, $isNorm, $canView): array
     {
         $headers = [];
-        if ($this->isEnabled('sectionRequired', $parameters)) {
+        if ($this->isEnabled('section_required', $parameters)) {
             $headers[] = 'Section';
         }
-        if ($this->isEnabled('subSectionRequired', $parameters)) {
+        if ($this->isEnabled('sub_section_required', $parameters)) {
             $headers[] = 'Sub Section';
         }   
-
         $qtyLebel = $isNorm ? 'Norms' : 'Consumption';
         if($canView) {
             $baseHeaders = [
@@ -213,7 +211,8 @@ class BomExportService
         } else {
             $baseHeaders = [
                 'Item Code', 'Item Name', 'Attributes', 'UOM',
-                'Consumption', 'Station', 'Vendor Name', 'Remark'
+                $qtyLebel,
+                'Station', 'Vendor Name', 'Remark'
             ];
         }
         $headers = array_merge($headers, $baseHeaders);
@@ -234,10 +233,10 @@ class BomExportService
     private function getComponentRow($parameters, $isNorm, $canView, $component): array
     {
         $row = [];
-        if ($this->isEnabled('sectionRequired', $parameters)) {
+        if ($this->isEnabled('section_required', $parameters)) {
             $row[] = $component->section_name ?? '';
         }
-        if ($this->isEnabled('subSectionRequired', $parameters)) {
+        if ($this->isEnabled('sub_section_required', $parameters)) {
             $row[] = $component->sub_section_name ?? '';
         }
 
@@ -283,10 +282,10 @@ class BomExportService
     private function getInstructionHeaders($parameters): array
     {
         $headers = ['Station'];
-        if ($this->isEnabled('sectionRequired', $parameters)) {
+        if ($this->isEnabled('section_required', $parameters)) {
             $headers[] = 'Section';
         }
-        if ($this->isEnabled('subSectionRequired', $parameters)) {
+        if ($this->isEnabled('sub_section_required', $parameters)) {
             $headers[] = 'Sub Section';
         }
         $headers[] = 'Description';
@@ -298,10 +297,10 @@ class BomExportService
         $row = [
             optional($step->station)->name,
         ];
-        if ($this->isEnabled('sectionRequired', $parameters)) {
+        if ($this->isEnabled('section_required', $parameters)) {
             $row[] = optional($step->section)->name;
         }
-        if ($this->isEnabled('subSectionRequired', $parameters)) {
+        if ($this->isEnabled('sub_section_required', $parameters)) {
             $row[] = optional($step->subSection)->name;
         }
         $row[] = $step->instructions;
