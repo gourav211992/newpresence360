@@ -53,8 +53,75 @@ class CloseFyController extends Controller
         ));
     }
 
+    public function monthFyIndex(Request $request)
+    {
+        $fyearId = $request->fyear;
+        $user = Helper::getAuthenticatedUser();
+        $organizationId = $request->organization_id;
+        $companies = $user->access_rights_org;
+        $past_fyears = Helper::getAllPastFinancialYear($organizationId);
+        $current_fyear = Helper::getFinancialYear(date('Y-m-d'));
+        $months = $this->showMonths($current_fyear['start_date'],$current_fyear['end_date']);
+        // dd($current_fyear, $months);
+        $financialYear = $fyearId ? ErpFinancialYear::where('organization_id',$organizationId)->find($fyearId) : null;
+        // $financialYearAuthUsers = $fyearId ? null : Helper::getFyAuthorizedUsers(date('Y-m-d'));
+
+        if ($financialYear) {
+            // $organizationId = $financialYear->organization_id;
+            $financialYear->access_by = $this->setFinancialYearAccessBy(
+                $organizationId,
+                $financialYear->lock_fy,
+                $financialYear->access_by
+            );
+            $financialYear->save();
+
+            $startYear = Carbon::parse($financialYear['start_date'])->format('Y');
+            $endYearShort = Carbon::parse($financialYear['end_date'])->format('y');
+        } else {
+            $now = Carbon::now();
+            $startYear = $now->format('Y');
+            $endYearShort = $now->copy()->addYear()->format('y');
+        }
+
+        $authorized_users = ($financialYear ? $financialYear->authorizedUsers() : null);
+        $current_range = $startYear . '-' . $endYearShort;
+        $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+        // for testing
+        Log::info('Authenticated User ID: ' . Helper::getAuthenticatedUser()->auth_user_id);
+        Log::info('Financial Year: ' .$financialYear);
+
+        return view('close-fy.close-month-fy', compact(
+            'companies', 'organizationId', 'past_fyears', 'financialYear', 'fyearId',
+            'employees', 'current_range', 'authorized_users','current_fyear','months'
+        ));
+    }
+
+    private function showMonths($start, $end)
+    {
+        $startDate = Carbon::parse($start);
+        $endDate = Carbon::parse($end);
+        $today     = Carbon::now();
+
+        // If end_date is in the future, use current month as end_date
+        if ($endDate->greaterThan($today)) {
+            $endDate = $today->copy()->startOfMonth();
+        }
+
+        $months = [];
+        $current = $startDate->copy();
+        while ($current <= $endDate) {
+            $months[] = [
+                'value' => $current->format('Y-m'),
+                'label' => $current->format('F Y'),
+            ];
+            $current->addMonth();
+        }
+        return $months;
+    }
+
     public function getFyInitialGroups(Request $r)
     {
+        dd($r->all());
         $financialYear = null;
         $organizationId = $r->organization_id;
         if($r->fyear){
