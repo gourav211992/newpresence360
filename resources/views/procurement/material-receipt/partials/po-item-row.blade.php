@@ -11,6 +11,8 @@
         if($moduleType === 'gate-entry') {
             $geId = $item->ge_id;
             $geItemId = $item->ge_item_id;
+            $suppInvId = $item->vendor_asn_id;
+            $suppInvItemId = $item->vendor_asn_item_id;
         }
         if($moduleType === 'suppl-inv') {
             $suppInvId = $item->asn_id;

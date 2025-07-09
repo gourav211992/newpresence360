@@ -3406,7 +3406,8 @@
                         finalExpenses,
                         pos,
                         moduleType,
-                        vendorAsn
+                        vendorAsn,
+                        geHeader
                     } = data.data;
 
                     const modelType = processType === 'jo' ? 'jo' : 'po';
@@ -3457,13 +3458,23 @@
                     $(".editAddressBtn").addClass('d-none');
 
                     // Supplier details
-                    if (moduleType === 'suppl-inv' && vendorAsn) {
+                    if (moduleType === 'gate-entry' && geHeader) {
+                        $("[name='gate_entry_no']").val(geHeader.gate_entry_no);
+                        $("[name='gate_entry_date']").val(geHeader.gate_entry_date);
+                        $("[name='supplier_invoice_no']").val(geHeader.supplier_invoice_no);
+                        $("[name='supplier_invoice_date']").val(geHeader.supplier_invoice_date);
+                        $("[name='consignment_no']").val(geHeader.consignment_no);
+                        $("[name='eway_bill_no']").val(geHeader.eway_bill_no);
+                        $("[name='transporter_name']").val(geHeader.transporter_name);
+                        $("[name='vehicle_no']").val(geHeader.vehicle_no);
+                    } else if (moduleType === 'suppl-inv' && vendorAsn) {
                         $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
                         $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
                         $("[name='consignment_no']").val(vendorAsn.consignment_no);
                         $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
                         $("[name='transporter_name']").val(vendorAsn.transporter_name);
                         $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
+                    
                     } else {
                         $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
                     }

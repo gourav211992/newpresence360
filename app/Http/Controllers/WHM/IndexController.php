@@ -6,6 +6,7 @@ use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
@@ -61,4 +62,46 @@ class IndexController extends Controller
             'data' => $subStores,
         ];
     }
+
+    public function storagePoints(Request $request){
+        $validator = Validator::make($request->all(),[
+            'store_id' => ['required'],
+        ],[
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $storeId = $request->store_id;
+        $storagePoints = StoragePointHelper::getStoragePoints("", "", $storeId, "");
+        
+        return [
+            'data' => $storagePoints,
+        ];
+    }
+
+    // public function storagePointDetail(Request $request){
+    //     $validator = Validator::make($request->all(),[
+    //         'store_id' => ['required'],
+    //         'storage_point_id' => ['required'],
+    //     ],[
+    //         'store_id.required' => 'Store id is required',
+    //         'storage_point_id.required' => 'Storage point id is required',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         throw new ValidationException($validator);
+    //     }
+
+    //     $detail = \DB::table('erp_wh_details')->where('id', $request->storage_point_id)->first();
+    //     if (!$detail) {
+    //         throw ValidationException::withMessages([
+    //             'storage_point_id' => ['Invalid storage.'],
+    //         ]);
+    //     }
+
+    //     $parents = StoragePointHelper::getParentHierarchy($detail->parent_id);
+    // }
 }

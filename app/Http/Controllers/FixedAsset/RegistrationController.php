@@ -119,7 +119,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
         })->get();
@@ -158,7 +158,6 @@ class RegistrationController extends Controller
                     $subQuery->where('act_type', '!=', 'income_tax')
                         ->orWhereNull('act_type');
                 });
-
             })
             ->select('id', 'name')
             ->get();
@@ -167,14 +166,13 @@ class RegistrationController extends Controller
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
                 });
+            });
 
-            })
-            ->select('id', 'name')
-            ->get();
+
         $locations = InventoryHelper::getAccessibleLocations();
 
 
-        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
+        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
     }
 
     /**
@@ -291,7 +289,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
         })->get();
@@ -346,11 +344,9 @@ class RegistrationController extends Controller
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
                 });
+            });
 
-            })
-            ->select('id', 'name')
-            ->get();
-        return view('fixed-asset.registration.show', compact('categories', 'it_categories', 'ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        return view('fixed-asset.registration.show', compact('categories','ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
     }
 
     /**
@@ -380,7 +376,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
                     }
                 });
         })->get();
@@ -410,7 +406,6 @@ class RegistrationController extends Controller
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
                 });
-
             })
             ->select('id', 'name')
             ->get();
@@ -418,7 +413,7 @@ class RegistrationController extends Controller
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = InventoryHelper::getAccessibleLocations();
 
-        return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
+        return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
     }
 
     /**
@@ -916,7 +911,7 @@ class RegistrationController extends Controller
     {
         $uploadItems = UploadFAMaster::where('import_status', 'Success')
             ->get();
-        $codes = $uploadItems->pluck('asset_code') ?? [];
+        $codes =  $uploadItems->pluck('asset_code') ?? [];
 
         $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
             $query->whereIn('asset_code', $codes);

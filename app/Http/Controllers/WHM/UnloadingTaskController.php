@@ -134,10 +134,26 @@ class UnloadingTaskController extends Controller
             throw new ValidationException($validator);
         }
 
-        // // custom validation after
+        // Check invalid packets
+        $validPackets = ErpItemUniqueCode::where('job_id', $request->id)
+            ->whereIn('uid', $request->packet_ids)
+            ->where('morphable_type', 'App\Models\GateEntryDetail')
+            ->pluck('uid')
+            ->toArray();
+
+        $invalidPackets = array_diff($request->packet_ids, $validPackets);
+
+        if (!empty($invalidPackets)) {
+            throw ValidationException::withMessages([
+                'packet_ids' => ['Invalid or mismatched packet IDs: ' . implode(', ', $invalidPackets)],
+            ]);
+        }
+
+        // custom validation after
         $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->id)
             ->whereIn('uid', $request->packet_ids)
             ->where('status', CommonHelper::SCANNED)
+            ->where('morphable_type', 'App\Models\GateEntryDetail')
             ->pluck('uid')
             ->toArray();
 
@@ -153,16 +169,17 @@ class UnloadingTaskController extends Controller
             $user = Helper::getAuthenticatedUser();
             
             // Update Job Status
-            ErpWhmJob::where('id',$request->id)
-            ->update([
-                'status' => CommonHelper::IN_PROGRESS
-            ]);
+            $job = ErpWhmJob::find($request->id);
+            if($job->status != CommonHelper::DEVIATION){
+                $job->status = CommonHelper::IN_PROGRESS;
+                $job->save();
+            }
 
             // Update Task Status
             ErpItemUniqueCode::where('job_id',$request->id)
             ->whereIn('uid',$request->packet_ids)
             ->update([
-                'status' => 'scanned',
+                'status' => CommonHelper::SCANNED,
                 'action_by' => $user->id,
                 'action_at' => now()
             ]);
@@ -190,26 +207,44 @@ class UnloadingTaskController extends Controller
         }
 
         // custom validation after
-        $alreadyClosed = ErpWhmJob::where('id',$request->job_id)->whereNotNull('job_closed_at')->first();
-        if (!empty($alreadyClosed)) {
+        $job = ErpWhmJob::find($request->job_id);
+        if (!$job) {
             throw ValidationException::withMessages([
-                'job_id' => ['Job already closed.'],
+                'job_id' => ['Job not found.'],
             ]);
         }
+
+        // Check if job is already closed with deviation=0 and incoming deviation=0
+        if ($job->job_closed_at !== null ) {
+            if ($job->deviation_qty == $request->deviation) {
+                throw ValidationException::withMessages([
+                    'job_id' => ['Job already closed.'],
+                ]);
+            }
+        }
+        // $alreadyClosed = ErpWhmJob::where('id',$request->job_id)->where('job_closed_at')->first();
+        // if (!empty($alreadyClosed)) {
+        //     throw ValidationException::withMessages([
+        //         'job_id' => ['Job already closed.'],
+        //     ]);
+        // }
 
 
         \DB::beginTransaction();
         try {
 
-            $message = 'Job closed successfully.';
             $job = ErpWhmJob::find($request->job_id);
             $job->status = CommonHelper::CLOSED;
             $job->job_closed_at = now();
+            $job->deviation_qty = $request->deviation;
+            $message = 'Job closed successfully.';
+
+            // Update status based on deviation
             if($request->deviation > 0){
-                $job->deviation_qty = $request->deviation;
                 $job->status = CommonHelper::DEVIATION;
                 $message = 'Job closed with deviation '.$request->deviation.'.';
             }
+
             $job->save();
 
             \DB::commit();

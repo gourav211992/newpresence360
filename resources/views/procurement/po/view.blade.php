@@ -185,6 +185,12 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                                <div class="col-md-3">
+                                                    <div class="mb-1">
+                                                        <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control mw-100 {{$isDifferentCurrency ? '' : 'disabled-input'}}" value="{{$po->org_currency_exg_rate}}" id="exchange_rate" name="exchange_rate" />
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-md-4">
@@ -221,7 +227,7 @@
                                                             <div class="genertedvariables genertedvariablesnone">
                                                                 <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
                                                                 </label>
-                                                                <div class="mrnaddedd-prim delivery_address">{{$deliveryAddress}}</div>   
+                                                                <div class="mrnaddedd-prim delivery_address">{{$po?->latestDeliveryAddress()?->display_address}}</div>   
                                                             </div>
                                                         </div>
                                                     </div>
@@ -292,7 +298,7 @@
                                                 <td></td>
                                             </tr>
                                         <tr valign="top">
-                                            <td colspan="7" rowspan="10">
+                                            <td colspan="8" rowspan="10">
                                                 <table class="table border">
                                                     <tbody id="itemDetailDisplay">
                                                     <tr>

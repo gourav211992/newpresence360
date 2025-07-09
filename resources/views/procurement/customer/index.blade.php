@@ -119,6 +119,8 @@
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                         <option value="draft">Draft</option>
+                                        <option value="submitted">Submitted</option>
+                                        <option value="rejected">Rejected</option>
                                     </select>
                                 </div>
                             </div>

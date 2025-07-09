@@ -95,12 +95,12 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                     $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
     
@@ -329,7 +329,6 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'ledger_group_id' => $ledgerGroupId ?? null,
                 'credit_limit' => $uploadedVendor->credit_limit ?? null,
                 'credit_days' => $uploadedVendor->credit_days ?? null,
-                'status' => 'active',
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedVendor->group_id ?? null,
                 'company_id' => $uploadedVendor->company_id ?? null,
@@ -607,6 +606,45 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
 
 
             $vendor = new Vendor($uploadedVendorData);
+            $vendor->document_status = ConstantHelper::DRAFT;
+            $vendor->status = ConstantHelper::DRAFT; 
+            $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS; 
+            $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
+            if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+                if (isset($services['current_book'])) {
+                    $book = $services['current_book'];
+                    $vendor->book_id = $book->id ?? null;
+                } else {
+                    $vendor->book_id = null;
+                }
+            } else {
+                $vendor->book_id = null;
+            }
+
+            $vendor->save();
+
+            $bookId = $vendor->book_id;
+            $docId = $vendor->id;
+            $remarks = null; 
+            $attachments = null; 
+            $currentLevel = $vendor->approval_level ?? 1;
+            $revisionNumber = $vendor->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($vendor);
+            $totalValue = 0;
+
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue,  $modelName);
+            
+            $document_status = $approveDocument['approvalStatus'];
+            $vendor->document_status = $document_status;
+
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $vendor->status = ConstantHelper::ACTIVE;
+            } else {
+                $vendor->status = $document_status;
+            }
+
             $vendor->save();
 
             $vendor->compliances()->create([

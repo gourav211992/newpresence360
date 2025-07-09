@@ -1085,6 +1085,7 @@ class PoController extends Controller
             $po->payment_term_code = $request->payment_term_code;
             $po->department_id = $request->department_id;
             $po->store_id = $request->store_id;
+            $po->document_date = $request->document_date ?? $po->document_date; 
             $po->save();
             $vendorBillingAddress = $po->bill_address ?? null;
             $vendorShippingAddress = $po->ship_address ?? null;

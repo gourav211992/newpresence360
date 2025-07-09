@@ -397,8 +397,8 @@
                                                 <div class="col-md-6 text-sm-end">
                                                     <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
                                                     <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                                    <i data-feather="plus"></i> Add New Item</a>
+                                                    <!-- <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
+                                                    <i data-feather="plus"></i> Add New Item</a> -->
                                                 </div>
                                             </div>
                                         </div>
@@ -1346,6 +1346,8 @@
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
             let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
+            let joHeaderId = $(currentTr).find("[name*='jo_order_id']").val();
+            let joDetailId = $(currentTr).find("[name*='jo_detail_id']").val();
             let remark = '';
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
@@ -1370,7 +1372,7 @@
                 }
                 else if(currentProcessType == 'jo')
                 {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&job_order_id='+poHeaderId+'&jo_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&job_order_id='+joHeaderId+'&jo_detail_id='+joHeaderId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 }
                 else
                 {

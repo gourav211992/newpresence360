@@ -28,8 +28,8 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
 						<div class="form-group breadcrumb-right">
                         <input type="hidden" name="document_status" value="{{$po->document_status}}" id="document_status">
 							<button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+                            <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                             @if($buttons['draft'])
-                             <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                             @endif
                             @if(!intval(request('amendment') ?? 0) && $po->document_status != \App\Helpers\ConstantHelper::DRAFT && $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
                             <a href="{{ url(request()->route('type')) }}/{{$po->id}}/pdf" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">

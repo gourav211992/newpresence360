@@ -21,6 +21,8 @@ class GateEntryDetail extends Model
         'po_id',
         'jo_id',
         'so_id',
+        'vendor_asn_id',
+        'vendor_asn_item_id',
         'sale_order_item_id',
         'item_id',
         'item_code',
@@ -79,12 +81,22 @@ class GateEntryDetail extends Model
 
     public function po()
     {
-        return $this->belongsTo(PurchaseOrder::class, 'so_id');
+        return $this->belongsTo(PurchaseOrder::class, 'po_id');
     }
 
     public function jo()
     {
         return $this->belongsTo(JobOrder::class, 'jo_id');
+    }
+
+    public function vendorAsnDetail()
+    {
+        return $this->belongsTo(VendorAsnItem::class, 'vendor_asn_item_id');
+    }
+
+    public function vendorAsn()
+    {
+        return $this->belongsTo(VendorAsn::class, 'vendor_asn_id');
     }
 
     public function attributes()

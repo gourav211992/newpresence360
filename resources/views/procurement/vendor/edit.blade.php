@@ -1470,7 +1470,7 @@
                     </div>
                 </div>
                 <div class="modal-footer justify-content-center">  
-                    <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+                    <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('amendConfirmPopup')">Cancel</button> 
                     <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
                 </div>
             </div>
@@ -1518,7 +1518,7 @@
             </div>
          </div>
          <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick="closeModal('approveModal')">Cancel</button> 
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>
@@ -2762,6 +2762,10 @@ $(document).ready(function() {
                 }
             });
         }
+    }
+    function closeModal(id)
+    {
+        $('#' + id).modal('hide');
     }
     function openModal(id)
     {

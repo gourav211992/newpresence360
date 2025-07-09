@@ -170,8 +170,12 @@
         ];
         const ALLOWED_MIME_TYPES = [
             'application/vnd.ms-excel', 
+            'application/excel',
+            'application/x-excel', 
+            'application/x-msexcel', 
+            'application/vnd.ms-office', 
+            'application/kset',
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel',
         ];
         const MAX_FILE_SIZE = 30 * 1024 * 1024;
         const MAX_ROW_COUNT = 10000; 
