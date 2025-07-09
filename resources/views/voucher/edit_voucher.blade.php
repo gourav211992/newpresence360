@@ -1620,8 +1620,8 @@
 
             const rowId = $row.data('row-id') || $row.attr('id') || ''; // fallback if needed
             const ledgerName = $row.find('td').eq(1).find('input[name^="ledger_name"]').val();
-            const debitAmount = parseFloat($row.find('td').eq(3).find('input').val()) || 0;
-            const creditAmount = parseFloat($row.find('td').eq(4).find('input').val()) || 0;
+            const debitAmount = parseFloat(removeCommas($row.find('td').eq(3).find('input').val() || '0')) || 0;
+            const creditAmount = parseFloat(removeCommas($row.find('td').eq(4).find('input').val() || '0')) || 0;
 
             const compCurrency = $('#comp_currency_code').val() || '';
             const groupCurrency = $('#group_currency_code').val() || '';
