@@ -164,6 +164,7 @@ class EditMaterialReceiptRequest extends FormRequest
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
+                $poId = $component['purchase_order_id'] ?? null;
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;
@@ -180,13 +181,15 @@ class EditMaterialReceiptRequest extends FormRequest
                     'uom_id' => $uomId,
                     'attributes' => $attributes,
                     'so_id' => $soId,
+                    'po_id' => $poId,
                 ];
                 foreach ($items as $existingItem) {
                     if (
                         $existingItem['item_id'] === $currentItem['item_id'] &&
                         $existingItem['uom_id'] === $currentItem['uom_id'] &&
                         $existingItem['attributes'] === $currentItem['attributes'] &&
-                        $existingItem['so_id'] === $currentItem['so_id']
+                        $existingItem['so_id'] === $currentItem['so_id'] &&
+                        $existingItem['po_id'] === $currentItem['po_id']
                     ) {
                         $validator->errors()->add(
                             "components.$key.item_id",

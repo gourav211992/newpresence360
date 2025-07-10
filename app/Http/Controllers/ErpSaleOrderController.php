@@ -597,41 +597,31 @@ class ErpSaleOrderController extends Controller
 
                 if (count($deletedData['deletedSoItemIds'])) {
                     $soItems = ErpSoItem::whereIn('id',$deletedData['deletedSoItemIds'])->get();
-                    # all ted remove item level
                     foreach($soItems as $soItem) {
-                        //If this item is pulled from another quotation
                         if ($soItem -> sq_item_id) {
                             $qtItem = ErpSoItem::find($soItem -> sq_item_id);
                             if (isset($qtItem)) {
-                                //Subtract the value utilized
                                 $qtItem -> quotation_order_qty -= $soItem -> order_qty;
                                 $qtItem -> save();
                             }
                         }
-                        //If this item is pulled from another org PO
                         if ($soItem -> po_item_id) {
                             $poItem = PoItem::find($soItem -> po_item_id);
                             if (isset($poItem)) {
-                                //Subtract the value utilized
                                 $poItem -> inter_org_so_qty -= $soItem -> order_qty;
                                 $poItem -> save();
                             }
                         }
-                        //If this item is pulled from another org JO
                         if ($soItem -> jo_product_id) {
                             $joProduct = JoProduct::find($soItem -> jo_product_id);
                             if (isset($joProduct)) {
-                                //Subtract the value utilized
                                 $joProduct -> inter_org_so_qty -= $soItem -> order_qty;
                                 $joProduct -> save();
                             }
                         }
-                        #Bom remove
                         $soItem->custom_bom_details()->delete();
                         $soItem->teds()->delete();
-                        #delivery remove
                         $soItem->item_deliveries()->delete();
-                        # all attr remove
                         $soItem->attributes()->delete();
                         $soItem->delete();
                     }

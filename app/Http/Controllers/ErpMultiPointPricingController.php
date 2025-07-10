@@ -36,118 +36,115 @@ class ErpMultiPointPricingController extends Controller
     $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
     $multiPoints = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()->get();
 
-if ($request->ajax()) {
-    $query = ErpLogisticsMultiFixedPricing::with([
-        'sourceRoute', 'destinationRoute',
-        'customer', 'locations.route'
-    ])->withDefaultGroupCompanyOrg();
+    if ($request->ajax()) {
+        $query = ErpLogisticsMultiFixedPricing::with([
+            'sourceRoute', 'destinationRoute',
+            'customer'
+        ])->withDefaultGroupCompanyOrg();
 
-    // Filters
-    if ($request->filled('source_route_name')) {
-        $query->whereHas('sourceRoute', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->source_route_name . '%');
-        });
+        // Filters
+        if ($request->filled('source_route_name')) {
+            $query->whereHas('sourceRoute', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->source_route_name . '%');
+            });
+        }
+
+        if ($request->filled('destination_route_name')) {
+            $query->whereHas('destinationRoute', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->destination_route_name . '%');
+            });
+        }
+
+        if ($request->filled('customer_name')) {
+            $query->whereHas('customer', function ($q) use ($request) {
+                $q->where('company_name', 'like', '%' . $request->customer_name . '%');
+            });
+        }
+
+        $query->orderByDesc('id');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+
+            // Render columns
+            ->addColumn('source', function ($row) {
+                return optional($row->sourceRoute)->name ?? 'N/A';
+            })
+            ->addColumn('destination', function ($row) {
+                return optional($row->destinationRoute)->name ?? 'N/A';
+            })
+            ->addColumn('customer', function ($row) {
+                return optional($row->customer)->company_name ?? '-';
+            })
+        ->addColumn('locations', function ($row) {
+                $html = '';
+                foreach ($row->locations->take(2) as $location) {
+                    $html .= '<span class="badge rounded-pill badge-light-primary">'
+                        . optional($location->route)->name . ': ' . number_format($location->amount, 2) . '</span> ';
+                }
+                if ($row->locations->count() > 2) {
+                    $html .= '<span class="badge rounded-pill badge-light-primary">+'
+                        . ($row->locations->count() - 2) . '</span>';
+                }
+                return $html;
+            })
+            ->addColumn('created_at', function ($row) {
+                return optional($row->created_at)->format('d-m-Y h:i A') ?? '-';
+            })
+
+            ->addColumn('created_by', function ($row) {
+                return optional($row->createdBy)->name ?? '-';
+            })
+
+
+            ->addColumn('status', function ($row) {
+                $colors = [
+                    'active' => 'badge-light-success',
+                    'inactive' => 'badge-light-danger',
+                    'block' => 'badge-light-secondary',
+                    'transfer' => 'badge-light-warning',
+                    'blacklist' => 'badge-dark',
+                ];
+                $badge = $colors[$row->status] ?? 'badge-light-secondary';
+                return '<span class="badge rounded-pill ' . $badge . ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
+            })
+            ->addColumn('action', function ($row) {
+                $editRoute = route('logistics.multi-point-fixed.edit', $row->id);
+                return '<div class="dropdown">
+                            <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                                <i data-feather="more-vertical"></i>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <a class="dropdown-item" href="' . $editRoute . '">
+                                    <i data-feather="edit-3" class="me-50"></i>
+                                    <span>Edit</span>
+                                </a>
+                            </div>
+                        </div>';
+            })
+
+            // Updated search columns
+            ->filterColumn('source', function ($query, $keyword) {
+                $query->whereHas('sourceRoute', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%$keyword%");
+                });
+            })
+            ->filterColumn('destination', function ($query, $keyword) {
+                $query->whereHas('destinationRoute', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%$keyword%");
+                });
+            })
+            ->filterColumn('customer', function ($query, $keyword) {
+                $query->whereHas('customer', function ($q) use ($keyword) {
+                    $q->where('company_name', 'like', "%$keyword%");
+                });
+            })
+
+            ->rawColumns(['locations', 'status', 'action'])
+            ->make(true);
     }
 
-    if ($request->filled('destination_route_name')) {
-        $query->whereHas('destinationRoute', function ($q) use ($request) {
-            $q->where('name', 'like', '%' . $request->destination_route_name . '%');
-        });
-    }
-
-    if ($request->filled('customer_name')) {
-        $query->whereHas('customer', function ($q) use ($request) {
-            $q->where('company_name', 'like', '%' . $request->customer_name . '%');
-        });
-    }
-
-    $query->orderByDesc('id');
-
-    return DataTables::of($query)
-        ->addIndexColumn()
-
-        // Render columns
-        ->addColumn('source', function ($row) {
-            return optional($row->sourceRoute)->name ?? 'N/A';
-        })
-        ->addColumn('destination', function ($row) {
-            return optional($row->destinationRoute)->name ?? 'N/A';
-        })
-        ->addColumn('customer', function ($row) {
-            return optional($row->customer)->company_name ?? '-';
-        })
-       ->addColumn('locations', function ($row) {
-            $html = '';
-            foreach ($row->locations->take(2) as $location) {
-                $html .= '<span class="badge rounded-pill badge-light-primary">'
-                    . optional($location->route)->name . ': ' . number_format($location->amount, 2) . '</span> ';
-            }
-            if ($row->locations->count() > 2) {
-                $html .= '<span class="badge rounded-pill badge-light-primary">+'
-                    . ($row->locations->count() - 2) . '</span>';
-            }
-            return $html;
-        })
-        ->addColumn('created_at', function ($row) {
-            return optional($row->created_at)->format('d-m-Y h:i A') ?? '-';
-        })
-
-        ->addColumn('created_by', function ($row) {
-            return optional($row->createdBy)->name ?? '-';
-        })
-
-
-        ->addColumn('status', function ($row) {
-            $colors = [
-                'active' => 'badge-light-success',
-                'inactive' => 'badge-light-danger',
-                'block' => 'badge-light-secondary',
-                'transfer' => 'badge-light-warning',
-                'blacklist' => 'badge-dark',
-            ];
-            $badge = $colors[$row->status] ?? 'badge-light-secondary';
-            return '<span class="badge rounded-pill ' . $badge . ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
-        })
-        ->addColumn('action', function ($row) {
-            $editRoute = route('logistics.multi-point-fixed.edit', $row->id);
-            return '<div class="dropdown">
-                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                            <i data-feather="more-vertical"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="' . $editRoute . '">
-                                <i data-feather="edit-3" class="me-50"></i>
-                                <span>Edit</span>
-                            </a>
-                        </div>
-                    </div>';
-        })
-
-        // Updated search columns
-        ->filterColumn('source', function ($query, $keyword) {
-            $query->whereHas('sourceRoute', function ($q) use ($keyword) {
-                $q->where('name', 'like', "%$keyword%");
-            });
-        })
-        ->filterColumn('destination', function ($query, $keyword) {
-            $query->whereHas('destinationRoute', function ($q) use ($keyword) {
-                $q->where('name', 'like', "%$keyword%");
-            });
-        })
-        ->filterColumn('customer', function ($query, $keyword) {
-            $query->whereHas('customer', function ($q) use ($keyword) {
-                $q->where('company_name', 'like', "%$keyword%");
-            });
-        })
-
-        ->rawColumns(['locations', 'status', 'action'])
-        ->make(true);
-}
-
-
-
-
-    return view('multi-point-pricing.index', compact('customers', 'states', 'multiPoints', 'routeMasters'));
+    return view('logistics.multi-point-pricing.index', compact('customers', 'states', 'multiPoints', 'routeMasters'));
   }
 
   public function store(MultiPointPricingRequest $request)

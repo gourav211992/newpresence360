@@ -19,7 +19,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/stores', 'stores')->name('whm.stores');
         Route::get('/sub-stores', 'subStores')->name('whm.sub-stores');
         Route::get('/storage-points', 'storagePoints')->name('whm.storage-points');
-        // Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');
+        Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');
     });
 
     Route::controller(UnloadingTaskController::class)->group(function () {

@@ -6,7 +6,6 @@ use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
-use App\Helpers\NumberHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\UserHelper;
@@ -30,7 +29,6 @@ use App\Models\ErpSoItemBom;
 use App\Models\Unit;
 use App\Models\Vendor;
 use App\Models\Attribute;
-use App\Models\ItemAttribute;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Http\Request;
@@ -44,13 +42,11 @@ class PiController extends Controller
      # Po List
     public function index(Request $request)
     {
-        $currentfyYear = Helper::getCurrentFinancialYear();
-        $selectedfyYear = Helper::getFinancialYear(Carbon::now());
-
         if (request()->ajax()) {
-            $pis = PurchaseIndent::withDraftListingLogic()
-                    -> whereBetween('document_date',[$selectedfyYear['start_date'],$selectedfyYear['end_date']])
-                    ->with('vendor')
+            $selectedfyYear = Helper::getFinancialYear(Carbon::now());
+            $selectColumns = ['id','document_date','document_status','book_id','store_id','sub_store_id','user_id','requester_type','revision_number','document_number'];
+            $pis = PurchaseIndent::select($selectColumns)->withDraftListingLogic()
+                    ->whereBetween('document_date',[$selectedfyYear['start_date'], $selectedfyYear['end_date']])
                     ->latest();
             return DataTables::of($pis)
             ->addIndexColumn()
@@ -200,10 +196,6 @@ class PiController extends Controller
         try {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first(); 
-            $organizationId = $organization ?-> id ?? null;
-            $groupId = $organization ?-> group_id ?? null;
-            $companyId = $organization ?-> company_id ?? null;
-
             # Bom Header save
             $pi = new PurchaseIndent;
             $pi->organization_id = $organization->id;
@@ -432,8 +424,6 @@ class PiController extends Controller
         try {
             # Pi Header save
             $pi = PurchaseIndent::find($id);
-            $user = Helper::getAuthenticatedUser();
-            $organization = Organization::where('id', $user->organization_id)->first(); 
             $currentStatus = $pi->document_status;
             $actionType = $request->action_type;
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
@@ -474,6 +464,7 @@ class PiController extends Controller
                 }
             }
             $pi->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $pi->document_date = $request->document_date ?? $pi->document_date; 
             $pi->remarks = $request->remarks ?? null;
             $pi->save();
             if (isset($request->all()['components']) && count($request->all()['components'])) {
@@ -565,7 +556,6 @@ class PiController extends Controller
                         $piSoMapping->pi_item_qty += $allowedQty;
                         $piSoMapping->save();
 
-                        
                         // Update qty in the current PiSoMappingItem
                         $poSiMapItem = PiSoMappingItem::find($poSiMappingItem->id);
                         $poSiMapItem->qty += $allowedQty;
@@ -673,15 +663,6 @@ class PiController extends Controller
                 $pi->approval_level = 1;
                 $pi->revision_date = now();
                 $amendAfterStatus = $approveDocument['approvalStatus'] ?? $pi->document_status;
-                // $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
-                // if(isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
-                //     $totalValue = 0;
-                //     $amendAfterStatus = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                // }
-                // if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
-                //     $actionType = 'submit';
-                //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-                // }
                 $pi->document_status = $amendAfterStatus;
                 $pi->save();
             } else {
@@ -888,7 +869,6 @@ class PiController extends Controller
         }
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pi->document_status] ?? '';
-        $organization = Organization::where('id', $user->organization_id)->first();
         $departmentsData = UserHelper::getDepartments($user->auth_user_id ?? 0);
         $users = UserHelper::getUserSubOrdinates($user->auth_user_id ?? 0);
         $selecteduserId = $pi ?-> user_id;
@@ -914,7 +894,6 @@ class PiController extends Controller
             'approvalHistory' => $approvalHistory,
             'docStatusClass' => $docStatusClass,
             'revision_number' => $revision_number,
-            // 'selectedDepartmentId' => $departmentsData['selectedDepartmentId'],
             'departments' => $departmentsData['departments'],
             'users' => $users['data'],
             'selecteduserId' => $selecteduserId,
@@ -934,8 +913,7 @@ class PiController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $pi = PurchaseIndent::with(['vendor', 'pi_items', 'book'])
-            ->findOrFail($id);
+        $pi = PurchaseIndent::with(['pi_items', 'book'])->findOrFail($id);
 
         $imagePath = public_path('assets/css/midc-logo.jpg');
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$pi->document_status] ?? '';
@@ -964,75 +942,13 @@ class PiController extends Controller
        $headerBookId = $request->header_book_id ?? null;
        $itemSearch = $request->item_search ?? null;
        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-    //    $soItems = ErpSoItem::where(function ($query) {
-    //        $query->whereExists(function ($subQuery) {
-    //            $subQuery->select(DB::raw(1))
-    //                ->from('erp_pi_so_mapping')
-    //                ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
-    //                ->where(function ($q) {
-    //                     $q->whereRaw('ROUND(erp_pi_so_mapping.qty, 4) < ROUND(erp_so_items.order_qty, 4)');
-    //                 });
-    //             //    ->where(function ($q) {
-    //             //         $q->whereRaw('ROUND(erp_pi_so_mapping.qty,4) > ROUND(erp_pi_so_mapping.pi_item_qty,4)')
-    //             //         ->orWhereRaw('ROUND(erp_pi_so_mapping.order_qty,4) < ROUND(erp_so_items.order_qty,4)');
-    //             //     });
-    //        })
-    //        ->orWhere(function ($subQuery) {
-            //    $subQuery->whereNotExists(function ($subQuery2) {
-            //        $subQuery2->select(DB::raw(1))
-            //            ->from('erp_pi_so_mapping')
-            //            ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id');
-            //    });
-    //        });
-    //    })
-    //    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber) {
-    //        $subQuery->whereIn('book_id', $applicableBookIds)
-    //            -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-    //            ->when($request->customer_id, function ($custQuery) use ($request) {
-    //                $custQuery->where('customer_id', $request->customer_id);
-    //            })
-    //            ->when($request->book_id, function ($bookQuery) use ($request) {
-    //                $bookQuery->where('book_id', $request->book_id);
-    //            })
-    //            ->when($request->document_id, function ($docQuery) use ($request) {
-    //                $docQuery->where('id', $request->document_id);
-    //            })
-    //            ->when($docNumber, function ($query) use ($docNumber) {
-    //                $query->where('document_number', 'LIKE', "%{$docNumber}%");
-    //            });
-    //    })
-    //    ->whereColumn('invoice_qty', '<', 'order_qty')
-    //    ->where(function ($query) use ($itemSearch) {
-    //         if ($itemSearch) {
-    //             $query->whereHas('item', function ($query) use ($itemSearch) {
-    //                 $query->where('item_name', 'like', '%' . $itemSearch . '%')
-    //                     ->orWhere('item_code', 'like', '%' . $itemSearch . '%');
-    //             });
-    //         }
-    //    })
-    //    ->with(['header', 'item']);
         $soItems = ErpSoItem::where(function ($query) {
-
-            $query->whereDoesntHave('soItemMapping') // No mapping at all
+            $query->whereDoesntHave('soItemMapping')
               ->orWhereHas('soItemMapping', function ($subQuery) {
                   $subQuery->select(DB::raw('SUM(pi_item_qty)'))
                       ->groupBy('so_item_id')
                       ->havingRaw('SUM(pi_item_qty) < SUM(qty)');
               });
-
-            // $query->whereNotExists(function ($subQuery2) {
-            //     $subQuery2->select(DB::raw(1))
-            //         ->from('erp_pi_so_mapping')
-            //         ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
-            //         ->whereRaw('erp_pi_so_mapping.pi_item_qty > 0');
-            // });
-            // $query->whereHas('soItemMapping', function ($q) {
-            //     $q->where(function ($q) {
-            //         $q->whereRaw('ROUND(erp_pi_so_mapping.qty,2) > ROUND(erp_pi_so_mapping.pi_item_qty,2)');
-            //         // ->orWhereRaw('ROUND(erp_pi_so_mapping.order_qty,4) < ROUND(erp_so_items.order_qty,4)');
-            //     });
-            // })
-            // ->orWhereDoesntHave('soItemMapping');
         })
         ->whereColumn('invoice_qty', '<', 'order_qty')
         ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $docNumber) {
@@ -1092,14 +1008,7 @@ class PiController extends Controller
        } 
        $soItems = ErpSoItem::whereIn('id', $ids)
                    ->where(function($query) {
-                    //    $query->whereNotExists(function ($subQuery) {
-                    //        $subQuery->select(DB::raw(1))
-                    //            ->from('erp_pi_so_mapping')
-                    //            ->whereRaw('erp_pi_so_mapping.so_item_id = erp_so_items.id')
-                    //            ->whereRaw('erp_pi_so_mapping.qty <= erp_pi_so_mapping.pi_item_qty')
-                    //            ->whereColumn('erp_pi_so_mapping.order_qty', '>=', 'erp_so_items.order_qty');
-                    //    });
-                    $query->whereDoesntHave('soItemMapping') // No mapping at all
+                    $query->whereDoesntHave('soItemMapping')
                         ->orWhereHas('soItemMapping', function ($subQuery) {
                             $subQuery->select(DB::raw('SUM(pi_item_qty)'))
                                 ->groupBy('so_item_id')
@@ -1194,7 +1103,6 @@ class PiController extends Controller
                 ->havingRaw('total_qty > 0')
                 ->get();
             }
-            // dd($soProcessItems);
             $html = view('procurement.pi.partials.so-process-data', ['soTracking' => $soTracking,'soProcessItems' => $soProcessItems])->render();
 
         } else {
@@ -1285,7 +1193,6 @@ class PiController extends Controller
    private function syncPiSoMapping($soId, $soItemId, $itemId, $attr, $soQty, $createdBy, $soItemOrderQty)
    {
        $so = ErpSaleOrder::find($soId);
-       $customerId = $so?->customer_id; 
        $item = Item::find($itemId);
        $checkBomExist = ItemHelper::checkItemBomExists($itemId, $attr);
        if($checkBomExist['bom_id']) {
@@ -1361,24 +1268,16 @@ class PiController extends Controller
                                ['so_item_id', $soItemId],
                                ['item_id', $mappingData['item_id']]
                            ])
-                        //    ->where('attributes', json_encode($attributes))
                            ->whereJsonContains('attributes', $attributes)
                            ->first();
                            if($mappingExit) {
-                            
-                            //    $mappingData['order_qty'] = $mappingData['order_qty'] + $soQty;
-                            //    $mappingData['bom_qty'] = $mappingData['bom_qty'] + floatval($bomDetail->qty);
                                $mappingData['qty'] = $mappingData['qty'] + $mappingExit->qty;
                            }
-        
                            if ($mappingExit) {
                                $mappingExit->update($mappingData);
                            } else {
                                PiSoMapping::create($mappingData);
                            }
-                           
-                           
-
                        }
                        
                    }
@@ -1501,11 +1400,17 @@ class PiController extends Controller
                }
            } else {
                DB::rollBack();
-               throw new ApiGenericException("No Document found");
+               return response() -> json([
+                    'status' => 'error',
+                    'message' => 'No Document found',
+                ]);
            }
        } catch(Exception $ex) {
            DB::rollBack();
-           throw new ApiGenericException($ex -> getMessage());
+           return response() -> json([
+                'status' => 'error',
+                'message' => $ex->getMessage(),
+            ]);
        }
    }
 

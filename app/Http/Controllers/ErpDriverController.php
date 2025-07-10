@@ -95,7 +95,7 @@ class ErpDriverController extends Controller
                 ->make(true);
         }
 
-        return view('drivers.index');
+        return view('logistics.drivers.index');
     }
 
 
@@ -105,7 +105,7 @@ class ErpDriverController extends Controller
         $status = ConstantHelper::STATUS;
         $employees = Employee::where('organization_id',$user->organization_id)->where('status', 'active')->get();
        
-        return view('drivers.create', compact('status','employees'));
+        return view('logistics.drivers.create', compact('status','employees'));
     }
     
    public function store(DriverRequest $request)
@@ -196,7 +196,7 @@ class ErpDriverController extends Controller
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
         $employees = Employee::where('organization_id',$user->organization_id)->where('status', 'active')->get();
-        return view('drivers.edit', compact('driver', 'status', 'employees'));
+        return view('logistics.drivers.edit', compact('driver', 'status', 'employees'));
     }
 
     public function update(DriverRequest $request, $id)

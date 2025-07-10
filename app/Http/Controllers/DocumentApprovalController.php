@@ -21,6 +21,7 @@ use App\Helpers\InspectionHelper;
 
 use App\Models\Bom;
 use App\Models\ErpSaleOrder;
+use App\Models\ErpLorryReceipt;
 use App\Models\MrnDetail;
 use App\Models\ExpenseHeader;
 use App\Models\ErpSaleReturn;
@@ -35,6 +36,8 @@ use App\Models\PurchaseOrder;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
 use App\Models\JobOrder\JobOrder;
+use App\Models\WHM\ErpItemUniqueCode;
+use App\Models\WHM\ErpWhmJob;
 use Exception;
 use Illuminate\Http\Request;
 class DocumentApprovalController extends Controller
@@ -542,17 +545,41 @@ class DocumentApprovalController extends Controller
             $bookId = $expense->series_id;
             $docId = $expense->id;
             $docValue = $expense->total_amount;
-            $remarks = $request->remarks;
-            $attachments = $request->file('attachment');
+            if($request->action_type == 'deviation')
+            {
+                $remarks = $request->closing_remarks;
+                $attachments = [];
+            }
+            else
+            {
+                $remarks = $request->remarks;
+                $attachments = $request->file('attachment');
+            }
             $currentLevel = $expense->approval_level;
+            $actionType = $request->action_type;
             $revisionNumber = $expense->revision_number ?? 0;
-            $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($expense);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $expense->approval_level = $approveDocument['nextLevel'];
-            $expense->document_status = $approveDocument['approvalStatus'];
+            if($request->action_type != 'deviation')
+            {
+                $expense->document_status = $approveDocument['approvalStatus'];
+            }
             $expense->save();
-
+            if ($request->action_type === 'deviation') {
+                $jobData = ErpWhmJob::find($request->closing_job_id);
+                if ($jobData) {
+                    ErpItemUniqueCode::where('job_id', $jobData->id)
+                        ->where('status', 'pending')
+                        ->delete();
+                    $hasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
+                        ->where('status', 'pending')
+                        ->exists();
+                    if (!$hasPending) {
+                        $jobData->update(['status' => 'closed']);
+                    }
+                }
+            }
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",
@@ -895,17 +922,17 @@ class DocumentApprovalController extends Controller
             $item = Item::find($request->id);
             $bookId = $item->book_id;
             $docId = $item->id;
-            $docValue = 0; 
+            $docValue = 0;
             $remarks = $request->remarks;
             $attachments = $request->file('attachment');
             $currentLevel = $item->approval_level;
             $revisionNumber = $item->revision_number ?? 0;
-            $actionType = $request->action_type; 
+            $actionType = $request->action_type;
             $modelName = get_class($item);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $item->approval_level = $approveDocument['nextLevel'];
             $document_status = $approveDocument['approvalStatus'];
-            $status = $request->status; 
+            $status = $request->status;
             $item->document_status = $document_status;
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
               $item->status = ConstantHelper::ACTIVE;
@@ -940,17 +967,17 @@ class DocumentApprovalController extends Controller
             $vendor = Vendor::find($request->id);
             $bookId = $vendor->book_id;
             $docId = $vendor->id;
-            $docValue = 0; 
+            $docValue = 0;
             $remarks = $request->remarks;
             $attachments = $request->file('attachment');
-            $currentLevel = $vendor->approval_level ?? 1; 
-            $revisionNumber = $vendor->revision_number ?? 0; 
+            $currentLevel = $vendor->approval_level ?? 1;
+            $revisionNumber = $vendor->revision_number ?? 0;
             $actionType = $request->action_type;
             $modelName = get_class($vendor);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
-            $vendor->approval_level = $approveDocument['nextLevel'] ?? 1; 
+            $vendor->approval_level = $approveDocument['nextLevel'] ?? 1;
             $approvalStatus = $approveDocument['approvalStatus'];
-            $status = $request->status; 
+            $status = $request->status;
             $vendor->document_status = $approvalStatus;
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
                 $vendor->status = ConstantHelper::ACTIVE;
@@ -994,8 +1021,8 @@ class DocumentApprovalController extends Controller
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
 
             $customer->approval_level = $approveDocument['nextLevel'] ?? 1;
-            $approvalStatus = $approveDocument['approvalStatus']; 
-            $status = $request->status; 
+            $approvalStatus = $approveDocument['approvalStatus'];
+            $status = $request->status;
             $customer->document_status = $approvalStatus;
 
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
@@ -1014,6 +1041,49 @@ class DocumentApprovalController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType customer document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+     public function lorryReceipt(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $lr = ErpLorryReceipt::find($request->id);
+            $bookId = $lr->book_id;
+            $docId = $lr->id;
+            $docValue =$lr->total_charges ??  0;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $lr->approval_level ?? 1;
+            $revisionNumber = $lr->revision_number ?? 0;
+            $actionType = $request->action_type;
+           
+            $modelName = get_class($lr);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $lr->approval_level = $approveDocument['nextLevel'] ?? 1;
+            $approvalStatus = $approveDocument['approvalStatus']; 
+            $lr->document_status = $approvalStatus;
+
+         
+            $lr->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Lorry Receipt document $actionType successfully!",
+                'data' => $lr,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType lorry receipt document.",
                 'error' => $e->getMessage(),
             ], 500);
         }

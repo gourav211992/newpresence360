@@ -766,6 +766,7 @@
         window.onload = function () {
             localStorage.removeItem('selectedPoIds');
             localStorage.removeItem('selectedJoIds');
+            localStorage.removeItem('selectedSoIds');
             currentProcessType = null;
         };
         let currentProcessType = null;
@@ -3392,6 +3393,7 @@
                 + '&geIds=' + encodeURIComponent(geIds)
                 + '&geItemIds=' + encodeURIComponent(geItemIds)
                 + '&moduleTypes=' + moduleTypes
+                + '&tableRowCount=' + tableRowCount
                 + '&currency_id=' + encodeURIComponent(currencyId)
                 + '&d_date=' + encodeURIComponent(transactionDate)
                 + '&current_row_count=' + current_row_count;

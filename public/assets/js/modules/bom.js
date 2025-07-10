@@ -415,23 +415,65 @@ document.addEventListener("DOMContentLoaded", function () {
    }
 });
 
+// $(document).on('click', '.consumption_btn', (e) => {
+//    let rowCount = $(e.target).attr('data-row-count');
+//    $("#consumptionPopup").modal('show');
+//    $("#consumptionPopup input[name='consumption_row']").val(rowCount);
+//    let qty_per_unit = $(`[name="components[${rowCount}][qty_per_unit]"]`).val() || '';
+//    let total_qty = $(`[name="components[${rowCount}][total_qty]"]`).val() || '';
+//    let std_qty = $(`[name="components[${rowCount}][std_qty]"]`).val() || '';
+//    $("#qty_per_unit").val(qty_per_unit);
+//    $("#total_qty").val(total_qty);
+//    $("#std_qty").val(std_qty);
+//    const qty = parseFloat(qty_per_unit) || 0;
+//    const total = parseFloat(total_qty) || 0;
+//    const std = parseFloat(std_qty) || 0;
+//    const result = total > 0 ? (std / total * qty) : 0;
+//    const output  = isNaN(result) ? "0.000000" : result.toFixed(6);
+//    $("#output").val(output);
+// });
+
 $(document).on('click', '.consumption_btn', (e) => {
-   let rowCount = $(e.target).attr('data-row-count');
-   $("#consumptionPopup").modal('show');
-   $("#consumptionPopup input[name='consumption_row']").val(rowCount);
-   let qty_per_unit = $(`[name="components[${rowCount}][qty_per_unit]"]`).val() || '';
-   let total_qty = $(`[name="components[${rowCount}][total_qty]"]`).val() || '';
-   let std_qty = $(`[name="components[${rowCount}][std_qty]"]`).val() || '';
-   $("#qty_per_unit").val(qty_per_unit);
-   $("#total_qty").val(total_qty);
-   $("#std_qty").val(std_qty);
-   const qty = parseFloat(qty_per_unit) || 0;
-   const total = parseFloat(total_qty) || 0;
-   const std = parseFloat(std_qty) || 0;
-   const result = total > 0 ? (std / total * qty) : 0;
-   const output  = isNaN(result) ? "0.000000" : result.toFixed(6);
-   $("#output").val(output);
+    const rowCount = $(e.target).attr('data-row-count');
+    showConsumptionPopup(rowCount);
 });
+
+$(document).on('click', '.submit_consumption', (e) => {
+    const rowCount = $(e.target).closest('.modal-content').find('input[name="consumption_row"]').val() || 1;
+    showConsumptionPopup(rowCount);
+});
+
+function showConsumptionPopup(rowCount) {
+    const modal = $("#consumptionPopup");
+    modal.modal('show');
+    modal.find("input[name='consumption_row']").val(rowCount);
+    const qty_per_unit = $(`[name="components[${rowCount}][qty_per_unit]"]`).val() || '';
+    const total_qty = $(`[name="components[${rowCount}][total_qty]"]`).val() || '';
+    const std_qty = $(`[name="components[${rowCount}][std_qty]"]`).val() || '';
+    $("#qty_per_unit").val(qty_per_unit);
+    $("#total_qty").val(total_qty);
+    $("#std_qty").val(std_qty);
+    const qty = parseFloat(qty_per_unit) || 0;
+    const total = parseFloat(total_qty) || 0;
+    const std = parseFloat(std_qty) || 0;
+    const result = total > 0 ? (std / total * qty) : 0;
+    const output = isNaN(result) ? Number(0.000000) : result.toFixed(6);
+    if(output < 1) {
+        const existQty = $("tr").find(`input[name='components[${rowCount}][qty]']`).val() || 0;
+         if(existQty) {
+             $("tr").find(`input[name='components[${rowCount}][qty]']`).val(existQty);
+            } else {
+             $("tr").find(`input[name='components[${rowCount}][qty]']`).val(output);
+         }
+        $("#output").val(output);
+    } else {
+        $("tr").find(`input[name='components[${rowCount}][qty]']`).val(output);
+        $("#output").val(output);
+    }
+}
+
+
+
 
 // Added for visible seprate tab button
 document.addEventListener("DOMContentLoaded", function () {

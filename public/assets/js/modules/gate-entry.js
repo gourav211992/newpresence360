@@ -20,6 +20,16 @@ $(document).on('click', '#reject-button', (e) => {
     $("#approveModal").modal('show');
 });
 
+/*Deviation modal*/
+$(document).on('click', '#deviation-button', (e) => {
+    let actionType = 'deviation';
+    let count = 15;
+    $("#deviateModal").find("#action_type").val(actionType);
+    $("#deviateModal #popupTitle").text("Close Job");
+    $("#deviateModal").find("#itemCountDisplay").val(count);
+    $("#deviateModal").modal('show');
+});
+
 function getTaxSummary()
 {
     let taxSummary = {};
@@ -223,7 +233,6 @@ $(document).on('change',"[name*='rate']",(e) => {
     if (Number(acceptedQuantity.val())) {
         let itemRate = parseFloat(rate.value);
         // if(itemRate < 1) {
-        //     console.log('oldValue', oldValue);
         //     itemRate = oldValue;
         //     orderRate.val(oldValue);
         //     Swal.fire({
@@ -309,7 +318,7 @@ function setTableCalculation(edit = false) {
     let poItemIds = [];
     let poIds = [];
     let itemQtys = {}; // <-- make this an object
-    
+
     $("#itemTable [id*='row_']").each(function (index, item) {
         let rowCount = Number($(item).attr('data-index'));
         let poItemId = '';
@@ -329,7 +338,7 @@ function setTableCalculation(edit = false) {
             poItemIds.push(poItemId);
             itemQtys[poItemId] = qty; // assign qty keyed by poItemId
         }
-    
+
         if (poId) {
             poIds.push(poId);
         }
@@ -389,21 +398,20 @@ function setTableCalculation(edit = false) {
         $(".display_summary_discount_row").find("[name*='[d_perc]']").each(function(index, eachItem) {
             let eachDiscTypePrice = 0;
             let hiddenPerc = Number($(`[name="disc_summary[${index + 1}][hidden_d_perc]"]`).val()) || 0;
-            
+
             let itemDiscPerc = hiddenPerc || Number($(eachItem).val());
             if(itemDiscPerc) {
                 eachDiscTypePrice = (totalAmountAfterItemDis * itemDiscPerc) / 100;
             } else {
                 eachDiscTypePrice = Number($(`[name="disc_summary[${index + 1}][d_amnt]"]`).val()) || 0;
             }
-            
+
             $(`[name="disc_summary[${index + 1}][d_amnt]"]`).closest('td').html(`${eachDiscTypePrice.toFixed(2)}
                 <input type="hidden" value="${eachDiscTypePrice.toFixed(2)}" name="disc_summary[${index + 1}][d_amnt]">
             `);
             // $(`[name="disc_summary[${index + 1}][d_amnt]"]`).val(eachDiscTypePrice.toFixed(2));
             disHeaderAmnt += eachDiscTypePrice;
-            console.log('disHeaderAmnt', disHeaderAmnt);
-            
+
         });
     } else {
         let eachDiscTypePrice = 0;
@@ -423,9 +431,9 @@ function setTableCalculation(edit = false) {
         .attr('amount',disHeaderAmnt.toFixed(2))
         .text(disHeaderAmnt.toFixed(2))
         .attr('style', disHeaderAmnt < 0 ? 'color: red !important;' : '');
-    
+
     /*Bind summary header Discount*/
-    
+
     /*Bind header discount item level*/
     $("#itemTable [id*='row_']").each(function (index, item2) {
         let rowCount2 = Number($(item2).attr('data-index'));
@@ -474,7 +482,6 @@ function setTableCalculation(edit = false) {
                     location_id:locationId,
                     document_date:document_date
                 }).toString();
-                console.log('queryParams', queryParams);
 
                 let urlWithParams = `${actionUrlTax}?${queryParams}`;
                 let promise = fetch(urlWithParams)
@@ -555,25 +562,25 @@ function setTableCalculation(edit = false) {
         let fetchPromises = [];
         let expAmounts = [];
         let totalRows = rows.length;
-        
+
         if (totalRows && totalAfterTax) {
             rows.each(function(index, eachItem) {
                 let hiddenPerc = Number($(`[name="exp_summary[${index+1}][hidden_e_perc]"]`).val()) || 0;
                 let expDiscPerc = hiddenPerc || Number($(eachItem).val());
                 let tedId = Number($(`[name="exp_summary[${index+1}][e_id]"]`).val()) || 0;
-                
+
                 const computeAndUpdate = (baseAmount, idx) => {
                     let eachExpTypePrice = (baseAmount * expDiscPerc) / 100;
                     expAmounts[idx] = eachExpTypePrice; // store individually for later accumulation
-                    
+
                     $(`[name="exp_summary[${idx+1}][e_amnt]"]`).closest('td').html(`
                         ${eachExpTypePrice.toFixed(2)}
                         <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${idx+1}][e_amnt]">
                     `);
                 };
-                
+
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
-                    
+
                     const p = fetch('/gate-entries/get-selected-item-amount', {
                         method: 'POST',
                         headers: {
@@ -586,29 +593,29 @@ function setTableCalculation(edit = false) {
                             ted_id: tedId,
                             edit: edit,
                             itemQtys: itemQtys,
-                            reference_type: reference_type, 
+                            reference_type: reference_type,
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
                         let baseAmount = data.status === 200 ? data.data.poItemValue : totalAfterTax;
                         console.log('baseAmount', baseAmount);
-                        
+
                         computeAndUpdate(baseAmount, index);
                     })
                     .catch(() => {
                         computeAndUpdate(totalAfterTax, index);
                     });
-        
+
                     fetchPromises.push(p);
                 } else {
                     computeAndUpdate(totalAfterTax, index);
                 }
             });
-        
+
             Promise.all(fetchPromises).then(() => {
                 let totalHeaderExp = expAmounts.reduce((sum, val) => sum + (val || 0), 0);
-        
+
                 $("#expSummaryFooter #total")
                     .attr('amount', totalHeaderExp.toFixed(2))
                     .text(totalHeaderExp.toFixed(2))
@@ -616,9 +623,9 @@ function setTableCalculation(edit = false) {
                 $("#f_exp")
                     .text(totalHeaderExp.toFixed(2))
                     .css('color', totalHeaderExp < 0 ? 'red' : '');
-        
+
                 grandTotal = totalAfterTax + totalHeaderExp;
-                
+
                 $("#f_total_after_exp")
                     .attr('amount',grandTotal.toFixed(2))
                     .text(grandTotal.toFixed(2))
@@ -659,7 +666,7 @@ function setTableCalculation(edit = false) {
                     }
                     if(totalHeaderExp) {
                         each_net_value = itemValue6 - itemDisc6 - itemHeaderDisc6 + itemTax6;
-                        
+
                         exp_header_amnt_item = each_net_value / total_net_total * totalHeaderExp;
                         $(item6).find("[name*='[exp_amount_header]']").val(exp_header_amnt_item.toFixed(2));
                     } else {
@@ -667,10 +674,10 @@ function setTableCalculation(edit = false) {
                     }
                 });
             });
-        
+
         } else {
             let totalHeaderExp = 0;
-        
+
             rows.each(function(index, eachItem) {
                 let eachExpTypePrice = 0;
                 $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
@@ -679,7 +686,7 @@ function setTableCalculation(edit = false) {
                 `);
                 totalHeaderExp += eachExpTypePrice;
             });
-        
+
             $("#expSummaryFooter #total")
                 .attr('amount', totalHeaderExp.toFixed(2))
                 .text(totalHeaderExp.toFixed(2))
@@ -687,9 +694,9 @@ function setTableCalculation(edit = false) {
             $("#f_exp")
                 .text(totalHeaderExp.toFixed(2))
                 .css('color', totalHeaderExp < 0 ? 'red' : '');
-        
+
             grandTotal = totalAfterTax + totalHeaderExp;
-            
+
             $("#f_total_after_exp")
                 .attr('amount',grandTotal.toFixed(2))
                 .text(grandTotal.toFixed(2))
@@ -1557,8 +1564,7 @@ function getSelectedItemAmount(poItemIds, poIds, tedId, callback) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 200) {
-            console.log('Selected Item Amount:', data.data.poItemValue);
-            
+
             callback(data.data.poItemValue || 0);
         } else {
             callback(0);
@@ -1592,10 +1598,8 @@ $(document).on('click', '.asn_process', function () {
             container.find('.asn_process').prop('disabled', true).text('Processing...');
         },
         success: function (response) {
-            console.log('response', response);
-            
+
             if (response.status === 200) {
-                console.log('response', response.data);
                 let asnData = response.data;
                 asnProcess(asnData, 'asn-process');
             } else {

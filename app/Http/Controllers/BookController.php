@@ -905,7 +905,7 @@ class BookController extends Controller
                 }
             }
 
-            if ($request->params && $request->param_ids && $request->param_names) {
+            if ($request->param_ids && $request->param_names) {
                 foreach ($request->param_ids as $bookParamKey => $bookParamId) {
                     if ($request->param_names[$bookParamKey] === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM) {
                         $paramValues = isset($request->params[$bookParamKey]) ? $request->params[$bookParamKey] : [];

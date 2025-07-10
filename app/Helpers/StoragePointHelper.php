@@ -48,7 +48,7 @@ class StoragePointHelper
             ->where('store_id', $locationId);
 
             if($itemId){
-                $query->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [$itemId]);
+                $query->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string)$itemId]);
             }
 
             if($subLocationId){
@@ -89,17 +89,14 @@ class StoragePointHelper
                         $storagePointIds = array_merge($storagePointIds, $level['level-values']);
                     }
                 }
-            }
-
-            $storagePointIds = array_unique($storagePointIds);
-
+            }   
+            $storagePointIds = array_unique($storagePointIds);    
             // Step 4: Fetch matching storage points
             $results = self::getFinalStoragePoints($storagePointIds);
             // $results = \DB::table('erp_wh_details')
             //     ->where('is_storage_point', 1)
             //     ->whereIn('id', $storagePointIds)
             //     ->get();
-            
             if(!empty($results)){
                 $message = "Records successfuly fetched.";
                 $data = self::successResponse($message, $results);
@@ -124,7 +121,15 @@ class StoragePointHelper
 
             if (!$detail) continue;
 
-            if ($detail->is_storage_point == 1) {
+            // Check if storage point and has space (weight or volume)
+            $hasSpace = (
+                (is_null($detail->max_weight) || is_null($detail->current_weight) || $detail->current_weight < $detail->max_weight)
+                ||
+                (is_null($detail->max_volume) || is_null($detail->current_volume) || $detail->current_volume < $detail->max_volume)
+            );
+
+
+            if ($detail->is_storage_point == 1 && $hasSpace) {
                 $finalIds[] = $detail->id;
             } else {
                 // Recursively find child storage points
@@ -154,7 +159,13 @@ class StoragePointHelper
             ->get();
 
         foreach ($children as $child) {
-            if ($child->is_storage_point == 1) {
+            $hasSpace = (
+                (is_null($child->max_weight) || is_null($child->current_weight) || $child->current_weight < $child->max_weight)
+                ||
+                (is_null($child->max_volume) || is_null($child->current_volume) || $child->current_volume < $child->max_volume)
+            );
+
+            if ($child->is_storage_point == 1 && $hasSpace) {
                 $results[] = $child->id;
             } else {
                 // Recursive call
@@ -265,6 +276,100 @@ class StoragePointHelper
             "message" => $response,
             "data" => $data
         ];
+    }
+
+    public static function getStoragePointsForMultipleItems(array $itemIds, $locationId = null, $subLocationId = null)
+    {
+        try {
+            if (empty($itemIds)) {
+                return self::errorResponse("Item Ids required.");
+            }
+
+            if (empty($locationId)) {
+                return self::errorResponse("Location Id required.");
+            }
+
+            // Step 1: Fetch all item mappings
+            $mappings = \DB::table('erp_wh_item_mappings')
+                ->where('store_id', $locationId)
+                ->where(function ($q) use ($itemIds) {
+                    foreach ($itemIds as $itemId) {
+                        $q->orWhereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string)$itemId]);
+                    }
+                })
+                ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+                ->get();
+
+            // Step 2: If not found, try subcategory/category fallback
+            if ($mappings->isEmpty()) {
+                $items = \DB::table('erp_items')->whereIn('id', $itemIds)->get();
+
+                $subcategoryIds = $items->pluck('subcategory_id')->filter()->unique()->toArray();
+                $categoryIds = $items->pluck('category_id')->filter()->unique()->toArray();
+
+                if (!empty($subcategoryIds)) {
+                    $mappings = \DB::table('erp_wh_item_mappings')
+                        ->where(function ($q) use ($subcategoryIds) {
+                            foreach ($subcategoryIds as $subId) {
+                                $q->orWhereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string)$subId]);
+                            }
+                        })->get();
+                }
+
+                if ($mappings->isEmpty() && !empty($categoryIds)) {
+                    $mappings = \DB::table('erp_wh_item_mappings')
+                        ->where(function ($q) use ($categoryIds) {
+                            foreach ($categoryIds as $catId) {
+                                $q->orWhereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string)$catId]);
+                            }
+                        })->get();
+                }
+            }
+
+            // Step 3: Extract structure point IDs
+            $structurePointIds = collect($mappings)->flatMap(function ($record) {
+                $details = json_decode($record->structure_details, true) ?? [];
+                return collect($details)->pluck('level-values')->flatten()->all();
+            })->unique()->values()->all();
+
+            if (empty($structurePointIds)) {
+                return self::successResponse("No storage points mapped.", []);
+            }
+
+            // Step 4: Get final storage points
+            $storagePoints = self::getFinalStoragePoints($structurePointIds);
+
+            return self::successResponse("Records successfully fetched.", $storagePoints);
+        } catch (\Exception $e) {
+            return self::errorResponse($e->getMessage());
+        }
+    }
+
+
+    // Get Specific Storage Point Detail
+    public static function getStoragePointDetail($storageNumber)
+    {
+        try {
+            if (!$storageNumber) {
+                return self::errorResponse("Storage number is required.");
+            }
+
+            // Fetch the storage point
+            $storagePoint = \DB::table('erp_wh_details')->where('storage_number', $storageNumber)->first();
+
+            if (!$storagePoint) {
+                return self::errorResponse("Storage point not found.");
+            }
+
+            // Fetch parent hierarchy
+            $parentHierarchy = self::getParentHierarchy($storagePoint->parent_id);
+            $storagePoint->parents = implode(' → ', $parentHierarchy); // Optional formatting
+
+            return self::successResponse("Storage point details fetched successfully.", $storagePoint);
+
+        } catch (\Exception $e) {
+            return self::errorResponse($e->getMessage());
+        }
     }
 
 }

@@ -35,7 +35,7 @@ class ErpRouteMasterController extends Controller
          $status = ConstantHelper::STATUS;
          $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->get();
        
-       return view('route-masters.index', compact(
+       return view('logistics.route-masters.index', compact(
         'countries', 'states', 'selectedCountryId', 'routeMasters', 'status'));
     }
 

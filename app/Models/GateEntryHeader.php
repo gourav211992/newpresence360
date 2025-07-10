@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Models\JobOrder\JobOrder;
+use App\Models\WHM\ErpItemUniqueCode;
+use App\Models\WHM\ErpWhmJob;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
@@ -353,5 +355,25 @@ class GateEntryHeader extends Model
     {
         return $this -> hasMany(ErpGeDynamicField::class, 'header_id');
     }
+
+    public function deviationPendingItems()
+    {
+        $job = $this->deviationJob;
+
+        if (!$job) {
+            return collect();
+        }
+
+        return ErpItemUniqueCode::where('job_id', $job->id)
+            ->where('status', 'pending')
+            ->get();
+    }
+
+    public function deviationJob()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable')
+                    ->where('status', 'deviation');
+    }
+
 }
 
