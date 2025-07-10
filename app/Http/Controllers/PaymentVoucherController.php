@@ -140,7 +140,7 @@ class PaymentVoucherController extends Controller
        // Determine relation and alias
         $relation = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
         
-        $data = Ledger::withDefaultGroupCompanyOrg()->with($relation)
+        $data = Ledger::with($relation)
         // ->whereHas($relation, function ($query) use ($group_id) {
         //     $query->whereNotNull('credit_days')
         //         ->where('credit_days', '!=', 0)
@@ -237,8 +237,7 @@ class PaymentVoucherController extends Controller
             if (!empty($request->cost_center_id)) {
                 $cost_center_ids = $request->cost_center_id ?? null;
             } elseif (!empty($request->cost_group_id)) {
-                $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                    ->with('costCenters')
+                $cost_group = CostGroup::with('costCenters')
                     ->where('id', $request->cost_group_id)
                     ->where('status', 'active')
                     ->first();
@@ -246,8 +245,7 @@ class PaymentVoucherController extends Controller
                 $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
             }
         // Retrieve vouchers based on organization_id and include series with levels
-        $data = PaymentVoucher::withDefaultGroupCompanyOrg()
-            ->with([
+        $data = PaymentVoucher::with([
                 'series' => function ($d) {
                     $d->select('id', 'book_name');
                 },
@@ -317,10 +315,10 @@ class PaymentVoucherController extends Controller
         $ledger_id = $request->ledger_id;
         $document_type = $request->document_type;
         $cost_center = $request->cost_center_id;
-        $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
+        $banks = Bank::withWhereHas('bankDetails')->get();
         $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
+        $ledgers = Ledger::where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId)
                 ->orWhere('ledger_group_id', $groupId);
         })->select('id', 'name')->get();
@@ -328,7 +326,7 @@ class PaymentVoucherController extends Controller
         $date2 = Carbon::parse($start)->format('jS-F-Y') . ' to ' . Carbon::parse($end)->format('jS-F-Y');
 
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
         $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
         return view('paymentVoucher.paymentVouchers', compact('cost_centers','mappings', 'banks', 'ledgers', 'bank_id', 'ledger_id', 'organizationId', 'data', 'book_type', 'date', 'document_no', 'document_type', 'type', 'createRoute', 'editRouteString','date','date2','fyearLocked','locations','cost_groups'));
@@ -361,11 +359,11 @@ class PaymentVoucherController extends Controller
         $firstService = $servicesBooks['services'][0];
         $books = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
-       $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
+       $banks = Bank::withWhereHas('bankDetails')->get();
         
        $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
+        $ledgers = Ledger::where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId) // Cast groupId to string
                 ->orWhere('ledger_group_id', $groupId);
         })->get();
@@ -418,7 +416,7 @@ class PaymentVoucherController extends Controller
         
         
         
-        $voucherExists = PaymentVoucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
+        $voucherExists = PaymentVoucher::where('voucher_no', $numberPatternData['document_number'])
         ->where('book_id',$request -> book_id)->exists();
         
         $selected_token = $request->selected_token;
@@ -663,10 +661,10 @@ class PaymentVoucherController extends Controller
 
         $history = Helper::getApprovalHistory($data->book_id, $id, $revNo,$data->amount,$data->created_by);
 
-        $banks = Bank::withDefaultGroupCompanyOrg()->withWhereHas('bankDetails')->get();
+        $banks = Bank::withWhereHas('bankDetails')->get();
         $groupId = Helper::getGroupsQuery()->where('name', 'Cash-in-Hand')->value('id');
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($groupId) {
+        $ledgers = Ledger::where(function ($query) use ($groupId) {
             $query->whereJsonContains('ledger_group_id', (string) $groupId)
                 ->orWhere('ledger_group_id', $groupId);
         })->select('id', 'name')->get();
@@ -1424,8 +1422,7 @@ class PaymentVoucherController extends Controller
         if ($ledger && $group) {
             $ledger = (int) $ledger;
             $ledger_group = (int)$group;
-            $data = Voucher::withDefaultGroupCompanyOrg()
-                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
+            $data = Voucher::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->withWhereHas('items', function ($i) use ($ledger, $doc_type, $ledger_group) {
                     $i->where('ledger_id', $ledger)
                     ->where('ledger_parent_id', $ledger_group);

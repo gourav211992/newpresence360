@@ -47,8 +47,7 @@ class CashflowReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_idss);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -58,7 +57,7 @@ class CashflowReportController extends Controller
         }
         // $cost_center_ids = $cost_center_idss;
         $location_id = $request->location_id;
-        $payment_made = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
+        $payment_made = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->when($location_id, function ($query) use ($location_id) {
@@ -76,7 +75,7 @@ class CashflowReportController extends Controller
                             : $collection->where('cost_center_id', $cost_center_ids);
 
                     })->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -89,7 +88,7 @@ class CashflowReportController extends Controller
                 });
             })->values()->all();
 
-        $payment_made_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
+        $payment_made_t = Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->when($location_id, function ($query) use ($location_id) {
@@ -109,7 +108,7 @@ class CashflowReportController extends Controller
             })->sum('debit_amt_org');
 
 
-        $opening_payment_made =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
+        $opening_payment_made =  Voucher::where('reference_service', ConstantHelper::PAYMENTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
             ->when($location_id, function ($query) use ($location_id) {
@@ -130,7 +129,7 @@ class CashflowReportController extends Controller
 
 
 
-        $payment_received = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
+        $payment_received = Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->when($location_id, function ($query) use ($location_id) {
@@ -146,7 +145,7 @@ class CashflowReportController extends Controller
                             ? $collection->whereIn('cost_center_id', $cost_center_ids)
                             : $collection->where('cost_center_id', $cost_center_ids);
                     })->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -159,7 +158,7 @@ class CashflowReportController extends Controller
                 });
             })->values()->all();
 
-        $payment_received_t = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
+        $payment_received_t = Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->whereBetween('document_date', [$startDate, $endDate])
             ->when($location_id, function ($query) use ($location_id) {
@@ -178,7 +177,7 @@ class CashflowReportController extends Controller
                     })->where('credit_amt_org', '>', 0);
             })->sum('credit_amt_org');
 
-        $opening_payment_received =  Voucher::withDefaultGroupCompanyOrg()->where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
+        $opening_payment_received =  Voucher::where('reference_service', ConstantHelper::RECEIPTS_SERVICE_ALIAS)
             ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
             ->where('document_date', '<', $startDate)
             ->when($location_id, function ($query) use ($location_id) {
@@ -219,7 +218,7 @@ class CashflowReportController extends Controller
         $endDate = date('d-m-Y', strtotime($endDate));
         $range = $startDate . ' to ' . $endDate;
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
 
@@ -255,8 +254,7 @@ class CashflowReportController extends Controller
             $cost_center_id = $rcost ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($costGroup)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $costGroup)
                 ->where('status', 'active')
                 ->first();
@@ -283,7 +281,7 @@ class CashflowReportController extends Controller
                             : $collection->where('cost_center_id', $cost_center_id);
                         // return $collection->where('cost_center_id',$cost_center_id);
                     })->where('debit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
                     return (object)[
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,
@@ -354,7 +352,7 @@ class CashflowReportController extends Controller
                             ? $collection->whereIn('cost_center_id', $cost_center_id)
                             : $collection->where('cost_center_id', $cost_center_id);
                     })->where('credit_amt_org', '>', 0)->map(function ($item) use ($voucher) {
-                    $pay = PaymentVoucher::withDefaultGroupCompanyOrg()->find($voucher->reference_doc_id);
+                    $pay = PaymentVoucher::find($voucher->reference_doc_id);
                     return (object) [
                         'voucher_id'    => $voucher->id,
                         'voucher_no' => $voucher->voucher_no,

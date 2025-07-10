@@ -72,8 +72,7 @@ class FixedAssetSplit extends Model
                 'data' => []
             );
         }
-        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->where('reference_series',$request->book_id)
+        $exitingReg = FixedAssetRegistration::where('reference_series',$request->book_id)
         ->where('reference_doc_id',$request->id)->first();
             if ($exitingReg) {
                 return array(
@@ -82,8 +81,7 @@ class FixedAssetSplit extends Model
                 );
             }
             
-            $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-            ->where('document_number',$request->document_number)
+            $exitingVoucher = FixedAssetRegistration::where('document_number',$request->document_number)
             ->where('book_id',$request->book_id)->first();
 
             if ($exitingVoucher) {
@@ -98,7 +96,7 @@ class FixedAssetSplit extends Model
 
         foreach ($grouped as $assetCode => $items) {
             $firstItem = $items->first();
-            $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $assetCode)->first();
+            $existingAsset = FixedAssetRegistration::where('asset_code', $assetCode)->first();
 
             if ($existingAsset) {
                 return array(

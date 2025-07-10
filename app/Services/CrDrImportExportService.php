@@ -51,8 +51,7 @@ class CrDrImportExportService
             ];
         }
 
-        $ledger = Ledger::withDefaultGroupCompanyOrg()
-            ->where('name', $ledgerName)
+        $ledger = Ledger::where('name', $ledgerName)
             ->first();
 
         if (empty($ledger)) {

@@ -31,7 +31,7 @@ class LedgerImportExportService
         $groupId = $organization->group_id;
         $companyId = $organization->company_id;
         $organizationId = $organization->id;
-        $existing = Ledger::withDefaultGroupCompanyOrg()->
+        $existing = Ledger::
         where($field, $value)
         ->first();
         // $existing = Ledger::where($field, $value)

@@ -305,12 +305,12 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $validator = Validator::make($item->toArray(), $rules);
 
             $validator->after(function ($validator) use ($item) {
-                $codeExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-                    ->where('code', $item->code)
+                $codeExists = \App\Models\Ledger
+                    ::where('code', $item->code)
                     ->exists();
 
-                $nameExists = \App\Models\Ledger::withDefaultGroupCompanyOrg()
-                    ->where('name', $item->name)
+                $nameExists = \App\Models\Ledger
+                    ::where('name', $item->name)
                     ->exists();
 
                 if ($codeExists && $nameExists) {

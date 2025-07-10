@@ -75,22 +75,21 @@ class FixedAssetMerger extends Model
         
 
 
-        $exitingReg = FixedAssetRegistration::withDefaultGroupCompanyOrg()
-        ->where('reference_series', $request->book_id)->where('reference_doc_id', $request->id)->first();
+        $exitingReg = FixedAssetRegistration::where('reference_series', $request->book_id)->where('reference_doc_id', $request->id)->first();
         if ($exitingReg) {
             return array(
                 'message' => 'Registration already posted',
                 'status' => false
             );
         }
-        $exitingVoucher = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('document_number', $request->document_number)->where('book_id', $request->book_id)->first();
+        $exitingVoucher = FixedAssetRegistration::where('document_number', $request->document_number)->where('book_id', $request->book_id)->first();
         if ($exitingVoucher) {
             return array(
                 'message' => 'Registration already posted with same Doc No# ' . $request->document_number,
                 'status' => false
             );
         }
-        $exitingVouchers = Voucher::withDefaultGroupCompanyOrg()->where('voucher_no', $request->document_number)->where('book_id', $request->book_id)->first();
+        $exitingVouchers = Voucher::where('voucher_no', $request->document_number)->where('book_id', $request->book_id)->first();
         if ($exitingVouchers) {
             return array(
                 'message' => 'Voucher already posted with same Doc No# ' . $request->document_number,
@@ -98,7 +97,7 @@ class FixedAssetMerger extends Model
             );
         }
 
-        $existingAsset = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $request->asset_code)->first();
+        $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->first();
 
         if ($existingAsset) {
             return array(
