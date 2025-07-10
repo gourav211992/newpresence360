@@ -27,4 +27,9 @@ class ErpWhmJob extends Model
         return $this->morphTo();
     }
 
+    public function itemUniqueCodes()
+    {
+        return $this->hasMany(ErpItemUniqueCode::class, 'job_id', 'id');
+    }
+
 }

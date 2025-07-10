@@ -55,16 +55,27 @@ class MultiFixedRequest extends FormRequest
         ];
     }
 
-     public function withValidator(Validator $validator)
-    {
-        $validator->after(function ($validator) {
-            if (
-                $this->input('source_route_id') &&
-                $this->input('destination_route_id') &&
-                $this->input('source_route_id') == $this->input('destination_route_id')
-            ) {
-                $validator->errors()->add('destination_route_id', 'Source and destination location cannot be the same.');
-            }
-        });
-    }
+   public function withValidator(Validator $validator)
+{
+    $validator->after(function ($validator) {
+        if (
+            $this->input('source_route_id') &&
+            $this->input('destination_route_id') &&
+            $this->input('source_route_id') == $this->input('destination_route_id')
+        ) {
+            $validator->errors()->add('destination_route_id', 'Source and destination location cannot be the same.');
+        }
+
+        $locations = collect($this->input('multi_fixed_pricing', []))
+            ->pluck('location_route_id')
+            ->filter();
+
+        $duplicates = $locations->duplicates();
+
+        foreach ($duplicates as $index => $value) {
+            $validator->errors()->add("multi_fixed_pricing.$index.location_route_id", 'Duplicate locations are not allowed.');
+        }
+    });
+}
+
 }

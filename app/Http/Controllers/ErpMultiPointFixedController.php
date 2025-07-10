@@ -37,7 +37,7 @@ class ErpMultiPointFixedController extends Controller
         $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-        return view('multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes','status', 'routeMasters'));
+        return view('logistics.multi-point-pricing.fixed.create', compact('states','customers', 'vehicleTypes','status', 'routeMasters'));
     }
 
       public function getCityByState(Request $request)
@@ -75,7 +75,7 @@ class ErpMultiPointFixedController extends Controller
     $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
     $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-    return view('multi-point-pricing.fixed.edit', [
+    return view('logistics.multi-point-pricing.fixed.edit', [
         'multiPricing' => $multiPricing,
         'vehicleTypes' => $vehicleTypes,
         'customers' => $customers,

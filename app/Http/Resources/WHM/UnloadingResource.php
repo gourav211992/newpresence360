@@ -16,6 +16,7 @@ class UnloadingResource extends JsonResource
     public function toArray(Request $request): array
     {
         $morphable = $this->whenLoaded('morphable'); // ensure it's loaded safely
+        $itemUniqueCodes = $this->whenLoaded('itemUniqueCodes');
 
         return [
             'id' => $this->id,
@@ -31,8 +32,8 @@ class UnloadingResource extends JsonResource
             'series' => optional(optional($morphable)->book)->book_code,
             'consignment_no' => optional($morphable)->consignment_no,
             'supplier_invoice_no' => optional($morphable)->supplier_invoice_no,
-            'total_item' => optional($morphable->items ?? null)->count() ?? 0,
-            'total_packets' => optional($morphable->items ?? null)->sum('accepted_qty') ?? 0,
+            'total_item' => $itemUniqueCodes ? $itemUniqueCodes->unique('item_id')->count() : 0,
+            'total_packets' => $itemUniqueCodes ? $itemUniqueCodes->count() : 0,
         ];
     }
 }

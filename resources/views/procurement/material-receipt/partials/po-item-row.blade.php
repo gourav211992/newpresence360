@@ -1,6 +1,6 @@
 @foreach($poItems as $key => $item)
     @php
-        $rowCount = $key + 1;
+        $rowCount = $tableRowCount + $key + 1;
         $item_disc_key = '';
         $suppInvId = null;
         $suppInvItemId = null;

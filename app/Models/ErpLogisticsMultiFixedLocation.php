@@ -24,5 +24,10 @@ class ErpLogisticsMultiFixedLocation extends Model
     }
 
 
+        public function fixedPricing()
+    {
+        return $this->belongsTo(ErpLogisticsMultiFixedPricing::class, 'multi_fixed_pricing_id');
+    }
+
 
 }

@@ -1917,7 +1917,7 @@ $(document).ready(function() {
         }
          function applyFixedPrefixToInputs() {
             const selector = '.asset-code-input';
-            let prefix = $('#asset_search_input').val();
+            let prefix = $('#subasset_search_input').val();
 
             if (!prefix) {
                 return; // Exit if prefix is not set
@@ -1972,7 +1972,7 @@ $(document).ready(function() {
 
         function validateAssetCodes() {
             const inputs = document.querySelectorAll('.asset-code-input');
-            let prefix = $('#asset_search_input').val();
+            let prefix = $('#subasset_search_input').val();
 
             if (!prefix) return true; // If no prefix, nothing to validate
 

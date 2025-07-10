@@ -2,9 +2,605 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ApiGenericException;
+use App\Helpers\ConstantHelper;
+use App\Helpers\Helper;
+use App\Models\ErpRouteMaster;
+use App\Http\Requests\LorryReceiptRequest;
+use App\Models\ErpLogisticsMultiFixedPricing;
+use App\Models\ErpLogisticsMultiFixedLocation;
+use App\Models\ErpLogisticsMultiPointPricing;
+use App\Models\ErpVehicleType;
+use App\Models\ErpLogisticLRMedia;
+use App\Models\ErpLorryReceipt;
+use App\Models\ErpLogisticsLrLocation;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Yajra\DataTables\DataTables;
+use App\Helpers\InventoryHelper;
+use App\Models\CostCenterOrgLocations;
+use App\Models\Customer;
+use App\Models\ErpDriver;
+use App\Models\Organization;
 use Illuminate\Http\Request;
+use Exception;
 
 class ErpLorryReceiptController extends Controller
 {
-    //
+   public function index(Request $request)
+{
+    $user = Helper::getAuthenticatedUser();
+    $organization = Organization::find($user->organization_id);
+
+    $drivers = ErpDriver::where('organization_id', $organization->id)->where('status', 'active')->get();
+    $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+   
+
+    if ($request->ajax()) {
+        $lrs = ErpLorryReceipt::with([
+                'source', 
+                'destination', 
+                'driver', 
+                'vehicleType', 
+                'consignor', 
+                'consignee', 
+                'createdBy'
+            ])
+            ->withDefaultGroupCompanyOrg()
+            ->orderByDesc('id');
+
+        // Apply filters if needed
+        if ($request->filled('lr_no')) {
+            $lrs->where('document_number', 'like', '%' . $request->lr_no . '%');
+        }
+
+        if ($request->filled('source_id')) {
+            $lrs->where('source_id', $request->source_id);
+        }
+
+        if ($request->filled('destination_id')) {
+            $lrs->where('destination_id', $request->destination_id);
+        }
+
+        if ($request->filled('driver_id')) {
+            $lrs->where('driver_id', $request->driver_id);
+        }
+
+        if ($request->filled('status')) {
+            $lrs->where('status', $request->status);
+        }
+
+        if ($request->filled('document_date')) {
+            $lrs->whereDate('document_date', $request->document_date);
+        }
+
+        return DataTables::of($lrs)
+            ->addIndexColumn()
+            ->editColumn('document_date', function ($row) {
+                return $row->document_date ? \Carbon\Carbon::parse($row->document_date)->format('d-m-Y') : '-';
+            })
+
+            ->addColumn('source_name', fn($row) => $row->source->name ?? '-')
+            ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
+            ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
+            ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? '-')
+            ->addColumn('created_by', fn($row) => $row->createdBy->name ?? '-')
+            ->editColumn('document_status', function ($row) {
+                $colors = [
+                    'draft'    => 'badge-light-warning',
+                    'approved'   => 'badge-light-success',
+                    'rejected'=> 'badge-light-danger',
+                    'submitted'=>'badge-light-primary',
+                ];
+                $badge = $colors[$row->document_status] ?? 'badge-light-secondary';
+                return '<span class="badge rounded-pill ' . $badge . '">' . ucfirst($row->document_status) . '</span>';
+            })
+            ->addColumn('action', function ($row) {
+                return '
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                            <i data-feather="more-vertical"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a class="dropdown-item" href="' . route('logistics.lorry-receipt.edit', $row->id) . '">
+                                <i data-feather="edit-3" class="me-50"></i>
+                                <span>Edit</span>
+                            </a>
+                        </div>
+                    </div>';
+            })
+            ->rawColumns(['document_status', 'action'])
+            ->make(true);
+    }
+
+    return view('logistics.lorry-receipt.index', compact('drivers', 'vehicleTypes'));
+}
+
+    
+    public function create(Request $request){
+
+       $segments = request()->segments(); 
+       $pathUrl = $segments['0'].'/'.$segments['1'];
+       $pathUrl = str_replace('/', '_', $pathUrl);
+    
+        $redirectUrl = route('logistics.lorry-receipt.create');
+        $lorryReceipt = ConstantHelper::LR_SERVICE_ALIAS;
+    
+        request() -> merge(['type' => $lorryReceipt]);
+        $lorryReceipt = $request -> input('type', ConstantHelper::LR_SERVICE_ALIAS);
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
+        
+        if (count($servicesBooks['services']) == 0) {
+            return redirect() -> route('/');
+        }
+
+        $series = Helper:: getBookSeriesNew($lorryReceipt, $pathUrl)->get();
+        $firstService = $servicesBooks['services'][0];
+        $user = Helper::getAuthenticatedUser();
+        $bookTypeAlias = ConstantHelper::LR_SERVICE_ALIAS;
+        $lorryCharges = ConstantHelper::LORRY_CHARGES;
+        $customers = Customer::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
+       
+     
+
+        return view('logistics.lorry-receipt.create', compact('series', 'routeMasters','customers', 'drivers', 'vehicleTypes', 'locations','lorryCharges'));
+    }
+
+
+ public function edit(Request $request, $id)
+{
+    $user = Helper::getAuthenticatedUser();
+    $segments = request()->segments(); 
+    $pathUrl = $segments['0'].'/'.$segments['1'];
+    $pathUrl = str_replace('/', '_', $pathUrl);
+    $redirectUrl = route('logistics.lorry-receipt.edit', $id); 
+    $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
+
+    $lr = ErpLorryReceipt::with([
+        'consignor',
+        'consignee',
+        'driver',
+        'vehicleType',
+        'locations.route',
+        'mediaAttachments'
+    ])->where('id', $id)->withDefaultGroupCompanyOrg()->first();
+
+    if (!$lr) {
+        return redirect()->route('logistics.lorry-receipt.index')->with('error', 'Lorry Receipt not found.');
+    }
+
+    $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
+
+    if (count($servicesBooks['services']) == 0) {
+        return redirect()->route('/');
+    }
+
+    $series = Helper::getBookSeriesNew($lorryReceiptType, $pathUrl)->get();
+    $firstService = $servicesBooks['services'][0];
+
+    $lorryCharges  = ConstantHelper::LORRY_CHARGES;
+    $customers     = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $drivers       = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $locations     = InventoryHelper::getAccessibleLocations();
+    $vehicleTypes  = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $userType = Helper::userCheck();
+    $routeMasters  = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $revision_number = $lr->revision_number;
+    $buttons = Helper::actionButtonDisplay($lr->book_id,$lr->document_status , $lr->id, $lr->total_charges, $lr->approval_level, $lr->created_by ?? 0, $userType['type']);
+    $revNo = $lr->revision_number;
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $lr->revision_number;
+        }
+    $approvalHistory = Helper::getApprovalHistory($lr->book_id, $lr->id, $revNo, $lr->total_charges, $lr -> created_by);
+    $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
+
+    return view('logistics.lorry-receipt.edit', compact(
+        'lr',
+        'series',
+        'routeMasters',
+        'approvalHistory',
+        'docStatusClass',
+        'buttons',
+        'customers',
+        'drivers',
+        'revision_number',
+        'vehicleTypes',
+        'locations',
+        'lorryCharges'
+    ));
+}
+
+
+
+    public function lorryReceiptPrint(){
+
+       return view('logistics.lorry-receipt.lorry-receipt-print');
+    }
+
+ public function getCostCentersByLocation($locationId)
+{
+    $costCenters = CostCenterOrgLocations::with('costCenter')
+        ->where('location_id', $locationId)
+        ->get()
+        ->pluck('costCenter')
+        ->map(function ($center) {
+            return [
+                'id' => $center->id,
+                'name' => $center->name,
+            ];
+        })
+        ->values();
+
+    return response()->json([
+        'success' => true,
+        'data' => $costCenters,
+    ]);
+}
+
+
+
+    public function store(LorryReceiptRequest $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+
+        DB::beginTransaction();
+
+        try {
+            // Create LR record
+            $lr = new ErpLorryReceipt();
+            $lr->organization_id   = $organization->id;
+            $lr->group_id          = $organization->group_id;
+            $lr->company_id        = $user->company_id ?? null;
+            $lr->book_id           = $request->book_id;
+            $lr->document_number   = $request->document_number;
+            $lr->document_date     = $request->document_date;
+            $lr->location_id       = $request->location;
+            $lr->cost_center_id    = $request->cost_center_id;
+            $lr->source_id         = $request->source_id;
+            $lr->destination_id    = $request->destination_id;
+            $lr->consignor_id      = $request->customer_id;
+            $lr->consignee_id      = $request->consignee_id;
+            $lr->vehicle_type_id   = $request->vehicle_type_id;
+            $lr->distance          = $request->distance;
+            $lr->freight_charges   = $request->freight_charges;
+            $lr->driver_id         = $request->driver_id;
+            $lr->driver_cash       = $request->driver_cash ?? 0;
+            $lr->fuel_price        = $request->fuel_price ?? 0;
+            $lr->invoice_no        = $request->invoice_no;
+            $lr->invoice_value     = $request->invoice_value ?? 0;
+            $lr->no_of_bundles     = $request->no_of_bundles;
+            $lr->weight            = $request->weight;
+            $lr->ewaybill_no       = $request->ewaybill_no;
+            $lr->gst_paid_by       = $request->gst_paid_by;
+            $lr->lr_type           = $request->lr_type;
+            $lr->billing_type      = $request->billing_type;
+            $lr->load_type         = $request->load_type;
+            $lr->lr_charges        = $request->lr_charges ?? 0;
+            $lr->sub_total         = $request->sub_total ?? 0;
+            $lr->total_charges     = $request->total_freight ?? 0;
+            $lr->status            = $request->status;
+            $lr->created_by        = $user->auth_user_id ;
+            $lr->save();
+            $this->handleLorryMediaUploads($request, $lr);
+
+
+            // Save related locations
+            foreach ($request->locations as $location) {
+                ErpLogisticsLrLocation::create([
+                    'lorry_receipt_id' => $lr->id,
+                    'location_id'      => $location['location_id'],
+                    'type'             => $location['type'],
+                    'no_of_articles'   => $location['no_of_articles'],
+                    'weight'           => $location['weight'],
+                    'amount'           => $location['freight'] ?? 0,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Record created successfully.',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while saving the Lorry Receipt.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function update(LorryReceiptRequest $request, $id)
+{
+   
+    $user = Helper::getAuthenticatedUser();
+    $organization = $user->organization;
+
+    DB::beginTransaction();
+
+    try {
+        $lr = ErpLorryReceipt::findOrFail($id);
+        $currentStatus = $lr->document_status;
+        $actionType = $request->action_type ?? 'submit'; 
+        $amendRemarks = $request->amend_remarks ?? null;
+
+        if (($lr->document_status == ConstantHelper::APPROVED || $lr->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
+            && $actionType == 'amendment') {
+
+            $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'ErpLorryReceipt', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'ErpLogisticsLrLocation', 'relation_column' => 'lorry_receipt_id'],
+                
+            ];
+
+            Helper::documentAmendment($revisionData, $lr->id);
+        }
+
+
+        // Update main LR fields
+        $lr->organization_id   = $organization->id;
+        $lr->group_id          = $organization->group_id;
+        $lr->company_id        = $user->company_id ?? null;
+        $lr->book_id           = $request->book_id;
+        $lr->document_number   = $request->document_number;
+        $lr->document_date     = $request->document_date;
+        $lr->location_id       = $request->location;
+        $lr->cost_center_id    = $request->cost_center_id;
+        $lr->source_id         = $request->source_id;
+        $lr->destination_id    = $request->destination_id;
+        $lr->consignor_id      = $request->customer_id;
+        $lr->consignee_id      = $request->consignee_id;
+        $lr->vehicle_type_id   = $request->vehicle_type_id;
+        $lr->distance          = $request->distance;
+        $lr->freight_charges   = $request->freight_charges;
+        $lr->driver_id         = $request->driver_id;
+        $lr->driver_cash       = $request->driver_cash ?? 0;
+        $lr->fuel_price        = $request->fuel_price ?? 0;
+        $lr->invoice_no        = $request->invoice_no;
+        $lr->invoice_value     = $request->invoice_value ?? 0;
+        $lr->no_of_bundles     = $request->no_of_bundles;
+        $lr->weight            = $request->weight;
+        $lr->ewaybill_no       = $request->ewaybill_no;
+        $lr->gst_paid_by       = $request->gst_paid_by;
+        $lr->lr_type           = $request->lr_type;
+        $lr->billing_type      = $request->billing_type;
+        $lr->load_type         = $request->load_type;
+        $lr->lr_charges        = $request->lr_charges ?? 0;
+        $lr->sub_total         = $request->sub_total ?? 0;
+        $lr->total_charges     = $request->total_freight ?? 0;
+        $lr->document_status   = $request->status;
+        $lr->updated_by        = $user->auth_user_id ;
+
+
+
+         if ($request->input('status') === ConstantHelper::SUBMITTED ) {
+            $bookId = $lr->book_id;
+            $docId = $lr->id;
+            $remarks = $lr->remarks;
+            $attachments = $request->file('attachment');
+            $currentLevel = $lr->approval_level ?? 1;
+            $modelName = get_class($lr);
+            
+    
+            if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+                $revisionNumber =  $lr->revision_number + 1;
+                $totalValue = 0; 
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $lr->approval_level = 1;
+                $lr->revision_date = now();
+        
+                $statusAfterApproval = $approveDocument['approvalStatus'] ?? $lr->document_status;
+
+                $lr->document_status = $statusAfterApproval;
+            } else {
+                $revisionNumber = $lr->revision_number ?? 0;
+                $totalValue = 0;
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $document_status = $approveDocument['approvalStatus'];
+                $lr->document_status = $document_status;
+            }
+        
+        } else {
+            $document_status = $request->current_status ?? ConstantHelper::DRAFT;
+            $lr->document_status = $document_status;
+           
+        }
+        $lr->save();
+        $this->handleLorryMediaUploads($request, $lr);
+
+
+        $lr->locations()->delete();
+
+        foreach ($request->locations as $location) {
+            ErpLogisticsLrLocation::create([
+                'lorry_receipt_id' => $lr->id,
+                'location_id'      => $location['location_id'],
+                'type'             => $location['type'],
+                'no_of_articles'   => $location['no_of_articles'],
+                'weight'           => $location['weight'],
+                'amount'           => $location['freight'] ?? 0,
+            ]);
+        }
+
+       
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Record updated successfully',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while updating the driver',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+}
+
+protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr)
+{
+    $fileInputs = [
+        'attachments'          => 'attachments',
+        'amend_attachments'    => 'amend_attachments',
+        'approval_attachments' => 'approval_attachments',
+    ];
+
+    foreach ($fileInputs as $inputKey => $collectionName) {
+        if ($request->hasFile($inputKey)) {
+            foreach ($request->file($inputKey) as $file) {
+                $path = $file->store('lorry_files', 'public');
+
+                ErpLogisticLRMedia::create([
+                    'uuid'                  => (string) Str::uuid(),
+                    'model_type'            => ErpLorryReceipt::class,
+                    'model_id'              => $lr->id,
+                    'model_name'            => 'ErpLorryReceipt',
+                    'collection_name'       => $collectionName,
+                    'name'                  => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'file_name'             => basename($path),
+                    'mime_type'             => $file->getMimeType(),
+                    'disk'                  => 'public',
+                    'size'                  => $file->getSize(),
+                    'manipulations'         => json_encode([]),
+                    'custom_properties'     => json_encode([]),
+                    'generated_conversions' => json_encode([]),
+                    'responsive_images'     => json_encode([]),
+                    'lorry_column'          => null,
+                ]);
+            }
+        }
+    }
+}
+
+
+
+ public function getFreePointData(Request $request)
+{
+    $locationId = $request->location_id;
+    $sourceId = $request->source_id;
+
+    $amount = null;
+    $pricing = ErpLogisticsMultiFixedPricing::withDefaultGroupCompanyOrg()
+        ->where('source_route_id', $sourceId)
+        ->first();
+
+    if ($pricing) {
+        $matchedLocation = ErpLogisticsMultiFixedLocation::where('location_route_id', $locationId)
+        ->where('multi_fixed_pricing_id', $pricing->id)->first();
+        if ($matchedLocation) {
+            $amount = $matchedLocation->amount;
+            
+        }
+    }
+
+    $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+        ->where('source_route_id', $sourceId)
+        ->first();
+
+    if ($pricing && $multiPoint) {
+        return response()->json([
+            'status' => 'both_exist',
+            'amount' => $amount ?? 0,
+            'free_point' => $multiPoint->free_point,
+            'free_amount' => $multiPoint->amount,
+        ]);
+    }
+    if ($pricing) {
+        return response()->json([
+            'status' => 'exists_in_fixed',
+            'amount' => $amount ?? 0,
+        ]);
+    }
+    if ($multiPoint) {
+        return response()->json([
+            'status' => 'free_point',
+            'free_point' => $multiPoint->free_point,
+            'free_amount' => $multiPoint->amount,
+        ]);
+    }
+
+    return response()->json([
+        'status' => 'not_found',
+    ]);
+}
+
+
+ public function revoke(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            $lr = ErpLorryReceipt::find($request->id);
+            if (isset($lr)) {
+                $revoke = Helper::approveDocument($lr->book_id, $lr->id, 0, '', [], 0, ConstantHelper::REVOKE, 0, get_class($lr));
+                if ($revoke['message']) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $revoke['message'],
+                    ]);
+                } else {
+                    
+                    $lr->document_status = $revoke['approvalStatus'];
+                    $lr->save();
+                    DB::commit();
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Revoked successfully',
+                    ]);
+                }
+            } else {
+                DB::rollBack();
+                throw new ApiGenericException("No Document found");
+            }
+        } catch(Exception $ex) {
+            DB::rollBack();
+            throw new ApiGenericException($ex->getMessage());
+        }
+    }
+   
+public function destroy($id)
+{
+    DB::beginTransaction();
+
+    try {
+        $lr = ErpLorryReceipt::findOrFail($id);
+
+        // Delete related media and locations using Eloquent relationships
+        $lr->mediaAttachments()->delete();
+        $lr->locations()->delete();
+
+     
+        $lr->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Record deleted successfully'
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        return response()->json([
+            'status' => false,
+            'message' => 'An error occurred while deleting the item: ' . $e->getMessage()
+        ], 500);
+    }
+ }
+
 }

@@ -31,10 +31,10 @@ class ErpVehicleController extends Controller
         $organizationId = $organization?->id;
         $companyId = $organization?->company_id;
 
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->get();
+        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         $fuelTypes = ConstantHelper::FUEL_TYPES;
         $ownership = ConstantHelper::OWNERSHIP;
-        $drivers = ErpDriver::where('organization_id',$user->organization_id)->get();
+        $drivers = ErpDriver::where('organization_id',$user->organization_id)->where('status', 'active')->get();
 
         if ($request->ajax()) {
             $vehicles = ErpVehicle::with('driver', 'vehicleType')
@@ -141,7 +141,7 @@ class ErpVehicleController extends Controller
                 ->make(true);
         }
 
-        return view('vehicles.index',compact('drivers', 'fuelTypes', 'ownership', 'vehicleTypes'));
+        return view('logistics.vehicles.index',compact('drivers', 'fuelTypes', 'ownership', 'vehicleTypes'));
     }
 
 
@@ -163,7 +163,7 @@ class ErpVehicleController extends Controller
         $ownership = ConstantHelper::OWNERSHIP;
         $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-        return view('vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes', 'groupOrganizations'));
+        return view('logistics.vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes', 'groupOrganizations'));
     }
 
        public function edit($id)
@@ -183,7 +183,7 @@ class ErpVehicleController extends Controller
         $ownership = ConstantHelper::OWNERSHIP;
         $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-        return view('vehicles.edit', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicle', 'vehicleTypes', 'groupOrganizations'));
+        return view('logistics.vehicles.edit', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicle', 'vehicleTypes', 'groupOrganizations'));
     }
     
 
@@ -421,76 +421,76 @@ class ErpVehicleController extends Controller
     }
 
 
-   public function destroy($id)
-{
-    DB::beginTransaction();
+    public function destroy($id)
+    {
+        DB::beginTransaction();
 
-    try {
-        $vehicle = ErpVehicle::with([
-            'fitness',
-            'permit',
-            'insurance',
-            'pollution',
-            'roadTax'
-        ])->findOrFail($id);
+        try {
+            $vehicle = ErpVehicle::with([
+                'fitness',
+                'permit',
+                'insurance',
+                'pollution',
+                'roadTax'
+            ])->findOrFail($id);
 
-        $vehicleMedia = ErpVehicleMedia::where('model_type', ErpVehicle::class)
-            ->where('model_id', $vehicle->id)
-            ->get();
+            $vehicleMedia = ErpVehicleMedia::where('model_type', ErpVehicle::class)
+                ->where('model_id', $vehicle->id)
+                ->get();
 
-        foreach ($vehicleMedia as $media) {
-            if ($media->file_name && $media->disk === 'public') {
-                Storage::disk('public')->delete("vehicle_uploads/{$vehicle->id}/{$media->file_name}");
-            }
-            $media->delete();
-        }
-
-        // Delete related model media
-        $relatedModels = [
-            'fitness'   => \App\Models\ErpVehicleFitness::class,
-            'permit'    => \App\Models\ErpVehiclePermit::class,
-            'insurance' => \App\Models\ErpVehicleInsurance::class,
-            'pollution' => \App\Models\ErpVehiclePollution::class,
-            'roadTax'   => \App\Models\ErpVehicleRoadTax::class,
-        ];
-
-        foreach ($relatedModels as $relation => $modelClass) {
-            $related = $vehicle->$relation;
-
-            if ($related) {
-                $mediaItems = ErpVehicleMedia::where('model_type', $modelClass)
-                    ->where('model_id', $related->id)
-                    ->get();
-
-                foreach ($mediaItems as $media) {
-                    if ($media->file_name && $media->disk === 'public') {
-                        Storage::disk('public')->delete("vehicle_uploads/{$vehicle->id}/{$media->file_name}");
-                    }
-                    $media->delete();
+            foreach ($vehicleMedia as $media) {
+                if ($media->file_name && $media->disk === 'public') {
+                    Storage::disk('public')->delete("vehicle_uploads/{$vehicle->id}/{$media->file_name}");
                 }
-
-                $related->delete();
+                $media->delete();
             }
+
+            // Delete related model media
+            $relatedModels = [
+                'fitness'   => \App\Models\ErpVehicleFitness::class,
+                'permit'    => \App\Models\ErpVehiclePermit::class,
+                'insurance' => \App\Models\ErpVehicleInsurance::class,
+                'pollution' => \App\Models\ErpVehiclePollution::class,
+                'roadTax'   => \App\Models\ErpVehicleRoadTax::class,
+            ];
+
+            foreach ($relatedModels as $relation => $modelClass) {
+                $related = $vehicle->$relation;
+
+                if ($related) {
+                    $mediaItems = ErpVehicleMedia::where('model_type', $modelClass)
+                        ->where('model_id', $related->id)
+                        ->get();
+
+                    foreach ($mediaItems as $media) {
+                        if ($media->file_name && $media->disk === 'public') {
+                            Storage::disk('public')->delete("vehicle_uploads/{$vehicle->id}/{$media->file_name}");
+                        }
+                        $media->delete();
+                    }
+
+                    $related->delete();
+                }
+            }
+
+        
+            $vehicle->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Record deleted successfully.'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while deleting the vehicle: ' . $e->getMessage()
+            ], 500);
         }
-
-       
-        $vehicle->delete();
-
-        DB::commit();
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Record deleted successfully.'
-        ], 200);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        return response()->json([
-            'status' => false,
-            'message' => 'An error occurred while deleting the vehicle: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 }

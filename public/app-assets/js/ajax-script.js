@@ -22,6 +22,7 @@ $(document)
     });
 
 $(document).on('submit', '.ajax-input-form', function (e) {
+    
     e.preventDefault();
     const currentFrom = this;
     var formObj = $(this);

@@ -9,6 +9,7 @@ use App\Http\Controllers\ErpFreightChargesController;
 use App\Http\Controllers\ErpMultiPointPricingController;
 use App\Http\Controllers\ErpMultiPointFixedController;
 use App\Http\Controllers\ErpRouteMasterController;
+use App\Http\Controllers\ErpLorryReceiptController;
 use App\Http\Controllers\ErpPlController;
 use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\OverheadMasterController;
@@ -1355,6 +1356,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
             Route::post('item', 'item')->name('item');
             Route::post('vendor', 'vendor')->name('vendor');
             Route::post('customer', 'customer')->name('customer');
+            Route::post('lorryReceipt', 'lorryReceipt')->name('lorryReceipt');
         });
 
     // Material Receipt routes
@@ -2273,6 +2275,7 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('/logistics/freight-charges/store', [ErpFreightChargesController::class, 'store'])->name('logistics.freight-charges.store');
     Route::delete('/logistics/freight-charges/delete-multiple', [ErpFreightChargesController::class, 'deleteMultiple'])->name('logistics.freight-charges.delete-multiple');
     Route::get('/logistics/freight-charges/get-cities-by-state', [ErpFreightChargesController::class, 'getCityByState'])->name('logistics.freight-charges.get-cities-by-state');
+    Route::get('/freight-charge-details', [ErpFreightChargesController::class, 'getFreightChargeDetails']);
 
     //Multi-Point-Pricing
     Route::get('/logistics/multi-point-pricing', [ErpMultiPointPricingController::class, 'index'])->name('logistics.multi-point-pricing.index');
@@ -2303,7 +2306,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::put('/logistics/lorry-receipt/update/{id}', [ErpLorryReceiptController::class, 'update'])->name('logistics.lorry-receipt.update');
     Route::get('/logistics/lorry-receipt/edit/{id}', [ErpLorryReceiptController::class, 'edit'])->name('logistics.lorry-receipt.edit');
     Route::delete('/logistics/lorry-receipt/{id}', [ErpLorryReceiptController::class, 'destroy'])->name('logistics.lorry-receipt.destroy');
-    Route::get('/logistics/lorry-receipt/get-cities-by-state', [ErpLorryReceiptController::class, 'getCityByState'])->name('logistics.multi-point-fixed.get-cities-by-state');
+    Route::get('/get-cost-centers-by-location/{locationId}', [ErpLorryReceiptController::class, 'getCostCentersByLocation']);
+    Route::post('/get-location-pricing', [ErpLorryReceiptController::class, 'getFreePointData']);
+     Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class,'revoke'])->name('logistics.lorry-receipt.revoke');
+    Route::get('/logistics/lorry-receipt/print', [ErpLorryReceiptController::class, 'lorryReceiptPrint'])->name('logistics.lorry-receipt.print');
 
 
      //Production Slip
@@ -2555,7 +2561,10 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
     Route::post('fixed-asset/import', [RegistrationController::class,'import'])->name('finance.fixed-asset.import');
     Route::get('fixed-asset/export-successful', [RegistrationController::class,'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
     Route::get('fixed-asset/export-failed', [RegistrationController::class,'exportFailedItems'])->name('finance.fixed-asset.export.failed');
-
+    Route::post('fixed-asset/get-code', [RegistrationController::class, 'generateAssetCode'])->name('finance.fixed-asset.asset-code');
+    
+    
+    
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

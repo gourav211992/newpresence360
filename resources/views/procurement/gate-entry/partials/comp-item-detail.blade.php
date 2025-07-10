@@ -50,7 +50,14 @@
     <tr>
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
-                <strong style="font-size:11px; color : #6a6a6a;">Purchase Order</strong>
+                <strong style="font-size:11px; color : #6a6a6a;">
+                    {{
+                        ($type == 'po') ? 'Purchase' :
+                        (($type == 'jo') ? 'Job' :
+                        (($type == 'so') ? 'Sale' : ''))
+                    }}
+                    Order
+                </strong>
             </span>
             <span class="badge rounded-pill badge-light-primary">
                 {{$purchaseOrder->book_code}}-{{$purchaseOrder->document_number}}

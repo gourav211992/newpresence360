@@ -119,7 +119,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
                     }
                 });
         })->get();
@@ -166,13 +166,12 @@ class RegistrationController extends Controller
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
                 });
-            });
-
+            })->get();
 
         $locations = InventoryHelper::getAccessibleLocations();
 
 
-        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
+        return view('fixed-asset.registration.create', compact('locations', 'series', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'dep_method', 'dep_percentage', 'dep_type', 'financialEndDate', 'financialStartDate'));
     }
 
     /**
@@ -190,13 +189,14 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
-        $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->first();
+        $code = self::generateAssetCode($request);
+        $existingAsset = FixedAssetRegistration::where('asset_code', $code)->first();
 
         if ($existingAsset) {
             return redirect()
                 ->route('finance.fixed-asset.registration.create')
                 ->withInput()
-                ->withErrors('Asset Code ' . $existingAsset->asset_code . ' already exists.');
+                ->withErrors('Asset Code ' . $code . ' already exists.');
         }
 
         $user = Helper::getAuthenticatedUser();
@@ -209,6 +209,7 @@ class RegistrationController extends Controller
             'last_dep_date' => $request->capitalize_date,
             'approval_level' => 1,
             'revision_number' => 0,
+            'asset_code' => $code,
             'current_value_after_dep' => $request->current_value,
         ];
 
@@ -289,7 +290,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
                     }
                 });
         })->get();
@@ -344,9 +345,9 @@ class RegistrationController extends Controller
                 $q->where(function ($subQuery) {
                     $subQuery->where('act_type', 'income_tax');
                 });
-            });
+            })->get();
 
-        return view('fixed-asset.registration.show', compact('categories','ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
+        return view('fixed-asset.registration.show', compact('categories', 'ref_view_route', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'buttons', 'docStatusClass', 'revision_number', 'currNumber', 'approvalHistory'));
     }
 
     /**
@@ -376,7 +377,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
                     }
                 });
         })->get();
@@ -413,7 +414,7 @@ class RegistrationController extends Controller
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = InventoryHelper::getAccessibleLocations();
 
-        return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
+        return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
     }
 
     /**
@@ -437,7 +438,11 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
-        $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->where('id', '!=', $id)->first();
+        $request->merge([
+        'asset_id'      => $id,
+        ]);
+        $code = self::generateAssetCode($request);
+        $existingAsset = FixedAssetRegistration::where('asset_code', $code)->where('id', '!=', $id)->first();
 
         if ($existingAsset) {
             redirect()
@@ -448,6 +453,7 @@ class RegistrationController extends Controller
 
         $request->merge(['last_dep_date' => $request->capitalize_date]);
         $request->merge(['current_value_after_dep' => $request->current_value]);
+        $request->merge(['asset_code' => $code]);
         $data = $request->all();
         $data['last_dep_date'] = $request->capitalize_date;
         DB::beginTransaction();
@@ -708,9 +714,9 @@ class RegistrationController extends Controller
         }
 
         $query = FixedAssetRegistration::where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+            $query->where('document_status', ConstantHelper::POSTED)
+                ->orWhereNotNull('reference_doc_id');
+        })
             //->whereNotNull('capitalize_date')
             ->where('asset_code', 'like', "%$q%")
             ->withWhereHas('subAsset', function ($query) use ($oldAssets, $module) {
@@ -813,9 +819,9 @@ class RegistrationController extends Controller
     public function getCategories(Request $request)
     {
         $query = FixedAssetRegistration::where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            });
+            $query->where('document_status', ConstantHelper::POSTED)
+                ->orWhereNotNull('reference_doc_id');
+        });
 
         if ($request->location_id) {
             $query->where('location_id', $request->location_id);
@@ -845,9 +851,9 @@ class RegistrationController extends Controller
     {
         $categoryId = $request->input('category_id');
         $locationIds = FixedAssetRegistration::where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+            $query->where('document_status', ConstantHelper::POSTED)
+                ->orWhereNotNull('reference_doc_id');
+        })
             ->where('category_id', $categoryId)->pluck('location_id')->unique()->toArray();
         $locations = InventoryHelper::getAccessibleLocations()->map(function ($store) {
             return [
@@ -863,9 +869,9 @@ class RegistrationController extends Controller
         $categoryId = $request->input('category_id');
         $locationId = $request->input('location_id');
         $locationIds = FixedAssetRegistration::where(function ($query) {
-                $query->where('document_status', ConstantHelper::POSTED)
-                    ->orWhereNotNull('reference_doc_id');
-            })
+            $query->where('document_status', ConstantHelper::POSTED)
+                ->orWhereNotNull('reference_doc_id');
+        })
             ->where('category_id', $categoryId)
             ->where('location_id', $locationId)
             ->pluck('cost_center_id')->unique()->toArray();
@@ -911,7 +917,7 @@ class RegistrationController extends Controller
     {
         $uploadItems = UploadFAMaster::where('import_status', 'Success')
             ->get();
-        $codes =  $uploadItems->pluck('asset_code') ?? [];
+        $codes = $uploadItems->pluck('asset_code') ?? [];
 
         $data = FixedAssetSub::whereHas('asset', function ($query) use ($codes) {
             $query->whereIn('asset_code', $codes);
@@ -1076,4 +1082,56 @@ class RegistrationController extends Controller
             'doc_no' => $numberPatternData['doc_no'],
         ];
     }
+    public static function generateAssetCode(Request $request)
+    {
+        $edit = $request->asset_id ?? null;
+        $name = $request->asset_name;
+
+        if (empty($name)) {
+            return null;
+        }
+
+        $baseCode = self::generateUniquePrefix($name);
+        $suffix = '001';
+
+        $query = FixedAssetRegistration::where('asset_code', 'like', $baseCode . '%');
+
+        if ($edit) {
+            $query->where('id', '!=', $edit);
+        }
+
+        $latestCode = $query->orderByDesc('asset_code')->value('asset_code');
+
+        if ($latestCode) {
+            $lastSuffix = (int) substr($latestCode, -3);
+            $suffix = str_pad($lastSuffix + 1, 3, '0', STR_PAD_LEFT);
+        }
+
+        return $baseCode . $suffix;
+
+    }
+    public static function generateUniquePrefix(string $name): ?string
+    {
+        $clean = preg_replace('/[^A-Za-z\s]/', '', $name);
+        $words = array_values(array_filter(explode(' ', strtoupper(trim($clean)))));
+
+        if (empty($words)) {
+            return null;
+        }
+
+        $take = static function (string $word, int $len): string {
+            return substr($word . str_repeat('X', $len), 0, $len);
+        };
+
+        switch (count($words)) {
+            case 1:
+                return $take($words[0], 3);
+            case 2:
+                return $take($words[0], 2) . $take($words[1], 1);
+            default:
+                return $take($words[0], 1) . $take($words[1], 1) . $take($words[2], 1);
+        }
+    }
+
+
 }

@@ -49,7 +49,7 @@ class WhmJob
     {
         $qty = intval($detail->accepted_qty);
         $attributes = $this->getAttributes($detail);
-        $itemUid = $this->generateUniqueItemUid(); // safe UID
+        $itemUid = $this->generateUniqueUid(); // safe UID
 
         // Check if this is MrnDetail and has gate_entry_detail_id
         if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
@@ -104,7 +104,9 @@ class WhmJob
             $diff = $existingCount - $qty;
 
             ErpItemUniqueCode::where('job_id', $job->id)
-                ->where('item_id', $detail->id)
+                ->where('item_id', $detail->item_id)
+                ->where('morphable_type', $namespace)
+                ->where('morphable_id', $detail->id)
                 ->where('status', 'pending')
                 ->orderBy('id', 'desc')
                 ->limit($diff)
@@ -176,23 +178,10 @@ class WhmJob
         return $attributeJsonArray;
     }
 
-    private function generateUniqueItemUid($length = 15)
-    {
-        do {
-            $raw = str_replace('-', '', Str::uuid()); // 32-character hex
-            $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase
-        } while (ErpItemUniqueCode::where('item_uid', $uid)->exists());
-
-        return $uid;
-    }
-
     private function generateUniqueUid($length = 15)
     {
-        do {
-            $raw = str_replace('-', '', Str::uuid()); // 32-character hex
-            $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase
-        } while (ErpItemUniqueCode::where('uid', $uid)->exists());
-
+        $raw = str_replace('-', '', Str::uuid()); // 15-character hex
+        $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase
         return $uid;
     }
 

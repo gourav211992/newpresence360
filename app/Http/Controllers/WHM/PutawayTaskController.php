@@ -18,7 +18,7 @@ class PutawayTaskController extends Controller
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
-        $jobs = ErpWhmJob::with('morphable.book', 'morphable.items')
+        $jobs = ErpWhmJob::with('morphable.book', 'morphable.items', 'itemUniqueCodes')
                     ->where('morphable_type', 'App\Models\MrnHeader')
                     ->whereHasMorph('morphable', ['App\Models\MrnHeader'], function ($q) use ($search, $location) {
                     if ($search) {
