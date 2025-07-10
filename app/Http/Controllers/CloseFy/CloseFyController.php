@@ -121,7 +121,7 @@ class CloseFyController extends Controller
 
     public function getFyInitialGroups(Request $r)
     {
-        dd($r->all());
+        // dd($r->all()); april 2025 . 1st april 2025 - 31st april 2025 / april month 2025
         $financialYear = null;
         $organizationId = $r->organization_id;
         if($r->fyear){

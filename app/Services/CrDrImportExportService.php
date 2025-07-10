@@ -18,7 +18,7 @@ class CrDrImportExportService
     {
         $requiredFields = [
             'ledger_name'   => 'Ledger Name',
-            'ledger_group'  => 'Ledger Group',
+            // 'ledger_group'  => 'Ledger Group',
             'voucher_no'   => 'Voucher No',
             'series'   => 'Series',
             'settle_amount' => 'Settle Amount',
@@ -37,7 +37,6 @@ class CrDrImportExportService
 {
     try {
         $ledgerName   = isset($row['ledger_name']) ? trim($row['ledger_name']) : null;
-        $ledgerGroup  = isset($row['ledger_group']) ? trim($row['ledger_group']) : null;
         $voucherNo    = isset($row['voucher_no']) ? trim($row['voucher_no']) : null;
         $series       = isset($row['series']) ? trim($row['series']) : null;
         $settleAmountRaw = isset($row['settle_amount']) ? trim($row['settle_amount']) : null;
@@ -51,10 +50,33 @@ class CrDrImportExportService
             ];
         }
 
+        $validationErrors = [];
+        $reportedLedgers = [];
+
         $ledger = Ledger::withDefaultGroupCompanyOrg()
+            ->with('customer', 'vendor')
             ->where('name', $ledgerName)
             ->first();
 
+        $relation = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
+        $ledgerNameDisplay = $ledger ? $ledger->name : ($row['ledger_name'] ?? 'Unknown Ledger');
+
+        // Relation missing
+        if (!$ledger || !$ledger->{$relation}) {
+            if (!in_array($ledgerNameDisplay, $reportedLedgers)) {
+                $validationErrors[] = "{$ledgerNameDisplay}'s {$relation} is missing";
+                $reportedLedgers[] = $ledgerNameDisplay;
+            }
+        }
+
+        // Credit days check
+        $creditDays = $ledger->{$relation}->credit_days ?? null;
+        if ($creditDays === null || $creditDays === '' || $creditDays == 0) {
+            if (!in_array($ledgerNameDisplay, $reportedLedgers)) {
+                $validationErrors[] = "{$ledgerNameDisplay}'s {$relation} has no credit days set";
+                $reportedLedgers[] = $ledgerNameDisplay;
+            }
+        }
         if (empty($ledger)) {
             return [
                 'status' => false,
@@ -62,19 +84,11 @@ class CrDrImportExportService
                 'error' => "Ledger '{$ledgerName}' does not exist."
             ];
         }
-        
-        $group = Helper::getGroupsQuery()
-            ->where('name', $ledgerGroup)
-            ->first();
 
-        if (empty($group)) {
-            return [
-                'status' => false,
-                'row' => $row,
-                'error' => "Ledger group '{$ledgerGroup}' does not exist."
-            ];
-        }
-        
+        $group = $ledger->group()->first();
+        $row['ledger_group']    =  $group?->name;
+        $row['ledger_group_id'] = $group?->id;
+
         $invoices = Helper::getVoucherBalance($voucherNo, $type, $ledger->id, $group->id);
         $voucher = collect($invoices->getData()->data)
             ->first(function ($item) use ($voucherNo, $series) {
@@ -100,7 +114,6 @@ class CrDrImportExportService
 
         $row['voucher_id']      = $voucher->id;
         $row['ledger_id']       = $ledger->id;
-        $row['ledger_group_id'] = $group->id;
         $row['settle_amount']   = $settleAmount;
         $voucherBalance         = $voucher->balance;
         $row['balance']         = $voucherBalance;
@@ -120,6 +133,15 @@ class CrDrImportExportService
                 'status' => false,
                 'row' => $row,
                 'error' => "Settle Amount ({$settleAmount}) cannot be greater than Balance ({$voucherBalance})."
+            ];
+        }
+
+         // Return here if validation errors exist
+        if (!empty($validationErrors)) {
+            return [
+                'status' => false,
+                'row' => $row,
+                'error' => implode(', ', $validationErrors),
             ];
         }
 
