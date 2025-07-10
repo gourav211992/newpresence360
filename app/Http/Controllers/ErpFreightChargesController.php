@@ -31,13 +31,13 @@ class ErpFreightChargesController extends Controller
         $countryId = optional($organization->addresses->first())->country_id;
         $states = State::where('country_id',$countryId)->get();
         $status = ConstantHelper::STATUS;
-        $customers = Customer::withDefaultGroupCompanyOrg()->get();
+        $customers = Customer::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $freightCharges = ErpFreightCharge::withDefaultGroupCompanyOrg()->get();
         
 
-        return view('freight-charges.index', compact('customers', 'vehicleTypes', 'states', 'freightCharges','routeMasters'));
+        return view('logistics.freight-charges.index', compact('customers', 'vehicleTypes', 'states', 'freightCharges','routeMasters'));
     }
 
     public function getCityByState(Request $request)
@@ -140,6 +140,32 @@ class ErpFreightChargesController extends Controller
                 'message' => 'Error deleting records: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+
+     public function getFreightChargeDetails(Request $request)
+    {
+        $sourceId = $request->source_id;
+        $destinationId = $request->destination_id;
+
+        $freightCharge = ErpFreightCharge::where('source_route_id', $sourceId)
+            ->where('destination_route_id', $destinationId)
+            ->first();
+
+        if (!$freightCharge) {
+            return response()->json(['message' => 'No freight charge found.'], 404);
+        }
+
+        return response()->json([
+            'vehicle_type_id' => $freightCharge->vehicle_type_id,
+            'vehicle_type_name' => optional($freightCharge->vehicleType)->name,
+            'distance' => $freightCharge->distance,
+            'freight_charges' => $freightCharge->amount,
+            'vehicle_type_capacity'   => $freightCharge->vehicleType->capacity ?? '',
+            'vehicle_type_unit_name'  => optional($freightCharge->vehicleType->unit)->name ?? '',
+            'source_name'             => optional($freightCharge->sourceRoute)->name ?? '',
+            'destination_name'        => optional($freightCharge->destinationRoute)->name ?? '',
+        ]);
     }
 
 }

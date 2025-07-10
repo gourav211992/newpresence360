@@ -29,7 +29,7 @@ class ErpVehicleTypeController extends Controller
         $uoms = Unit::where('status', 'active')->get();
 
        $vehicleTypes = ErpVehicleType::where('organization_id', $organizationId)->get();
-       return view('vehicle-types.index', compact('vehicleTypes', 'uoms'));
+       return view('logistics.vehicle-types.index', compact('vehicleTypes', 'uoms'));
     }
 
 

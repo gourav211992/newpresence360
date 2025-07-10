@@ -69,9 +69,12 @@ class PoController extends Controller
     {
         $type = $this->type;
         if (request()->ajax()) {
-            $pos = PurchaseOrder::ofType($type)
+            $selectColumns = ['id','vendor_id','type','document_status','book_id','document_number','store_id','currency_id','document_date','revision_number',
+        'total_item_value','total_discount_value','total_tax_value','total_expense_value'];
+            $pos = PurchaseOrder::select($selectColumns)->ofType($type)
                     ->withDraftListingLogic()
-                    ->with('vendor')
+                    ->with('vendor:id,vendor_code,company_name')
+                    ->with('currency:id,short_name,name')
                     ->latest();
             return DataTables::of($pos)
             ->addIndexColumn()
@@ -92,9 +95,9 @@ class PoController extends Controller
             ->addColumn('book_name', function ($row) {
                 return $row->book ? $row->book?->book_code : 'N/A';
             })
-            ->addColumn('department', function ($row) {
-                return $row->department ? $row->department?->name : 'N/A';
-            })
+            // ->addColumn('department', function ($row) {
+            //     return $row->department ? $row->department?->name : 'N/A';
+            // })
             ->addColumn('sales_order', function ($row) {
                 $saleReferences = ErpSaleOrder::whereIn('id', $row->so_id ?? [])
                 ->get()
@@ -394,11 +397,8 @@ class PoController extends Controller
             }
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
-            $organizationId = $organization ?-> id ?? null;
-            $groupId = $organization ?-> group_id ?? null;
-            $companyId = $organization ?-> company_id ?? null;
             //Tax Country and State
-            $firstAddress = $organization->addresses->first();
+            $firstAddress = $organization?->addresses->first();
             $companyCountryId = null;
             $companyStateId = null;
             if ($firstAddress) {
@@ -412,9 +412,9 @@ class PoController extends Controller
             # PO Header Save
             $po = new PurchaseOrder;
             $po->type = $type;
-            $po->organization_id = $organization->id;
-            $po->group_id = $organization->group_id;
-            $po->company_id = $organization->company_id;
+            $po->organization_id = $organization?->id;
+            $po->group_id = $organization?->group_id;
+            $po->company_id = $organization?->company_id;
             $po->department_id = $request->department_id;
             $po->store_id = $request->store_id;
             $po->book_id = $request->book_id;
@@ -542,10 +542,6 @@ class PoController extends Controller
                 $storeLocation->save();
             }
 
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalTax = 0;
 
@@ -761,14 +757,14 @@ class PoController extends Controller
                         $indentQty = min($piItem->indent_qty,$poQty);
                         $piPoMapping->po_qty = $indentQty;
 
-                        if($piItem->indent_qty < ($piItem->order_qty + $indentQty)) {
-                            $itemName = $piItem?->item?->item_name;
-                            // DB::rollBack();
-                            // return response()->json([
-                            //         'message' => "Po is more than indent qty for item $itemName",
-                            //         'error' => "",
-                            //     ], 422);
-                        }
+                        // if($piItem->indent_qty < ($piItem->order_qty + $indentQty)) {
+                        //     $itemName = $piItem?->item?->item_name;
+                        //     DB::rollBack();
+                        //     return response()->json([
+                        //             'message' => "Po is more than indent qty for item $itemName",
+                        //             'error' => "",
+                        //         ], 422);
+                        // }
 
                         $piPoMapping->save();
                         $piItem->order_qty += $indentQty;
@@ -984,11 +980,8 @@ class PoController extends Controller
         $po = PurchaseOrder::find($id);
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization ?-> id ?? null;
-        $groupId = $organization ?-> group_id ?? null;
-        $companyId = $organization ?-> company_id ?? null;
         //Tax Country and State
-        $firstAddress = $organization->addresses->first();
+        $firstAddress = $organization?->addresses->first();
         $companyCountryId = null;
         $companyStateId = null;
         if ($firstAddress) {
@@ -1078,7 +1071,6 @@ class PoController extends Controller
                 }
             }
             # Bom Header save
-            $totalTaxValue = 0.00;
             $po->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $po->remarks = $request->remarks ?? null;
             $po->payment_term_id = $request->payment_term_id;
@@ -1139,11 +1131,6 @@ class PoController extends Controller
                 ]);
                 $storeLocation->save();
             }
-
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalTax = 0;
 

@@ -71,7 +71,12 @@
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
                 <strong style="font-size:11px; color : #6a6a6a;">
-                    {{ ($type && $type == 'po') ? 'Purchase' : 'Job'}} Order
+                    {{
+                        ($type == 'po') ? 'Purchase' :
+                        (($type == 'jo') ? 'Job' :
+                        (($type == 'so') ? 'Sale' : ''))
+                    }}
+                    Order
                 </strong>
             </span>
             <span class="badge rounded-pill badge-light-primary">

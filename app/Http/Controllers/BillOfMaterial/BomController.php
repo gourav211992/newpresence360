@@ -1131,12 +1131,18 @@ class BomController extends Controller
                     foreach($bomDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $bomAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
-                            $bomAttr = BomAttribute::find($bomAttrId) ?? new BomAttribute;
-                            $bomAttr->bom_id = $bom->id;
-                            $bomAttr->bom_detail_id = $bomDetail->id;
+                            $bomAttr = BomAttribute::firstOrNew([
+                                'bom_id' => $bom->id,
+                                'bom_detail_id' => $bomDetail->id,
+                                'item_attribute_id' => $itemAttribute->id,
+                                'type' => 'D',
+                            ]);
+                            // $bomAttr = BomAttribute::find($bomAttrId) ?? new BomAttribute;
+                            // $bomAttr->bom_id = $bom->id;
+                            // $bomAttr->bom_detail_id = $bomDetail->id;
+                            // $bomAttr->item_attribute_id = $itemAttribute->id;
+                            // $bomAttr->type = 'D';
                             $bomAttr->item_id = $component['item_id'];
-                            $bomAttr->item_attribute_id = $itemAttribute->id;
-                            $bomAttr->type = 'D';
                             $bomAttr->item_code = $component['item_code'];
                             $bomAttr->attribute_name = $itemAttribute->attribute_group_id;
                             $bomAttr->attribute_value = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];

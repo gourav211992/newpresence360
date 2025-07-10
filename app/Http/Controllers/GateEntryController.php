@@ -146,7 +146,7 @@ class GateEntryController extends Controller
                             })
                             ->unique() // avoid duplicates
                             ->implode(', '); // convert to comma-separated string
-                
+
                         return $joReferences ?: 'N/A';
                     } elseif ($row->reference_type === 'po') {
                         // Multiple POs from related items
@@ -159,7 +159,7 @@ class GateEntryController extends Controller
                             })
                             ->unique() // avoid duplicates
                             ->implode(', '); // convert to comma-separated string
-                
+
                         return $poReferences ?: 'N/A';
                     } else {
                         return '';
@@ -621,7 +621,6 @@ class GateEntryController extends Controller
                     // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
                     // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
                     // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-                    // dd('itemPriceAterBothDis', $itemPriceAterBothDis, $totalAfterTax, $totalHeaderExpense, $itemHeaderExp);
                     $itemHeaderExp = floatval($mrnItem['expense_amount']);
 
                     $GateEntryDetail = new GateEntryDetail;
@@ -740,11 +739,9 @@ class GateEntryController extends Controller
 
                 /*Header level save discount*/
                 if(isset($request->all()['exp_summary'])) {
-                    // dd($request->all()['exp_summary']);
                     foreach($request->all()['exp_summary'] as $dis) {
                         if(isset($dis['e_amnt']) && $dis['e_amnt']) {
                             $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                            // dd($totalAfterTax);
                             $ted = new GateEntryTed;
                             $ted->header_id = $mrn->id;
                             $ted->detail_id = null;
@@ -766,7 +763,6 @@ class GateEntryController extends Controller
                 /*Update total in main header MRN*/
                 $mrn->total_item_amount = $itemTotalValue ?? 0.00;
                 $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                // dd($itemTotalValue, $totalDiscValue);
                 if($itemTotalValue < $totalDiscValue){
                     DB::rollBack();
                     return response()->json([
@@ -931,8 +927,9 @@ class GateEntryController extends Controller
             'book',
             'purchaseOrder',
             'jobOrder',
-        ])
-        ->findOrFail($id);
+            'deviationJob'
+        ])->findOrFail($id);
+        $deviationPendingItems = $mrn->deviationPendingItems();
 
         $totalItemValue = $mrn->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
@@ -983,7 +980,8 @@ class GateEntryController extends Controller
             'services' => $servicesBooks['services'],
             'servicesBooks' => $servicesBooks,
             'erpStores' => $erpStores,
-            'dynamicFieldsUI' => $dynamicFieldsUI
+            'dynamicFieldsUI' => $dynamicFieldsUI,
+            'deviationPendingItems' => $deviationPendingItems,
         ]);
     }
 
@@ -1529,9 +1527,9 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            // if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
-            //     (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
-            // }
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
+            }
 
             DB::commit();
             return response()->json([
@@ -1952,6 +1950,8 @@ class GateEntryController extends Controller
         $rackId = null;
         $shelfId = null;
         $binId = null;
+        $purchaseOrder = null;
+        $poDetail = null;
         $quantity = $request->qty;
         $headerId = $request->headerId;
         $detailId = $request->detailId;
@@ -1966,6 +1966,8 @@ class GateEntryController extends Controller
         }
         $remark = $request->remark ?? null;
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
+        $purchaseOrder = PurchaseOrder::find($request->purchase_order_id);
+        $poDetail = PoItem::find($request->po_detail_id ?? $request->supplier_inv_detail_id);
         $type = $request->type;
         if($type == 'po')
         {
@@ -1977,6 +1979,7 @@ class GateEntryController extends Controller
             $purchaseOrder = JobOrder::find($request->job_order_id);
             $poDetail = JoProduct::find($request->jo_detail_id);
         }
+        
         $html = view(
             'procurement.gate-entry.partials.comp-item-detail',
             compact(
@@ -1990,6 +1993,7 @@ class GateEntryController extends Controller
                 'detailId',
                 'specifications',
                 'poDetail',
+                'type'
             )
         )->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
@@ -2398,12 +2402,18 @@ class GateEntryController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $selected_po_ids = json_decode($request->selected_po_ids) ?? [];
-        $selected_asn_ids = json_decode($request->selected_asn_ids) ?? [];
 
-        $poData = '';
+        if($request->type == 'create')
+        {
+            $decoded = urldecode(urldecode($request->selected_po_ids));
+            $selected_po_ids = json_decode($decoded, true) ?? [];
+        }
+        else{
+            $decoded = urldecode(urldecode($request->selected_po_ids));
+            $selected_po_ids = json_decode($decoded, true) ?? [];
+        }
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-
         $poItems = PoItem::select(
                 'erp_po_items.*',
                 'erp_purchase_orders.id as po_id',
@@ -2417,8 +2427,14 @@ class GateEntryController extends Controller
             ->where('erp_purchase_orders.gate_entry_required', 'yes')
             // ->whereIn('erp_purchase_orders.id', [7])
             ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item) {
+            ->whereHas('item', function($item) use($itemSearch){
                 $item->where('type', 'Goods');
+                if ($itemSearch) {
+                    $item->where(function ($query) use ($itemSearch) {
+                        $query->where('erp_items.item_name', 'LIKE', "%{$itemSearch}%")
+                            ->orWhere('erp_items.item_code', 'LIKE', "%{$itemSearch}%");
+                    });
+                }
             })
             ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
                 $po->whereIn('document_status', [
@@ -2444,11 +2460,9 @@ class GateEntryController extends Controller
             $poItems->where('item_id', $itemId);
         }
 
-        if ($request->type === 'create' && count($selected_po_ids)) {
-            $poData = PoItem::with('po')->whereIn('id', $selected_po_ids)->first();
+        if ($request->type == 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-        } elseif ($request->type === 'edit' && count($selected_po_ids)) {
-            $poData = PoItem::with('po')->whereIn('purchase_order_id', $selected_po_ids)->first();
+        } elseif ($request->type == 'edit' && count($selected_po_ids)) {
             $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
         }
 
@@ -2460,7 +2474,7 @@ class GateEntryController extends Controller
                     ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
                     ->with(['vendorAsn'])
                     ->get();
-                
+
                 foreach ($siItems as $siItem) {
                     $poItemId = $siItem->po_item_id. '+' .$siItem->vendor_asn_id ;
 
@@ -2495,7 +2509,6 @@ class GateEntryController extends Controller
         $asnItemIds = json_decode($request->asnItemIds, true) ?? [];
         $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
         $vendor = null;
-        // dd($moduleTypes, $request->all());
         // Ensure all module types are the same
         if (count(array_unique($moduleTypes)) > 1) {
             return response()->json([
@@ -2719,13 +2732,18 @@ class GateEntryController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $selected_jo_ids = json_decode($request->selected_jo_ids) ?? [];
-        $selected_asn_ids = json_decode($request->selected_asn_ids) ?? [];
 
-        $joData = '';
+        if($request->type == 'create')
+        {
+            $decoded = urldecode(urldecode($request->selected_po_ids));
+            $selected_jo_ids = json_decode($decoded, true) ?? [];
+        }
+        else{
+            $decoded = urldecode(urldecode($request->selected_po_ids));
+            $selected_jo_ids = json_decode($decoded, true) ?? [];
+        }
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-
-        $joData = '';
         $joItems = JoProduct::select(
                 'erp_jo_products.*',
                 'erp_job_orders.id as jo_id',
@@ -2738,8 +2756,14 @@ class GateEntryController extends Controller
             ->whereIn('erp_job_orders.book_id', $applicableBookIds)
             ->where('erp_job_orders.gate_entry_required', 'yes')
             ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item){
+            ->whereHas('item', function($item) use($itemSearch){
                 $item->where('type', 'Goods');
+                if ($itemSearch) {
+                    $item->where(function ($query) use ($itemSearch) {
+                        $query->where('erp_items.item_name', 'LIKE', "%{$itemSearch}%")
+                            ->orWhere('erp_items.item_code', 'LIKE', "%{$itemSearch}%");
+                    });
+                }
             })
             ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
             ->whereHas('jo', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
@@ -2775,7 +2799,7 @@ class GateEntryController extends Controller
             }
         }
 
-        $joItems = $joItems->get();
+        $joItems = $joItems->orderby('erp_job_orders.id', 'desc')->get();
 
         $joItemMap = [];
         foreach ($joItems as $joItem) {
@@ -2954,6 +2978,327 @@ class GateEntryController extends Controller
             'message' => "fetched!"
         ]);
     }
+
+    # Get JO Item List
+    public function getSo(Request $request)
+    {
+        $query = $this->buildSoQuery($request);
+        return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) use ($request) {
+                $moduleType = 's-order';
+                $ref_no = ($row?->header?->book_code ?? 'NA') . '-' . ($row?->header?->document_number ?? 'NA');
+
+                $dataCurrentJo = 'null';
+                $dataCurrentAsn = 'null';
+                $dataCurrentAsnItem = 'null';
+                $dataExistingSo = $request->type == 'create' && $row?->sale_order_id
+                    ? ($request->selected_so_ids[0] ?? 'null')
+                    : 'null';
+
+                // $disabled = ($dataExistingPo != 'null' && $dataExistingPo != $row->purchase_order_id) ? 'disabled' : '';
+
+                return "<div class='form-check form-check-inline me-0'>
+                            <input class='form-check-input so_item_checkbox' type='checkbox' name='so_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-jo='{$dataCurrentJo}' data-current-asn='{$dataCurrentAsn}' data-current-asn-item='{$dataCurrentAsnItem}' data-existing-jo='{$dataExistingSo}' >
+                            <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
+                        </div>";
+            })
+            ->addColumn('vendor', fn($row) => $row?->header?->vendor?->company_name ?? 'NA')
+            ->addColumn('so_doc', fn($row) => ($row?->header?->book_code ?? 'NA') . ' - ' . ($row?->header?->document_number ?? 'NA'))
+            ->addColumn('so_date', fn($row) => $row?->header?->getFormattedDate('document_date') ?? '-')
+            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? 'NA')
+            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? 'NA')
+            ->addColumn('attributes', function ($row) {
+                return $row?->attributes->map(function ($attr) {
+                    return "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->headerAttribute->name}</strong>: {$attr->headerAttributeValue->value}</span>";
+                })->implode(' ');
+            })
+            ->addColumn('order_qty', function ($row) {
+                return number_format(($row->qty ?? 0), 2);
+            })
+            ->addColumn('inv_order_qty', function ($row) {
+                return number_format(0, 2);
+            })
+            ->addColumn('ge_qty', fn($row) => number_format(($row->ge_qty ?? 0), 2))
+            ->addColumn('balance_qty', function ($row) {
+                $orderQty = ($row->qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+
+                return number_format(($orderQty - $geQty), 2);
+            })
+            ->addColumn('rate', fn($row) => number_format(($row->rate ?? 0), 2))
+            ->addColumn('total_amount', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $geQty = $row->ge_qty ?? 0;
+                if ($row?->jo?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->balance_qty ?? 0);
+                }
+                return number_format(($orderQty - $geQty) * ($row->rate ?? 0), 2);
+            })
+            ->rawColumns([
+                'select_checkbox', 'attributes', 'vendor', 'po_doc', 'po_date', 'si_doc', 'si_date', 'item_name', 'order_qty', 'inv_order_qty', 'ge_qty', 'balance_qty', 'rate', 'total_amount'
+            ])
+            ->make(true);
+    }
+
+
+    // # This for both bulk and single jo
+    // protected function buildJoQuery(Request $request)
+    // {
+    //     $documentDate = $request->document_date ?? null;
+    //     $seriesId = $request->series_id ?? null;
+    //     $docNumber = $request->document_number ?? null;
+    //     $itemId = $request->item_id ?? null;
+    //     $storeId = $request->store_id ?? null;
+    //     $vendorId = $request->vendor_id ?? null;
+    //     $headerBookId = $request->header_book_id ?? null;
+    //     $itemSearch = $request->item_search ?? null;
+    //     // $selected_jo_ids = json_decode($request->selected_jo_ids) ?? [];
+    //     // $selected_asn_ids = json_decode($request->selected_asn_ids) ?? [];
+
+    //     if($request->type == 'create')
+    //     {
+    //         $decoded = urldecode(urldecode($request->selected_jo_ids));
+    //         $selected_jo_ids = json_decode($decoded, true) ?? [];
+    //     }
+    //     else{
+    //         $selected_po_ids = $request->selected_jo_ids ?? [];
+    //         $selected_jo_ids = is_string($selected_po_ids)
+    //             ? array_map('trim', explode(',', $selected_po_ids))
+    //             : (is_array($selected_po_ids) ? $selected_po_ids : []);
+    //     }
+
+    //     $joData = '';
+    //     $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+
+    //     $joData = '';
+    //     $joItems = JoProduct::select(
+    //             'erp_jo_products.*',
+    //             'erp_job_orders.id as jo_id',
+    //             'erp_job_orders.vendor_id as vendor_id',
+    //             'erp_job_orders.book_id as book_id',
+    //             'erp_job_orders.gate_entry_required as gate_entry_required',
+    //             'erp_job_orders.supp_invoice_required as supp_invoice_required'
+    //         )
+    //         ->leftJoin('erp_job_orders', 'erp_job_orders.id', 'erp_jo_products.jo_id')
+    //         ->whereIn('erp_job_orders.book_id', $applicableBookIds)
+    //         ->where('erp_job_orders.gate_entry_required', 'yes')
+    //         ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
+    //         ->whereHas('item', function($item){
+    //             $item->where('type', 'Goods');
+    //         })
+    //         ->with(['jo', 'item', 'attributes', 'jo.book', 'jo.vendor'])
+    //         ->whereHas('jo', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
+    //             $po->withDefaultGroupCompanyOrg();
+    //             $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+    //             if ($seriesId) {
+    //                 $po->where('erp_job_orders.book_id', $seriesId);
+    //             }
+    //             if ($docNumber) {
+    //                 $po->where('erp_job_orders.document_number', $docNumber);
+    //             }
+    //             if ($vendorId) {
+    //                 $po->where('erp_job_orders.vendor_id', $vendorId);
+    //             }
+    //             if ($storeId) {
+    //                 $po->where('erp_job_orders.store_id', $storeId);
+    //             }
+    //         });
+
+    //     if ($itemId) {
+    //         $joItems->where('item_id', $itemId);
+    //     }
+
+    //     if ($request->type == 'create') {
+    //         if (count($selected_jo_ids)) {
+    //             $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
+    //             $joItems->whereNotIn('erp_jo_products.id',$selected_jo_ids);
+    //         }
+    //     } else if ($request->type == 'edit') {
+    //         if (count($selected_jo_ids)) {
+    //             $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
+    //             $joItems->whereIn('erp_jo_products.jo_id', $selected_jo_ids);
+    //         }
+    //     }
+
+    //     $joItems = $joItems->Orderby('jo_id', 'desc')->get();
+
+    //     $joItemMap = [];
+    //     foreach ($joItems as $joItem) {
+    //         if ($joItem->supp_invoice_required === 'yes') {
+    //             $siItems = VendorAsnItem::where('jo_prod_id', $joItem->id)
+    //                 ->whereRaw('((supplied_qty - short_close_qty) > ge_qty)')
+    //                 ->with(['vendorAsn'])
+    //                 ->get();
+
+    //             foreach ($siItems as $siItem) {
+    //                 $joItemId = $siItem->jo_prod_id. '+' .$siItem->vendor_asn_id ;
+
+    //                 if (!isset($joItemMap[$joItemId])) {
+    //                     $joItem = $siItem->jo_item;
+    //                     $joItem->balance_qty = 0;
+    //                     $joItem->vendorAsn = $siItem->vendorAsn;
+    //                     $joItem->asn_item_id = $siItem->id;
+    //                     $joItemMap[$joItemId] = $joItem;
+    //                 }
+
+    //                 $joItemMap[$joItemId]->balance_qty += ($siItem->supplied_qty - $siItem->short_close_qty) - $siItem->ge_qty;
+    //             }
+    //         } else {
+    //             $joItemId = $joItem->id;
+    //             if (!isset($joItemMap[$joItemId])) {
+    //                 $joItem->balance_qty = ($joItem->order_qty - $joItem->short_close_qty) - $joItem->ge_qty;
+    //                 $joItemMap[$joItemId] = $joItem;
+    //             }
+    //         }
+    //     }
+    //     return $joItemMap;
+    // }
+
+    // # Process JO Item list
+    // public function processJoItem(Request $request)
+    // {
+    //     $user = Helper::getAuthenticatedUser();
+    //     $type = 'jo';
+    //     $ids = json_decode($request->ids, true) ?? [];
+    //     $asnIds = json_decode($request->asnIds, true) ?? [];
+    //     $asnItemIds = json_decode($request->asnItemIds, true) ?? [];
+    //     $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
+    //     $vendor = null;
+
+    //     // Ensure all module types are the same
+    //     if (count(array_unique($moduleTypes)) > 1) {
+    //         return response()->json([
+    //             'data' => ['pos' => ''],
+    //             'status' => 422,
+    //             'message' => "Multiple different module types are not allowed."
+    //         ]);
+    //     }
+
+    //     $moduleType = $moduleTypes[0] ?? null;
+    //     $vendorAsn = null;
+
+    //     if ($moduleType === 'suppl-inv') {
+    //         $filteredAsnIds = array_filter($asnIds);
+    //         $uniqueAsnIds = array_unique($filteredAsnIds);
+
+    //         if (count($uniqueAsnIds) > 1) {
+    //             return response()->json([
+    //                 'data' => ['pos' => ''],
+    //                 'status' => 422,
+    //                 'message' => "Multiple ASN are not allowed."
+    //             ]);
+    //         }
+    //         $vendorAsn = VendorAsn::whereIn('id', $uniqueAsnIds)->first();
+
+    //         $vendorAsnItems = VendorAsnItem::whereIn('id', $asnItemIds)
+    //             ->with(['vendorAsn', 'jo_item.item', 'jo_item.attributes'])
+    //             ->get();
+
+    //         $joItems = $vendorAsnItems->map(function ($asnItem) {
+    //             $joItem = $asnItem->jo_item;
+    //             if ($joItem) {
+    //                 $joItem->avail_order_qty = $asnItem->order_qty;
+    //                 $joItem->balance_qty = $asnItem->balance_qty;
+    //                 $joItem->asn_id = $asnItem->vendor_asn_id;
+    //                 $joItem->asn_item_id = $asnItem->id;
+    //                 $joItem->available_qty = ((($asnItem->supplied_qty) - ($asnItem->short_close_qty ?? 0)) - ($asnItem->ge_qty ?? 0));
+    //                 $joItem->vendorAsn = $asnItem->vendorAsn;
+    //             }
+    //             return $joItem;
+    //         })->filter()->values();
+
+    //         $uniqueJoIds = $joItems->pluck('jo_id')->unique()->toArray();
+    //     } else {
+    //         $joItems = JoProduct::whereIn('id', $ids)->get();
+    //         foreach ($joItems as $joItem) {
+    //             $joItem->avail_order_qty = $joItem->order_qty ?? 0;
+    //             $joItem->available_qty = ((($joItem->order_qty ?? 0) - ($joItem->short_close_qty ?? 0)) - ($joItem->ge_qty ?? 0));
+    //         }
+    //         $uniqueJoIds = $joItems->pluck('jo_id')->unique()->toArray();
+    //     }
+
+    //     $locations = InventoryHelper::getAccessibleLocations('stock');
+    //     $jos = JobOrder::whereIn('id', $uniqueJoIds)->get();
+
+    //     $jobOrderData = JobOrder::whereIn('id', $uniqueJoIds)
+    //         ->with(['items' => function ($query) use ($ids) {
+    //             $query->whereIn('id', $ids);
+    //         }])
+    //         ->get();
+
+    //     $jobOrder = JobOrder::whereIn('id', $uniqueJoIds)->first();
+
+    //     $finalExpenses = [];
+    //     $joExpenses = JobOrder::whereIn('id', $uniqueJoIds)
+    //         ->with(['headerExpenses' => function ($query) {
+    //             $query->where('ted_level', 'H');
+    //         }])
+    //         ->get()
+    //         ->keyBy('id');
+
+    //     $selectedJoItemValues = JoProduct::whereIn('id', $ids)
+    //         ->select('jo_id', \DB::raw('SUM(order_qty * rate) as total'))
+    //         ->groupBy('jo_id')
+    //         ->pluck('total', 'jo_id');
+
+    //     $joValues = JoProduct::whereIn('jo_id', $uniqueJoIds)
+    //         ->select('jo_id', \DB::raw('SUM(order_qty * rate) as total'))
+    //         ->groupBy('jo_id')
+    //         ->pluck('total', 'jo_id');
+
+    //     foreach ($joExpenses as $joId => $jo) {
+    //         $joValue = $joValues[$joId] ?? 0;
+    //         $selectedPoItemValue = $selectedPoItemValues[$joId] ?? 0;
+
+    //         foreach ($jo->headerExpenses as $expense) {
+    //             $perc = $joValue > 0 ? ($expense->ted_amount / $joValue) * 100 : 0;
+    //             $amount = number_format(($selectedPoItemValue * $perc / 100), 2);
+
+    //             $finalExpenses[] = [
+    //                 'id' => $expense->id,
+    //                 'ref_type' => 'jo',
+    //                 'job_order_id' => $joId,
+    //                 'ted_id' => $expense->ted_id,
+    //                 'ted_name' => $expense->ted_name,
+    //                 'ted_amount' => $amount,
+    //                 'ted_perc' => round($perc, 4),
+    //             ];
+    //         }
+    //     }
+
+    //     $vendorId = $jos->pluck('vendor_id')->unique();
+    //     if ($vendorId->count() > 1) {
+    //         return response()->json([
+    //             'data' => ['jos' => ''],
+    //             'status' => 422,
+    //             'message' => "You can not select multiple vendors of JO items at a time."
+    //         ]);
+    //     } else {
+    //         $vendor = Vendor::find($vendorId->first());
+    //     }
+
+    //     $html = view('procurement.gate-entry.partials.jo-item-row', [
+    //         'jos' => $jos,
+    //         'type' => $type,
+    //         'joItems' => $joItems,
+    //         'locations' => $locations,
+    //         'moduleType' => $moduleType,
+    //         'jobOrderData' => $jobOrderData
+    //     ])->render();
+
+    //     return response()->json([
+    //         'data' => [
+    //             'pos' => $html,
+    //             'vendor' => $vendor,
+    //             'vendorAsn' => $vendorAsn,
+    //             'moduleType' => $moduleType,
+    //             'finalExpenses' => $finalExpenses,
+    //             'jobOrder' => $jobOrder,
+    //         ],
+    //         'status' => 200,
+    //         'message' => "fetched!"
+    //     ]);
+    // }
 
     public function getPostingDetails(Request $request)
     {
@@ -3565,7 +3910,7 @@ class GateEntryController extends Controller
                 }
                 $relatedId = $poTed->purchase_order_id;
             }
-            
+
             $items = PoItem::whereIn('id', $poItemIds)
                 ->where('purchase_order_id', $relatedId)
                 ->get();

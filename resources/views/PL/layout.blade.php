@@ -211,9 +211,9 @@
                         </div>    
 
                             @if(isset($order) && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
-                                @include('pl.edit')
+                                @include('PL.edit')
                             @else
-                                @include('pl.create')
+                                @include('PL.create')
                             @endif
                             </div>
                             <div class="col-md-12">

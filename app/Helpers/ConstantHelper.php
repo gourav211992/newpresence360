@@ -463,6 +463,7 @@ class ConstantHelper
     ];
     //Service Labels
     const SERVICE_LABEL = [
+        self::LR_SERVICE_ALIAS => "Lorry Receipt",
         self::SO_SERVICE_ALIAS => "Sales Order",
         self::SI_SERVICE_ALIAS => "Tax Invoice",
         self::SQ_SERVICE_ALIAS => "Sales Quotation",
@@ -526,6 +527,7 @@ class ConstantHelper
     const PRODUCTION_SLIP_SERVICE_ALIAS = 'pslip';
     const PB_SERVICE_ALIAS = 'pb';
     const SO_SERVICE_ALIAS = 'so';
+    const LR_SERVICE_ALIAS = 'lr';
     const SQ_SERVICE_ALIAS = 'sq';
     const SI_SERVICE_ALIAS = 'si';
     const SR_SERVICE_ALIAS = 'sr';
@@ -684,6 +686,7 @@ class ConstantHelper
 
     //Service Alias Models Mapping
     const SERVICE_ALIAS_MODELS = [
+        self::LR_SERVICE_ALIAS => 'ErpLorryReceipt',
         self::MO_SERVICE_ALIAS => 'MfgOrder',
         self::BOM_SERVICE_ALIAS => 'Bom',
         self::PO_SERVICE_ALIAS => 'PurchaseOrder',
@@ -1045,11 +1048,9 @@ class ConstantHelper
         ['label' => 'Boolean (Yes/No)', 'value' => self::DATA_TYPE_BOOLEAN],
     ];
 
-      public const VEHICLE_TYPES = [
-        '32 ft'   => '32 FT',
-        '14 ft'   => '14 Ft',
-        '17 ft'   => '17 FT',
-        '16 ft'   => '16 FT',
+      public const LORRY_CHARGES = [
+        '5'   => '5',
+        '10'   => '10',
     ];
 
      public const FUEL_TYPES = [

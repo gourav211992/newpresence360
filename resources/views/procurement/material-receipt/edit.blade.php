@@ -41,24 +41,26 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                    Print
-                                </a>
-                                <a href="{{ route('material-receipt.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                    Print Labels
-                                </a>
+                                @if(!intval(request('amendment') ?? 0) && $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT && $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
+                                    <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                                        Print
+                                    </a>
+                                    <a href="{{ route('material-receipt.print-labels', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                                        Print Labels
+                                    </a>
+                                @endif
                                 @if($buttons['draft'])
                                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
                                         <i data-feather='save'></i> Save as Draft
@@ -191,6 +193,12 @@
                                                                     <i data-feather="plus-square"></i>
                                                                     Outstanding JO
                                                                 </button>
+                                                            @elseif($mrn->reference_type == 'so')
+                                                                <button type="button"
+                                                                    class="btn btn-outline-primary btn-sm mb-0 soSelect">
+                                                                    <i data-feather="plus-square"></i>
+                                                                    Outstanding SO
+                                                                </button>
                                                             @endif
                                                         </div>
                                                     </div>
@@ -205,14 +213,14 @@
                                                         <div class="col-md-5">
                                                             <input type="text" name="reference_number"
                                                                 class="form-control" id="reference_number_input"
-                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn->purchaseOrder->book_code }} - {{ $mrn->purchaseOrder->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn->jobOrder->book_code }} - {{ $mrn->jobOrder->document_number }} @endif"
+                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn->purchaseOrder->book_code }} - {{ $mrn->purchaseOrder->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn->jobOrder->book_code }} - {{ $mrn->jobOrder->document_number }} @elseif($mrn->reference_type == 'so') {{ $mrn->saleOrder->book_code }} - {{ $mrn->saleOrder->document_number }} @endif"
                                                                 readonly>
 
                                                             <input type="hidden" name="reference_type"
                                                                 class="form-control reference_type" id="reference_type_input"
                                                                 value="{{ $mrn->reference_type }}" readonly>
                                                             <input type="hidden" name="purchase_order_id" class="form-control"
-                                                            value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
+                                                            value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @elseif($mrn->reference_type == 'so') {{ $mrn->sale_order_id }} @endif">
                                                         </div>
                                                     </div>
                                                 @endif
@@ -943,6 +951,8 @@
     @include('procurement.material-receipt.partials.outstanding-po-modal')
     {{-- Add Outstanding JO modal --}}
     @include('procurement.material-receipt.partials.outstanding-jo-modal')
+    {{-- Add Outstanding JO modal --}}
+    @include('procurement.material-receipt.partials.outstanding-so-modal')
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -970,6 +980,14 @@
             $("#addNewItemBtn").hide();
             $("#importItem").hide();
         }
+        if(currentProcessType == 'so')
+        {
+            document.getElementById('rateHeader').textContent = 'Rate';
+            $("#addNewItemBtn").hide();
+            $("#importItem").hide();
+        }
+
+
 
         let tableRowCount = 0;
         /*Clear local storage*/
@@ -1541,122 +1559,76 @@
         });
 
         function getItemDetail(currentTr) {
-            let pName = $(currentTr).find("[name*='component_item_name']").val();
-            let itemId = $(currentTr).find("[name*='item_id']").val();
-            let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
-            let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
-            let storeId = $("[name='header_store_id']").val() || '';
-            let subStoreId = $("[name='sub_store_id']").val() || '';
-            let remark = '';
-            if($(currentTr).find("[name*='remark']")) {
-                remark = $(currentTr).find("[name*='remark']").val() || '';
-            }
+            const getVal = (selector) => {
+                let el = $(currentTr).find(selector);
+                return el.length ? el.val() : '';
+            };
 
-            if (itemId) {
-                let selectedAttr = [];
-                $(currentTr).find("[name*='attr_name']").each(function(index, item) {
-                    if($(item).val()) {
-                        selectedAttr.push($(item).val());
-                    }
-                });
-                let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
-                let qtyElement = $(currentTr).find("[name*='[accepted_qty]']");  // Get the jQuery object, not the value
-                let qty = qtyElement.val() || '';  // Get the value of the accepted_qty input
+            let itemId = getVal("[name*='[item_id]']");
+            if (!itemId) return;
 
-                let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
-                if(currentProcessType == 'po')
-                {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
-                    '?item_id=' + itemId +
-                    '&type='+currentProcessType+
-                    '&purchase_order_id=' + poHeaderId +
-                    '&po_detail_id=' + poDetailId +
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
-                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
-                    '&remark=' + remark +
-                    '&uom_id=' + uomId +
-                    '&qty=' + qty +
-                    '&headerId=' + headerId +
-                    '&detailId='+detailId+
-                    '&store_id='+storeId+
-                    '&sub_store_id='+subStoreId;
-                }
-                else if(currentProcessType == 'jo')
-                {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
-                    '?item_id=' + itemId +
-                    '&type='+currentProcessType+
-                    '&job_order_id=' + poHeaderId +
-                    '&jo_detail_id=' + poDetailId +
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
-                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
-                    '&remark=' + remark +
-                    '&uom_id=' + uomId +
-                    '&qty=' + qty +
-                    '&headerId=' + headerId +
-                    '&detailId='+detailId+
-                    '&store_id='+storeId+
-                    '&sub_store_id='+subStoreId;
-                }
-                else
-                {
-                    actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
-                    '?item_id=' + itemId +
-                    '&type='+currentProcessType+
-                    '&purchase_order_id=' + poHeaderId +
-                    '&po_detail_id=' + poDetailId +
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
-                    '&itemStoreData=' + JSON.stringify(itemStoreData) +
-                    '&remark=' + remark +
-                    '&uom_id=' + uomId +
-                    '&qty=' + qty +
-                    '&headerId=' + headerId +
-                    '&detailId='+detailId+
-                    '&store_id='+storeId+
-                    '&sub_store_id='+subStoreId;
-                }
+            let selectedAttr = [];
+            $(currentTr).find("[name*='[attr_name]']").each(function () {
+                const val = $(this).val();
+                if (val) selectedAttr.push(val);
+            });
 
-                fetch(actionUrl).then(response => {
-                    return response.json().then(data => {
-                        if (data.status == 200) {
-                            // Update the modal or display section
-                            $("#itemDetailDisplay").html(data.data.html);
+            let data = {
+                item_id: itemId,
+                purchase_order_id: getVal("[name*='[purchase_order_id]']"),
+                po_detail_id: getVal("[name*='[po_detail_id]']"),
+                job_order_id: getVal("[name*='[job_order_id]']"),
+                jo_detail_id: getVal("[name*='[jo_detail_id]']"),
+                remark: getVal("[name*='[remark]']"),
+                uom_id: getVal("[name*='[uom_id]']"),
+                qty: getVal("[name*='[accepted_qty]']"),
+                headerId: getVal("[name*='[mrn_header_id]']"),
+                detailId: getVal("[name*='[mrn_detail_id]']"),
+                selectedAttr: JSON.stringify(selectedAttr),
+                itemStoreData: JSON.parse(getVal("[id*='components_stores_data']") || "[]"),
+                type: currentProcessType,
+            };
 
-                            var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if(approvedStockLedger)
-                            {
-                                if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                                let approved_stock = approvedStockLedger['approvedStock'];
-                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                                let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                                let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                                if (qty < approved_stock) {
-                                    if (qtyElement.length > 0) {  // Ensure the element was found
-                                        qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                        rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: "Accepted quantity input not found",
-                                            icon: 'error',
-                                        });
-                                    }
+            let actionUrl = '{{ route('material-receipt.get.itemdetail') }}?' + new URLSearchParams(data).toString();
+            
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 200) {
+                        // Update the modal or display section
+                        $("#itemDetailDisplay").html(data.data.html);
+
+                        var approvedStockLedger = data.data.checkApprovedQuantity;
+                        if(approvedStockLedger)
+                        {
+                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
+                            let approved_stock = approvedStockLedger['approvedStock'];
+                            let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
+                            let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
+                            let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
+                            if (qty < approved_stock) {
+                                if (qtyElement.length > 0) {  // Ensure the element was found
+                                    qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
+                                    rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
                                 } else {
                                     Swal.fire({
                                         title: 'Error!',
-                                        text: "Accepted quantity is higher than the approved stock.",
+                                        text: "Accepted quantity input not found",
                                         icon: 'error',
                                     });
                                 }
-                                }
+                            } else {
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: "Accepted quantity is higher than the approved stock.",
+                                    icon: 'error',
+                                });
                             }
-
+                            }
                         }
-                    });
+
+                    }
                 });
-            }
+            });
         }
 
         // Event listener for Edit Address button click
@@ -2873,8 +2845,8 @@
 
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
             let modalType = '#poModal';
-            if (currentProcessType == 'jo')
-                modalType = '#joModal';
+            // if (currentProcessType == 'jo')
+            //     modalType = '#joModal';
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -2931,19 +2903,21 @@
         }
 
         window.onload = function () {
-            localStorage.removeItem('selectedPoIds', selectedPoIds);
-            localStorage.removeItem('selectedJoIds', selectedJoIds);
             let selectedPoIds = [];
             let selectedJoIds = [];
+            let selectedSoIds = [];
 
             @if ($mrn->reference_type == 'po')
                 selectedPoIds = @json(is_array($mrn->purchase_order_id) ? $mrn->purchase_order_id : [$mrn->purchase_order_id]);
             @elseif ($mrn->reference_type == 'jo')
                 selectedJoIds = @json(is_array($mrn->job_order_id) ? $mrn->job_order_id : [$mrn->job_order_id]);
+            @elseif ($mrn->reference_type == 'so')
+                selectedSoIds = @json(is_array($mrn->sale_order_id) ? $mrn->sale_order_id : [$mrn->sale_order_id]);
             @endif
 
             localStorage.setItem('selectedPoIds', selectedPoIds);
             localStorage.setItem('selectedJoIds', selectedJoIds);
+            localStorage.setItem('selectedSoIds', selectedSoIds);
         };
 
 
@@ -2952,29 +2926,76 @@
         }
 
         function getDynamicParams() {
-            if(currentProcessType == 'jo')
+            let document_date = '',
+                header_book_id = '',
+                series_id = '',
+                document_number = '',
+                item_id = '',
+                vendor_id = '',
+                store_id = '',
+                so_id = '',
+                item_search = '',
+                selected_po_ids = '';
+            if(currentProcessType === 'po')
             {
-                selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+                let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
+                selectedPoIds = JSON.parse(selectedPoIds);
+                selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+                document_date = $("[name ='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#document_id_qt_val").val() || '',
+                item_id = $("#item_id_qt_val").val() || '',
+                vendor_id = $("#vendor_id_qt_val").val(),
+                store_id = $("#store_id").val() || '',
+                so_id = $("#po_so_qt_val").val() || '',
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedPoIds)
             }
-            else
+            if(currentProcessType === 'jo')
             {
-                selectedPoIds = localStorage.getItem('selectedJoIds') ?? '[]';
+                let selectedJoIds = localStorage.getItem('selectedJoIds') ?? '[]';
+                selectedJoIds = JSON.parse(selectedJoIds);
+                selectedJoIds = encodeURIComponent(JSON.stringify(selectedJoIds));
+                document_date = $("[name='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#jo_document_id_qt_val").val() || '',
+                item_id = $("#jo_item_id_qt_val").val() || '',
+                vendor_id = $("#jo_vendor_id_qt_val").val(),
+                store_id = $("#jo_store_id").val() || '',
+                so_id = $("#jo_so_qt_val").val() || '',
+                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedJoIds)
             }
-            // selectedPoIds = selectedPoIds;
-            // selectedPoIds = JSON.parse(selectedPoIds);
-            // selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
+            if(currentProcessType === 'so')
+            {
+                let selectedSoIds = localStorage.getItem('selectedSoIds') ?? '[]';
+                selectedSoIds = JSON.parse(selectedSoIds);
+                selectedSoIds = encodeURIComponent(JSON.stringify(selectedSoIds));
+                document_date = $("[name='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#so_document_id_qt_val").val() || '',
+                item_id = $("#so_item_id_qt_val").val() || '',
+                vendor_id = $("#so_vendor_id_qt_val").val(),
+                store_id = $("#so_store_id").val() || '',
+                so_id = $("#so_so_qt_val").val() || '',
+                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
+                selected_po_ids = encodeURIComponent(selectedSoIds)
+            }
             return {
-                document_date: $("[name='document_date']").val() || '',
-                header_book_id: $("#book_id").val() || '',
-                series_id: $("#book_id_qt_val").val() || '',
-                document_number: $("#document_id_qt_val").val() || '',
-                item_id: $("#item_id_qt_val").val() || '',
-                vendor_id: $("#vendor_id_qt_val").val(),
-                store_id: $("#store_id").val() || '',
-                so_id: $("#po_so_qt_val").val() || '',
-                item_search: $("#item_name_search").val(),
-                selected_po_ids: encodeURIComponent(selectedPoIds)
-            };
+                    document_date: document_date,
+                    header_book_id: header_book_id,
+                    series_id: series_id,
+                    document_number: document_number,
+                    item_id: item_id,
+                    vendor_id: vendor_id,
+                    store_id: store_id,
+                    so_id: so_id,
+                    item_search: item_search,
+                    selected_po_ids: selected_po_ids
+                };
         }
 
         function getPurchaseOrders()
@@ -3549,7 +3570,7 @@
             );
         }
 
-        $(document).on('keyup', '#item_name_search', (e) => {
+        $(document).on('keyup', '#jo_item_name_search', (e) => {
             $('#joModal .jo-order-detail').DataTable().ajax.reload();
         });
 
@@ -3875,6 +3896,504 @@
                             '<option value="">Select</option>').prop('readonly', false);
                         $("select[name='payment_term_id']").empty().append(
                             '<option value="">Select</option>').prop('readonly', false);
+                        $(".shipping_detail").text('-');
+                        $(".billing_detail").text('-');
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error',
+                        });
+                        return false;
+                    }
+                });
+            });
+        });
+
+         /*Open So model*/
+        let soOrderTable;
+        $(document).on('click', '.soSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
+            $("#soModal").modal('show');
+            currentProcessType = 'so';
+            openSaleRequest();
+            const tableSelector = '#soModal .so-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
+            getSaleOrders();
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    soOrderTable = $(tableSelector).DataTable();
+                    soOrderTable.ajax.reload();
+                }
+                // Re-initialize DataTable
+            }
+        });
+
+        function getSelectedSoTypes()
+        {
+            let moduleTypes = [];
+            $('.so_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module'));
+            });
+            return moduleTypes;
+        }
+
+        function openSaleRequest()
+        {
+            initializeAutocompleteSQt("so_vendor_code_input_qt", "so_vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocompleteSQt("so_document_no_input_qt", "so_document_id_qt_val", "so_document_qt", "document_number", "");
+            initializeAutocompleteSQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
+        }
+
+        function initializeAutocompleteSQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        {
+            let modalType = '#soModal';
+
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: typeVal,
+                            vendor_id : $("#vendor_id_qt_val").val(),
+                            header_book_id : $("#book_id").val(),
+                            item_search : $("#item_search_id_qt_val").val() || '',
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+                                return {
+                                    id: item.id,
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                appendTo : modalType,
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $("#" + selectorSibling).val(ui.item.id);
+                    $('#soModal .so-order-detail').DataTable().ajax.reload();
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + selectorSibling).val("");
+                        $('#soModal .so-order-detail').DataTable().ajax.reload();
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#soModal .so-order-detail').DataTable().ajax.reload();
+                    $(this).autocomplete("search", "");
+                }
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#soModal .so-order-detail').DataTable().ajax.reload();
+                }
+            })
+        }
+
+        function renderData(data) {
+            return data ? data : '';
+        }
+
+        function getSaleOrders()
+        {
+            const ajaxUrl = '{{ route("material-receipt.get.so", ["type" => "edit"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'so_doc', name: 'so_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'so_date', name: 'so_date', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_doc', name: 'ge_doc', render: renderData, orderable: false, searchable: false },
+                { data: 'ge_date', name: 'ge_date', render: renderData, orderable: false, searchable: false },
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'inv_order_qty', name: 'inv_order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'ge_qty', name: 'ge_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'grn_qty', name: 'grn_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'total_amount', name: 'total_amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#soModal .so-order-detail',
+                ajaxUrl,
+                columns
+            );
+        }
+
+        $(document).on('keyup', '#so_item_name_search', (e) => {
+            $('#soModal .so-order-detail').DataTable().ajax.reload();
+        });
+
+        /*Checkbox for po/si item list*/
+        $(document).on('change','.so-order-detail > thead .form-check-input',(e) => {
+            if (e.target.checked) {
+                $(".so-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',true);
+                });
+            } else {
+                $(".so-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',false);
+                });
+            }
+        });
+
+        function getSelectedSoIDS()
+        {
+            let ids = [];
+            let referenceNos = [];
+            $('.so_item_checkbox:checked').each(function() {
+                ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
+            });
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
+        }
+
+        $(document).on('click', '.soProcess', (e) => {
+            let result = getSelectedSoIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            let idsLength = ids.length;
+            currentProcessType = 'so';
+            rateHeader.textContent = 'Rate';
+            if (!ids.length) {
+                $("#soModal").modal('hide');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please select at least one one so',
+                    icon: 'error',
+                });
+                return false;
+            }
+
+            let moduleTypes = getSelectedSoTypes();
+
+            $("[name='so_item_ids']").val(ids);
+            $(".poSelect").hide();
+            $(".joSelect").hide();
+            $("#addNewItemBtn").hide();
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('so');
+
+            // for component item code
+            function initializeAutocomplete2(selector, type) {
+                $(selector).autocomplete({
+                    minLength: 0,
+                    source: function(request, response) {
+                        let selectedAllItemIds = [];
+                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                            if(Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                            }
+                        });
+                        $.ajax({
+                            url: '/search',
+                            method: 'GET',
+                            dataType: 'json',
+                            data: {
+                                q: request.term,
+                                type:'goods_item_list',
+                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        id: item.id,
+                                        label: `${item.item_name} (${item.item_code})`,
+                                        code: item.item_code || '',
+                                        item_id: item.id,
+                                        item_name:item.item_name,
+                                        uom_name:item.uom?.name,
+                                        uom_id:item.uom_id,
+                                        hsn_id:item.hsn?.id,
+                                        hsn_code:item.hsn?.code,
+                                        alternate_u_o_ms:item.alternate_u_o_ms,
+                                        is_attr:item.item_attributes_count,
+                                    };
+                                }));
+                            },
+                            error: function(xhr) {
+                                console.error('Error fetching customer data:', xhr.responseText);
+                            }
+                        });
+                    },
+                    select: function(event, ui) {
+                        let $input = $(this);
+                        let itemCode = ui.item.code;
+                        let itemName = ui.item.value;
+                        let itemN = ui.item.item_name;
+                        let itemId = ui.item.item_id;
+                        let uomId = ui.item.uom_id;
+                        let uomName = ui.item.uom_name;
+                        let hsnId = ui.item.hsn_id;
+                        let hsnCode = ui.item.hsn_code;
+                        $input.attr('data-name', itemName);
+                        $input.attr('data-code', itemCode);
+                        $input.attr('data-id', itemId);
+                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
+                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
+                        $input.closest('tr').find('[name*=item_name]').val(itemN);
+                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
+                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                        $input.val(itemCode);
+                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                        if(ui.item?.alternate_u_o_ms) {
+                            for(let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                            }
+                        }
+                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
+                        setTimeout(() => {
+                            if(ui.item.is_attr) {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                            } else {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                            }
+                        }, 100);
+                        getItemDetail($input.closest('tr'), currentProcessType);
+                        getItemCostPrice($input.closest('tr'));
+                        return false;
+                    },
+                    change: function(event, ui) {
+                        if (!ui.item) {
+                            $(this).val("");
+                                // $('#itemId').val('');
+                            $(this).attr('data-name', '');
+                            $(this).attr('data-code', '');
+                        }
+                    }
+                }).focus(function() {
+                    if (this.value === "") {
+                        $(this).autocomplete("search", "");
+                    }
+                });
+            }
+
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let groupItems = [];
+            $('tr[data-group-item]').each(function () {
+                let groupItemData = $(this).data('group-item');
+                groupItems.push(groupItemData);
+            });
+
+            groupItems = JSON.stringify(groupItems);
+            let current_row_count = $("tbody tr[id*='row_']").length;
+            ids = JSON.stringify(ids);
+            moduleTypes = JSON.stringify(moduleTypes);
+            let type = 'so'; // Dynamically fetch the `type` from the current route
+            let actionUrl = '{{ route("material-receipt.process.so-item") }}'
+            + '?ids=' + encodeURIComponent(ids)
+            + '&type=' + type
+            + '&moduleTypes=' + moduleTypes
+            + '&tableRowCount=' + tableRowCount
+            + '&currency_id=' + encodeURIComponent(currencyId)
+            + '&d_date=' + encodeURIComponent(transactionDate)
+            // + '&groupItems=' + encodeURIComponent(groupItems);
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        let soOrder = data?.data?.saleOrder;
+                        vendorOnChange(data?.data?.vendor?.id, 'so', soOrder.id);
+                        let result = getSelectedSoIDS();
+                        let newIds = result.ids;
+                        let existingIds = localStorage.getItem('selectedSoIds');
+
+                        if (existingIds) {
+                            existingIds = JSON.parse(existingIds);
+                            existingIds = Array.isArray(existingIds) ? existingIds : [existingIds];
+                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                            localStorage.setItem('selectedSoIds', JSON.stringify(mergedIds));
+                        } else {
+                            localStorage.setItem('selectedSoIds', JSON.stringify(newIds));
+                        }
+
+                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedSoIds'));
+                        $("[name='so_item_ids']").val(existingIdsUpdate.join(','));
+
+                        let module_type = data?.data?.moduleType || '';
+                        let vendor = data?.data?.vendor || '';
+                        let finalDiscounts = data?.data?.finalDiscounts;
+                        let finalExpenses = data?.data?.finalExpenses;
+
+                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
+                        } else {
+                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
+                        }
+                        initializeAutocomplete2(".comp_item_code");
+                        $("#soModal").modal('hide');
+                        $("select[name='currency_id']").prop('disabled', true);
+                        $("select[name='payment_term_id']").prop('disabled', true);
+                        $("#vendor_name").prop('readonly',true);
+                        $(".editAddressBtn").addClass('d-none');
+                        $("#vendor_name").prop('readonly',true);
+                        if(soOrder.type == 'supplier-invoice'){
+                            $("[name='supplier_invoice_no']").val(soOrder.document_number);
+                            $("[name='supplier_invoice_date']").val(soOrder.document_date);
+                        } else{
+                            $("[name='supplier_invoice_no']").val();
+                            $("[name='supplier_invoice_date']").val();
+                        }
+
+                        $(".module_type").val(module_type);
+                        let locationId = $("[name='header_store_id']").val();
+                        // getLocation(locationId);
+
+                        if(finalDiscounts.length) {
+                            let rows = '';
+                            finalDiscounts.forEach(function(item,index) {
+                                index = index + 1;
+                                rows+= `<tr class="display_summary_discount_row">
+                                        <td>${index}</td>
+                                        <td>${item.ted_name}
+                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
+                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
+                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
+                                        </td>
+                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
+                                            <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
+                                        </td>
+                                        <td class="text-end">
+                                            <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
+                                        </td>
+                                        <td>
+                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </a>
+                                        </td>
+                                    </tr>`
+                            });
+
+                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
+                            $("#f_header_discount_hidden").removeClass('d-none');
+                        } else {
+                            $("#f_header_discount_hidden").addClass('d-none');
+                        }
+
+                        if(finalExpenses.length) {
+                            let rows = '';
+                            finalExpenses.forEach(function(item,index) {
+                                index = index + 1;
+                                rows+=`<tr class="display_summary_exp_row">
+                                        <td>${index}</td>
+                                        <td>${item.ted_name}
+                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
+                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                        </td>
+                                        <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
+                                            <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
+                                            <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
+                                        </td>
+                                        <td class="text-end">
+                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                        </td>
+                                        <td>
+                                            <a href="javascript:;" class="text-danger deleteExpRow">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            </a>
+                                        </td>
+                                    </tr>`;
+
+                            });
+                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
+                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                        }
+                        initializeAutocomplete2(".comp_item_code");
+                        focusAndScrollToLastRowInput();
+                        setTimeout(() => {
+                            setTableCalculation();
+                            if(idsLength > 1)
+                            {
+                                $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    if(tableRowCount>0)
+                                    {
+                                        currentIndex = tableRowCount + 1;
+                                    }
+                                    let currentIndex = index + 1;
+                                    setAttributesUIHelper(currentIndex,"#itemTable");
+                                });
+                            }
+                            currentIndex = tableRowCount + 1;
+                            setAttributesUIHelper(currentIndex,"#itemTable");
+                        },500);
+                    }
+                    if(data.status == 422) {
+                        $(".editAddressBtn").removeClass('d-none');
+                        $("#vendor_name").val('').prop('readonly',false);
+                        $("#vendor_id").val('');
+                        $("#vendor_code").val('');
+                        $("#hidden_state_id").val('');
+                        $("#hidden_country_id").val('');
+                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
+                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
                         Swal.fire({

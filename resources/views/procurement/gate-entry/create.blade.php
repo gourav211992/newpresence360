@@ -702,6 +702,13 @@
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         let currentProcessType = null;
+
+        window.onload = function () {
+            localStorage.removeItem('selectedPoIds');
+            localStorage.removeItem('selectedJoIds');
+            localStorage.removeItem('selectedSoIds');
+            currentProcessType = null;
+        };
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -1112,7 +1119,7 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
-                        
+
                         $(".poSelect").hide();
                         $(".joSelect").hide();
                         $("#vendor_name").prop('readonly',true);
@@ -1341,7 +1348,7 @@
         });
 
         function getItemDetail(currentTr, type=null) {
-            
+
             let pName = $(currentTr).find("[name*='component_item_name']").val();
             let itemId = $(currentTr).find("[name*='item_id']").val();
             let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
@@ -1352,8 +1359,7 @@
             if($(currentTr).find("[name*='remark']")) {
                 remark = $(currentTr).find("[name*='remark']").val() || '';
             }
-            console.log('type', type, itemId);
-            
+
             if (itemId) {
                 let selectedAttr = [];
                 $(currentTr).find("[name*='attr_name']").each(function(index, item) {
@@ -1376,7 +1382,7 @@
                 }
                 else
                 {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
+                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+soHeaderId+'&po_detail_id='+soDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
                 }
                 fetch(actionUrl).then(response => {
                     return response.json().then(data => {
@@ -1559,10 +1565,6 @@
             })
         }
 
-        window.onload = function () {
-            localStorage.removeItem('selectedPoIds');
-        };
-
         function renderData(data) {
             return data ? data : '';
         }
@@ -1592,7 +1594,8 @@
                 vendor_id = $("#vendor_id_qt_val").val(),
                 store_id = $("#store_id").val() || '',
                 so_id = $("#po_so_qt_val").val() || '',
-                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '',
+                selected_po_ids = selectedPoIds
                 selected_po_ids = encodeURIComponent(selectedPoIds)
             }
             if(currentProcessType === 'jo')
@@ -1608,7 +1611,8 @@
                 vendor_id = $("#jo_vendor_id_qt_val").val(),
                 store_id = $("#jo_store_id").val() || '',
                 so_id = $("#jo_so_qt_val").val() || '',
-                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
+                item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '',
+                selected_po_ids = selectedJoIds
                 selected_po_ids = encodeURIComponent(selectedJoIds)
             }
             if(currentProcessType === 'so')
@@ -1624,7 +1628,7 @@
                 vendor_id = $("#so_vendor_id_qt_val").val(),
                 store_id = $("#so_store_id").val() || '',
                 so_id = $("#so_so_qt_val").val() || '',
-                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
+                item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '',
                 selected_po_ids = encodeURIComponent(selectedSoIds)
             }
             return {
@@ -1977,10 +1981,6 @@
                 }
             })
         }
-
-        window.onload = function () {
-            localStorage.removeItem('selectedJoIds');
-        };
 
         function renderJoData(data) {
             return data ? data : '';
@@ -2436,7 +2436,7 @@
                     $(".module_type").val(modelType);
                     $("#itemTable .mrntableselectexcel").append(pos);
                     initializeAutocomplete2(".comp_item_code");
-                    
+
                     $("#poModal, #joModal").modal('hide');
                     $('.asn_process').prop('disabled', true);
 
@@ -2459,7 +2459,7 @@
                             $(".asn-container").addClass('d-none');
                             break;
                     }
-                    
+
                     // UI Locks
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
                     $("#vendor_name").prop('readonly', true);

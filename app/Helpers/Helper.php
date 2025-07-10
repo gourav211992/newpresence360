@@ -1109,6 +1109,7 @@ class Helper
             }
             //Creator of document cannot approve
             // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
+           
             if ($user->auth_user_id === $createdBy) {
                 $approve = false;
                 $revoke = true;
@@ -1552,7 +1553,7 @@ class Helper
             $model = resolve($modelName);
             $document = $model::find($docId);
             $createdBy = $document ?-> created_by;
-            if (isset($document) && isset($document -> document_status)) { //Document Exists
+            if (isset($document) && isset($document -> document_status)) { 
                 if ($actionType == ConstantHelper::REVOKE && $document -> document_status != ConstantHelper::SUBMITTED) {
                     $message = "Can't Revoke. Document is already Approved/Rejected";
                 }
@@ -2497,7 +2498,7 @@ return [
                         $headerHistoryId = self::createRevisionHistory($headerModel);
                     }
 
-                    if ($table['model_type'] == 'detail' && count($headerHistoryId)) {
+                    if ($table['model_type'] == 'detail' && is_array($headerHistoryId) && count($headerHistoryId)) {
                         $detailColumn = $table['relation_column'];
 
                         $detailModel = $ModelInstance::where([[$detailColumn, $headerId]])->get();
