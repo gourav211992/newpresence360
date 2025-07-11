@@ -1006,6 +1006,7 @@ $(function(){
                   $("#head_uom_id").val(uom_id);
                   $("#head_uom_name").val(uom_name);
                   $(".heaer_item").remove();
+                  $('#vendor_section').find('input[name*="[attr_id]"]').remove();
                   if($(".customer_div").length) {
                       $(".customer_div").before(data.data.html);
                     } else {

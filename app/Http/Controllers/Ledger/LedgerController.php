@@ -62,7 +62,7 @@ class LedgerController extends Controller
                 // }
 
                 // $ledgers = Ledger::whereIn('organization_id', $organizations)->orderBy('id', 'desc');
-                // $ledgers = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')->get();
+                // $ledgers = Ledger::orderBy('id', 'desc')->get();
                 // if ($request->group) {
                 //     $ledgers->whereJsonContains('ledger_group_id', (string) $request->group)
                 //         ->orWhere('ledger_group_id', $request->group);
@@ -76,8 +76,7 @@ class LedgerController extends Controller
                 //     $end = date('Y-m-d', strtotime($dates[1]));
                 //     $ledgers->whereDate('created_at', '>=', $start)->whereDate('created_at', '<=', $end);
                 // }
-               $ledgersQuery = Ledger::withDefaultGroupCompanyOrg()
-                ->when(!empty($organizations), function ($query) use ($organizations) {
+               $ledgersQuery = Ledger::when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
                 })
                 ->orderBy('id', 'desc');
@@ -158,7 +157,7 @@ class LedgerController extends Controller
             }
 
             $groups = Helper::getGroupsQuery()->whereNotNull('parent_group_id')->select('id', 'name')->get();
-            $ledgers = Ledger::withDefaultGroupCompanyOrg()->select('id', 'name')->orderBy('id', 'desc')->get();
+            $ledgers = Ledger::select('id', 'name')->orderBy('id', 'desc')->get();
             $mappings = $user->access_rights_org;
 
             return view('ledgers.view_ledgers', compact('groups', 'ledgers', 'mappings', "organizationId"));
@@ -211,8 +210,7 @@ class LedgerController extends Controller
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
         //        $label = ConstantHelper::getTaxTypeLabel(ConstantHelper::TAX_TYPE_IGST);
-        $Existingledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->select('name', 'code')->get();
+        $Existingledgers = Ledger::select('name', 'code')->get();
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
@@ -366,7 +364,7 @@ class LedgerController extends Controller
     {
         $uploadItems = UploadLedgerMaster::where('import_status', 'Success')
             ->get();
-        $items = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')
+        $items = Ledger::orderBy('id', 'desc')
             ->whereIn('code', $uploadItems->pluck('code'))->get();
         return Excel::download(new LedgersExport($items, $this->ledgerImportExportService), "successful-items.xlsx");
     }
@@ -452,12 +450,10 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
-        $existingName = Ledger::withDefaultGroupCompanyOrg()
-            ->where('code', $request->name)
+        $existingName = Ledger::where('code', $request->name)
             ->first();
 
-        $existingCode = Ledger::withDefaultGroupCompanyOrg()
-            ->where('code', $request->code)
+        $existingCode = Ledger::where('code', $request->code)
             ->first();
 
 
@@ -562,7 +558,7 @@ class LedgerController extends Controller
         } else {
             $data->ledger_group_id = json_encode($decoded);
         }
-        $existingLedgers = Ledger::withDefaultGroupCompanyOrg()->where('id', '!=', $data->id)
+        $existingLedgers = Ledger::where('id', '!=', $data->id)
             ->select('name', 'code')
             ->get();
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
@@ -659,14 +655,12 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
-        $existingName = Ledger::withDefaultGroupCompanyOrg()
-            ->where('name', $request->name)
+        $existingName = Ledger::where('name', $request->name)
             ->where('id', '!=', $id)
             ->first();
 
 
-        $existingCode = Ledger::withDefaultGroupCompanyOrg()
-            ->where('code', $request->code)
+        $existingCode = Ledger::where('code', $request->code)
             ->where('id', '!=', $id)
             ->first();
 
@@ -776,9 +770,7 @@ class LedgerController extends Controller
     {
         $searchTerm = $request->input('q', '');
 
-        $query = Ledger::where('status', 1)
-            ->withDefaultGroupCompanyOrg();
-
+        $query = Ledger::where('status', 1);
         if (!empty($searchTerm)) {
             $query->where(function ($query) use ($searchTerm) {
                 $query->where('name', 'LIKE', "%$searchTerm%")
@@ -881,7 +873,7 @@ class LedgerController extends Controller
         $authUser = Helper::getAuthenticatedUser();
         $organizationId = $authUser->organization_id;
         if ($itemId) {
-            $existingItem = Ledger::withDefaultGroupCompanyOrg()->find($itemId);
+            $existingItem = Ledger::find($itemId);
             if ($existingItem) {
                 $existingItemCode = $existingItem->code;
                 $currentBaseCode = substr($existingItemCode, 0, strlen($baseCode));
@@ -895,8 +887,7 @@ class LedgerController extends Controller
         $finalItemCode = $baseCode . $nextSuffix;
 
         while (
-            Ledger::withDefaultGroupCompanyOrg()
-            ->where('code', $finalItemCode)
+            Ledger::where('code', $finalItemCode)
             ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
@@ -929,8 +920,7 @@ class LedgerController extends Controller
         $finalItemCode = $baseCode . $nextSuffix;
 
         while (
-            Ledger::withDefaultGroupCompanyOrg()
-            ->where('code', $finalItemCode)
+            Ledger::where('code', $finalItemCode)
             ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);

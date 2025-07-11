@@ -526,7 +526,7 @@ class FinancialPostingHelper
 
     public static function getDocumentPostedVoucher(int $documentId, string $serviceAlias)
     {
-        $voucher = Voucher::withDefaultGroupCompanyOrg()->with('items')->where('reference_service', $serviceAlias)->where('reference_doc_id', $documentId)->first();
+        $voucher = Voucher::with('items')->where('reference_service', $serviceAlias)->where('reference_doc_id', $documentId)->first();
         if (!isset($voucher)) {
             return array(
                 'status' => false,
@@ -848,7 +848,7 @@ class FinancialPostingHelper
     public static function postVoucher(array $details)
     {
         //Post Voucher
-        $exitingVoucher = Voucher::withDefaultGroupCompanyOrg()->where('reference_service', $details['voucher_header']['reference_service'])->where('reference_doc_id', $details['voucher_header']['reference_doc_id'])->first();
+        $exitingVoucher = Voucher::where('reference_service', $details['voucher_header']['reference_service'])->where('reference_doc_id', $details['voucher_header']['reference_doc_id'])->first();
         if ($exitingVoucher) {
             return array(
                 'message' => 'Voucher already posted',
@@ -6264,7 +6264,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
+        $document = PaymentVoucher::find($documentId);
         $vendors = $document->details;
         $vocuherdata = $document;
         if (!isset($document)) {
@@ -6852,7 +6852,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        $document = PaymentVoucher::withDefaultGroupCompanyOrg()->find($documentId);
+        $document = PaymentVoucher::find($documentId);
         $vendors = $document->details;
         $vocuherdata = $document;
         if (!isset($document)) {

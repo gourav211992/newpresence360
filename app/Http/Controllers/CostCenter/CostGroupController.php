@@ -18,13 +18,13 @@ class CostGroupController extends Controller
     public function index()
     {
         $organization_id = Helper::getAuthenticatedUser()->organization_id;
-        $parentGroup = CostGroup::withDefaultGroupCompanyOrg()->
+        $parentGroup = CostGroup::
         whereNotNull("parent_cost_group_id")->with([
             'parent' => function ($q) {
                 $q->select('id', 'name');
             }
         ])->get();
-        $data = CostGroup::withDefaultGroupCompanyOrg()->with([
+        $data = CostGroup::with([
             'parent' => function ($q) {
                 $q->select('id', 'name');
             }
@@ -37,9 +37,9 @@ class CostGroupController extends Controller
      */
     public function create()
     {
-        $parent = CostGroup::withDefaultGroupCompanyOrg()->where('organization_id',Helper::getAuthenticatedUser()->organization_id)->whereNotNull("parent_cost_group_id")->pluck("parent_cost_group_id")->toArray();
-        $groups = CostGroup::withDefaultGroupCompanyOrg()->where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->whereNotIn("id", $parent)->get();
-        $existingCostGroups = CostGroup::withDefaultGroupCompanyOrg()->pluck('name')->toArray();
+        $parent = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->whereNotNull("parent_cost_group_id")->pluck("parent_cost_group_id")->toArray();
+        $groups = CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->whereNotIn("id", $parent)->get();
+        $existingCostGroups = CostGroup::pluck('name')->toArray();
         return view('costCenter.groups.create', compact('groups','existingCostGroups'));
     }
 
@@ -53,8 +53,7 @@ class CostGroupController extends Controller
             'name' => 'required|string|max:255 ',
         ]);
 
-        $existingName = CostGroup::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
+        $existingName = CostGroup::where('name', $request->name)
         ->first();
 
             if ($existingName) {
@@ -65,7 +64,7 @@ class CostGroupController extends Controller
         $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
 
         // Create a new cost group record with organization details
-        CostGroup::withDefaultGroupCompanyOrg()->where('organization_id',Helper::getAuthenticatedUser()->organization_id)
+        CostGroup::where('organization_id',Helper::getAuthenticatedUser()->organization_id)
         ->create(array_merge($request->all(), [
             'organization_id' => $organization->id,
             'group_id' => $organization->group_id,
@@ -90,16 +89,16 @@ class CostGroupController extends Controller
      */
     public function edit(string $id)
     {
-        $data = CostGroup::withDefaultGroupCompanyOrg()->find($id);
-        $parent = CostGroup::withDefaultGroupCompanyOrg()->whereNotNull("parent_cost_group_id")->pluck("parent_cost_group_id")->toArray();
+        $data = CostGroup::find($id);
+        $parent = CostGroup::whereNotNull("parent_cost_group_id")->pluck("parent_cost_group_id")->toArray();
         if (($key = array_search($data->parent_cost_group_id, $parent)) !== false) {
             unset($parent[$key]);
         }
-        $existingCostGroups = CostGroup::withDefaultGroupCompanyOrg()->where('id', '!=', $id)
+        $existingCostGroups = CostGroup::where('id', '!=', $id)
         ->pluck('name')
         ->toArray();
 
-        $groups = CostGroup::withDefaultGroupCompanyOrg()->whereNot('id', $id)->orderBy('id', 'desc')->whereNotIn("id", $parent)->get();
+        $groups = CostGroup::whereNot('id', $id)->orderBy('id', 'desc')->whereNotIn("id", $parent)->get();
         return view('costCenter.groups.edit', compact('groups', 'data','existingCostGroups'));
     }
 
@@ -112,15 +111,14 @@ class CostGroupController extends Controller
             'name' => ['required', 'string', 'max:255', ],
         ]);
 
-         $existingName = CostGroup::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
+         $existingName = CostGroup::where('name', $request->name)
         ->where('id', '!=', $id)
         ->first();
 
         if ($existingName) {
             return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
         }
-        $update = CostGroup::withDefaultGroupCompanyOrg()->find($id);
+        $update = CostGroup::find($id);
         $update->name = $request->name;
         $update->parent_cost_group_id = $request->parent_cost_group_id;
         $update->status = $request->status;
@@ -134,7 +132,7 @@ class CostGroupController extends Controller
      */
     public function destroy(string $id)
     {
-        $record = CostGroup::withDefaultGroupCompanyOrg()->findOrFail($id);
+        $record = CostGroup::findOrFail($id);
         $record->delete();
         return redirect()->route('cost-group.index')->with('success', 'Cost Group deleted successfully');
     }

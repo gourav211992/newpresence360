@@ -190,8 +190,12 @@ class PWOController extends Controller
                     $item = Item::find($component['item_id'] ?? null);
                     $pwoSoMapping = new PwoSoMapping;
                     $pwoSoMapping->pwo_id = $mo->id;
-                    $pwoSoMapping->so_id = $component['so_id'] ?? null;
-                    $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
+                    if(isset($component['so_id']) && $component['so_id']) {
+                        $pwoSoMapping->so_id = $component['so_id'] ?? null;
+                    }
+                    if(isset($component['so_item_id']) && $component['so_item_id']) {
+                        $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
+                    }
                     $pwoSoMapping->store_id = $component['store_id'] ?? null;
                     // if(intval($component['main_so_item'])) {
                     // if (!empty(intval($component['main_so_item']))) {
@@ -789,8 +793,12 @@ class PWOController extends Controller
                     $pwoSoMapping = PwoSoMapping::find($pwoSoMappingId) ?? new PwoSoMapping;
                     
                     $pwoSoMapping->pwo_id = $mo->id;
-                    $pwoSoMapping->so_id = $component['so_id'] ?? null;
-                    $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
+                    if(isset($component['so_id']) && $component['so_id']) {
+                        $pwoSoMapping->so_id = $component['so_id'] ?? null;
+                    }
+                    if(isset($component['so_item_id']) && $component['so_item_id']) {
+                        $pwoSoMapping->so_item_id = $component['so_item_id'] ?? null;
+                    }
                     $pwoSoMapping->item_id = $component['item_id'] ?? null;
                     $pwoSoMapping->item_code = $component['item_code'] ?? null;
                     $pwoSoMapping->store_id = $component['store_id'] ?? null;

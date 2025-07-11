@@ -297,8 +297,6 @@ class GateEntryController extends Controller
             $mrn->book_code = $request->book_code ?? null;
             $mrn->vendor_code = $request->vendor_code;
             $mrn->company_id = $organization->company_id;
-            $mrn->gate_entry_date = $request->gate_entry_date ? date('Y-m-d', strtotime($request->gate_entry_date)) : '';
-            $mrn->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
             $mrn->billing_to = $request->billing_id;
             $mrn->ship_to = $request->shipping_id;
             $mrn->billing_address = $request->billing_address;
@@ -835,6 +833,10 @@ class GateEntryController extends Controller
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $mrn->uploadDocuments($request->file('attachment'), 'mrn', false);
             }
+            $mrn->save();
+
+            $mrn->gate_entry_no = ($mrn->book_code ?? '') .'-'. ($mrn->document_number ?? '');
+            $mrn->gate_entry_date = $mrn->document_date ? date('Y-m-d', strtotime($mrn->document_date)) : date('Y-m-d');
             $mrn->save();
 
             $redirectUrl = '';
@@ -2601,11 +2603,11 @@ class GateEntryController extends Controller
                 $finalExpenses[] = [
                     'id' => $expense->id,
                     'ref_type' => 'po',
-                    'purchase_order_id' => $poId,
+                    'purchase_order_id' => $expense->purchase_order_id,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
-                    'ted_perc' => round($perc, 4),
+                    'ted_perc' => round($perc, 8),
                 ];
             }
         }
@@ -2936,11 +2938,11 @@ class GateEntryController extends Controller
                 $finalExpenses[] = [
                     'id' => $expense->id,
                     'ref_type' => 'jo',
-                    'job_order_id' => $joId,
+                    'job_order_id' => $expense->jo_id,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
-                    'ted_perc' => round($perc, 4),
+                    'ted_perc' => round($perc, 8),
                 ];
             }
         }

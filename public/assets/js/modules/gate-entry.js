@@ -328,7 +328,7 @@ function setTableCalculation(edit = false) {
             poId = $(item).find("[name*='[purchase_order_id]']").val();
         }else if(reference_type == 'jo'){
             poItemId = $(item).find("[name*='[jo_detail_id]']").val();
-            poId = $(item).find("[name*='[jo_order_id]']").val();
+            poId = $(item).find("[name*='[job_order_id]']").val();
         }else{
             poItemId = '';
             poId = '';
@@ -562,7 +562,7 @@ function setTableCalculation(edit = false) {
         let fetchPromises = [];
         let expAmounts = [];
         let totalRows = rows.length;
-
+        
         if (totalRows && totalAfterTax) {
             rows.each(function(index, eachItem) {
                 let hiddenPerc = Number($(`[name="exp_summary[${index+1}][hidden_e_perc]"]`).val()) || 0;
@@ -578,7 +578,7 @@ function setTableCalculation(edit = false) {
                         <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${idx+1}][e_amnt]">
                     `);
                 };
-
+                console.log('tedId', tedId,poItemIds, poIds, reference_type);
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
 
                     const p = fetch('/gate-entries/get-selected-item-amount', {

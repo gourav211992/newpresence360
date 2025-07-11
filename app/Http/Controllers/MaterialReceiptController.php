@@ -500,7 +500,7 @@ class MaterialReceiptController extends Controller
                             $gateEntryDetail =  GateEntryDetail::find($component['gate_entry_detail_id']);
                             $gate_entry_detail_id = $gateEntryDetail->id ?? null;
                             $gateEntryHeaderId = $gateEntryDetail->header_id;
-                            $joDetail =  JoProduct::find($component['po_detail_id']);
+                            $joDetail =  JoProduct::find($component['jo_detail_id']);
                             $jo_detail_id = $joDetail->id ?? null;
                             $jobOrderId = $joDetail->jo_id;
                             if($gateEntryDetail){
@@ -526,13 +526,13 @@ class MaterialReceiptController extends Controller
                                     'message' => 'Gate Entry Not Found'
                                 ], 422);
                             }
-                        } elseif(isset($component['supplier_inv_detail_id']) && $component['supplier_inv_detail_id']){
-                            $supplierInvDetail =  JoProduct::find($component['supplier_inv_detail_id']);
-                            $supplier_inv_detail_id = $supplierInvDetail->id ?? null;
-                            $supplierInvHeaderId = $supplierInvDetail->jo_id;
-                            $joDetail =  JoProduct::find($component['po_detail_id']);
-                            $jo_detail_id = $joDetail->id ?? null;
-                            $jobOrderId = $joDetail->jo_id;
+                        } elseif (isset($component['vendor_asn_dtl_id']) && $component['vendor_asn_dtl_id']) {
+                            $supplierInvDetail =  VendorAsnItem::find($component['vendor_asn_dtl_id']);
+                            $jo_detail_id = $supplierInvDetail->jo_prod_id ?? null;
+                            $asn_detail_id = $supplierInvDetail->id ?? null;
+                            $jobOrderId = $supplierInvDetail?->jo_id;
+                            $asnId = $supplierInvDetail?->vendor_asn_id;
+                            $joDetail =  JoProduct::find($jo_detail_id);
                             if($supplierInvDetail){
                                 $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
                                 $balanceQty = ($supplierInvDetail->order_qty - ($gateEntryDetail->grn_qty ?? 0.00));
@@ -555,12 +555,12 @@ class MaterialReceiptController extends Controller
                                     'message' => 'Gate Entry Not Found'
                                 ], 422);
                             }
-                        } else{
-                            if(isset($component['po_detail_id']) && $component['po_detail_id']){
+                        } else {
+                            if(isset($component['jo_detail_id']) && $component['jo_detail_id']){
                                 $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
                                 $balanceQty = 0.00;
                                 $availableQty = 0.00;
-                                $joDetail =  JoProduct::find($component['po_detail_id']);
+                                $joDetail =  JoProduct::find($component['jo_detail_id']);
                                 $jo_detail_id = $joDetail->id ?? null;
                                 $jobOrderId = $joDetail->jo_id;
                                 $so_id = $joDetail->so_id;
@@ -943,7 +943,6 @@ class MaterialReceiptController extends Controller
                         }
                     }
                 }
-
                 /*Header level save discount*/
                 if(isset($request->all()['disc_summary'])) {
                     foreach($request->all()['disc_summary'] as $dis) {
@@ -2359,8 +2358,7 @@ class MaterialReceiptController extends Controller
             }
             $poDetail = ErpSoJobWorkItem::find($request->so_detail_id ?? $request->supplier_inv_detail_id);
         }
-
-
+        
         $html = view(
             'procurement.material-receipt.partials.comp-item-detail',
             compact(
@@ -3132,7 +3130,7 @@ class MaterialReceiptController extends Controller
             $poItems = $gateEntryItems->map(function ($geItem) {
                 $poItem = $geItem->po_item;
                 if ($poItem) {
-                    $poItem->avail_order_qty = $geItem->order_qty;
+                    $poItem->avail_order_qty = $geItem?->po_item?->order_qty;
                     $poItem->balance_qty = $geItem->accepted_qty;
                     $poItem->ge_id = $geItem->header_id;
                     $poItem->ge_item_id = $geItem->id;
@@ -3225,11 +3223,11 @@ class MaterialReceiptController extends Controller
                 $finalExpenses[] = [
                     'id' => $expense->id,
                     'ref_type' => 'po',
-                    'purchase_order_id' => $poId,
+                    'purchase_order_id' => $expense->purchase_order_id,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
-                    'ted_perc' => round($perc, 4),
+                    'ted_perc' => round($perc, 8),
                 ];
             }
         }
@@ -3410,7 +3408,7 @@ class MaterialReceiptController extends Controller
 
         $joItems = JoProduct::select(
                 'erp_jo_products.*',
-                'erp_job_orders.id as jo_id',
+                'erp_job_orders.id as job_id',
                 'erp_job_orders.vendor_id as vendor_id',
                 'erp_job_orders.book_id as book_id',
                 'erp_job_orders.gate_entry_required as gate_entry_required',
@@ -3451,17 +3449,16 @@ class MaterialReceiptController extends Controller
         }
 
         if ($request->type == 'create' && count($selected_jo_ids)) {
-            $poData = PoItem::with('po')->whereIn('id', $selected_jo_ids)->first();
+            $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
             $joItems->whereNotIn('erp_jo_products.id', $selected_jo_ids);
         } elseif ($request->type == 'edit' && count($selected_jo_ids)) {
-            $poData = PoItem::with('po')->whereIn('job_order_id', $selected_jo_ids)->first();
-            $joItems->whereIn('erp_jo_products.job_order_id', $selected_jo_ids);
+            $joData = JoProduct::with('jo')->whereIn('jo_id', $selected_jo_ids)->first();
+            $joItems->whereIn('erp_jo_products.jo_id', $selected_jo_ids);
         }
 
         $joItems = $joItems->orderBy('jo_id', 'desc')->get();
         $joItemIds = [];
-        $poItemMap = [];
-
+        $joItemMap = [];
         foreach ($joItems as $joItem) {
             if ($joItem->gate_entry_required === 'yes') {
                 $geItems = GateEntryDetail::where('job_order_item_id', $joItem->id)
@@ -3524,7 +3521,7 @@ class MaterialReceiptController extends Controller
                 }
             }
         }
-        return $poItemMap;
+        return $joItemMap;
     }
 
     // Process JO Item
@@ -3574,7 +3571,7 @@ class MaterialReceiptController extends Controller
             $joItems = $gateEntryItems->map(function ($geItem) {
                 $joItem = $geItem->jo_item;
                 if ($joItem) {
-                    $joItem->avail_order_qty = $geItem->order_qty;
+                    $joItem->avail_order_qty = $geItem?->jo_item?->order_qty;
                     $joItem->balance_qty = $geItem->accepted_qty;
                     $joItem->ge_id = $geItem->header_id;
                     $joItem->ge_item_id = $geItem->id;
@@ -3628,7 +3625,7 @@ class MaterialReceiptController extends Controller
         }
 
         $locations = InventoryHelper::getAccessibleLocations('stock');
-        $jos = JobOrder::whereIn('id', $uniqueJoIds)->get();
+        $pos = JobOrder::whereIn('id', $uniqueJoIds)->get();
 
         $jobData = JobOrder::whereIn('id', $uniqueJoIds)
             ->with(['items' => function ($query) use ($ids) {
@@ -3667,19 +3664,19 @@ class MaterialReceiptController extends Controller
                 $finalExpenses[] = [
                     'id' => $expense->id,
                     'ref_type' => 'jo',
-                    'jo_id' => $joId,
+                    'job_order_id' => $expense->jo_id,
                     'ted_id' => $expense->ted_id,
                     'ted_name' => $expense->ted_name,
                     'ted_amount' => $amount,
-                    'ted_perc' => round($perc, 4),
+                    'ted_perc' => round($perc, 8),
                 ];
             }
         }
 
-        $vendorId = $jos->pluck('vendor_id')->unique();
+        $vendorId = $pos->pluck('vendor_id')->unique();
         if ($vendorId->count() > 1) {
             return response()->json([
-                'data' => ['jos' => ''],
+                'data' => ['pos' => ''],
                 'status' => 422,
                 'message' => "You can not select multiple vendors of JO items at a time."
             ]);
@@ -3688,7 +3685,7 @@ class MaterialReceiptController extends Controller
         }
 
         $html = view('procurement.material-receipt.partials.jo-item-row', [
-            'pos' => $jos,
+            'pos' => $pos,
             'type' => $type,
             'poItems' => $joItems,
             'locations' => $locations,
@@ -5178,7 +5175,7 @@ class MaterialReceiptController extends Controller
 
             return $errorMessage; // No error
         } catch (\Exception $e) {
-            Log::error('Error in settlementOfInventoryAndStock: ' . $e->getMessage());
+            \Log::error('Error in settlementOfInventoryAndStock: ' . $e->getMessage());
             $errorMessage = 'Error in settlementOfInventoryAndStock: ' . $e->getMessage();
             return $errorMessage;  // Return error message
         }
@@ -5217,72 +5214,73 @@ class MaterialReceiptController extends Controller
     public function getSelectedItemAmount(Request $request)
     {
         try{
-        $poItemIds = array_filter($request->po_item_ids ?? [], 'is_numeric');
-        $poIds = array_filter($request->po_ids ?? [], 'is_numeric');
-        $itemQtys = $request->itemQtys ?? [];
-        $tedId = $request->ted_id;
-        $edit = $request->edit;
-        $refType = strtolower($request->reference_type);
+            $poItemIds = array_filter($request->po_item_ids ?? [], 'is_numeric');
+            $poIds = array_filter($request->po_ids ?? [], 'is_numeric');
+            $itemQtys = $request->itemQtys ?? [];
+            $tedId = $request->ted_id;
+            $edit = $request->edit;
+            $refType = strtolower($request->reference_type);
 
-        if (empty($poItemIds) || empty($poIds) || !$tedId || !$refType) {
-            return response()->json(['status' => 422, 'message' => 'Invalid input.']);
-        }
-
-        // Determine TED and associated ID
-        if ($refType === 'po') {
-            if($edit){
-                $poTed = MrnExtraAmount::find($tedId);
-                if(!$poTed){
-                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
-                }
-                $relatedId = $poTed->po_id;
-            } else{
-                $poTed = PurchaseOrderTed::find($tedId);
-                if(!$poTed){
-                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
-                }
-                $relatedId = $poTed->purchase_order_id;
+            if (empty($poItemIds) || empty($poIds) || !$tedId || !$refType) {
+                return response()->json(['status' => 422, 'message' => 'Invalid input.']);
             }
 
-            $items = PoItem::whereIn('id', $poItemIds)
-                ->where('purchase_order_id', $relatedId)
-                ->get();
-        } elseif ($refType === 'jo') {
-            if($edit){
-                $poTed = MrnExtraAmount::find($tedId);
-                if(!$poTed){
-                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+            // Determine TED and associated ID
+            if ($refType === 'po') {
+                if($edit){
+                    $poTed = MrnExtraAmount::find($tedId);
+                    if(!$poTed){
+                        return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                    }
+                    $relatedId = $poTed->po_id;
+                } else{
+                    $poTed = PurchaseOrderTed::find($tedId);
+                    if(!$poTed){
+                        return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                    }
+                    $relatedId = $poTed->purchase_order_id;
                 }
-                $relatedId = $poTed->jo_id;
-            } else{
-                $poTed = JobOrderTed::find($tedId);
-                if(!$poTed){
-                    return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+
+                $items = PoItem::whereIn('id', $poItemIds)
+                    ->where('purchase_order_id', $relatedId)
+                    ->get();
+            } elseif ($refType === 'jo') {
+                if($edit){
+                    $poTed = MrnExtraAmount::find($tedId);
+                    // dd($poTed);
+                    if(!$poTed){
+                        return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                    }
+                    $relatedId = $poTed->jo_id;
+                } else{
+                    $poTed = JobOrderTed::find($tedId);
+                    if(!$poTed){
+                        return response()->json(['status' => 422, 'message' => 'Ted not found.']);
+                    }
+                    $relatedId = $poTed->job_order_id;
                 }
-                $relatedId = $poTed->job_order_id;
+                $relatedId = $poTed->job_order_id ?? $poTed->jo_id;
+                $items = JoProduct::whereIn('id', $poItemIds)
+                    ->where('jo_id', $relatedId)
+                    ->get();
+            } else {
+                return response()->json(['status' => 422, 'message' => 'Invalid reference type.']);
             }
-            $relatedId = $poTed->job_order_id ?? $poTed->jo_id;
-            $items = JoProduct::whereIn('id', $poItemIds)
-                ->where('job_order_id', $relatedId)
-                ->get();
-        } else {
-            return response()->json(['status' => 422, 'message' => 'Invalid reference type.']);
-        }
 
-        // Calculate value
-        $poItemValue = $items->reduce(function ($carry, $item) use ($itemQtys) {
-            $qty = isset($itemQtys[$item->id]) ? floatval($itemQtys[$item->id]) : floatval($item->order_qty);
-            $rate = floatval($item->rate);
-            return $carry + ($qty * $rate);
-        }, 0);
+            // Calculate value
+            $poItemValue = $items->reduce(function ($carry, $item) use ($itemQtys) {
+                $qty = isset($itemQtys[$item->id]) ? floatval($itemQtys[$item->id]) : floatval($item->order_qty);
+                $rate = floatval($item->rate);
+                return $carry + ($qty * $rate);
+            }, 0);
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'Success',
-            'data' => [
-                'poItemValue' => round($poItemValue, 2),
-            ],
-        ]);
+            return response()->json([
+                'status' => 200,
+                'message' => 'Success',
+                'data' => [
+                    'poItemValue' => round($poItemValue, 2),
+                ],
+            ]);
         } catch(\Exception $e){
             dd($e);
         }

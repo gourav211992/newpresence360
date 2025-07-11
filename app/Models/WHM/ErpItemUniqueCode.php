@@ -61,4 +61,9 @@ class ErpItemUniqueCode extends Model
     {
         return $this->belongsTo(ErpVendor::class, 'vendor_id');
     }
+
+    public function storagePoint()
+    {
+        return $this->belongsTo(ErpWhDetail::class, 'storage_point_id');
+    }
 }

@@ -38,8 +38,7 @@ class ProfitLossController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -391,7 +390,7 @@ class ProfitLossController extends Controller
 
         }
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
         $locations = InventoryHelper::getAccessibleLocations();
@@ -428,8 +427,7 @@ class ProfitLossController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -475,8 +473,7 @@ class ProfitLossController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -520,8 +517,7 @@ class ProfitLossController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -558,7 +554,7 @@ class ProfitLossController extends Controller
             $childrens=array_merge($childrens,$groupId->getAllChildIds());
         }
 
-        $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childrens) {
+        $data = Ledger::where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
                 ->orWhere(function ($subQuery) use ($childrens) {
                     foreach ($childrens as $child) {
@@ -573,7 +569,6 @@ class ProfitLossController extends Controller
                             $query->where('cost_center_id', $cost);
                         });
                         $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                            $query->withDefaultGroupCompanyOrg();
                             $query->when(!empty($organizations), function ($query) use ($organizations) {
                                 $query->whereIn('organization_id', $organizations);
                             });
@@ -591,7 +586,6 @@ class ProfitLossController extends Controller
                 $query->where('cost_center_id', $cost);
             });
             $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                $query->withDefaultGroupCompanyOrg();
                 $query->when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
                 });
@@ -606,7 +600,6 @@ class ProfitLossController extends Controller
         ->with(['details' => function ($query) use ($startDate, $endDate,$childrens,$organizations,$location) {
             $query->whereIn('ledger_parent_id',$childrens);
             $query->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                $query->withDefaultGroupCompanyOrg();
                 $query->when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
                 });
@@ -632,7 +625,6 @@ class ProfitLossController extends Controller
                     ->when($cost, function ($query) use ($cost) {
                         $query->where('cost_center_id', $cost);
                     })->withwhereHas('voucher', function ($query) use($startDate,$carry,$fy,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });

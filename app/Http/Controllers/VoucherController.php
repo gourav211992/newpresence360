@@ -529,8 +529,7 @@ class VoucherController extends Controller
             $allowedNames = ConstantHelper::CV_ALLOWED_GROUPS;
             $allChildIds = Helper::getChildLedgerGroupsByNameArray($allowedNames);
 
-            $data = Ledger::withDefaultGroupCompanyOrg()
-                ->where('status', 1)
+            $data = Ledger::where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%')
                 ->where(function ($query) use ($allChildIds) {
                     // First: match plain integer values
@@ -557,8 +556,7 @@ class VoucherController extends Controller
             $excludeNames = ConstantHelper::JV_EXCLUDE_GROUPS;
             $allChildIds = Helper::getChildLedgerGroupsByNameArray($excludeNames);
 
-            $data = Ledger::withDefaultGroupCompanyOrg()
-                ->where('status', 1)
+            $data = Ledger::where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%')
                     // Exclude plain integer match
                 ->whereNotIn('ledger_group_id', $allChildIds)
@@ -577,8 +575,7 @@ class VoucherController extends Controller
         }
 
         else {
-            $data = Ledger::withDefaultGroupCompanyOrg()
-                ->where('status', 1)
+            $data = Ledger::where('status', 1)
                 ->where('name', 'like', '%' . $r->keyword . '%');
         }
 
@@ -630,8 +627,7 @@ class VoucherController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -639,8 +635,7 @@ class VoucherController extends Controller
             $cost_center_ids = optional($cost_group->costCenters)->pluck('id')->unique()->all();
                         // dd($cost_center_ids);
         }
-        $data =  Voucher::withDefaultGroupCompanyOrg()
-        ->with([
+        $data =  Voucher::with([
             'documents:id,name',
         ])
         ->whereHas('items', function ($d) use ($cost_center_ids) {
@@ -710,7 +705,7 @@ class VoucherController extends Controller
         $voucher_no = $request->voucher_no;
         $voucher_name = $request->voucher_name;
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
          $fyearLocked = $fyear['authorized'];
         $locations = InventoryHelper::getAccessibleLocations();
         return view('voucher.view_vouchers', compact('cost_centers','bookTypes', 'mappings', 'organizationId', 'data', 'book_type', 'date', 'voucher_no', 'voucher_name','date2','fyearLocked','locations','cost_groups'));
@@ -737,7 +732,7 @@ class VoucherController extends Controller
         $lastVoucher = Voucher::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->select('book_type_id', 'book_id')->first();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->select('id', 'name', 'short_name')->get();
         $orgCurrency = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->value('currency_id');
-        $allledgers = Ledger::withDefaultGroupCompanyOrg()->get();
+        $allledgers = Ledger::get();
         $allowedCVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::CV_ALLOWED_GROUPS,'names');
         $exlucdeJVGroups = Helper::getChildLedgerGroupsByNameArray(ConstantHelper::JV_EXCLUDE_GROUPS,'names');
         $cost_centers = Helper::getActiveCostCenters();
@@ -765,7 +760,7 @@ class VoucherController extends Controller
         $parentUrl = request()->segments()[0];
         $cost_centers = CostCenter::where('organization_id', Helper::getAuthenticatedUser()->organization_id)->select('id as value', 'name as label')->get()->toArray();
         $serviceAlias = [ConstantHelper::PURCHASE_VOUCHER, ConstantHelper::SALES_VOUCHER, ConstantHelper::RECEIPT_VOUCHER, ConstantHelper::PAYMENT_VOUCHER, ConstantHelper::DEBIT_Note, ConstantHelper::CREDIT_Note, ConstantHelper::JOURNAL_VOUCHER, ConstantHelper::CONTRA_VOUCHER];
-        // $bookTypes = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('alias', $serviceAlias)->where('status', ConstantHelper::ACTIVE)->get();
+        // $bookTypes = OrganizationService::whereIn('alias', $serviceAlias)->where('status', ConstantHelper::ACTIVE)->get();
         $serviceAlias = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if (count($serviceAlias['services']) == 0) {
             return redirect()->route('/');
@@ -836,7 +831,7 @@ class VoucherController extends Controller
                 }
 
 
-        $voucherExists = Voucher::withDefaultGroupCompanyOrg()->where('voucher_no', $numberPatternData['document_number'])
+        $voucherExists = Voucher::where('voucher_no', $numberPatternData['document_number'])
         ->where('book_id',$request -> book_id)->exists();
 
         if ($voucherExists) {

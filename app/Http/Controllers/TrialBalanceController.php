@@ -79,8 +79,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -212,8 +211,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -251,7 +249,7 @@ class TrialBalanceController extends Controller
                     // $q->where('cost_center_id', $cost);
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
-                $query->withDefaultGroupCompanyOrg();
+                
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->when(!is_null($loc), function ($q) use ($loc) {
                         $q->where('location', $loc);
@@ -414,8 +412,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -445,7 +442,7 @@ class TrialBalanceController extends Controller
                     }
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
-                $query->withDefaultGroupCompanyOrg();
+                
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->when(!is_null($loc), function ($q) use ($loc) {
                         $q->where('location', $loc);
@@ -479,7 +476,7 @@ class TrialBalanceController extends Controller
                 $orgQuery->whereIn('id', $orgIds);
             })->select('id', 'name')->get();
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         return view('ledgers.getLedgerReport', compact('cost_centers','cost_groups', 'companies','locations'));
@@ -487,8 +484,7 @@ class TrialBalanceController extends Controller
 
     public function get_org_ledgers($id)
     {
-        $data = Ledger::withDefaultGroupCompanyOrg()
-        ->where('status', 1)
+        $data = Ledger::where('status', 1)
         ->select('id', 'name')
         ->orderBy('name', 'asc')
         ->get();
@@ -514,7 +510,7 @@ class TrialBalanceController extends Controller
             $endDate = $fyear['end_date'];
         }
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $orgname=Organization::where('id',Helper::getAuthenticatedUser()->organization_id)->value('name');
@@ -563,8 +559,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -618,8 +613,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -666,8 +660,7 @@ class TrialBalanceController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -725,15 +718,14 @@ class TrialBalanceController extends Controller
             $endDate = $financialYear['end_date'];
         }
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
 
         $cost_center_ids = null;
         if (!empty($r->cost_center_id)) {
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -763,7 +755,7 @@ class TrialBalanceController extends Controller
                     // $q->where('cost_center_id', $cost);
                     })
             ->whereHas('voucher', function ($query) use ($startDate, $fy, $carry,$loc,$org) {
-                $query->withDefaultGroupCompanyOrg();
+                
                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                 $query->when(!is_null($loc), function ($q) use ($loc) {
                         $q->where('location', $loc);

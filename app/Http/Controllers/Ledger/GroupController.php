@@ -30,13 +30,12 @@ class GroupController extends Controller
             }
         ])->get();
 
-        $data = Group::withDefaultGroupCompanyOrg()->orWhere('edit', 0)
+        $data = Helper::getGroupsQuery([],['active','inactive'])
             ->with([
                 'parent' => function ($q) {
                     $q->select('id', 'name');
                 }
-            ])
-            ->orderBy('id', 'desc')
+            ])->orderBy('id', 'desc')
             ->get();
         Log::info('Group data result:', $data->toArray());
         
@@ -51,7 +50,7 @@ class GroupController extends Controller
     public function create()
     {
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
+        $ledgers = Ledger::get();
 
         $allLedgerParentIds = [];
         $allIds = [];
@@ -76,10 +75,8 @@ class GroupController extends Controller
             ->get();
 
 
-        $existingGroupname = Group::where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })->pluck('name')->map(function ($name) {
+        $existingGroupname = Helper::getGroupsQuery([],['active','inactive'])
+        ->pluck('name')->map(function ($name) {
             return strtolower($name);
         })->values();
 
@@ -92,10 +89,8 @@ class GroupController extends Controller
      */
     public function store(Request $request)
     {
-        $existingName = Group::where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })->where('name', $request->name)
+        $existingName = Helper::getGroupsQuery([],['active','inactive'])
+        ->where('name', $request->name)
             ->first();
 
 
@@ -103,10 +98,7 @@ class GroupController extends Controller
         if ($existingName) {
             return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
         }
-         $existingPrefix = Group::where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })->where('prefix', $request->prefix)
+         $existingPrefix = Helper::getGroupsQuery([],['active','inactive'])->where('prefix', $request->prefix)
             ->first();
 
 
@@ -144,7 +136,7 @@ class GroupController extends Controller
         $data = Group::find($id);
         $data_parent = $data->parent_group_id;
 
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
+        $ledgers = Ledger::get();
 
         $allLedgerParentIds = [];
         $allIds = [];
@@ -173,11 +165,8 @@ class GroupController extends Controller
             $parents[] = Group::find($data_parent);
 
         $update = $data->edit;
-        $existingGroupname = Group::where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })
-            ->where('id', '!=', $id) // exclude the one being edited
+        
+        $existingGroupname = Helper::getGroupsQuery([],['active','inactive'])->where('id', '!=', $id) // exclude the one being edited
             ->pluck('name')
             ->map(function ($name) {
                 return strtolower($name);
@@ -194,19 +183,17 @@ class GroupController extends Controller
     public function update(Request $request, string $id)
     {
 
-        $existingName = Group::where('id', '!=', (int)$id)->where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })->where('name', $request->name)->exists();
+        $existingName = Helper::getGroupsQuery([],['active','inactive'])
+        ->where('id', '!=', (int)$id)
+        ->where('name', $request->name)->exists();
 
         if ($existingName) {
             return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
         }
 
-        $existingPrefix = Group::where('id', '!=', (int)$id)->where(function ($q) {
-            $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-        })->where('prefix', $request->prefix)->exists();
+        $existingPrefix = Helper::getGroupsQuery([],['active','inactive'])
+        ->where('id', '!=', (int)$id)
+        ->where('prefix', $request->prefix)->exists();
 
         if ($existingPrefix) {
             return back()->withErrors(['prefix' => 'The prefix has already been taken.'])->withInput();

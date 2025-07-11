@@ -120,9 +120,9 @@
                                                             <tr>
                                                                 <th>S.NO</th>
                                                                 <th>Account Number</th>
+                                                                <th>IFSC Code</th>
                                                                 <th>Branch Name</th>
                                                                 <th>Branch Address</th>
-                                                                <th>IFSC Code</th>
                                                                 <th>Ledger Name</th>
                                                                 <th>Ledger Group</th>
                                                                 <th>Action</th>
@@ -132,9 +132,9 @@
                                                             <tr>
                                                                 <td>1</td>
                                                                 <td><input type="text" name="bank_details[0][account_number]" class="form-control mw-100" placeholder="Enter Account Number" /></td>
+                                                                <td><input type="text" name="bank_details[0][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" /></td>
                                                                 <td><input type="text" name="bank_details[0][branch_name]" class="form-control mw-100" placeholder="Enter Branch Name" /></td>
                                                                 <td><input type="text" name="bank_details[0][branch_address]" class="form-control mw-100" placeholder="Enter Branch Name" /></td>
-                                                                <td><input type="text" name="bank_details[0][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" /></td>
                                                                 <td>
                                                                     <input type="text" class="autocomplete-ledgr form-control mw-100" data-id="ledger_id_0" placeholder="Enter Ledger ID" value="">
                                                                     <input type="hidden" class="ledger-id" id="ledger_id_0" name="bank_details[0][ledger_id]" value="">

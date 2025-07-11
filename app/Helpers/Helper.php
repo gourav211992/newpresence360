@@ -174,8 +174,7 @@ class Helper
         $endDate = request()->cookie('fyear_end_date') ?? $date;
 
         
-        $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->where('start_date', '<=', $startDate)
+        $financialYear = ErpFinancialYear::where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
 
@@ -269,8 +268,7 @@ class Helper
     public static function getFinancialYearQuarter(string $date): mixed
     {
         $targetDate = Carbon::parse($date);
-        $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->where('start_date', '<=', $date)
+        $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
             ->where('end_date', '>=', $date)
             ->first();
         $quarter = null;
@@ -628,7 +626,7 @@ class Helper
             $carry=1;
 
 
-            $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
@@ -649,7 +647,6 @@ class Helper
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
                     $query->whereBetween('document_date', [$startDate, $endDate]);
                     $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -686,7 +683,6 @@ class Helper
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -744,7 +740,7 @@ class Helper
             ->whereIn('id',$allChildIds)->pluck('id')->toArray();
 
 
-            $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+            $ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
@@ -759,7 +755,7 @@ class Helper
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
+                    
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -794,7 +790,7 @@ class Helper
                 ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
                     $query->where('document_date', '<', $startDate);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
+                    
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -902,7 +898,7 @@ class Helper
             })
         ->where('ledger_parent_id',$ledger_parent)
         ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate,$location){
-            $query->withDefaultGroupCompanyOrg();
+            
             $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
             $query->where('organization_id', $organization_id);
             $query->whereBetween('document_date', [$startDate, $endDate]);
@@ -916,7 +912,7 @@ class Helper
 
 
 
-        $data = Voucher::withDefaultGroupCompanyOrg()->whereIn('id', $itemVouchers)
+        $data = Voucher::whereIn('id', $itemVouchers)
             ->where('organization_id', $organization_id)
             ->whereNotNull('approvalStatus')
             ->whereBetween('document_date', [$startDate, $endDate])
@@ -976,7 +972,7 @@ class Helper
             ->whereIn('id',$childrens)->pluck('id')->toArray();
 
 
-        $data = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($childrens) {
+        $data = Ledger::where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
                 ->orWhere(function ($subQuery) use ($childrens) {
                     foreach ($childrens as $child) {
@@ -995,7 +991,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1020,7 +1016,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1044,7 +1040,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1075,7 +1071,7 @@ class Helper
                    ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
                         $query->where('document_date', '<', $startDate);
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1946,8 +1942,7 @@ class Helper
         } else {
             $type = 'ledger';
 
-            $data = Ledger::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($group_id) {
+            $data = Ledger::where(function ($query) use ($group_id) {
                 $query->whereJsonContains('ledger_group_id', (string) $group_id)
                       ->orWhere('ledger_group_id', $group_id);
             })->where('status', 1)->select('id', 'name')
@@ -1961,7 +1956,7 @@ class Helper
                         // $query->where('cost_center_id', $cost);
                     })
                           ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                            $query->withDefaultGroupCompanyOrg();
+                            
                         $query->when(!empty($organizations), function ($query) use ($organizations,$location) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1985,7 +1980,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2010,7 +2005,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        $query->withDefaultGroupCompanyOrg();
+                        
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2040,7 +2035,7 @@ class Helper
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
+                    
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -2124,7 +2119,7 @@ class Helper
                 ->whereIn('id',$allChildIds)->pluck('id')->toArray();
 
 
-                $ledgers = Ledger::withDefaultGroupCompanyOrg()->where(function ($query) use ($allChildIds) {
+                $ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
@@ -2149,7 +2144,7 @@ class Helper
                 })
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
+                    
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -2179,7 +2174,7 @@ class Helper
                     //if(!$carry)
                     //$query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    $query->withDefaultGroupCompanyOrg();
+                    
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -3329,7 +3324,7 @@ return [
 
                 $financialYears = ErpFinancialYear::where('organization_id', $organizationId)->get();
             }else{
-                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()->get();
+                $financialYears = ErpFinancialYear::get();
             }
             if ($financialYears->isNotEmpty()) {
                 return $financialYears
@@ -3361,13 +3356,11 @@ return [
             $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
 
             if ($organizationId) {
-                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()
-                    ->where('organization_id', $organizationId)
+                $financialYears = ErpFinancialYear::where('organization_id', $organizationId)
                     ->orderBy('id', 'desc')
                     ->get();
             } else {
-                $financialYears = ErpFinancialYear::withDefaultGroupCompanyOrg()
-                    ->orderBy('id', 'desc')
+                $financialYears = ErpFinancialYear::orderBy('id', 'desc')
                     ->get();
             }
 
@@ -3404,8 +3397,7 @@ return [
         }
         // public static function getFyAuthorizedUsers(string $date): mixed
         // {
-        //     $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-        //         ->where('start_date', '<=', $date)
+        //     $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
         //         ->where('end_date', '>=', $date)
         //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
         //         ->first();
@@ -3419,12 +3411,12 @@ return [
         //     }
         // }
 
-        public static function getGroupsQuery($organizations=[])
+        public static function getGroupsQuery($organizations=[],$status=["active"])
         {
             $groups = Group::where(function ($q) {
                 $q->withDefaultGroupCompanyOrg()
                 ->orWhere('edit', 0);
-            })->where('status', 'active');
+            })->whereIn('status', $status);
 
             return $groups;
         }
@@ -3434,8 +3426,7 @@ return [
             $date = $date ?? date('Y-m-d');
             $startDate = session('fyear_start_date') ?? $date;
             $endDate = session('fyear_end_date') ?? $date;
-            $financialYear = ErpFinancialYear::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($startDate, $endDate) {
+            $financialYear = ErpFinancialYear::where(function ($query) use ($startDate, $endDate) {
                 $query->where('start_date', '<=', $startDate)
                     ->where('end_date', '>=', $endDate);
             })
@@ -3450,7 +3441,7 @@ return [
     {
         $query = CostCenterOrgLocations::with([
             'costCenter' => function ($query) {
-                $query->withDefaultGroupCompanyOrg()->where('status', 'active');
+                $query->where('status', 'active');
             }
         ]);
 

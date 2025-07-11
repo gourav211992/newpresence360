@@ -16,8 +16,7 @@ class AssetCategoryController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $categories = ErpAssetCategory::WithDefaultGroupCompanyOrg()
-            ->orderBy('id', 'ASC')
+            $categories = ErpAssetCategory::orderBy('id', 'ASC')
             ->get();
 
             return DataTables::of($categories)
@@ -73,7 +72,7 @@ class AssetCategoryController extends Controller
             'group_id' => $user->organization->group_id,
             'company_id' => $user->organization->company_id,
         ];
-        $asset = ErpAssetCategory::where('name', $request->name)->withDefaultGroupCompanyOrg()->first();
+        $asset = ErpAssetCategory::where('name', $request->name)->first();
         
 
         $data = array_merge($request->all(), $additionalData);

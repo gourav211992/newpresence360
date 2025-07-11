@@ -17,6 +17,7 @@ use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPlRequest;
 use App\Models\Address;
 use App\Helpers\DynamicFieldHelper;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\AttributeGroup;
 use App\Models\Category;
 use App\Models\ErpPlDynamicField;
@@ -701,6 +702,11 @@ class ErpPlController extends Controller
                         'error' => ''
                     ], 422);
                 }
+                
+                if(in_array($PL->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+                    (new WhmJob)->createJob($PL->id,'App\Models\ErpPlHeader');
+                }
+                
                 DB::commit();
                 $module = "Pick List";
                 return response() -> json([

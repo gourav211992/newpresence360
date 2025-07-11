@@ -58,8 +58,7 @@ class TDSReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -75,8 +74,7 @@ class TDSReportController extends Controller
             })
             ->with([
                 'expenseHeader' => function ($query) use ($organization_id, $startDate, $endDate, $vendor_id, $cost_center_ids, $location_id) {
-                    $query->withDefaultGroupCompanyOrg()
-                        ->with([
+                        $query->with([
                             'vendor' => function ($vendorQuery) use ($vendor_id) {
                                 $vendorQuery->when($vendor_id, function ($q) use ($vendor_id) {
                                     $q->where('id', $vendor_id);
@@ -126,8 +124,7 @@ class TDSReportController extends Controller
         $vendorIds = $records->pluck('expenseHeader.vendor_id')->filter()->unique()->toArray();
 
         // Fetch vendors matching these IDs
-        $vendors = Vendor::withDefaultGroupCompanyOrg()
-            ->whereIn('id', $vendorIds)
+        $vendors = Vendor::whereIn('id', $vendorIds)
             ->get();
         // Get ExpenseTed IDs from $records
         $tedIds = $records->pluck('ted_id')->filter()->unique()->toArray();
@@ -145,7 +142,7 @@ class TDSReportController extends Controller
         $range = $startDate . ' to ' . $endDate;
         $fy = self::formatWithOrdinal($startDate) . ' to ' . self::formatWithOrdinal($endDate);
         $locations = InventoryHelper::getAccessibleLocations();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
         return view('tds.index', compact('fy', 'mappings', 'organization_id', 'range', 'vendors', 'vendor_id', 'records', 'taxTypes', 'cost_centers', 'locations', 'cost_center_id', 'location_id','cost_group_id','cost_groups',));
     }
     

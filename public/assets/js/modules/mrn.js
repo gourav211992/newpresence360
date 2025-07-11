@@ -348,7 +348,7 @@ function setTableCalculation(edit = false) {
             poId = $(item).find("[name*='[purchase_order_id]']").val();
         }else if(reference_type == 'jo'){
             poItemId = $(item).find("[name*='[jo_detail_id]']").val();
-            poId = $(item).find("[name*='[jo_order_id]']").val();
+            poId = $(item).find("[name*='[job_order_id]']").val();
         }else{
             poItemId = '';
             poId = '';
@@ -593,9 +593,7 @@ function setTableCalculation(edit = false) {
                         `);
                     };
                     
-                console.log('totalRows', tedId, poItemIds, poIds, reference_type);
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
-                    
                     const p = fetch('/material-receipts/get-selected-item-amount', {
                         method: 'POST',
                         headers: {
