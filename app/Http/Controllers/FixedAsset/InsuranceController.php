@@ -104,7 +104,7 @@ class InsuranceController extends Controller
         $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.show', compact('assets', 'data','locations','categories'));
     }
@@ -115,7 +115,7 @@ class InsuranceController extends Controller
         $assets = FixedAssetRegistration::whereNotNull('asset_code')
             ->whereNotNull('asset_name')
             ->get();
-        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.insurance.edit', compact('assets', 'data','locations','categories'));
     }
