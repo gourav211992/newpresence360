@@ -77,8 +77,7 @@ class BalanceSheetController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -98,8 +97,7 @@ class BalanceSheetController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -226,7 +224,7 @@ class BalanceSheetController extends Controller
         }
 
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status','active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status','active')->get()->toArray();
 
         $dateRange = \Carbon\Carbon::parse($startDate)->format('d-m-Y') . " to " . \Carbon\Carbon::parse($endDate)->format('d-m-Y');
         $date2 = \Carbon\Carbon::parse($startDate)->format('jS-F-Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('jS-F-Y');
@@ -293,8 +291,7 @@ class BalanceSheetController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -350,8 +347,7 @@ class BalanceSheetController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -404,8 +400,7 @@ class BalanceSheetController extends Controller
             $cost_center_ids = $r->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($r->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $r->cost_group_id)
                 ->where('status', 'active')
                 ->first();

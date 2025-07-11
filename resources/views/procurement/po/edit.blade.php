@@ -1240,7 +1240,7 @@ function setServiceParameters(parameters) {
             $(this).closest('tr').find("input[name*='component_item_name']").val('');
             $(this).closest('tr').find("input[name*='item_name']").val('');
             $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
-            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='[item_id]']").val('');
             $(this).closest('tr').find("input[name*='item_code']").val('');
             $(this).closest('tr').find("input[name*='attr_name']").remove();
         }
@@ -2210,7 +2210,7 @@ $(document).on('click', '.prProcess', (e) => {
             $(this).closest('tr').find("input[name*='component_item_name']").val('');
             $(this).closest('tr').find("input[name*='item_name']").val('');
             $(this).closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
-            $(this).closest('tr').find("input[name*='item_id']").val('');
+            $(this).closest('tr').find("input[name*='[item_id]']").val('');
             $(this).closest('tr').find("input[name*='item_code']").val('');
             $(this).closest('tr').find("input[name*='attr_name']").remove();
         }

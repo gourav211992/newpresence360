@@ -30,6 +30,11 @@ class WhmJob
             ]
         );
 
+        // ❗ Skip unique code generation if it's ErpPlHeader
+        if ($namespace === \App\Models\ErpPlHeader::class) {
+            return;
+        }
+
         // Step 3: Fetch Details with attributes
         if (!method_exists($header, 'items')) {
             throw new \Exception("Model does not have 'items' relationship defined.");
@@ -123,9 +128,8 @@ class WhmJob
             ->limit($qty)
             ->get();
 
-        $records = [];
         foreach ($existingGateQRCodes as $code) {
-            $records[] = [
+            $newRecord = ErpItemUniqueCode::create([
                 'uid' => $this->generateUniqueUid(),
                 'job_id' => $job->id,
                 'organization_id' => $header->organization_id,
@@ -145,19 +149,15 @@ class WhmJob
                 'item_code' => $detail->item_code,
                 'vendor_id' => $header->vendor_id,
                 'item_uid' => $itemUid, 
-                'utilized_id' => $code->uid,
                 'type' => 'qr',
                 'qty' => 1,
                 'status' => CommonHelper::PENDING,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ];
-        }
+            ]);
 
-        if (!empty($records)) {
-            foreach (array_chunk($records, 500) as $chunk) {
-                ErpItemUniqueCode::insert($chunk);
-            }
+            $code->utilized_id = $newRecord->uid;
+            $code->save();
         }
     }
 

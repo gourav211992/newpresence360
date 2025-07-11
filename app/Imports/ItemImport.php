@@ -170,7 +170,8 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
             $subCategoryInitials = '';
             $itemName = $row['item_name'] ?? '';
             $itemInitials = strtoupper(substr($itemName, 0, 3));
-            $subType = $row['sub_type'] ?? null;
+            $subTypeRaw = $row['sub_type'] ?? null;
+            $subType = $subTypeRaw ? explode(',', $subTypeRaw) : [];
 
             if ($itemCodeType === 'Manual') {
                 $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
@@ -195,9 +196,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                     Log::error("Error fetching category: " . $e->getMessage());
                 }
             
-                // if (!empty($subCategoryInitials) && !empty($subType) && !empty($itemInitials)) {
-                //     $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
-                // }
                 if (!empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
                     $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
                 }
@@ -315,13 +313,18 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         } 
     
-        if (!empty($uploadedItem->sub_type)) {
-        try {
-            $subTypeId = $this->service->getSubTypeId($uploadedItem->sub_type);
-        } catch (Exception $e) {
-            $errors[] = $e->getMessage();
+       if (!empty($uploadedItem->sub_type)) {
+            try {
+                $subTypes = array_map('trim', explode(',', $uploadedItem->sub_type));
+                $subTypeData = $this->service->getSubTypeId($subTypes);
+                $subTypeId = $subTypeData['sub_type_id'] ?? null;
+                $isTradedItem = $subTypeData['is_traded_item'] ?? 0;
+                $isAsset = $subTypeData['is_asset'] ?? 0;
+
+            } catch (Exception $e) {
+                $errors[] = $e->getMessage();
+            }
         }
-       }
     
        if (!empty($uploadedItem->attributes)) {
             $attributes = json_decode($uploadedItem->attributes, true);
@@ -366,6 +369,8 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'safety_days' => $uploadedItem->safety_days ?? null,
                 'shelf_life_days' => $uploadedItem->shelf_life_days ?? null,
                 'item_remarks' => $uploadedItem->remarks ?? null,
+                'is_traded_item' => $subTypeData['is_traded_item'] ?? 0,
+                'is_asset'       => $subTypeData['is_asset'] ?? 0,
             ]);
 
             $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;

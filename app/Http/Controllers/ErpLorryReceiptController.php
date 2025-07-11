@@ -198,7 +198,7 @@ class ErpLorryReceiptController extends Controller
         } else {
             $revNo = $lr->revision_number;
         }
-    $approvalHistory = Helper::getApprovalHistory($lr->book_id, $lr->id, $revNo, $lr->total_charges, $lr -> created_by);
+   $approvalHistory = Helper::getApprovalHistory($lr->book_id, $lr->id, $revNo, $lr->total_charges, $lr -> created_by);
     $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
 
     return view('logistics.lorry-receipt.edit', compact(
@@ -286,7 +286,7 @@ class ErpLorryReceiptController extends Controller
             $lr->lr_charges        = $request->lr_charges ?? 0;
             $lr->sub_total         = $request->sub_total ?? 0;
             $lr->total_charges     = $request->total_freight ?? 0;
-            $lr->status            = $request->status;
+            $lr->document_status   = $request->status;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
             $this->handleLorryMediaUploads($request, $lr);

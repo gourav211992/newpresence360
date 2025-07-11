@@ -213,6 +213,7 @@ class MaterialReceiptRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $components = $this->input('components', []);
+            $referenceType = $this->input('reference_type');
             $items = [];
             foreach ($components as $key => $component) {
                 // $itemValue = floatval($component['item_total_cost']);
@@ -222,8 +223,12 @@ class MaterialReceiptRequest extends FormRequest
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
-                $poId = $component['purchase_order_id'] ?? null;
-
+                $poId = match ($referenceType) {
+                    'po' => $component['purchase_order_id'] ?? null,
+                    'jo' => $component['job_order_id'] ?? null,
+                    default => null,
+                };
+                
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;

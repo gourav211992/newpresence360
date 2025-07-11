@@ -474,6 +474,12 @@ class PiController extends Controller
                     $unit = Unit::find($component['uom_id']);
                     # Purchase Order Detail Save
                     $piDetail = PiItem::find($component['pi_item_id'] ?? null) ?? new PiItem;
+
+                    $isNewItem = false;
+                    if(isset($piDetail->item_id) && $piDetail->item_id) {
+                        $isNewItem = $piDetail->item_id != ($component['item_id'] ?? null);
+                    }
+
                     $updatedQty = 0;
                     if(isset($piDetail->id)) {
                         $updatedQty =  floatval($component['qty']) - $piDetail->indent_qty;
@@ -622,17 +628,22 @@ class PiController extends Controller
                         }
                     }
 
+                    if($isNewItem) {
+                        PiItemAttribute::where('pi_item_id', $piDetail->id)->delete();
+                    }
                     #Save component Attr
                     foreach($piDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                        $piAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
+                        // $piAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                         $piAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                        $piAttr = PiItemAttribute::find($piAttrId) ?? new PiItemAttribute;
-                        $piAttr->pi_id = $pi->id;
-                        $piAttr->pi_item_id = $piDetail->id;
-                        $piAttr->item_attribute_id = $itemAttribute->id;
+                        $piAttr = PiItemAttribute::firstOrNew([
+                                'pi_id' => $pi->id,
+                                'pi_item_id' => $piDetail->id,
+                                'item_attribute_id' => $itemAttribute->id
+                            ]);
+                        // $piAttr = PiItemAttribute::find($piAttrId) ?? new PiItemAttribute;
                         $piAttr->item_code = $component['item_code'] ?? null;
-                        $piAttr->attribute_name = $itemAttribute->attribute_group_id;
+                        $piAttr->attribute_name = $itemAttribute?->attribute_group_id;
                         $piAttr->attribute_value = $piAttrName ?? null;
                         $piAttr->save();
                         }

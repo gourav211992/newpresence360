@@ -29,7 +29,7 @@ class IssueTransferController extends Controller
             return redirect() -> route('/');
         }
         $query=FixedAssetIssueTransfer::orderBy('id','desc');
-        $assets = FixedAssetRegistration::HwhereNotNull('asset_code')
+        $assets = FixedAssetRegistration::whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
 
@@ -139,7 +139,7 @@ class IssueTransferController extends Controller
          whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.issue-transfer.show',compact('assets','employees','data','locations','categories'));
     }
@@ -160,7 +160,7 @@ class IssueTransferController extends Controller
         whereNotNull('asset_code')
         ->whereNotNull('asset_name')
         ->get();
-        $locations = InventoryHelper::getAccessibleLocations()->where('status','active')->get();
+        $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         return view('fixed-asset.issue-transfer.edit',compact('assets','employees','data','locations','categories'));
     }

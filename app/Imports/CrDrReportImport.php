@@ -51,8 +51,8 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
             'ledger_name' => $row->ledger_name,
             'voucher_no' => $row->voucher_no,
             'ledger_group' =>  $row->ledger_group,
-            'balance' => $row->balance,
-            'settle_amount' => $row->settle_amount,
+            'balance' => Helper::formatIndianNumber($row->balance),
+            'settle_amount' => Helper::formatIndianNumber($row->settle_amount),
             'series' => $row->series,
             'id' => $row->id,
             'status_check' => 'success',
@@ -66,8 +66,8 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
            'ledger_name' => $uploadedItem->ledger_name,
             'voucher_no' => $uploadedItem->voucher_no,
             'ledger_group' =>  $uploadedItem->ledger_group,
-            'balance' => $uploadedItem->balance,
-            'settle_amount' => $uploadedItem->settle_amount,
+            'balance' => Helper::formatIndianNumber($uploadedItem->balance),
+            'settle_amount' =>  Helper::formatIndianNumber($uploadedItem->settle_amount),
             'series' => $uploadedItem->series,
             'id' => $uploadedItem->id,
             'status_check' => 'failed',
@@ -95,7 +95,6 @@ class CrDrReportImport implements ToModel, WithHeadingRow, WithChunkReading, Wit
         try {
             $this->service->validateImportRow($row);
             $result = $this->service->processData($row, $this->type);
-
             if ($result['status']) {
                 $uploadedItem = $this->savePendingPaymentImport(
                     $result['row'], $this->user, $organization, 'Success', 'Success', $this->type

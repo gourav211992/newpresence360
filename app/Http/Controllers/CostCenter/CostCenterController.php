@@ -25,7 +25,7 @@ class CostCenterController extends Controller
     public function index()
     {
         // $centers = CostCenter::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->get();
-        $centers = CostCenter::withDefaultGroupCompanyOrg()->get();
+        $centers = CostCenter::get();
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
         $organizationId = Helper::getAuthenticatedUser()->organization_id;
 
@@ -39,8 +39,8 @@ class CostCenterController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
-        $existingCostCenters = CostCenter::withDefaultGroupCompanyOrg()->pluck('name')->toArray();
-        $groups = CostGroup::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $existingCostCenters = CostCenter::pluck('name')->toArray();
+        $groups = CostGroup::where('status','active')->get();
         return view('costCenter.create', compact('groups','companies','existingCostCenters'));
     }
 
@@ -67,8 +67,7 @@ class CostCenterController extends Controller
             ],
             // 'name' => 'required|string|max:255|unique:erp_cost_centers,name',
         ]);
-        $existingName = CostCenter::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
+        $existingName = CostCenter::where('name', $request->name)
         ->first();
 
             if ($existingName) {
@@ -111,7 +110,7 @@ class CostCenterController extends Controller
         $data = CostCenter::find($id);
         $user = Helper::getAuthenticatedUser();
         $companies = $user -> access_rights_org;
-         $existingCostCenters = CostCenter::withDefaultGroupCompanyOrg()->where('id', '!=', $id)
+         $existingCostCenters = CostCenter::where('id', '!=', $id)
         ->pluck('name')
         ->toArray();
 
@@ -141,8 +140,7 @@ class CostCenterController extends Controller
             ],
             // 'name' => ['required', 'string', 'max:255', Rule::unique('erp_cost_groups')->ignore($id)],
         ]);
-        $existingName = CostCenter::withDefaultGroupCompanyOrg()
-        ->where('name', $request->name)
+        $existingName = CostCenter::where('name', $request->name)
         ->where('id', '!=', $id)
         ->first();
 
@@ -189,7 +187,6 @@ class CostCenterController extends Controller
     public function getCostCenter($id){
         $cost_centers =  CostCenterOrgLocations::where('location_id',$id)->with(['costCenter' => function ($query) {
             $query->where('status', 'active');
-            $query->withDefaultGroupCompanyOrg();
         }])
         ->get()
         ->filter(function ($item) {

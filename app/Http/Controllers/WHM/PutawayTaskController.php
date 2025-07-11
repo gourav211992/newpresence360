@@ -18,30 +18,33 @@ class PutawayTaskController extends Controller
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
-        $jobs = ErpWhmJob::with('morphable.book', 'morphable.items', 'itemUniqueCodes')
+        $jobs = ErpWhmJob::with(['morphable.book' => function($q){
+                        $q->select('id','book_code');
+                    }, 'morphable.erpStore' => function($q){
+                        $q->select('id','store_name');
+                    }, 'itemUniqueCodes' => function($q){
+                        $q->select('id','job_id','item_id');
+                    }])
                     ->where('morphable_type', 'App\Models\MrnHeader')
-                    ->whereHasMorph('morphable', ['App\Models\MrnHeader'], function ($q) use ($search, $location) {
-                    if ($search) {
-                        $q->where(function($q2) use ($search) {
-                            $q2->where('document_number', 'like', "%{$search}%")
-                            ->orWhere('consignment_no', 'like', "%{$search}%")
-                            ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
-                            ->orWhereHas('book', function ($bookQuery) use ($search) {
-                                $bookQuery->where('book_code', 'like', "%{$search}%");
+                    ->when($search, function ($query) use ($search) {
+                        $query->whereHasMorph('morphable', ['App\Models\MrnHeader'], function ($q) use ($search) {
+                             $q->where(function($q2) use ($search) {
+                                $q2->where('document_number', 'like', "%{$search}%")
+                                ->orWhere('consignment_no', 'like', "%{$search}%")
+                                ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
+                                ->orWhereHas('book', function ($bookQuery) use ($search) {
+                                    $bookQuery->where('book_code', 'like', "%{$search}%");
+                                });
                             });
                         });
-                    }
-                    if ($location) {
-                        $q->where('store_id', $location);
-                    }
-                })
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
-                        $q->where('store_id', $location);
-                    });
-                })
-                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
-                ->paginate(CommonHelper::PAGE_LENGTH_10);
+                    })
+                    ->when($location, function ($query) use ($location) {
+                        $query->whereHasMorph('morphable', ['App\Models\MrnHeader'], function ($q) use ($location) {
+                            $q->where('store_id', $location);
+                        });
+                    })
+                    ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
+                    ->paginate(CommonHelper::PAGE_LENGTH_10);
         $jobResources = UnloadingResource::collection($jobs->getCollection());
 
         return [
@@ -134,5 +137,60 @@ class PutawayTaskController extends Controller
             \DB::rollback();
             throw new ApiGenericException($e->getMessage());
         }
+    }
+
+    public function updateStatus(Request $request){
+        $validator = Validator::make($request->all(),[
+            'packet_id' => ['required'],
+            'job_id' => ['required'],
+        ],[
+            'packet_id.required' => 'Packet id is required',
+            'job_id.required' => 'Job id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $job = ErpWhmJob::find($request->job_id);
+
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $uniqueCode = ErpItemUniqueCode::where('uid', $request->packet_id)
+                        ->where('job_id',$request->job_id)
+                        ->first();
+        if (!$uniqueCode) {
+            throw ValidationException::withMessages([
+                'packet_id' => ['Packet ID not found.'],
+            ]);
+        }
+
+        if ($job->status == CommonHelper::DEVIATION) {
+            throw ValidationException::withMessages([
+                'job_id' => ['The job status is deviation.'],
+            ]);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $uniqueCode->status = CommonHelper::PENDING;
+            $uniqueCode->storage_point_id = Null;
+            $uniqueCode->save();
+
+            \DB::commit();
+            return [
+                'data' => $request->packet_id,
+                'message' => 'Packet deleted successfully.'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+
     }
 }

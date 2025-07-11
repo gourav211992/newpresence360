@@ -43,6 +43,31 @@
     </tr> 
     @endif
 @endif
+{{-- @if(isset($item))
+    @if($item?->itemAttributes->count() > 0)
+    <tr> 
+        <td class="poprod-decpt">
+            <span class="poitemtxt mw-100"><strong>Attributes:</strong></span>
+            @foreach($item->itemAttributes as $attribute)
+                @php
+                    $selectedValues = collect($attribute->attributes())->filter(function($value) use ($selectedAttr) {
+                        return in_array($value->id ?? 0, $selectedAttr);
+                    });
+                @endphp
+
+                @if($selectedValues->isNotEmpty())
+                    <span class="badge rounded-pill badge-light-primary">
+                        <strong data-group-id="{{ $attribute?->attributeGroup?->id }}">
+                            {{ $attribute?->attributeGroup?->name }}
+                        </strong>:
+                        {{ $selectedValues->pluck('value')->join(', ') }}
+                    </span>
+                @endif
+            @endforeach
+        </td> 
+    </tr> 
+    @endif
+@endif --}}
 <tr>
     <td class="poprod-decpt">
         <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>:  {{$uomName}}</span>

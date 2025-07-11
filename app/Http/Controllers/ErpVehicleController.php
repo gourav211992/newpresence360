@@ -163,6 +163,7 @@ class ErpVehicleController extends Controller
         $ownership = ConstantHelper::OWNERSHIP;
         $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
         $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+       
         return view('logistics.vehicles.create', compact('status','drivers', 'fuelTypes', 'ownership', 'vehicleTypes', 'groupOrganizations'));
     }
 

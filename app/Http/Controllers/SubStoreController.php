@@ -6,10 +6,12 @@ use App\Helpers\InventoryHelper;
 use App\Http\Requests\SubStoreRequest;
 use App\Models\ErpSubStore;
 use App\Models\ErpSubStoreParent;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\SubStoreType;
 use Exception;
 use Yajra\DataTables\Facades\DataTables;
 use App\Models\ErpStore;
+use App\Models\AuthUser;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
@@ -23,9 +25,20 @@ class SubStoreController extends Controller
     
     public function index(Request $request)
     {    
-        $subStores = ErpSubStore::whereHas('parents', function ($subQuery) {
-            $subQuery -> withDefaultGroupCompanyOrg();
-        }) -> orderByDesc('id');    
+        $user = Helper::getAuthenticatedUser();
+        $authUser = AuthUser::find($user->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+       if ($isSuperAdmin) {
+            $subStores = ErpSubStore::whereHas('parents', function ($subQuery) use ($groupId) {
+                $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                        ->where('group_id', $groupId);
+            })->orderByDesc('id')->get();
+        } else {
+            $subStores = ErpSubStore::whereHas('parents')->orderByDesc('id')->get();
+        }
         if ($request->ajax()) {
             return DataTables::of($subStores)
                 ->addIndexColumn()
@@ -122,7 +135,21 @@ class SubStoreController extends Controller
     
     public function edit($id)
     {
-        $subStore = ErpSubStore::find($id);
+        $user = Helper::getAuthenticatedUser();
+        $authUser = AuthUser::find($user->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+        if ($isSuperAdmin) {
+          $subStore = ErpSubStore::whereHas('parents', function ($subQuery) use ($groupId) {
+                $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                        ->where('group_id', $groupId);
+            })
+            ->where('id', $id)
+            ->first();
+        } else {
+            $subStore = ErpSubStore::find($id);
+        }
         if (!$subStore) {
             return redirect()->back()->with('error', 'Sub Store not found.');
         }

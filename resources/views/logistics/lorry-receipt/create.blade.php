@@ -140,7 +140,7 @@
 												 
                                             </div> 
                                             
-                                            <div class="col-md-4"> 
+                                            <!-- <div class="col-md-4"> 
 
                                                     <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
                                                         <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
@@ -214,7 +214,7 @@
                                                         </ul>
                                                     </div>
 
-                                                </div>
+                                                </div> -->
 
                                         </div> 
                                 </div>
@@ -922,13 +922,18 @@ $(document).ready(function () {
 </script>
     <script>
         const routeMasters = [
+  @if($routeMasters->isNotEmpty())
     @foreach($routeMasters as $rm)
         {
             label: "{{ $rm->name }}",
             value: "{{ $rm->name }}",
             id: {{ $rm->id }}
-        },
+        }@if(!$loop->last),@endif
     @endforeach
+@else
+    null
+@endif
+
 ];
 
 $(document).on('focus', '.route-master-autocomplete', function () {
@@ -999,13 +1004,17 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
 //customer autocomplete
 const customerList = [
+@if($customers->isNotEmpty())
     @foreach($customers as $customer)
-        {
+        { 
             label: "{{ addslashes($customer->company_name) }}",
             value: "{{ addslashes($customer->company_name) }}",
             id: {{ $customer->id }}
         },
     @endforeach
+    @else
+    null
+    @endif
 ];
 
 $(document).on('focus', '.customer-autocomplete', function () {
@@ -1028,6 +1037,7 @@ $(document).on('focus', '.customer-autocomplete', function () {
 });
     //drivers autocomplete
 const driverList = [
+    @if($drivers->isNotEmpty())
     @foreach($drivers as $driver)
         {
             label: "{{ addslashes($driver->name) }}",
@@ -1035,6 +1045,9 @@ const driverList = [
             id: {{ $driver->id }}
         },
     @endforeach
+    @else
+    null
+@endif
 ];
 
 $(document).on('focus', '.driver-autocomplete', function () {
@@ -1058,13 +1071,17 @@ $(document).on('focus', '.driver-autocomplete', function () {
     
     //vehicle types
     const vehicleTypes = [
+   @if($vehicleTypes->isNotEmpty())
     @foreach($vehicleTypes as $vt)
         {
-            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
-            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
+            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
+            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
             id: {{ $vt->id }}
-        },
+        }@if(!$loop->last),@endif
     @endforeach
+@else
+    null
+@endif
 ];
 
    $(document).on('focus', '.vehicle-type-autocomplete', function () {

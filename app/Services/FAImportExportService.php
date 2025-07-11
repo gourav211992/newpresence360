@@ -68,7 +68,7 @@ class FAImportExportService
     {
 
         $org = Helper::getAuthenticatedUser()->organization;
-        $existing = FixedAssetRegistration::withDefaultGroupCompanyOrg()->where('asset_code', $data['asset_code'])
+        $existing = FixedAssetRegistration::where('asset_code', $data['asset_code'])
             ->first();
         if ($existing) {
             throw new \Exception("Asset Code already exists: {$data['asset_code']}");
@@ -101,8 +101,7 @@ class FAImportExportService
 
         // Calculate purchase_amount
         $data['purchase_amount'] = $data['current_value'];
-        $location = ErpStore::withDefaultGroupCompanyOrg()
-            ->where('store_name', $data['location'])
+        $location = ErpStore::where('store_name', $data['location'])
             ->first();
         
         if (empty($location)) {
@@ -115,7 +114,6 @@ class FAImportExportService
         }
         
         $cost_center = CostCenter::where('status', 'active')->where('name', $data['cost_center'])
-            ->withDefaultGroupCompanyOrg()
             ->first();
 
         if (empty($cost_center)) {
@@ -132,8 +130,7 @@ class FAImportExportService
 
 
 
-        $ledger = Ledger::withDefaultGroupCompanyOrg()
-            ->where('name', 'LIKE', '%' . trim($data['ledger'] ?? '') . '%')
+        $ledger = Ledger::where('name', 'LIKE', '%' . trim($data['ledger'] ?? '') . '%')
             ->first();
 
         if (empty($ledger)) {
@@ -149,14 +146,13 @@ class FAImportExportService
             throw new \Exception($data['ledger']. "Ledger not mapped with Fixed Assets group");
         }
         
-        $category = ErpAssetCategory::withDefaultGroupCompanyOrg()
-            ->where('name', $data['category'])
+        $category = ErpAssetCategory::where('name', $data['category'])
             ->first();
 
         if (empty($category)) {
             throw new \Exception($data['category'] . " Category(s) not found");
         }
-        $vendor = Vendor::withDefaultGroupCompanyOrg()->where('display_name', $data['vendor'])->first();
+        $vendor = Vendor::where('display_name', $data['vendor'])->first();
         if (empty($vendor)) {
             throw new \Exception($data['vendor'] . " Vendor(s) not found");
         }
