@@ -17,8 +17,17 @@
 @endsection
 
 @section('content')
+      @php
+        $unauthorizedMonths = [];
+        foreach ($fy_months as $month) {
+            if (!$month['authorized']) {
+                $unauthorizedMonths[] = $month['fy_month'];
+            }
+        }
+    @endphp
     <script>
-            const locationCostCentersMap = @json($cost_centers);
+        const locationCostCentersMap = @json($cost_centers);
+        const unauthorizedMonths = @json($unauthorizedMonths);
     </script>
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -594,11 +603,41 @@
 @section('scripts')
     <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
     <script>
+        function getMonthName(ym) {
+            // ym = '2024-07'
+            const [year, month] = ym.split('-');
+            const d = new Date(year, parseInt(month) - 1);
+            return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+        }
+
+        document.getElementById('date').addEventListener('input', function() {
+             if (!isDateAuthorized(this.value)) {
+                this.value = '';
+                this.focus();
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', function() {
+            var dateInput = document.getElementById('date');
+            if (dateInput && dateInput.value && !isDateAuthorized(dateInput.value)) {
+                dateInput.value = '';
+                dateInput.focus();
+            }
+        });
         // $('#voucherForm').on('submit', function () {
         //     $('.preloader').show();
         // });
         $('.voucher_details').hide();
-
+        function isDateAuthorized(dateValue) {
+            if (!dateValue) return true;
+            var selectedMonth = dateValue.substring(0, 7);
+            if (unauthorizedMonths.includes(selectedMonth)) {
+                var monthLabel = getMonthName(selectedMonth);
+                showToast('error', 'You are not authorized to select dates from ' + monthLabel + '. Please select another month.');
+                return false;
+            }
+            return true;
+        }
         var currencies = {!! json_encode($currencies) !!};
         var orgCurrency = {{ $orgCurrency }};
         var orgCurrencyName = '';
@@ -790,6 +829,12 @@
 
 
         function submitForm(status) {
+            var dateInput = document.getElementById('date');
+            if (dateInput && !isDateAuthorized(dateInput.value)) {
+                dateInput.value = '';
+                dateInput.focus();
+                return false; // Prevent form submission
+            }
             $('#status').val(status);
             $('#submitButton').click();
         }

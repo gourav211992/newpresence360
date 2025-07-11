@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\ErpFinancialYear;
+use App\Models\ErpFyMonth;
 use App\Models\Group;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -55,44 +56,77 @@ class CloseFyController extends Controller
 
     public function monthFyIndex(Request $request)
     {
-        $fyearId = $request->fyear;
+        $fmonthId = $request->fmonth;
+        $financialYearMonth = null;
+        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
         $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        // dd($organization);
+        $group_id = $organization->group_id;
+        $company_id     = $organization->company_id;
         $organizationId = $request->organization_id;
         $companies = $user->access_rights_org;
-        $past_fyears = Helper::getAllPastFinancialYear($organizationId);
         $current_fyear = Helper::getFinancialYear(date('Y-m-d'));
         $months = $this->showMonths($current_fyear['start_date'],$current_fyear['end_date']);
-        // dd($current_fyear, $months);
-        $financialYear = $fyearId ? ErpFinancialYear::where('organization_id',$organizationId)->find($fyearId) : null;
-        // $financialYearAuthUsers = $fyearId ? null : Helper::getFyAuthorizedUsers(date('Y-m-d'));
-
-        if ($financialYear) {
-            // $organizationId = $financialYear->organization_id;
-            $financialYear->access_by = $this->setFinancialYearAccessBy(
-                $organizationId,
-                $financialYear->lock_fy,
-                $financialYear->access_by
-            );
-            $financialYear->save();
-
-            $startYear = Carbon::parse($financialYear['start_date'])->format('Y');
-            $endYearShort = Carbon::parse($financialYear['end_date'])->format('y');
+        if($fmonthId){
+            $fmonthDate = $fmonthId ? Carbon::parse($fmonthId)->startOfMonth() : null;
+            $startDate = Carbon::parse($fmonthId)->startOfMonth()->toDateString(); // 2025-02-01
+            $endDate = Carbon::parse($fmonthId)->endOfMonth()->toDateString();   
+            $financialYear = $fmonthId ? ErpFinancialYear::where('organization_id',$organizationId)
+                            ->where('start_date','<=', $fmonthDate)
+                            ->where('end_date','>=', $fmonthDate)->first() : null;
+    
+            $financialYearMonth = ErpFyMonth::where('fy_month',$fmonthId)
+            ->where('fy_id', $financialYear->id)->first();
+            // dd($financialYearMonth, $fmonthId);
+            if($financialYearMonth)
+            {
+                $financialYearMonth->update([
+                    'access_by' => $this->setFinancialYearAccessBy(
+                    $organizationId,
+                    $financialYearMonth->lock_fy,
+                    $financialYearMonth->access_by),
+                    'fy_month' => $fmonthId,
+                    'lock_fy' => $financialYearMonth->lock_fy,
+                    'fy_id' => $financialYear->id,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'organization_id' => $organizationId ?? $organization->id,
+                    'company_id' => $company_id,
+                    'group_id' => $group_id,
+                ]);
+    
+            }else{
+              $financialYearMonth =  ErpFyMonth::create([
+                    'access_by' => $this->setFinancialYearAccessBy(
+                    $organizationId,
+                    false,
+                    null),
+                    'fy_month' => $fmonthId,
+                    'lock_fy' => false,
+                    'fy_id' => $financialYear->id,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'organization_id' => $organizationId ?? $organization->id,
+                    'company_id' => $company_id,
+                    'group_id' => $group_id,
+                ]);
+            }
+            $startYear = Carbon::parse($financialYearMonth['start_date'])->format('Y');
+            $endYearShort = Carbon::parse($financialYearMonth['end_date'])->format('y');
         } else {
             $now = Carbon::now();
             $startYear = $now->format('Y');
             $endYearShort = $now->copy()->addYear()->format('y');
         }
 
-        $authorized_users = ($financialYear ? $financialYear->authorizedUsers() : null);
+        $authorized_users = ($financialYearMonth ? $financialYearMonth->authorizedUsers() : null);
         $current_range = $startYear . '-' . $endYearShort;
         $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
-        // for testing
-        Log::info('Authenticated User ID: ' . Helper::getAuthenticatedUser()->auth_user_id);
-        Log::info('Financial Year: ' .$financialYear);
 
         return view('close-fy.close-month-fy', compact(
-            'companies', 'organizationId', 'past_fyears', 'financialYear', 'fyearId',
-            'employees', 'current_range', 'authorized_users','current_fyear','months'
+            'companies', 'organizationId', 'financialYear', 'fmonthId',
+            'employees', 'current_range', 'authorized_users','current_fyear','months','financialYearMonth'
         ));
     }
 
@@ -108,25 +142,25 @@ class CloseFyController extends Controller
         }
 
         $months = [];
-        $current = $startDate->copy();
-        while ($current <= $endDate) {
+        $current = $endDate->copy();
+
+        while ($current >= $startDate) {
             $months[] = [
                 'value' => $current->format('Y-m'),
                 'label' => $current->format('F Y'),
             ];
-            $current->addMonth();
+            $current->subMonth();
         }
         return $months;
     }
 
     public function getFyInitialGroups(Request $r)
     {
-        // dd($r->all()); april 2025 . 1st april 2025 - 31st april 2025 / april month 2025
-        $financialYear = null;
+        $financialSpan = null;
         $organizationId = $r->organization_id;
         if($r->fyear){
            $allFyears = Helper::getFinancialYears($organizationId);
-            $financialYear = $allFyears->firstWhere('id', $r->fyear);
+            $financialSpan = $allFyears->firstWhere('id', $r->fyear);
 
             // if ($currentFy && isset($currentFy['range'])) {
             //     [$start, $end] = explode('-', $currentFy['range']);
@@ -138,6 +172,11 @@ class CloseFyController extends Controller
             //         return trim($item['range']) === trim($nextRange);
             //     });
             // }
+        }elseif($r->fmonth){
+            $financialSpan = [
+                'start_date' => Carbon::parse($r->fmonth)->startOfMonth()->toDateString(),
+                'end_date' => Carbon::parse($r->fmonth)->endOfMonth()->toDateString()
+            ];         
         }
          $organizations = $r->organization_id && is_array($r->organization_id)
             ? $r->organization_id
@@ -150,7 +189,7 @@ class CloseFyController extends Controller
             ->select('id', 'name')
             ->with('children.children')
             ->get();
-        if ($financialYear === null) {
+        if ($financialSpan === null) {
             return response()->json([
                  'currency' => $currency,
                 'data' => null,
@@ -162,8 +201,8 @@ class CloseFyController extends Controller
                 'message' => 'No Data found related to financial year.'
             ]);
         }
-        $startDate = $financialYear['start_date'] ?? null;
-        $endDate = $financialYear['end_date'] ?? null;
+        $startDate = $financialSpan['start_date'] ?? null;
+        $endDate = $financialSpan['end_date'] ?? null;
 
         $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $r->cost_center_id);
         $data = Helper::getGroupsData($groups, $startDate, $endDate, $organizations, $currency, $r->cost_center_id);
@@ -246,35 +285,72 @@ class CloseFyController extends Controller
     {
         $request->validate(['lock_fy' => 'required']);
 
-        try {
-            $financialYear = $request->fyear
-                ? ErpFinancialYear::find($request->fyear)
-                : Helper::getCurrentFy();
+            // Determine target model (FY or FMonth)
+            if ($request->fmonth_id) {
+            $model = ErpFyMonth::find($request->fmonth_id);
+            if (!$model) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No financial year month found.'
+                ], 404);
+            }
+            if ($model && $request->lock_fy) { // Only check when locking (not unlocking)
+                $selectedMonthValue = $model->fy_month;
 
-            $existingAccess = collect($financialYear->access_by ?? []);
-            $updatedAccess = $existingAccess->map(fn($entry) => [
-                'user_id' => (int) $entry['user_id'],
-                'authenticable_type' => $entry['authenticable_type'] ?? null,
-                'authorized' => $entry['authorized'],
-                'locked' => $request->lock_fy,
-            ])->toArray();
+                // Get all previous months based on fy_month string comparison
+                $previousMonths = \App\Models\ErpFyMonth::where('fy_id', $model->fy_id)
+                    ->where('fy_month', '<', $selectedMonthValue) // string comparison works for YYYY-MM
+                    ->orderBy('fy_month', 'asc')
+                    ->get();
+                    $allPreviousLocked = $previousMonths->every(function($month) {
+                        return $month->lock_fy == true;
+                    });
+                    if (!$allPreviousLocked) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Please lock all previous financial year months before locking the current one.'
+                        ], 400);
+                    }
+                }
+            } else {
+                $model = $request->fyear
+                    ? ErpFinancialYear::find($request->fyear)
+                    : Helper::getCurrentFy();
+                    
+                if (!$model) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No financial year found.' 
+                    ], 404);
+                }
+            }
 
-            $financialYear->access_by = $updatedAccess;
-            $financialYear->lock_fy = $request->lock_fy;
-            $financialYear->save();
+            $dateRange = $model->start_date . ' to ' . $model->end_date;
+            try {
+                $existingAccess = collect($model->access_by ?? []);
+                $updatedAccess = $existingAccess->map(fn($entry) => [
+                    'user_id' => (int) $entry['user_id'],
+                    'authenticable_type' => $entry['authenticable_type'] ?? null,
+                    'authorized' => $entry['authorized'],
+                    'locked' => $request->lock_fy,
+                ])->toArray();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Financial year locked successfully.',
-                'date_range' => $financialYear->start_date . ' to ' . $financialYear->end_date
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to Lock Financial Year.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+                $model->access_by = $updatedAccess;
+                $model->lock_fy = $request->lock_fy;
+                $model->save();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Financial year locked successfully.',
+                    'date_range' => $dateRange
+                ]);
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to lock.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
     }
 
     public function updateFyAuthorizedUser(Request $request)
@@ -286,40 +362,46 @@ class CloseFyController extends Controller
 
         $selectedUsers = collect($request->users)->keyBy(fn($item) => (int) $item['user_id']);
 
-        $financialYear = $request->fyear
-            ? ErpFinancialYear::find($request->fyear)
-            : ErpFinancialYear::where('fy_status', 'current')->first();
-
-        if (!$financialYear) {
-            return response()->json(['success' => false, 'message' => 'No financial year found.'], 404);
+        // Determine the target model
+        if ($request->fmonth_id) {
+            $model = ErpFyMonth::find($request->fmonth_id);
+        } else {
+            $model = $request->fyear
+                ? \App\Models\ErpFinancialYear::find($request->fyear)
+                : \App\Models\ErpFinancialYear::where('fy_status', 'current')->first();
         }
 
-        $existingAccess = collect($financialYear->access_by ?? []);
+        if (!$model) {
+            return response()->json(['success' => false, 'message' => $request->fmonth_id ? 'No financial year month found.' : 'No financial year found.'], 404);
+        }
+
+        $existingAccess = collect($model->access_by ?? []);
         $updatedAccess = $existingAccess->isEmpty()
             ? $selectedUsers->map(fn($data, $userId) => [
                 'user_id' => $userId,
                 'authenticable_type' => $data['authenticable_type'] ?? null,
                 'authorized' => true,
-                'locked' => $financialYear->lock_fy == 1
+                'locked' => $model->lock_fy == 1
             ])->values()->toArray()
-            : $existingAccess->map(function ($entry) use ($selectedUsers, $financialYear) {
+            : $existingAccess->map(function ($entry) use ($selectedUsers, $model) {
                 $userId = (int) $entry['user_id'];
                 $isSelected = $selectedUsers->has($userId);
 
                 return [
-                'user_id' => $userId,
+                    'user_id' => $userId,
                     'authenticable_type' => $entry['authenticable_type'] ?? $selectedUsers[$userId]['authenticable_type'] ?? null,
                     'authorized' => $isSelected,
-                    'locked' => $financialYear->lock_fy == 1
+                    'locked' => $model->lock_fy == 1
                 ];
             })->toArray();
 
-        $financialYear->access_by = $updatedAccess;
-        $financialYear->save();
+        $model->access_by = $updatedAccess;
+        $model->save();
 
-        return response()->json(['success' => true, 'message' => 'Close FY Authoriz users saved successfully.']);
+        return response()->json(['success' => true, 'message' => 'Authorization users saved successfully.']);
     }
 
+    // not in use
     public function deleteFyAuthorizedUser(Request $request)
     {
         $financialYear = $request->fyear

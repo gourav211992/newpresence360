@@ -21,11 +21,12 @@
                                                 <p>Apply the Basic Filter</p>
                                             </div>
                                             <div class="col-md-8 text-sm-end">
-                                                @if (isset($financialYear))
+                                                {{-- {{ dd($financialYearMonth) }} --}}
+                                                @if (isset($financialYearMonth))
                                                     {{-- Show "Close F.Y" button only if FY is not already closed --}}
 
                                                     {{-- Show "Lock F.Y" button only if it's currently unlocked --}}
-                                                    @if ($financialYear['lock_fy'] == false)
+                                                    @if ($financialYearMonth->lock_fy == false)
                                                         <button class="btn mt-25 btn-danger btn-sm swal-action-btn"
                                                             data-type="lock" data-url="{{ route('close-fy.lock') }}"
                                                             type="submit">
@@ -34,7 +35,7 @@
                                                     @endif
 
                                                     {{-- Show "Unlock F.Y" button only if it's currently locked --}}
-                                                    @if ($financialYear['lock_fy'] == true)
+                                                    @if ($financialYearMonth->lock_fy == true)
                                                         <button class="btn mt-25 btn-success btn-sm swal-action-btn"
                                                             data-type="unlock" data-url="{{ route('close-fy.lock') }}"
                                                             type="submit">
@@ -70,17 +71,14 @@
                                                 <div class="col-md-3">
                                                     <div class="mb-1 mb-sm-0">
                                                         <label class="form-label">Select F.Y</label>
-                                                        <select id="fyear_id" class="form-select select2">
+                                                        <select id="fmonth_id" class="form-select select2">
                                                             <option value="">Select</option>
                                                             @if (isset($months) && is_iterable($months))
-                                                            @foreach ($months as $month)
-                                                                    <option value="{{ $month['value'] }}">{{ $month['label'] }}</option>
-                                                                {{-- <option value="{{ $fyear['id'] }}"
-                                                                data-start="{{ $fyear['start_date'] }}"
-                                                                    data-end="{{ $fyear['end_date'] }}"
-                                                                    {{ $fyear['id'] == $fyearId ? 'selected' : '' }}>
-                                                                    {{ $fyear['range'] }}
-                                                                </option> --}}
+                                                            @foreach ($months as $fmonth)
+                                                                <option value="{{ $fmonth['value'] }}"
+                                                                    {{ $fmonth['value'] == $fmonthId ? 'selected' : '' }}>
+                                                                    {{ $fmonth['label'] }}
+                                                                </option>
                                                             @endforeach
                                                             @endif
                                                         </select>
@@ -152,11 +150,11 @@
                                     </div>
                                     <div class="tab-pane" id="Access">
                                         @php
-                                        $locked = $authorized_users['locked'] ?? false;
+                                        $locked = $authorized_users['locked'] ?? null;
                                         @endphp
                                         @if (isset($organizationId) && $organizationId)
                                         <div class="text-end mb-2">
-                                            @if(!$locked)
+                                            @if(!is_null($locked) && !$locked)
                                             <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
                                                 <i data-feather='check-circle'></i> Save
                                             </a>
@@ -177,6 +175,7 @@
                                                 </thead>
 
                                                <tbody>
+                                                {{-- {{  dd($authorized_users) }} --}}
                                                     @php
                                                         $authorizedUsers = $authorized_users['users'] ?? collect();
                                                         $showAddRowOnly = $authorizedUsers->isEmpty();
@@ -291,6 +290,7 @@
 
 @section('scripts')
     <script>
+    const fmonthId = @json($financialYearMonth->id ?? null);
 // 1. Function to create a new row
     function getNewRowHtml(rowNum) {
             return `
@@ -459,8 +459,8 @@
                 $('.preloader').show();
 
                 let users = [];
-                const fyValue = $('#fyear_id').val();
-                console.log(fyValue);
+                const fmValue = $('#fmonth_id').val();
+                console.log(fmValue);
 
                 // Collect selected user IDs
                 let hasEmptyUser = false;
@@ -490,8 +490,8 @@
                     return;
                 }
 
-                if (fyValue && fyValue.trim() !== "") {
-                    users.fyear = fyValue;
+                if (fmValue && fmValue.trim() !== "") {
+                    users.fmonth = fmValue;
                 }
 
                 console.log("Data to be saved:", users);
@@ -506,7 +506,7 @@
                         },
                         body: JSON.stringify({
                             users: users,
-                            fyear: users.fyear
+                            fmonth_id : fmonthId
                         })
                     })
                     .then(res => res.json())
@@ -520,7 +520,7 @@
                                 confirmButtonText: 'OK'
                             }).then(() => {
                                 $('.preloader').show();
-                                // location.reload();
+                                location.reload();
                             });
                         } else {
                             Swal.fire({
@@ -592,14 +592,14 @@
         $(document).ready(function() {
 
             const params = new URLSearchParams(window.location.search);
-            const fyearId = params.get('fyear');
+            const fmonthId = params.get('fmonth');
             const organizationId = params.get('organization_id');
 
             // Check if both parameters are present and non-empty
-            if (fyearId && organizationId) {
+            if (fmonthId && organizationId) {
 
                 // Update the displayed labels
-                $('#fy_range').text(`F.Y ${$('#fyear_id option:selected').text()} Closing Balance`);
+                $('#fy_range').text(`F.Y ${$('#fmonth_id option:selected').text()} Closing Balance`);
                 $('#company_name').text(
                     $('#organization_id option:selected')
                     .map(function() {
@@ -621,7 +621,7 @@
                 .get()
                 .join(', ')
             );
-            const selectedOption = $('#fyear_id option:selected');
+            const selectedOption = $('#fmonth_id option:selected');
             const selectedValue = selectedOption.val()?.trim();
 
             const selectedText = selectedValue !== "" ? selectedOption.text() : '';
@@ -640,12 +640,13 @@
                 $('#tableData').html('');
 
                 // Get selected values
-                const fyearId = $('#fyear_id').val()?.trim();
+                const fmonthId = $('#fmonth_id').val()?.trim();
                 const organizationId = $('#organization_id').val() || [];
+                console.log("fmonthId: " + fmonthId);
 
                 // Build URL params
                 let params = new URLSearchParams(window.location.search);
-                params.set('fyear', fyearId);
+                params.set('fmonth', fmonthId);
                 params.set('organization_id', organizationId);
                 // params.set('cost_center_id', $('#cost_center_id').val());
 
@@ -672,18 +673,18 @@
 
 
                 // Validate filters before redirect
-                const isValid = fyearId !== "" && organizationId.length > 0;
+                const isValid = fmonthId !== "" && organizationId.length > 0;
                 if (isValid) {
                     // Update financial year label
-                const selectedOption = $('#fyear_id option:selected');
-                    const selectedText = fyearId !== "" ? selectedOption.text() : '{{ $current_range }}';
+                const selectedOption = $('#fmonth_id option:selected');
+                    const selectedText = fmonthId !== "" ? selectedOption.text() : '{{ $current_range }}';
                     // $('#fy_range').text(`F.Y ${selectedText} Closing Balance`);
                     window.location.href = currentUrl; // ✅ Perform redirect
                 } else {
                     $('.preloader').hide();
                     Swal.fire({
                         title: 'Not Valid Filters!',
-                        text: "Please select both Financial Year and Organization to proceed.",
+                        text: "Please select both Financial Month and Organization to proceed.",
                         icon: 'error'
                     });
                 }
@@ -700,7 +701,7 @@
 
 
                 var obj = {
-                    fyear: $('#fyear_id').val(),
+                    fmonth: $('#fmonth_id').val(),
                     // cost_center_id: $('#cost_center_id').val(),
                     // currency: $('#currency').val(),
                     '_token': '{!! csrf_token() !!}'
@@ -712,6 +713,7 @@
                 // if (filteredValues.length > 0) {
                 obj.organization_id = selectedValues
                 // }
+                console.log(obj, 'getInitialGroups()');
                 $('.preloader').show();
                 $.ajax({
                     headers: {
@@ -947,14 +949,15 @@
                     if ($('#check' + id).val() == "") {
 
 
-                        const selected = $('#fyear_id').find('option:selected');
+                        const selected = $('#fmonth_id').find('option:selected');
                         const date1 = formatDate(selected.data('start'));
                         const date2 = formatDate(selected.data('end'));
                         const fullRange = `${date1} to ${date2}`;
+                        const fmValue = $('#fmonth_id').val();
                         console.log(fullRange)
                         var obj = {
                             id: id,
-                            date: fullRange,
+                            fmonth: fmValue,
                             cost_center_id: $('#cost_center_id').val(),
                             currency: $('#currency').val(),
                             '_token': '{!! csrf_token() !!}'
@@ -1120,13 +1123,14 @@
                 });
 
                 if (trIds.length > 0) {
-                        const selected = $('#fyear_id').find('option:selected');
+                        const selected = $('#fmonth_id').find('option:selected');
                         const date1 = formatDate(selected.data('start'));
                         const date2 = formatDate(selected.data('end'));
                         const fullRange = `${date1} to ${date2}`;
+                        const fmValue = $('#fmonth_id').val();
                     var obj = {
                         ids: trIds,
-                        date: fullRange,
+                        fmonth: fmValue,
                         cost_center_id: $('#cost_center_id').val(),
                         currency: $('#currency').val(),
                         '_token': '{!! csrf_token() !!}'
@@ -1404,7 +1408,7 @@
                 let bodyData = {};
                 const actionType = this.getAttribute('data-type');
                 const url = this.getAttribute('data-url');
-                const fyValue = $('#fyear_id').val();
+                const fmValue = $('#fmonth_id').val();
 
                 let swalOptions = {
                     title: 'Are you sure?',
@@ -1430,15 +1434,18 @@
                     swalOptions.text = "Are you sure you want to lock the current Financial Year?";
                     swalOptions.confirmButtonText = 'Yes, lock it!';
                     bodyData.lock_fy = true; // equivalent to 1
+                    bodyData.fmonth_id = fmonthId;
+
                 } else if (actionType === 'unlock') {
                     swalOptions.text = "Are you sure you want to unlock the current Financial Year?";
                     swalOptions.confirmButtonText = 'Yes, unlock it!';
                     bodyData.lock_fy = false; // equivalent to 0
+                    bodyData.fmonth_id = fmonthId;
                 }
 
-                if (fyValue && fyValue.trim() !== "") {
-                    bodyData.fyear = fyValue;
-                }
+                // if (fmValue && fmValue.trim() !== "") {
+                //     bodyData.fmonth = fmValue;
+                // }
 
                 Swal.fire(swalOptions).then((result) => {
                     if (result.isConfirmed) {
@@ -1455,6 +1462,14 @@
                             .then(response => response.json())
                             .then(data => {
                                 $('.preloader').hide();
+                                if (!data.success) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Failed!',
+                                        text: data.message || 'Something went wrong.',
+                                    });
+                                    return;
+                                }
                                 Swal.fire({
                                     icon: 'success',
                                     title: 'Success!',
@@ -1463,10 +1478,11 @@
                                     confirmButtonText: 'OK'
                                 }).then(() => {
                                     $('.preloader').show();
-                                    // setTimeout(() => location.reload(), 1000);
+                                    setTimeout(() => location.reload(), 1000);
                                 });
                             })
                             .catch(error => {
+                            console.log('Error:', error);
                                 $('.preloader').hide();
                                 Swal.fire({
                                     icon: 'error',
