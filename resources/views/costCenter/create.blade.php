@@ -1,5 +1,5 @@
-
 @extends('layouts.app')
+
 
 @section('content')
     <!-- BEGIN: Content-->
@@ -56,14 +56,15 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
 
+
                                                     <div class="col-md-5">
                                                         <select id="organizations" class="form-select select2" onchange="getLocations()" name="organizations[]" multiple>
                                                             @foreach ($companies as $organization)
-                                                                <option value="{{ $organization->organization->id }}"
-                                                                    @if (in_array($organization->organization->id, old('organizations', [])))
+                                                                <option value="{{ $organization->id }}"
+                                                                    @if (in_array($organization->id, old('organizations', [])))
                                                                         selected
                                                                     @endif>
-                                                                    {{ $organization->organization->name }}
+                                                                    {{ $organization->name }}
                                                                 </option>
                                                             @endforeach
                                                         </select>

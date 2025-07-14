@@ -1,5 +1,6 @@
 @extends('layouts.app')
 
+
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content ">
@@ -60,9 +61,9 @@
                                                     <div class="col-md-5">
                                                         <select id="organizations" class="form-select select2" onchange="getLocations()" name="organizations[]" multiple>
                                                             @foreach ($companies as $organization)
-                                                            <option value="{{ $organization->organization->id }}"
-                                                                {{ in_array($organization->organization->id, $data->organizations ?? []) ? 'selected' : '' }}>
-                                                                {{ $organization->organization->name }}
+                                                            <option value="{{ $organization->id }}"
+                                                                {{ in_array($organization->id, $data->organizations ?? []) ? 'selected' : '' }}>
+                                                                {{ $organization->name }}
                                                             </option>
                                                         @endforeach
                                                         </select>

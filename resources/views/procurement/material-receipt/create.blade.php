@@ -756,6 +756,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
@@ -1305,11 +1306,19 @@
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
             if(currentProcessType && currentProcessType != null)
             {
+                let checkAttr = 0;
                 rowCount = tableRowCount;
+                let isPo = $(tr).find('[name*="purchase_order_item_id"]').length ? 1 : 0;
+                let isJo = $(tr).find('[name*="job_order_item_id"]').length ? 1 : 0;
+                if((!isPo) || (!isJo)) {
+                    if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+                        checkAttr = 1;
+                    }
+                }
             }
 
             let mrn_detail_id = "";
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&checkAttr=${checkAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1497,7 +1506,7 @@
                         $("#itemDetailDisplay").html(data.data.html);
 
                         // ✅ Fill storage_points hidden input
-                        const hiddenInput = $row.find("input[name*='[storage_points]']");
+                        const hiddenInput = getVal("input[name*='[storage_points]']");
                         if (hiddenInput.length) {
                             hiddenInput.val(JSON.stringify(storagePoints));
                         }
@@ -1715,7 +1724,7 @@
                 document_number = $("#document_id_qt_val").val() || '',
                 item_id = $("#item_id_qt_val").val() || '',
                 vendor_id = $("#vendor_id_qt_val").val(),
-                store_id = $("#store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#po_so_qt_val").val() || '',
                 item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedPoIds)
@@ -1731,7 +1740,7 @@
                 document_number = $("#jo_document_id_qt_val").val() || '',
                 item_id = $("#jo_item_id_qt_val").val() || '',
                 vendor_id = $("#jo_vendor_id_qt_val").val(),
-                store_id = $("#jo_store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#jo_so_qt_val").val() || '',
                 item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedJoIds)
@@ -1747,7 +1756,7 @@
                 document_number = $("#so_document_id_qt_val").val() || '',
                 item_id = $("#so_item_id_qt_val").val() || '',
                 vendor_id = $("#so_vendor_id_qt_val").val(),
-                store_id = $("#so_store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#so_so_qt_val").val() || '',
                 item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '';
                 selected_po_ids = encodeURIComponent(selectedSoIds)

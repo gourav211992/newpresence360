@@ -405,7 +405,7 @@ class ErpRCController extends Controller
                     'vendor_code' =>  $request->party_type == 'vendor' ? $party?->company_name : null,
                     'customer_id' =>  $request->party_type == 'customer' ? $party?->id : null,
                     'customer_code' =>  $request->party_type == 'customer' ? $party?->company_name : null,
-                    'document_status' => ConstantHelper::DRAFT,
+                    'document_status' => $request->document_status ?? ConstantHelper::DRAFT,
                     'approval_level' => 1,
                     'applicable_organizations' => json_encode($request->organization_id),
                     'payment_term_id' => isset($request->payment_terms_id) ? $request->payment_terms_id : null,

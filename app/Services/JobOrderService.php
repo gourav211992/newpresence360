@@ -53,6 +53,11 @@ class JobOrderService
     {
         $itemHeaderExp = floatval($poItem['expense_amount']);
         $joProduct = JoProduct::find($component['jo_product_id'] ?? null) ?? new JoProduct;
+
+        $isNewItem = false;
+        if(isset($joProduct->item_id) && $joProduct->item_id) {
+            $isNewItem = $joProduct->item_id != ($poItem['item_id'] ?? null);
+        }
         $joProduct->pwo_so_mapping_id = $poItem['pwo_so_mapping_id'] ?? null;
         $joProduct->so_id = $poItem['so_id'] ?? null;
         $joProduct->jo_id = $jobOrderId;
@@ -74,6 +79,10 @@ class JobOrderService
         $joProduct->remarks = $poItem['remarks'];
         $joProduct->delivery_date = $poItem['delivery_date'];
         $joProduct->save();
+        if ($isNewItem && $joProduct->id) {
+            JoProductAttribute::where('jo_product_id', $joProduct->id)
+                ->delete();
+        }
         foreach ($joProduct->item->itemAttributes as $itemAttribute) {
             $groupId = $itemAttribute?->attribute_group_id;
             if (isset($component['attr_group_id'][$groupId])) {

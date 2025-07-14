@@ -749,7 +749,7 @@ class PurchaseReturnController extends Controller
                 $mediaFiles = $pb->uploadDocuments($request->file('attachment'), 'pb', false);
             }
             $pb->save();
-            if($pb->qty_return_type == 'accepted'){
+            if(($pb->qty_return_type == 'accepted') && ($pb->items)){
                 $invoiceLedger = self::maintainStockLedger($pb);
                 if($invoiceLedger['status'] == 'error') {
                     DB::rollBack();
@@ -1152,14 +1152,13 @@ class PurchaseReturnController extends Controller
                     $pbItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if ($isTax) {
-                        //Tax
                         $itemTax = 0;
                         $itemPrice = ($pbItem['basic_value'] - $headerDiscount - $pbItem['discount_amount']);
-                        $shippingAddress = $pb->shippingAddress;
+                        $billingAddress = $pb->billingAddress;
 
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
+                        $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
+                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'collection');
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -1405,8 +1404,15 @@ class PurchaseReturnController extends Controller
             }
 
             $pb->save();
-            if($pb->qty_return_type == 'accepted'){
+            if(($pb->qty_return_type == 'accepted') && ($pb->items)){
                 $invoiceLedger = self::maintainStockLedger($pb);
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -2877,7 +2883,7 @@ class PurchaseReturnController extends Controller
                 $itemLocations = PRItemLocation::where('header_id', $pr->id)
                     ->whereIn('detail_id', $detailIds)
                     ->delete();
-    
+
                 foreach($data['records'] as $key => $val){
                     $itemLocation = new PRItemLocation;
                     $itemLocation->header_id = @$val->issuedBy->document_header_id;
@@ -2894,7 +2900,7 @@ class PurchaseReturnController extends Controller
         }
 
         return $data;
-        
+
     }
 
     public function generateEInvoice(Request $request)
@@ -2912,7 +2918,6 @@ class PurchaseReturnController extends Controller
             $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
             if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
                 $data = MasterIndiaHelper::saveGstIn($documentHeader);
-                dd($data);
                 if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
                         'status' => 'error',

@@ -42,10 +42,10 @@ class ErpItemUniqueCode extends Model
         'action_by',
         'action_at',
     ];
-    
-    protected  $casts = [
-        'item_attributes' => 'array'
-    ];
+
+    // protected  $casts = [
+    //     'item_attributes' => 'array'
+    // ];
 
     public function morphable()
     {
@@ -65,5 +65,18 @@ class ErpItemUniqueCode extends Model
     public function storagePoint()
     {
         return $this->belongsTo(ErpWhDetail::class, 'storage_point_id');
+    }
+
+    public function getItemAttributesAttribute($value)
+    {
+        // First decode stringified JSON to string or array
+        $decoded = json_decode($value, true);
+
+        // If still a string, decode again
+        if (is_string($decoded)) {
+            return json_decode($decoded, true);
+        }
+
+        return $decoded;
     }
 }

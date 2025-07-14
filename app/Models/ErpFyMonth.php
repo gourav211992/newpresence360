@@ -6,11 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ErpFinancialYear;
-use App\Traits\DefaultGroupCompanyOrg;
 
 class ErpFyMonth extends Model
 {
-    use HasFactory,DefaultGroupCompanyOrg;
+    use HasFactory;
 
     protected $connection = 'mysql';
     protected $table='erp_fy_months';

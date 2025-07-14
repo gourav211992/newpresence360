@@ -825,7 +825,7 @@
           <div class="modal-body alertmsg text-center warning">
               <i data-feather='alert-circle'></i>
               <h2>Are you sure?</h2>
-              <p>Are you sure you want to <strong>Amendment</strong> this <strong>PO</strong>? After Amendment this action cannot be undone.</p>
+              <p>Are you sure you want to <strong>Amendment</strong> this <strong>JO</strong>? After Amendment this action cannot be undone.</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
           </div> 

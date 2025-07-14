@@ -6,12 +6,14 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\CostCenterHelper;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
+use App\Models\AuthUser;
 use App\Models\CostCenterOrgLocations;
 use App\Models\CostCenter;
 use App\Models\CostGroup;
 use App\Models\ErpStore;
 use App\Models\Ledger;
 use Illuminate\Http\Request;
+
 
 use Illuminate\Validation\Rule;
 use App\Models\Organization;
@@ -25,8 +27,24 @@ class CostCenterController extends Controller
     public function index()
     {
         // $centers = CostCenter::where('organization_id',Helper::getAuthenticatedUser()->organization_id)->orderBy('id', 'desc')->get();
-        $centers = CostCenter::get();
-        $companies = Helper::getAuthenticatedUser()->access_rights_org;
+        $centers = CostCenter::orderBy('id','desc')->get();
+        $user = Helper::getAuthenticatedUser();
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+       if ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER') {
+            $companies = Organization::where('group_id', $user->group_id)
+            ->where('status', 'active')
+                ->with('addresses')
+                ->get();
+        } else {
+            $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+            $companies = Organization::whereIn('id', $orgIds)
+                ->with('addresses')
+                ->where('status', 'active')
+                ->get();
+        }
         $organizationId = Helper::getAuthenticatedUser()->organization_id;
 
         return view('costCenter.view', compact('centers','companies','organizationId'));
@@ -38,10 +56,26 @@ class CostCenterController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
-        $companies = $user -> access_rights_org;
+        
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+       if ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER') {
+            $companies = Organization::where('group_id', $user->group_id)
+            ->where('status', 'active')
+                ->with('addresses')
+                ->get();
+        } else {
+            $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+            $companies = Organization::whereIn('id', $orgIds)
+                ->with('addresses')
+                ->where('status', 'active')
+                ->get();
+        }
         $existingCostCenters = CostCenter::pluck('name')->toArray();
         $groups = CostGroup::where('status','active')->get();
-        return view('costCenter.create', compact('groups','companies','existingCostCenters'));
+        return view('costCenter.create', compact('groups','companies','companies','existingCostCenters'));
     }
 
     /**
@@ -109,7 +143,22 @@ class CostCenterController extends Controller
     {
         $data = CostCenter::find($id);
         $user = Helper::getAuthenticatedUser();
-        $companies = $user -> access_rights_org;
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+       if ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER') {
+            $companies = Organization::where('group_id', $user->group_id)
+            ->where('status', 'active')
+                ->with('addresses')
+                ->get();
+        } else {
+            $orgIds = $user->organizations()->pluck('organizations.id')->toArray();
+            if ($user->organization_id) {
+                $orgIds[] = $user->organization_id;
+            }
+            $companies = Organization::whereIn('id', $orgIds)
+                ->with('addresses')
+                ->where('status', 'active')
+                ->get();
+        }
          $existingCostCenters = CostCenter::where('id', '!=', $id)
         ->pluck('name')
         ->toArray();
