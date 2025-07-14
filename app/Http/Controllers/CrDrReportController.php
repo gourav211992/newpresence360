@@ -74,7 +74,7 @@ class CrDrReportController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
+            $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
         }
         $cost_center_ids = null;
         if (!empty($request->cost_center_id)) {
@@ -174,7 +174,7 @@ class CrDrReportController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
+            $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
         }
 
         $cost_center_ids = null;
@@ -1185,7 +1185,7 @@ class CrDrReportController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
+            $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
         }
         $loc = null;
         $cost = null;

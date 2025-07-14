@@ -34,7 +34,7 @@ class CashflowReportController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
         if ($request->organization_id)
             $organization_id = $request->organization_id;
@@ -204,7 +204,7 @@ class CashflowReportController extends Controller
             if ($request->range) {
                 $dates = explode(' to ', $request->range);
                 $startDate = date('Y-m-d', strtotime($dates[0]));
-                $endDate = date('Y-m-d', strtotime($dates[1]));
+                $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
             }
         $createdBy= Helper::getAuthenticatedUser()->auth_user_id;
         // dd($location_id,$cost_center_ids, $request->all());

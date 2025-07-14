@@ -51,7 +51,7 @@ class TrialBalanceController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
 
         $organizations = [];
@@ -224,7 +224,7 @@ class TrialBalanceController extends Controller
 
         $dates = explode(' to ', $r->date);
         $startDate = date('Y-m-d', strtotime($dates[0]));
-        $endDate = date('Y-m-d', strtotime($dates[1]));
+        $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         $fy = Helper::getFinancialYear($startDate);
 
         $non_carry = Helper::getNonCarryGroups();
@@ -405,7 +405,7 @@ class TrialBalanceController extends Controller
 
         $dates = explode(' to ', $r->date);
         $startDate = date('Y-m-d', strtotime($dates[0]));
-        $endDate = date('Y-m-d', strtotime($dates[1]));
+        $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         $fy = Helper::getFinancialYear($startDate);
          $cost_center_ids = null;
         if (!empty($r->cost_center_id)) {
@@ -503,7 +503,7 @@ class TrialBalanceController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         } else {
             $fyear = Helper::getFinancialYear(date('Y-m-d'));
             $startDate = $fyear['start_date'];
@@ -528,7 +528,7 @@ class TrialBalanceController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
 
         $organizations = [];
@@ -636,7 +636,7 @@ class TrialBalanceController extends Controller
         if ($r->date) {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         } elseif ($r->fmonth) {
             $startDate = Carbon::parse($r->fmonth)->startOfMonth()->toDateString();
             $endDate = Carbon::parse($r->fmonth)->endOfMonth()->toDateString();

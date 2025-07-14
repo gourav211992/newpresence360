@@ -293,7 +293,8 @@ class PaymentVoucherController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
+            // $end = date('Y-m-d', strtotime($dates[1]));
+            $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
             $data = $data->whereDate('document_date', '>=', $start)->whereDate('document_date', '<=', $end);
         } else {
             $data = $data->whereDate('document_date', '>=', $fyear['start_date'])
