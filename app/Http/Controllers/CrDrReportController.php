@@ -1953,9 +1953,11 @@ class CrDrReportController extends Controller
                 ->orderBy('created_at', 'asc');
 
             if ($request->filled('date')) {
-                [$startDate, $endDate] = explode(' to ', $request->date);
+                // [$startDate, $endDate] = explode(' to ', $request->date);
+                [$startDate, $endDate] = array_pad(explode(' to ', $request->date), 2, null);
                 $start = Carbon::parse(trim($startDate))->format('Y-m-d');
-                $end = Carbon::parse(trim($endDate))->format('Y-m-d');
+                // $end = Carbon::parse(trim(isset($endDate) ? trim($endDate) : $startDate))->format('Y-m-d');
+                $end = trim($endDate) ? Carbon::parse(trim($endDate))->format('Y-m-d') : $start;
                 $data->whereBetween('document_date', [$start, $end]);
             }
 
