@@ -53,7 +53,7 @@
             </div>
         </td>
         <td>
-            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" readonly />
+            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" {{$item?->purchase_order_item_id ? 'readonly' : ''}} />
             <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
@@ -81,7 +81,7 @@
         <td>
             <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
         </td>
-        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
+        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}" {{$item?->purchase_order_item_id ? 'data-disabled="true"' : ''}} >
         </td>
         <td>
             <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">

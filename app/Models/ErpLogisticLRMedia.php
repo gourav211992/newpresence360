@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+
 
 class ErpLogisticLRMedia extends Model
 {
@@ -29,13 +31,14 @@ class ErpLogisticLRMedia extends Model
         'lorry_column',
     ];
 
-    protected $appends = ['file_url'];
+   protected $appends = ['file_url'];
 
     public function getFileUrlAttribute()
     {
-        if (isset($this->file_name)) {
-            return Storage::url($this->file_name);
-        }
-        return '';
+        return asset('storage/lorry_files/' . $this->file_name);
     }
+
+
+
+
 }

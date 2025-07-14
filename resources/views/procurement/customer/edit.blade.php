@@ -1283,8 +1283,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend
-                        {{request() -> type === 'customer' ? 'Customer' : 'Customer'}}
+                    <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Customer
                     </h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1327,9 +1326,9 @@
       <div class="modal-content">
         <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.customer') }}" data-redirect="{{ route('customer.index') }}" enctype='multipart/form-data'>
           @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($customer) ? $customer -> id : ''}}">
-          <input type="hidden" name="status" id="hidden_status" value="">
+          <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
+          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($customer) ? $customer -> id : ''}}">
+          <input type="hidden" class = "cannot_disable" name="status" id="hidden_status" value="">
          <div class="modal-header">
             <div>
                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
@@ -2501,6 +2500,9 @@
     }
     function disableAllFieldsAndTabs() {
         document.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.classList.contains('cannot_disable')) {
+                return; // Skip this element
+            }
             el.disabled = true;
             if (el.type === 'checkbox' || el.type === 'radio') {
                 el.disabled = true;
@@ -2537,6 +2539,7 @@
     }
     function amendConfirm()
     {
+        enableAmendmentFields();
         const amendButton = document.getElementById('amendShowButton');
         if (amendButton) {
             amendButton.style.display = "none";
@@ -2566,7 +2569,6 @@
 
     function openAmendConfirmModal()
     {
-        enableAmendmentFields();
         $("#amendConfirmPopup").modal("show");
     }
 

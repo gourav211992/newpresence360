@@ -21,12 +21,13 @@ class MrnDetail extends Model
         'purchase_order_item_id',
         'gate_entry_detail_id',
         'job_order_item_id',
+        'sale_order_item_id',
         'po_id',
         'jo_id',
         'ge_id',
+        'so_id',
         'vendor_asn_id',
         'vendor_asn_item_id',
-        'so_id',
         'item_id',
         'item_code',
         'item_name',
@@ -157,6 +158,11 @@ class MrnDetail extends Model
         return $this->hasMany(MrnExtraAmount::class, 'mrn_detail_id');
     }
 
+    public function teds()
+    {
+        return $this->hasMany(MrnExtraAmount::class, 'mrn_detail_id');
+    }
+
     public function extraAmountHistories()
     {
         return $this->hasMany(MrnExtraAmountHistory::class, 'mrn_detail_id');
@@ -175,6 +181,16 @@ class MrnDetail extends Model
     public function joItem()
     {
         return $this->belongsTo(JoProduct::class, 'job_order_item_id');
+    }
+
+    public function soItem()
+    {
+        return $this->belongsTo(ErpSoJobWorkItem::class, 'sale_order_item_id');
+    }
+
+    public function asnItem()
+    {
+        return $this->belongsTo(VendorAsnItem::class, 'vendor_asn_item_id');
     }
 
     public function item()
@@ -232,22 +248,27 @@ class MrnDetail extends Model
     {
         return $this->belongsTo(ErpStore::class, 'store_id');
     }
+
     public function subStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
+
     public function itemDiscount()
     {
         return $this->hasMany(MrnExtraAmount::class)->where('ted_level', 'D')->where('ted_type','Discount');
     }
+
     public function itemDiscountHistory()
     {
         return $this->hasMany(MrnExtraAmountHistory::class)->where('ted_level', 'D')->where('ted_type','Discount');
     }
+
     public function stockLedger()
     {
         return $this->hasOne(StockLedger::class, 'document_detail_id');
     }
+
     /*Header Level Discount*/
     public function headerDiscount()
     {

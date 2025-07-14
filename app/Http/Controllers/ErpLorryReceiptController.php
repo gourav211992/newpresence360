@@ -25,12 +25,15 @@ use App\Models\ErpDriver;
 use App\Models\Organization;
 use Illuminate\Http\Request;
 use Exception;
+use Auth;
 
 class ErpLorryReceiptController extends Controller
 {
    public function index(Request $request)
 {
+   
     $user = Helper::getAuthenticatedUser();
+    
     $organization = Organization::find($user->organization_id);
 
     $drivers = ErpDriver::where('organization_id', $organization->id)->where('status', 'active')->get();
@@ -45,7 +48,7 @@ class ErpLorryReceiptController extends Controller
                 'vehicleType', 
                 'consignor', 
                 'consignee', 
-                'createdBy'
+                'auth_user'
             ])
             ->withDefaultGroupCompanyOrg()
             ->orderByDesc('id');
@@ -85,7 +88,10 @@ class ErpLorryReceiptController extends Controller
             ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
             ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
             ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? '-')
-            ->addColumn('created_by', fn($row) => $row->createdBy->name ?? '-')
+             ->editColumn('created_by', function ($row) {
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    return $createdBy;
+                })
             ->editColumn('document_status', function ($row) {
                 $colors = [
                     'draft'    => 'badge-light-warning',
@@ -286,6 +292,7 @@ class ErpLorryReceiptController extends Controller
             $lr->lr_charges        = $request->lr_charges ?? 0;
             $lr->sub_total         = $request->sub_total ?? 0;
             $lr->total_charges     = $request->total_freight ?? 0;
+             $lr->remarks           = $request->remarks;
             $lr->document_status   = $request->status;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
@@ -379,6 +386,7 @@ class ErpLorryReceiptController extends Controller
         $lr->lr_charges        = $request->lr_charges ?? 0;
         $lr->sub_total         = $request->sub_total ?? 0;
         $lr->total_charges     = $request->total_freight ?? 0;
+        $lr->remarks           = $request->remarks;
         $lr->document_status   = $request->status;
         $lr->updated_by        = $user->auth_user_id ;
 

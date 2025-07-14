@@ -718,6 +718,8 @@ class VoucherController extends Controller
         $parentUrl = request()->segments()[0];
 
         $serviceAlias = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $fy_months = Helper::getCurrentFinancialYearMonths();
+        // dd($fy_months);
         // if (count($serviceAlias['services']) == 0) {
         //     return redirect()->route('/');
         // }
@@ -737,7 +739,7 @@ class VoucherController extends Controller
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
         // pass authenticate user's org locations
      $locations = InventoryHelper::getAccessibleLocations();
-         return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations','fyear'));
+         return view('voucher.create_voucher', compact('cost_centers','allledgers', 'currencies', 'orgCurrency', 'cost_centers', 'bookTypes', 'lastVoucher','allowedCVGroups','exlucdeJVGroups','locations','fyear','fy_months'));
     }
 
     function get_series($id)

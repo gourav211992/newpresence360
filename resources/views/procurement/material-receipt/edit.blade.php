@@ -958,6 +958,8 @@
     <script>
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
+        var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
+
 
         if(currentProcessType == 'jo')
         {
@@ -1519,12 +1521,20 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+            let checkAttr = 0;
             if(currentProcessType && currentProcessType != null)
             {
                 rowCount = tableRowCount;
+                let isPo = $(tr).find('[name*="purchase_order_item_id"]').val() ? 1 : 0;
+                let isJo = $(tr).find('[name*="job_order_item_id"]').val() ? 1 : 0;
+                if((!isPo) || (!isJo)) {
+                    if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+                        checkAttr = 1;
+                    }
+                }
             }
             let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&checkAttr=${checkAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {

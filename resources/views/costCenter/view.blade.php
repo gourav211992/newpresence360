@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('content')
 
+
 <!-- BEGIN: Content-->
 <div class="app-content content ">
 	<div class="content-overlay"></div>
@@ -119,9 +120,9 @@
 									<label class="form-label">Organization</label>
 									<select class="form-select" id="filter-group">
 										@foreach ($companies as $organization)
-									<option value="{{ $organization->organization->name }}"
-										{{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
-										{{ $organization->organization->name }}
+									<option value="{{ $organization->name }}"
+										{{ $organization->id == $organizationId ? 'selected' : '' }}>
+										{{ $organization->name }}
 									</option>
 								@endforeach
 

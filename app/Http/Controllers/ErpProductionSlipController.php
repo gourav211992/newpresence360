@@ -866,13 +866,20 @@ class ErpProductionSlipController extends Controller
                 }
                 if($productionSlip->fresh()->items->count()){
                     $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
-                    if($moProdItemReceipt['status'] != 'success') {
+                    if($moProdItemReceipt['status'] == 'error') {
                         DB::rollBack();
-                        return response() -> json([
-                            'status' => 'error',
-                            'message' => "Error while updating stock ledger for receipt.",
-                        ]);
-                    }               
+                        return response()->json([
+                            'message' => $moProdItemReceipt['message'],
+                            'error' => ''
+                        ], 422);
+                    }
+                    // if($moProdItemReceipt['status'] != 'success') {
+                    //     DB::rollBack();
+                    //     return response() -> json([
+                    //         'status' => 'error',
+                    //         'message' => "Error while updating stock ledger for receipt.",
+                    //     ]);
+                    // }               
                 }
 
                 // Back Update Mo Product Qty

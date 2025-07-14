@@ -1545,6 +1545,12 @@ class PoController extends Controller
                             'error' => "",
                         ], 422);
                 }
+                if($po->fresh()->po_items->isEmpty()) {
+                    $po->total_expense_value = 0;
+                    $po->total_tax_value = 0;
+                    $po->total_discount_value = 0;
+                    $po->total_item_value = 0;
+                }
             }
 
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($po->vendor->currency_id, $po->document_date);

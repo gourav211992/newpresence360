@@ -22,12 +22,12 @@ $(document)
     });
 
 $(document).on('submit', '.ajax-input-form', function (e) {
-    
+
     e.preventDefault();
     const currentFrom = this;
     var formObj = $(this);
 
-    // Disabled input ad select field temp enabled then disabled for send value in request 
+    // Disabled input ad select field temp enabled then disabled for send value in request
     formObj.find('input:disabled, select:disabled').each(function () {
         $(this).attr('data-was-disabled', true).prop('disabled', false);
     });
@@ -36,9 +36,9 @@ $(document).on('submit', '.ajax-input-form', function (e) {
     const loader = document.getElementById("erp-overlay-loader");
     loader.style.display = "flex";
 
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
+     var submitButton = (e.originalEvent && e.originalEvent.submitter)
                         || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML; 
+    var submitButtonHtml = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     submitButton.disabled = true;
     var method = $(this).attr('method');
@@ -58,7 +58,9 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         'deletedSoItemIds',
         'deletedSiItemIds',
         'deletedAttachmentIds',
-        'deletedDelivery'
+        'deletedDelivery',
+        'deletedMrnItemIds',
+        'deletedItemLocationIds'
     ];
 
     keys.forEach(key => {
@@ -101,7 +103,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         for (let index = 0; index < items.length; index++) {
             data.append(`item_attributes[${index}]`, items[index].getAttribute('selected-attribute'));
         }
-        
+
     }
     if (this.classList.contains('material_issue')) {
         const items = document.getElementsByClassName('comp_item_code');
@@ -137,7 +139,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         const itemBoms = document.getElementsByClassName('dynamic_bom_div');
         for (let index = 0; index < itemBoms.length; index++) {
             let bomDetails = itemBoms[index].getAttribute('bom_details');
-            
+
             try {
                 bomDetails = JSON.parse(bomDetails); // Ensure it's parsed JSON
                 data.append(`item_bom_details[${index}]`, JSON.stringify(bomDetails));
@@ -217,7 +219,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
                     location.reload();
                 }
             }, 1500);
-            
+
         },
         error: function (error) {
             if (currentFrom.dataset.completionfunction) {
@@ -260,50 +262,50 @@ $(document).on('submit', '.ajax-input-form', function (e) {
                         } else {
                             console.log('Tab link with href "' + tabId + '" not found in the DOM.');
                         }
-                    } 
+                    }
                 });
                 function getTabIdForField(field) {
                     let tabId = null;
                     $('.tab-pane').each(function () {
                         const tabPaneId = $(this).attr('id');
                         const isFieldInsideTab = $(this).find('[name="' + field + '"]').length > 0;
-                
+
                         if (isFieldInsideTab) {
                             tabId = tabPaneId;
-                            return false; 
+                            return false;
                         }
                     });
                     return tabId;
                 }
                 function getTabIdForNestedField(field) {
-                    const fields = field.split('.'); 
+                    const fields = field.split('.');
                     let tabId = null;
                     $('.tab-pane').each(function () {
                         const tabPaneId = $(this).attr('id');
                         let isFieldInsideTab = false;
-                
+
                         $(this).find('input, select').each(function () {
                             const name = $(this).attr('name');
                             if (name && name.startsWith(fields[0])) {
                                 isFieldInsideTab = true;
-                                return false; 
+                                return false;
                             }
                         });
-                
+
                         if (isFieldInsideTab) {
                             tabId = tabPaneId;
-                            return false; 
+                            return false;
                         }
                     });
-                
+
                     return tabId;
                 }
                 function getTabId(field) {
-                    let tabId = getTabIdForField(field);  
+                    let tabId = getTabIdForField(field);
                     if (tabId) {
                         return tabId;
                     } else {
-                        return getTabIdForNestedField(field); 
+                        return getTabIdForNestedField(field);
                     }
                 }
 
@@ -376,35 +378,35 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
                 break;
             case 'mo':
                 cleanupPatterns.push(
-                    /^components\\[\\d+\\]\\[.*\\]$/,  
-                    /^component\\[\\d+\\]\\[.*\\]$/,  
-                    /^instructions\[\d+](\[[^\]]+])+$/,        
+                    /^components\\[\\d+\\]\\[.*\\]$/,
+                    /^component\\[\\d+\\]\\[.*\\]$/,
+                    /^instructions\[\d+](\[[^\]]+])+$/,
                 );
                 break;
             case 'pslip':
                 cleanupPatterns.push(
                     /^cons\[\d+\]\[[^\]]+\]$/,
                     /^instructions\[\d+\]\[[^\]]+\]$/,
-                    /^so_doc\d+$/,       
-                    /^customer\d+$/,       
-                    /^customer_id\d+$/,       
-                    /^item_code\d+$/,       
-                    /^item_name\d+$/,       
-                    /^uom_id\d+$/,       
-                    /^mo_product_id\d+$/,       
-                    /^mo_id\d+$/,       
-                    /^so_id\d+$/,       
-                    /^so_item_id\d+$/,       
-                    /^station_id\d+$/,       
-                    /^station_id\d+$/,       
-                    /^item_so_qty_\d+$/,       
-                    /^item_qty\d+$/,       
-                    /^item_accepted_qty\d+$/,       
-                    /^item_sub_prime_qty\d+$/,       
-                    /^item_rejected_qty\d+$/,       
-                    /^item_remarks\d+$/,       
+                    /^so_doc\d+$/,
+                    /^customer\d+$/,
+                    /^customer_id\d+$/,
+                    /^item_code\d+$/,
+                    /^item_name\d+$/,
+                    /^uom_id\d+$/,
+                    /^mo_product_id\d+$/,
+                    /^mo_id\d+$/,
+                    /^so_id\d+$/,
+                    /^so_item_id\d+$/,
+                    /^station_id\d+$/,
+                    /^station_id\d+$/,
+                    /^item_so_qty_\d+$/,
+                    /^item_qty\d+$/,
+                    /^item_accepted_qty\d+$/,
+                    /^item_sub_prime_qty\d+$/,
+                    /^item_rejected_qty\d+$/,
+                    /^item_remarks\d+$/,
                     /^item_id\\[\\]$/
-                    // /^.*_\d+$/                         
+                    // /^.*_\d+$/
                 );
                 break;
             default:
@@ -448,7 +450,7 @@ $(document).on('click', '.submit-button', (e) => {
 });
 
 $('#save-draft-button').on('click', function (e) {
-    $(this).data('clicked', true); 
+    $(this).data('clicked', true);
     document.getElementById('document_status').value = 'draft';
     $('.ajax-input-form').submit();
     $(this).data('clicked', false);
@@ -456,7 +458,7 @@ $('#save-draft-button').on('click', function (e) {
 
 $('#submit-button').on('click', function (e) {
     $(this).data('clicked', false);
-    document.getElementById('document_status').value = 'submitted'; 
+    document.getElementById('document_status').value = 'submitted';
     $('.ajax-input-form').submit();
 });
 
@@ -469,14 +471,14 @@ function show_validation_error(msg) {
 
     $.each($data, function (index, value) {
         var name = index.replace(/\./g, "][");
-        
+
         if (index.indexOf(".") !== -1) {
             name = name + "]";
             name = name.replace("]", "");
         }
-        if (index === "sub_types" || index === "sub_types[]") {  
+        if (index === "sub_types" || index === "sub_types[]") {
             if ($('form [name="sub_types[]"]:checked').length === 0 && !$('#tradedItemCheckbox').is(':checked') && !$('#assetCheckbox').is(':checked')) {
-                var checkboxGroupContainer = $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing'); 
+                var checkboxGroupContainer = $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing');
                 if (checkboxGroupContainer.find('.ajax-validation-error-span').length === 0) {
                   checkboxGroupContainer.after(
                     '<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">Please select at least one subtype.</span>'
@@ -487,7 +489,7 @@ function show_validation_error(msg) {
                 $('.ajax-validation-error-span').remove();
                 $('form [name="sub_types[]"]').first().closest('.demo-inline-spacing').removeClass("is-invalid error");
               }
-              
+
         } else if (name.indexOf("[]") !== -1) {
             $('form [name="' + name + '"]')
                 .last()
@@ -562,11 +564,11 @@ function show_validation_error(msg) {
                             );
                     }
             } else if ($('form [name="' + name + '"]').get(0)) {
-                
+
                 if (
                     $('form [name="' + name + '"]').get(0).tagName == "SELECT"
                 ) {
-                   
+
                     $('form [name="' + name + '"]')
                         // .closest(".form-group")
                         .addClass("is-invalid error");
@@ -684,12 +686,12 @@ $(document).ready(function() {
     $('input[name="compliance[gst_applicable]"]').on('change', function() {
         const currentGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
         if (currentGstApplicable === 1 && previousGstApplicable === 0) {
-            handleGstApplicableChange(); 
+            handleGstApplicableChange();
             enableGstFields();
         }else {
-            disableGstFields(); 
+            disableGstFields();
         }
-        previousGstApplicable = currentGstApplicable; 
+        previousGstApplicable = currentGstApplicable;
     });
 });
 
@@ -746,29 +748,29 @@ $('#fetchGstDetails').click(function() {
     fetchGstDetailsByGstin(gstinNo);
 });
 function updateRowIndexes() {
-    var $rows = $('#address-table-body tr'); 
+    var $rows = $('#address-table-body tr');
     $('#address-table-body .address-row').each(function(index) {
         $(this).find('.index').text(index + 1);
         $(this).find('input, select').each(function() {
             $(this).attr('name', $(this).attr('name').replace(/\[\d+\]/, `[${index}]`));
         });
         if ($rows.length === 1) {
-            $(this).find('.delete-address').hide(); 
-            $(this).find('.add-address').show(); 
+            $(this).find('.delete-address').hide();
+            $(this).find('.add-address').show();
         } else {
-            $(this).find('.delete-address').show(); 
-            $(this).find('.add-address').toggle(index === 0); 
-        }  
+            $(this).find('.delete-address').show();
+            $(this).find('.add-address').toggle(index === 0);
+        }
     });
 }
-   
+
 function initializeAutocomplete($row) {
     // Country Autocomplete
     $row.find('.country-input').autocomplete({
         source: function(request, response) {
             $.get('/countries', { term: request.term }, function(data) {
                 response(data.data.countries.map(country => ({
-                    label: country.label, 
+                    label: country.label,
                     value: country.value,
                     id: country.value
                 })));
@@ -777,7 +779,7 @@ function initializeAutocomplete($row) {
         minLength: 0,
         select: function(event, ui) {
             $(this).val(ui.item.label);
-            $(this).closest('tr').find('.country-id').val(ui.item.id);  
+            $(this).closest('tr').find('.country-id').val(ui.item.id);
             const $stateInput = $(this).closest('tr').find('.state-input');
             $stateInput.val('').removeAttr('data-state-id');
             const $cityInput = $(this).closest('tr').find('.city-input');
@@ -811,7 +813,7 @@ function initializeAutocomplete($row) {
         minLength: 0,
         select: function(event, ui) {
             $(this).val(ui.item.label);
-            $(this).closest('tr').find('.state-id').val(ui.item.id);  
+            $(this).closest('tr').find('.state-id').val(ui.item.id);
             const $cityInput = $(this).closest('tr').find('.city-input');
             $cityInput.val('').removeAttr('data-city-id');
             const $pincodeInput = $(this).closest('tr').find('input[name*="[pincode]"]');
@@ -842,7 +844,7 @@ function initializeAutocomplete($row) {
         minLength: 0,
         select: function(event, ui) {
             $(this).val(ui.item.label);
-            $(this).closest('tr').find('.city-id').val(ui.item.id); 
+            $(this).closest('tr').find('.city-id').val(ui.item.id);
             return false;
         }
     }).focus(function() {
@@ -866,8 +868,8 @@ function initializeAutocomplete($row) {
         },
         minLength: 0,
         select: function(event, ui) {
-            $(this).val(ui.item.label);  
-            $(this).closest('tr').find('input[name*="[pincode_master_id]"]').val(ui.item.id);  
+            $(this).val(ui.item.label);
+            $(this).closest('tr').find('input[name*="[pincode_master_id]"]').val(ui.item.id);
             return false;
         }
     }).focus(function() {
@@ -891,8 +893,8 @@ function applyCapsLock() {
         $(this).val($(this).val().toUpperCase());
     });
     $('input[type="text"], input[type="number"]').on('input', function() {
-        var value = $(this).val().toUpperCase();  
-        $(this).val(value); 
+        var value = $(this).val().toUpperCase();
+        $(this).val(value);
     });
 }
 function fetchGstDetailsByGstin(gstinNo) {
@@ -935,9 +937,9 @@ function fetchGstDetailsByGstin(gstinNo) {
                 });
 
                 getStateIdByCode(StateCode, function(stateId, stateName) {
-                   
+
                     getCountryIdAndNameByState(stateId, function(countryId, countryName) {
-                   
+
                         getPincodeIdByCode(AddrPncd, stateId, function(pincodeMasterId, pincode) {
                             const $existingRow = findMatchingRow(countryId, stateId, pincodeMasterId, fullAddress);
                             if ($existingRow) {
@@ -977,7 +979,7 @@ function findMatchingRow(countryId, stateId, pincodeMasterId, fullAddress) {
         const rowAddress = $row.find('input[name*="[address]"]').val();
         if (rowCountryId == countryId && rowStateId == stateId && rowPincodeMasterId == pincodeMasterId && rowAddress === fullAddress||rowCountryId == countryId && rowStateId == stateId ) {
             matchingRow = $row;
-            return false; 
+            return false;
         }
     });
 
@@ -1028,8 +1030,8 @@ function addNewRow() {
 }
 
 function handleErrorResponse(response) {
-    const errorMessage = response.checkGstIn?.ErrorDetails?.[0]?.ErrorCode === "3001" 
-        ? 'Invalid GST Number' 
+    const errorMessage = response.checkGstIn?.ErrorDetails?.[0]?.ErrorCode === "3001"
+        ? 'Invalid GST Number'
         : response.errorMsg || "Unable to fetch details.";
     $('#gstinDetails').html(errorMessage).css('color', 'red');
 }
@@ -1053,7 +1055,7 @@ function getStateIdByCode(stateCode, callback,rowIndex) {
         },
         error: function(xhr, status, error) {
             const errorMessage = xhr.responseJSON?.message || 'Error fetching state details.';
-            callback(null, null, errorMessage); 
+            callback(null, null, errorMessage);
         }
     });
 }
@@ -1072,12 +1074,12 @@ function getCountryIdAndNameByState(stateId, callback,rowIndex) {
             if (response.country_id) {
                 callback(response.country_id, response.country_name);
             } else {
-                callback(null, null, response.message); 
+                callback(null, null, response.message);
             }
         },
         error: function(xhr, status, error) {
             const errorMessage = xhr.responseJSON?.message || 'Error fetching country details.';
-            callback(null, null, errorMessage); 
+            callback(null, null, errorMessage);
         }
     });
 }
@@ -1096,12 +1098,12 @@ function getPincodeIdByCode(pincode, stateId, callback,rowIndex) {
             if (response.pincode_id) {
                 callback(response.pincode_id, response.pincode);
             } else {
-                callback(null, null, response.message); 
+                callback(null, null, response.message);
             }
         },
         error: function(xhr, status, error) {
             const errorMessage = xhr.responseJSON?.message || 'Error fetching pincode details.';
-            callback(null, null, errorMessage); 
+            callback(null, null, errorMessage);
         }
     });
 }

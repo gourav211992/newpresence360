@@ -437,10 +437,10 @@ class MasterIndiaHelper
         ->pluck('config_value', 'config_key');
 
         $authCredentials = [
-            'client_id'    => $configurations['e_invoice_client_id'] ?? env('EINVOICE_CLIENT_ID', ''),
-            'client_secret' => $configurations['e_invoice_client_secret'] ?? env('EINVOICE_CLIENT_SECRET', ''),
-            'user_name'    => $configurations['e_invoice_client_username'] ?? env('EINVOICE_USER_NAME', ''),
-            'password'     => $configurations['e_invoice_client_password'] ?? env('EINVOICE_PASSWORD', ''),
+            'client_id'    => $configurations['e_invoice_client_id'] ?? config('app.masterindia.client_id'),
+            'client_secret' => $configurations['e_invoice_client_secret'] ?? config('app.masterindia.client_secret'),
+            'user_name'    => $configurations['e_invoice_client_username'] ?? config('app.masterindia.user_name'),
+            'password'     => $configurations['e_invoice_client_password'] ?? config('app.masterindia.password'),
             'gstin'        => $organization->gst_number ?? env('EINVOICE_GSTIN', ''),
         ];
 

@@ -454,9 +454,10 @@
                                  <i data-feather="plus"></i> Add New Item
                                  </a>
                                  @else
-                                 <a href="#" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
-                                 <i data-feather="x-circle"></i> Delete
-                                 </a>
+                                 <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
+                                    <i data-feather="x-circle"></i> Delete
+                                </button>
+
                                  <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
                                  <i data-feather="plus"></i> Add New Item
                                  </a>
@@ -635,7 +636,7 @@
                                     <div class="col-md-4">
                                         <div class="mb-1">
                                             <label class="form-label">Upload Document</label>
-                                            <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_lorry_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple >
+                                            <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_lorry_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
                                             <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                         </div>
                                     </div> 
@@ -644,36 +645,36 @@
                                         </div>
                                     </div>
                                     </div>
-                                    @if($lr->mediaAttachments && $lr->mediaAttachments->count())
-                                    <div class="row">
-                                        @foreach($lr->mediaAttachments as $media)
-                                            <div class="col-md-3 mb-2">
-                                                @php
-                                                    $url = asset('storage/' . $media->file_name);
-                                                    $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
-                                                @endphp
+                             @if($lr->mediaAttachments && $lr->mediaAttachments->count())
+                                <div class="row">
+                                    @foreach($lr->mediaAttachments as $media)
+                                        @php
+                                            $url = $media->file_url;
+                                            $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
+                                        @endphp
 
-                                                @if(in_array($extension, ['jpg', 'jpeg', 'png']))
-                                                    <img src="{{ $url }}" alt="Attachment" class="img-fluid border rounded" style="max-height: 150px;">
-                                                @elseif(in_array($extension, ['pdf']))
-                                                    <a href="{{ $url }}" target="_blank" class="btn btn-outline-primary w-100">
-                                                        View PDF
-                                                    </a>
-                                                @else
-                                                    <a href="{{ $url }}" target="_blank" class="btn btn-outline-secondary w-100">
-                                                        {{ $media->file_name }}
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
+                                        <div class="col-md-3 mb-2">
+                                            @if(in_array($extension, ['jpg', 'jpeg', 'png', 'webp']))
+                                                <img src="{{ $url }}" alt="Attachment" class="img-fluid border rounded" style="max-height: 150px;">
+                                            @elseif($extension === 'pdf')
+                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-primary w-100">
+                                                    📄 View PDF
+                                                </a>
+                                            @else
+                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-secondary w-100">
+                                                    📎 {{ $media->file_name }}
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
 
                             </div>
                                  <div class="col-md-12">
                                     <div class="mb-1">  
                                        <label class="form-label">Final Remarks</label> 
-                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks">{{$lr->remarks ?? '' }}</textarea> 
+                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>{{$lr->remarks ?? '' }}</textarea> 
                                     </div>
                                  </div>
                               </div>
@@ -972,8 +973,11 @@ $('#addRowBtn').on('click', function () {
         $('#lrCharges, #freightCharges').on('input', calculateTotals);
         $(document).on('input', 'input[name*="[freight]"]', calculateTotals);
     });
-    $(document).on('click', '#deleteSelected', function (e) {
-        e.preventDefault();
+    
+    // delete row script
+$(document).on('click', '#deleteSelected', function (e) {
+    e.preventDefault(); 
+    e.stopImmediatePropagation(); 
 
     const selectedRows = $('.rowCheckbox:checked').closest('tr');
 
@@ -985,9 +989,8 @@ $('#addRowBtn').on('click', function () {
             confirmButtonText: 'OK'
         });
         return;
-    }
+    }   
 
-    // Optional: Confirmation
     Swal.fire({
         icon: 'question',
         title: 'Are you sure?',
@@ -997,7 +1000,18 @@ $('#addRowBtn').on('click', function () {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            calculateTotals(); 
+            applyFreightToRows(); 
+            calculateTotals();
+        }
+    });
+});
+
+$(document).ready(function () {
+    $('#item-table-body tr').each(function () {
+        const $row = $(this);
+        const locationId = $row.find('input[name*="[location_id]"]').val();
+        if (locationId && globalSourceId) {
+            checkFreePoint(locationId, globalSourceId, $row, true); 
         }
     });
 });
@@ -1131,7 +1145,6 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
 //customer autocomplete
 const customerList = [
-   @if($customers->isNotEmpty())
     @foreach($customers as $customer)
         {
             label: "{{ addslashes($customer->company_name) }}",
@@ -1139,9 +1152,7 @@ const customerList = [
             id: {{ $customer->id }}
         },
     @endforeach
-    @else
-    null
-    @endif
+  
 ];
 
 $(document).on('focus', '.customer-autocomplete', function () {
@@ -1164,7 +1175,6 @@ $(document).on('focus', '.customer-autocomplete', function () {
 });
     //drivers autocomplete
 const driverList = [
-     @if($drivers->isNotEmpty())
     @foreach($drivers as $driver)
         {
             label: "{{ addslashes($driver->name) }}",
@@ -1172,9 +1182,7 @@ const driverList = [
             id: {{ $driver->id }}
         },
     @endforeach
-    @else
-    null
-@endif
+
 ];
 
 $(document).on('focus', '.driver-autocomplete', function () {
@@ -1324,10 +1332,11 @@ let activeFreePoint = 0;
 let fixedAmount = null;
 let sourceRouteId = null;
 let freeAmount = null;
+let globalSourceId = $('#sourceIdInput').val();
 
 let pricingCache = {}
 
-  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null) {
+  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
     $.ajax({
@@ -1344,109 +1353,84 @@ let pricingCache = {}
             const sourceAmount = parseInt(res.source_amount || 0);
             $('#sourceDefaultAmountGlobal').val(sourceAmount);
 
-            if (res.status === 'both_exist') {
-                $('#activeFreePointGlobal').val(parseInt(res.free_point));
-                $('#fixedAmountGlobal').val(parseInt(res.amount));
-                $('#freeAmountGlobal').val(parseInt(res.free_amount));
-
-                pricingCache[locationId] = {
-                    type: 'both',
-                    free_point: parseInt(res.free_point),
-                    amount: parseInt(res.amount),
-                    freeAmount: parseInt(res.free_amount),
-                };
-            }
-
-            if (res.status === 'exists_in_fixed') {
-                $('#activeFreePointGlobal').val(0);
-                $('#fixedAmountGlobal').val(parseInt(res.amount));
-
-                pricingCache[locationId] = {
-                    type: 'fixed',
-                    amount: parseInt(res.amount),
-                };
-            }
-
-          if (res.status === 'free_point') {
-            $('#activeFreePointGlobal').val(parseInt(res.free_point));
-            $('#fixedAmountGlobal').val(0);
-            $('#freeAmountGlobal').val(parseInt(res.free_amount));
-
+            // Store response to cache
             pricingCache[locationId] = {
-                type: 'free',
-                free_point: parseInt(res.free_point),
-                amount: 0,
-                freeAmount: parseInt(res.free_amount),
+                type: res.status,
+                free_point: parseInt(res.free_point || 0),
+                amount: parseInt(res.amount || 0),
+                freeAmount: parseInt(res.free_amount || 0),
             };
 
-            // ✅ Optional direct bind if this row is within free_point range
-            if ($targetRow && $targetRow.length) {
-                const currentIndex = $targetRow.index(); 
-                if (currentIndex < parseInt(res.free_point)) {
-                    $targetRow.find('input[name*="[freight]"]').val(0);
-                } else {
-                    $targetRow.find('input[name*="[freight]"]').val(res.free_amount);
-                }
-            }
-        }
+            // Set globals
+            $('#activeFreePointGlobal').val(pricingCache[locationId].free_point || 0);
+            $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
+            $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-
-            if (res.status === 'not_exist') {
-                $('#activeFreePointGlobal').val(0);
-                $('#fixedAmountGlobal').val(0);
-
-                pricingCache[locationId] = {
-                    type: 'none',
-                    amount: 0,
-                };
-            }
-
-            // 🔥 Only apply freight to the selected row
-            applyFreightToRows($targetRow);
+            // Apply freight
+            applyFreightToRows(); // apply to all rows in edit
         }
     });
 }
 
-function applyFreightToRows() {
+
+function applyFreightToRows($specificRow = null) {
     const $rows = $('#item-table-body').find('tr');
     const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
-    const sourceDefaultAmount = parseInt($('#sourceDefaultAmountGlobal').val() || 0);
+    const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
 
-    $rows.each(function (index) {
-        const $row = $(this);
+    const processRow = ($row, index) => {
         const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
         const $freightInput = $row.find('input[name*="[freight]"]');
 
         if (!locationId) return;
 
-        const pricing = pricingCache[locationId];
+       const pricing = {
+                type: res.status,
+                free_point: parseInt(res.free_point || 0),
+                amount: parseFloat(res.amount || 0),
+                freeAmount: parseFloat(res.free_amount || 0),
+            };
+
+            pricingCache[locationId] = pricing;
+
+
         if (pricing) {
-            const currentValue = $freightInput.val();
-            // ✅ Only overwrite if empty or zero
-            if (currentValue === '' || parseFloat(currentValue) === 0) {
-                if ((pricing.type === 'both' || pricing.type === 'free') && index < activeFreePoint) {
-                    $freightInput.val(0);
-                } else if ((pricing.type === 'both' || pricing.type === 'fixed') && index >= activeFreePoint) {
-                    if (pricing.amount && parseFloat(pricing.amount) > 0) {
-                        $freightInput.val(pricing.amount);
-                    } else {
-                        $freightInput.val(pricing.freeAmount);
-                    }
+            if (pricing.type === 'both_exist') {
+                if (index < activeFreePoint) {
+                    alert(pricing.amount);
+                    $freightInput.val(0); 
                 } else {
-                    $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
+                    
+                   $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
                 }
-            }
-        } else {
-            const currentValue = $freightInput.val();
-            if (currentValue === '' || parseFloat(currentValue) === 0) {
+            } else if (pricing.type === 'free_point') {
+                if (index < activeFreePoint) {
+                    $freightInput.val(0);
+                } else {
+                    $freightInput.val(parseFloat(pricing.freeAmount));
+                }
+            } else if (pricing.type === 'exists_in_fixed') {
+                $freightInput.val(parseFloat(pricing.amount));
+            } else {
+                // fallback
                 $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
             }
+        } else {
+            // No pricing for this location
+            $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
+    };
 
-        calculateTotals(); 
-    });
+    if ($specificRow && $specificRow.length) {
+        processRow($specificRow, $specificRow.index());
+    } else {
+        $rows.each(function (index) {
+            processRow($(this), index);
+        });
+    }
+
+    calculateTotals();
 }
-
 
 
 function handleLocationUpdate($input) {
@@ -1455,7 +1439,7 @@ function handleLocationUpdate($input) {
     const sourceId = $('#sourceIdInput').val();
 
     if (locationId && sourceId) {
-        checkFreePoint(locationId, sourceId, $row); // ✅ pass row
+        checkFreePoint(locationId, sourceId, $row); 
     }
 }
 
@@ -1761,17 +1745,16 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
             }
         }
 
-        // Stop if there's an invalid file
+      
         if (invalidFile && invalidFile.message) {
             Swal.fire({
                 title: 'Error!',
                 text: invalidFile.message,
                 icon: 'error',
             });
-            element.value = ''; // Reset file input
+            element.value = ''; 
             return;
         } else {
-            // Add all files to DataTransfer and rebuild the preview
             allFiles.forEach((file, i) => {
                 dt.items.add(file);
                 if (!fileInputData[inputId].some(f => f.name === file.name && f.size === file.size)) {
@@ -1780,18 +1763,13 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
                 }
             });
 
-            // Update the global object for this input
             fileInputData[inputId] = allFiles.reduce((unique, file) => {
                 if (!unique.some(f => f.name === file.name && f.size === file.size)) {
                     unique.push(file);
                 }
                 return unique;
             }, []);
-
-            // Update the file input's FileList
             input.files = dt.files;
-
-            // Reset and re-render SVG icons (if applicable)
             feather.replace({
                 width: 20,
                 height: 20,

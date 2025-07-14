@@ -1217,8 +1217,8 @@
       <div class="modal-content">
         <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.item') }}" data-redirect="{{ route('item.index') }}" enctype='multipart/form-data'>
           @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($item) ? $item -> id : ''}}">
+          <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
+          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($item) ? $item -> id : ''}}">
          <div class="modal-header">
             <div>
                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
@@ -2959,6 +2959,7 @@
 
     function amendConfirm()
     {
+        enableAmendmentFields();
         const amendButton = document.getElementById('amendShowButton');
         if (amendButton) {
             amendButton.style.display = "none";
@@ -2990,7 +2991,6 @@
 
     function openAmendConfirmModal()
     {
-        enableAmendmentFields();
         $("#amendConfirmPopup").modal("show");
     }
 

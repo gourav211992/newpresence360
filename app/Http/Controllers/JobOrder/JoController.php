@@ -886,7 +886,7 @@ class JoController extends Controller
                     $component = $request->all()['components'][$_key] ?? [];
                     if(isset($component['jo_product_id']) && $component['jo_product_id']) {
                         $joProduct = JoProduct::where('id', $component['jo_product_id'])->first();
-                        if(floatval($joProduct->inventory_uom_id) == $component['uom_id']) {
+                        if(intval($joProduct->inventory_uom_id) == intval($component['uom_id']) && intval($component['item_id']) == intval($joProduct->item_id)) {
                             continue;
                         }
                     }
@@ -949,6 +949,12 @@ class JoController extends Controller
                             'message' => 'Please add atleast one row in component table.',
                             'error' => "",
                         ], 422);
+                }
+                if($po->fresh()->joProducts->isEmpty()) {
+                    $po->total_expense_value = 0;
+                    $po->total_tax_value = 0;
+                    $po->total_discount_value = 0;
+                    $po->total_item_value = 0;
                 }
             }
 

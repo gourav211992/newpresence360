@@ -326,7 +326,7 @@
                                                     <input type="text" @if(isset($slip)) value="{{$slip->is_last_station == true ? 'Final' : 'WIP'}}" @endif id="mo_type_name" placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" name="mo_type_name" />
                                                 </div>
                                             </div> 
-                                            <div class="col">
+                                            <div class="col {{ isset($slip) && optional($slip->mo->station)->name ? '' : 'd-none' }}">
                                                 <div class="mb-1">
                                                     <label class="form-label">Station </label> 
                                                     <input type="text" @if(isset($slip)) value="{{$slip?->mo?->station?->name}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="station_name" name="station_name"  /> 
@@ -3481,9 +3481,9 @@ function openHeaderPullModal(type = null)
                         });
                     }
                     if($("#station_name").val()) {
-                        $("#station_name").closest('div').removeClass('d-none');
+                        $('#station_name').closest('.mb-1').closest('.col').removeClass('d-none');
                     } else {
-                        $("#station_name").closest('div').addClass('d-none');
+                        $('#station_name').closest('.mb-1').closest('.col').addClass('d-none');
 
                     }
                     if(currentOrders.mo.is_last_station) {
@@ -3508,9 +3508,9 @@ function openHeaderPullModal(type = null)
                     $("#is_last_station").val("");
                     $("#mo_station_id").val("");
                     if($("#station_name").val()) {
-                        $("#station_name").closest('div').removeClass('d-none');
+                        $('#station_name').closest('.mb-1').closest('.col').removeClass('d-none');
                     } else {
-                        $("#station_name").closest('div').addClass('d-none');
+                        $('#station_name').closest('.mb-1').closest('.col').addClass('d-none');
 
                     }
                     console.error('Error fetching customer data:', xhr.responseText);
@@ -3527,9 +3527,9 @@ function openHeaderPullModal(type = null)
             $("#is_last_station").val("");
             $("#mo_station_id").val("");
             if($("#station_name").val()) {
-                $("#station_name").closest('div').removeClass('d-none');
+                $('#station_name').closest('.mb-1').closest('.col').removeClass('d-none');
             } else {
-                $("#station_name").closest('div').addClass('d-none');
+                $('#station_name').closest('.mb-1').closest('.col').addClass('d-none');
 
             }
             Swal.fire({
