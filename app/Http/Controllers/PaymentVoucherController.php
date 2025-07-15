@@ -379,6 +379,7 @@ class PaymentVoucherController extends Controller
         $cached = Cache::get($token, ['grouped' => [], 'raw' => []]);
 
         $selectedRows = $cached['grouped'];
+        $fy_months = Helper::getCurrentFinancialYearMonths();
         $rawItemData = $cached['raw']; 
         return view('paymentVoucher.createPaymentVoucher',
             compact(
@@ -395,7 +396,7 @@ class PaymentVoucherController extends Controller
                 'locations',
                 'fyear',
                 'selectedRows',
-                'rawItemData',
+                'rawItemData','fy_months'
             )
         );
     }

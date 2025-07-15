@@ -334,16 +334,9 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
     Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
     Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
+    // close month fy
+    Route::get('/close-month-fy', [CloseFyController::class,'monthFyIndex'])->name('close-month-fy');
 
-
-    // closefy
-    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
-    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
-    Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
-    Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
-    Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
-    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
-    Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
 
 
     Route::resource('cost-group', CostGroupController::class)->except(['show']);

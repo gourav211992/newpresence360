@@ -15,7 +15,7 @@
    <td>{{$attribute->attributeGroup->name}}</td>
    <td>
     <input type="hidden" name="comp_attribute[{{$rowCount}}][item_id]" value="{{$item->id}}">
-    <input value="{{$selectedValue}}" name="comp_attribute[{{$rowCount}}][item_name]" type="text" class="form-control mw-100 ledgerselecct attr-autocomplete" data-row="{{$rowCount}}" data-attr-group-id="{{ $attrGroupId }}" placeholder="Type to search {{ $attrGroupName }}..." id="autocomplete_input_{{$rowKey}}" autocomplete="off">
+    <input value="{{$selectedValue}}" name="comp_attribute[{{$rowCount}}][item_name]" type="text" class="form-control mw-100 ledgerselecct attr-autocomplete" data-row="{{$rowCount}}" data-attr-group-id="{{ $attrGroupId }}" placeholder="Type to search {{ $attrGroupName }}..." id="autocomplete_input_{{$rowKey}}" autocomplete="off" {{ $checkAttr ? 'disabled' : '' }}>
    </td>
 </tr>
 @endforeach

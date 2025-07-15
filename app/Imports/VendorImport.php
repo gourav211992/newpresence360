@@ -15,6 +15,7 @@ use Illuminate\Validation\Rule;
 use App\Helpers\ConstantHelper;
 use App\Helpers\ServiceParametersHelper;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\EInvoiceHelper;
 use Exception;
 use stdClass;
 use Illuminate\Support\Collection;
@@ -123,18 +124,18 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
             $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3)); 
 
             $gstinRegDate = $row['gstin_reg_date'] ?? null;
-            $gstinRegistrationDate = null;
+            // $gstinRegistrationDate = null;
             
-            if ($gstinRegDate) {
-                if (is_numeric($gstinRegDate)) {
-                    $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                        ->addDays($gstinRegDate - 2) 
-                        ->format('Y-m-d');
-                } else {
-                    $gstinRegistrationDate = $gstinRegDate; 
-                    \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
-                }
-            }
+            // if ($gstinRegDate) {
+            //     if (is_numeric($gstinRegDate)) {
+            //         $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
+            //             ->addDays($gstinRegDate - 2) 
+            //             ->format('Y-m-d');
+            //     } else {
+            //         $gstinRegistrationDate = $gstinRegDate; 
+            //         \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
+            //     }
+            // }
             
             $tdsWefDate = $row['tds_wef_date'] ?? null;
             $tdsWefDatee = null;
@@ -179,8 +180,6 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'credit_days' => $row['credit_days'] ?? null,
                 'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
                 'gstin_no' => $row['gstin_no'] ?? null,
-                'gst_registered_name' => $row['gst_registered_name'] ?? null,
-                'gstin_registration_date' => $gstinRegistrationDate,
                 'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0, 
                 'wef_date' =>  $tdsWefDatee, 
                 'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
@@ -264,7 +263,7 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         } 
 
-        $organizationType = $uploadedVendor->organization_type ?? 'Private Ltd'; 
+        $organizationType = $uploadedVendor->organization_type ?? 'Private Limited'; 
         try {
             $organizationTypeId = $this->service->getOrganizationTypeId($organizationType);
         } catch (Exception $e) {
@@ -285,13 +284,37 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         } 
     
-        if (!empty($uploadedVendor->country) && !empty($uploadedVendor->state) && !empty($uploadedVendor->city)) {
+        if (!empty($uploadedVendor->country) || !empty($uploadedVendor->state) || !empty($uploadedVendor->city)) {
             try {
-                $locationIds = $this->service->getLocationIds($uploadedVendor->country, $uploadedVendor->state, $uploadedVendor->city);
+                $locationIds = $this->service->getLocationIds($uploadedVendor->country, $uploadedVendor->state, $uploadedVendor->city, $uploadedVendor->pin_code);
+
+                if (!empty($locationIds['country_id'])) {
+                    $countryId = $locationIds['country_id'];
+                }
+
+                if (!empty($locationIds['state_id'])) {
+                    $stateId = $locationIds['state_id'];
+                }
+
+                if (!empty($locationIds['city_id'])) {
+                    $cityId = $locationIds['city_id'];
+                }
+
+                if (!empty($locationIds['pincode_id'])) {
+                    $pincodeId = $locationIds['pincode_id'];
+                }
+
+                if (!empty($locationIds['errors'])) {
+                    foreach ($locationIds['errors'] as $field => $message) {
+                        $errors[] = $message;
+                    }
+                }
+
             } catch (Exception $e) {
                 $errors[] = 'Error while fetching location: ' . $e->getMessage();
             }
-        } 
+        }
+
         $vendorSubType = $uploadedVendor->vendor_sub_type === 'T' ? 'Transporter' : 'Regular';
     
         $msmeType = null;
@@ -350,7 +373,8 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'country_id' => $locationIds['country_id'] ?? null,
                 'state_id' => $locationIds['state_id'] ?? null,
                 'city_id' => $locationIds['city_id'] ?? null,
-                'pincode' => $uploadedVendor->pin_code,
+                'pincode_master_id' => $locationIds['pincode_id'] ?? null,
+                'pincode' => $locationIds['pincode'] ?? null,
                 'address' => $uploadedVendor->address,
             ];
             
@@ -572,23 +596,20 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'country_id' => $locationIds['country_id'] ?? null,
                 'state_id' => $locationIds['state_id'] ?? null,
                 'city_id' => $locationIds['city_id'] ?? null,
-                'pincode' => $uploadedVendor->pin_code,
+                'pincode_id' => $locationIds['pincode_id'] ?? null,
                 'address' => $uploadedVendor->address,
                 'is_billing' => 1,
                 'is_shipping' => 0,
             ];
-    
             $gstAndAddressData = [
                 'company_name' => $uploadedVendor->company_name ?? null,
                 'addresses' => [$addressData], 
                 'compliance' => [
                     'gst_applicable' => $uploadedVendor->gst_applicable ?? null,
                     'gstin_no' => $uploadedVendor->gstin_no ?? null,
-                    'gstin_registration_date' => $uploadedVendor->gstin_registration_date ?? null,
-                    'gst_registered_name' => $uploadedVendor->gst_registered_name ?? null,
                 ],
             ];
-    
+
             $gstAddressErrors = $this->service->validateGstAndAddresses($gstAndAddressData);
     
             if (!empty($gstAddressErrors)) {
@@ -647,11 +668,21 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
 
             $vendor->save();
 
-            $vendor->compliances()->create([
+           if (isset($uploadedVendor->gst_applicable) && $uploadedVendor->gst_applicable == 1) {
+                $gstValidation = EInvoiceHelper::validateGstinName($uploadedVendor->gstin_no);
+                if ($gstValidation['Status'] == 1) {
+                    $gstDetails = json_decode($gstValidation['checkGstIn'], true);
+                } else {
+                    $gstDetails = null;
+                }
+            } else {
+               $gstDetails = null;
+            }
+           $compliancesData = [
                 'gst_applicable' =>$uploadedVendor->gst_applicable ?? 0,
                 'gstin_no' => $uploadedVendor->gstin_no ?? null,
-                'gst_registered_name' => $uploadedVendor->gst_registered_name ?? null,
-                'gstin_registration_date' => $uploadedVendor->gstin_registration_date ?? null,
+                'gstin_registration_date' => $gstDetails ? ($gstDetails['DtReg'] ?? null) : null,
+                'gst_registered_name' => $gstDetails ? ($gstDetails['LegalName'] ?? null) : null,
                 'tds_applicable' =>$uploadedVendor->tds_applicable ?? 0,
                 'wef_date' => $uploadedVendor->wef_date ?? null,
                 'tds_certificate_no' => $uploadedVendor->tds_certificate_no ?? null,
@@ -663,14 +694,19 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'msme_no' => $uploadedVendor->msme_no ?? null,
                 'msme_type' => $msmeType,
                 'status' => 'active',
-            ]);
-            
-            if (!empty($locationIds['country_id']) && !empty($locationIds['state_id']) && !empty($locationIds['city_id']) && !empty($uploadedVendor->pin_code) && !empty($uploadedVendor->address)) {
+            ];
+       
+            if (isset($uploadedVendor->gst_applicable)) {
+                $vendor->compliances()->create($compliancesData);
+            }
+
+            if (!empty($locationIds['country_id']) && !empty($locationIds['state_id']) && !empty($locationIds['city_id']) && !empty($locationIds['pincode_id']) && !empty($uploadedVendor->address)) {
                 $addressData = [
                     'country_id' => $locationIds['country_id'],
                     'state_id' => $locationIds['state_id'],
                     'city_id' => $locationIds['city_id'],
-                    'pincode' => $uploadedVendor->pin_code,
+                    'pincode_master_id'=>$locationIds['pincode_id'],
+                    'pincode' => $locationIds['pincode'],
                     'address' => $uploadedVendor->address,
                     'is_billing' => 1,  
                     'is_shipping' => 0, 

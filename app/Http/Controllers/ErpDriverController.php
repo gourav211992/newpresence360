@@ -129,7 +129,7 @@ class ErpDriverController extends Controller
             'license_no'          => $validated['license_no'],
             'license_expiry_date' => $validated['license_expiry_date'],
             'created_by'          => $user->id,
-            'status'              => $validated['status'],
+            'status'              => $request->status,
         ]);
 
         $this->handleDriverMediaUploads($request, $driver);

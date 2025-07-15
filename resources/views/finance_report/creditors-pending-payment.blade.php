@@ -550,7 +550,7 @@
                 }
             });
 
-            $('.totalSettle').text(settleSum.toFixed(2));
+            $('.totalSettle').text(formatIndianNumber(settleSum.toFixed(2)));
         }
 
         $('.datatables-basic').on('draw.dt', function() {

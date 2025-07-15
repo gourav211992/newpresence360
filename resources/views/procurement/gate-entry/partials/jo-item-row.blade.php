@@ -1,6 +1,6 @@
 @foreach($joItems as $key => $item)
     @php
-        $rowCount = $key + 1;
+        $rowCount = $tableRowCount + $key + 1;
         $item_disc_key = '';
         $suppInvId = null;
         $suppInvItemId = null;
@@ -20,7 +20,7 @@
         $headerExpPercentage = $grossItemValue > 0 ? ($headerExpAmount / $grossItemValue) * 100 : 0;
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
-        <input type="hidden" name="components[{{$rowCount}}][jo_order_id]" value="{{$item->jo_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][job_order_id]" value="{{$item->jo_id}}">
         <input type="hidden" name="components[{{$rowCount}}][jo_detail_id]" value="{{$item->id}}">
         <input type="hidden" name="components[{{$rowCount}}][vendor_asn_dtl_id]" value="{{$suppInvItemId}}">
         <input type="hidden" name="components[{{$rowCount}}][vendor_asn_id]" value="{{$suppInvId}}">

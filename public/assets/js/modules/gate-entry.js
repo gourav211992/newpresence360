@@ -157,66 +157,72 @@ $(document).on('change',"[name*='order_qty']",(e) => {
 });
 
 /*qty on change*/
-$(document).on('blur',"[name*='accepted_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let itemId = $(e.target).closest('tr').find('[name*=item_id]').val();
+$(document).on('blur change', "[name*='accepted_qty']", async function (e) {
+    const $tr = $(e.target).closest('tr');
+    const $qtyInput = $(e.target);
+    const orderQty = parseFloat($qtyInput.val()) || 0;
+    $qtyInput.val(orderQty.toFixed(2));
     let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let receiptQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
+    checkDuplicateObjects($qtyInput);
+
+    const getVal = (selector) => {
+        const el = $tr.find(selector);
+        return el.length ? el.val() : '';
+    };
+
+    // // Validate Accepted Quantity
+    // if (orderQty <= 0) {
+    //     Swal.fire({
+    //         title: 'Error!',
+    //         text: 'Accepted Qty. cannot be zero.',
+    //         icon: 'error',
+    //     });
+    //     return;
+    // }
+
+    const itemId = getVal("[name*='item_id']");
+    const acceptedQtyInput = $tr.find("[name*='accepted_qty']");
     let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='mrn_detail_id']").val() || '';
+    let mrnDetailId = $(e.target).closest('tr').find("[name*='detail_id']").val() || '';
     let poDetailId = $(e.target).closest('tr').find("[name*='po_detail_id']").val() || '';
     let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
 
-    // if(Number(acceptedQuantity.val()) > Number(receiptQuantity.val())) {
-    //     acceptedQuantity.val(receiptQuantity.val());
-    //     Swal.fire({
-    //         title: 'Error!',
-    //         text: 'Accepted Quantity can not be greater than receipt quantity.',
-    //         icon: 'error',
-    //     });
-    //     return false;
-    // }
-    if(mrnDetailId || poDetailId){
-        let actionUrl = '/gate-entries/validate-quantity?item_id='+itemId+'&mrnDetailId='+mrnDetailId+'&poDetailId='+poDetailId+'&qty='+acceptedQuantity.val();
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                let aq = parseFloat(acceptedQuantity.val());
-                let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
-                if(data.data.error_message) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.data.error_message,
-                        icon: 'error',
-                    });
-                    if(rq < 0){
-                        rq = 0;
-                    }
-                    acceptedQuantity.val(data.data.order_qty);
-                    rejectedQuantity.val(rq.toFixed(2));
-                    return false;
-                } else{
-                    if(rq < 0){
-                        rq = 0;
-                    }
-                    acceptedQuantity.val(aq.toFixed(2));
-                    rejectedQuantity.val(rq.toFixed(2));
-                }
-            });
-        });
-    }
-    let aq = parseFloat(acceptedQuantity.val());
-    let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
+    const data = {
+        item_id: itemId,
+        purchase_order_id: getVal("[name*='[purchase_order_id]']"),
+        po_detail_id: getVal("[name*='[po_detail_id]']"),
+        job_order_id: getVal("[name*='[job_order_id]']"),
+        jo_detail_id: getVal("[name*='[jo_detail_id]']"),
+        sale_order_id: getVal("[name*='[sale_order_id]']"),
+        so_detail_id: getVal("[name*='[so_detail_id]']"),
+        asn_header_id: getVal("[name*='[vendor_asn_id]']"),
+        asn_detail_id: getVal("[name*='[vendor_asn_dtl_id]']"),
+        ge_header_id: getVal("[name*='[header_id]']"),
+        ge_detail_id: getVal("[name*='[detail_id]']"),
+        qty: getVal("[name*='[accepted_qty]']"),
+        type: currentProcessType,
+    };
+    let response = await fetch('/gate-entries/validate-quantity?' + new URLSearchParams(data).toString());
+    const result = await response.json();
 
-    acceptedQuantity.val(aq.toFixed(2));
-    rejectedQuantity.val(rq.toFixed(2));
-    if (Number(itemCost.val())) {
-        let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
-        itemValue.val(totalItemValue.toFixed(2));
-    } else {
-        itemValue.val('');
+    let resultQty = parseFloat(result.order_qty) || 0;
+    let receiptQty = (resultQty.toFixed(2));
+    let acceptedQty = (resultQty.toFixed(2));
+    let rejectedQty = (receiptQty - acceptedQty).toFixed(2);
+    // If validation failed
+    if (result.status !== 200 && result.message) {
+        Swal.fire({
+            title: 'Error!',
+            text: result.message,
+            icon: 'error',
+        });
+        $qtyInput.val(receiptQty);
+        $acceptedQtyInput.val(acceptedQty);
+        $rejectedQtyInput.val(rejectedQty);
+    } else{
+        $qtyInput.val(receiptQty);
+        $acceptedQtyInput.val(acceptedQty);
+        $rejectedQtyInput.val(rejectedQty);
     }
 });
 
@@ -328,7 +334,7 @@ function setTableCalculation(edit = false) {
             poId = $(item).find("[name*='[purchase_order_id]']").val();
         }else if(reference_type == 'jo'){
             poItemId = $(item).find("[name*='[jo_detail_id]']").val();
-            poId = $(item).find("[name*='[jo_order_id]']").val();
+            poId = $(item).find("[name*='[job_order_id]']").val();
         }else{
             poItemId = '';
             poId = '';
@@ -578,7 +584,7 @@ function setTableCalculation(edit = false) {
                         <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${idx+1}][e_amnt]">
                     `);
                 };
-
+                console.log('tedId', tedId,poItemIds, poIds, reference_type);
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
 
                     const p = fetch('/gate-entries/get-selected-item-amount', {

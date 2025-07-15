@@ -588,15 +588,18 @@ class TrialBalanceController extends Controller
             $currency = $r->currency;
         };
 
-        if ($r->date == "") {
-            $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-            $startDate = $financialYear['start_date'];
-            $endDate = $financialYear['end_date'];
-        } else {
+        if ($r->date) {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
             $endDate = date('Y-m-d', strtotime($dates[1]));
-        }
+        } elseif ($r->fmonth) {
+            $startDate = Carbon::parse($r->fmonth)->startOfMonth()->toDateString();
+            $endDate = Carbon::parse($r->fmonth)->endOfMonth()->toDateString();
+        } else {
+            $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+            $startDate = $financialYear['start_date'];
+            $endDate = $financialYear['end_date'];
+        }      
 
         $organizations = [];
         if ($r->organization_id && is_array($r->organization_id)) {
@@ -630,15 +633,18 @@ class TrialBalanceController extends Controller
         if ($r->currency != "") {
             $currency = $r->currency;
         };
-        if ($r->date == "") {
-            $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-            $startDate = $financialYear['start_date'];
-            $endDate = $financialYear['end_date'];
-        } else {
+        if ($r->date) {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
             $endDate = date('Y-m-d', strtotime($dates[1]));
-        }
+        } elseif ($r->fmonth) {
+            $startDate = Carbon::parse($r->fmonth)->startOfMonth()->toDateString();
+            $endDate = Carbon::parse($r->fmonth)->endOfMonth()->toDateString();
+        } else {
+            $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+            $startDate = $financialYear['start_date'];
+            $endDate = $financialYear['end_date'];
+        }      
 
         $organizations = [];
         if ($r->organization_id && is_array($r->organization_id)) {

@@ -6,6 +6,7 @@
         $suppInvItemId = null;
         $geId = null;
         $geItemId = null;
+        $readOnly = '';
         $poQty = $item->avail_order_qty ?? 0.00;
         $availableQty = $item->available_qty ?? 0.00;
         if($moduleType === 'gate-entry') {
@@ -18,6 +19,17 @@
             $suppInvId = $item->asn_id;
             $suppInvItemId = $item->asn_item_id;
         }
+
+        if($moduleType === 'suppl-inv'){
+            $readOnly = 'readonly';
+        } elseif($moduleType === 'gate-entry'){
+            $readOnly = 'readonly';
+        } elseif($moduleType === 'p-order'){
+            $readOnly = (($item->po?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+        } else {
+            $readOnly = '';
+        }
+
         $grossItemValue = $availableQty * $item->rate;
         $itemDisc = $item->item_discount_amount;
         $headerDiscAmount = $item->header_discount_amount;
@@ -41,7 +53,7 @@
             </div>
         </td>
         <td>
-            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" readonly />
+            <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" {{$item?->purchase_order_item_id ? 'readonly' : ''}} />
             <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
@@ -69,7 +81,7 @@
         <td>
             <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
         </td>
-        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
+        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}" {{$item?->purchase_order_item_id ? 'data-disabled="true"' : ''}} >
         </td>
         <td>
             <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">
@@ -88,15 +100,15 @@
         <td>
             <input type="hidden" name="module-type" id="module-type" value="{{ $moduleType }}">
             <input type="number" class="form-control mw-100 order_qty text-end checkNegativeVal" name="components[{{$rowCount}}][order_qty]"
-            value="{{$availableQty}}" step="any" {{ ($item?->po?->partial_delivery == 'no') ? 'readonly' : '' }} {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="{{$availableQty}}" step="any" {{ $readOnly }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{($item?->item?->is_inspection == 0) ? $availableQty : 0.00}}" step="any" {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="{{($item?->item?->is_inspection == 0) ? $availableQty : 0.00}}" step="any" {{ $readOnly }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"
-            {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            {{ $readOnly }} />
         </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />

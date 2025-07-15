@@ -207,20 +207,11 @@
                                                 @if (!is_null($mrn->reference_type) && !empty($mrn->reference_type))
                                                     <div class="row align-items-center mb-1" id="referenceNoDiv">
                                                         <div class="col-md-3">
-                                                            <label class="form-label">Reference No.<span
-                                                                    class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-5">
-                                                            <input type="text" name="reference_number"
-                                                                class="form-control" id="reference_number_input"
-                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn->purchaseOrder->book_code }} - {{ $mrn->purchaseOrder->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn->jobOrder->book_code }} - {{ $mrn->jobOrder->document_number }} @elseif($mrn->reference_type == 'so') {{ $mrn->saleOrder->book_code }} - {{ $mrn->saleOrder->document_number }} @endif"
-                                                                readonly>
-
                                                             <input type="hidden" name="reference_type"
                                                                 class="form-control reference_type" id="reference_type_input"
                                                                 value="{{ $mrn->reference_type }}" readonly>
-                                                            <input type="hidden" name="purchase_order_id" class="form-control"
-                                                            value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @elseif($mrn->reference_type == 'so') {{ $mrn->sale_order_id }} @endif">
                                                         </div>
                                                     </div>
                                                 @endif
@@ -967,6 +958,8 @@
     <script>
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
+        var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
+
 
         if(currentProcessType == 'jo')
         {
@@ -1528,12 +1521,20 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+            let checkAttr = 0;
             if(currentProcessType && currentProcessType != null)
             {
                 rowCount = tableRowCount;
+                let isPo = $(tr).find('[name*="purchase_order_item_id"]').val() ? 1 : 0;
+                let isJo = $(tr).find('[name*="job_order_item_id"]').val() ? 1 : 0;
+                if((!isPo) || (!isJo)) {
+                    if($(tr).find('td[id*="itemAttribute_"]').data('disabled')) {
+                        checkAttr = 1;
+                    }
+                }
             }
             let mrn_detail_id = $(tr).find("input[name*='[mrn_detail_id]']").val() || '';
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+'&mrn_detail_id='+mrn_detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}&checkAttr=${checkAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {

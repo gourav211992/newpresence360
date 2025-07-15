@@ -130,28 +130,85 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
     oldValue = e.target.value;  // Store the old value when the field gains focus
 });
 
-/*Order qty on change*/
-$(document).on('change',"[name*='order_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    checkDuplicateObjects(qty);
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let orderQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
-    let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
-    let orderQty = parseFloat(qty.value);
-    orderQuantity.val(orderQty.toFixed(2));
-    if(isInspection == 1){
-        acceptedQuantity.val('0.00');
-    } else{
-        acceptedQuantity.val(orderQty.toFixed(2));
+$(document).on('blur change', "[name*='order_qty']", async function (e) {
+    const $tr = $(e.target).closest('tr');
+    const $qtyInput = $(e.target);
+    const $poQtyInput = $tr.find(".po_qty");
+    
+    const $acceptedQtyInput = $tr.find("[name*='accepted_qty']");
+    const $rejectedQtyInput = $tr.find("[name*='rejected_qty']");
+    const orderQty = parseFloat($qtyInput.val()) || 0;
+    const poQty = parseFloat($poQtyInput.val()) || 0;
+    const accQty = parseFloat($acceptedQtyInput.val()) || 0;
+    
+    // Format and set input
+    $qtyInput.val(orderQty.toFixed(2));
+    checkDuplicateObjects($qtyInput);
+
+    const getVal = (selector) => {
+        const el = $tr.find(selector);
+        return el.length ? el.val() : '';
+    };
+
+    // Validate Order Quantity
+    if ((orderQty <= 0)) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Receipt Qty. cannot be zero.',
+            icon: 'error',
+        });
+        $qtyInput.val(poQty.toFixed(2));
+        return;
     }
-    rejectedQuantity.val('0.00');
+
+    // Prepare payload
+    const data = {};
+    const safeSet = (key, val) => {
+        if (val) data[key] = val;
+    };
+
+    safeSet('item_id', getVal("[name*='item_id']"));
+    safeSet('purchase_order_id', getVal("[name*='[purchase_order_id]']"));
+    safeSet('po_detail_id', getVal("[name*='[po_detail_id]']"));
+    safeSet('job_order_id', getVal("[name*='[job_order_id]']"));
+    safeSet('jo_detail_id', getVal("[name*='[jo_detail_id]']"));
+    safeSet('sale_order_id', getVal("[name*='[sale_order_id]']"));
+    safeSet('so_detail_id', getVal("[name*='[so_detail_id]']"));
+    safeSet('ge_detail_id', getVal("[name*='[gate_entry_detail_id]']"));
+    safeSet('asn_detail_id', getVal("[name*='[vendor_asn_dtl_id]']"));
+    safeSet('mrn_detail_id', getVal("[name*='[mrn_detail_id]']"));
+    safeSet('qty', orderQty.toFixed(2));
+    safeSet('type', currentProcessType);
+
+    const isInspection = getVal("[name*='is_inspection']");
+
+    // Send request to validate
+    const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+    const result = await response.json();
+    console.log('result', result);
+    let resultQty = parseFloat(result.order_qty) || 0;
+    let receiptQty = (resultQty.toFixed(2));
+    let acceptedQty = (resultQty.toFixed(2));
+    let rejectedQty = (receiptQty - acceptedQty).toFixed(2);
+    // If validation failed
+    if (result.status !== 200 && result.message) {
+        Swal.fire({
+            title: 'Error!',
+            text: result.message,
+            icon: 'error',
+        });
+        $qtyInput.val(receiptQty);
+        $acceptedQtyInput.val(acceptedQty);
+        $rejectedQtyInput.val(rejectedQty);
+    } else{
+        $qtyInput.val(receiptQty);
+        $acceptedQtyInput.val(acceptedQty);
+        $rejectedQtyInput.val(rejectedQty);
+    }
 });
 
 /*qty on change*/
-$(document).on('blur',"[name*='accepted_qty']",(e) => {
+$(document).on('blur change',"[name*='accepted_qty']",(e) => {
     let tr = e.target.closest('tr');
     let qty = e.target;
     let dataIndex = $(e.target).closest('tr').attr('data-index');
@@ -166,6 +223,7 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     let siDetailId = $(e.target).closest('tr').find("[name*='supplier_inv_detail_id']").val() || '';
     let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
     let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
+    
     if (Number(acceptedQuantity.val()) > Number(receiptQuantity.val())) {
         Swal.fire({
             title: 'Error!',
@@ -176,48 +234,6 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
         return false;
     }
 
-    if(mrnDetailId || poDetailId){
-        let actionUrl = '/material-receipts/validate-quantity?item_id='+itemId+
-        '&mrnDetailId='+mrnDetailId+
-        '&poDetailId='+poDetailId+
-        '&geDetailId='+geDetailId+
-        '&siDetailId='+siDetailId+
-        '&qty='+acceptedQuantity.val()+
-        '&type='+currentProcessType;
-
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                console.log('data.data', data.data);
-                let aq = parseFloat(acceptedQuantity.val());
-                let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
-                if(data.data.error_message) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.data.error_message,
-                        icon: 'error',
-                    });
-                    if(isInspection == 1){
-                        rq = 0;
-                    }
-                    if(rq < 0){
-                        rq = 0;
-                    }
-                    acceptedQuantity.val(data.data.order_qty);
-                    rejectedQuantity.val(rq.toFixed(2));
-                    return false;
-                } else{
-                    if(rq < 0){
-                        rq = 0;
-                    }
-                    if(isInspection == 1){
-                        rq = 0;
-                    }
-                    acceptedQuantity.val(aq.toFixed(2));
-                    rejectedQuantity.val(rq.toFixed(2));
-                }
-            });
-        });
-    }
     let aq = parseFloat(acceptedQuantity.val());
     let rq = 0;
     if(isInspection == 1){
@@ -238,7 +254,6 @@ $(document).on('blur',"[name*='accepted_qty']",(e) => {
     {
         generatePackets(dataIndex, itemId, acceptedQuantity.val());
     }
-
 });
 
 /*rate on change*/
@@ -348,7 +363,7 @@ function setTableCalculation(edit = false) {
             poId = $(item).find("[name*='[purchase_order_id]']").val();
         }else if(reference_type == 'jo'){
             poItemId = $(item).find("[name*='[jo_detail_id]']").val();
-            poId = $(item).find("[name*='[jo_order_id]']").val();
+            poId = $(item).find("[name*='[job_order_id]']").val();
         }else{
             poItemId = '';
             poId = '';
@@ -593,9 +608,7 @@ function setTableCalculation(edit = false) {
                         `);
                     };
                     
-                console.log('totalRows', tedId, poItemIds, poIds, reference_type);
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
-                    
                     const p = fetch('/material-receipts/get-selected-item-amount', {
                         method: 'POST',
                         headers: {

@@ -146,7 +146,13 @@ $(document).ready(function () {
                 { data: 'driver_name' },
                 { data: 'vehicle_type' },
                 { data: 'document_status' },
-                { data: 'created_by' },
+                {
+                    data: 'created_by', 
+                    name: 'created_by', 
+                    render: function(data, type, row) {
+                        return row.auth_user ? row.auth_user.name : 'N/A';
+                    }
+                },
                 { data: 'action', orderable: false, searchable: false }
             ],
             dom: '<"d-flex justify-content-between align-items-center mx-2 row"' +

@@ -69,6 +69,7 @@ use App\Models\BankInfo;
 use App\Models\Note;
 use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
+use App\Models\ErpFyMonth;
 
 class Helper
 {
@@ -196,6 +197,7 @@ class Helper
                 }
             return [
                 'alias' => $financialYear->alias,
+                'id' => $financialYear->id,
                 'start_date' => $financialYear->start_date,
                 'end_date' => $financialYear->end_date,
                 'lock_fy' => $financialYear->lock_fy,
@@ -208,6 +210,60 @@ class Helper
         }
     }
 
+    public static function getCurrentFinancialYearMonths(): array
+    {
+        $user = self::getAuthenticatedUser();
+        $startDate = request()->cookie('fyear_start_date');
+        $endDate = request()->cookie('fyear_end_date');
+        
+        
+        if (!$startDate || !$endDate) {
+            return [];
+        }
+        
+        // 1. Find current financial year
+        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+    
+        if (!$financialYear['authorized']) {
+            return [];
+        }
+
+        
+    
+        // 2. Get all ErpFyMonth for this financial year
+        $months = ErpFyMonth::where('fy_id', $financialYear['id'])
+            ->orderBy('start_date')
+            ->get();
+    
+        $currentUserId = $user->auth_user_id;
+        // dd($currentUserId);
+        $currentUserType = $user->authenticable_type;
+    
+        $result = [];
+        foreach ($months as $month) {
+            $authorized = true;
+            if (is_array($month->access_by)) {
+                foreach ($month->access_by as $entry) {
+                    if (
+                        isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
+                        $entry['user_id'] == $currentUserId &&
+                        $entry['authenticable_type'] == $currentUserType &&
+                        (
+                            $entry['authorized'] == false ||
+                            $entry['locked'] == true
+                        )
+                    ) {
+                        $authorized = false;
+                        break;
+                    }
+                }
+            }
+            $monthData = $month->toArray();
+            $monthData['authorized'] = $authorized;
+            $result[] = $monthData;
+        }
+        return $result;
+    }    
 
     public static function getFinancialYearQuarter(string $date): mixed
     {

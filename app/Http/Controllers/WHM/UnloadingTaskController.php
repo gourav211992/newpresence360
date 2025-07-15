@@ -21,30 +21,33 @@ class UnloadingTaskController extends Controller
     public function index(Request $request){
         $search = $request->input('search');
         $location = $request->input('store_id');
-        $jobs = ErpWhmJob::with('morphable.book', 'morphable.items', 'itemUniqueCodes')
+        $jobs = ErpWhmJob::with(['morphable.book' => function($q){
+                            $q->select('id','book_code');
+                        }, 'morphable.erpStore' => function($q){
+                            $q->select('id','store_name');
+                        }, 'itemUniqueCodes' => function($q){
+                            $q->select('id','job_id','item_id');
+                        }])
                     ->where('morphable_type', 'App\Models\GateEntryHeader')
-                    ->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($search, $location) {
-                    if ($search) {
-                        $q->where(function($q2) use ($search) {
-                            $q2->where('document_number', 'like', "%{$search}%")
-                            ->orWhere('consignment_no', 'like', "%{$search}%")
-                            ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
-                            ->orWhereHas('book', function ($bookQuery) use ($search) {
-                                $bookQuery->where('book_code', 'like', "%{$search}%");
+                    ->when($search, function ($query) use ($search) {
+                        $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($search) {
+                             $q->where(function($q2) use ($search) {
+                                $q2->where('document_number', 'like', "%{$search}%")
+                                ->orWhere('consignment_no', 'like', "%{$search}%")
+                                ->orWhere('supplier_invoice_no', 'like', "%{$search}%")
+                                ->orWhereHas('book', function ($bookQuery) use ($search) {
+                                    $bookQuery->where('book_code', 'like', "%{$search}%");
+                                });
                             });
                         });
-                    }
-                    if ($location) {
-                        $q->where('store_id', $location);
-                    }
-                })
-                ->when($location, function ($query) use ($location) {
-                    $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
-                        $q->where('store_id', $location);
-                    });
-                })
-                ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
-                ->paginate(CommonHelper::PAGE_LENGTH_10);
+                    })
+                    ->when($location, function ($query) use ($location) {
+                        $query->whereHasMorph('morphable', ['App\Models\GateEntryHeader'], function ($q) use ($location) {
+                            $q->where('store_id', $location);
+                        });
+                    })
+                    ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
+                    ->paginate(CommonHelper::PAGE_LENGTH_10);
         $jobResources = UnloadingResource::collection($jobs->getCollection());
 
         return [
@@ -105,10 +108,12 @@ class UnloadingTaskController extends Controller
             // Fetch Scanned Packets
             $scannedPackets = ErpItemUniqueCode::with(['vendor' => function ($q) {
                 $q->select('id', 'vendor_code', 'company_name');
+            },'storagePoint' => function($q){
+                $q->select('id', 'storage_number');
             }])
             ->where('job_id',$request->id)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id')
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
             ->get();
 
             \DB::commit();

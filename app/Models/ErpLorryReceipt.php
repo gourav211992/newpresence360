@@ -102,16 +102,16 @@ class ErpLorryReceipt extends Model
         return $this->belongsTo(Customer::class, 'consignee_id');
     }
 
-    public function createdBy()
+      public function auth_user()
     {
-        return $this->belongsTo(Customer::class, 'created_by');
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
 
-    public function mediaAttachments()
-{
-    return $this->hasMany(ErpLogisticLRMedia::class, 'model_id')
-        ->where('model_type', self::class)
-        ->where('collection_name', 'attachments');
-}
+   public function mediaAttachments()
+    {
+        return $this->hasMany(ErpLogisticLRMedia::class, 'model_id', 'id')
+                    ->where('model_name', 'ErpLorryReceipt'); // adjust if needed
+    }
+
 
 }

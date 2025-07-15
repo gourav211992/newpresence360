@@ -61,6 +61,17 @@
                                                         @enderror
                                                     </div>
                                                 </div>
+                                                 <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Bank Code <span class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="bank_code" class="form-control" placeholder="Enter Bank Code" value="{{ old('bank_code', $bank->bank_code) }}" />
+                                                        @error('bank_code')
+                                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                </div>
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -122,9 +133,9 @@
                                                             <tr>
                                                                 <th>S.NO</th>
                                                                 <th>Account Number</th>
+                                                                <th>IFSC Code</th>
                                                                 <th>Branch Name</th>
                                                                 <th>Branch Address</th>
-                                                                <th>IFSC Code</th>
                                                                 <th>Ledger Name</th>
                                                                 <th>Ledger Group</th>
                                                                 <th>Action</th>
@@ -138,14 +149,14 @@
                                                                     <td>
                                                                         <input type="text" name="bank_details[{{ $index }}][account_number]" class="form-control mw-100" placeholder="Enter Account Number" value="{{ $detail->account_number ?? '' }}" />
                                                                     </td>
+                                                                     <td>
+                                                                        <input type="text" name="bank_details[{{ $index }}][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" value="{{ $detail->ifsc_code ?? '' }}" />
+                                                                    </td>
                                                                     <td>
                                                                         <input type="text" name="bank_details[{{ $index }}][branch_name]" class="form-control mw-100" placeholder="Enter Branch Name" value="{{ $detail->branch_name ?? '' }}" />
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" name="bank_details[{{ $index }}][branch_address]" class="form-control mw-100" placeholder="Enter Branch Address" value="{{ $detail->branch_address ?? '' }}" />
-                                                                    </td>
-                                                                    <td>
-                                                                        <input type="text" name="bank_details[{{ $index }}][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" value="{{ $detail->ifsc_code ?? '' }}" />
                                                                     </td>
                                                                     <!-- Ledger Name and ID -->
                                                                     <td>
@@ -175,15 +186,15 @@
                                                                     <td>
                                                                         <input type="text" name="bank_details[0][account_number]" class="form-control mw-100" placeholder="Enter Account Number" />
                                                                     </td>
+                                                                     <td>
+                                                                        <input type="text" name="bank_details[0][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" />
+                                                                    </td>
                                                                     <td>
                                                                         <input type="text" name="bank_details[0][branch_name]" class="form-control mw-100" placeholder="Enter Branch Name" />
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" name="bank_details[0][branch_address]" class="form-control mw-100" placeholder="Enter Branch Address" />
                                                                         <input type="hidden" name="bank_details[0][branch_address_id]" class="branch-address-id" />
-                                                                    </td>
-                                                                    <td>
-                                                                        <input type="text" name="bank_details[0][ifsc_code]" class="form-control mw-100 ifsc-code" placeholder="Enter IFSC Code" />
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" class="autocomplete-ledgr form-control mw-100" data-id="ledger_id_0" placeholder="Enter Ledger ID" value="">

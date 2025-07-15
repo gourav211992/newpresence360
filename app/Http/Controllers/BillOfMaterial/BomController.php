@@ -1018,6 +1018,10 @@ class BomController extends Controller
                 BomInstruction::whereIn('id',$deletedData['deletedInstructionItemIds'])->delete();
             }
 
+            $isNewHeaderItem = false;
+            if (isset($bom->item_id) && $bom->item_id) {
+                $isNewHeaderItem = $bom->item_id != ($request->item_id ?? null);
+            }
             # Bom Header save
             $bom->uom_id = $request->uom_id;
             $bom->production_type = $request->production_type;
@@ -1060,15 +1064,26 @@ class BomController extends Controller
                 }
             }
 
+            if($isNewHeaderItem) {
+                BomAttribute::where('bom_id', $bom->id)
+                            ->where('type', 'H')
+                            ->delete();
+            }
             # Save header attribute
             foreach($bom->item->itemAttributes as  $key => $itemAttribute) {
                 $key = $key + 1;
                 $headerAttr = @$request->all()['attributes'][$key];
                 if (isset($headerAttr['attr_group_id'][$itemAttribute->attribute_group_id])) {
 
-                    $bomAttrId = @$headerAttr['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'] ?? null;
+                    // $bomAttrId = @$headerAttr['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'] ?? null;
 
-                    $bomAttr = BomAttribute::find($bomAttrId) ?? new BomAttribute;
+                    $bomAttr = BomAttribute::firstOrNew([
+                        'bom_id' => $bom->id,
+                        'item_attribute_id' => $itemAttribute->id,
+                        'type' => 'H',
+                    ]);
+
+                    // $bomAttr = BomAttribute::find($bomAttrId) ?? new BomAttribute;
                     $bomAttr->bom_id = $bom->id;
                     $bomAttr->item_attribute_id = $itemAttribute->id;
                     $bomAttr->item_id = $bom->item->id;
@@ -1085,6 +1100,10 @@ class BomController extends Controller
                 foreach($request->all()['components'] as $component) {
                     # Bom Detail Save
                     $bomDetail = BomDetail::find(@$component['bom_detail_id']) ?? new BomDetail;
+                    $isNewItem = false;
+                    if(isset($bomDetail->item_id) && $bomDetail->item_id) {
+                        $isNewItem = $bomDetail->item_id != ($component['item_id'] ?? null);
+                    }
                     $bomDetail->bom_id = $bom->id;
                     $bomDetail->vendor_id = $component['vendor_id'] ?? null;
                     $bomDetail->item_id = $component['item_id'];
@@ -1127,10 +1146,16 @@ class BomController extends Controller
                     //     # Manual
                     // }
 
+                    // Delete old BOM attributes if item has changed
+                    if ($isNewItem && $bomDetail->id) {
+                        BomAttribute::where('bom_detail_id', $bomDetail->id)
+                            ->where('type', 'D')
+                            ->delete();
+                    }
                     #Save component Attr
                     foreach($bomDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                            $bomAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
+                            // $bomAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                             $bomAttr = BomAttribute::firstOrNew([
                                 'bom_id' => $bom->id,
                                 'bom_detail_id' => $bomDetail->id,

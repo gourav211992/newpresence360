@@ -15,6 +15,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\ServiceParametersHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Helpers\EInvoiceHelper;
 use Exception;
 use stdClass;
 use Illuminate\Support\Collection;
@@ -180,8 +181,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'credit_days' => $row['credit_days'] ?? null,
                 'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
                 'gstin_no' => $row['gstin_no'] ?? null,
-                'gst_registered_name' => $row['gst_registered_name'] ?? null,
-                'gstin_registration_date' => $gstinRegistrationDate ?? null,
                 'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0, 
                 'wef_date' =>  $tdsWefDatee ?? null,
                 'tds_certificate_no' => $row['tds_certificate_no'] ?? null,
@@ -271,7 +270,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             }
         } 
     
-        $organizationType = $uploadedCustomer->organization_type ?? 'Private Ltd'; 
+        $organizationType = $uploadedCustomer->organization_type ?? 'Private Limited'; 
         try {
             $organizationTypeId = $this->service->getOrganizationTypeId($organizationType);
         } catch (Exception $e) {
@@ -293,12 +292,35 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
         } 
 
         if (!empty($uploadedCustomer->country) && !empty($uploadedCustomer->state) && !empty($uploadedCustomer->city)) {
-        try {
-                $locationIds = $this->service->getLocationIds($uploadedCustomer->country, $uploadedCustomer->state, $uploadedCustomer->city);
+            try {
+                $locationIds = $this->service->getLocationIds($uploadedCustomer->country, $uploadedCustomer->state, $uploadedCustomer->city,$uploadedCustomer->pin_code);
+
+                if (!empty($locationIds['country_id'])) {
+                    $countryId = $locationIds['country_id'];
+                }
+
+                if (!empty($locationIds['state_id'])) {
+                    $stateId = $locationIds['state_id'];
+                }
+
+                if (!empty($locationIds['city_id'])) {
+                    $cityId = $locationIds['city_id'];
+                }
+
+                if (!empty($locationIds['pincode_id'])) {
+                    $pincodeId = $locationIds['pincode_id'];
+                }
+
+                if (!empty($locationIds['errors'])) {
+                    foreach ($locationIds['errors'] as $field => $message) {
+                        $errors[] = $message;
+                    }
+                }
+
             } catch (Exception $e) {
-                $errors[] = 'Error while fetching location IDs: ' . $e->getMessage();
+                $errors[] = 'Error while fetching location: ' . $e->getMessage();
             }
-        } 
+        }
         try {
             $customerData = [
                 'organization_type_id' => $organizationTypeId ?? null,
@@ -329,8 +351,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'organization_id' => $uploadedCustomer->organization_id ?? null,
                 'gst_applicable' => $uploadedCustomer->gst_applicable ?? 0,
                 'gstin_no' => $uploadedCustomer->gstin_no ?? null,
-                'gst_registered_name' => $uploadedCustomer->gst_registered_name ?? null,
-                'gstin_registration_date' => $uploadedCustomer->gstin_registration_date ?? null,
                 'tds_applicable' => $uploadedCustomer->tds_applicable ?? 0,
                 'wef_date' => $uploadedCustomer->wef_date ?? null,
                 'tds_certificate_no' => $uploadedCustomer->tds_certificate_no ?? null,
@@ -341,7 +361,8 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'country_id' => $locationIds['country_id'] ?? null,
                 'state_id' => $locationIds['state_id'] ?? null,
                 'city_id' => $locationIds['city_id'] ?? null,
-                'pincode' => $uploadedCustomer->pin_code,
+                'pincode_master_id' => $locationIds['pincode_id'] ?? null,
+                'pincode' => $locationIds['pincode'] ?? null,
                 'address' => $uploadedCustomer->address,
             ];
         
@@ -552,7 +573,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'country_id' => $locationIds['country_id'] ?? null,
                 'state_id' => $locationIds['state_id'] ?? null,
                 'city_id' => $locationIds['city_id'] ?? null,
-                'pincode' => $uploadedCustomer->pin_code,
+                'pincode_id' => $locationIds['pincode_id'] ?? null,
                 'address' => $uploadedCustomer->address,
                 'is_billing' => 1,
                 'is_shipping' => 1,
@@ -564,8 +585,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'compliance' => [
                     'gst_applicable' => $uploadedCustomer->gst_applicable ?? null,
                     'gstin_no' => $uploadedCustomer->gstin_no ?? null,
-                    'gstin_registration_date' => $uploadedCustomer->gstin_registration_date ?? null,
-                    'gst_registered_name' => $uploadedCustomer->gst_registered_name ?? null,
                 ],
             ];
     
@@ -627,11 +646,21 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             }
 
             $customer->save();
-            $customer->compliances()->create([
+           if (isset($uploadedCustomer->gstin_no) && $uploadedCustomer->gst_applicable == 1) {
+                $gstValidation = EInvoiceHelper::validateGstinName($uploadedCustomer->gstin_no);
+                if ($gstValidation['Status'] == 1) {
+                    $gstDetails = json_decode($gstValidation['checkGstIn'], true);
+                } else {
+                    $gstDetails = null;
+                }
+            } else {
+                $gstDetails = null;
+            }
+           $compliancesData = [
                 'gst_applicable' =>$uploadedCustomer->gst_applicable ?? 0,
                 'gstin_no' => $uploadedCustomer->gstin_no ?? null,
-                'gst_registered_name' => $uploadedCustomer->gst_registered_name ?? null,
-                'gstin_registration_date' => $uploadedCustomer->gstin_registration_date ?? null,
+                'gstin_registration_date' => $gstDetails ? ($gstDetails['DtReg'] ?? null) : null,
+                'gst_registered_name' => $gstDetails ? ($gstDetails['LegalName'] ?? null) : null,
                 'tds_applicable' =>$uploadedCustomer->tds_applicable ?? 0,
                 'wef_date' => $uploadedCustomer->wef_date ?? null,
                 'tds_certificate_no' => $uploadedCustomer->tds_certificate_no ?? null,
@@ -640,14 +669,17 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'tds_value_cab' => $uploadedCustomer->tds_value_cab ?? null,
                 'tan_number' => $uploadedCustomer->tan_number ?? null,
                 'status' => 'active',
-            ]);
-
-            if (!empty($locationIds['country_id']) && !empty($locationIds['state_id']) && !empty($locationIds['city_id']) && !empty($uploadedCustomer->pin_code) && !empty($uploadedCustomer->address)) {
+            ];
+            if (isset($uploadedCustomer->gst_applicable)) {
+                $customer->compliances()->create($compliancesData);
+            }
+            if (!empty($locationIds['country_id']) && !empty($locationIds['state_id']) && !empty($locationIds['city_id'])  && !empty($locationIds['pincode_id']) && !empty($uploadedCustomer->address)) {
                 $addressData = [
                     'country_id' => $locationIds['country_id'],
                     'state_id' => $locationIds['state_id'],
                     'city_id' => $locationIds['city_id'],
-                    'pincode' => $uploadedCustomer->pin_code,
+                    'pincode_master_id'=>$locationIds['pincode_id'],
+                    'pincode' => $locationIds['pincode'],
                     'address' => $uploadedCustomer->address,
                     'is_billing' => 1,
                     'is_shipping' => 1,

@@ -819,13 +819,20 @@ class ErpProductionSlipController extends Controller
                 # Issue Raws Materials
                 if($productionSlip->fresh()->items->count()) {
                     $maintainStockLedger = self::maintainStockLedger($productionSlip);
-                    if($maintainStockLedger != 'Success') {
+                    if($maintainStockLedger['status'] == 'error') {
                         DB::rollBack();
-                        return response() -> json([
-                            'message' => "Error while updating stock ledger for issue. $maintainStockLedger",
+                        return response()->json([
+                            'message' => $maintainStockLedger['message'],
                             'error' => ''
                         ], 422);
                     }
+                    // if($maintainStockLedger != 'Success') {
+                    //     DB::rollBack();
+                    //     return response() -> json([
+                    //         'message' => "Error while updating stock ledger for issue. $maintainStockLedger",
+                    //         'error' => ''
+                    //     ], 422);
+                    // }
                 }
                 
                 # Update rate in  Pslip Item & insert in Pslip Item Location
@@ -859,13 +866,20 @@ class ErpProductionSlipController extends Controller
                 }
                 if($productionSlip->fresh()->items->count()){
                     $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
-                    if($moProdItemReceipt['status'] != 'success') {
+                    if($moProdItemReceipt['status'] == 'error') {
                         DB::rollBack();
-                        return response() -> json([
-                            'status' => 'error',
-                            'message' => "Error while updating stock ledger for receipt.",
-                        ]);
-                    }               
+                        return response()->json([
+                            'message' => $moProdItemReceipt['message'],
+                            'error' => ''
+                        ], 422);
+                    }
+                    // if($moProdItemReceipt['status'] != 'success') {
+                    //     DB::rollBack();
+                    //     return response() -> json([
+                    //         'status' => 'error',
+                    //         'message' => "Error while updating stock ledger for receipt.",
+                    //     ]);
+                    // }               
                 }
 
                 // Back Update Mo Product Qty
@@ -1098,9 +1112,9 @@ class ErpProductionSlipController extends Controller
         $user = Helper::getAuthenticatedUser();
         $detailIds = $pslip->fresh()->consumptions->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($pslip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $pslipStatus, 'issue');
-        if(isset($issueRecords['message']) && $issueRecords['message'] != 'Success') {
-            return $issueRecords['message'];
-        }
+        // if(isset($issueRecords['message']) && $issueRecords['message'] != 'Success') {
+        //     return $issueRecords['message'];
+        // }
         if(!empty($issueRecords['data'])){
             foreach($issueRecords['data'] as $key => $val){
                 $pslipConsumption = PslipBomConsumption::where('id',@$val->issuedBy->document_detail_id)->first();
@@ -1135,8 +1149,9 @@ class ErpProductionSlipController extends Controller
                 $psConsumption->rate = floatval($stockLedger->cost) / floatval($psConsumption->qty);
                 $psConsumption->save();
             }
-            return 'Success';
+            // return 'Success';
         } 
+        return $issueRecords;
     }
 
     public function getItemDetail(Request $request)

@@ -18,6 +18,7 @@ use App\Models\Hsn;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
+use App\Models\PincodeMaster;
 use App\Models\Customer;
 use App\Models\Vendor;
 use App\Models\Currency;
@@ -33,8 +34,9 @@ use Exception;
 
 class ItemImportExportService
 {
-    public function generateItemCode($subType, $subCategoryInitials, $itemInitials)
+    public function generateItemCode(array $subTypes, $subCategoryInitials, $itemInitials)
     {
+        $subType = $this->getItemSubTypeCode($subTypes);
         $baseCode = $subType . $subCategoryInitials . $itemInitials;
         $lastSimilarItem = Item::where('item_code', 'like', "{$baseCode}%")
             ->withDefaultGroupCompanyOrg()
@@ -50,6 +52,46 @@ class ItemImportExportService
         return $baseCode . $nextSuffix;
     }
 
+    private function getItemSubTypeCode(array $types): string
+    {
+        $types = array_unique(array_map('strtoupper', $types));
+        sort($types);
+
+       $combinations = [
+            // Triple
+            ['match' => ['A', 'RM', 'TI'], 'code' => 'RM'],
+            ['match' => ['A', 'FG', 'TI'], 'code' => 'FG'],
+            ['match' => ['A', 'SF', 'TI'], 'code' => 'SF'],
+            ['match' => ['A', 'E',  'TI'], 'code' => 'EX'],
+
+            // Double
+            ['match' => ['A', 'TI'],       'code' => 'AS'],
+            ['match' => ['RM', 'TI'],      'code' => 'RM'],
+            ['match' => ['FG', 'TI'],      'code' => 'FG'],
+            ['match' => ['SF', 'TI'],      'code' => 'SF'],
+            ['match' => ['E', 'TI'],       'code' => 'EX'],
+            ['match' => ['A', 'RM'],       'code' => 'RM'],
+            ['match' => ['A', 'FG'],       'code' => 'FG'],
+            ['match' => ['A', 'SF'],       'code' => 'SF'],
+            ['match' => ['A', 'E'],        'code' => 'EX'],
+
+            // Single
+            ['match' => ['RM'],            'code' => 'RM'],
+            ['match' => ['FG'],            'code' => 'FG'],
+            ['match' => ['SF'],            'code' => 'SF'],
+            ['match' => ['E'],             'code' => 'EX'],
+            ['match' => ['TI'],            'code' => 'TR'],
+            ['match' => ['A'],             'code' => 'AS'],
+        ];
+        foreach ($combinations as $combo) {
+            $match = $combo['match'];
+            sort($match);
+            if ($types === $match) {
+                return $combo['code'];
+            }
+        }
+       return '';
+    }
 
     public function generateCustomerCode($customerInitials, $customerType)
     {
@@ -247,29 +289,82 @@ class ItemImportExportService
         return $status === 'submitted' ? 'Active' : ($status === 'failed' ? 'Failed' : 'Draft');
     }
 
-    public function getSubTypeId($subTypeCode)
+
+    public function getSubTypeId(array $subTypeCodes): array
     {
         $subTypeMapping = [
             'FG' => 'Finished Goods',
             'SF' => 'WIP/Semi Finished',
             'RM' => 'Raw Material',
-            'TI' => 'Traded Item',
-            'A'  => 'Asset',
-            'E'  => 'Expense'
+            'E'  => 'Expense',
         ];
 
-        if (isset($subTypeMapping[$subTypeCode])) {
-            $subTypeName = $subTypeMapping[$subTypeCode];
-            $subType = SubType::where('name', $subTypeName)->first();
-            if (!$subType) {
-                throw new Exception("SubType not found: {$subTypeName}");
+        $subTypeCodes = array_unique(array_map('strtoupper', $subTypeCodes));
+        sort($subTypeCodes);
+
+        $validCombinations = [
+             // Triple
+            ['match' => ['A', 'RM', 'TI'], 'code' => 'RM'],
+            ['match' => ['A', 'FG', 'TI'], 'code' => 'FG'],
+            ['match' => ['A', 'SF', 'TI'], 'code' => 'SF'],
+            ['match' => ['A', 'E',  'TI'], 'code' => 'E'],
+
+            // Double
+            ['match' => ['A', 'TI'],       'code' => null],
+            ['match' => ['RM', 'TI'],      'code' => 'RM'],
+            ['match' => ['FG', 'TI'],      'code' => 'FG'],
+            ['match' => ['SF', 'TI'],      'code' => 'SF'],
+            ['match' => ['E', 'TI'],       'code' => 'E'],
+            ['match' => ['A', 'RM'],       'code' => 'RM'],
+            ['match' => ['A', 'FG'],       'code' => 'FG'],
+            ['match' => ['A', 'SF'],       'code' => 'SF'],
+            ['match' => ['A', 'E'],        'code' => 'E'],
+
+            // Single
+            ['match' => ['RM'],            'code' => 'RM'],
+            ['match' => ['FG'],            'code' => 'FG'],
+            ['match' => ['SF'],            'code' => 'SF'],
+            ['match' => ['E'],             'code' => 'E'],
+            ['match' => ['TI'],            'code' => null],
+            ['match' => ['A'],             'code' => null],
+        ];
+
+        $matched = false;
+        $resolvedCode = null;
+
+        foreach ($validCombinations as $combo) {
+            $match = $combo['match'];
+            sort($match);
+            if ($subTypeCodes === $match) {
+                $matched = true;
+                $resolvedCode = $combo['code'];
+                break;
             }
-            return $subType->id;
         }
 
-        throw new Exception("Invalid SubType code: {$subTypeCode}");
-    }
+        if (!$matched) {
+            throw new \Exception("Invalid SubType combination: " . implode(', ', $subTypeCodes));
+        }
 
+        $result = [
+            'sub_type_id'     => null,
+            'is_traded_item'  => in_array('TI', $subTypeCodes) ? 1 : 0,
+            'is_asset'        => in_array('A', $subTypeCodes) ? 1 : 0,
+        ];
+
+        if ($resolvedCode && isset($subTypeMapping[$resolvedCode])) {
+            $subTypeName = $subTypeMapping[$resolvedCode];
+            $subType = SubType::where('name', $subTypeName)->first();
+
+            if (!$subType) {
+                throw new \Exception("SubType not found for name: {$subTypeName}");
+            }
+
+            $result['sub_type_id'] = $subType->id;
+        }
+
+        return $result;
+    }
 
     public function getOrganizationTypeId($orgTypeCode)
     {
@@ -548,31 +643,91 @@ class ItemImportExportService
          return "{$organizationId}-{$groupId}-{$companyId}-{$userId}-{$date}-{$nextSuffix}";
      }
 
-     public function getLocationIds($countryName, $stateName, $cityName)
+    public function getLocationIds($countryName, $stateName, $cityName, $pincode)
     {
         $countryId = null;
         $stateId = null;
         $cityId = null;
+        $pincodeId = null;
+        $pincodeVal = null;
+        $errors = [];
 
-        if ($countryName) {
-            $country = Country::where('name', $countryName)->first();
-            $countryId = $country ? $country->id : null;
+        // देश की जांच
+        if (isset($countryName)) {
+            if (trim($countryName) === '') {
+                $errors['country'] = "Country name is empty.";
+            } else {
+                $country = Country::where('name', $countryName)->first();
+                if (!$country) {
+                    $errors['country'] = "Country '{$countryName}' not found.";
+                } else {
+                    $countryId = $country->id;
+                }
+            }
         }
 
-        if ($stateName && $countryId) {
-            $state = State::where('name', $stateName)->where('country_id', $countryId)->first();
-            $stateId = $state ? $state->id : null;
+        // स्टेट की जांच
+        if (isset($stateName)) {
+            if (trim($stateName) === '') {
+                $errors['state'] = "State name is empty.";
+            } else {
+                $query = State::where('name', $stateName);
+                if ($countryId) {
+                    $query->where('country_id', $countryId);
+                }
+                $state = $query->first();
+                if (!$state) {
+                    $errors['state'] = "Invalid state name: '{$stateName}'" . ($countryName ? " for the selected country: '{$countryName}'." : ".");
+                } else {
+                    $stateId = $state->id;
+                }
+            }
         }
 
-        if ($cityName && $stateId) {
-            $city = City::where('name', $cityName)->where('state_id', $stateId)->first();
-            $cityId = $city ? $city->id : null;
+        // शहर की जांच
+        if (isset($cityName)) {
+            if (trim($cityName) === '') {
+                $errors['city'] = "City name is empty.";
+            } else {
+                $query = City::where('name', $cityName);
+                if ($stateId) {
+                    $query->where('state_id', $stateId);
+                }
+                $city = $query->first();
+                if (!$city) {
+                    $errors['city'] = "Invalid city name: '{$cityName}'" . ($stateName ? " for the selected state: '{$stateName}'." : ".");
+                } else {
+                    $cityId = $city->id;
+                }
+            }
+        }
+
+        // पिनकोड की जांच
+        if (isset($pincode)) {
+            if (trim($pincode) === '') {
+                $errors['pincode'] = "Pincode is empty.";
+            } else {
+                $query = PincodeMaster::where('pincode', $pincode);
+                if ($stateId) {
+                    $query->where('state_id', $stateId);
+                }
+                $pincodeRecord = $query->first();
+                if (!$pincodeRecord) {
+                    $errors['pincode'] = "Invalid pincode: '{$pincode}'" . ($stateName ? " for the selected state: '{$stateName}'." : ".");
+                } else {
+                    $pincodeId = $pincodeRecord->id;
+                    $pincodeVal = $pincodeRecord->pincode;
+                }
+            }
         }
 
         return [
-            'country_id' => $countryId,
-            'state_id' => $stateId,
-            'city_id' => $cityId
+            'country_id'  => $countryId,
+            'state_id'    => $stateId,
+            'city_id'     => $cityId,
+            'pincode_id'  => $pincodeId,
+            'pincode'     => $pincodeVal ?? $pincode,
+            'errors'      => $errors,
         ];
     }
 
@@ -586,7 +741,6 @@ class ItemImportExportService
             $errors['addresses'] = 'At least one address is required.';
             return $errors; 
         }
-    
         foreach ($addresses as $index => $address) {
             if (empty($address['address'])) {
                 $errors["addresses.{$index}.address"] = 'Address is required.';
@@ -598,7 +752,7 @@ class ItemImportExportService
             if (empty($address['country_id'])) {
                 $errors["addresses.{$index}.country_id"] = 'Country is required.';
             }
-            if (empty($address['pincode'])) {
+            if (empty($address['pincode_id'])) {
                 $errors["addresses.{$index}.pincode"] = 'Pincode is required.';
             }
             if (!empty($address['is_billing'])) {
@@ -626,15 +780,47 @@ class ItemImportExportService
             $gstValidation = EInvoiceHelper::validateGstinName($gstinNo);
             if ($gstValidation['Status'] == 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
-    
-                if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
-                    $errors['compliance.gst_registered_name'] = 'Legal name does not match GSTIN record.';
-                }
-    
-                if (($gstData['DtReg'] ?? null) && $gstinRegistrationDate !== $gstData['DtReg']) {
-                    $errors['compliance.gstin_registration_date'] = 'GSTIN registration date does not match GSTIN records.';
-                }
+                $gstnHelper = new GstnHelper();
+               foreach ($addresses as $index => $address) {
+                if (!empty($address['state_id'])) {
+                    $stateValidation = $gstnHelper->validateStateCode(
+                        $address['state_id'],
+                        $gstData['StateCode'] ?? null
+                    );
 
+                    if (!$stateValidation['valid'] && !empty($stateValidation['message'])) {
+                        $errors["addresses.{$index}.state_id"] = $stateValidation['message'];
+                    } else {
+                        $state = State::find($address['state_id']);
+                        if (!$state) {
+                            $errors["addresses.{$index}.state_id"] = 'Invalid state selected.';
+                        }
+                        if (!empty($address['country_id']) && $state && $state->country_id != $address['country_id']) {
+                            $errors["addresses.{$index}.country_id"] = 'Selected country does not belong to the selected state.';
+                        }
+
+                        if (!empty($address['city_id'])) {
+                            $cityExists = City::where('id', $address['city_id'])
+                                ->where('state_id', $address['state_id'])
+                                ->exists();
+
+                            if (!$cityExists) {
+                                $errors["addresses.{$index}.city_id"] = 'Selected city does not belong to the selected state.';
+                            }
+                        }
+
+                        if (!empty($address['pincode_id'])) {
+                            $pincodeExists = PincodeMaster::where('id', $address['pincode_id'])
+                                ->where('state_id', $address['state_id'])
+                                ->exists();
+
+                            if (!$pincodeExists) {
+                                $errors["addresses.{$index}.pincode"] = 'Pincode does not match the selected state.';
+                            }
+                        }
+                    }
+                }
+            }
             } else {
                 $errors['compliance.gstin_no'] = 'The provided GSTIN number is invalid. Please verify and try again.';
             }

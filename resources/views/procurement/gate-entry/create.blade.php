@@ -188,11 +188,11 @@
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No <span class="text-danger">*</span></label>
-                                                    </div>
+                                                    {{-- <div class="col-md-3">
+                                                        <label class="form-label">Reference Type <span class="text-danger">*</span></label>
+                                                    </div> --}}
                                                     <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
+                                                        {{-- <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly> --}}
                                                         <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
@@ -702,12 +702,18 @@
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         let currentProcessType = null;
-
+        let tableRowCount = 0;
         window.onload = function () {
             localStorage.removeItem('selectedPoIds');
             localStorage.removeItem('selectedJoIds');
             localStorage.removeItem('selectedSoIds');
             currentProcessType = null;
+            $("#addNewItemBtn").remove();
+            $("#add_new_item_dis").remove();
+            $(".deleteItemDiscountRow").remove();
+            $("#add_new_head_dis").remove();
+            $("#add_new_head_exp").remove();
+            $(".deleteExpRow").remove();
         };
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
@@ -1177,7 +1183,7 @@
                 $(".poSelect").show();
                 $(".joSelect").show();
                 $("#referenceNoDiv").hide();
-                $("#reference_number_input").val('');
+                // $("#reference_number_input").val('');
                 $("#addNewItemBtn").show();
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 $("select[name='currency_id']").prop('disabled', false);
@@ -1214,6 +1220,10 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+            if(currentProcessType && currentProcessType != null)
+            {
+                rowCount = tableRowCount;
+            }
             let detail_id = "";
             let actionUrl = '{{route("gate-entry.item.attr")}}'+'?item_id='+itemId+'&detail_id='+detail_id+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
@@ -1347,51 +1357,46 @@
             getItemDetail(currentTr, currentProcessType);
         });
 
-        function getItemDetail(currentTr, type=null) {
+        function getItemDetail(currentTr) {
+            const getVal = (selector) => {
+                let el = $(currentTr).find(selector);
+                return el.length ? el.val() : '';
+            };
 
-            let pName = $(currentTr).find("[name*='component_item_name']").val();
-            let itemId = $(currentTr).find("[name*='item_id']").val();
-            let poHeaderId = $(currentTr).find("[name*='purchase_order_id']").val();
-            let poDetailId = $(currentTr).find("[name*='po_detail_id']").val();
-            let joHeaderId = $(currentTr).find("[name*='jo_order_id']").val();
-            let joDetailId = $(currentTr).find("[name*='jo_detail_id']").val();
-            let remark = '';
-            if($(currentTr).find("[name*='remark']")) {
-                remark = $(currentTr).find("[name*='remark']").val() || '';
-            }
+            let itemId = getVal("[name*='[item_id]']");
+            if (!itemId) return;
 
-            if (itemId) {
-                let selectedAttr = [];
-                $(currentTr).find("[name*='attr_name']").each(function(index, item) {
-                    if($(item).val()) {
-                        selectedAttr.push($(item).val());
+            let selectedAttr = [];
+            $(currentTr).find("[name*='[attr_name]']").each(function () {
+                const val = $(this).val();
+                if (val) selectedAttr.push(val);
+            });
+
+            let data = {
+                item_id: itemId,
+                purchase_order_id: getVal("[name*='[purchase_order_id]']"),
+                po_detail_id: getVal("[name*='[po_detail_id]']"),
+                job_order_id: getVal("[name*='[job_order_id]']"),
+                jo_detail_id: getVal("[name*='[jo_detail_id]']"),
+                remark: getVal("[name*='[remark]']"),
+                uom_id: getVal("[name*='[uom_id]']"),
+                qty: getVal("[name*='[accepted_qty]']"),
+                headerId: getVal("[name*='[header_id]']"),
+                detailId: getVal("[name*='[detail_id]']"),
+                selectedAttr: JSON.stringify(selectedAttr),
+                itemStoreData: JSON.parse(getVal("[id*='components_stores_data']") || "[]"),
+                type: currentProcessType
+            };
+
+            let actionUrl = '{{ route('gate-entry.get.itemdetail') }}?' + new URLSearchParams(data).toString();
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status == 200) {
+                        $("#itemDetailDisplay").html(data.data.html);
                     }
                 });
-                let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
-                let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
-                let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
-                let itemStoreData = JSON.parse($(currentTr).find("[id*='components_stores_data']").val() || "[]");
-                if(currentProcessType == 'po')
-                {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+poHeaderId+'&po_detail_id='+poDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
-                }
-                else if(currentProcessType == 'jo')
-                {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&job_order_id='+joHeaderId+'&jo_detail_id='+joHeaderId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
-                }
-                else
-                {
-                    actionUrl = '{{route("gate-entry.get.itemdetail")}}'+'?item_id='+itemId+'&type='+currentProcessType+'&purchase_order_id='+soHeaderId+'&po_detail_id='+soDetailId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&itemStoreData='+JSON.stringify(itemStoreData)+'&remark='+remark+'&uom_id='+uomId+'&qty='+qty+'&headerId='+headerId+'&detailId='+detailId;
-                }
-                fetch(actionUrl).then(response => {
-                    return response.json().then(data => {
-                        if(data.status == 200) {
-                            $("#itemDetailDisplay").html(data.data.html);
-                        }
-                    });
-                });
-            }
         }
 
         /*Tbl row highlight*/
@@ -1471,6 +1476,7 @@
         /*Open Po model*/
         let poOrderTable;
         $(document).on('click', '.poSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#poModal").modal('show');
             currentProcessType = 'po';
             openPurchaseRequest();
@@ -1592,7 +1598,7 @@
                 document_number = $("#document_id_qt_val").val() || '',
                 item_id = $("#item_id_qt_val").val() || '',
                 vendor_id = $("#vendor_id_qt_val").val(),
-                store_id = $("#store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#po_so_qt_val").val() || '',
                 item_search = $("#item_name_search").length ? $("#item_name_search").val() : '',
                 selected_po_ids = selectedPoIds
@@ -1609,7 +1615,7 @@
                 document_number = $("#jo_document_id_qt_val").val() || '',
                 item_id = $("#jo_item_id_qt_val").val() || '',
                 vendor_id = $("#jo_vendor_id_qt_val").val(),
-                store_id = $("#jo_store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#jo_so_qt_val").val() || '',
                 item_search = $("#jo_item_name_search").length ? $("#jo_item_name_search").val() : '',
                 selected_po_ids = selectedJoIds
@@ -1626,7 +1632,7 @@
                 document_number = $("#so_document_id_qt_val").val() || '',
                 item_id = $("#so_item_id_qt_val").val() || '',
                 vendor_id = $("#so_vendor_id_qt_val").val(),
-                store_id = $("#so_store_id").val() || '',
+                store_id = $(".header_store_id").val() || '',
                 so_id = $("#so_so_qt_val").val() || '',
                 item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '',
                 selected_po_ids = encodeURIComponent(selectedSoIds)
@@ -1756,10 +1762,10 @@
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
-                $("#reference_number_input").val(referenceNo);
+                // $("#reference_number_input").val(referenceNo);
             } else {
                 $("#referenceNoDiv").hide();
-                $("#reference_number_input").val('');
+                // $("#reference_number_input").val('');
             }
             $("#reference_type_input").val('po');
 
@@ -1888,6 +1894,7 @@
         /*Open Jo model*/
         let joOrderTable;
         $(document).on('click', '.joSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
             $("#joModal").modal('show');
             currentProcessType = 'jo';
             openJoRequest();
@@ -2096,10 +2103,10 @@
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
-                $("#reference_number_input").val(referenceNo);
+                // $("#reference_number_input").val(referenceNo);
             } else {
                 $("#referenceNoDiv").hide();
-                $("#reference_number_input").val('');
+                // $("#reference_number_input").val('');
             }
             $("#reference_type_input").val('jo');
 
@@ -2401,6 +2408,7 @@
                 + '&asnIds=' + encodeURIComponent(asnIds)
                 + '&asnItemIds=' + encodeURIComponent(asnItemIds)
                 + '&moduleTypes=' + moduleTypes
+                + '&tableRowCount=' + tableRowCount
                 + '&currency_id=' + encodeURIComponent(currencyId)
                 + '&d_date=' + encodeURIComponent(transactionDate)
                 + '&current_row_count=' + current_row_count;

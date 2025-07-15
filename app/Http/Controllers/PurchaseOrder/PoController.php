@@ -1266,6 +1266,12 @@ class PoController extends Controller
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemHeaderExp = floatval($poItem['expense_amount']);
                     $poDetail = PoItem::find($component['po_item_id'] ?? null) ?? new PoItem;
+
+                    $isNewItem = false;
+                    if(isset($poDetail->item_id) && $poDetail->item_id) {
+                        $isNewItem = $poDetail->item_id != ($poItem['item_id'] ?? null);
+                    }
+
                     $updatedQty =  floatval($poItem['order_qty']) - ($poDetail?->order_qty ?? 0);
                     if((isset($component['pi_item_id']) && $component['pi_item_id']) || (isset($poDetail->pi_item_id) && $poDetail->pi_item_id)) {
                         $piItem = PiItem::find($component['pi_item_id'] ?? $poDetail->pi_item_id);
@@ -1311,14 +1317,20 @@ class PoController extends Controller
                     $poDetail->save();
 
                     #Save component Attr
+                    if ($isNewItem && $poDetail->id) {
+                        PoItemAttribute::where('po_item_id', $poDetail->id)
+                            ->delete();
+                    }
                     foreach($poDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                            $poAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
+                            // $poAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                             $poAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            $poAttr = PoItemAttribute::find($poAttrId) ?? new PoItemAttribute;
-                            $poAttr->purchase_order_id = $po->id;
-                            $poAttr->po_item_id = $poDetail->id;
-                            $poAttr->item_attribute_id = $itemAttribute->id;
+                            $poAttr = PoItemAttribute::firstOrNew([
+                                'purchase_order_id' => $po->id,
+                                'po_item_id' => $poDetail->id,
+                                'item_attribute_id' => $itemAttribute->id
+                            ]);
+                            // $poAttr = PoItemAttribute::find($poAttrId) ?? new PoItemAttribute;
                             $poAttr->item_code = $component['item_code'] ?? null;
                             $poAttr->attribute_name = $itemAttribute->attribute_group_id;
                             $poAttr->attribute_value = $poAttrName ?? null;
@@ -1532,6 +1544,12 @@ class PoController extends Controller
                             'message' => 'Please add atleast one row in component table.',
                             'error' => "",
                         ], 422);
+                }
+                if($po->fresh()->po_items->isEmpty()) {
+                    $po->total_expense_value = 0;
+                    $po->total_tax_value = 0;
+                    $po->total_discount_value = 0;
+                    $po->total_item_value = 0;
                 }
             }
 

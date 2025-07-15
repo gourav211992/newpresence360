@@ -68,7 +68,7 @@
                                                         <label class="form-label">Vehicle No. <span class="text-danger">*</span>  <i class="ml-2 fas fa-info-circle text-primary" data-bs-toggle="tooltip" data-bs-html="true" title="" data-bs-original-title="Format:&lt;br&gt;[A-Z]{2} – 2 uppercase letters (e.g., 'MH')&lt;br&gt;[0-9]{2} – 2 digits (e.g., '12')&lt;br&gt;[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')&lt;br&gt;[0-9]{4} – 4 digits (e.g., '1234')" aria-label="Format:&lt;br&gt;[A-Z]{2} – 2 uppercase letters (e.g., 'MH')&lt;br&gt;[0-9]{2} – 2 digits (e.g., '12')&lt;br&gt;[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')&lt;br&gt;[0-9]{4} – 4 digits (e.g., '1234')"></i></label>  
                                                     </div>  
                                                     <div class="col-md-4"> 
-                                                        <input type="text" class="form-control" name="lorry_no" placeholder="UP65AA123" />
+                                                        <input type="text" class="form-control" name="lorry_no" placeholder="MH12AB1234" />
                                                     </div> 
                                                     <div class="col-md-2"> 
                                                         <label class="form-label">Vehicle Type <span class="text-danger">*</span></label>  
@@ -76,13 +76,14 @@
                                                     <div class="col-md-4"> 
                                                         <select name="vehicle_type_id" id="vehicle_type_id" class="form-select select2">
                                                              <option value="">Select</option>
-                                                             @foreach($vehicleTypes as $type)
-                                                        <option value="{{ $type->id }}" 
-                                                           data-capacity="{{ optional($type)->capacity }}"
-                                                           data-unit="{{ optional(optional($type)->unit)->name }}"
-                                                            {{ $type->name }} 
-                                                        </option>
-                                                    @endforeach
+                                                            @foreach($vehicleTypes as $type)
+                                                            <option value="{{ $type->id }}"
+                                                                    data-capacity="{{ optional($type)->capacity }}"
+                                                                    data-unit="{{ optional(optional($type)->unit)->name }}">
+                                                                {{ $type->name }}
+                                                            </option>
+                                                        @endforeach
+
                                                         </select>
                                                     </div> 
                                                     

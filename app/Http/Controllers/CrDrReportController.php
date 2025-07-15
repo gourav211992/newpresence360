@@ -2524,13 +2524,13 @@ class CrDrReportController extends Controller
         });
     });
 
-    if (!empty($validationErrors)) {
-        if ($request->ajax()) {
-            // return JSON error with 422 status
-            return response()->json(['errors' => $validationErrors], 422);
-        }
-        return back()->withErrors($validationErrors)->withInput();
-    }
+    // if (!empty($validationErrors)) {
+    //     if ($request->ajax()) {
+    //         // return JSON error with 422 status
+    //         return response()->json(['errors' => $validationErrors], 422);
+    //     }
+    //     return back()->withErrors($validationErrors)->withInput();
+    // }
 
 
     $grouped = $flattened

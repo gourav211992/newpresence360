@@ -21,13 +21,13 @@ public function validateStateCode($stateId, $gstStateCode)
         if (!$state) {
             return [
                 'valid' => false,
-                'message' => 'State not found'
+                'message' => 'State not found.'
             ];
         }
 
         return [
             'valid' => $state->state_code == $gstStateCode,
-            'message' => 'State does not match GST records'
+            'message' => 'State does not match the registered state in GSTIN details.'
         ];
     } catch (\Exception $e) {
         return [

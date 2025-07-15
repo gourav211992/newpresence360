@@ -15,6 +15,7 @@
  <form class="ajax-input-form" method="POST" action="{{ route('vendor.update', $vendor->id) }}" data-redirect="{{ url('/vendors') }}" id="vendor_form" enctype="multipart/form-data">
  <input type="hidden" name="vendor_id" value="{{ $vendor->id ?? '' }}">
  <input type="hidden" name="vendor_code_type" value="{{ $vendorCodeType }}">
+ <input type="hidden" id="documentStatus" name="document_status" value="{{ $vendor->documentStatus ?? '' }}">
    @csrf
     @method('PUT') 
     @php
@@ -59,11 +60,20 @@
                                            <i data-feather="trash-2" class="me-50"></i> Delete
                                         </button>
                                     @endif
+                                     @if($buttons['amendDelete'])
+                                     <button type="button" style="display:none;" id="btnAmendDelete" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                        data-url="{{ route('vendor.destroy', $vendor->id) }}"
+                                        data-redirect="{{ route('vendor.index') }}"
+                                        data-message="Are you sure you want to delete this record?">
+                                        <i data-feather="trash-2" class="me-50"></i> Delete
+                                    </button>
+                                    @endif
                                     @if($buttons['draft'])
                                         <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
                                             <i data-feather='save'></i> Save as Draft
                                         </button>
                                     @endif
+                                    
                                     @if($buttons['submit'])
                                         <button type="submit" value="submitted" class="btn btn-primary btn-sm submit-button">
                                             <i data-feather="check-circle"></i> Submit
@@ -1482,9 +1492,9 @@
       <div class="modal-content">
         <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.vendor') }}" data-redirect="{{ route('vendor.index') }}" enctype='multipart/form-data'>
           @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($vendor) ? $vendor -> id : ''}}">
-          <input type="hidden" name="status" id="hidden_status" value="">
+          <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
+          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($vendor) ? $vendor -> id : ''}}">
+          <input type="hidden" class = "cannot_disable" name="status" id="hidden_status" value="">
          <div class="modal-header">
             <div>
                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
@@ -2771,8 +2781,48 @@ $(document).ready(function() {
     {
         $('#' + id).modal('show');
     }
+      function disableAllFieldsAndTabs() {
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.classList.contains('cannot_disable')) {
+                return; // Skip this element
+            }
+            el.disabled = true;
+            if (el.type === 'checkbox' || el.type === 'radio') {
+                el.disabled = true;
+            }
+        });
+    }
+    const status = document.getElementById('documentStatus').value;
+    if (status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
+        disableAllFieldsAndTabs();
+    }
+    function enableAmendmentFields() {
+       document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.getAttribute('name') !== 'vendor_code') {
+            el.disabled = false;
+                el.readOnly = false;
+            }
+        });
+       //  GST Applicable condition check
+        const gstApplicable = document.querySelector('input[name="compliance[gst_applicable]"]:checked');
+        if (gstApplicable && gstApplicable.value == '0') {
+            document.getElementById('gstinNo')?.setAttribute('disabled', true);
+            document.querySelector('input[name="compliance[gst_registered_name]"]')?.setAttribute('disabled', true);
+            document.querySelector('input[name="compliance[gstin_registration_date]"]')?.setAttribute('disabled', true);
+            document.querySelector('input[name="compliance[gst_certificate][]"]')?.setAttribute('disabled', true);
+        }
+        const checkbox = document.getElementById('customSwitch3');
+        if (checkbox) {
+            checkbox.disabled = false;
+        }
+        const amendDeleteBtn = document.getElementById('btnAmendDelete');
+        if (amendDeleteBtn) {
+            amendDeleteBtn.style.setProperty('display', 'inline-block', 'important');
+        }
+    }
     function amendConfirm()
 {
+     enableAmendmentFields();
     const amendButton = document.getElementById('amendShowButton');
     if (amendButton) {
         amendButton.style.display = "none";
@@ -2809,6 +2859,7 @@ $(document).ready(function() {
 
     function submitAmend()
     {
+        enableAmendmentFields();
         let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
         $("#action_type_main").val("amendment");
         $("#amendConfirmPopup").modal('hide');

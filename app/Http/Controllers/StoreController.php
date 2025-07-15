@@ -21,17 +21,28 @@ use App\Helpers\Helper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Traits\Deletable; 
 
 class StoreController extends Controller
 {
 
-    
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $stores = ErpStore::withDefaultGroupCompanyOrg()
-            ->orderBy('id', 'desc'); 
+            $user = Helper::getAuthenticatedUser(); 
+            $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+            $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
+            $organization = $user->organization;
+            $groupId = $organization?->group_id;
+
+            if ($isSuperAdmin) {
+                  $stores = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('group_id', $groupId)
+                    ->orderBy('id', 'desc');
+            } else {
+                $stores = ErpStore::orderBy('id', 'desc');
+            }
     
             return DataTables::of($stores)
                 ->addIndexColumn()
@@ -73,10 +84,12 @@ class StoreController extends Controller
     public function create()
     {
         $user = Helper::getAuthenticatedUser();
-      
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
         $useRole = AuthUser::where('id', $user->auth_user_id)->first();
-       if ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER') {
-            $allOrganizations = Organization::where('group_id', $user->group_id)
+        $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
+       if ($isSuperAdmin) {
+            $allOrganizations = Organization::where('group_id',$groupId)
             ->where('status', 'active')
                 ->with('addresses')
                 ->get();
@@ -307,9 +320,13 @@ class StoreController extends Controller
     public function edit($id)
     {
         $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
         $useRole = AuthUser::where('id', $user->auth_user_id)->first();
-        if ($useRole->user_type === 'IAM-SUPER') {
-            $allOrganizations = Organization::where('status', 'active')
+        $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
+        if ($isSuperAdmin) {
+              $allOrganizations = Organization::where('group_id',  $groupId)
+               ->where('status', 'active')
                 ->with('addresses')
                 ->get();
         } else {
@@ -324,7 +341,13 @@ class StoreController extends Controller
         }
         $states = [];
         $cities = [];
-        $store = ErpStore::find($id);
+       if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+            ->where('group_id', $groupId)
+            ->find($id);
+        } else {
+            $store = ErpStore::find($id);
+        }
         if (!$store) {
             return redirect()->back()->with('error', 'Store not found.');
         }
