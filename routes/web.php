@@ -169,6 +169,8 @@ use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\PutAwayController;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
 
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
@@ -2052,6 +2054,18 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::post('/', 'store')->name('expense-masters.store');
         Route::put('/{id}', 'update')->name('expense-masters.update');
         Route::delete('/{id}', 'destroy')->name('expense-masters.destroy');
+    });
+
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+    Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
     });
 
     Route::get('/search', [AutocompleteController::class, 'search'])->name('search');
