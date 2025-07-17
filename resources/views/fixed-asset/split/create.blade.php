@@ -344,7 +344,7 @@
                                                                 <td class="customernewsection-form">
                                                                     <div
                                                                         class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox" class="form-check-input">
+                                                                        <input type="checkbox" class="form-check-input row-check">
                                                                         <label class="form-check-label"></label>
                                                                     </div>
                                                                 </td>
@@ -739,7 +739,7 @@
             newRow = ` <tr >
                  <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
-                  <input type="checkbox" class="form-check-input">
+                  <input type="checkbox" class="form-check-input row-check">
                   <label class="form-check-label"></label>
                 </div>
               </td>
@@ -1459,7 +1459,7 @@
             let blank_row = ` <tr >
               <td class="customernewsection-form">
                 <div class="form-check form-check-primary custom-checkbox">
-                  <input type="checkbox" class="form-check-input">
+                  <input type="checkbox" class="form-check-input row-check">
                   <label class="form-check-label"></label>
                 </div>
               </td>

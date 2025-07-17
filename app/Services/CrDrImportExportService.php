@@ -49,13 +49,9 @@ class CrDrImportExportService
                 'error' => "Settle Amount must be a valid number. Found: '{$settleAmountRaw}'"
             ];
         }
-
         $validationErrors = [];
         $reportedLedgers = [];
-
-        $ledger = Ledger::withDefaultGroupCompanyOrg()
-            ->with('customer', 'vendor')
-            ->where('name', $ledgerName)
+        $ledger = Ledger::where('name', $ledgerName)
             ->first();
 
         $relation = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
