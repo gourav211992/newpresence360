@@ -13,11 +13,7 @@ class ErpMaintenanceTypeController extends Controller
    public function index(Request $request)
     {
         // Get the authenticated user and their organization
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::find($user->organization_id); 
-        $maintenanceTypes = ErpMaintenanceType::where('organization_id', $organization->id)
-            ->whereNull('deleted_at')
-            ->get();
+        $maintenanceTypes = ErpMaintenanceType::get();
         if ($request->ajax()) {
             return response()->json(['data' => $maintenanceTypes]);
         }
@@ -28,16 +24,14 @@ class ErpMaintenanceTypeController extends Controller
     public function store(ErpMaintenanceTypeRequest $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::find($user->organization_id);
+        $organization = $user->organization;
 
         $rows = $request->input('rows', []);
         $errors = [];
 
         foreach ($rows as $row) {
             // Unique name validation per organization, skipping current id if updating
-            $query = ErpMaintenanceType::where('name', $row['name'])
-                ->where('organization_id', $organization->id)
-                ->whereNull('deleted_at');
+            $query = ErpMaintenanceType::where('name', $row['name']);
 
             if (!empty($row['id'])) {
                 $query->where('id', '!=', $row['id']);

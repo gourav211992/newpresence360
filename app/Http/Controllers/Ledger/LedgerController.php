@@ -9,6 +9,9 @@ use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Models\CostCenter;
 use App\Models\Group;
+use Illuminate\Support\Facades\DB;
+use Exception;
+
 use App\Models\Ledger;
 use App\Models\Organization;
 use Illuminate\Http\Request;
@@ -22,6 +25,7 @@ use App\Imports\LedgerImport;
 use App\Mail\ImportComplete;
 use App\Models\Voucher;
 use App\Models\ItemDetail;
+use App\Models\LedgerHistory;
 use App\Models\PaymentVoucherDetails;
 use App\Models\UploadLedgerMaster;
 use Maatwebsite\Excel\Facades\Excel;
@@ -120,11 +124,25 @@ class LedgerController extends Controller
                         return $ledger->costCenter ? $ledger->costCenter->name : 'N/A';
                     })
                     ->addColumn('status', function ($ledger) {
+                        $status = in_array($ledger->document_status,[ConstantHelper::REJECTED,ConstantHelper::SUBMITTED,ConstantHelper::PARTIALLY_APPROVED])?
+                        $ledger->document_status:'InActive';
+                        if($ledger->document_status!=null){
                         if ($ledger->status == 1) {
                             $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
                         } else {
-                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">Inactive</span>';
+                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">'.$status.'</span>';
                         }
+                    }
+                        else
+                        {
+                            if ($ledger->status == 1) {
+                            $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
+                        } else {
+                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">InActive</span>';
+                        }
+                        }
+                              
+
                         return $btn;
                     })
                     ->editColumn('created_at', function ($data) {
@@ -140,15 +158,15 @@ class LedgerController extends Controller
                         <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" href="' . route('ledgers.edit', ['ledger' => $ledger->id]) . '">
                                 <i data-feather="edit-3" class="me-50"></i>
-                                <span>Edit</span>
+                                <span>View</span>
                             </a>
 
-                            <a class="delete-btn dropdown-item"
+                            <!--<a class="delete-btn dropdown-item"
                                     data-url="' . route('ledgers.destroy', ['ledger' => $ledger->id]) . '"
                                     data-redirect="' . route('ledgers.index') . '"
                                     data-message="Are you sure you want to delete this ledger?">
                                 <i data-feather="trash-2" class="me-50"></i> Delete
-                            </a>
+                            </a>-->
                         </div>
                     </div>';
                     })
@@ -214,8 +232,10 @@ class LedgerController extends Controller
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $itemCodeType = 'Manual';
+        $book_id = null;
         if ($services && $services['current_book']) {
             if (isset($services['current_book'])) {
+                $book_id = $services['current_book']->id;
                 $book = $services['current_book'];
                 if ($book) {
                     $parameters = new stdClass();
@@ -228,10 +248,11 @@ class LedgerController extends Controller
                     }
                 }
             }
+        
         }
+        
 
-
-        return view('ledgers.add_ledger', compact('itemCodeType', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
+        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id','costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
     }
 
     public function showImportForm()
@@ -450,6 +471,10 @@ class LedgerController extends Controller
                 'max:255',
             ],
         ]);
+        $user = Helper::getAuthenticatedUser();
+        $request->merge([
+            'created_by' => $user->auth_user_id,
+        ]);
         $existingName = Ledger::where('code', $request->name)
             ->first();
 
@@ -494,11 +519,48 @@ class LedgerController extends Controller
 
         $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
         $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        if ($services && $services['current_book']) {
+            if (isset($services['current_book'])) {
+                $book = $services['current_book'];
+                if ($book) {
+                    $parameters = new stdClass();
+                    foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                        $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                        $parameters->{$paramName} = $param;
+                    }
+                    if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                        $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                    }
+                }
+            }
+        }
+
 
         // Create a new ledger record with organization details
         $ledger = Ledger::create(array_merge($request->all(), $validatedData));
         if($request->has('prefix') && $request->prefix!="")
-        Group::updatePrefix($ledger->id,$request->prefix);
+            Group::updatePrefix($ledger->id,$request->prefix);
+            $bookId = $ledger->book_id;
+            $docId = $ledger->id;
+            $remarks = $request->remarks; 
+            $attachments = $request->file('attachment');
+            $currentLevel = $item->approval_level ?? 1;
+            $revisionNumber = $item->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($ledger);
+            $totalValue = 0;
+        
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $ledger->document_status = $document_status;
+            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $ledger->status = 0;
+            }
+            else{
+                $ledger->status = 1;
+            }
+            $ledger->save();
     
 
 
@@ -509,10 +571,14 @@ class LedgerController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, string $id)
     {
         $user = Helper::getAuthenticatedUser();
+        if($request->has('revisionNumber'))
+        $data = LedgerHistory::where('source_id',$id)->where('revision_number',$request->revisionNumber)->firstorFail();
+        else
         $data = Ledger::find($id);
+            
 
         $costCenters = CostCenter::where('status', 'active')
             ->where('organization_id', $user->organization_id);
@@ -579,6 +645,20 @@ class LedgerController extends Controller
                 }
             }
         }
+        $item = $data;
+        $revision_number = $item->revision_number;
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay($item->book_id,$item->document_status , $item->id, 1, $item->approval_level, $item -> created_by ?? 0, $userType['type'], $revision_number);
+        $revNo = $item->revision_number;
+        
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $item->revision_number;
+        }
+        $docValue =1;
+        $approvalHistory = Helper::getApprovalHistory($item->book_id, $item->id, $revNo, $docValue, $item -> created_by);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$item->document_status] ?? '';
         return view('ledgers.edit_ledger', compact(
             'groups',
             'itemCodeType',
@@ -589,6 +669,10 @@ class LedgerController extends Controller
             'tds_group_id',
             'tcs_group_id',
             'existingLedgers',
+            'approvalHistory',
+            'buttons',
+            'docStatusClass'
+
         ));
     }
 
@@ -708,15 +792,33 @@ class LedgerController extends Controller
         $update->code = $request->code;
         $update->cost_center_id = $request->cost_center_id;
         $update->ledger_group_id = $request->ledger_group_id;
-        $update->status = $request->status;
+        $update->status = $request->status=='on'?1:0;
         $update->tax_type = $request->tax_type ?? null;
         $update->tax_percentage =  $request->tax_percentage ?? null;
         $update->tds_section = $request->tds_section ?? null;
         $update->tds_percentage = $request->tds_percentage ?? null;
         $update->tcs_section = $request->tcs_section ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
-
-        $update->save();
+        $bookId = $update->book_id;
+            $docId = $update->id;
+            $remarks = $request->remarks??""; 
+            $attachments = $request->file('attachment')??null;
+            $currentLevel = $update->approval_level ?? 1;
+            $revisionNumber = $update->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($update);
+            $totalValue = 0;
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $update->document_status = $document_status;
+            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $update->status = 0;
+            }
+            else
+                $update->status = 1;
+            $update->save();
+    
+     
 
 
 
@@ -736,7 +838,8 @@ class LedgerController extends Controller
       
          if($request->has('prefix') && $request->prefix!="")
         Group::updatePrefix($update->id,$request->prefix);
-
+      
+        
 
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
     }
@@ -928,5 +1031,81 @@ class LedgerController extends Controller
         }
 
         return $finalItemCode;
+    }
+    
+    public function amendment(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $voucher = Ledger::find($id);
+            if (!$voucher) {
+                return response()->json(['data' => [], 'message' => "Ledger not found.", 'status' => 404]);
+            }
+
+            $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'Ledger', 'relation_column' => ''],
+            ];
+
+            $a = Helper::documentAmendment($revisionData, $id);
+            if ($a) {
+                Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, 'Amendment', $request->file('attachment') ?? null, $voucher->approvalLevel, 'amendment');
+
+                $voucher->document_status = ConstantHelper::DRAFT;
+                $voucher->status = 0;
+                $voucher->revision_number = $voucher->revision_number + 1;
+                $voucher->save();
+            }
+
+            DB::commit();
+            return response()->json(['data' => [], 'message' => "Amendment done!", 'status' => 200]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Amendment Submit Error: ' . $e->getMessage());
+            return response()->json(['data' => [], 'message' => "An unexpected error occurred. Please try again.", 'status' => 500]);
+        }
+    }
+
+    public function approveVoucher(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+         try {
+            $saleOrder = Ledger::find($request->id);
+            $bookId = $saleOrder->book_id;
+            $docId = $saleOrder->id;
+            $docValue = $saleOrder->amount??0;
+            $remarks = $request->remarks??"";
+            $attachments = $request->file('attachments')??null;
+            $currentLevel = $saleOrder->approval_level;
+            $revisionNumber = $saleOrder->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($saleOrder);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $saleOrder->document_status = $approveDocument['approvalStatus'];
+            $saleOrder->approval_level = $approveDocument['nextLevel'];
+            $document_status = $approveDocument['approvalStatus'];
+            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $saleOrder->status = 0;
+            }
+            else{
+                $saleOrder->status=1;
+            }
+            $saleOrder->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $saleOrder,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

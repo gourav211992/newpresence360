@@ -13,11 +13,7 @@ class ErpDefectTypeController extends Controller
     public function index(Request $request)
     {
         // dd('This is the index method of ErpDefectTypeController');
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::find($user->organization_id); 
-        $defectTypes = ErpDefectType::where('organization_id', $organization->id)
-            ->whereNull('deleted_at')
-            ->get();
+        $defectTypes = ErpDefectType::get();
         if ($request->ajax()) {
             return response()->json(['data' => $defectTypes]);
         }
@@ -27,17 +23,15 @@ class ErpDefectTypeController extends Controller
 
     public function store(ErpDefectTypeRequest $request)
     {
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::find($user->organization_id);
-
+        
         $rows = $request->input('rows', []);
         $errors = [];
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
 
         foreach ($rows as $row) {
             // Unique name validation per organization, skipping current id if updating
-            $query = ErpDefectType::where('name', $row['name'])
-                ->where('organization_id', $organization->id)
-                ->whereNull('deleted_at');
+            $query = ErpDefectType::where('name', $row['name']);
 
             if (!empty($row['id'])) {
                 $query->where('id', '!=', $row['id']);

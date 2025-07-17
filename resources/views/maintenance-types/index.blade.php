@@ -351,7 +351,12 @@
                             title: 'Success!',
                             text: res.success || 'Records saved successfully.',
                             confirmButtonText: 'OK'
+                        }).then(() => {
+                            location.reload(); // Reload the page after user clicks 'OK'
                         });
+                        setTimeout(() => {
+                            location.reload();
+                        }, 3500);
                         fetchRows();
                     },
                     error: function(xhr) {

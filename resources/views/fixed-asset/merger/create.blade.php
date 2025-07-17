@@ -1569,7 +1569,7 @@ $(document).on('keydown', function(e) {
         function applyFixedPrefixToInputs() {
             const selector = '#asset_code';
             let prefix = $('.sub_asset_id').first().find('option:selected').first().text();
-            console.log(prefix);
+            //console.log("prefix"+prefix);
 
             if (!prefix) {
                 return; // Exit if prefix is not set

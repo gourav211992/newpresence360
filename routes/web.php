@@ -1,6 +1,8 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -327,7 +329,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
     Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
     Route::post('/ledger/generate-code', [LedgerController::class,'generateLedgerCode'])->name('generate-ledger-code');
-
+     Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
+    Route::get('ledgerAmendment/{id}', [LedgerController::class, 'amendment'])->name('ledgers.amendment');
+   
+    
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
     Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
@@ -2848,6 +2853,17 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 });
 
 
+Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });
 // generate IRN
 
 

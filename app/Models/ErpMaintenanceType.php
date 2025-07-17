@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\DefaultGroupCompanyOrg;
+use App\Traits\Deletable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ErpMaintenanceType extends Model
 {
-    use HasFactory;
+    use HasFactory,DefaultGroupCompanyOrg, Deletable,softDeletes;
 
     protected $table = 'erp_maintenance_types';
 

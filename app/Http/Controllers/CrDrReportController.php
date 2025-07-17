@@ -81,8 +81,7 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -99,7 +98,7 @@ class CrDrReportController extends Controller
 
         $cost_centers = Helper::getActiveCostCenters();
 
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status', 'active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::RECEIVABLE;
@@ -113,8 +112,7 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
 
             if (count($ledger_groups) > 0) {
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -129,8 +127,7 @@ class CrDrReportController extends Controller
                     $customers = self::get_ledgers_data($ledger_groups, $ages_all, 'debit', $request->ledger, $start, $end, $org, $loc, $cost_center_ids);
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -182,8 +179,7 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -196,7 +192,7 @@ class CrDrReportController extends Controller
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
 
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status', 'active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         $group_name = Group::find($request->group)->name ?? ConstantHelper::PAYABLE;
@@ -208,8 +204,7 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
             if (count($ledger_groups) > 0) {
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -223,8 +218,7 @@ class CrDrReportController extends Controller
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
                 $ages_all = [$request->age0 ?? 30, $request->age1 ?? 60, $request->age2 ?? 90, $request->age3 ?? 120, $request->age4 ?? 180];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -279,8 +273,7 @@ class CrDrReportController extends Controller
         $ledger_groups_all = [];
 
         foreach ($ledger_groups as $group) {
-            $ledgers = Ledger::withDefaultGroupCompanyOrg()
-                ->where('status', 1)
+            $ledgers = Ledger::where('status', 1)
                 ->where(function ($query) use ($group) {
                     $query->where('ledger_group_id', $group)
                         ->orWhereJsonContains('ledger_group_id', (string) $group);
@@ -288,7 +281,7 @@ class CrDrReportController extends Controller
                 ->pluck('id')
                 ->toArray();
             if ($ledgers) {
-                $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost, $ledgers, $group, $type, $filter) {
+                $vouchers = Voucher::withWhereHas('items', function ($query) use ($cost, $ledgers, $group, $type, $filter) {
                     $query->whereIn('ledger_id', $ledgers);
                     if (!empty($filter)) {
                         $query->where('ledger_id', $filter);
@@ -378,7 +371,7 @@ class CrDrReportController extends Controller
 
                 foreach ($l_ledger as $customer) {
                     $ledger = $customer->ledger_id;
-                    $voucher = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost, $ledger, $group, $type) {
+                    $voucher = Voucher::withWhereHas('items', function ($query) use ($cost, $ledger, $group, $type) {
                         $query->where('ledger_id', $ledger);
                         $query->where('ledger_parent_id', $group);
                         $query->where($type . '_amt_org', '>', 0);
@@ -437,8 +430,7 @@ class CrDrReportController extends Controller
             } else {
                 if ($filter == "") {
                     $childs = Group::find($group)->getAllChildIds();
-                    $ledgers = Ledger::withDefaultGroupCompanyOrg()
-                        ->where('status', 1)
+                    $ledgers = Ledger::where('status', 1)
                         ->where(function ($query) use ($childs) {
                             $query->whereIn('ledger_group_id', $childs);
                             foreach ($childs as $child) {
@@ -447,7 +439,7 @@ class CrDrReportController extends Controller
                         })->pluck('id')->toArray();
 
 
-                    $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost, $childs, $type, $ledgers) {
+                    $vouchers = Voucher::withWhereHas('items', function ($query) use ($cost, $childs, $type, $ledgers) {
                         $query->whereIn('ledger_parent_id', $childs);
                         $query->whereIn('ledger_id', $ledgers);
                         $query->where($type . '_amt_org', '>', 0);
@@ -668,8 +660,7 @@ class CrDrReportController extends Controller
         $grps[] = $drp_group->id;
         $search_ledger = Group::whereIn('id', $grps)->get()->pluck('id');
 
-        $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->where('status', 1)
+        $all_ledgers = Ledger::where('status', 1)
             ->where(function ($query) use ($search_ledger) {
                 $query->whereIn('ledger_group_id', $search_ledger);
 
@@ -716,7 +707,7 @@ class CrDrReportController extends Controller
                     'days_diff' => 0
                 ];
                 foreach ($items as $item) {
-                    $d_date = Voucher::withDefaultGroupCompanyOrg()->find($item->voucher_id)->document_date;
+                    $d_date = Voucher::find($item->voucher_id)->document_date;
                     $totals->document_date = $d_date;
                     $totals->ledger_parent_id = $item->ledger_parent_id;
                     $totals->ledger_id = $item->ledger_id;
@@ -751,7 +742,7 @@ class CrDrReportController extends Controller
 
         foreach ($vendors as $vendor) {
             $ages = self::getAgedReceipts([$vendor->id], $ages_all, $doc_types, $start, $end);
-            $voucher = Voucher::withDefaultGroupCompanyOrg()->find($vendor->id);
+            $voucher = Voucher::find($vendor->id);
             $bill_no = "";
             $invoice_amount = "";
             $view_route = "";
@@ -1020,7 +1011,7 @@ class CrDrReportController extends Controller
             //     $groups[] = $group;
 
             // foreach($groups as $grp){
-            //     $ledgers = Ledger::withDefaultGroupCompanyOrg()->where('ledger_group_id',$grp)
+            //     $ledgers = Ledger::where('ledger_group_id',$grp)
             //     ->orWhereJsonContains('ledger_group_id', (string)$grp)->pluck('id')->toArray();
 
 
@@ -1202,8 +1193,7 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -1228,7 +1218,7 @@ class CrDrReportController extends Controller
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost_center_ids, $ledger, $group, $type) {
+        $vouchers = Voucher::withWhereHas('items', function ($query) use ($cost_center_ids, $ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
@@ -1272,7 +1262,7 @@ class CrDrReportController extends Controller
         $companies = Helper::getAuthenticatedUser()->access_rights_org;
 
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status', 'active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         $locations = InventoryHelper::getAccessibleLocations();
 
         return view('finance_report.details', compact('cost_centers', 'companies', 'cost_groups', 'organizationId', 'locations', 'ledger_name', 'scheduler', 'group_name', 'credit_days', 'data', 'cc_users', 'to_users', 'to_user_mail', 'to_type', 'ledger', 'group', 'type', 'date', 'date2'));
@@ -1326,7 +1316,7 @@ class CrDrReportController extends Controller
         $credit_days = $credit_days ?? 0;
         $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($ledger, $group, $type) {
+        $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type) {
             $query->where('ledger_id', $ledger);
             $query->where('ledger_parent_id', $group);
             $query->where($type . '_amt_org', '>', 0);
@@ -1380,8 +1370,7 @@ class CrDrReportController extends Controller
                 $cost_center_ids = $request->cost_center_id ?? null;
                 // dd($cost_center_ids);
             } elseif (!empty($request->cost_group_id)) {
-                $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                    ->with('costCenters')
+                $cost_group = CostGroup::with('costCenters')
                     ->where('id', $request->cost_group_id)
                     ->where('status', 'active')
                     ->first();
@@ -1406,7 +1395,7 @@ class CrDrReportController extends Controller
             $doc_types = $type === 'debit' ? [ConstantHelper::RECEIPTS_SERVICE_ALIAS, 'Receipt'] : [ConstantHelper::PAYMENTS_SERVICE_ALIAS, 'Payment'];
             $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
-            $vouchers = Voucher::withDefaultGroupCompanyOrg()->withWhereHas('items', function ($query) use ($cost_center_ids, $ledger, $group, $type) {
+            $vouchers = Voucher::withWhereHas('items', function ($query) use ($cost_center_ids, $ledger, $group, $type) {
                 $query->where('ledger_id', $ledger);
                 $query->where('ledger_parent_id', $group);
                 $query->where($type . '_amt_org', '>', 0);
@@ -1639,8 +1628,7 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -1667,8 +1655,7 @@ class CrDrReportController extends Controller
 
         $cus_type = $type === 'debit' ? 'customer' : 'vendor';
 
-        $vouchers = Voucher::withDefaultGroupCompanyOrg()
-            ->withWhereHas('items', function ($query) use ($ledger, $group, $type, $cost_center_ids) {
+        $vouchers = Voucher::withWhereHas('items', function ($query) use ($ledger, $group, $type, $cost_center_ids) {
                 $query->where('ledger_id', $ledger);
                 $query->where('ledger_parent_id', $group);
                 $query->where($type . '_amt_org', '>', 0);
@@ -1746,8 +1733,7 @@ class CrDrReportController extends Controller
         if ($group) {
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
             if (count($ledger_groups) > 0) {
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1758,8 +1744,7 @@ class CrDrReportController extends Controller
                     ->get();
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1780,7 +1765,7 @@ class CrDrReportController extends Controller
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status', 'active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         return view('finance_report.creditors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers', 'cost_groups'));
     }
     public function debitorsPendingPayment(Request $request)
@@ -1819,8 +1804,7 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
 
             if (count($ledger_groups) > 0) {
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1831,8 +1815,7 @@ class CrDrReportController extends Controller
                     ->get();
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1853,7 +1836,7 @@ class CrDrReportController extends Controller
         $organizationId = $user->organization_id;
         $locations = InventoryHelper::getAccessibleLocations();
         $cost_centers = Helper::getActiveCostCenters();
-        $cost_groups = CostGroup::withDefaultGroupCompanyOrg()->with('costCenters')->where('status', 'active')->get()->toArray();
+        $cost_groups = CostGroup::with('costCenters')->where('status', 'active')->get()->toArray();
         return view('finance_report.debitors-pending-payment', compact('date', 'date2', 'type', 'all_ledgers', 'all_groups', 'books_t', 'organizationId', 'mappings', 'locations', 'cost_centers', 'cost_groups'));
     }
 
@@ -1874,8 +1857,7 @@ class CrDrReportController extends Controller
         $group_id[] = $ledger_group->id;
         $accessibleLocations = InventoryHelper::getAccessibleLocations();
         $locationIds = $accessibleLocations->pluck('id')->toArray();
-        $ledger_ids = Ledger::withDefaultGroupCompanyOrg()
-            ->where(function ($query) use ($group_id, $request) {
+        $ledger_ids = Ledger::where(function ($query) use ($group_id, $request) {
                 $query->where(function ($q) use ($group_id, $request) {
                     foreach ($group_id as $id) {
                         $q->orWhereJsonContains('ledger_group_id', (string) $id);
@@ -1898,8 +1880,7 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
-                ->with('costCenters')
+            $cost_group = CostGroup::with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -2270,7 +2251,7 @@ class CrDrReportController extends Controller
     {
         $uploadItems = UploadPendingPaymentMaster::where('import_status', 'Success')
             ->get();
-        // $items = Ledger::withDefaultGroupCompanyOrg()->orderBy('id', 'desc')
+        // $items = Ledger::orderBy('id', 'desc')
         //     ->whereIn('code', $uploadItems->pluck('code'))->get();
         return Excel::download(new PendingPaymentExport($uploadItems, $this->PendingPaymentImportExportService), "successful-items.xlsx");
     }
