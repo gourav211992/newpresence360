@@ -11,9 +11,9 @@ use App\Traits\Deletable;
 use App\Helpers\ConstantHelper;
 
 
-class Ledger extends Model
+class LedgerHistory extends Model
 {
-    protected $table = 'erp_ledgers';
+    protected $table = 'erp_ledgers_history';
 
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg;
 
