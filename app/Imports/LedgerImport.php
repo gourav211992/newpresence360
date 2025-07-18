@@ -26,17 +26,20 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
     protected $service;
     protected $user;
     protected $code_type;
+    protected $book_id;
 
     public function chunkSize(): int
     {
         return 500;
     }
 
-    public function __construct(LedgerImportExportService $service, $user,$code_type)
+    public function __construct(LedgerImportExportService $service, $user,$code_type,$book_id)
     {
         $this->service = $service;
         $this->user = $user;
         $this->code_type = $code_type;
+        $this->book_id = $book_id;
+
     }
     public function startRow(): int
     {
@@ -276,6 +279,7 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             $code = $uploadedItem->code;
             $item = new Ledger([
                 'code' => $code,
+                'book_id'=> $this->book_id,
                 'name' => $uploadedItem->name,
                 'ledger_group_id' => json_encode($groupIds),
                 'status' => $this->service->mapStatus($uploadedItem['status'] ?? 1),
@@ -288,7 +292,9 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
                 'organization_id' => $uploadedItem->organization_id,
                 'company_id' => $uploadedItem->company_id,
                 'group_id' => $uploadedItem->group_id,
+                'created_by'=>$this->user->id,
             ]);
+            
 
             $rules = [
                 'code' => ['required', 'string', 'max:255'],
@@ -337,6 +343,28 @@ class LedgerImport implements ToModel, WithHeadingRow, WithChunkReading, WithSta
             }
 
             $item->save();
+            $ledger= $item;
+            $bookId = $this->book_id;
+            $docId = $ledger->id;
+            $remarks = ""; 
+            $attachments = null;
+            $currentLevel = $item->approval_level ?? 1;
+            $revisionNumber = $item->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($ledger);
+            $totalValue = 0;
+        
+
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $status = 1;
+            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $status = 0;
+            }
+            $document_status = $approveDocument['approvalStatus'];
+            $ledger->document_status = $document_status;
+            $ledger->status = $status;
+            $ledger->save();
 
             $uploadedItem->update([
                 'import_status' => 'Success',

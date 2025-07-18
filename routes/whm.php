@@ -34,6 +34,8 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
 
     Route::controller(PutawayTaskController::class)->group(function () {
         Route::get('/putaway/tasks', 'index')->name('whm.putaway.tasks');
+        Route::get('/putaway/pending-tasks', 'pendingTasks')->name('whm.putaway.pending-tasks');
+        // Route::get('/putaway/scanned-packets', 'scannedPackets')->name('whm.putaway.scanned-packets');
         Route::post('/putaway/save-as-draft', 'saveAsDraft')->name('whm.putaway.save-as-draft');
         Route::post('/putaway/update-status', 'updateStatus')->name('whm.putaway.update-status');
 
@@ -42,7 +44,9 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
     Route::controller(PicklistTaskController::class)->group(function () {
         Route::get('/picklist/tasks', 'index')->name('whm.picklist.tasks');
         Route::get('/picklist/items', 'items')->name('whm.picklist.items');
-        Route::get('/picklist/item-location', 'itemLocation')->name('whm.picklist.item-location');
+        Route::get('/picklist/item-detail', 'itemDetail')->name('whm.picklist.item-detail');
+        Route::post('/picklist/save-as-draft', 'saveAsDraft')->name('whm.picklist.save-as-draft');
+        Route::post('/picklist/update-status', 'updateStatus')->name('whm.picklist.update-status');
     });
     
     

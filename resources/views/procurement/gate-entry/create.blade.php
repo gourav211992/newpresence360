@@ -53,7 +53,7 @@
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" method="POST" action="{{ route('gate-entry.store') }}" data-redirect="/gate-entries" enctype="multipart/form-data">
+    <form class="ajax-input-form"  data-module="ge" method="POST" action="{{ route('gate-entry.store') }}" data-redirect="/gate-entries" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <!-- <input type="hidden" name="bill_to_follow" id="bill_to_follow" value=""> -->
         @csrf
@@ -405,7 +405,9 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                        data-json-key="components_json"
+                                                        data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
@@ -695,6 +697,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("gate-entry.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("gate-entry.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>

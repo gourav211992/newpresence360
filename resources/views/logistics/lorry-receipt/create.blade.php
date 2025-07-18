@@ -298,7 +298,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="distance">Distance (Km) <span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control" id="distance" name="distance"  placeholder="Enter Distance (Km)" />
+                                                            <input type="text" class="form-control" id="distance" name="distances"  placeholder="Enter Distance (Km)" />
                                                              <input type="hidden" class="form-control" id="distanceInput" name="distance"  placeholder="Enter Distance (Km)" />
                                                         </div>
                                                     </div>
@@ -306,7 +306,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label" for="freight_charges">Freight Charges (Rs) <span class="text-danger">*</span></label>
-                                                            <input type="number" class="form-control" id="freight_charges" name="freight_charges"  placeholder="Enter Freight Charges (Rs)" />
+                                                            <input type="number" class="form-control" id="freight_charges" name="freight_charge"  placeholder="Enter Freight Charges (Rs)" />
                                                              <input type="hidden" class="form-control" id="freightCharges" name="freight_charges"  placeholder="Enter Freight Charges (Rs)" />
                                                         </div>
                                                     </div>
@@ -802,6 +802,10 @@ $('#addRowBtn').on('click', function () {
     tbody.append(newRow);
   
 
+    const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
+    const fixedAmountGlobal = parseInt($('#fixedAmountGlobal').val() || 0);
+    const freeAmountGlobal = parseInt($('#freeAmountGlobal').val() || 0);
+
     setTimeout(() => {
     const $rows = $('#item-table-body').find('tr');
 
@@ -812,13 +816,13 @@ $('#addRowBtn').on('click', function () {
 
         // Only set freight if it's empty or 0
         if (!currentVal || parseFloat(currentVal) === 0) {
-            if (index < activeFreePointId) {
+            if (index < activeFreePoint) {
                 freightInput.val(0);
             } else {
-                if (fixedAmountGlobalId) {
-                    freightInput.val(fixedAmountGlobalId);
+                if (fixedAmountGlobal) {
+                    freightInput.val(fixedAmountGlobal);
                 } else {
-                    freightInput.val(freeAmountGlobalId);
+                    freightInput.val(freeAmountGlobal);
                 }
             }
         }
@@ -830,21 +834,20 @@ $('#addRowBtn').on('click', function () {
     calculateTotals();
 }, 300);
 
-setTimeout(() => {
-        updateRouteDetailsUI(); // Add this
-    }, 500);
     rowIndex++;
 });
 
 
-    $(document).ready(function () {
+ $(document).ready(function () {
         calculateTotals();
-
         $('#lrCharges, #freightCharges').on('input', calculateTotals);
         $(document).on('input', 'input[name*="[freight]"]', calculateTotals);
-    });
-    $(document).on('click', '#deleteSelected', function (e) {
-        e.preventDefault();
+  });
+
+// delete row script
+$(document).on('click', '#deleteSelected', function (e) {
+    e.preventDefault(); 
+    e.stopImmediatePropagation(); 
 
     const selectedRows = $('.rowCheckbox:checked').closest('tr');
 
@@ -856,9 +859,8 @@ setTimeout(() => {
             confirmButtonText: 'OK'
         });
         return;
-    }
+    }   
 
-    // Optional: Confirmation
     Swal.fire({
         icon: 'question',
         title: 'Are you sure?',
@@ -868,7 +870,18 @@ setTimeout(() => {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            calculateTotals(); 
+            applyFreightToRows(selectedRows.length); 
+            calculateTotals();
+        }
+    });
+});
+
+$(document).ready(function () {
+    $('#item-table-body tr').each(function () {
+        const $row = $(this);
+        const locationId = $row.find('input[name*="[location_id]"]').val();
+        if (locationId && globalSourceId) {
+            checkFreePoint(locationId, globalSourceId, $row, true); 
         }
     });
 });
@@ -1184,15 +1197,16 @@ $(document).ready(function () {
 });
 
 
- // location on focus
+// location on focus
 let activeFreePoint = 0;
 let fixedAmount = null;
 let sourceRouteId = null;
 let freeAmount = null;
+let globalSourceId = $('#sourceIdInput').val();
 
 let pricingCache = {}
 
-  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null) {
+  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
     $.ajax({
@@ -1209,113 +1223,108 @@ let pricingCache = {}
             const sourceAmount = parseInt(res.source_amount || 0);
             $('#sourceDefaultAmountGlobal').val(sourceAmount);
 
-            if (res.status === 'both_exist') {
-                $('#activeFreePointGlobal').val(parseInt(res.free_point));
-                $('#fixedAmountGlobal').val(parseInt(res.amount));
-                $('#freeAmountGlobal').val(parseInt(res.free_amount));
-              
-
-
-                pricingCache[locationId] = {
-                    type: 'both',
-                    free_point: parseInt(res.free_point),
-                    amount: parseInt(res.amount),
-                    freeAmount: parseInt(res.free_amount),
-                };
-            }
-
-            if (res.status === 'exists_in_fixed') {
-                $('#activeFreePointGlobal').val(0);
-                $('#fixedAmountGlobal').val(parseInt(res.amount));
-
-                pricingCache[locationId] = {
-                    type: 'fixed',
-                    amount: parseInt(res.amount),
-                };
-            }
-
-          if (res.status === 'free_point') {
-            $('#activeFreePointGlobal').val(parseInt(res.free_point));
-            $('#fixedAmountGlobal').val(0);
-            $('#freeAmountGlobal').val(parseInt(res.free_amount));
-            
-
-
+            // Store response to cache
             pricingCache[locationId] = {
-                type: 'free',
-                free_point: parseInt(res.free_point),
-                amount: 0,
-                freeAmount: parseInt(res.free_amount),
+                type: res.status,
+                free_point: parseInt(res.free_point || 0),
+                amount: parseInt(res.amount || 0),
+                freeAmount: parseInt(res.free_amount || 0),
             };
 
-            // ✅ Optional direct bind if this row is within free_point range
-            if ($targetRow && $targetRow.length) {
-                const currentIndex = $targetRow.index(); // or use $targetRow.data('index') if set earlier
-                if (currentIndex < parseInt(res.free_point)) {
-                    $targetRow.find('input[name*="[freight]"]').val(0);
-                } else {
-                    $targetRow.find('input[name*="[freight]"]').val(res.free_amount);
-                }
-            }
-        }
+            // Set globals
+            $('#activeFreePointGlobal').val(pricingCache[locationId].free_point || 0);
+            $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
+            $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-
-            if (res.status === 'not_exist') {
-                $('#activeFreePointGlobal').val(0);
-                $('#fixedAmountGlobal').val(0);
-
-                pricingCache[locationId] = {
-                    type: 'none',
-                    amount: 0,
-                };
-            }
-
-            // 🔥 Only apply freight to the selected row
-            applyFreightToRows($targetRow);
+            applyFreightToRows(pricingCache[locationId]); 
         }
     });
 }
 
-function applyFreightToRows() {
-    const $rows = $('#item-table-body').find('tr');
-    const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
-    const sourceDefaultAmount = parseInt($('#sourceDefaultAmountGlobal').val() || 0);
 
-    $rows.each(function (index) {
-        const $row = $(this);
+function applyFreightToRows($specificRow = null, deletedRow = null) {
+    const $rows = $('#item-table-body').find('tr');
+    let zeroFreightCount = 0;
+
+    $rows.each(function () {
+        const freightAmount = parseFloat($(this).find('input[name*="[freight]"]').val()) || 0;
+        if (freightAmount === 0) {
+            zeroFreightCount++;
+        }
+    });
+    const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
+    const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
+
+    const processRow = ($row, index) => {
         const locationId = $row.find('input[name*="[location_id]"]').val()?.trim();
         const $freightInput = $row.find('input[name*="[freight]"]');
 
         if (!locationId) return;
+       const pricing = pricingCache[locationId];
 
-        const pricing = pricingCache[locationId];
+    if (!pricing) {
+        $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
+        return;
+    }
+
+
         if (pricing) {
-            const currentValue = $freightInput.val();
-            // ✅ Only overwrite if empty or zero
-            if (currentValue === '' || parseFloat(currentValue) === 0) {
-                if ((pricing.type === 'both' || pricing.type === 'free') && index < activeFreePoint) {
-                    $freightInput.val(0);
-                } else if ((pricing.type === 'both' || pricing.type === 'fixed') && index >= activeFreePoint) {
-                    if (pricing.amount && parseFloat(pricing.amount) > 0) {
-                        $freightInput.val(pricing.amount);
-                    } else {
-                        $freightInput.val(pricing.freeAmount);
-                    }
-                } else {
-                    $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
+            if (pricing.type === 'both_exist') {
+              if (index < activeFreePoint) {
+                console.log(`Row index: ${index}, activeFreePoint: ${activeFreePoint}`);
+
+                $freightInput.val(0);
+            } else {
+                if(pricing.amount){
+                  $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
+                }else{
+                    $freightInput.val(pricing.freeAmount && parseFloat(pricing.freeAmount) > 0 ? parseFloat(pricing.freeAmount) : 0);
                 }
+                
             }
-        } else {
-            const currentValue = $freightInput.val();
-            if (currentValue === '' || parseFloat(currentValue) === 0) {
+
+            }else if (pricing.type === 'free_point') {
+                if (index < activeFreePoint) {
+                    $freightInput.val(0);
+                } else {
+                    $freightInput.val(parseFloat(pricing.freeAmount));
+                }
+            } else if (pricing.type === 'exists_in_fixed') {
+                $freightInput.val(parseFloat(pricing.amount));
+            } else {
+                // fallback
                 $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
             }
+        } else {
+            // No pricing for this location
+            $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
+    };
+    if (deletedRow !== null) {
+        const $targetRow = $rows.eq(deletedRow);
+        const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
+        const $freightInput = $targetRow.find('input[name*="[freight]"]');
 
-        calculateTotals(); 
-    });
+        const pricing = pricingCache[locationId]; // assuming pricing was cached
+
+        if (deletedRow <= activeFreePoint) {
+            $freightInput.val(0);
+        } else {
+            $freightInput.val(pricing?.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0); 
+        }
+    }
+
+
+    if ($specificRow && $specificRow.length) {
+        processRow($specificRow, $specificRow.index());
+    } else {
+        $rows.each(function (index) {
+            processRow($(this), index);
+        });
+    }
+
+    calculateTotals();
 }
-
 
 
 function handleLocationUpdate($input) {
@@ -1324,7 +1333,7 @@ function handleLocationUpdate($input) {
     const sourceId = $('#sourceIdInput').val();
 
     if (locationId && sourceId) {
-        checkFreePoint(locationId, sourceId, $row); // ✅ pass row
+        checkFreePoint(locationId, sourceId, $row); 
     }
 }
 
@@ -1341,6 +1350,7 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     handleLocationUpdate($input);
 });
 
+//File upload preview js code
     let fileInputData = {};
       const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
     const ALLOWED_MIME_TYPES = [

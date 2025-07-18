@@ -422,6 +422,7 @@
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
                                                                    @endif
+                                                                   <th class="text-end {{$machines->isNotEmpty() ? : 'd-done'}}" id="machineName">Machine</th>
                                                                    <th>Action</th>
                                                                  </tr>
                                                                </thead>
@@ -3459,7 +3460,6 @@ function openHeaderPullModal(type = null)
                     $("#mo_id").val(currentOrders.mo.mo_id);
                     $("#is_last_station").val(currentOrders.mo.is_last_station);
                     $("#mo_station_id").val(currentOrders.mo.mo_station_id);
-                    
                     // const mainTableItem = document.getElementById('item_header');
                     // let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;
                     // mainTableItem.innerHTML = currentOrders.html;
@@ -3469,6 +3469,13 @@ function openHeaderPullModal(type = null)
                         assignDefaultBundleInfoArray(itemIndex);
                     });
                     
+                    if(currentOrders?.mo?.mo_machine_id) {
+                        $("#machineName").removeClass('d-none');
+                        $("#item_details_td").attr('colspan','14');
+                    } else {
+                        $("#item_details_td").attr('colspan','13');
+                        $("#machineName").addClass('d-none');
+                    }
                     $("#raw-materials tbody:first").html(currentOrders.consHtml);
                     $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
                         setAttributesUI(itemIndex,"#raw-materials tbody");  

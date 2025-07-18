@@ -97,7 +97,7 @@ class LedgerController extends Controller
                 if ($request->date) {
                     $dates = explode(' to ', $request->date);
                     $start = date('Y-m-d', strtotime($dates[0]));
-                    $end = date('Y-m-d', strtotime($dates[1]));
+                    $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
                     $ledgersQuery->whereDate('created_at', '>=', $start)
                                 ->whereDate('created_at', '<=', $end);
                 }
@@ -125,12 +125,13 @@ class LedgerController extends Controller
                     })
                     ->addColumn('status', function ($ledger) {
                         $status = in_array($ledger->document_status,[ConstantHelper::REJECTED,ConstantHelper::SUBMITTED,ConstantHelper::PARTIALLY_APPROVED])?
-                        $ledger->document_status:'InActive';
+                        $ledger->document_status:'inactive';
                         if($ledger->document_status!=null){
                         if ($ledger->status == 1) {
                             $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
                         } else {
-                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">'.$status.'</span>';
+                                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$status??"draft"];
+                              $btn = '<span class="badge rounded-pill '.$statusClass.' badgeborder-radius">'.ucfirst($status).'</span>';
                         }
                     }
                         else
@@ -320,9 +321,12 @@ class LedgerController extends Controller
             $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
             $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $itemCodeType = 'Manual';
+            $book_id=null;
             if ($services && $services['current_book']) {
                 if (isset($services['current_book'])) {
                     $book = $services['current_book'];
+                    $book_id = $services['current_book']->id;
+
                     if ($book) {
                         $parameters = new stdClass();
                         foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
@@ -336,7 +340,7 @@ class LedgerController extends Controller
                 }
             }
 
-            $import = new LedgerImport($this->ledgerImportExportService, $user,$itemCodeType);
+            $import = new LedgerImport($this->ledgerImportExportService, $user,$itemCodeType,$book_id);
             Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
@@ -437,7 +441,7 @@ class LedgerController extends Controller
             ],
             'tax_percentage' => [
                 'nullable',
-                'int',
+                'numeric',
                 'max:255',
             ],
             'tds_section' => [
@@ -454,6 +458,14 @@ class LedgerController extends Controller
                 'nullable',
                 'string',
                 'max:255',
+            ],
+            'tcs_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            'tds_capping' => [
+                'nullable',
+                'numeric',
             ],
             'tcs_percentage' => [
                 'nullable',
@@ -492,6 +504,7 @@ class LedgerController extends Controller
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
+       
         $ledgerGroupIds = $request->ledger_group_id ?? [];
         $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
             ->pluck('name')
@@ -505,11 +518,13 @@ class LedgerController extends Controller
         if (!in_array('tds', $groupNames)) {
             $request->request->remove('tds_section');
             $request->request->remove('tds_percentage');
+            $request->request->remove('tds_capping');
         }
 
         if (!in_array('tcs', $groupNames)) {
             $request->request->remove('tcs_section');
             $request->request->remove('tcs_percentage');
+            $request->request->remove('tcs_capping');
         }
 
         if (!in_array('gst', $groupNames)) {
@@ -1051,7 +1066,7 @@ class LedgerController extends Controller
                 Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, 'Amendment', $request->file('attachment') ?? null, $voucher->approvalLevel, 'amendment');
 
                 $voucher->document_status = ConstantHelper::DRAFT;
-                $voucher->status = 0;
+                //$voucher->status = 0;
                 $voucher->revision_number = $voucher->revision_number + 1;
                 $voucher->save();
             }

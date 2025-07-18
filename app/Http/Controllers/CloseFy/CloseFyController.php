@@ -55,63 +55,99 @@ class CloseFyController extends Controller
     }
 
     public function monthFyIndex(Request $request)
-    {
-        $fmonthId = $request->fmonth;
-        $financialYearMonth = null;
-        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-        $user = Helper::getAuthenticatedUser();
-        $organization = $user->organization;
-        // dd($organization);
-        $group_id = $organization->group_id;
-        $company_id     = $organization->company_id;
-        $organizationId = $request->organization_id;
-        $companies = $user->access_rights_org;
-        $current_fyear = Helper::getFinancialYear(date('Y-m-d'));
-        $months = $this->showMonths($current_fyear['start_date'],$current_fyear['end_date']);
-        if($fmonthId){
-            $fmonthDate = $fmonthId ? Carbon::parse($fmonthId)->startOfMonth() : null;
-            $startDate = Carbon::parse($fmonthId)->startOfMonth()->toDateString(); // 2025-02-01
-            $endDate = Carbon::parse($fmonthId)->endOfMonth()->toDateString();   
-            $financialYear = $fmonthId ? ErpFinancialYear::where('organization_id',$organizationId)
-                            ->where('start_date','<=', $fmonthDate)
-                            ->where('end_date','>=', $fmonthDate)->first() : null;
-    
-            $financialYearMonth = ErpFyMonth::where('fy_month',$fmonthId)
-            ->where('fy_id', $financialYear->id)->first();
-            // dd($financialYearMonth, $fmonthId);
-            if($financialYearMonth)
-            {
-                $financialYearMonth->update([
+{
+    $fmonthId = $request->fmonth;
+    $financialYearMonth = null;
+    $user = Helper::getAuthenticatedUser();
+    $organization = $user->organization;
+    $group_id = $organization->group_id;
+    $company_id = $organization->company_id;
+    $organizationId = $request->organization_id ?: $organization->id;
+    $companies = $user->access_rights_org;
+
+    $current_fyear = Helper::getFinancialYear(date('Y-m-d'));
+    $months = $this->showMonths($current_fyear['start_date'], $current_fyear['end_date']);
+
+    if ($fmonthId) {
+        // ----- Single Month Processing -----
+        $fmonthDate = Carbon::parse($fmonthId)->startOfMonth();
+        $startDate = $fmonthDate->toDateString();
+        $endDate = $fmonthDate->copy()->endOfMonth()->toDateString();
+
+        $financialYear = ErpFinancialYear::where('organization_id', $organizationId)
+            ->where('start_date', '<=', $fmonthDate)
+            ->where('end_date', '>=', $fmonthDate)
+            ->first();
+
+        $financialYearMonth = ErpFyMonth::where('fy_month', $fmonthId)
+            ->where('fy_id', $financialYear?->id)
+            ->first();
+
+        $fyMonthData = [
+            'access_by' => $this->setFinancialYearAccessBy(
+                $organizationId,
+                $financialYearMonth?->lock_fy ?? false,
+                $financialYearMonth?->access_by ?? null
+            ),
+            'fy_month' => $fmonthId,
+            'lock_fy' => $financialYearMonth?->lock_fy ?? false,
+            'fy_id' => $financialYear?->id,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'organization_id' => $organizationId,
+            'company_id' => $company_id,
+            'group_id' => $group_id,
+        ];
+
+        if ($financialYearMonth) {
+            $financialYearMonth->update($fyMonthData);
+        } else {
+            $financialYearMonth = ErpFyMonth::create($fyMonthData);
+        }
+
+        $startYear = Carbon::parse($financialYearMonth['start_date'])->format('Y');
+        $endYearShort = Carbon::parse($financialYearMonth['end_date'])->format('y');
+    } else {
+        // ----- All Months in Current FY -----
+        $financialYear = ErpFinancialYear::where('organization_id', $organizationId)
+            ->where('start_date', '<=', $current_fyear['start_date'])
+            ->where('end_date', '>=', $current_fyear['end_date'])
+            ->first();
+
+        if (!empty($months) && $financialYear) {
+            foreach ($months as $month) {
+                $monthValue = $month['value'];
+                $fmonthDate = Carbon::parse($monthValue)->startOfMonth();
+                $startDate = $fmonthDate->toDateString();
+                $endDate = $fmonthDate->copy()->endOfMonth()->toDateString();
+
+                $financialYearMonth = ErpFyMonth::where('fy_month', $monthValue)
+                    ->where('fy_id', $financialYear->id)
+                    ->first();
+
+                $fyMonthData = [
                     'access_by' => $this->setFinancialYearAccessBy(
-                    $organizationId,
-                    $financialYearMonth->lock_fy,
-                    $financialYearMonth->access_by),
-                    'fy_month' => $fmonthId,
-                    'lock_fy' => $financialYearMonth->lock_fy,
+                        $organizationId,
+                        $financialYearMonth?->lock_fy ?? false,
+                        $financialYearMonth?->access_by ?? null
+                    ),
+                    'fy_month' => $monthValue,
+                    'lock_fy' => $financialYearMonth?->lock_fy ?? false,
                     'fy_id' => $financialYear->id,
                     'start_date' => $startDate,
                     'end_date' => $endDate,
-                    'organization_id' => $organizationId ?? $organization->id,
+                    'organization_id' => $organizationId,
                     'company_id' => $company_id,
                     'group_id' => $group_id,
-                ]);
-    
-            }else{
-              $financialYearMonth =  ErpFyMonth::create([
-                    'access_by' => $this->setFinancialYearAccessBy(
-                    $organizationId,
-                    false,
-                    null),
-                    'fy_month' => $fmonthId,
-                    'lock_fy' => false,
-                    'fy_id' => $financialYear->id,
-                    'start_date' => $startDate,
-                    'end_date' => $endDate,
-                    'organization_id' => $organizationId ?? $organization->id,
-                    'company_id' => $company_id,
-                    'group_id' => $group_id,
-                ]);
+                ];
+
+                if ($financialYearMonth) {
+                    $financialYearMonth->update($fyMonthData);
+                } else {
+                    $financialYearMonth = ErpFyMonth::create($fyMonthData);
+                }
             }
+            // Use the last month for display
             $startYear = Carbon::parse($financialYearMonth['start_date'])->format('Y');
             $endYearShort = Carbon::parse($financialYearMonth['end_date'])->format('y');
         } else {
@@ -119,16 +155,18 @@ class CloseFyController extends Controller
             $startYear = $now->format('Y');
             $endYearShort = $now->copy()->addYear()->format('y');
         }
-
-        $authorized_users = ($financialYearMonth ? $financialYearMonth->authorizedUsers() : null);
-        $current_range = $startYear . '-' . $endYearShort;
-        $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
-
-        return view('close-fy.close-month-fy', compact(
-            'companies', 'organizationId', 'financialYear', 'fmonthId',
-            'employees', 'current_range', 'authorized_users','current_fyear','months','financialYearMonth'
-        ));
     }
+
+    $authorized_users = ($financialYearMonth ? $financialYearMonth->authorizedUsers() : null);
+    $current_range = $startYear . '-' . $endYearShort;
+    $employees = Helper::getOrgWiseUserAndEmployees($organizationId);
+
+    return view('close-fy.close-month-fy', compact(
+        'companies', 'organizationId', 'financialYear', 'fmonthId',
+        'employees', 'current_range', 'authorized_users', 'current_fyear', 'months', 'financialYearMonth'
+    ));
+}
+
 
     private function showMonths($start, $end)
     {

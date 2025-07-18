@@ -935,7 +935,11 @@ class DocumentApprovalController extends Controller
             $status = $request->status;
             $item->document_status = $document_status;
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-              $item->status = ConstantHelper::ACTIVE;
+                if ($status === ConstantHelper::INACTIVE) {
+                    $item->status = ConstantHelper::INACTIVE;
+                } else {
+                    $item->status = ConstantHelper::ACTIVE;
+                }
             } else {
                 $item->status = $document_status;
             }
@@ -980,7 +984,11 @@ class DocumentApprovalController extends Controller
             $status = $request->status;
             $vendor->document_status = $approvalStatus;
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $vendor->status = ConstantHelper::ACTIVE;
+                if ($status === ConstantHelper::INACTIVE) {
+                    $vendor->status = ConstantHelper::INACTIVE;
+                } else {
+                    $vendor->status = ConstantHelper::ACTIVE;
+                }
             } else {
                 $vendor->status = $approvalStatus;
             }
@@ -1026,7 +1034,11 @@ class DocumentApprovalController extends Controller
             $customer->document_status = $approvalStatus;
 
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $customer->status = ConstantHelper::ACTIVE;
+                 if ($status === ConstantHelper::INACTIVE) {
+                    $customer->status = ConstantHelper::INACTIVE;
+                } else {
+                    $customer->status = ConstantHelper::ACTIVE;
+                }
             } else {
                 $customer->status = $approvalStatus;
             }

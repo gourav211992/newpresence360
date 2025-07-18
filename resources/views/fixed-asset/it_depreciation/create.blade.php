@@ -33,7 +33,7 @@
                  <section id="basic-datatable">
                     <div class="row">
                         <form id="fixed-asset-depreciation-form"
-                        enctype="multipart/form-data"
+                        enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="asset_details" id="asset_json" value="">
                                  
@@ -539,7 +539,9 @@ document.getElementById("process_btn").addEventListener("click", function () {
                      
                         let totalDepreciation = ((parseFloat(asset.it_category.setup.dep_percentage/100)*parseFloat(value)));
                         const capitalizeDate = new Date(sub_asset.capitalize_date);
-                        const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); // October is month 9 (0-indexed)
+                        const cutoffDate = new Date(capitalizeDate.getFullYear(), 9, 3); 
+                        console.log(cutoffDate);
+                        // October is month 9 (0-indexed)
                         if (capitalizeDate>cutoffDate) {
                             totalDepreciation = totalDepreciation/2;
                         } 

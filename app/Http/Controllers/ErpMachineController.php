@@ -12,6 +12,7 @@ use App\Helpers\Helper;
 use DB;
 use App\Models\ErpMachine;
 use App\Models\ErpMachineDetail;
+use Illuminate\Validation\Rule;
 
 class ErpMachineController extends Controller
 {    
@@ -96,23 +97,55 @@ class ErpMachineController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'machine_name' => 'required|string|max:255',
-            'attribute_group_id' => 'required',
-            'machine_details.*.attribute_id' => 'required',
-            'machine_details.*.length' => 'required|numeric|min:0',
-            'machine_details.*.width' => 'required|numeric|min:0',
-            'machine_details.*.no_of_pairs' => 'required|integer|min:0',
-        ]);
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationId = $organization?->id;
+        $companyId = $organization?->company_id;
+        $groupId = $organization?->group_id;
 
-        $existingMachine = ErpMachine::where('name', $request->input('machine_name'))
-            ->where('attribute_group_id', $request->input('attribute_group_id'))
-            ->first();
+        $rules = [
+            'machine_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('erp_machines', 'name')
+                ->where(function ($query) use ($organizationId,$companyId,$groupId) {
+                    return $query->where('company_id', $companyId)
+                                ->where('group_id', $groupId)
+                                ->where('organization_id', $organizationId);
+                }),
+            ],
+            'attribute_group_id' => 'nullable',
+        ];
 
-        if ($existingMachine) {
-            return redirect()->back()->withErrors([
-                'error' => 'A machine with the same name and attribute already exists. Please select a different attribute.',
-            ]);
+        if ($request->filled('attribute_group_id')) {
+            $rules['machine_details.*.attribute_id'] = 'required';
+            $rules['machine_details.*.length'] = 'required|numeric|min:0';
+            $rules['machine_details.*.width'] = 'required|numeric|min:0';
+            $rules['machine_details.*.no_of_pairs'] = 'required|integer|min:0';
+        } else {
+            $rules['machine_details.*.attribute_id'] = 'nullable';
+            $rules['machine_details.*.length'] = 'nullable|numeric|min:0';
+            $rules['machine_details.*.width'] = 'nullable|numeric|min:0';
+            $rules['machine_details.*.no_of_pairs'] = 'nullable|integer|min:0';
+        }
+
+        $request->validate($rules);
+        if($request->input('attribute_group_id') && !$request->machine_details) {
+            return response()->json([
+                            'message' => "Please add machine details.",
+                            'error' => "",
+                        ], 422);
+        }
+        if($request->input('attribute_group_id')) {
+            $existingMachine = ErpMachine::where('name', $request->input('machine_name'))
+                ->where('attribute_group_id', $request->input('attribute_group_id'))
+                ->first();
+            if ($existingMachine) {
+                return redirect()->back()->withErrors([
+                    'error' => 'A machine with the same name and attribute already exists. Please select a different attribute.',
+                ]);
+            }
         }
 
         try {
@@ -124,9 +157,9 @@ class ErpMachineController extends Controller
             $production_route_id = $request->production_route_id;
 
             $group = AttributeGroup::where('id', $request->input('attribute_group_id'))->first();
-            if (!$group) {
-                return redirect()->back()->withErrors(['error' => 'Attribute group not found.']);
-            }
+            // if (!$group) {
+            //     return redirect()->back()->withErrors(['error' => 'Attribute group not found.']);
+            // }
             DB::beginTransaction();
             // Create the machine
             $machine = new ErpMachine;
@@ -134,24 +167,28 @@ class ErpMachineController extends Controller
             $machine->group_id = $groupId;
             $machine->company_id = $companyId;
             $machine->name = $request->input('machine_name');
-            $machine->attribute_group_id = $request->input('attribute_group_id');
-            $machine->attribute_group_name = $group->name;
+            if($request->input('attribute_group_id')) {
+                $machine->attribute_group_id = $request->input('attribute_group_id') ?? null;
+                $machine->attribute_group_name = $group?->name;
+            }
             $machine->status = $request->input('status') ?? ConstantHelper::ACTIVE;
             $machine->production_route_id = $production_route_id;
             // Save the machine
             $machine->save();
             // Handle machine details
-            foreach ($request->input('machine_details', []) as $detail) {
-                $attributeVal = Attribute::find($detail['attribute_id']);
-                $machineDetail = new ErpMachineDetail;
-                $machineDetail->machine_id = $machine->id;
-                $machineDetail->attribute_group_id = $request->input('attribute_group_id');
-                $machineDetail->attribute_id = $attributeVal->id;
-                $machineDetail->attribute_value = $attributeVal->value;
-                $machineDetail->length = $detail['length'];
-                $machineDetail->width = $detail['width'];
-                $machineDetail->no_of_pairs = $detail['no_of_pairs'];
-                $machineDetail->save();
+            if($request->filled('attribute_group_id')) {
+                foreach ($request->input('machine_details', []) as $detail) {
+                    $attributeVal = Attribute::find($detail['attribute_id'] ?? null);
+                    $machineDetail = new ErpMachineDetail;
+                    $machineDetail->machine_id = $machine->id;
+                    $machineDetail->attribute_group_id = $request->input('attribute_group_id');
+                    $machineDetail->attribute_id = $attributeVal->id;
+                    $machineDetail->attribute_value = $attributeVal->value;
+                    $machineDetail->length = $detail['length'];
+                    $machineDetail->width = $detail['width'];
+                    $machineDetail->no_of_pairs = $detail['no_of_pairs'];
+                    $machineDetail->save();
+                }
             }
             DB::commit();
             return response()->json([
@@ -178,7 +215,13 @@ class ErpMachineController extends Controller
         $productionRoutes = ProductionRoute::withDefaultGroupCompanyOrg()
         ->where('status', ConstantHelper::ACTIVE)
         ->get();
-        $values = $machine->attribute_group->attributes()->select('id', 'value', 'attribute_group_id')->get();
+        $values = collect();
+        if ($machine->attribute_group) {
+            $values = $machine->attribute_group
+                ->attributes()
+                ->select('id', 'value', 'attribute_group_id')
+                ->get();
+        }
         return view('machine.edit', [
             'machine' => $machine,
             'attributes' => $attribute,
@@ -189,14 +232,47 @@ class ErpMachineController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'machine_name' => 'required|string|max:255',
-            'attribute_group_id' => 'required',
-            'machine_details.*.attribute_id' => 'required',
-            'machine_details.*.length' => 'required|numeric|min:0',
-            'machine_details.*.width' => 'required|numeric|min:0',
-            'machine_details.*.no_of_pairs' => 'required|integer|min:0',
-        ]);
+        $user = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationId = $organization?->id;
+        $companyId = $organization?->company_id;
+        $groupId = $organization?->group_id;
+        $rules = [
+            'machine_name' => 'required|string|max:255|unique:erp_machines,name,' . $id,
+            'machine_name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('erp_machines', 'name')
+                ->ignore($id)
+                ->where(function ($query) use ($organizationId,$companyId,$groupId) {
+                    return $query->where('company_id', $companyId)
+                                ->where('group_id', $groupId)
+                                ->where('organization_id', $organizationId);
+                }),
+            ],
+            'attribute_group_id' => 'nullable',
+        ];
+
+        if ($request->filled('attribute_group_id')) {
+            $rules['machine_details.*.attribute_id'] = 'required';
+            $rules['machine_details.*.length'] = 'required|numeric|min:0';
+            $rules['machine_details.*.width'] = 'required|numeric|min:0';
+            $rules['machine_details.*.no_of_pairs'] = 'required|integer|min:0';
+        } else {
+            $rules['machine_details.*.attribute_id'] = 'nullable';
+            $rules['machine_details.*.length'] = 'nullable|numeric|min:0';
+            $rules['machine_details.*.width'] = 'nullable|numeric|min:0';
+            $rules['machine_details.*.no_of_pairs'] = 'nullable|integer|min:0';
+        }
+        
+        $request->validate($rules);
+        if($request->input('attribute_group_id') && !$request->machine_details) {
+            return response()->json([
+                            'message' => "Please add machine details.",
+                            'error' => "",
+                        ], 422);
+        }
 
         try {
             DB::beginTransaction();
@@ -204,11 +280,14 @@ class ErpMachineController extends Controller
             $machine = ErpMachine::findOrFail($id);
             $machine->update([
                 'name' => $request->input('machine_name'),
-                'attribute_group_id' => $request->input('attribute_group_id'),
+                'attribute_group_id' => $request->input('attribute_group_id') ?? null,
                 'production_route_id' => $request->input('production_route_id')
             ]);
 
-            $existingDetailIds =$machine->details()->pluck('id')->filter()->toArray();
+            $existingDetailIds = optional($machine->details())
+                                ->pluck('id')
+                                ->filter()
+                                ->toArray();
             $inputDetailIds = collect($request->input('machine_details', []))
                 ->pluck('id')
                 ->filter()
@@ -218,18 +297,21 @@ class ErpMachineController extends Controller
             if (!empty($idsToDelete)) {
                 ErpMachineDetail::whereIn('id', $idsToDelete)->delete();
             }
-
-            foreach ($request->input('machine_details', []) as $detail) {
-                $attributeVal = Attribute::find($detail['attribute_id']);
-                $machineDetail = ErpMachineDetail::find($detail['id'] ?? null) ?? new ErpMachineDetail;
-                $machineDetail->machine_id = $machine->id;
-                $machineDetail->attribute_group_id = $request->input('attribute_group_id');
-                $machineDetail->attribute_id = $attributeVal->id;
-                $machineDetail->attribute_value = $attributeVal->value;
-                $machineDetail->length = $detail['length'];
-                $machineDetail->width = $detail['width'];
-                $machineDetail->no_of_pairs = $detail['no_of_pairs'];
-                $machineDetail->save();
+            if($request->input('attribute_group_id')) {
+                foreach ($request->input('machine_details', []) as $detail) {
+                    $attributeVal = Attribute::find($detail['attribute_id']);
+                    $machineDetail = ErpMachineDetail::find($detail['id'] ?? null) ?? new ErpMachineDetail;
+                    $machineDetail->machine_id = $machine->id;
+                    $machineDetail->attribute_group_id = $request->input('attribute_group_id');
+                    $machineDetail->attribute_id = $attributeVal->id;
+                    $machineDetail->attribute_value = $attributeVal->value;
+                    $machineDetail->length = $detail['length'];
+                    $machineDetail->width = $detail['width'];
+                    $machineDetail->no_of_pairs = $detail['no_of_pairs'];
+                    $machineDetail->save();
+                }
+            } else {
+                ErpMachineDetail::where('machine_id', $id)->delete();
             }
 
             DB::commit();

@@ -360,7 +360,11 @@ class VendorController extends Controller
                 $submittedStatus = $validatedData['status'] ?? ConstantHelper::ACTIVE;
 
                 if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    $vendor->status = ConstantHelper::ACTIVE;
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $vendor->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $vendor->status = ConstantHelper::ACTIVE;
+                    }
                 } else {
                     $vendor->status = $document_status;
                 }
@@ -727,7 +731,11 @@ class VendorController extends Controller
                     $document_status = $approve['approvalStatus'] ;
                     $vendor->document_status = $document_status;
                     if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                         $vendor->status = ConstantHelper::ACTIVE;
+                        if ($submittedStatus === ConstantHelper::INACTIVE) {
+                            $vendor->status = ConstantHelper::INACTIVE;
+                        } else {
+                            $vendor->status = ConstantHelper::ACTIVE;
+                        }
                     } else {
                         $vendor->status = $document_status;
                     }

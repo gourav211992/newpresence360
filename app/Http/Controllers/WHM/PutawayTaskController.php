@@ -5,6 +5,7 @@ namespace App\Http\Controllers\WHM;
 use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
 use App\Helpers\Helper;
+use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\UnloadingResource;
 use App\Models\WHM\ErpItemUniqueCode;
@@ -63,6 +64,57 @@ class PutawayTaskController extends Controller
         ];
     }
 
+    public function pendingTasks(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required']
+        ],[
+            'job_id.required' => 'Job id is required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $job = ErpWhmJob::where('morphable_type','App\Models\MrnHeader')->where('id',$request->job_id)->first();
+
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $pendingTasks = ErpItemUniqueCode::with(['vendor' => function ($q) {
+            $q->select('id', 'vendor_code', 'company_name');
+        }])
+        ->where('job_id',$request->job_id)
+        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
+        ->get();
+
+        foreach ($pendingTasks as $item) {
+            // dd($item->item_id);
+            $item->storage_points = [];
+            if ($item->item_id && $item->company_id && $item->organization_id) {
+                $response = StoragePointHelper::getStoragePoints(
+                    $item->item_id,
+                    null,
+                    $request->store_id,
+                    null
+                );
+
+                if (!empty($response['status']) && $response['status'] === 'success') {
+                    $item->storage_points = $response['data'];
+                }
+            }
+        }
+
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => $pendingTasks,
+        ];
+
+    }
+
     public function saveAsDraft(Request $request){
         $validator = Validator::make($request->all(),[
             'job_id' => ['required'],
@@ -78,12 +130,21 @@ class PutawayTaskController extends Controller
             throw new ValidationException($validator);
         }
 
-        $validPackets = ErpItemUniqueCode::where('job_id', $request->job_id)
-            ->whereIn('uid', $request->packet_ids)
-            ->where('morphable_type', 'App\Models\MrnDetail')
-            ->pluck('uid')
-            ->toArray();
+        // custom validation after
+        $job = ErpWhmJob::find($request->job_id);
 
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $packets = ErpItemUniqueCode::where('job_id', $request->job_id)
+            ->whereIn('item_uid', $request->packet_ids)
+            ->where('morphable_type', 'App\Models\MrnDetail')
+            ->get();
+
+        $validPackets = $packets->pluck('item_uid')->toArray();
         $invalidPackets = array_diff($request->packet_ids, $validPackets);
 
         if (!empty($invalidPackets)) {
@@ -93,11 +154,8 @@ class PutawayTaskController extends Controller
         }
 
         // custom validation after
-        $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->job_id)
-            ->whereIn('uid', $request->packet_ids)
-            ->where('status', CommonHelper::SCANNED)
-            ->where('morphable_type', 'App\Models\MrnDetail')
-            ->pluck('uid')
+        $alreadyScanned = $packets->where('status', CommonHelper::SCANNED)
+            ->pluck('item_uid')
             ->toArray();
 
         if (!empty($alreadyScanned)) {
@@ -112,7 +170,6 @@ class PutawayTaskController extends Controller
             $user = Helper::getAuthenticatedUser();
             
             // Update Job Status
-            $job = ErpWhmJob::find($request->job_id);
             if($job->status != CommonHelper::DEVIATION){
                 $job->status = CommonHelper::IN_PROGRESS;
                 $job->save();
@@ -121,7 +178,7 @@ class PutawayTaskController extends Controller
             // Update Task Status
             ErpItemUniqueCode::where('job_id',$request->job_id)
             ->where('morphable_type', 'App\Models\MrnDetail')
-            ->whereIn('uid',$request->packet_ids)
+            ->whereIn('item_uid',$request->packet_ids)
             ->update([
                 'status' => CommonHelper::SCANNED,
                 'storage_point_id' => $request->storage_point_id,
@@ -161,7 +218,7 @@ class PutawayTaskController extends Controller
             ]);
         }
 
-        $uniqueCode = ErpItemUniqueCode::where('uid', $request->packet_id)
+        $uniqueCode = ErpItemUniqueCode::where('item_uid', $request->packet_id)
                         ->where('job_id',$request->job_id)
                         ->first();
         if (!$uniqueCode) {
@@ -193,4 +250,38 @@ class PutawayTaskController extends Controller
         }
 
     }
+
+    // public function scannedPackets(Request $request){
+    //     $validator = Validator::make($request->all(),[
+    //         'job_id' => ['required'],
+    //     ],[
+    //         'job_id.required' => 'Job id is required',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         throw new ValidationException($validator);
+    //     }
+
+    //     \DB::beginTransaction();
+    //     try {
+    //         // Fetch Scanned Packets
+    //         $scannedPackets = ErpItemUniqueCode::with(['vendor' => function ($q) {
+    //             $q->select('id', 'vendor_code', 'company_name');
+    //         },'storagePoint' => function($q){
+    //             $q->select('id', 'storage_number');
+    //         }])
+    //         ->where('job_id',$request->job_id)
+    //         ->where('status',CommonHelper::SCANNED)
+    //         ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id','storage_point_id')
+    //         ->get();
+
+    //         \DB::commit();
+    //         return [
+    //             'data' => $scannedPackets
+    //         ];
+    //     } catch (\Exception $e) {
+    //         \DB::rollback();
+    //         throw new ApiGenericException($e->getMessage());
+    //     }
+    // }
 }

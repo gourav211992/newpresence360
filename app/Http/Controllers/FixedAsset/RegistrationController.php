@@ -1092,22 +1092,23 @@ class RegistrationController extends Controller
         }
 
         $baseCode = self::generateUniquePrefix($name);
-        $suffix = '001';
+        $nextSuffix = '001';
 
-        $query = FixedAssetRegistration::where('asset_code', 'like', $baseCode . '%');
+        $finalItemCode = $baseCode . $nextSuffix;
 
-        if ($edit) {
-            $query->where('id', '!=', $edit);
+        while (
+            FixedAssetRegistration::where('asset_code', $finalItemCode)
+            ->when($edit, function ($query) use ($edit) {
+                return $query->where('id', '!=', $edit);
+            })
+            ->exists()
+        ) {
+            $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
+            $finalItemCode = $baseCode . $nextSuffix;
         }
 
-        $latestCode = $query->orderByDesc('asset_code')->value('asset_code');
 
-        if ($latestCode) {
-            $lastSuffix = (int) substr($latestCode, -3);
-            $suffix = str_pad($lastSuffix + 1, 3, '0', STR_PAD_LEFT);
-        }
-
-        return $baseCode . $suffix;
+        return $finalItemCode;
 
     }
     public static function generateUniquePrefix(string $name): ?string

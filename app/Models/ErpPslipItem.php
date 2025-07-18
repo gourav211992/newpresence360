@@ -42,6 +42,7 @@ class ErpPslipItem extends Model
         'accepted_qty',
         'subprime_qty',
         'rejected_qty',
+        'machine_id'
     ];
 
     public $referencingRelationships = [
@@ -68,6 +69,11 @@ class ErpPslipItem extends Model
     public function mo_product()
     {
         return $this -> belongsTo(MoProduct::class, 'mo_product_id', 'id');
+    }
+
+    public function machine()
+    {
+        return $this -> belongsTo(ErpMachine::class, 'machine_id', 'id');
     }
 
     public function consumptions()

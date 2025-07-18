@@ -46,6 +46,8 @@ class CommonHelper
     const SCANNED = 'scanned';
     const IN_PROGRESS = 'in_progress';
     const DEVIATION = 'deviation';
+    const RECEIPT = 'receipt';
+    const ISSUE = 'issue';
 
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,

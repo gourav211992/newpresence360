@@ -376,6 +376,14 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
             case 'pwo':
                 cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
                 break;
+            case 'mrn':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                cleanupRegex2 = '^component\\[\\d+\\]\\[.*\\]$';
+                break;
+            case 'ge':
+                cleanupRegex = '^components\\[\\d+\\]\\[.*\\]$';
+                cleanupRegex2 = '^component\\[\\d+\\]\\[.*\\]$';
+                break;
             case 'mo':
                 cleanupPatterns.push(
                     /^components\\[\\d+\\]\\[.*\\]$/,
@@ -404,6 +412,7 @@ function appendSerializedFormRows(formData, containerSelector, jsonKey, options 
                     /^item_accepted_qty\d+$/,
                     /^item_sub_prime_qty\d+$/,
                     /^item_rejected_qty\d+$/,
+                    /^machine_id\d+$/,
                     /^item_remarks\d+$/,
                     /^item_id\\[\\]$/
                     // /^.*_\d+$/

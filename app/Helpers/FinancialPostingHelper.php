@@ -7580,7 +7580,7 @@ class FinancialPostingHelper
                     'ledger_parent_id' => $post['ledger_group_id'],
                     'debit_amt' => $post['debit_amount'],
                     'credit_amt' => $post['credit_amount'],
-                    'cost_center_id' => $document?->cost_center_id ?? null,
+                    'cost_center_id' => ($document?->cost_center_id) ?: null,
                     'debit_amt_org' => $debitAmtOrg,
                     'credit_amt_org' => $creditAmtOrg,
                     'debit_amt_comp' => $debitAmtComp,

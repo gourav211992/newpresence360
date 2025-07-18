@@ -88,7 +88,7 @@
         $routeAlias = ($routeName && ($routeName == 'mrn')) ? 'material-receipt' : $routeName;
         $routeRedirect = ($routeAlias && ($routeAlias == 'material-receipt')) ? 'material-receipts' : $routeAlias;
     @endphp
-    <form class="ajax-input-form" method="POST" action="{{ route('material-receipt.store') }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
+    <form class="ajax-input-form" data-module="mrn" method="POST" action="{{ route('material-receipt.store') }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <input type="hidden" name="bill_to_follow" id="bill_to_follow" value="">
         @csrf
@@ -459,7 +459,9 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                        data-json-key="components_json"
+                                                        data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
@@ -1304,9 +1306,9 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
+            let checkAttr = 0;
             if(currentProcessType && currentProcessType != null)
             {
-                let checkAttr = 0;
                 rowCount = tableRowCount;
                 let isPo = $(tr).find('[name*="purchase_order_item_id"]').length ? 1 : 0;
                 let isJo = $(tr).find('[name*="job_order_item_id"]').length ? 1 : 0;
@@ -1482,7 +1484,7 @@
             };
 
             let actionUrl = '{{ route('material-receipt.get.itemdetail') }}?' + new URLSearchParams(data).toString();
-            
+
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.status == 200) {
@@ -2254,7 +2256,7 @@
             let idsLength = ids.length;
             currentProcessType = 'jo';
             rateHeader.textContent = 'Service Charge';
-            
+
             if (!ids.length) {
                 $("#joModal").modal('hide');
                 Swal.fire({
@@ -3289,7 +3291,7 @@
                     $(".module_type").val(modelType);
                     $("#itemTable .mrntableselectexcel").append(pos);
                     initializeAutocomplete2(".comp_item_code");
-                    
+
                     $("#poModal, #joModal").modal('hide');
                     $('.asn_process').prop('disabled', true);
 
@@ -3312,7 +3314,7 @@
                             $(".asn-container").addClass('d-none');
                             break;
                     }
-                    
+
                     // UI Locks
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
                     $("#vendor_name").prop('readonly', true);
@@ -3335,7 +3337,7 @@
                         $("[name='eway_bill_no']").val(vendorAsn.eway_bill_no);
                         $("[name='transporter_name']").val(vendorAsn.transporter_name);
                         $("[name='vehicle_no']").val(vendorAsn.vehicle_no);
-                    
+
                     } else {
                         $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
                     }

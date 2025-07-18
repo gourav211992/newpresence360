@@ -1040,7 +1040,11 @@ $(document).on('click','#addNewItemBtn', (e) => {
         return response.json().then(data => {
             if (data.status == 200) {
                 if (rowsLength) {
-                    $("#itemTable > tbody > tr:last").after(data.data.html);
+                    if($("#itemTable > tbody > tr.trselected")) {
+                        $("#itemTable > tbody > tr.trselected").after(data.data.html);
+                    }else {
+                        $("#itemTable > tbody > tr:last").after(data.data.html);
+                    }
                 } else {
                     $("#itemTable > tbody").html(data.data.html);
                 }

@@ -389,7 +389,18 @@ class StoreController extends Controller
         DB::beginTransaction();
     
         try {
-            $store = ErpStore::where('id', $id)->first();
+            $user = Helper::getAuthenticatedUser(); 
+            $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+            $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
+            $organization = $user->organization;
+            $groupId = $organization?->group_id;
+            if ($isSuperAdmin) {
+                $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->find($id);
+            } else {
+                $store = ErpStore::find($id);
+            }
     
             if (!$store) {
                 return response()->json([
@@ -457,8 +468,19 @@ class StoreController extends Controller
     
     public function getMappedRacks(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $mappedRacks = ErpRack::whereNotNull('erp_store_id')->pluck('id')->toArray();
         $racks = ErpRack::where('organization_id', $store->organization_id)
             ->whereNotIn('id', $mappedRacks)
@@ -469,8 +491,20 @@ class StoreController extends Controller
 
     public function getMappedShelves(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $mappedShelves = ErpShelf::whereNotNull('erp_store_id')->pluck('id')->toArray();
         $shelves = ErpShelf::where('organization_id', $store->organization_id)
             ->whereNotIn('id', $mappedShelves)
@@ -481,8 +515,20 @@ class StoreController extends Controller
     
     public function getMappedBins(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $mappedBins = ErpBin::whereNotNull('erp_store_id')->pluck('id')->toArray();
         $bins = ErpBin::where('organization_id', $store->organization_id)
             ->whereNotIn('id', $mappedBins)
@@ -494,8 +540,20 @@ class StoreController extends Controller
 
     public function getRacks(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $racks = ErpRack::where('organization_id', $store->organization_id)
             ->get();
 
@@ -504,8 +562,20 @@ class StoreController extends Controller
 
     public function getShelves(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+       if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $shelves = ErpShelf::where('organization_id', $store->organization_id)
             ->get();
     
@@ -514,8 +584,20 @@ class StoreController extends Controller
     
     public function getBins(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
         $storeId = $request->input('store_id');
-        $store = ErpStore::findOrFail($storeId);
+        if ($isSuperAdmin) {
+          $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+            ->where('group_id', $groupId)
+            ->findOrFail($storeId);
+        } else {
+            $store = ErpStore::findOrFail($storeId);
+        }
         $bins = ErpBin::where('organization_id', $store->organization_id)
             ->get();
 
@@ -524,9 +606,20 @@ class StoreController extends Controller
 
     public function searchRacks(Request $request)
     {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
         $query = $request->input('query');
         $storeId = $request->store_id;
-        $store = ErpStore::find($storeId);
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->find($storeId);
+        } else {
+            $store = ErpStore::find($storeId);
+        }
         if ($store) {
             $racks = ErpRack::where('rack_code', 'LIKE', '%' . $query . '%')
                            ->where('organization_id', $store->organization_id)
@@ -543,7 +636,19 @@ class StoreController extends Controller
     {
         $query = $request->input('query');
         $storeId = $request->store_id;
-        $store = ErpStore::find($storeId); 
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
+
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->find($storeId);
+        } else {
+            $store = ErpStore::find($storeId);
+        }
         if ($store) {
             $shelves = ErpShelf::where('shelf_code', 'LIKE', '%' . $query . '%')
                             ->where('organization_id', $store->organization_id) 
@@ -559,7 +664,19 @@ class StoreController extends Controller
     {
         $query = $request->input('query');
         $storeId = $request->store_id;
-        $store = ErpStore::find($storeId);
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+        $useRole = AuthUser::where('id', $user->auth_user_id)->first();
+        $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
+        if ($isSuperAdmin) {
+            $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->find($storeId);
+        } else {
+            $store = ErpStore::find($storeId);
+        }
         if ($store) {
             $bins = ErpBin::where('bin_code', 'LIKE', '%' . $query . '%')
                         ->where('organization_id', $store->organization_id)
@@ -573,7 +690,19 @@ class StoreController extends Controller
     public function destroy($id)
     {
         try {
-            $store = ErpStore::findOrFail($id);
+            $user = Helper::getAuthenticatedUser();
+            $organization = $user->organization;
+            $groupId = $organization?->group_id;
+
+            $useRole = AuthUser::find($user->auth_user_id);
+            $isSuperAdmin = ($useRole && $useRole->user_type === 'IAM-SUPER');
+            if ($isSuperAdmin) {
+                $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('group_id', $groupId)
+                    ->findOrFail($id);
+            } else {
+                $store = ErpStore::findOrFail($id);
+            }
             $referenceTables = [
                 'erp_racks' => ['erp_store_id'], 
                 'erp_shelfs' => ['erp_store_id'],

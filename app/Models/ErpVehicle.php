@@ -39,9 +39,9 @@ class ErpVehicle extends Model
         'updated_by',
     ];
 
-      public function createdBy()
+       public function auth_user()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
 
     public function fitness()

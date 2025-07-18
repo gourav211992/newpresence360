@@ -45,7 +45,7 @@ class BalanceSheetController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
             $today = date('Y-m-d');
         }
         $organizations = [];
@@ -254,7 +254,7 @@ class BalanceSheetController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
             $today = date('Y-m-d');
 
             // if ($endDate > $today) {
@@ -327,7 +327,7 @@ class BalanceSheetController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
             $today = date('Y-m-d');
 
             // if ($endDate > $today) {
@@ -380,7 +380,7 @@ class BalanceSheetController extends Controller
         } else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
             $today = date('Y-m-d');
 
             // if ($endDate > $today) {
