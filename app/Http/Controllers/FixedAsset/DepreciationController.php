@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
 use App\Helpers\InventoryHelper;
+use App\Models\ErpFinancialYear;
 use DateTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -601,4 +602,28 @@ class DepreciationController extends Controller
 
         return response()->json($rows);
     }
+      public static function getIncomeTaxRDV(string $date,$range)
+    {
+        $user = Helper::getAuthenticatedUser();
+       
+        $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
+            ->where('end_date', '>=', $date)
+            ->first();
+
+        if (isset($financialYear)) {
+                $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                 $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
+                
+            return [
+                'alias' => $financialYear->alias,
+                'id' => $financialYear->id,
+                'start_date' => $financialYear->start_date,
+                'end_date' => $financialYear->end_date,
+                'range' => $startYear . '-' . $endYearShort,
+            ];
+        } else {
+            return null;
+        }
+    }
+
 }

@@ -152,6 +152,8 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                               
+
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -349,6 +351,24 @@
                                                             </select>
                                                         </div>
                                                     </div>
+                                                     <div class="col-md-3">
+                                                            <div class="mb-1">
+                                                                <label class="form-label">IT Act Category <span
+                                                                        class="text-danger"></span></label>
+                                                                <select class="form-select select2" name="it_category_id"
+                                                                    id="it_category">
+                                                                    <option value=""
+                                                                        {{ old('it_category') ? '' : 'selected' }}>
+                                                                        Select</option>
+                                                                        @foreach ($it_categories as $it_category)
+                                                                            <option value="{{ $it_category->id }}" 
+                                                                                {{ old('it_category') == $it_category->id ? 'selected' : '' }}>
+                                                                                {{ $it_category->name }}
+                                                                            </option>
+                                                                        @endforeach
+                                                                </select>
+                                                            </div>
+                                                        </div>
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
@@ -613,6 +633,7 @@ $(document).on('keydown', function(e) {
         $('#add_new_sub_asset').on('click', function() {
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
+            applyFixedPrefixToInputs();
         });
 
 
@@ -1576,10 +1597,9 @@ $(document).on('keydown', function(e) {
             }
 
             prefix = prefix.trim().split(/\s+/)[0] + "#M";
-            const inputs = document.querySelectorAll(selector);
+            const input = document.getElementById('asset_code');
 
-            inputs.forEach(input => {
-                // Set default value if needed
+            // Set default value if needed
                 if (!input.value.startsWith(prefix)) {
                     input.value = prefix+"01";
                 }
@@ -1597,8 +1617,7 @@ $(document).on('keydown', function(e) {
 
                 // Prevent deleting or navigating into the prefix
                 input.addEventListener("keydown", function(e) {
-                    if (
-                        this.selectionStart <= prefix.length &&
+                    if (this.selectionStart <= prefix.length &&
                         (e.key === "Backspace" || e.key === "Delete" || e.key === "ArrowLeft")
                     ) {
                         e.preventDefault();
@@ -1618,7 +1637,6 @@ $(document).on('keydown', function(e) {
                         this.setSelectionRange(prefix.length, prefix.length);
                     }
                 });
-            });
              $(selector).trigger('change');
         }
         function validateAssetCodes() {
