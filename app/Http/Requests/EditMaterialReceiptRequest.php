@@ -12,9 +12,11 @@ use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
 use Illuminate\Validation\Rule;
+use App\Traits\ProcessesComponentJson;
 
 class EditMaterialReceiptRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -28,6 +30,10 @@ class EditMaterialReceiptRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {
@@ -142,7 +148,7 @@ class EditMaterialReceiptRequest extends FormRequest
             'components.*.accepted_qty.numeric' => 'Accepted Qty must be integer',
             'components.*.rate.numeric' => 'Rate must be integer',
         ];
- 
+
     }
 
     /**

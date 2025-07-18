@@ -13,9 +13,11 @@ use App\Models\PoItem;
 use App\Models\GateEntryDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
+use App\Traits\ProcessesComponentJson;
 
 class GateEntryRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -29,6 +31,10 @@ class GateEntryRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {
@@ -108,7 +114,7 @@ class GateEntryRequest extends FormRequest
         $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
-        
+
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
@@ -153,7 +159,7 @@ class GateEntryRequest extends FormRequest
             'components.*.store_id.required' => 'Store is required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
         ];
- 
+
     }
 
     /**
@@ -216,7 +222,7 @@ class GateEntryRequest extends FormRequest
                         })
                         ->selectRaw('SUM(order_qty - ge_qty) as balance_qty')
                         ->value('balance_qty') ?? 0;
-                    
+
                     if($mrnItem) {
                         $inputQty = (floatval($component['accepted_qty']) - $mrnItem->accepted_qty) ?? 0;
                     } else {

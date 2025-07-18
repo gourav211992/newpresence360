@@ -14,10 +14,12 @@ use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
 use Illuminate\Validation\Rule;
+use App\Traits\ProcessesComponentJson;
 
 
 class MaterialReceiptRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -33,7 +35,7 @@ class MaterialReceiptRequest extends FormRequest
      */
 
     protected $organization_id;
-    protected $group_id; 
+    protected $group_id;
 
      protected function prepareForValidation()
      {
@@ -41,7 +43,8 @@ class MaterialReceiptRequest extends FormRequest
          $organization = $user->organization;
          $this->organization_id = $organization ? $organization->id : null;
          $this->group_id = $organization ? $organization->group_id : null;
-     } 
+         $this->processComponentJson('components_json');
+     }
 
     public function rules(): array
     {
@@ -149,7 +152,7 @@ class MaterialReceiptRequest extends FormRequest
         }
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
-        
+
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
@@ -228,7 +231,7 @@ class MaterialReceiptRequest extends FormRequest
                     'jo' => $component['job_order_id'] ?? null,
                     default => null,
                 };
-                
+
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;
@@ -316,7 +319,7 @@ class MaterialReceiptRequest extends FormRequest
                         })
                         ->selectRaw('SUM(order_qty - grn_qty) as balance_qty')
                         ->value('balance_qty') ?? 0;
-                    
+
                     if($mrnItem) {
                         $inputQty = (floatval($component['accepted_qty']) - $mrnItem->accepted_qty) ?? 0;
                     } else {

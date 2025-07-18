@@ -1233,7 +1233,12 @@ $(document).on('click','#addNewItemBtn', (e) => {
             if (data.status == 200) {
                // $("#submit-button").click();
                 if (rowsLength) {
-                    $("#itemTable > tbody > tr:last").after(data.data.html);
+                    // $("#itemTable > tbody > tr:last").after(data.data.html);
+                    if($("#itemTable > tbody > tr.trselected")) {
+                        $("#itemTable > tbody > tr.trselected").after(data.data.html);
+                    }else {
+                        $("#itemTable > tbody > tr:last").after(data.data.html);
+                    }
                 } else {
                     $("#itemTable > tbody").html(data.data.html);
                 }

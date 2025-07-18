@@ -32,12 +32,12 @@ class SubStoreController extends Controller
         $groupId = $organization?->group_id;
 
        if ($isSuperAdmin) {
-            $subStores = ErpSubStore::whereHas('parents', function ($subQuery) use ($groupId) {
+            $subStores = ErpSubStore::withWhereHas('parents', function ($subQuery) use ($groupId) {
                 $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
                         ->where('group_id', $groupId);
             })->orderByDesc('id')->get();
         } else {
-            $subStores = ErpSubStore::whereHas('parents')->orderByDesc('id')->get();
+            $subStores = ErpSubStore::withWhereHas('parents')->orderByDesc('id')->get();
         }
         if ($request->ajax()) {
             return DataTables::of($subStores)
@@ -46,7 +46,12 @@ class SubStoreController extends Controller
                     return $subStore->erp_store?->organization->name ?? 'AS';
                 })
                 ->addColumn('store_name', function ($subStore) {
-                    return $subStore->store_names();
+                    $parents = $subStore->parents;
+                    $storesName = '';
+                    foreach ($parents as $storeKey => $store) {
+                        $storesName .=  (($storeKey === 0 ? '' : ', ') . $store ?-> store?-> store_name);
+                    }
+                    return $storesName;
                 })
                 ->addColumn('sub_type_name', function ($subStore) {
                     return isset(SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type]) ? SubStoreConstants::STOCK_STORE_TYPES[$subStore->sub_type ?-> type] : " ";
@@ -96,7 +101,7 @@ class SubStoreController extends Controller
                 'name' => $validatedData['name'], 
                 'type'=>$validatedData['store_location_type'],
                 'station_wise_consumption'=>isset($request -> station_wise_consumption) ? 'yes' : 'no',
-                'is_warehouse_required'=>isset($request -> is_warehouse_required) ? 1 : 0,
+                'is_warehouse_required'=>isset($request -> is_warehouse_required) && $request -> stock_store_types === SubStoreConstants::MAIN_STORE_VALUE ? 1 : 0,
                 'status'=>$validatedData['status'],
             ];
             $erpSubStore->fill($data);
@@ -140,9 +145,9 @@ class SubStoreController extends Controller
         $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
         $organization = $user->organization;
         $groupId = $organization?->group_id;
-        if ($isSuperAdmin) {
-          $subStore = ErpSubStore::whereHas('parents', function ($subQuery) use ($groupId) {
-                $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+       if ($isSuperAdmin) {
+           $subStore = ErpSubStore::withWhereHas('parents', function ($query) use ($groupId) {
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
                         ->where('group_id', $groupId);
             })
             ->where('id', $id)
@@ -176,6 +181,11 @@ class SubStoreController extends Controller
 
     public function update(SubStoreRequest $request, $id)
     {
+        $user = Helper::getAuthenticatedUser();
+        $authUser = AuthUser::find($user->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
         $validatedData = $request->validated();
         DB::beginTransaction();
         try {
@@ -209,7 +219,13 @@ class SubStoreController extends Controller
             }
             $newSelectedStoreIds = [];
             foreach ($validatedData['store_id'] as $storeId) {
-                $store = ErpStore::find($storeId);
+               if ($isSuperAdmin) {
+                    $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('group_id', $groupId)
+                    ->find($storeId);
+                } else {
+                    $store = ErpStore::find($storeId);
+                }
                 ErpSubStoreParent::updateOrCreate(
                     ['store_id' => $storeId, 'sub_store_id' => $subStore -> id],
                     [
@@ -273,7 +289,8 @@ class SubStoreController extends Controller
             $storeId = $request -> store_id ?? 0;
             $itemId = $request -> item_id ?? null;
             $type = isset($request -> types) ? $request -> types : ConstantHelper::STOCKK;
-            $subStores = InventoryHelper::getAccesibleSubLocations($storeId, $itemId, $type);
+            $subType = isset($request -> sub_type) ? $request -> sub_type : null;
+            $subStores = InventoryHelper::getAccesibleSubLocations($storeId, $itemId, $type, null, $subType);
             return response() -> json([
                 'status' => 200,
                 'message' => 'Records retrieved successfully',

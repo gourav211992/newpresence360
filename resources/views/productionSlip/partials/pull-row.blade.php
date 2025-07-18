@@ -40,6 +40,16 @@ $currentOrderIndexVal = $index;
 <td><input type="text" id="item_sub_prime_qty_{{$currentOrderIndexVal}}" name = "item_sub_prime_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = ""/></td>
 @endif
 <td><input type="text" id="item_rejected_qty_{{$currentOrderIndexVal}}" name = "item_rejected_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
+@if($machines->isNotEmpty())
+<td>
+    <select class="form-select" name="machine_id[{{$currentOrderIndexVal}}]">
+        <option value="">Select Machine</option>
+        @foreach ($machines as $machine)
+            <option value="{{$machine->id}}" {{$machine->id == $order->machine_id ? 'selected' : ''}}>{{$machine?->name}}</option>
+        @endforeach
+    </select>
+</td>
+@endif
 <td>
     <div class="d-flex">
             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$currentOrderIndexVal}}');">        

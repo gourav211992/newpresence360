@@ -56,7 +56,7 @@ class ProfitLossController extends Controller
         else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
         $organizations=[];
         if ($r->organization_id && is_array($r->organization_id)) {
@@ -380,7 +380,7 @@ class ProfitLossController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
         else{
             $fyear = Helper::getFinancialYear(date('Y-m-d'));
@@ -412,7 +412,7 @@ class ProfitLossController extends Controller
         else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
 
         $organizations=[];
@@ -457,7 +457,7 @@ class ProfitLossController extends Controller
         else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
 
         $organizations=[];
@@ -502,7 +502,7 @@ class ProfitLossController extends Controller
         else {
             $dates = explode(' to ', $r->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
 
         $organizations=[];

@@ -7,9 +7,11 @@ use App\Helpers\Helper;
 use App\Models\NumberPattern;
 use Auth;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class EditGateEntryRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,6 +25,11 @@ class EditGateEntryRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {
@@ -92,6 +99,6 @@ class EditGateEntryRequest extends FormRequest
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
             'components.*.rate.numeric' => 'Rate must be integer',
         ];
- 
+
     }
 }

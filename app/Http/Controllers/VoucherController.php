@@ -669,10 +669,13 @@ class VoucherController extends Controller
 
         if ($request->date) {
             $dates = explode(' to ', $request->date);
+
+            // If no end date, use start date as end date
             $start = date('Y-m-d', strtotime($dates[0]));
-            $end = date('Y-m-d', strtotime($dates[1]));
+            $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
+
             $data = $data->whereDate('document_date', '>=', $start)
-                ->whereDate('document_date', '<=', $end);
+                        ->whereDate('document_date', '<=', $end);
         }
         else{
 

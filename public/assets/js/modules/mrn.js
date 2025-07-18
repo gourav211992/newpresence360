@@ -1,3 +1,6 @@
+// Determine if current URL is an edit page
+const isEditPage = window.location.pathname.includes('/edit');
+
 /*Tax Detail Display Start*/
 $(document).on('click', '.summaryTaxBtn', (e) => {
     getTaxSummary();
@@ -130,44 +133,40 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
     oldValue = e.target.value;  // Store the old value when the field gains focus
 });
 
-$(document).on('blur change', "[name*='order_qty']", async function (e) {
+$(document).on('change', "[name*='order_qty']", async function (e) {
     const $tr = $(e.target).closest('tr');
     const $qtyInput = $(e.target);
+    const orderQty = parseFloat($qtyInput.val()) || 0;
+
     const $poQtyInput = $tr.find(".po_qty");
-    
+    const poQty = parseFloat($poQtyInput.val()) || 0;
+
     const $acceptedQtyInput = $tr.find("[name*='accepted_qty']");
     const $rejectedQtyInput = $tr.find("[name*='rejected_qty']");
-    const orderQty = parseFloat($qtyInput.val()) || 0;
-    const poQty = parseFloat($poQtyInput.val()) || 0;
-    const accQty = parseFloat($acceptedQtyInput.val()) || 0;
-    
-    // Format and set input
+    const $itemCost = $tr.find("[name*='rate']");
+    const $itemValue = $tr.find("[name*='basic_value']");
+    const isInspection = $tr.find("[name*='is_inspection']").val() || '';
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+
     $qtyInput.val(orderQty.toFixed(2));
     checkDuplicateObjects($qtyInput);
+
+    if (orderQty <= 0) {
+        Swal.fire({ title: 'Error!', text: 'Receipt Qty. cannot be zero.', icon: 'error' });
+        $qtyInput.val(poQty.toFixed(2));
+        return;
+    }
 
     const getVal = (selector) => {
         const el = $tr.find(selector);
         return el.length ? el.val() : '';
     };
 
-    // Validate Order Quantity
-    if ((orderQty <= 0)) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Receipt Qty. cannot be zero.',
-            icon: 'error',
-        });
-        $qtyInput.val(poQty.toFixed(2));
-        return;
-    }
-
-    // Prepare payload
     const data = {};
-    const safeSet = (key, val) => {
-        if (val) data[key] = val;
-    };
+    const safeSet = (key, val) => { if (val) data[key] = val; };
 
-    safeSet('item_id', getVal("[name*='item_id']"));
+    safeSet('item_id', itemId);
     safeSet('purchase_order_id', getVal("[name*='[purchase_order_id]']"));
     safeSet('po_detail_id', getVal("[name*='[po_detail_id]']"));
     safeSet('job_order_id', getVal("[name*='[job_order_id]']"));
@@ -180,79 +179,79 @@ $(document).on('blur change', "[name*='order_qty']", async function (e) {
     safeSet('qty', orderQty.toFixed(2));
     safeSet('type', currentProcessType);
 
-    const isInspection = getVal("[name*='is_inspection']");
+    try {
+        const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+        const result = await response.json();
 
-    // Send request to validate
-    const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
-    const result = await response.json();
-    console.log('result', result);
-    let resultQty = parseFloat(result.order_qty) || 0;
-    let receiptQty = (resultQty.toFixed(2));
-    let acceptedQty = (resultQty.toFixed(2));
-    let rejectedQty = (receiptQty - acceptedQty).toFixed(2);
-    // If validation failed
-    if (result.status !== 200 && result.message) {
-        Swal.fire({
-            title: 'Error!',
-            text: result.message,
-            icon: 'error',
-        });
-        $qtyInput.val(receiptQty);
-        $acceptedQtyInput.val(acceptedQty);
-        $rejectedQtyInput.val(rejectedQty);
-    } else{
-        $qtyInput.val(receiptQty);
-        $acceptedQtyInput.val(acceptedQty);
-        $rejectedQtyInput.val(rejectedQty);
+        const resultQty = parseFloat(result.order_qty) || 0;
+        const finalQty = resultQty.toFixed(2);
+        $qtyInput.val(finalQty);
+
+        let acceptedQty = (isInspection == 1) ? 0.00 : resultQty;
+        let rejectedQty = (isInspection == 1) ? 0.00 : (resultQty - acceptedQty);
+
+        $acceptedQtyInput.val(acceptedQty.toFixed(2));
+        $acceptedQtyInput.trigger('change');
+        $rejectedQtyInput.val(rejectedQty.toFixed(2));
+
+        if (Number($itemCost.val())) {
+            let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
+            $itemValue.val(totalValue.toFixed(2));
+        } else {
+            $itemValue.val('');
+        }
+
+        if (acceptedQty > 0) {
+            generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
+        }
+
+
+        if (result.status !== 200 && result.message) {
+            Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
+            return false;
+        }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ title: 'Error!', text: 'Quantity validation failed.', icon: 'error' });
     }
 });
 
 /*qty on change*/
-$(document).on('blur change',"[name*='accepted_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let itemId = $(e.target).closest('tr').find('[name*=item_id]').val();
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let receiptQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
-    let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='mrn_detail_id']").val() || '';
-    let poDetailId = $(e.target).closest('tr').find("[name*='po_detail_id']").val() || '';
-    let geDetailId = $(e.target).closest('tr').find("[name*='gate_entry_detail_id']").val() || '';
-    let siDetailId = $(e.target).closest('tr').find("[name*='supplier_inv_detail_id']").val() || '';
-    let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
-    let isInspection = $(e.target).closest('tr').find("[name*='is_inspection']").val() || '';
-    
-    if (Number(acceptedQuantity.val()) > Number(receiptQuantity.val())) {
-        Swal.fire({
-            title: 'Error!',
-            text: 'Accepted Qty. can not be greater than Receipt Qty.',
-            icon: 'error',
-        });
-        acceptedQuantity.val(receiptQuantity.val());
-        return false;
+$(document).on('change', "[name*='accepted_qty']", function (e) {
+    edit = true; // Set edit to true when order_qty changes
+    const $tr = $(e.target).closest('tr');
+    const $acceptedQtyInput = $tr.find("[name*='accepted_qty']");
+    const $orderQtyInput = $tr.find("[name*='order_qty']");
+    const $rejectedQtyInput = $tr.find("[name*='rejected_qty']");
+    const $itemCost = $tr.find("[name*='rate']");
+    const $itemValue = $tr.find("[name*='basic_value']");
+    const isInspection = $tr.find("[name*='is_inspection']").val() || '';
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+
+    let acceptedQty = parseFloat($acceptedQtyInput.val()) || 0;
+    const orderQty = parseFloat($orderQtyInput.val()) || 0;
+
+    if (acceptedQty > orderQty) {
+        Swal.fire({ title: 'Error!', text: 'Accepted Qty. cannot be greater than Receipt Qty.', icon: 'error' });
+        acceptedQty = orderQty;
     }
 
-    let aq = parseFloat(acceptedQuantity.val());
-    let rq = 0;
-    if(isInspection == 1){
-        rq = 0;
-    }else{
-        rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
-    }
+    let rejectedQty = (isInspection == 1) ? 0 : orderQty - acceptedQty;
 
-    acceptedQuantity.val(aq.toFixed(2));
-    rejectedQuantity.val(rq.toFixed(2));
-    if (Number(itemCost.val())) {
-        let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
-        itemValue.val(totalItemValue.toFixed(2));
+    $acceptedQtyInput.val(acceptedQty.toFixed(2));
+    $rejectedQtyInput.val(rejectedQty.toFixed(2));
+
+    if (Number($itemCost.val())) {
+        const value = acceptedQty * parseFloat($itemCost.val());
+        $itemValue.val(value.toFixed(2));
     } else {
-        itemValue.val('');
+        $itemValue.val('');
     }
-    if(acceptedQuantity.val() > 0)
-    {
-        generatePackets(dataIndex, itemId, acceptedQuantity.val());
+
+    if (acceptedQty > 0) {
+        generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
     }
 });
 
@@ -341,7 +340,11 @@ $(document).on('click', '.addDiscountBtn', (e) => {
 });
 
 // Set Each Row Item Calculation
-function setTableCalculation(edit = false) {
+function setTableCalculation(edit = null) {
+    if (edit === null) {
+        edit = window.location.pathname.includes('/edit');
+    }
+    
     const reference_type = $('.reference_type').val();
     let totalItemValue = 0;
     let totalItemDiscount = 0;
@@ -588,6 +591,7 @@ function setTableCalculation(edit = false) {
             .attr('style', totalAfterTax < 0 ? 'color: red !important;' : '');
 
         let rows = $(".display_summary_exp_row").find("[name*='[e_perc]']");
+        
         let fetchPromises = [];
         let expAmounts = [];
         let totalRows = rows.length;
@@ -653,7 +657,6 @@ function setTableCalculation(edit = false) {
                     .css('color', totalHeaderExp < 0 ? 'red' : '');
         
                 grandTotal = totalAfterTax + totalHeaderExp;
-                console.log('grandTotal', grandTotal, totalAfterTax, totalHeaderExp);
                 
                 $("#f_total_after_exp")
                     .attr('amount',grandTotal.toFixed(2))

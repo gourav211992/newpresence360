@@ -7,7 +7,7 @@
     </style>
 @endsection
 @section('content')
-    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}"
+    <form id="mrnEditForm"  data-module="ge" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}"
         data-redirect="/gate-entries" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
@@ -526,7 +526,9 @@
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
                                                     <table id="itemTable"
-                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                        class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                        data-json-key="components_json"
+                                                        data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
@@ -1102,6 +1104,7 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{ route('gate-entry.tax.calculation') }}';
+        var qtyChangeUrl = '{{ route("gate-entry.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>

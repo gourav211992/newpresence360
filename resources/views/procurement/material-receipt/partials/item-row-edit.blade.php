@@ -1,6 +1,18 @@
 @foreach($mrn->items as $key => $item)
    @php
       $rowCount = $key + 1;
+      $readonly = '';
+      if($item->gate_entry_detail_id){
+         $readOnly = 'readonly';
+      }elseif($item->vendor_asn_dtl_id){
+         $readOnly = 'readonly';
+      }elseif(($item->purchase_order_item_id) && ($item->mrnHeader->reference_type == 'po')){
+         $readOnly = (($item->po?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+      }elseif(($item->job_order_item_id) && ($item->mrnHeader->reference_type == 'jo')){
+         $readOnly = (($item->jo?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+      }else {
+         $readOnly = '';
+      }
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
       <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->mrn_header_id}}">
@@ -62,15 +74,15 @@
             <input type="number" class="form-control mw-100 po_qty text-end checkNegativeVal" value="{{$item?->poItem?->order_qty}}" step="any" readonly />
         </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" @readonly(true)/>
+         <input type="number" class="form-control mw-100 text-end order_qty" name="components[{{$rowCount}}][order_qty]" value="{{$item->order_qty}}" step="any" {{ $readOnly }} />
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any"
-         {{ ($item?->is_inspection == 1) ? 'readonly' : '' }} @readonly(true) />
+         {{ $readOnly }} />
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any"
-         {{ ($item?->is_inspection == 1) ? 'readonly' : '' }} @readonly(true)/>
+         {{ $readOnly }}/>
       </td>
       <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
       <td>

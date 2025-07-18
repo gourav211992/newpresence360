@@ -118,4 +118,9 @@ class ErpPlItem extends Model
     public function header(){
         return $this->belongsTo(ErpPlHeader::class, 'pl_header_id');
     }
+
+    public function attributes()
+    {
+        return $this->hasMany(ErpPlItemAttribute::class, 'pl_item_id');
+    }
 }

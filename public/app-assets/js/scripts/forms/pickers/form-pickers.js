@@ -56,12 +56,15 @@
         mode: 'range',
         dateFormat: 'd-m-Y',
         onClose: function(selectedDates, dateStr, instance) {
-          if (selectedDates.length === 2 && selectedDates[0].getTime() === selectedDates[1].getTime()) {
-            instance.clear();
+          // If only a single date is picked (user didn't pick an end date)
+          if (selectedDates.length === 1) {
+            // Set both start and end to the same selected date
+            instance.setDate([selectedDates[0], selectedDates[0]], true);
           }
         }
       });
   });
+
 
   // Human Friendly
   humanFriendlyPickr.each(function () {

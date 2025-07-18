@@ -370,7 +370,11 @@ class CustomerController extends Controller
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
 
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-               $customer->status = ConstantHelper::ACTIVE;
+                if ($submittedStatus === ConstantHelper::INACTIVE) {
+                    $customer->status = ConstantHelper::INACTIVE;
+                } else {
+                    $customer->status = ConstantHelper::ACTIVE;
+                } 
             } else {
                 $customer->status = $document_status;
             }
@@ -680,7 +684,11 @@ class CustomerController extends Controller
                 $customer->document_status = $document_status;
 
                 if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    $customer->status = ConstantHelper::ACTIVE;
+                    if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $customer->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $customer->status = ConstantHelper::ACTIVE;
+                    }
                 } else {
                     $customer->status = $document_status;
                 }

@@ -344,10 +344,12 @@ class BomController extends Controller
 
             if (isset($request->all()['components'])) {
                 $consumptionMethod = $request->consumption_method;
+                $_index = 1;
                 foreach($request->all()['components'] as $component) {
                     # Bom Detail Save
                     $bomDetail = new BomDetail;
                     $bomDetail->bom_id = $bom->id;
+                    $bomDetail->sequence_no = $_index;
                     $bomDetail->item_id = $component['item_id'];
                     $bomDetail->vendor_id = $component['vendor_id'] ?? null;
                     $bomDetail->item_code = $component['item_code'];
@@ -424,6 +426,7 @@ class BomController extends Controller
                             }
                         }
                     }
+                    $_index = $_index + 1;
                 }
             } else {
                 DB::rollBack();
@@ -1097,7 +1100,8 @@ class BomController extends Controller
 
             if (isset($request->all()['components'])) {
                 $consumptionMethod = $request->consumption_method;
-                foreach($request->all()['components'] as $component) {
+                $_index = 1;
+                foreach($request->all()['components'] as  $component) {
                     # Bom Detail Save
                     $bomDetail = BomDetail::find(@$component['bom_detail_id']) ?? new BomDetail;
                     $isNewItem = false;
@@ -1105,6 +1109,7 @@ class BomController extends Controller
                         $isNewItem = $bomDetail->item_id != ($component['item_id'] ?? null);
                     }
                     $bomDetail->bom_id = $bom->id;
+                    $bomDetail->sequence_no = $_index;
                     $bomDetail->vendor_id = $component['vendor_id'] ?? null;
                     $bomDetail->item_id = $component['item_id'];
                     $bomDetail->item_code = $component['item_code'];
@@ -1213,6 +1218,7 @@ class BomController extends Controller
                     //         }
                     //     }
                     // }
+                    $_index = $_index + 1;
                 }
             } else {
                 DB::rollBack();

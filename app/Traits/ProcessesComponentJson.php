@@ -10,6 +10,9 @@ trait ProcessesComponentJson
             return;
         }
         $decoded = json_decode($this->input($jsonField), true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
         $decoded = array_filter($decoded, function ($item) {
             if (!is_array($item)) return false;
             return collect($item)

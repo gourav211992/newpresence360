@@ -33,7 +33,8 @@ class BomDetail extends Model
         'station_id',
         'station_name',
         'remark',
-        'vendor_id'
+        'vendor_id',
+        'sequence_no',
     ];
 
     public $referencingRelationships = [

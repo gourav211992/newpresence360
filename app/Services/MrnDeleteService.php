@@ -6,6 +6,8 @@ use App\Models\MrnExtraAmount;
 use App\Models\MrnItemLocation;
 
 use App\Helpers\ConstantHelper;
+use App\Helpers\InventoryHelper;
+use App\Helpers\InventoryHelperV2;
 
 class MrnDeleteService
 {
@@ -24,9 +26,35 @@ class MrnDeleteService
             $mrnItems = MrnDetail::whereIn('id', $deletedData['deletedMrnItemIds'])->get();
 
             foreach ($mrnItems as $mrnItem) {
+                $itemName = $mrnItem->item->item_name;
                 if ($mrnItem->purchase_bill_qty > 0 || $mrnItem->pr_qty > 0) {
-                    $errorMessage = "Cannot delete MRN item with purchase bill or PR quantity.";
+                    $errorMessage = $itemName. " has been used in purchase bill so cannot be deleted from this MRN.";
                     $data = self::errorResponse($errorMessage);
+                    return $data;
+                }
+                
+                // Check Stock and delete 
+                $documentHeaderId = $mrnItem->mrn_header_id;
+                $documentDetailId = $mrnItem->id;
+                $itemId = $mrnItem->item_id;
+                $storeId = $mrnItem->store_id;
+                $subStoreId = $mrnItem->sub_store_id;
+                $documentStatus = $mrnItem->document_status;
+                $selectedAttr = collect($mrnItem->attributes)->pluck('attr_value')->filter()->values()->toArray();
+                $mrnData = [
+                    'document_header_id' => $documentHeaderId,
+                    'document_detail_id' => $documentDetailId,
+                    'item_id' => $itemId,
+                    'store_id' => $storeId,
+                    'document_type' => 'mrn',
+                    'attributes' => $selectedAttr,
+                    'sub_store_id' => $subStoreId,
+                    'transaction_type' => 'receipt',
+                    'document_status' => $documentStatus,
+                ];
+                $checkStockAvailable = InventoryHelperV2::checkStockForDelete($mrnData, 'true');
+                if ($checkStockAvailable['status'] === 'error') {
+                    $data = self::errorResponse($checkStockAvailable['message']);
                     return $data;
                 }
 
@@ -36,29 +64,34 @@ class MrnDeleteService
                 $mrnItem->attributes()->delete();
 
                 if ($geItem = $mrnItem->geItem) {
-                    $geItem->update(['mrn_qty' => $geItem->accepted_qty - $orderQty]);
+                    $geItem->mrn_qty -= $orderQty;
+                    $geItem->save();
                 }
-
+                
                 if ($asnItem = $mrnItem->asnItem) {
-                    $asnItem->update(['grn_qty' => $asnItem->supplied_qty - $orderQty]);
+                    $asnItem->grn_qty -= $orderQty;
+                    $asnItem->save();
                 }
-
+                
                 switch ($mrn->reference_type) {
                     case ConstantHelper::JO_SERVICE_ALIAS:
                         if ($joItem = $mrnItem->joItem) {
-                            $joItem->update(['grn_qty' => $joItem->order_qty - $orderQty]);
+                            $joItem->grn_qty -= $orderQty;
+                            $joItem->save();
                         }
                         break;
-
+                
                     case ConstantHelper::SO_SERVICE_ALIAS:
                         if ($soItem = $mrnItem->soItem) {
-                            $soItem->update(['grn_qty' => $soItem->qty - $orderQty]);
+                            $soItem->grn_qty -= $orderQty;
+                            $soItem->save();
                         }
                         break;
-
+                
                     case ConstantHelper::PO_SERVICE_ALIAS:
                         if ($poItem = $mrnItem->poItem) {
-                            $poItem->update(['grn_qty' => $poItem->order_qty - $orderQty]);
+                            $poItem->grn_qty -= $orderQty;
+                            $poItem->save();
                         }
                         break;
                 }

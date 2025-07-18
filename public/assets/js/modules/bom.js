@@ -610,7 +610,11 @@ function initAttributeAutocomplete(context = document) {
 
 // Auto scroll when row added
 function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSelector = '#itemTable') {
-   let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+//    let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+    let $lastRow = $(`${tableSelector} > tbody > tr.trselected`).length
+    ? $(`${tableSelector} > tbody > tr.trselected`).next('tr')
+    : $(`${tableSelector} > tbody > tr`).last();
+
    let $input = $lastRow.find(inputSelector);
 
    if ($input.length) {

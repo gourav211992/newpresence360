@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
+use App\Models\MfgOrder;
 use App\Models\MoBomMapping;
 use App\Models\PslipBomConsumption;
 use App\Traits\ProcessesComponentJson;
@@ -67,6 +69,18 @@ class PslipRequest extends FormRequest
         //         }
         //     }
         // }
+        $moId = $this->mo_id ?? null;
+        $machines = collect();
+        $mo = MfgOrder::where('id', $moId)->first();
+        $productionBom = $mo?->productionRoute ?? null;
+        if($productionBom) {
+            $machines = $productionBom?->machines()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(); 
+        }
+        if($machines->isNotEmpty()) {
+            $rules['machine_id.*'] = 'required';
+        }
         return $rules;
     }
 
@@ -111,7 +125,7 @@ class PslipRequest extends FormRequest
                 );
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
                 if ($requiredQty > $stockBalanceQty) {
-                    $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
+                    // $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
             }
         });

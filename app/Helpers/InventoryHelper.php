@@ -70,6 +70,8 @@ use App\Models\PoItem;
 use Illuminate\Support\Collection;
 use App\Models\PslipBomConsumption;
 use Illuminate\Support\Facades\Log;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
+use App\Models\AuthUser;
 use stdClass;
 class InventoryHelper
 {
@@ -2183,14 +2185,21 @@ class InventoryHelper
         //Retrieve Editable Store
         $employee = Helper::getAuthenticatedUser();
         $editStore = ErpStore::with('address') -> find($storeId);
+        $authUser = AuthUser::find($employee->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $employee->organization;
+        $groupId = $organization?->group_id;
 
-        $stores = ErpStore::withDefaultGroupCompanyOrg()
-        ->withWhereHas('address')
+        $stores = ErpStore::withWhereHas('address')
         ->where(function($query) use($storeId) {
             $query->where('status',ConstantHelper::ACTIVE);
             if($storeId) {
                 $query->orWhere('id', $storeId);
             }
+        })
+        ->when($isSuperAdmin && $groupId, function ($query) use ($groupId) {
+            $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId);
         })
         ->when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
@@ -2223,8 +2232,25 @@ class InventoryHelper
 
     public static function getAccesibleSubLocations(int $storeId, int|null $itemId = null, string| array $locationType = [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR], $subStoreId = NULL, string $subTypes = null )
     {
-        $subStoreIds = ErpSubStoreParent::withDefaultGroupCompanyOrg()->where('store_id', $storeId)
-            -> get() -> pluck('sub_store_id') -> toArray();
+        $user = Helper::getAuthenticatedUser();
+        $authUser = AuthUser::find($user->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+         if ($isSuperAdmin) {
+               $subStoreIds = ErpSubStoreParent::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->where('store_id', $storeId)
+                ->get()
+                ->pluck('sub_store_id')
+                ->toArray();
+            } else {
+               $subStoreIds = ErpSubStoreParent::where('store_id', $storeId)
+                ->get()
+                ->pluck('sub_store_id')
+                ->toArray();
+        }
         $subStores = ErpSubStore::select('id', 'name', 'code','station_wise_consumption','is_warehouse_required') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
                 $typeQuery = $typeQuery -> where('type', $locationType);

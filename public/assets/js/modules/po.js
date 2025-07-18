@@ -24,7 +24,8 @@ function getTaxSummary()
 {
     let taxSummary = {};
     $("#itemTable [id*='row_']").each(function(index, row) {
-        row = $(row);        
+        row = $(row);
+        let rowCount = Number(row.attr('data-index')) || 1;
         let qty = Number(row.find('[name*="[qty]"]').val());
         let rate = Number(row.find('[name*="[rate]"]').val());
         let itemDisc = Number(row.find('[name*="[discount_amount]"]').val());
@@ -36,9 +37,9 @@ function getTaxSummary()
         if (totalItemValueAfterDisc) {
             row.find('[name*="[t_type]"]').each(function(taxIndex, TaxRow) {
                 // Get tax type, percentage, and value for each tax row
-                let tType = $(TaxRow).closest('td').find(`[name*="components[${index+1}][taxes][${taxIndex+1}][t_type]"]`).val();
-                let tPerc = Number($(TaxRow).closest('td').find(`[name*="components[${index+1}][taxes][${taxIndex+1}][t_perc]"]`).val());
-                let tValue = Number($(TaxRow).closest('td').find(`[name*="components[${index+1}][taxes][${taxIndex+1}][t_value]"]`).val());
+                let tType = $(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_type]"]`).val();
+                let tPerc = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_perc]"]`).val());
+                let tValue = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_value]"]`).val());
                 let dynamicKey = `${tType}_${tPerc}`;                
                 if (taxSummary[dynamicKey]) {
                     taxSummary[dynamicKey].totalTaxValue += tValue;

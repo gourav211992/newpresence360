@@ -33,35 +33,35 @@ class GeDeleteService
                     return $data;
                 }
 
-                $orderQty = $mrnItem->order_qty;
+                $orderQty = $mrnItem->accepted_qty;
 
                 $mrnItem->extraAmounts()->delete();
                 $mrnItem->attributes()->delete();
 
-                if ($geItem = $mrnItem->geItem) {
-                    $geItem->update(['mrn_qty' => $geItem->accepted_qty - $orderQty]);
-                }
-
                 if ($asnItem = $mrnItem->asnItem) {
-                    $asnItem->update(['grn_qty' => $asnItem->supplied_qty - $orderQty]);
+                    $asnItem->ge_qty -= $orderQty;
+                    $asnItem->save();
                 }
-
+                
                 switch ($mrn->reference_type) {
                     case ConstantHelper::JO_SERVICE_ALIAS:
                         if ($joItem = $mrnItem->joItem) {
-                            $joItem->update(['grn_qty' => $joItem->order_qty - $orderQty]);
+                            $joItem->ge_qty -= $orderQty;
+                            $joItem->save();
                         }
                         break;
-
+                
                     case ConstantHelper::SO_SERVICE_ALIAS:
                         if ($soItem = $mrnItem->soItem) {
-                            $soItem->update(['grn_qty' => $soItem->qty - $orderQty]);
+                            $soItem->ge_qty -= $orderQty;
+                            $soItem->save();
                         }
                         break;
-
+                
                     case ConstantHelper::PO_SERVICE_ALIAS:
                         if ($poItem = $mrnItem->poItem) {
-                            $poItem->update(['grn_qty' => $poItem->order_qty - $orderQty]);
+                            $poItem->ge_qty -= $orderQty;
+                            $poItem->save();
                         }
                         break;
                 }

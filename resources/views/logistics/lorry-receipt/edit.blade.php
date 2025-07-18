@@ -300,8 +300,8 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="distance">Distance (Km) <span class="text-danger">*</span></label>
-                                          <input type="text" class="form-control" id="distance" name="distance"
-                                             placeholder="Enter Distance (Km)" value="{{ old('distance', $lr->distance) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="text" class="form-control" id="distance" name="distances"
+                                             placeholder="Enter Distance (Km)" value="{{ old('distances', $lr->distance) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
                                           <input type="hidden" class="form-control" id="distanceInput" name="distance"
                                              value="{{ old('distance', $lr->distance) }}" />
                                        </div>
@@ -309,8 +309,8 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="freight_charges">Freight Charges (Rs) <span class="text-danger">*</span></label>
-                                          <input type="number" class="form-control" id="freight_charges" name="freight_charges"
-                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charges', $lr->freight_charges) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <input type="number" class="form-control" id="freight_charges" name="freight_charge"
+                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', $lr->freight_charges) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
                                           <input type="hidden" class="form-control" id="freightCharges" name="freight_charges"
                                              value="{{ old('freight_charges', $lr->freight_charges) }}" />
                                        </div>
@@ -484,67 +484,76 @@
                                        </tr>
                                     </thead>
                                     <tbody class="mrntableselectexcel" id="item-table-body">
-                                        @php 
-                                        $total_weight = 0;
-                                        $total_articles = 0;
-                                        @endphp
-                                       @forelse($lr->locations as $index => $location)
-                                       @php 
-                                       $total_weight += $location->weight;
-                                       $total_articles += $location->no_of_articles;
-                                       @endphp
-                                       <tr>
-                                          <td class="customernewsection-form">
-                                             <div class="form-check form-check-primary custom-checkbox">
-                                                <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ $index }}][selected]" id="row_{{ $index }}">
-                                                <label class="form-check-label" for="row_{{ $index }}"></label>
-                                             </div>
-                                          </td>
-                                          <td class="poprod-decpt">
-                                            <input type="hidden" name="locations[{{ $index }}][id]" value="{{ old("locations.$index.id", $location->id ?? '') }}">
-                                             <input type="text" name="locations[{{ $index }}][location_name]" value="{{ old("locations.$index.location_name", optional($location->route)->name) }}" 
-                                                placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete"
-                                                data-type="source" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                             <input type="hidden" name="locations[{{ $index }}][location_id]" value="{{ $location->location_id ?? '' }}"
-                                                class="route-master-id" data-type="source" />
-                                          </td>
-                                          <td>
-                                             <select class="form-select mw-100" name="locations[{{ $index }}][type]" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
-                                                <option value="">Select</option>
-                                                <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
-                                                <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
-                                             </select>
-                                          </td>
-                                          <td><input type="text" name="locations[{{ $index }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[{{ $index }}][weight]" value="{{ $location->weight ?? '' }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[{{ $index }}][freight]" value="{{ $location->amount ?? '' }}"  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100 text-end" /></td>
-                                       </tr>
-                                       @empty
-                                       <!-- If no existing points, render one empty row -->
-                                       <tr>
-                                          <td class="customernewsection-form">
-                                             <div class="form-check form-check-primary custom-checkbox">
-                                                <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
-                                                <label class="form-check-label" for="row_0"></label>
-                                             </div>
-                                          </td>
-                                          <td class="poprod-decpt">
-                                             <input type="text" name="locations[0][location_name]" placeholder="Select"
-                                                class="form-control mw-100 location-update route-master-autocomplete" data-type="source" />
-                                             <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="source" />
-                                          </td>
-                                          <td>
-                                             <select class="form-select mw-100" name="locations[0][type]">
-                                                <option value="">Select</option>
-                                                <option value="Pick Up">Pick Up</option>
-                                                <option value="Drop Off">Drop Off</option>
-                                             </select>
-                                          </td>
-                                          <td><input type="text" name="locations[0][no_of_articles]" class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[0][weight]" class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[0][freight]" class="form-control mw-100 text-end" /></td>
-                                       </tr>
-                                       @endforelse
+                                    @php 
+                                    $total_weight = 0;
+                                    $total_articles = 0;
+                                    $rowIndex = 0;
+                                    @endphp
+
+                                    @forelse($lr->locations as $location)
+                                    @php 
+                                    $total_weight += $location->weight;
+                                    $total_articles += $location->no_of_articles;
+                                    @endphp
+                                    <tr>
+                                    <td class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ $rowIndex }}][selected]" id="row_{{ $rowIndex }}">
+                                            <label class="form-check-label" for="row_{{ $rowIndex }}"></label>
+                                        </div>
+                                    </td>
+                                    <td class="poprod-decpt">
+                                        <input type="hidden" name="locations[{{ $rowIndex }}][id]" value="{{ old("locations.$rowIndex.id", $location->id ?? '') }}">
+                                        <input type="text" name="locations[{{ $rowIndex }}][location_name]" value="{{ old("locations.$rowIndex.location_name", optional($location->route)->name) }}" 
+                                            placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete"
+                                            data-type="source" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                        <input type="hidden" name="locations[{{ $rowIndex }}][location_id]" value="{{ $location->location_id ?? '' }}"
+                                            class="route-master-id" data-type="source" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select mw-100" name="locations[{{ $rowIndex }}][type]" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                            <option value="">Select</option>
+                                            <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
+                                            <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][weight]" value="{{ $location->weight ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][freight]" value="{{ $location->amount ?? '' }}" class="form-control mw-100 text-end" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    </tr>
+                                    @php $rowIndex++; @endphp
+                                    @empty
+                                    <tr>
+                                    <td class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
+                                            <label class="form-check-label" for="row_0"></label>
+                                        </div>
+                                    </td>
+                                    <td class="poprod-decpt">
+                                        <input type="text" name="locations[0][location_name]" placeholder="Select"
+                                            class="form-control mw-100 location-update route-master-autocomplete" data-type="source" />
+                                        <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="source" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select mw-100" name="locations[0][type]">
+                                            <option value="">Select</option>
+                                            <option value="Pick Up">Pick Up</option>
+                                            <option value="Drop Off">Drop Off</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="locations[0][no_of_articles]" class="form-control mw-100" /></td>
+                                    <td><input type="text" name="locations[0][weight]" class="form-control mw-100" /></td>
+                                    <td><input type="text" name="locations[0][freight]" class="form-control mw-100 text-end" /></td>
+                                    </tr>
+                                    @endforelse
+
                                     </tbody>
                                     <tfoot>
                                        <tr class="totalsubheadpodetail">
@@ -868,7 +877,7 @@ function updateRouteDetailsUI() {
 }
 
 
- let rowIndex = 1;
+ let rowIndex = {{ $rowIndex ?? 1 }};
 
 $('#addRowBtn').on('click', function () {
     const tbody = $('.mrntableselectexcel');
@@ -1000,7 +1009,7 @@ $(document).on('click', '#deleteSelected', function (e) {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            applyFreightToRows(); 
+            applyFreightToRows(selectedRows.length); 
             calculateTotals();
         }
     });
@@ -1366,15 +1375,22 @@ let pricingCache = {}
             $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
             $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-            // Apply freight
-            applyFreightToRows(); // apply to all rows in edit
+            applyFreightToRows(pricingCache[locationId]); 
         }
     });
 }
 
 
-function applyFreightToRows($specificRow = null) {
+function applyFreightToRows($specificRow = null, deletedRow = null) {
     const $rows = $('#item-table-body').find('tr');
+    let zeroFreightCount = 0;
+
+    $rows.each(function () {
+        const freightAmount = parseFloat($(this).find('input[name*="[freight]"]').val()) || 0;
+        if (freightAmount === 0) {
+            zeroFreightCount++;
+        }
+    });
     const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
     const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
 
@@ -1383,27 +1399,30 @@ function applyFreightToRows($specificRow = null) {
         const $freightInput = $row.find('input[name*="[freight]"]');
 
         if (!locationId) return;
+       const pricing = pricingCache[locationId];
 
-       const pricing = {
-                type: res.status,
-                free_point: parseInt(res.free_point || 0),
-                amount: parseFloat(res.amount || 0),
-                freeAmount: parseFloat(res.free_amount || 0),
-            };
-
-            pricingCache[locationId] = pricing;
+    if (!pricing) {
+        $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
+        return;
+    }
 
 
         if (pricing) {
             if (pricing.type === 'both_exist') {
-                if (index < activeFreePoint) {
-                    alert(pricing.amount);
-                    $freightInput.val(0); 
-                } else {
-                    
-                   $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
+              if (index < activeFreePoint) {
+                console.log(`Row index: ${index}, activeFreePoint: ${activeFreePoint}`);
+
+                $freightInput.val(0);
+            } else {
+                if(pricing.amount){
+                  $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
+                }else{
+                    $freightInput.val(pricing.freeAmount && parseFloat(pricing.freeAmount) > 0 ? parseFloat(pricing.freeAmount) : 0);
                 }
-            } else if (pricing.type === 'free_point') {
+                
+            }
+
+            }else if (pricing.type === 'free_point') {
                 if (index < activeFreePoint) {
                     $freightInput.val(0);
                 } else {
@@ -1420,6 +1439,20 @@ function applyFreightToRows($specificRow = null) {
             $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
     };
+    if (deletedRow !== null) {
+        const $targetRow = $rows.eq(deletedRow);
+        const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
+        const $freightInput = $targetRow.find('input[name*="[freight]"]');
+
+        const pricing = pricingCache[locationId]; // assuming pricing was cached
+
+        if (deletedRow <= activeFreePoint) {
+            $freightInput.val(0);
+        } else {
+            $freightInput.val(pricing?.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0); 
+        }
+    }
+
 
     if ($specificRow && $specificRow.length) {
         processRow($specificRow, $specificRow.index());

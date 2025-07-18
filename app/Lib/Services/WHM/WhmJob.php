@@ -79,7 +79,7 @@ class WhmJob
                     'company_id' => $header->company_id,
                     'morphable_type' => $namespace,
                     'morphable_id' => $detail->id,
-                    'doc_type' => $header->doc_number_type ?? null,
+                    'doc_type' => CommonHelper::RECEIPT,
                     'doc_no' => $header->document_number ?? null,
                     'doc_date' => $header->document_date ?? null,
                     'book_id' => $header->book_id ?? null,
@@ -90,7 +90,7 @@ class WhmJob
                     'item_name' => $detail->item->item_name,
                     'item_code' => $detail->item_code,
                     'vendor_id' => $header->vendor_id,
-                    'item_uid' => $itemUid,
+                    'item_uid' => $this->generateUniqueUid(),
                     'type' => 'qr',
                     'qty' => 1,
                     'status' => 'pending',
@@ -137,7 +137,7 @@ class WhmJob
                 'company_id' => $header->company_id,
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
-                'doc_type' => $header->doc_number_type ?? null,
+                'doc_type' => CommonHelper::RECEIPT,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
                 'book_id' => $header->book_id ?? null,
@@ -148,7 +148,7 @@ class WhmJob
                 'item_name' => $detail->item->item_name,
                 'item_code' => $detail->item_code,
                 'vendor_id' => $header->vendor_id,
-                'item_uid' => $itemUid, 
+                'item_uid' => $code->item_uid, 
                 'type' => 'qr',
                 'qty' => 1,
                 'status' => CommonHelper::PENDING,
@@ -183,6 +183,54 @@ class WhmJob
         $raw = str_replace('-', '', Str::uuid()); // 15-character hex
         $uid = strtoupper(substr($raw, 0, $length)); // Alphanumeric only, uppercase
         return $uid;
+    }
+
+    public function copyQRCodesForPickList($detail, $header, $jobId, $packetIds, $storagePointId, $user)
+    {
+        $attributes = $this->getAttributes($detail);
+
+        $packets = ErpItemUniqueCode::whereIn('item_uid', $packetIds)
+            ->where('storage_point_id',$storagePointId)
+            ->whereNull('utilized_id')
+            ->where('morphable_type', 'App\Models\MrnDetail')
+            ->get();
+
+        $namespace = get_class($detail);
+
+        foreach ($packets as $packet) {
+            $newRecord = ErpItemUniqueCode::create([
+                'uid' => $this->generateUniqueUid(),
+                'job_id' => $jobId,
+                'organization_id' => $header->organization_id,
+                'group_id' => $header->group_id,
+                'company_id' => $header->company_id,
+                'morphable_type' => $namespace,
+                'morphable_id' => $detail->id,
+                'doc_type' => CommonHelper::ISSUE,
+                'doc_no' => $header->document_number ?? null,
+                'doc_date' => $header->document_date ?? null,
+                'book_id' => $header->book_id ?? null,
+                'store_id' => $header->store_id ?? null,
+                'book_code' => $header->book_code ?? null,
+                'item_attributes' => json_encode($attributes),
+                'item_id' => $detail->item_id,
+                'item_name' => $detail->item->item_name,
+                'item_code' => $detail->item_code,
+                'vendor_id' => $header->vendor_id,
+                'item_uid' => $packet->item_uid, 
+                'storage_point_id' => $packet->storage_point_id, 
+                'type' => 'qr',
+                'qty' => 1,
+                'status' => CommonHelper::SCANNED,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'action_by' => $user->id,
+                'action_at' => now()
+            ]);
+
+            $packet->utilized_id = $newRecord->uid;
+            $packet->save();
+        }
     }
 
 }

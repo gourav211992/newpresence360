@@ -27,7 +27,7 @@ class TDSReportController extends Controller
         if ($request->date) {
             $dates = explode(' to ', $request->date);
             $startDate = date('Y-m-d', strtotime($dates[0]));
-            $endDate = date('Y-m-d', strtotime($dates[1]));
+            $endDate =  isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $startDate;
         }
         $organization_id = null;
         $vendor_id = null;

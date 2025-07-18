@@ -88,7 +88,8 @@ class ErpLorryReceiptController extends Controller
             ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
             ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
             ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? '-')
-             ->editColumn('created_by', function ($row) {
+            
+            ->editColumn('created_by', function ($row) {
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
                     return $createdBy;
                 })
@@ -194,7 +195,7 @@ class ErpLorryReceiptController extends Controller
     $drivers       = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $locations     = InventoryHelper::getAccessibleLocations();
     $vehicleTypes  = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $userType = Helper::userCheck();
+    $userType      = Helper::userCheck();
     $routeMasters  = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $revision_number = $lr->revision_number;
     $buttons = Helper::actionButtonDisplay($lr->book_id,$lr->document_status , $lr->id, $lr->total_charges, $lr->approval_level, $lr->created_by ?? 0, $userType['type']);
@@ -292,7 +293,7 @@ class ErpLorryReceiptController extends Controller
             $lr->lr_charges        = $request->lr_charges ?? 0;
             $lr->sub_total         = $request->sub_total ?? 0;
             $lr->total_charges     = $request->total_freight ?? 0;
-             $lr->remarks           = $request->remarks;
+            $lr->remarks           = $request->remarks;
             $lr->document_status   = $request->status;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
@@ -390,40 +391,34 @@ class ErpLorryReceiptController extends Controller
         $lr->document_status   = $request->status;
         $lr->updated_by        = $user->auth_user_id ;
 
-
-
-         if ($request->input('status') === ConstantHelper::SUBMITTED ) {
-            $bookId = $lr->book_id;
-            $docId = $lr->id;
-            $remarks = $lr->remarks;
-            $attachments = $request->file('attachment');
-            $currentLevel = $lr->approval_level ?? 1;
-            $modelName = get_class($lr);
+        $bookId = $lr->book_id;
+        $docId = $lr->id;
+        $remarks = $lr->remarks;
+        $attachments = $request->file('attachment');
+        $currentLevel = $lr->approval_level ?? 1;
+        $modelName = get_class($lr);
             
     
-            if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
-                $revisionNumber =  $lr->revision_number + 1;
-                $totalValue = 0; 
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-                $lr->approval_level = 1;
-                $lr->revision_date = now();
-        
-                $statusAfterApproval = $approveDocument['approvalStatus'] ?? $lr->document_status;
+        if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+            $revisionNumber =  $lr->revision_number + 1;
+            $totalValue =      $lr->total_charges ?? 0;
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $lr->revision_number = $revisionNumber;
+            $lr->approval_level = 1;
+            $lr->revision_date = now();
+    
+            $statusAfterApproval = $approveDocument['approvalStatus'] ?? $lr->document_status;
 
-                $lr->document_status = $statusAfterApproval;
-            } else {
-                $revisionNumber = $lr->revision_number ?? 0;
-                $totalValue = 0;
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-                $document_status = $approveDocument['approvalStatus'];
-                $lr->document_status = $document_status;
-            }
-        
+            $lr->document_status = $statusAfterApproval;
         } else {
-            $document_status = $request->current_status ?? ConstantHelper::DRAFT;
+            $revisionNumber = $lr->revision_number ?? 0;
+            $totalValue =  $lr->total_charges ?? 0;
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
             $lr->document_status = $document_status;
-           
         }
+        
+      
         $lr->save();
         $this->handleLorryMediaUploads($request, $lr);
 

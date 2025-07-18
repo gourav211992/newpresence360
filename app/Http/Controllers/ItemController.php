@@ -342,7 +342,11 @@ class ItemController extends Controller
             $item->document_status = $document_status;
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $item->status = ConstantHelper::ACTIVE;
+                if ($submittedStatus === ConstantHelper::INACTIVE) {
+                    $item->status = ConstantHelper::INACTIVE;
+                } else {
+                    $item->status = ConstantHelper::ACTIVE;
+                }
             } else {
                 $item->status = $document_status;
             }
@@ -824,7 +828,11 @@ class ItemController extends Controller
                 $document_status = $approveDocument['approvalStatus'];
                 $item->document_status = $document_status;
                if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    $item->status = ConstantHelper::ACTIVE;
+                   if ($submittedStatus === ConstantHelper::INACTIVE) {
+                        $item->status = ConstantHelper::INACTIVE;
+                    } else {
+                        $item->status = ConstantHelper::ACTIVE;
+                    }
                 } else {
                     $item->status = $document_status;
                 }
