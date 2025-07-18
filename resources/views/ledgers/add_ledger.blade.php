@@ -232,7 +232,7 @@
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
-                                                                id="tax_percentage" name="tax_percentage" />
+                                                                id="tax_percentage" name="tax_percentage" step="any" />
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_section_label">
@@ -266,6 +266,18 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TDS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_capping" name="tds_capping" step="any" />
+                                                        </div>
+                                                    </div>
+
                                                     <div class="row align-items-center mb-1" id="tcs_section_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label">TCS Section Type<span
@@ -294,6 +306,17 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tcs_percentage" name="tcs_percentage" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1" id="tcs_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TCS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tcs_capping" name="tcs_capping"  step="any"/>
                                                         </div>
                                                     </div>
 
@@ -398,9 +421,9 @@
                 // Hide all sections first
                 $('#tax_type, #tax_percentage,#tax_type_label,#tax_percentage_label').attr('required', false)
                     .hide();
-                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required', false)
+                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required', false)
                     .hide();
-                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required', false)
+                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required', false)
                     .hide();
 
                 // Check which special group is selected (only one can be selected)
@@ -410,11 +433,11 @@
                         .show();
                 } else if ({{ $tds_group_id }} != null && selectedOptions.includes("{{ $tds_group_id }}")) {
                     showGst = true;
-                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required',
+                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required',
                         true).show();
                 } else if ({{ $tcs_group_id }} != null && selectedOptions.includes("{{ $tcs_group_id }}")) {
                     showGst = true;
-                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required',
+                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required',
                         true).show();
                 }
 
