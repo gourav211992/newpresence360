@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
 use App\Helpers\InventoryHelper;
+use App\Models\ErpFinancialYear;
+
+
 use DateTime;
 
 class ITDepreciationController extends Controller
@@ -28,7 +31,7 @@ class ITDepreciationController extends Controller
 
         $locations = InventoryHelper::getAccessibleLocations();
 
-        
+
         return view('fixed-asset.it_depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'periods', 'fy', 'dep_type'));
     }
 
@@ -42,6 +45,8 @@ class ITDepreciationController extends Controller
                 $endDate = Carbon::parse($dateRange[1])->format('Y-m-d');
             }
         }
+        //$rdv = self::getIncomeTaxRDV('01-12-2025', $$request->date_range);
+       // dd($rdv);
         $asset_details = [];
         $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
@@ -51,15 +56,15 @@ class ITDepreciationController extends Controller
             })
             ->whereNotNull('depreciation_percentage')
             ->withWhereHas('ledger')
-           ->whereNotNull('capitalize_date')
+            ->whereNotNull('capitalize_date')
             ->where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category.setup')
             ->withWhereHas('it_category.setup')
-            ->orderBy('last_dep_date','asc')
-             ->whereNotNull('it_category_id')
+            ->orderBy('last_dep_date', 'asc')
+            ->whereNotNull('it_category_id')
             ->get()->values();
 
         return response()->json($asset_details);
@@ -99,7 +104,8 @@ class ITDepreciationController extends Controller
                 $quarterStart = clone $start;
                 while ($quarterStart <= $end) {
                     $quarterEnd = (clone $quarterStart)->modify('+2 months')->modify('last day of this month');
-                    if ($quarterEnd > $end) $quarterEnd = clone $end;
+                    if ($quarterEnd > $end)
+                        $quarterEnd = clone $end;
 
                     $periods[] = (object) [
                         "value" => $quarterStart->format("d-m-Y") . " to " . $quarterEnd->format("d-m-Y"),
@@ -113,7 +119,8 @@ class ITDepreciationController extends Controller
                 $monthStart = clone $start;
                 while ($monthStart <= $end) {
                     $monthEnd = (clone $monthStart)->modify('last day of this month');
-                    if ($monthEnd > $end) $monthEnd = clone $end;
+                    if ($monthEnd > $end)
+                        $monthEnd = clone $end;
 
                     $periods[] = (object) [
                         "value" => $monthStart->format("d-m-Y") . " to " . $monthEnd->format("d-m-Y"),
@@ -128,5 +135,34 @@ class ITDepreciationController extends Controller
         }
 
         return $periods;
-       }
- }
+    }
+    public static function getIncomeTaxRDV(string $date, $range)
+    {
+        $start = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+                $end = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+                $startFormatted = date('d-m-Y', strtotime($start));
+                $endFormatted = date('d-m-Y', strtotime($end));
+                $frange = $startFormatted . ' to ' . $endFormatted;
+        $rdv = null;
+        while (true) {
+
+            $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->first();
+            
+
+            if (isset($financialYear)) {
+                $rdv[$range] = 1;
+            } else {
+                $rdv[$range] = null;
+            }
+            if($range == $frange)
+                break;
+            else
+            $date = (new DateTime($date))->modify('+1 year')->format('Y-m-d');
+
+        }
+        return $rdv;
+    }
+
+}

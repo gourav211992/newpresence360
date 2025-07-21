@@ -1617,7 +1617,6 @@ $(document).on('keydown', function(e) {
             }
 
             prefix = prefix.trim().split(/\s+/)[0] + "#M";
-            prefix = trim(prefix);
             const input = document.getElementById('asset_code');
 
             // Set default value if needed
@@ -1626,15 +1625,24 @@ $(document).on('keydown', function(e) {
                 }
 
                 // Enforce prefix and allow only numbers after it
-                input.addEventListener("input", function() {
+                input.addEventListener("input", function (e) {
+                    const cursorPosition = this.selectionStart;
+
+                    // If prefix is missing or changed, reset it
                     if (!this.value.startsWith(prefix)) {
                         this.value = prefix;
                     }
 
-                    // Extract the numeric part after prefix
-                    let numericPart = this.value.slice(prefix.length).replace(/\D/g,'');
-                    this.value = prefix + numericPart;
+                    // Only allow numbers after the prefix
+                    let valueAfterPrefix = this.value.slice(prefix.length);
+                    valueAfterPrefix = valueAfterPrefix.replace(/\D/g, '');
+
+                    this.value = prefix + valueAfterPrefix;
+
+                    // Restore cursor position
+                    this.setSelectionRange(cursorPosition, cursorPosition);
                 });
+
 
                 // Prevent deleting or navigating into the prefix
                 input.addEventListener("keydown", function(e) {

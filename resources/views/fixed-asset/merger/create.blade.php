@@ -1604,8 +1604,27 @@ $(document).on('keydown', function(e) {
                     input.value = prefix+"01";
                 }
 
+                input.addEventListener("input", function (e) {
+                    const cursorPosition = this.selectionStart;
+
+                    // If prefix is missing or changed, reset it
+                    if (!this.value.startsWith(prefix)) {
+                        this.value = prefix;
+                    }
+
+                    // Only allow numbers after the prefix
+                    let valueAfterPrefix = this.value.slice(prefix.length);
+                    valueAfterPrefix = valueAfterPrefix.replace(/\D/g, '');
+
+                    this.value = prefix + valueAfterPrefix;
+
+                    // Restore cursor position
+                    this.setSelectionRange(cursorPosition, cursorPosition);
+                });
+
+
                 // Enforce prefix and allow only numbers after it
-                input.addEventListener("input", function() {
+                /*input.addEventListener("input", function() {
                     if (!this.value.startsWith(prefix)) {
                         this.value = prefix;
                     }
@@ -1613,7 +1632,7 @@ $(document).on('keydown', function(e) {
                     // Extract the numeric part after prefix
                     let numericPart = this.value.slice(prefix.length).replace(/\D/g, '');
                     this.value = prefix + numericPart;
-                });
+                });*/
 
                 // Prevent deleting or navigating into the prefix
                 input.addEventListener("keydown", function(e) {
