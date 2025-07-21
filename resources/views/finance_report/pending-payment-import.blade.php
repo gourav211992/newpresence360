@@ -138,7 +138,6 @@
                                                         <th>Voucher No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
-                                                        <th>Series</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>
@@ -170,7 +169,6 @@
                                                         <th>Voucher No.</th>
                                                         <th>Balance</th>
                                                         <th>Settle Amount</th>
-                                                        <th>Series</th>
                                                         <th>Remarks</th>
                                                     </tr>
                                                 </thead>

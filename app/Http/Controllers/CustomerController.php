@@ -117,7 +117,7 @@ class CustomerController extends Controller
                     return $className ? '<span class="' . $className . '">' . $statusText . '</span>' : $statusText;
                 })
                 ->editColumn('created_at', function ($row) {
-                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
+                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->addColumn('created_by', function ($row) {
@@ -126,7 +126,7 @@ class CustomerController extends Controller
                 })
                 
                 ->editColumn('updated_at', function ($row) {
-                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
+                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->editColumn('status', function ($row) {
@@ -265,6 +265,9 @@ class CustomerController extends Controller
                 }
          }
         }
+        if (count($services['services']) == 0) {
+           return redirect() -> route('/');
+        }
         return view('procurement.customer.create', [
             'organizationTypes' => $organizationTypes,
             'categories' => $categories,
@@ -351,6 +354,7 @@ class CustomerController extends Controller
             }
         }
         $customer = Customer::create($validatedData);
+        $customer ->updated_at = null;
 
         if ($request->document_status === 'submitted') {
             $bookId = $customer->book_id;
@@ -370,7 +374,9 @@ class CustomerController extends Controller
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
 
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-               $customer->status = ConstantHelper::ACTIVE;
+                if ($revisionNumber == 0) {
+                  $customer->status = ConstantHelper::ACTIVE;
+                }
             } else {
                 $customer->status = $document_status;
             }
@@ -647,8 +653,9 @@ class CustomerController extends Controller
       if ($request->input('current_status') === ConstantHelper::SUBMITTED) {
             $bookId = $customer->book_id;
             $docId = $customer->id;
-            $remarks = '';
+            $remarks = $request->remarks ?? null;
             $attachments = $request->file('attachment');
+            $amendAttachments = $request->file('amend_attachments');
             $currentLevel = $customer->approval_level ?? 1;
             $modelName = get_class($customer);
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
@@ -657,7 +664,7 @@ class CustomerController extends Controller
                 $revisionNumber = $customer->revision_number + 1;
                 $totalValue = 0;
 
-                $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $approve = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $customer->revision_number = $revisionNumber;
                 $customer->approval_level = 1;
                 $customer->revision_date = now();
@@ -680,7 +687,9 @@ class CustomerController extends Controller
                 $customer->document_status = $document_status;
 
                 if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    $customer->status = ConstantHelper::ACTIVE;
+                     if ($revisionNumber == 0) {
+                          $customer->status = ConstantHelper::ACTIVE;
+                       }
                 } else {
                     $customer->status = $document_status;
                 }

@@ -151,6 +151,7 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                               
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -305,6 +306,24 @@
                                                                         </option>
                                                                 </select>
                                                                     </div>
+                                                    </div>
+                                                     <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">IT Act Category <span
+                                                                    class="text-danger"></span></label>
+                                                            <select class="form-select select2" name="it_category_id" disabled
+                                                                id="it_category">
+                                                                <option value=""
+                                                                    {{ old('it_category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($it_categories as $it_category)
+                                                                    <option value="{{ $it_category->id }}"
+                                                                        {{ $data->it_category_id == $it_category->id ? 'selected' : '' }}>
+                                                                        {{ $it_category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
                                                     </div>
 
                                                     <div class="col-md-3">

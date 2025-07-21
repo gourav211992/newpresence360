@@ -47,6 +47,7 @@ class UnloadingTaskController extends Controller
                         });
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
+                    ->orderBy('id','desc')
                     ->paginate(CommonHelper::PAGE_LENGTH_10);
         $jobResources = UnloadingResource::collection($jobs->getCollection());
 
@@ -82,7 +83,7 @@ class UnloadingTaskController extends Controller
         }])
         ->where('job_id',$request->job_id)
         // ->where('status',CommonHelper::PENDING)
-        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status','vendor_id')
+        ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
         ->get();
 
         return [
@@ -139,13 +140,20 @@ class UnloadingTaskController extends Controller
             throw new ValidationException($validator);
         }
 
-        // Check invalid packets
-        $validPackets = ErpItemUniqueCode::where('job_id', $request->id)
-            ->whereIn('uid', $request->packet_ids)
-            ->where('morphable_type', 'App\Models\GateEntryDetail')
-            ->pluck('uid')
-            ->toArray();
+        $job = ErpWhmJob::find($request->id);
+        if(!$job){
+            throw ValidationException::withMessages([
+                'id' => ['Job no found.'],
+            ]);
+        }
 
+        $packets = ErpItemUniqueCode::where('job_id', $request->id)
+            ->whereIn('item_uid', $request->packet_ids)
+            ->where('morphable_type', 'App\Models\GateEntryDetail')
+            ->get();
+
+        // Check invalid packets
+        $validPackets = $packets->pluck('item_uid')->toArray();
         $invalidPackets = array_diff($request->packet_ids, $validPackets);
 
         if (!empty($invalidPackets)) {
@@ -154,12 +162,9 @@ class UnloadingTaskController extends Controller
             ]);
         }
 
-        // custom validation after
-        $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->id)
-            ->whereIn('uid', $request->packet_ids)
-            ->where('status', CommonHelper::SCANNED)
-            ->where('morphable_type', 'App\Models\GateEntryDetail')
-            ->pluck('uid')
+        // Filter already scanned packets from the result set
+        $alreadyScanned = $packets->where('status', CommonHelper::SCANNED)
+            ->pluck('item_uid')
             ->toArray();
 
         if (!empty($alreadyScanned)) {
@@ -174,7 +179,6 @@ class UnloadingTaskController extends Controller
             $user = Helper::getAuthenticatedUser();
             
             // Update Job Status
-            $job = ErpWhmJob::find($request->id);
             if($job->status != CommonHelper::DEVIATION){
                 $job->status = CommonHelper::IN_PROGRESS;
                 $job->save();
@@ -182,7 +186,8 @@ class UnloadingTaskController extends Controller
 
             // Update Task Status
             ErpItemUniqueCode::where('job_id',$request->id)
-            ->whereIn('uid',$request->packet_ids)
+            ->whereIn('item_uid',$request->packet_ids)
+            ->where('morphable_type', 'App\Models\GateEntryDetail')
             ->update([
                 'status' => CommonHelper::SCANNED,
                 'action_by' => $user->id,
@@ -252,6 +257,16 @@ class UnloadingTaskController extends Controller
 
             $job->save();
 
+            $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
+            $gateEntry = $job->morphable;
+            $bookId = $gateEntry->series_id;
+            $docId = $gateEntry->id;
+            $docValue = $gateEntry->total_amount;
+            $currentLevel = $gateEntry->approval_level;
+            $revisionNumber = $gateEntry->revision_number ?? 0;
+            $modelName = $job->morphable_type;
+            Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
+
             \DB::commit();
             return [
                 'message' => $message
@@ -284,7 +299,7 @@ class UnloadingTaskController extends Controller
             ]);
         }
 
-        $uniqueCode = ErpItemUniqueCode::where('uid', $request->packet_id)->first();
+        $uniqueCode = ErpItemUniqueCode::where('job_id',$request->job_id)->where('item_uid', $request->packet_id)->first();
         if (!$uniqueCode) {
             throw ValidationException::withMessages([
                 'packet_id' => ['Packet ID not found.'],
@@ -299,7 +314,6 @@ class UnloadingTaskController extends Controller
 
         \DB::beginTransaction();
         try {
-            $uniqueCode = ErpItemUniqueCode::where('uid',$request->packet_id)->first();
             $uniqueCode->status = CommonHelper::PENDING;
             $uniqueCode->save();
 

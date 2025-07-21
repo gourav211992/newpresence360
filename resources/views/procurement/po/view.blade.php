@@ -31,7 +31,7 @@
     </style>
 @endsection
 @section('content')
-<form class="ajax-input-form" action="{{ route('po.update', ['type' => request()->route('type'), 'id' => $po->id]) }}" method="POST" data-redirect="/purchase-order" enctype="multipart/form-data">
+<form class="ajax-input-form" action="{{ route('po.update', ['type' => request()->route('type'), 'id' => $po->id]) }}" method="POST" data-redirect="/{{ request()->route('type') }}" enctype="multipart/form-data">
 @csrf
 <input type="hidden" name="tax_required" id="tax_required" value="">
 <input type="hidden" name="pi_item_ids" id="pi_item_ids">
@@ -104,7 +104,6 @@
                                                     <input type="date" class="form-control" value="{{ $po->document_date }}" name="document_date">
                                                 </div>
                                             </div>
-                                            @if(request()->route("type") != 'supplier-invoice')
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3"> 
                                                     <label class="form-label">Location <span class="text-danger">*</span></label>  
@@ -113,23 +112,7 @@
                                                     <input type="hidden" name="store_id" value="{{$po->store_id}}">
                                                     <input disabled type="text" value="{{$po?->store_location->store_name}}" placeholder="Select" class="form-control mw-100 ledgerselecct" name="store" />
                                                 </div> 
-                                            </div>
-                                            {{-- <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Department <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="hidden" value="{{$po->department_id}}" name="department_id">
-                                                        <select class="form-select" id="department_id" disabled name="department_id">
-                                                            <option value="">Select</option>
-                                                        @foreach($departments as $department)
-                                                        <option value="{{$department->id}}" {{$po->department_id == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                                        @endforeach 
-                                                    </select>  
-                                                </div>
-                                            </div> --}}
-                                            
-                                            @endif
+                                            </div>                                            
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-3">
                                                     <label class="form-label">Reference No </label>
@@ -247,12 +230,6 @@
                                         <p class="card-text">Fill the details</p>
                                     </div>
                                 </div>
-                                <div class="col-md-6 text-sm-end">
-                                    {{-- <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                        <i data-feather="x-circle"></i> Delete</a>
-                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary">
-                                            <i data-feather="plus"></i> Add Item</a> --}}
-                                        </div>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -277,11 +254,6 @@
                                                 <th>Discount</th>
                                                 <th>Total</th>
                                                 <th>Delivery Date</th>
-                                                {{-- @if($shortClose)
-                                                <th width="100px">
-                                                    Short Close
-                                                </th>          
-                                                @endif     --}}
                                                 <th width="5px">Action</th>
                                             </tr>
                                         </thead>
@@ -293,7 +265,6 @@
                                                 <td colspan="8"></td>
                                                 <td class="text-end" id="totalItemValue">0.00</td>
                                                 <td class="text-end" id="totalItemDiscount">0.00</td>
-                                                {{-- <td class="text-end" id="TotalEachRowTax">0.00</td> --}}
                                                 <td class="text-end" id="TotalEachRowAmount">0.00</td>
                                                 <td></td>
                                             </tr>
@@ -606,105 +577,8 @@
     </div>
 </div>
 
-{{-- Delete component modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
-
-{{-- Delete Item discount modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteItemDiscConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
-
-{{-- Delete Item discount modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteHeaderDiscConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
-
-{{-- Delete header exp modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-   <div class="modal-dialog">
-      <div class="modal-content">
-         <div class="modal-header p-0 bg-transparent">
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body alertmsg text-center warning">
-           <i data-feather='alert-circle'></i>
-           <h2>Are you sure?</h2>
-           <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-           <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-           <button type="button" id="deleteHeaderExpConfirm" class="btn btn-primary" >Confirm</button>
-         </div>
-      </div>
-   </div>
-</div>
-
-{{-- Approval Modal --}}
-@include('procurement.po.partials.approve-modal', ['id' => $po->id])
-
 {{-- Taxes --}}
 @include('procurement.po.partials.tax-detail-modal')
-
-{{-- Amendment Modal --}}
-<div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-  <div class="modal-dialog">
-      <div class="modal-content">
-          <div class="modal-header p-0 bg-transparent">
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body alertmsg text-center warning">
-              <i data-feather='alert-circle'></i>
-              <h2>Are you sure?</h2>
-              <p>Are you sure you want to <strong>Amendment</strong> this <strong>PO</strong>? After Amendment this action cannot be undone.</p>
-              <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-              <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
-          </div> 
-      </div>
-  </div>
-</div>
-
-{{-- Purchase Model --}}
-@include('procurement.po.partials.pr-modal')
-
 @endsection
 @section('scripts')
 <script>

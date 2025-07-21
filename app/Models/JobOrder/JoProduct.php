@@ -11,6 +11,9 @@ use App\Models\Attribute;
 use App\Models\ErpMiItem;
 use App\Models\PwoSoMapping;
 use App\Models\Unit;
+use App\Models\VendorAsnItem;
+use App\Models\VendorAsn;
+use App\Models\GateEntryDetail;
 use App\Traits\DateFormatTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -318,6 +321,16 @@ class JoProduct extends Model
     public function getInterOrgSoBalQtyAttribute()
     {
         return ($this->order_qty - $this->inter_org_so_qty);
+    }
+
+    public function asnItems()
+    {
+        return $this->hasMany(VendorAsnItem::class, 'jo_prod_id', 'id');
+    }
+
+    public function geItems()
+    {
+        return $this->hasMany(GateEntryDetail::class, 'job_order_item_id', 'id');
     }
 
 }

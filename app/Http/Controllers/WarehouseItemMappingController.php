@@ -464,7 +464,7 @@ class WarehouseItemMappingController extends Controller
                         'name' => $item->name,
                         'selected' => in_array($item->id, $itemIds)
                     ];
-                });
+                })->values();
 
             // Process structures
             $structures = [];

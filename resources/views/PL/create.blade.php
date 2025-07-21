@@ -71,7 +71,8 @@
                             <th>UOM</th>
                             <th class="text-end">Order Qty</th>
                             <th class="text-end">Balance Qty</th>
-                            <th class="text-end">Avl Qty</th>
+                            <th class="text-end">Avl Stk</th>
+                            <th class="text-end">Pick Qty</th>
                             <th>Rate.</th>
                             <th>Customer</th>
                         </tr>

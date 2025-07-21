@@ -56,6 +56,26 @@
         <td><input type="text" id = "item_item_value_{{$slipItemIndex}}" value = "{{number_format($slipItem -> item_value,2)}}" name = "item_item_value[{{$slipItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
         @endif
         
+        @if($machines->isNotEmpty())
+        <td>
+            <input type="hidden" name="machine_id[{{ $slipItemIndex }}]" value="">
+            <select class="form-select select2"  multiple name="machine_id[{{$slipItemIndex}}][]" data-index="{{ $slipItemIndex }}" multiple>
+                <option value="">Select Machine</option>
+                @foreach ($machines as $machine)
+                    <option value="{{$machine->id}}" {{ in_array($machine->id, $slipItem->machine_id ?? []) ? 'selected' : '' }}>{{$machine?->name}}</option>
+                @endforeach
+            </select>
+        </td>
+        <td>
+            <select class="form-select" name="cycle_count[{{$slipItemIndex}}]">
+                <option value="">Select Cycle Count</option>
+                @for ($i = 1; $i <= 10; $i++)
+                    <option value="{{$i}}" {{$i == $slipItem->cycle_count ? 'selected' : ''}}>{{$i}}</option>
+                @endfor
+            </select>
+        </td>
+        @endif
+
         <td>
         <div class="d-flex">
                 <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$slipItemIndex}}');">        

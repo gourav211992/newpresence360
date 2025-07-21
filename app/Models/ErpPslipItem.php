@@ -42,6 +42,8 @@ class ErpPslipItem extends Model
         'accepted_qty',
         'subprime_qty',
         'rejected_qty',
+        'machine_id',
+        'cycle_count'
     ];
 
     public $referencingRelationships = [
@@ -54,7 +56,9 @@ class ErpPslipItem extends Model
     
     protected $hidden = ['deleted_at'];
     protected $with = ['mo_product.mo'];
-
+    protected $casts = [
+        'machine_id' => 'array'
+    ];
     public function getItemValueAttribute()
     {
         return $this->qty * $this->rate;
@@ -68,6 +72,11 @@ class ErpPslipItem extends Model
     public function mo_product()
     {
         return $this -> belongsTo(MoProduct::class, 'mo_product_id', 'id');
+    }
+
+    public function machine()
+    {
+        return $this -> belongsTo(ErpMachine::class, 'machine_id', 'id');
     }
 
     public function consumptions()

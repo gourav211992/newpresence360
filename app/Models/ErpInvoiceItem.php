@@ -343,4 +343,9 @@ class ErpInvoiceItem extends Model
     {
         return $this->hasMany(ErpSaleInvoiceTed::class,'invoice_item_id')->where('ted_level', 'D')->where('ted_type', 'Tax');
     }
+    
+    public function plItem()
+    {
+        return $this->belongsTo(ErpPlItem::class, 'pl_item_id');
+    }
 }

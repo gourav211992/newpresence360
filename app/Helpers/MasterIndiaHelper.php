@@ -518,15 +518,16 @@ class MasterIndiaHelper
 
         $dispatchDetails = (object) [
             "company_name" => $documentHeader?->erpStore?->store_name,
-            "address1" => $buyerAddress?->address,
-            "address2" => null,
-            "location" => $buyerAddress?->city?->name,
-            "pincode" => $buyerAddress?->pincode,
-            "state_code" => $buyerStateCode->name,
+            "address1" => $organizationAddress->line_1,
+            "address2" => $organizationAddress->line_2,
+            "location" => $organizationAddress?->city?->name,
+            "pincode" => $organizationAddress->postal_code,
+            "state_code" => $sellerStateCode->name,
         ];
 
         $shipDetails = (object) [
-            "gstin" => "05AAAPG7885R002",
+            // "gstin" => "05AAAPG7885R002",
+            "gstin" => $documentHeader?->vendor->compliances->gstin_no,
             "legal_name" => $documentHeader?->vendor?->company_name,
             "trade_name" => null,
             "address1" => $sellerBillingAddress?->address,
@@ -605,7 +606,7 @@ class MasterIndiaHelper
             "total_cess_value" => 0,
             "total_discount" => 0,
             "total_other_charge" => round($documentHeader->expense_amount, 2),
-            "total_invoice_value" => round(($documentHeader->total_amount),2) + round(($totalTaxValue),2),
+            "total_invoice_value" => round(($documentHeader->total_amount),2),
             "total_cess_value_of_state" => 0,
             "round_off_amount" => 0,
             "total_invoice_value_additional_currency" => 0
@@ -790,7 +791,8 @@ class MasterIndiaHelper
                 'ewb_date' => $generateInvoice['results']['message']['EwbDt'],
                 'ewb_valid_till' => $generateInvoice['results']['message']['EwbValidTill'],
                 'status' => $generateInvoice['results']['message']['Status'],
-                'remarks' => $generateInvoice['results']['message']['Remarks']
+                'remarks' => $generateInvoice['results']['message']['Remarks'],
+                'type' => 'IRN'
             ]);
             return $generateInvoice;
         }

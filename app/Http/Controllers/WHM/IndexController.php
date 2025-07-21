@@ -9,10 +9,13 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\StoragePointResource;
+use App\Http\Resources\WHM\TrackingResource;
+use App\Models\Configuration;
 use App\Models\ErpStore;
 use App\Models\ErpSubStore;
 use App\Models\ErpSubStoreParent;
 use App\Models\WHM\ErpItemUniqueCode;
+use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -164,6 +167,82 @@ class IndexController extends Controller
         return [
             'data' => $response['data'],
             'message' => $response['message'],
+        ];
+    }
+
+    public function getJobs(Request $request){
+        $search = $request->input('search');
+        $jobs = ErpWhmJob::when($search, function ($query) use ($search) {
+                        $query->where('type', $search);
+                        
+                    })
+                    ->orderBy('id','desc')
+                    ->get();
+        return [
+            'data' => $jobs,
+        ];
+
+    }
+
+    public function getUniqueCodes(Request $request){
+        $search = $request->input('search');
+        $jobId = $request->input('job_id');
+        $jobs = ErpItemUniqueCode::when($search, function ($query) use ($search) {
+                        $query->where('job_type', $search);
+                    })
+                    ->when($jobId, function ($query) use ($jobId) {
+                        $query->where('job_id', $jobId);
+                    })
+                    ->orderBy('id','desc')
+                    ->get();
+        return [
+            'data' => $jobs,
+        ];
+
+    }
+
+    public function trackPacket(Request $request){
+        $validator = Validator::make($request->all(),[
+            'packet_id' => ['required'],
+        ],[
+            'packet_id.required' => 'Packet Id is required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $unicodes = ErpItemUniqueCode::with(['actionBy' => function($q){
+                $q->select('id','name');
+            }])
+            ->where('item_uid',$request->packet_id)
+            ->select('uid','item_uid', 'action_at','action_by','job_type')
+            ->get();
+
+        $trackingResources = TrackingResource::collection($unicodes);
+
+        return [
+            'data' => $trackingResources,
+            'message' => 'Data fetched successfully.',
+        ];
+    }
+
+    public function getConfiguration(Request $request){
+        $validator = Validator::make($request->all(),[
+            'organization_id' => ['required'],
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $configurations = Configuration::where('type','organization')
+            ->where('type_id', $request->organization_id)
+            ->get();
+
+        return [
+            'data' => $configurations,
+            'message' => 'Data fetched successfully.',
         ];
     }
 }

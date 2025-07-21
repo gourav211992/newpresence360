@@ -170,11 +170,10 @@
                                                 <label class="form-label" id="from_location_header_label">Location<span class="text-danger">*</span></label>  
                                             </div>
                                             <div class="col-md-5">  
-                                                <select class="form-select disable_on_edit" name="store_id" id="store_id_input">
+                                                <select class="form-select disable_on_edit" name="store_id" id="store_id_input" oninput = "locationChange(this);">
                                                     @if(isset($order) && $order->store_id && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
                                                         <option value="{{ $order->store_id }}" selected> {{ $order->store_code }}</option>
                                                     @else
-                                                    <option value="">Select</option> 
                                                         @foreach ($stores as $store)
                                                             <option value="{{$store->id}}" {{isset($order) ? ($order->store_id == $store->id ? 'selected' : '') : ''}} data-name="{{$store->store_name}}">{{$store->store_name}}</option> 
                                                         @endforeach
@@ -182,14 +181,28 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="row align-items-center d-none mb-1 lease-hidden">
+                                        <div class="row align-items-center mb-1">
                                             <div class="col-md-3"> 
-                                                <label class="form-label" id="from_store_header_label">Store<span class="text-danger">*</span></label>  
+                                                <label class="form-label" id="from_store_header_label">Main Store<span class="text-danger">*</span></label>  
                                             </div>
                                             <div class="col-md-5">  
-                                                <select class="form-select disable_on_edit" name="sub_store_id" id="xsub_store_id_input">
-                                                    @if(isset($order) && $order->sub_store_id && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
-                                                        <option value="{{ $order->sub_store_id }}" selected> {{ $order->sub_store_code }}</option>
+                                                <select class="form-select disable_on_edit" name="main_sub_store_id" id="main_sub_store_id_input" oninput = "subStoreIdOnchange(this);">
+                                                    @if(isset($order) && $order->main_sub_store_id && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
+                                                        <option value="{{ $order->main_sub_store_id }}" selected> {{ $order->main_sub_store_code }}</option>
+                                                    @else
+                                                    <option value="">Select</option>  
+                                                    @endif    
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label" id="staging_store_header_label">Staging Store<span class="text-danger">*</span></label>  
+                                            </div>
+                                            <div class="col-md-5">  
+                                                <select class="form-select disable_on_edit" name="staging_sub_store_id" id="staging_sub_store_id_input">
+                                                    @if(isset($order) && $order->staging_sub_store_id && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
+                                                        <option value="{{ $order->staging_sub_store_id }}" selected> {{ $order->staging_sub_store_code }}</option>
                                                     @else
                                                     <option value="">Select</option> 
                                                         

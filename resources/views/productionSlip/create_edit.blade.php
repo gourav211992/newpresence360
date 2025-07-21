@@ -422,6 +422,8 @@
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
                                                                    @endif
+                                                                   <th class="{{$machines->isNotEmpty() ? : 'd-done'}}" id="machineName">Machine</th>
+                                                                   <th class="{{$machines->isNotEmpty() ? : 'd-done'}}" id="cycleCount">Cycle Count</th>
                                                                    <th>Action</th>
                                                                  </tr>
                                                                </thead>
@@ -432,9 +434,9 @@
                                                             <tfoot>
                                                                 <tr valign="top">
                                                                    @if (isset($slip))
-                                                                       <td id = "item_details_td" colspan="15" rowspan="10">
-                                                                       @else
-                                                                       <td id = "item_details_td" colspan="13" rowspan="10">
+                                                                       <td id = "item_details_td" colspan="16" rowspan="10">
+                                                                    @else
+                                                                       <td id = "item_details_td" colspan="14" rowspan="10">
                                                                    @endif
                                                                        <table class="table border">
                                                                            <tr>
@@ -3459,7 +3461,6 @@ function openHeaderPullModal(type = null)
                     $("#mo_id").val(currentOrders.mo.mo_id);
                     $("#is_last_station").val(currentOrders.mo.is_last_station);
                     $("#mo_station_id").val(currentOrders.mo.mo_station_id);
-                    
                     // const mainTableItem = document.getElementById('item_header');
                     // let currentOrderIndexVal = document.getElementsByClassName('item_header_rows').length;
                     // mainTableItem.innerHTML = currentOrders.html;
@@ -3469,6 +3470,15 @@ function openHeaderPullModal(type = null)
                         assignDefaultBundleInfoArray(itemIndex);
                     });
                     
+                    if(currentOrders?.mo?.mo_machine_id) {
+                        $("#machineName").removeClass('d-none');
+                        $("#cycleCount").removeClass('d-none');
+                        $("#item_details_td").attr('colspan','15');
+                    } else {
+                        $("#item_details_td").attr('colspan','14');
+                        $("#machineName").addClass('d-none');
+                        $("#cycleCount").addClass('d-none');
+                    }
                     $("#raw-materials tbody:first").html(currentOrders.consHtml);
                     $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
                         setAttributesUI(itemIndex,"#raw-materials tbody");  
@@ -3496,6 +3506,7 @@ function openHeaderPullModal(type = null)
                     } else {
                         $("#subprime_qty_col").removeClass('d-none');
                     }
+                    $(".select2").select2();
                 },
                 error: function(xhr) {
                     $("#mo_no").val("");
@@ -3540,6 +3551,13 @@ function openHeaderPullModal(type = null)
         }
     }
 
+    function initSelect2() {
+        $('.select2').select2();
+    }
+    $(document).ready(function () {
+        initSelect2();
+    });
+
 $(document).on('change',"#store_id_input", (e) => {
     let storeId = e.target.value || '';
     locationOnChange(storeId);
@@ -3548,6 +3566,7 @@ $(document).on('change',"#store_id_input", (e) => {
 setTimeout(() => {
     let storeId = $("#store_id_input").val() || '';
     locationOnChange(storeId);
+    $(".select2").select2();
 }, 0);
     // Sub Store
 function locationOnChange(storeId = '') {

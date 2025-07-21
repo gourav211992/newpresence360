@@ -46,9 +46,9 @@ class ErpLogisticsMultiFixedPricing extends Model
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-     public function createdBy()
+      public function auth_user()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(AuthUser::class, 'created_by', 'id');
     }
 
     public function locations() 

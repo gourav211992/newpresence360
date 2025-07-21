@@ -15,6 +15,7 @@ class ErpWhmJob extends Model
         'organization_id',
         'morphable_id',
         'morphable_type',
+        'type',
         'status',
         'deviation_qty',
         'deviation_approved_by',

@@ -39,7 +39,7 @@ class ErpMultiPointPricingController extends Controller
     if ($request->ajax()) {
         $query = ErpLogisticsMultiFixedPricing::with([
             'sourceRoute', 'destinationRoute',
-            'customer'
+            'customer','auth_user'
         ])->withDefaultGroupCompanyOrg();
 
         // Filters
@@ -92,9 +92,10 @@ class ErpMultiPointPricingController extends Controller
                 return optional($row->created_at)->format('d-m-Y h:i A') ?? '-';
             })
 
-            ->addColumn('created_by', function ($row) {
-                return optional($row->createdBy)->name ?? '-';
-            })
+            ->editColumn('created_by', function ($row) {
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    return $createdBy;
+                })
 
 
             ->addColumn('status', function ($row) {

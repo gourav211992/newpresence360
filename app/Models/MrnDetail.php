@@ -6,8 +6,9 @@ use App\Models\PO\PoHeader;
 use App\Models\PO\PoDetail;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
-use App\Models\JobOrder\JoProduct;
 use App\Models\JobOrder\JobOrder;
+use App\Models\JobOrder\JoProduct;
+use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -422,6 +423,11 @@ class MrnDetail extends Model
             ];
         }
         return collect($processedData);
+    }
+
+    public function uniqueCodes()
+    {
+        return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
     }
 }
 

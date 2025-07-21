@@ -328,10 +328,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
     Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
     Route::post('/ledger/generate-code', [LedgerController::class,'generateLedgerCode'])->name('generate-ledger-code');
-     Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
+    Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
     Route::get('ledgerAmendment/{id}', [LedgerController::class, 'amendment'])->name('ledgers.amendment');
+    Route::get('ledger/update_null_data', [LedgerController::class, 'updateNull'])->name('ledgers.update-null-data');
    
-    
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
     Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
@@ -2859,6 +2859,13 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 });
 
 
+// generate IRN
+
+
+
+
+Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
+
 Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
         Route::get('/', 'index')->name('maintenance-types.index');
         Route::post('/', 'store')->name('maintenance-types.store');
@@ -2870,11 +2877,3 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
     });
-// generate IRN
-
-
-
-
-Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
-
-

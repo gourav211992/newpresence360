@@ -528,13 +528,14 @@ class VendorRequest extends FormRequest
                 $gstValidation = EInvoiceHelper::validateGstinName($gstinNo);
                 if ($gstValidation['Status'] == 1) {
                     $gstData = json_decode($gstValidation['checkGstIn'], true);
+                    $gstDataLegalName = trim($gstData['LegalName'] ?? ''); 
                     // if ($companyName && $companyName !== ($gstData['TradeName'] ?? '')) {
                     //     $validator->errors()->add(
                     //         'company_name', 
                     //         'Company name  does not match GSTIN record.'
                     //     );
                     // }
-                    if ($gstinLegalName && $gstinLegalName !== ($gstData['LegalName'] ?? '')) {
+                    if ($gstinLegalName && strtolower($gstinLegalName) !== strtolower($gstDataLegalName)) {
                         $validator->errors()->add(
                             'compliance.gst_registered_name', 
                             'Legal name  does not match GSTIN record.'

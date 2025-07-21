@@ -28,9 +28,16 @@
 					</div>
 					<div class="col">
 						<div class="mb-1">
-							<label class="form-label">Doc No.</label>
+							<label class="form-label">JO No.</label>
 							<input type="text" id="jo_document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
 							<input type = "hidden" id = "jo_document_id_qt_val"></input>
+						</div>
+					</div>
+                    <div class="col">
+						<div class="mb-1">
+							<label class="form-label">ASN No.</label>
+							<input type="text" id="jo_asn_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "jo_asn_id_qt_val"></input>
 						</div>
 					</div>
 					<div class="col">

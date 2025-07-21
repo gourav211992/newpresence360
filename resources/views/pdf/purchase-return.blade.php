@@ -279,7 +279,7 @@
                         </tr>
                         @endif
                     </table>
-                    @if($eInvoice && $qrCodeBase64)
+                    @if($qrCodeBase64)
                     <img src="{{ $qrCodeBase64 }}" style = "margin-top:10px" width="100%" alt="QR Code">
                     @endif
                 </td>
@@ -401,11 +401,13 @@
                     </table>
                 </td>
             </tr>
+            @if($eInvoice->irn_number)
             <tr>
                 <td colspan="3" style="border: 1px solid #000; padding: 10px 3px; vertical-align: top; border-top: none; text-align: center;">
                     IRN : {{ $eInvoice->irn_number }}
                 </td>
             </tr>
+            @endif
         </table>
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">

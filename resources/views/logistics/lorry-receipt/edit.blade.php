@@ -71,8 +71,7 @@
                                     <i data-feather="rotate-ccw"></i> Revoke
                               </button>
                            @endif
-
-                        @else
+                         @else
                            <button type="submit" onclick="submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button">
                               <i data-feather="save"></i> Save as Draft
                            </button>
@@ -103,7 +102,7 @@
                                  @if (isset($lr) && isset($docStatusClass))
                                        <div class="col-md-6 text-sm-end">
                                           <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{$lr->document_status}}</span>
+                                                Status : <span class="{{$docStatusClass}}">{{ucfirst(string: $lr->document_status)}}</span>
                                           </span>
                                        </div>
                                           
@@ -116,13 +115,14 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="status" id="statusInput" value="{{ old('status', $lr->status ?? 'draft') }}">
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', $lr->status ?? 'draft') }}">
                                        <select class="form-select disable_on_edit" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
                                        @foreach ($series as $currentSeries)
                                        <option value="{{ $currentSeries->id }}" {{ old('book_id', $lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
                                        </select>
                                     </div>
+                                    <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($lr) ? $lr -> book_code : ''}}"></input>
                                  </div>
                                  <div class="row align-items-center mb-1">
                                     <div class="col-md-3"> 
@@ -164,76 +164,11 @@
                                     </div>
                                  </div>
                               </div>
-                              <div class="col-md-4">
+                             
                                   
-                               @if(isset($lr) && ($lr->document_status !== "draft"))
-                                                @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($lr->revision_number))
-                                                        <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                            <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                                <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                                @if(!isset(request()->revisionNumber) && $lr->document_status !== 'draft')
-                                                                    <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                        <select class="form-select" id="revisionNumber">
-                                                                            @for($i=$lr->revision_number; $i >= 0; $i--)
-                                                                                <option value="{{$i}}" {{request('revisionNumber', $lr->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
-                                                                            @endfor
-                                                                        </select>
-                                                                    </strong>
-                                                                @else
-                                                                    @if ($lr->document_status !== 'draft')
-                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
-                                                                            Rev. No. {{ request()->revisionNumber }}
-                                                                        </strong>
-                                                                    @endif
-
-                                                                @endif
-                                                            </h5>
-                                                            <ul class="timeline ms-50 newdashtimline ">
-                                                                @foreach($approvalHistory as $approvalHist)
-                                                                    <li class="timeline-item">
-                                                                        <span class="timeline-point timeline-point-indicator"></span>
-                                                                        <div class="timeline-event">
-                                                                            <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                                <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
-                                                                                @if($approvalHist->approval_type == 'approve')
-                                                                                    <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'submit')
-                                                                                    <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'reject')
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @else
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            @if($approvalHist->approval_date)
-                                                                                <h6>
-                                                                                    {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                                                </h6>
-                                                                            @endif
-                                                                            @if($approvalHist->remarks)
-                                                                                <p>{!! $approvalHist->remarks !!}</p>
-                                                                            @endif
-                                                                            @if ($approvalHist->media && count($approvalHist->media) > 0)
-                                                                                @foreach ($approvalHist->media as $mediaFile)
-                                                                                    <p><a href="{{ $mediaFile->file_url }}" target="_blank">
-                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
-                                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                                                                <polyline points="7 10 12 15 17 10"></polyline>
-                                                                                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                                                                                            </svg>
-                                                                                        </a></p>
-                                                                                @endforeach
-                                                                            @endif
-                                                                        </div>
-                                                                    </li>
-                                                                @endforeach
-
-                                                            </ul>
-                                                        </div>
-                                                @endif
-                                            @endif
+                               @include('partials.approval-history', ['document_status' => $lr->document_status, 'revision_number' => $lr->revision_number])
                                             {{-- Approval History Section --}}
-                              </div>
+                             
                            </div>
                         </div>
                      </div>
@@ -300,8 +235,8 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="distance">Distance (Km) <span class="text-danger">*</span></label>
-                                          <input type="text" class="form-control" id="distance" name="distance"
-                                             placeholder="Enter Distance (Km)" value="{{ old('distance', $lr->distance) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="text" class="form-control" id="distance" name="distances"
+                                             placeholder="Enter Distance (Km)" value="{{ old('distances', $lr->distance) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
                                           <input type="hidden" class="form-control" id="distanceInput" name="distance"
                                              value="{{ old('distance', $lr->distance) }}" />
                                        </div>
@@ -309,8 +244,8 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="freight_charges">Freight Charges (Rs) <span class="text-danger">*</span></label>
-                                          <input type="number" class="form-control" id="freight_charges" name="freight_charges"
-                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charges', $lr->freight_charges) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <input type="number" class="form-control" id="freight_charges" name="freight_charge"
+                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', $lr->freight_charges) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
                                           <input type="hidden" class="form-control" id="freightCharges" name="freight_charges"
                                              value="{{ old('freight_charges', $lr->freight_charges) }}" />
                                        </div>
@@ -484,67 +419,76 @@
                                        </tr>
                                     </thead>
                                     <tbody class="mrntableselectexcel" id="item-table-body">
-                                        @php 
-                                        $total_weight = 0;
-                                        $total_articles = 0;
-                                        @endphp
-                                       @forelse($lr->locations as $index => $location)
-                                       @php 
-                                       $total_weight += $location->weight;
-                                       $total_articles += $location->no_of_articles;
-                                       @endphp
-                                       <tr>
-                                          <td class="customernewsection-form">
-                                             <div class="form-check form-check-primary custom-checkbox">
-                                                <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ $index }}][selected]" id="row_{{ $index }}">
-                                                <label class="form-check-label" for="row_{{ $index }}"></label>
-                                             </div>
-                                          </td>
-                                          <td class="poprod-decpt">
-                                            <input type="hidden" name="locations[{{ $index }}][id]" value="{{ old("locations.$index.id", $location->id ?? '') }}">
-                                             <input type="text" name="locations[{{ $index }}][location_name]" value="{{ old("locations.$index.location_name", optional($location->route)->name) }}" 
-                                                placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete"
-                                                data-type="source" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                             <input type="hidden" name="locations[{{ $index }}][location_id]" value="{{ $location->location_id ?? '' }}"
-                                                class="route-master-id" data-type="source" />
-                                          </td>
-                                          <td>
-                                             <select class="form-select mw-100" name="locations[{{ $index }}][type]" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
-                                                <option value="">Select</option>
-                                                <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
-                                                <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
-                                             </select>
-                                          </td>
-                                          <td><input type="text" name="locations[{{ $index }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[{{ $index }}][weight]" value="{{ $location->weight ?? '' }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[{{ $index }}][freight]" value="{{ $location->amount ?? '' }}"  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif class="form-control mw-100 text-end" /></td>
-                                       </tr>
-                                       @empty
-                                       <!-- If no existing points, render one empty row -->
-                                       <tr>
-                                          <td class="customernewsection-form">
-                                             <div class="form-check form-check-primary custom-checkbox">
-                                                <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
-                                                <label class="form-check-label" for="row_0"></label>
-                                             </div>
-                                          </td>
-                                          <td class="poprod-decpt">
-                                             <input type="text" name="locations[0][location_name]" placeholder="Select"
-                                                class="form-control mw-100 location-update route-master-autocomplete" data-type="source" />
-                                             <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="source" />
-                                          </td>
-                                          <td>
-                                             <select class="form-select mw-100" name="locations[0][type]">
-                                                <option value="">Select</option>
-                                                <option value="Pick Up">Pick Up</option>
-                                                <option value="Drop Off">Drop Off</option>
-                                             </select>
-                                          </td>
-                                          <td><input type="text" name="locations[0][no_of_articles]" class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[0][weight]" class="form-control mw-100" /></td>
-                                          <td><input type="text" name="locations[0][freight]" class="form-control mw-100 text-end" /></td>
-                                       </tr>
-                                       @endforelse
+                                    @php 
+                                    $total_weight = 0;
+                                    $total_articles = 0;
+                                    $rowIndex = 0;
+                                    @endphp
+
+                                    @forelse($lr->locations as $location)
+                                    @php 
+                                    $total_weight += $location->weight;
+                                    $total_articles += $location->no_of_articles;
+                                    @endphp
+                                    <tr>
+                                    <td class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ $rowIndex }}][selected]" id="row_{{ $rowIndex }}">
+                                            <label class="form-check-label" for="row_{{ $rowIndex }}"></label>
+                                        </div>
+                                    </td>
+                                    <td class="poprod-decpt">
+                                        <input type="hidden" name="locations[{{ $rowIndex }}][id]" value="{{ old("locations.$rowIndex.id", $location->id ?? '') }}">
+                                        <input type="text" name="locations[{{ $rowIndex }}][location_name]" value="{{ old("locations.$rowIndex.location_name", optional($location->route)->name) }}" 
+                                            placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete"
+                                            data-type="source" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                        <input type="hidden" name="locations[{{ $rowIndex }}][location_id]" value="{{ $location->location_id ?? '' }}"
+                                            class="route-master-id" data-type="source" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select mw-100" name="locations[{{ $rowIndex }}][type]" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                            <option value="">Select</option>
+                                            <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
+                                            <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][weight]" value="{{ $location->weight ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    <td>
+                                        <input type="text" name="locations[{{ $rowIndex }}][freight]" value="{{ $location->amount ?? '' }}" class="form-control mw-100 text-end" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                    </td>
+                                    </tr>
+                                    @php $rowIndex++; @endphp
+                                    @empty
+                                    <tr>
+                                    <td class="customernewsection-form">
+                                        <div class="form-check form-check-primary custom-checkbox">
+                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[0][selected]" id="row_0">
+                                            <label class="form-check-label" for="row_0"></label>
+                                        </div>
+                                    </td>
+                                    <td class="poprod-decpt">
+                                        <input type="text" name="locations[0][location_name]" placeholder="Select"
+                                            class="form-control mw-100 location-update route-master-autocomplete" data-type="source" />
+                                        <input type="hidden" name="locations[0][location_id]" class="route-master-id" data-type="source" />
+                                    </td>
+                                    <td>
+                                        <select class="form-select mw-100" name="locations[0][type]">
+                                            <option value="">Select</option>
+                                            <option value="Pick Up">Pick Up</option>
+                                            <option value="Drop Off">Drop Off</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="locations[0][no_of_articles]" class="form-control mw-100" /></td>
+                                    <td><input type="text" name="locations[0][weight]" class="form-control mw-100" /></td>
+                                    <td><input type="text" name="locations[0][freight]" class="form-control mw-100 text-end" /></td>
+                                    </tr>
+                                    @endforelse
+
                                     </tbody>
                                     <tfoot>
                                        <tr class="totalsubheadpodetail">
@@ -630,54 +574,70 @@
                                     </tfoot>
                                  </table>
                               </div>
-                               <div class="row mt-2">
+                              <div class="row mt-2">
                                 <div class="col-md-12">
-                                    <div class = "row">
-                                    <div class="col-md-4">
-                                        <div class="mb-1">
-                                            <label class="form-label">Upload Document</label>
-                                            <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_lorry_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
-                                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                    <div class="row">
+                                        {{-- File Upload --}}
+                                        <div class="col-md-4">
+                                            <div class="mb-1">
+                                                <label class="form-label">Upload Document</label>
+                                                <input type="file" class="form-control" name="attachments[]" 
+                                                    onchange="addFiles(this, 'main_lorry_file_preview')" 
+                                                    max_file_count="{{ isset($maxFileCount) ? $maxFileCount : 10 }}" 
+                                                    multiple 
+                                                    @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                                <span class="text-primary small">{{ __("message.attachment_caption") }}</span>
+                                            </div>
                                         </div>
-                                    </div> 
-                                    <div class = "col-md-6" style = "margin-top:19px;">
-                                        <div class = "row" id = "main_lorry_file_preview">
-                                        </div>
-                                    </div>
-                                    </div>
-                             @if($lr->mediaAttachments && $lr->mediaAttachments->count())
-                                <div class="row">
-                                    @foreach($lr->mediaAttachments as $media)
-                                        @php
-                                            $url = $media->file_url;
-                                            $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
-                                        @endphp
 
-                                        <div class="col-md-3 mb-2">
-                                            @if(in_array($extension, ['jpg', 'jpeg', 'png', 'webp']))
-                                                <img src="{{ $url }}" alt="Attachment" class="img-fluid border rounded" style="max-height: 150px;">
-                                            @elseif($extension === 'pdf')
-                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-primary w-100">
-                                                    📄 View PDF
-                                                </a>
-                                            @else
-                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-secondary w-100">
-                                                    📎 {{ $media->file_name }}
-                                                </a>
-                                            @endif
+                                        {{-- Preview for newly added files --}}
+                                        <div class="col-md-6" style="margin-top:19px;">
+                                            <div class="row" id="main_lorry_file_preview">
+                                                @if($lr->mediaAttachments && $lr->mediaAttachments->count())
+                                                @foreach($lr->mediaAttachments as $media)
+                                                @php
+                                                    $url = $media->file_url;
+                                                    $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
+                                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
+                                                   // $label = $isImage ? 'Image File' : ($extension === 'pdf' ? 'PDF File' : $media->file_name);
+                                                @endphp
+
+                                                <div class="col-md-1 mb-1 d-flex align-items-center">
+                                                    <a href="{{ $url }}" target="_blank" class="d-flex align-items-center text-decoration-none me-3">
+                                                        {{-- SVG icon --}}
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                            class="feather feather-file-text me-2">
+                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                            <polyline points="14 2 14 8 20 8"/>
+                                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                                            <polyline points="10 9 9 9 8 9"/>
+                                                        </svg>
+                                                        
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                              @endif
+                                            </div>
                                         </div>
-                                    @endforeach
+                                    </div>
+
+                                  
+                                    {{-- Remarks --}}
+                                    <div class="col-md-12">
+                                        <div class="mb-1">  
+                                            <label class="form-label">Final Remarks</label> 
+                                            <textarea rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" 
+                                                @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                                {{ $lr->remarks ?? '' }}
+                                            </textarea> 
+                                        </div>
+                                    </div>
                                 </div>
-                            @endif
-
                             </div>
-                                 <div class="col-md-12">
-                                    <div class="mb-1">  
-                                       <label class="form-label">Final Remarks</label> 
-                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>{{$lr->remarks ?? '' }}</textarea> 
-                                    </div>
-                                 </div>
-                              </div>
+
                            </div>
                         </div>
                      </div>
@@ -690,7 +650,9 @@
    </div>
    </div>
    <!-- END: Content-->
-     <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        {{-- Amendment Modal --}}
+
+ <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -710,15 +672,15 @@
                         <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
                     </div>
                     <div class = "row">
-                        <div class = "col-md-8">
+                        <div class = "col-md-12">
                             <div class="mb-1">
                                 <label class="form-label">Upload Document</label>
                                 <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
                             </div>
                         </div>
-                        <div class = "col-md-4" style = "margin-top:19px;">
-                            <div class="row" id = "amend_files_preview">
-                            </div>
+                        <div class = "col-md-12" style = "margin-top:19px;">
+                            <!-- <div class="row" id = "amend_files_preview">
+                            </div> -->
                         </div>
                     </div>
                     <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
@@ -726,60 +688,72 @@
                 </div>
             </div>
             <div class="modal-footer justify-content-center">  
-                <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+                 <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
                 <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
             </div>
         </div>
     </div>
     </div>
 </form>
+<!-----------Approval Modal---------->
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.lorryReceipt') }}" data-redirect="{{ route('logistics.lorry-receipt.index') }}" enctype='multipart/form-data'>
-          @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($lr) ? $lr -> id : ''}}">
-         <div class="modal-header">
-            <div>
-               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
-               </h4>
+         <form class="ajax-input-form" method="POST" action="{{ route('document.approval.lorryReceipt') }}" data-redirect="{{ route('logistics.lorry-receipt.index') }}" enctype='multipart/form-data'>
+            @csrf
+            <input type="hidden" name="action_type" id="action_type">
+            <input type="hidden" name="id" value="{{$lr->id ?? ''}}">
+            <div class="modal-header">
+               <div>
+                  <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="popupTitle">Approve Application</h4>
+               </div>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body pb-2">
-            <div class="row mt-1">
-               <div class="col-md-12">
-                  <div class="mb-1">
-                     <label class="form-label">Remarks</label>
-                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
+            <div class="modal-body pb-2">
+               <div class="row mt-1">
+                  <div class="col-md-12">
+                     <div class="mb-2">
+                        <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
+                        <textarea maxlength="250" name="remarks" class="form-control"></textarea>
+                     </div>
+                     <div class="mb-2" id="fileUploadSection">
+                        <label class="form-label">Upload Document</label>
+                        <input id="attachments" type="file" name="attachment[]" class="form-control" onchange="addFiles(this, 'lr_popup_file_preview')" multiple>
+                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                     </div>
+                     <div class="mt-2">
+                        <!-- <div class="row" id="lr_popup_file_preview">
+                        </div> -->
+                     </div>
                   </div>
-                  <div class="row">
-                    <div class = "col-md-8">
-                        <div class="mb-1">
-                            <label class="form-label">Upload Document</label>
-                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
-                        </div>
-                    </div>
-                    <div class = "col-md-4" style = "margin-top:19px;">
-                        <div class = "row" id = "approval_files_preview">
-
-                        </div>
-                    </div>
-                  </div>
-                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
                </div>
             </div>
-         </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
-            <button type="submit" class="btn btn-primary">Submit</button>
-         </div>
-       </form>
+            <div class="modal-footer justify-content-center">  
+               <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+               <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+         </form>
       </div>
    </div>
 </div>
+
+ {{-- Amendment Modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Purchase Bill</strong>? After Amendment this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 @section('scripts')
 
@@ -868,7 +842,7 @@ function updateRouteDetailsUI() {
 }
 
 
- let rowIndex = 1;
+ let rowIndex = {{ $rowIndex ?? 1 }};
 
 $('#addRowBtn').on('click', function () {
     const tbody = $('.mrntableselectexcel');
@@ -1000,7 +974,7 @@ $(document).on('click', '#deleteSelected', function (e) {
     }).then((result) => {
         if (result.isConfirmed) {
             selectedRows.remove();
-            applyFreightToRows(); 
+            applyFreightToRows(selectedRows.length); 
             calculateTotals();
         }
     });
@@ -1366,15 +1340,22 @@ let pricingCache = {}
             $('#fixedAmountGlobal').val(pricingCache[locationId].amount || 0);
             $('#freeAmountGlobal').val(pricingCache[locationId].freeAmount || 0);
 
-            // Apply freight
-            applyFreightToRows(); // apply to all rows in edit
+            applyFreightToRows(pricingCache[locationId]); 
         }
     });
 }
 
 
-function applyFreightToRows($specificRow = null) {
+function applyFreightToRows($specificRow = null, deletedRow = null) {
     const $rows = $('#item-table-body').find('tr');
+    let zeroFreightCount = 0;
+
+    $rows.each(function () {
+        const freightAmount = parseFloat($(this).find('input[name*="[freight]"]').val()) || 0;
+        if (freightAmount === 0) {
+            zeroFreightCount++;
+        }
+    });
     const activeFreePoint = parseInt($('#activeFreePointGlobal').val() || 0);
     const sourceDefaultAmount = parseFloat($('#sourceDefaultAmountGlobal').val() || 0);
 
@@ -1383,27 +1364,30 @@ function applyFreightToRows($specificRow = null) {
         const $freightInput = $row.find('input[name*="[freight]"]');
 
         if (!locationId) return;
+       const pricing = pricingCache[locationId];
 
-       const pricing = {
-                type: res.status,
-                free_point: parseInt(res.free_point || 0),
-                amount: parseFloat(res.amount || 0),
-                freeAmount: parseFloat(res.free_amount || 0),
-            };
-
-            pricingCache[locationId] = pricing;
+    if (!pricing) {
+        $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
+        return;
+    }
 
 
         if (pricing) {
             if (pricing.type === 'both_exist') {
-                if (index < activeFreePoint) {
-                    alert(pricing.amount);
-                    $freightInput.val(0); 
-                } else {
-                    
-                   $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
+              if (index < activeFreePoint) {
+                console.log(`Row index: ${index}, activeFreePoint: ${activeFreePoint}`);
+
+                $freightInput.val(0);
+            } else {
+                if(pricing.amount){
+                  $freightInput.val(pricing.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0);
+                }else{
+                    $freightInput.val(pricing.freeAmount && parseFloat(pricing.freeAmount) > 0 ? parseFloat(pricing.freeAmount) : 0);
                 }
-            } else if (pricing.type === 'free_point') {
+                
+            }
+
+            }else if (pricing.type === 'free_point') {
                 if (index < activeFreePoint) {
                     $freightInput.val(0);
                 } else {
@@ -1420,6 +1404,20 @@ function applyFreightToRows($specificRow = null) {
             $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
     };
+    if (deletedRow !== null) {
+        const $targetRow = $rows.eq(deletedRow);
+        const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
+        const $freightInput = $targetRow.find('input[name*="[freight]"]');
+
+        const pricing = pricingCache[locationId]; // assuming pricing was cached
+
+        if (deletedRow <= activeFreePoint) {
+            $freightInput.val(0);
+        } else {
+            $freightInput.val(pricing?.amount && parseFloat(pricing.amount) > 0 ? parseFloat(pricing.amount) : 0); 
+        }
+    }
+
 
     if ($specificRow && $specificRow.length) {
         processRow($specificRow, $specificRow.index());
@@ -1583,14 +1581,20 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
         });
     });
 
-     function setApproval() {
-        document.getElementById('action_type').value = "approve";
-        document.getElementById('approve_reject_heading_label').textContent = "Approve Item";
+      function setApproval() {
+        document.getElementById('popupTitle').innerText = 'Approve Lorry Receipt';
+        document.getElementById('action_type').value = 'approve';
+
+        // Show file upload section
+        document.getElementById('fileUploadSection').style.display = 'block';
     }
 
     function setReject() {
-        document.getElementById('action_type').value = "reject";
-        document.getElementById('approve_reject_heading_label').textContent = "Reject Item";
+        document.getElementById('popupTitle').innerText = 'Reject Lorry Receipt';
+        document.getElementById('action_type').value = 'reject';
+
+        // Hide file upload section
+        document.getElementById('fileUploadSection').style.display = 'none';
     }
 
       // Show modal by ID
@@ -1676,17 +1680,17 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     const fileName = fileUrl.split('/').pop();
 
     const previewHtml = `
-        <div class="col-4 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
-            <div class="card border">
-                <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                    <div class="text-truncate small" title="${fileName}">
-                        <i class="fa fa-paperclip me-1 text-secondary"></i> ${fileName}
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFilePreview(this, '${previewElementId}', '${fileName}')">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-file-text me-2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
         </div>
     `;
 
@@ -1776,6 +1780,17 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
             });
         }
     }
+ /*Amendment modal open*/
+        $(document).on('click', '.amendmentBtn', (e) => {
+            $("#amendmentconfirm").modal('show');
+        });
+      $(document).on('click', '#amendmentSubmit', (e) => {
+            let url = new URL(window.location.href);
+            url.search = '';
+            url.searchParams.set('amendment', 1);
+            let amendmentUrl = url.toString();
+            window.location.replace(amendmentUrl);
+        });
 </script>
 
 @endsection

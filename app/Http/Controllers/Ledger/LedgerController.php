@@ -7,10 +7,12 @@ use App\Exports\LedgerExport;
 use App\Exports\LedgersExport;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
+use App\Models\AuthUser;
 use App\Models\CostCenter;
 use App\Models\Group;
 use Illuminate\Support\Facades\DB;
 use Exception;
+
 
 use App\Models\Ledger;
 use App\Models\Organization;
@@ -48,7 +50,7 @@ class LedgerController extends Controller
     public function index(Request $request)
     {
         try {
-            $user =  Helper::getAuthenticatedUser();
+            $user = Helper::getAuthenticatedUser();
             $organizationId = $user->organization_id;
 
             if ($request->ajax()) {
@@ -80,14 +82,14 @@ class LedgerController extends Controller
                 //     $end = date('Y-m-d', strtotime($dates[1]));
                 //     $ledgers->whereDate('created_at', '>=', $start)->whereDate('created_at', '<=', $end);
                 // }
-               $ledgersQuery = Ledger::when(!empty($organizations), function ($query) use ($organizations) {
+                $ledgersQuery = Ledger::when(!empty($organizations), function ($query) use ($organizations) {
                     $query->whereIn('organization_id', $organizations);
                 })
-                ->orderBy('id', 'desc');
-                
+                    ->orderBy('id', 'desc');
+
                 if ($request->group) {
                     $ledgersQuery->whereJsonContains('ledger_group_id', (string) $request->group)
-                                ->orWhere('ledger_group_id', $request->group);
+                        ->orWhere('ledger_group_id', $request->group);
                 }
 
                 if ($request->status) {
@@ -99,16 +101,15 @@ class LedgerController extends Controller
                     $start = date('Y-m-d', strtotime($dates[0]));
                     $end = isset($dates[1]) && $dates[1] ? date('Y-m-d', strtotime($dates[1])) : $start;
                     $ledgersQuery->whereDate('created_at', '>=', $start)
-                                ->whereDate('created_at', '<=', $end);
+                        ->whereDate('created_at', '<=', $end);
                 }
-                if($request->ledger)
-                {
+                if ($request->ledger) {
                     $searchTerm = $request->input('ledger');
                     $ledgersQuery->where(function ($query) use ($searchTerm) {
-                        $query->where('id',$searchTerm);
+                        $query->where('id', $searchTerm);
                     });
                 }
-                $ledgers = $ledgersQuery->get(); 
+                $ledgers = $ledgersQuery->get();
                 return DataTables::of($ledgers)
                     ->addColumn('group_name', function ($ledger) {
                         $groups = $ledger->group();
@@ -124,24 +125,23 @@ class LedgerController extends Controller
                         return $ledger->costCenter ? $ledger->costCenter->name : 'N/A';
                     })
                     ->addColumn('status', function ($ledger) {
-                        $status = in_array($ledger->document_status,[ConstantHelper::REJECTED,ConstantHelper::SUBMITTED,ConstantHelper::PARTIALLY_APPROVED])?
-                        $ledger->document_status:'InActive';
-                        if($ledger->document_status!=null){
-                        if ($ledger->status == 1) {
-                            $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
-                        } else {
-                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">'.$status.'</span>';
-                        }
-                    }
-                        else
-                        {
+                        $status = in_array($ledger->document_status, [ConstantHelper::REJECTED, ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED]) ?
+                            $ledger->document_status : 'inactive';
+                        if ($ledger->document_status != null) {
                             if ($ledger->status == 1) {
-                            $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
+                                $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
+                            } else {
+                                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$status ?? "draft"];
+                                $btn = '<span class="badge rounded-pill ' . $statusClass . ' badgeborder-radius">' . ucfirst($status) . '</span>';
+                            }
                         } else {
-                            $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">InActive</span>';
+                            if ($ledger->status == 1) {
+                                $btn = '<span class="badge rounded-pill badge-light-success badgeborder-radius">Active</span>';
+                            } else {
+                                $btn = '<span class="badge rounded-pill badge-light-danger badgeborder-radius">InActive</span>';
+                            }
                         }
-                        }
-                              
+
 
                         return $btn;
                     })
@@ -248,11 +248,11 @@ class LedgerController extends Controller
                     }
                 }
             }
-        
-        }
-        
 
-        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id','costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
+        }
+
+
+        return view('ledgers.add_ledger', compact('itemCodeType', 'book_id', 'costCenters', 'groups', 'gst_group_id', 'tds_group_id', 'tcs_group_id', 'taxTypes', 'tdsSections', 'tcsSections', 'Existingledgers'));
     }
 
     public function showImportForm()
@@ -275,7 +275,7 @@ class LedgerController extends Controller
                 }
             }
         }
-        return view('ledgers.import',compact('itemCodeType'));
+        return view('ledgers.import', compact('itemCodeType'));
     }
 
     public function import(Request $request)
@@ -320,9 +320,12 @@ class LedgerController extends Controller
             $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
             $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $itemCodeType = 'Manual';
+            $book_id = null;
             if ($services && $services['current_book']) {
                 if (isset($services['current_book'])) {
                     $book = $services['current_book'];
+                    $book_id = $services['current_book']->id;
+
                     if ($book) {
                         $parameters = new stdClass();
                         foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
@@ -336,7 +339,7 @@ class LedgerController extends Controller
                 }
             }
 
-            $import = new LedgerImport($this->ledgerImportExportService, $user,$itemCodeType);
+            $import = new LedgerImport($this->ledgerImportExportService, $user, $itemCodeType, $book_id);
             Excel::import($import, $request->file('file'));
 
             $successfulItems = $import->getSuccessfulItems();
@@ -437,7 +440,7 @@ class LedgerController extends Controller
             ],
             'tax_percentage' => [
                 'nullable',
-                'int',
+                'numeric',
                 'max:255',
             ],
             'tds_section' => [
@@ -454,6 +457,14 @@ class LedgerController extends Controller
                 'nullable',
                 'string',
                 'max:255',
+            ],
+            'tcs_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            'tds_capping' => [
+                'nullable',
+                'numeric',
             ],
             'tcs_percentage' => [
                 'nullable',
@@ -492,6 +503,7 @@ class LedgerController extends Controller
         $request->merge([
             'ledger_group_id' => isset($request->ledger_group_id) ? json_encode($request->ledger_group_id) : null,
         ]);
+
         $ledgerGroupIds = $request->ledger_group_id ?? [];
         $groupNames = Helper::getGroupsQuery()->whereIn('id', (array) json_decode($ledgerGroupIds))
             ->pluck('name')
@@ -505,11 +517,13 @@ class LedgerController extends Controller
         if (!in_array('tds', $groupNames)) {
             $request->request->remove('tds_section');
             $request->request->remove('tds_percentage');
+            $request->request->remove('tds_capping');
         }
 
         if (!in_array('tcs', $groupNames)) {
             $request->request->remove('tcs_section');
             $request->request->remove('tcs_percentage');
+            $request->request->remove('tcs_capping');
         }
 
         if (!in_array('gst', $groupNames)) {
@@ -539,29 +553,28 @@ class LedgerController extends Controller
 
         // Create a new ledger record with organization details
         $ledger = Ledger::create(array_merge($request->all(), $validatedData));
-        if($request->has('prefix') && $request->prefix!="")
-            Group::updatePrefix($ledger->id,$request->prefix);
-            $bookId = $ledger->book_id;
-            $docId = $ledger->id;
-            $remarks = $request->remarks; 
-            $attachments = $request->file('attachment');
-            $currentLevel = $item->approval_level ?? 1;
-            $revisionNumber = $item->revision_number ?? 0;
-            $actionType = 'submit';
-            $modelName = get_class($ledger);
-            $totalValue = 0;
-        
-            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-            $document_status = $approveDocument['approvalStatus'];
-            $ledger->document_status = $document_status;
-            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $ledger->status = 0;
-            }
-            else{
-                $ledger->status = 1;
-            }
-            $ledger->save();
-    
+        if ($request->has('prefix') && $request->prefix != "")
+            Group::updatePrefix($ledger->id, $request->prefix);
+        $bookId = $ledger->book_id;
+        $docId = $ledger->id;
+        $remarks = $request->remarks;
+        $attachments = $request->file('attachment');
+        $currentLevel = $item->approval_level ?? 1;
+        $revisionNumber = $item->revision_number ?? 0;
+        $actionType = 'submit';
+        $modelName = get_class($ledger);
+        $totalValue = 0;
+
+        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+        $document_status = $approveDocument['approvalStatus'];
+        $ledger->document_status = $document_status;
+        if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+            $ledger->status = 0;
+        } else {
+            $ledger->status = 1;
+        }
+        $ledger->save();
+
 
 
 
@@ -574,11 +587,11 @@ class LedgerController extends Controller
     public function edit(Request $request, string $id)
     {
         $user = Helper::getAuthenticatedUser();
-        if($request->has('revisionNumber'))
-        $data = LedgerHistory::where('source_id',$id)->where('revision_number',$request->revisionNumber)->firstorFail();
+        if ($request->has('revisionNumber'))
+            $data = LedgerHistory::where('source_id', $id)->where('revision_number', $request->revisionNumber)->firstorFail();
         else
-        $data = Ledger::find($id);
-            
+            $data = Ledger::find($id);
+
 
         $costCenters = CostCenter::where('status', 'active')
             ->where('organization_id', $user->organization_id);
@@ -648,16 +661,16 @@ class LedgerController extends Controller
         $item = $data;
         $revision_number = $item->revision_number;
         $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplay($item->book_id,$item->document_status , $item->id, 1, $item->approval_level, $item -> created_by ?? 0, $userType['type'], $revision_number);
+        $buttons = Helper::actionButtonDisplayLedger($item->book_id, $item->document_status, $item->id, 1, $item->approval_level, $item->created_by ?? 0, $userType['type'], $revision_number);
         $revNo = $item->revision_number;
-        
-        if($request->has('revisionNumber')) {
+
+        if ($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
             $revNo = $item->revision_number;
         }
-        $docValue =1;
-        $approvalHistory = Helper::getApprovalHistory($item->book_id, $item->id, $revNo, $docValue, $item -> created_by);
+        $docValue = 1;
+        $approvalHistory = Helper::getApprovalHistory($item->book_id, $item->id, $revNo, $docValue, $item->created_by);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$item->document_status] ?? '';
         return view('ledgers.edit_ledger', compact(
             'groups',
@@ -681,7 +694,7 @@ class LedgerController extends Controller
      */
     public function update(Request $request, string $id)
     {
-       
+
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization?->company_id;
@@ -718,6 +731,15 @@ class LedgerController extends Controller
                 'numeric',
                 'max:255',
             ],
+            'tcs_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            'tds_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            
             'tds_section' => [
                 'nullable',
                 'string',
@@ -773,18 +795,20 @@ class LedgerController extends Controller
         if (!in_array('tds', $groupNames)) {
             $request->request->remove('tds_section');
             $request->request->remove('tds_percentage');
+            $request->request->remove('tds_capping');
         }
 
         if (!in_array('tcs', $groupNames)) {
             $request->request->remove('tcs_section');
             $request->request->remove('tcs_percentage');
+            $request->request->remove('tcs_capping');
         }
 
         if (!in_array('gst', $groupNames)) {
             $request->request->remove('tax_type');
             $request->request->remove('tax_percentage');
         }
-      
+
 
         $update = Ledger::find($id);
         $update->name = $request->name;
@@ -792,33 +816,34 @@ class LedgerController extends Controller
         $update->code = $request->code;
         $update->cost_center_id = $request->cost_center_id;
         $update->ledger_group_id = $request->ledger_group_id;
-        $update->status = $request->status=='on'?1:0;
+        $update->status = $request->status == 'on' ? 1 : 0;
         $update->tax_type = $request->tax_type ?? null;
-        $update->tax_percentage =  $request->tax_percentage ?? null;
+        $update->tax_percentage = $request->tax_percentage ?? null;
         $update->tds_section = $request->tds_section ?? null;
         $update->tds_percentage = $request->tds_percentage ?? null;
         $update->tcs_section = $request->tcs_section ?? null;
+        $update->tds_capping = $request->tds_capping ?? null;
+        $update->tcs_capping = $request->tcs_capping ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
         $bookId = $update->book_id;
-            $docId = $update->id;
-            $remarks = $request->remarks??""; 
-            $attachments = $request->file('attachment')??null;
-            $currentLevel = $update->approval_level ?? 1;
-            $revisionNumber = $update->revision_number ?? 0;
-            $actionType = 'submit';
-            $modelName = get_class($update);
-            $totalValue = 0;
-            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-            $document_status = $approveDocument['approvalStatus'];
-            $update->document_status = $document_status;
-            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $update->status = 0;
-            }
-            else
-                $update->status = 1;
-            $update->save();
-    
-     
+        $docId = $update->id;
+        $remarks = $request->remarks ?? "";
+        $attachments = $request->file('attachment') ?? null;
+        $currentLevel = $update->approval_level ?? 1;
+        $revisionNumber = $update->revision_number ?? 0;
+        $actionType = 'submit';
+        $modelName = get_class($update);
+        $totalValue = 0;
+        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+        $document_status = $approveDocument['approvalStatus'];
+        $update->document_status = $document_status;
+        if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+            $update->status = 0;
+        } else
+            $update->status = 1;
+        $update->save();
+
+
 
 
 
@@ -830,16 +855,16 @@ class LedgerController extends Controller
                 // Ensure it has necessary keys before using
                 if (isset($group['removeGroup'], $group['removeGroupName'], $group['updatedGroup'])) {
                     if ($group['removeGroup'] != "0") {
-                        self::updateVoucherGroups((int)$id, (int)$group['removeGroup'], (int)$group['updatedGroup']);
+                        self::updateVoucherGroups((int) $id, (int) $group['removeGroup'], (int) $group['updatedGroup']);
                     }
                 }
             }
         }
-      
-         if($request->has('prefix') && $request->prefix!="")
-        Group::updatePrefix($update->id,$request->prefix);
-      
-        
+
+        if ($request->has('prefix') && $request->prefix != "")
+            Group::updatePrefix($update->id, $request->prefix);
+
+
 
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
     }
@@ -963,15 +988,15 @@ class LedgerController extends Controller
 
     public static function generateLedgerCode(Request $request)
     {
-        if(!$request->has('group_id') || $request->group_id=="")
-        return "";
+        if (!$request->has('group_id') || $request->group_id == "")
+            return "";
 
         $itemInitials = Group::getPrefix($request->group_id);
         $itemId = $request->input('ledger_id');
         $group_id = $request->input('group_id');
         $group = Group::find($group_id)?->name;
 
-        $baseCode =  $itemInitials;
+        $baseCode = $itemInitials;
 
         $authUser = Helper::getAuthenticatedUser();
         $organizationId = $authUser->organization_id;
@@ -985,46 +1010,46 @@ class LedgerController extends Controller
                 }
             }
         }
-        
+
         $nextSuffix = '001';
         $finalItemCode = $baseCode . $nextSuffix;
 
         while (
             Ledger::where('code', $finalItemCode)
-            ->exists()
+                ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
         }
 
-        return response()->json(['code' => $finalItemCode,'prefix'=>$baseCode]);
+        return response()->json(['code' => $finalItemCode, 'prefix' => $baseCode]);
     }
     public static function generateLedgerCodeIm($group)
     {
         $groupIds = [];
         if (empty($group))
-        return null;
-            $groupParts = array_map('trim', explode(',', $group));
-            $groupLower = array_map('strtolower', $groupParts);
+            return null;
+        $groupParts = array_map('trim', explode(',', $group));
+        $groupLower = array_map('strtolower', $groupParts);
 
-            $existingGroups = Helper::getGroupsQuery()
-                ->whereIn('name', $groupParts)
-                ->pluck('name', 'id')
+        $existingGroups = Helper::getGroupsQuery()
+            ->whereIn('name', $groupParts)
+            ->pluck('name', 'id')
             ->toArray();
 
-            $groupIds = array_keys($existingGroups);
-            if(empty($groupIds))
+        $groupIds = array_keys($existingGroups);
+        if (empty($groupIds))
             return null;
 
-        $group_id = $groupIds[0];    
+        $group_id = $groupIds[0];
         $itemInitials = Group::getPrefix($group_id);
-        $baseCode =  $itemInitials;
+        $baseCode = $itemInitials;
         $nextSuffix = '001';
         $finalItemCode = $baseCode . $nextSuffix;
 
         while (
             Ledger::where('code', $finalItemCode)
-            ->exists()
+                ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
@@ -1032,7 +1057,7 @@ class LedgerController extends Controller
 
         return $finalItemCode;
     }
-    
+
     public function amendment(Request $request, $id)
     {
         DB::beginTransaction();
@@ -1051,7 +1076,7 @@ class LedgerController extends Controller
                 Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, 'Amendment', $request->file('attachment') ?? null, $voucher->approvalLevel, 'amendment');
 
                 $voucher->document_status = ConstantHelper::DRAFT;
-                $voucher->status = 0;
+                //$voucher->status = 0;
                 $voucher->revision_number = $voucher->revision_number + 1;
                 $voucher->save();
             }
@@ -1072,13 +1097,13 @@ class LedgerController extends Controller
             'attachment' => 'nullable'
         ]);
         DB::beginTransaction();
-         try {
+        try {
             $saleOrder = Ledger::find($request->id);
             $bookId = $saleOrder->book_id;
             $docId = $saleOrder->id;
-            $docValue = $saleOrder->amount??0;
-            $remarks = $request->remarks??"";
-            $attachments = $request->file('attachments')??null;
+            $docValue = $saleOrder->amount ?? 0;
+            $remarks = $request->remarks ?? "";
+            $attachments = $request->file('attachments') ?? null;
             $currentLevel = $saleOrder->approval_level;
             $revisionNumber = $saleOrder->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
@@ -1089,9 +1114,8 @@ class LedgerController extends Controller
             $document_status = $approveDocument['approvalStatus'];
             if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
                 $saleOrder->status = 0;
-            }
-            else{
-                $saleOrder->status=1;
+            } else {
+                $saleOrder->status = 1;
             }
             $saleOrder->save();
 
@@ -1108,4 +1132,60 @@ class LedgerController extends Controller
             ], 500);
         }
     }
+    public function updateNull()
+    {
+        $user = Helper::getAuthenticatedUser();
+        $superadmin = AuthUser::where('user_type', 'IAM-SUPER')
+            ->where('organization_id', $user->organization_id)
+            ->first();
+
+        $book_id = null;
+        $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+        $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
+        if (!empty($services['current_book'])) {
+            $book_id = $services['current_book']->id;
+        }
+
+        $response = [
+            'superadmin_found' => !empty($superadmin),
+            'book_id_found' => !empty($book_id),
+            'updates' => []
+        ];
+
+        if (!empty($superadmin)) {
+            $rowsToUpdateCreatedBy = Ledger::whereNull('created_by')->get(['code']);
+            $updatedCreatedBy = Ledger::whereNull('created_by')->update(['created_by' => $superadmin->id]);
+
+            $response['updates']['created_by'] = [
+                'updated_count' => $updatedCreatedBy,
+                'updated_ledgers' => $rowsToUpdateCreatedBy->pluck('code')
+            ];
+        } else {
+            $response['updates']['created_by'] = 'Superadmin not found';
+        }
+
+        if (!empty($book_id)) {
+            $rowsToUpdate = Ledger::whereNull('book_id')->get(['code']);
+            $updatedCount = Ledger::whereNull('book_id')->update(['book_id' => $book_id]);
+
+            $response['updates']['book_id'] = [
+                'updated_count' => $updatedCount,
+                'updated_ledgers' => $rowsToUpdate->pluck('code'),
+            ];
+        } else {
+            $response['updates']['book_id'] = 'Book ID not found';
+        }
+
+        $rowsToUpdateStatus = Ledger::whereNull('document_status')->get(['code']);
+        $updatedStatus = Ledger::whereNull('document_status')->update(['document_status' => 'approved']);
+
+        $response['updates']['document_status'] = [
+            'updated_count' => $updatedStatus,
+            'updated_ledgers' => $rowsToUpdateStatus->pluck('code')
+        ];
+
+        return response()->json($response);
+    }
+
 }

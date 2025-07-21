@@ -2147,7 +2147,7 @@ class PurchaseReturnController extends Controller
         $eInvoice = $purchaseReturn->irnDetail()->first();
 
         // QrCode::format('png')->size(300)->generate($eInvoice->signed_qr_code, $qrCodePath);
-        $qrCodeBase64 = EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code);
+        $qrCodeBase64 = $eInvoice->signed_qr_code ? EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code) : '';
 
 
         $options = new Options();
@@ -2973,7 +2973,8 @@ class PurchaseReturnController extends Controller
                     'ewb_no' => $message['ewayBillNo'],
                     'ewb_date' => $ewb_date,
                     'ewb_valid_till' => $ewb_valid_till,
-                    'status' => $data['results']['status']
+                    'status' => $data['results']['status'],
+                    'type' => 'Direct Eway Bill'
                 ]);
                 return response() -> json([
                     'status' => 'success',

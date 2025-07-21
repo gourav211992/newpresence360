@@ -46,6 +46,13 @@ class CommonHelper
     const SCANNED = 'scanned';
     const IN_PROGRESS = 'in_progress';
     const DEVIATION = 'deviation';
+    const RECEIPT = 'receipt';
+    const ISSUE = 'issue';
+    const PUTAWAY = 'putaway';
+    const PICKING = 'picking';
+    const DISPATCH = 'dispatch';
+    const UNLOADING_REQUIRED = 'unloading_required';
+    const ENFORCE_UIC_SCANNING = 'enforce_uic_scanning';
 
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,
@@ -110,6 +117,22 @@ class CommonHelper
         return $date;
     }
 
+    public static function dateTimeFormat($input)
+    {
+        $date = new \DateTime($input);
+
+        // Get day with suffix (st, nd, rd, th)
+        $day = $date->format('j');
+        $suffix = date('S', strtotime($input)); // gives st, nd, etc.
+        $dayWithSuffix = $day . $suffix;
+
+        // Build final string manually
+        $formatted = $date->format('D') . " {$dayWithSuffix} " .
+                    $date->format("M 'y - g:ia");
+
+        return $formatted;
+    }
+
     public static function getSummaryData($request, $user){
         $requestCount = ErpRecruitmentJobRequestLog::where('action_by',$user->id)
         ->where('action_by_type',$user->authenticable_type)
@@ -121,5 +144,23 @@ class CommonHelper
             'requestCount' =>  $requestCount,
             'referralCount' =>  $referralCount,
         ];
+    }
+
+    public static function getJobType($morphableType){
+        if($morphableType == 'App\Models\GateEntryHeader'){
+            $type = 'unloading';
+        }elseif($morphableType == 'App\Models\MrnHeader'){
+            $type = 'putaway';
+        }elseif($morphableType == 'App\Models\ErpPlHeader'){
+            $type = 'picking';
+        }elseif($morphableType == 'App\Models\InspectionHeader'){
+            $type = 'putaway';
+        }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
+            $type = 'dispatch';
+        }else{
+            $type = '';
+        }
+    
+        return $type;
     }
 }

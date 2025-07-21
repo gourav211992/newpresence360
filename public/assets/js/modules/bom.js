@@ -610,7 +610,11 @@ function initAttributeAutocomplete(context = document) {
 
 // Auto scroll when row added
 function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSelector = '#itemTable') {
-   let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+//    let $lastRow = $(`${tableSelector} > tbody > tr`).last();
+    let $lastRow = $(`${tableSelector} > tbody > tr.trselected`).length
+    ? $(`${tableSelector} > tbody > tr.trselected`).next('tr')
+    : $(`${tableSelector} > tbody > tr`).last();
+
    let $input = $lastRow.find(inputSelector);
 
    if ($input.length) {
@@ -629,4 +633,19 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
            inline: 'nearest'
        });
    }
+}
+
+function getUniqueRowCount() {
+    let existingIndexes = [];
+    $("#itemTable > tbody > tr").each(function () {
+        let index = parseInt($(this).attr("data-index"));
+        if (!isNaN(index)) {
+            existingIndexes.push(index);
+        }
+    });
+    let rowCount = $("#itemTable > tbody > tr").length + 1;
+    while (existingIndexes.includes(rowCount)) {
+        rowCount++;
+    }
+    return rowCount - 1;
 }

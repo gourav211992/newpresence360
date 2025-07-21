@@ -10,22 +10,22 @@ use Illuminate\Http\Request;
 use App\Http\Requests\GateEntryRequest;
 use App\Http\Requests\EditGateEntryRequest;
 
+use App\Models\GateEntryTed;
+use App\Models\AlternateUOM;
 use App\Models\GateEntryHeader;
 use App\Models\GateEntryDetail;
 use App\Models\GateEntryAttribute;
 use App\Models\GateEntryItemLocation;
-use App\Models\GateEntryTed;
-use App\Models\AlternateUOM;
 
 use App\Models\VendorAsn;
 use App\Models\VendorAsnItem;
 
 
+use App\Models\GateEntryTedHistory;
 use App\Models\GateEntryHeaderHistory;
 use App\Models\GateEntryDetailHistory;
 use App\Models\GateEntryAttributeHistory;
 use App\Models\GateEntryItemLocationHistory;
-use App\Models\GateEntryTedHistory;
 
 use App\Models\Unit;
 use App\Models\Item;
@@ -40,12 +40,13 @@ use App\Models\ErpAddress;
 use App\Models\ErpSaleOrder;
 use App\Models\Organization;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseOrderTed;
 use App\Models\AttributeGroup;
+use App\Models\PurchaseOrderTed;
 
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\BookHelper;
+use App\Helpers\CommonHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
@@ -57,6 +58,7 @@ use App\Jobs\SendEmailJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\AuthUser;
 use App\Models\Category;
+use App\Models\Configuration;
 use App\Models\Employee;
 use App\Models\ErpGeDynamicField;
 use App\Models\ErpItem;
@@ -66,7 +68,7 @@ use App\Models\JobOrder\JobOrder;
 use App\Models\JobOrder\JoProduct;
 use App\Models\JobOrder\JobOrderTed;
 use App\Services\GeDeleteService;
-use App\Services\MrnService;
+use App\Services\GeCheckAndUpdateService;
 use Carbon\Carbon;
 use DateTime;
 use Maatwebsite\Excel\Facades\Excel;
@@ -107,10 +109,10 @@ class GateEntryController extends Controller
                     'jobOrder'
                 ]
             )
-            ->withDefaultGroupCompanyOrg()
-            // ->withDraftListingLogic()
+            // ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic()
             ->bookViewAccess($parentUrl)
-            ->where('company_id', $organization->company_id)
+            // ->where('company_id', $organization->company_id)
             ->latest();
             return DataTables::of($records)
                 ->addIndexColumn()
@@ -430,96 +432,35 @@ class GateEntryController extends Controller
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
                 foreach($request->all()['components'] as $c_key => $component) {
+
+                    $refType = $request->input('reference_type');
+                    $inputQty = floatval($component['accepted_qty'] ?? $component['order_qty'] ?? 0);
                     $item = Item::find($component['item_id'] ?? null);
-                    $po_detail_id = null;
-                    $purchaseOrderId = null;
-                    $jo_detail_id = null;
-                    $jobOrderId = null;
                     $so_id = null;
-                    if ($request->all()['reference_type'] == ConstantHelper::JO_SERVICE_ALIAS) {
-                        if (isset($component['vendor_asn_dtl_id']) && $component['vendor_asn_dtl_id']) {
-                            $supplierInvDetail =  VendorAsnItem::find($component['vendor_asn_dtl_id']);
-                            $jo_detail_id = $supplierInvDetail->jo_prod_id ?? null;
-                            $asn_detail_id = $supplierInvDetail->id ?? null;
-                            $jobOrderId = $supplierInvDetail?->jo_id;
-                            $asnId = $supplierInvDetail?->vendor_asn_id;
-                            if ($supplierInvDetail) {
-                                $supplierInvDetail->ge_qty += floatval($component['accepted_qty']);
-                                $supplierInvDetail->save();
-                            }
-                            if ($supplierInvDetail->jo_prod_id) {
-                                $joDetail =  JoProduct::find($supplierInvDetail->jo_prod_id);
-                                $jo_detail_id = $joDetail->id ?? null;
-                                if ($joDetail) {
-                                    $so_id = $joDetail->so_id;
-                                    $joDetail->ge_qty += floatval($component['accepted_qty']);
-                                    $joDetail->save();
-                                }
-                            }
-                        } else {
-                            if (isset($component['jo_detail_id']) && $component['jo_detail_id']) {
-                                $joDetail =  JoProduct::find($component['jo_detail_id']);
-                                $jo_detail_id = $joDetail->id ?? null;
-                                $jobOrderId = $joDetail->jo_id;
-                                if ($joDetail) {
-                                    $poQtyDifference = ($joDetail->order_qty - $joDetail->ge_qty);
-                                    if ($poQtyDifference < $component['accepted_qty']) {
-                                        DB::rollBack();
-                                        return response()->json([
-                                            'message' => 'GE Qty can not be greater than jo qty.',
-                                            'error' => "",
-                                        ], 422);
-                                    }
-                                    $so_id = $joDetail->so_id;
-                                    $joDetail->ge_qty += floatval($component['accepted_qty']);
-                                    $joDetail->save();
-                                }
-                            }
-                        }
-                    } else {
-                        if (isset($component['vendor_asn_dtl_id']) && $component['vendor_asn_dtl_id']) {
-                            $supplierInvDetail =  VendorAsnItem::find($component['vendor_asn_dtl_id']);
-                            $po_detail_id = $supplierInvDetail->po_item_id ?? null;
-                            $asn_detail_id = $supplierInvDetail->id ?? null;
-                            $purchaseOrderId = $supplierInvDetail?->po_id;
-                            $asnId = $supplierInvDetail?->vendor_asn_id;
-                            if ($supplierInvDetail) {
-                                $supplierInvDetail->ge_qty += floatval($component['accepted_qty']);
-                                $supplierInvDetail->save();
-                            }
-                            if ($supplierInvDetail->po_item_id) {
-                                $poDetail =  PoItem::find($supplierInvDetail->po_item_id);
-                                $po_detail_id = $poDetail->id ?? null;
-                                if ($poDetail) {
-                                    $so_id = $poDetail->so_id;
-                                    $poDetail->ge_qty += floatval($component['accepted_qty']);
-                                    $poDetail->save();
-                                }
-                            }
-                        } else {
-                            if (isset($component['po_detail_id']) && $component['po_detail_id']) {
-                                $inputQty = 0.00;
-                                $balanceQty = 0.00;
-                                $availableQty = 0.00;
-                                $poDetail =  PoItem::find($component['po_detail_id']);
-                                $po_detail_id = $poDetail->id ?? null;
-                                $purchaseOrderId = $poDetail->purchase_order_id;
-                                if ($poDetail) {
-                                    $poQtyDifference = ($poDetail->order_qty - $poDetail->ge_qty);
-                                    if ($poQtyDifference < $component['accepted_qty']) {
-                                        DB::rollBack();
-                                        return response()->json([
-                                            'message' => 'GE Qty can not be greater than po qty.',
-                                            'error' => "",
-                                        ], 422);
-                                    }
-                                    $so_id = $poDetail->so_id;
-                                    $poDetail->ge_qty += floatval($component['accepted_qty']);
-                                    $poDetail->save();
-                                }
-                            }
-                        }
+
+                    if (!$item) {
+                        \DB::rollBack();
+                        return response()->json(['message' => 'Item not found.'], 422);
                     }
+
+                    switch ($refType) {
+                        case ConstantHelper::JO_SERVICE_ALIAS:
+                            $result = self::processJobOrderComponent($component, $item, $inputQty);
+                            break;
+
+                        case ConstantHelper::SO_SERVICE_ALIAS:
+                            $result = self::processSaleOrderComponent($component, $item, $inputQty);
+                            break;
+
+                        default:
+                            $result = self::processPurchaseOrderComponent($component, $item, $inputQty);
+                            break;
+                    }
+
+                    if ($result !== true) {
+                        return $result; // return response from updatePoQty or entry logic
+                    }
+
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -546,13 +487,13 @@ class GateEntryController extends Controller
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $mrnItemArr[] = [
                         'header_id' => $mrn->id,
-                        'purchase_order_item_id' => $po_detail_id ?? null,
-                        'po_id' => $purchaseOrderId ?? null,
-                        'job_order_item_id' => $jo_detail_id ?? null,
-                        'jo_id' => $jobOrderId ?? null,
+                        'purchase_order_item_id' => $component['po_detail_id'] ?? null,
+                        'po_id' => $component['purchase_order_id'] ?? null,
+                        'job_order_item_id' => $component['jo_detail_id'] ?? null,
+                        'jo_id' => $component['job_order_id'] ?? null,
                         'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
                         'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
-                        'so_id' => $so_id,
+                        'so_id' => $so_id ?? null,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -622,48 +563,48 @@ class GateEntryController extends Controller
                     // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
                     $itemHeaderExp = floatval($mrnItem['expense_amount']);
 
-                    $GateEntryDetail = new GateEntryDetail;
-                    $GateEntryDetail->header_id = $mrnItem['header_id'];
-                    $GateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
-                    $GateEntryDetail->po_id = $mrnItem['po_id'];
-                    $GateEntryDetail->job_order_item_id = $mrnItem['job_order_item_id'];
-                    $GateEntryDetail->jo_id = $mrnItem['jo_id'];
-                    $GateEntryDetail->so_id = $mrnItem['so_id'];
-                    $GateEntryDetail->vendor_asn_id = $mrnItem['vendor_asn_id'];
-                    $GateEntryDetail->vendor_asn_item_id = $mrnItem['vendor_asn_item_id'];
-                    $GateEntryDetail->item_id = $mrnItem['item_id'];
-                    $GateEntryDetail->item_code = $mrnItem['item_code'];
-                    $GateEntryDetail->hsn_id = $mrnItem['hsn_id'];
-                    $GateEntryDetail->hsn_code = $mrnItem['hsn_code'];
-                    $GateEntryDetail->uom_id = $mrnItem['uom_id'];
-                    $GateEntryDetail->uom_code = $mrnItem['uom_code'];
-                    $GateEntryDetail->accepted_qty = $mrnItem['accepted_qty'];
-                    $GateEntryDetail->inventory_uom_id = $mrnItem['inventory_uom_id'];
-                    $GateEntryDetail->inventory_uom_code = $mrnItem['inventory_uom_code'];
-                    $GateEntryDetail->inventory_uom_qty = $mrnItem['inventory_uom_qty'];
-                    $GateEntryDetail->store_id = $mrnItem['store_id'];
-                    $GateEntryDetail->store_code = $mrnItem['store_code'];
-                    $GateEntryDetail->rate = $mrnItem['rate'];
-                    $GateEntryDetail->basic_value = $mrnItem['basic_value'];
-                    $GateEntryDetail->discount_amount = $mrnItem['discount_amount'];
-                    $GateEntryDetail->header_discount_amount = $mrnItem['header_discount_amount'];
-                    $GateEntryDetail->header_exp_amount = $itemHeaderExp;
-                    $GateEntryDetail->tax_value = $mrnItem['tax_value'];
-                    // $GateEntryDetail->company_currency = $mrnItem['company_currency_id'];
-                    // $GateEntryDetail->group_currency = $mrnItem['group_currency_id'];
-                    // $GateEntryDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
-                    $GateEntryDetail->remark = $mrnItem['remark'];
-                    $GateEntryDetail->save();
+                    $gateEntryDetail = new GateEntryDetail;
+                    $gateEntryDetail->header_id = $mrnItem['header_id'];
+                    $gateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
+                    $gateEntryDetail->po_id = $mrnItem['po_id'];
+                    $gateEntryDetail->job_order_item_id = $mrnItem['job_order_item_id'];
+                    $gateEntryDetail->jo_id = $mrnItem['jo_id'];
+                    $gateEntryDetail->so_id = $mrnItem['so_id'];
+                    $gateEntryDetail->vendor_asn_id = $mrnItem['vendor_asn_id'];
+                    $gateEntryDetail->vendor_asn_item_id = $mrnItem['vendor_asn_item_id'];
+                    $gateEntryDetail->item_id = $mrnItem['item_id'];
+                    $gateEntryDetail->item_code = $mrnItem['item_code'];
+                    $gateEntryDetail->hsn_id = $mrnItem['hsn_id'];
+                    $gateEntryDetail->hsn_code = $mrnItem['hsn_code'];
+                    $gateEntryDetail->uom_id = $mrnItem['uom_id'];
+                    $gateEntryDetail->uom_code = $mrnItem['uom_code'];
+                    $gateEntryDetail->accepted_qty = $mrnItem['accepted_qty'];
+                    $gateEntryDetail->inventory_uom_id = $mrnItem['inventory_uom_id'];
+                    $gateEntryDetail->inventory_uom_code = $mrnItem['inventory_uom_code'];
+                    $gateEntryDetail->inventory_uom_qty = $mrnItem['inventory_uom_qty'];
+                    $gateEntryDetail->store_id = $mrnItem['store_id'];
+                    $gateEntryDetail->store_code = $mrnItem['store_code'];
+                    $gateEntryDetail->rate = $mrnItem['rate'];
+                    $gateEntryDetail->basic_value = $mrnItem['basic_value'];
+                    $gateEntryDetail->discount_amount = $mrnItem['discount_amount'];
+                    $gateEntryDetail->header_discount_amount = $mrnItem['header_discount_amount'];
+                    $gateEntryDetail->header_exp_amount = $itemHeaderExp;
+                    $gateEntryDetail->tax_value = $mrnItem['tax_value'];
+                    // $gateEntryDetail->company_currency = $mrnItem['company_currency_id'];
+                    // $gateEntryDetail->group_currency = $mrnItem['group_currency_id'];
+                    // $gateEntryDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
+                    $gateEntryDetail->remark = $mrnItem['remark'];
+                    $gateEntryDetail->save();
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
 
                     #Save component Attr
-                    foreach($GateEntryDetail->item->itemAttributes as $itemAttribute) {
+                    foreach($gateEntryDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $mrnAttr = new GateEntryAttribute;
                             $mrnAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
                             $mrnAttr->header_id = $mrn->id;
-                            $mrnAttr->detail_id = $GateEntryDetail->id;
+                            $mrnAttr->detail_id = $gateEntryDetail->id;
                             $mrnAttr->item_attribute_id = $itemAttribute->id;
                             $mrnAttr->item_code = $component['item_code'] ?? null;
                             $mrnAttr->item_id = $component['item_id'] ?? null;
@@ -679,7 +620,7 @@ class GateEntryController extends Controller
                             if (isset($dis['dis_amount']) && $dis['dis_amount']) {
                                 $ted = new GateEntryTed;
                                 $ted->header_id = $mrn->id;
-                                $ted->detail_id = $GateEntryDetail->id;
+                                $ted->detail_id = $gateEntryDetail->id;
                                 $ted->ted_type = 'Discount';
                                 $ted->ted_level = 'D';
                                 $ted->ted_id = $dis['ted_id'] ?? null;
@@ -700,7 +641,7 @@ class GateEntryController extends Controller
                             if(isset($tax['t_value']) && $tax['t_value']) {
                                 $ted = new GateEntryTed;
                                 $ted->header_id = $mrn->id;
-                                $ted->detail_id = $GateEntryDetail->id;
+                                $ted->detail_id = $gateEntryDetail->id;
                                 $ted->ted_type = 'Tax';
                                 $ted->ted_level = 'D';
                                 $ted->ted_id = $tax['t_d_id'] ?? null;
@@ -856,7 +797,16 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
+                ->pluck('config_value', 'config_key'); 
+                
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
+            ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
@@ -939,24 +889,34 @@ class GateEntryController extends Controller
 
         $headerField = null;
         $detailsField = null;
+        $asnHeaderField = null;
+        $asnDetailsField = null;
 
         switch ($referenceType) {
             case 'po':
                 $headerField = 'po_id';
                 $detailsField = 'purchase_order_item_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
                 break;
             case 'jo':
                 $headerField = 'jo_id';
                 $detailsField = 'job_order_item_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
                 break;
             case 'so':
                 $headerField = 'so_id';
                 $detailsField = 'sale_order_item_id';
+                $asnHeaderField = null;
+                $asnDetailsField = null;
                 break;
         }
 
         $headerIds = [];
         $detailsIds = [];
+        $asnHeaderIds = [];
+        $asnDetailsIds = [];
 
         if ($headerField && $detailsField) {
             $headerIds = collect($items)
@@ -972,9 +932,21 @@ class GateEntryController extends Controller
                 ->unique()
                 ->values()
                 ->all();
+            $asnHeaderIds = collect($items)
+                ->pluck($asnHeaderField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $asnDetailsIds = collect($items)
+                ->pluck($asnDetailsField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
         }
 
-        $deviationPendingItems = $mrn->deviationPendingItems();
+        $itemUniqueCodes = $mrn->itemUniqueCodes();
 
         $totalItemValue = $mrn->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
@@ -1026,9 +998,11 @@ class GateEntryController extends Controller
             'servicesBooks' => $servicesBooks,
             'erpStores' => $erpStores,
             'dynamicFieldsUI' => $dynamicFieldsUI,
-            'deviationPendingItems' => $deviationPendingItems,
+            'itemUniqueCodes' => $itemUniqueCodes,
             'headerIds' => $headerIds,
-            'detailsIds' => $detailsIds
+            'detailsIds' => $detailsIds,
+            'asnHeaderIds' => $asnHeaderIds,
+            'asnDetailsIds' => $asnDetailsIds
         ]);
     }
 
@@ -1197,59 +1171,53 @@ class GateEntryController extends Controller
                 $itemTotalHeaderDiscount = 0;
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
-                foreach ($request->all()['components'] as $component) {
-                    $GateEntryDetail = GateEntryDetail::find($component['detail_id'])->first();
-                    $inputQty = floatval($component['accepted_qty'] ?? 0);
-                    if ($request->reference_type === ConstantHelper::JO_SERVICE_ALIAS) {
-                        $poDetail = JoProduct::find($component['jo_detail_id']);
-                        $orderQty = $poDetail->order_qty;
-                    } elseif ($request->reference_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                        $poDetail = ErpSoJobWorkItem::find($component['so_detail_id']);
-                        $orderQty = $poDetail->qty;
-                    } else {
-                        $poDetail = PoItem::find($component['po_detail_id']);
-                        $orderQty = $poDetail->order_qty;
-                    }
-
-                    if ($poDetail) {
-                        if ($inputQty > $orderQty) {
-                            DB::rollBack();
-                            return response()->json([
-                                'message' =>   "Input qty cannot be greater than Order qty ($orderQty).",
-                                'error' => "",
-                            ], 422);
-                        }
-
-                        $availableQty = $orderQty - $poDetail->ge_qty;
-                        $availInputQty = $inputQty - ($GateEntryDetail->accepted_qty ?? 0);
-
-                        if ($availableQty < $availInputQty) {
-                            return response()->json([
-                                'message' => "You can add only {$availableQty} quantity. {$poDetail->ge_qty} already used, $mrn->reference_type qty is {$poDetail->order_qty}.",
-                                'order_qty' => $geDetail->accepted_qty ?? 0
-                            ], 422);
-                        }
-                    }
-
-                    if ($component['accepted_qty'] < $GateEntryDetail->mrn_qty) {
-                        $itemCode = $GateEntryDetail->item()->item_code;
-                        DB::rollBack();
-                        return response()->json([
-                                        'message' => "Accepted quantity for $itemCode can not be less than $GateEntryDetail->mrn_qty  as it has been utilised in MRN",
-                                        'error' => "",
-                                    ], 422);
-                    }
-
+                foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $po_detail_id = null;
-                    if (isset($component['po_detail_id']) && $component['po_detail_id']) {
-                        $poDetail =  PoItem::find($component['po_detail_id']);
-                        $po_detail_id = $poDetail->id ?? null;
-                        if ($poDetail) {
-                            $qtyDifference = ($poDetail->ge_qty - floatval($component['accepted_qty']));
-                            $poDetail->ge_qty += floatval($qtyDifference);
-                            $poDetail->save();
+                    if(isset($component['detail_id']) && $component['detail_id']) {
+                        $gateEntryDetail = GateEntryDetail::find($component['detail_id']);
+                    }
+
+                    $validateQty = self::validateQuantityBackend($component, $mrn->reference_type);
+                    if ($validateQty['status'] === 'error') {
+                        \DB::rollBack();
+                        return response()->json([
+                            'message' => $validateQty['message']
+                        ], 422);
+                    }
+                    $inputQty = floatval($component['accepted_qty'] ?? 0);
+                    if(isset($component['po_detail_id']) && $component['po_detail_id']) {
+                        $poItem = PoItem::find($component['po_detail_id'] ?? @$gateEntryDetail->purchase_order_item_id);
+                        if(isset($poItem) && $poItem) {
+                            if(isset($poItem->id) && $poItem->id) {
+                                $orderQty = floatval(@$gateEntryDetail->accepted_qty)?? 0.00;
+                                $componentQty = floatval($component['accepted_qty'] ?? $component['order_qty']);
+                                $qtyDifference = $componentQty - $orderQty;
+                                if($qtyDifference) {
+                                    $poItem->ge_qty += $qtyDifference;
+                                }
+                            } else {
+                                // $poItem->order_qty += $component['qty'];
+                            }
+                            $poItem->save();
                         }
+                    } else if(isset($component['jo_detail_id']) && $component['jo_detail_id']) {
+                        $joItem = JoProduct::find($component['jo_detail_id'] ?? @$gateEntryDetail->job_order_item_id);
+                        if(isset($joItem) && $joItem) {
+                            if(isset($joItem->id) && $joItem->id) {
+                                $orderQty = floatval(@$gateEntryDetail->accepted_qty)?? 0;
+                                $componentQty = floatval($component['accepted_qty'] ?? $component['order_qty']);
+                                $qtyDifference = $componentQty - $orderQty;
+                                if($qtyDifference) {
+                                    $joItem->ge_qty += $qtyDifference;
+                                }
+                            } else {
+                                // $joItem->order_qty += $component['qty'];
+                            }
+                            $joItem->save();
+                        }
+                    } else{
+
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
@@ -1276,7 +1244,12 @@ class GateEntryController extends Controller
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $mrnItemArr[] = [
                         'header_id' => $mrn->id,
-                        'purchase_order_item_id' => $po_detail_id,
+                        'purchase_order_item_id' => $component['po_detail_id'] ?? null,
+                        'po_id' => $component['purchase_order_id'] ?? null,
+                        'job_order_item_id' => $component['jo_detail_id'] ?? null,
+                        'jo_id' => $component['job_order_id'] ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
+                        'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -1340,87 +1313,55 @@ class GateEntryController extends Controller
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemHeaderExp = floatval($mrnItem['expense_amount']);
-                    // $itemPriceAterBothDis =  $mrnItem['basic_value'] - $mrnItem['discount_amount'] - $mrnItem['header_discount_amount'];
-                    // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
 
                     # Gate Entry Detail Save
-                    $GateEntryDetail = GateEntryDetail::find($component['detail_id'] ?? null) ?? new GateEntryDetail;
+                    $gateEntryDetail = GateEntryDetail::find($component['detail_id'] ?? null) ?? new GateEntryDetail;
 
-                    $orderQty      = floatval($GateEntryDetail->accepted_qty);
+                    $orderQty      = floatval($gateEntryDetail->accepted_qty);
                     $componentQty  = floatval($component['accepted_qty']);
                     $qtyDifference = $componentQty - $orderQty;
 
-                    if (($component['vendor_asn_dtl_id']) || ($GateEntryDetail->vendor_asn_item_id)) {
-                        $asnDetailId = $component['vendor_asn_dtl_id'] ?? $GateEntryDetail->vendor_asn_item_id;
-                        if ($asnDetailId && ($asnItem = VendorAsnItem::find($asnDetailId))) {
-                            $asnItem->ge_qty += $qtyDifference;
-                            $asnItem->save();
-                        }
-                    }
-
-                    switch ($mrn->reference_type) {
-                        case ConstantHelper::PO_SERVICE_ALIAS:
-                            $poDetailId = $component['po_detail_id'] ?? $GateEntryDetail->purchase_order_item_id;
-                            if ($poDetailId && ($poItem = PoItem::find($poDetailId))) {
-                                $poItem->ge_qty += $qtyDifference;
-                                $poItem->save();
-                            }
-                            break;
-
-                        case ConstantHelper::JO_SERVICE_ALIAS:
-                            $joDetailId = $component['jo_detail_id'] ?? $GateEntryDetail->job_order_item_id;
-                            if ($joDetailId && ($joItem = JoProduct::find($joDetailId))) {
-                                $joItem->ge_qty += $qtyDifference;
-                                $joItem->save();
-                            }
-                            break;
-
-                        case ConstantHelper::SO_SERVICE_ALIAS:
-                            $soDetailId = $component['so_detail_id'] ?? $GateEntryDetail->sale_order_item_id;
-                            if ($soDetailId && ($soItem = ErpSoJobWorkItem::find($soDetailId))) {
-                                $soItem->ge_qty += $qtyDifference;
-                                $soItem->save();
-                            }
-                            break;
-                    }
-
-                    $GateEntryDetail->header_id = $mrnItem['header_id'];
-                    $GateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
-                    $GateEntryDetail->item_id = $mrnItem['item_id'];
-                    $GateEntryDetail->item_code = $mrnItem['item_code'];
-                    $GateEntryDetail->hsn_id = $mrnItem['hsn_id'];
-                    $GateEntryDetail->hsn_code = $mrnItem['hsn_code'];
-                    $GateEntryDetail->uom_id = $mrnItem['uom_id'];
-                    $GateEntryDetail->uom_code = $mrnItem['uom_code'];
-                    $GateEntryDetail->accepted_qty = $mrnItem['accepted_qty'];
-                    $GateEntryDetail->inventory_uom_id = $mrnItem['inventory_uom_id'];
-                    $GateEntryDetail->inventory_uom_code = $mrnItem['inventory_uom_code'];
-                    $GateEntryDetail->inventory_uom_qty = $mrnItem['inventory_uom_qty'];
-                    $GateEntryDetail->rate = $mrnItem['rate'];
-                    $GateEntryDetail->basic_value = $mrnItem['basic_value'];
-                    $GateEntryDetail->discount_amount = $mrnItem['discount_amount'];
-                    $GateEntryDetail->header_discount_amount = $mrnItem['header_discount_amount'];
-                    $GateEntryDetail->tax_value = $mrnItem['tax_value'];
-                    $GateEntryDetail->header_exp_amount = $itemHeaderExp;
-                    // $GateEntryDetail->company_currency = $mrnItem['company_currency_id'];
-                    // $GateEntryDetail->group_currency = $mrnItem['group_currency_id'];
-                    // $GateEntryDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
-                    $GateEntryDetail->remark = $mrnItem['remark'];
-                    $GateEntryDetail->save();
+                    $gateEntryDetail->header_id = $mrnItem['header_id'];
+                    $gateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
+                    $gateEntryDetail->po_id = $mrnItem['po_id'];
+                    $gateEntryDetail->job_order_item_id = $mrnItem['job_order_item_id'];
+                    $gateEntryDetail->jo_id = $mrnItem['jo_id'];
+                    // $gateEntryDetail->so_id = $mrnItem['so_id'];
+                    $gateEntryDetail->vendor_asn_id = $mrnItem['vendor_asn_id'];
+                    $gateEntryDetail->vendor_asn_item_id = $mrnItem['vendor_asn_item_id'];
+                    $gateEntryDetail->item_id = $mrnItem['item_id'];
+                    $gateEntryDetail->item_code = $mrnItem['item_code'];
+                    $gateEntryDetail->hsn_id = $mrnItem['hsn_id'];
+                    $gateEntryDetail->hsn_code = $mrnItem['hsn_code'];
+                    $gateEntryDetail->uom_id = $mrnItem['uom_id'];
+                    $gateEntryDetail->uom_code = $mrnItem['uom_code'];
+                    $gateEntryDetail->accepted_qty = $mrnItem['accepted_qty'];
+                    $gateEntryDetail->inventory_uom_id = $mrnItem['inventory_uom_id'];
+                    $gateEntryDetail->inventory_uom_code = $mrnItem['inventory_uom_code'];
+                    $gateEntryDetail->inventory_uom_qty = $mrnItem['inventory_uom_qty'];
+                    $gateEntryDetail->rate = $mrnItem['rate'];
+                    $gateEntryDetail->basic_value = $mrnItem['basic_value'];
+                    $gateEntryDetail->discount_amount = $mrnItem['discount_amount'];
+                    $gateEntryDetail->header_discount_amount = $mrnItem['header_discount_amount'];
+                    $gateEntryDetail->tax_value = $mrnItem['tax_value'];
+                    $gateEntryDetail->header_exp_amount = $itemHeaderExp;
+                    // $gateEntryDetail->company_currency = $mrnItem['company_currency_id'];
+                    // $gateEntryDetail->group_currency = $mrnItem['group_currency_id'];
+                    // $gateEntryDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
+                    $gateEntryDetail->remark = $mrnItem['remark'];
+                    $gateEntryDetail->save();
 
                     #Save component Attr
-                    foreach ($GateEntryDetail->item->itemAttributes as $itemAttribute) {
+                    foreach ($gateEntryDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $mrnAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                             $mrnAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            $mrnAttr = GateEntryAttribute::where('detail_id', $GateEntryDetail->id)
+                            $mrnAttr = GateEntryAttribute::where('detail_id', $gateEntryDetail->id)
                                 ->where('item_attribute_id', $itemAttribute->id)
                                 ->first();
-
                             $data = [
                                 'header_id' => $mrn->id,
-                                'detail_id' => $GateEntryDetail->id,
+                                'detail_id' => $gateEntryDetail->id,
                                 'item_attribute_id' => $itemAttribute->id,
                                 'item_code' => $component['item_code'] ?? null,
                                 'item_id' => $component['item_id'] ?? null,
@@ -1428,7 +1369,7 @@ class GateEntryController extends Controller
                                 'attr_value' => $mrnAttrName ?? null
                             ];
 
-                            if ($mrnAttr->item_code != $component['item_code']) {
+                            if (@$mrnAttr->item_code != $component['item_code']) {
                                 $mrnAttr?->delete();
                                 GateEntryAttribute::create($data);
                             } else {
@@ -1443,7 +1384,7 @@ class GateEntryController extends Controller
                             if (isset($dis['dis_amount']) && $dis['dis_amount']) {
                                 $ted = GateEntryTed::find($dis['id'] ?? null) ?? new GateEntryTed;
                                 $ted->header_id = $mrn->id;
-                                $ted->detail_id = $GateEntryDetail->id;
+                                $ted->detail_id = $gateEntryDetail->id;
                                 $ted->ted_type = 'Discount';
                                 $ted->ted_level = 'D';
                                 $ted->ted_id = $dis['ted_id'] ?? null;
@@ -1465,7 +1406,7 @@ class GateEntryController extends Controller
                             $mrnAmountId = null;
                             $ted = GateEntryTed::find(@$tax['id']) ?? new GateEntryTed;
                             $ted->header_id = $mrn->id;
-                            $ted->detail_id = $GateEntryDetail->id;
+                            $ted->detail_id = $gateEntryDetail->id;
                             $ted->ted_type = 'Tax';
                             $ted->ted_level = 'D';
                             $ted->ted_id = $tax['t_d_id'] ?? null;
@@ -1543,11 +1484,23 @@ class GateEntryController extends Controller
                 $mrn->total_amount = $totalAmount ?? 0.00;
                 $mrn->save();
             } else {
-                DB::rollBack();
-                return response()->json([
-                    'message' => 'Please add atleast one row in component table.',
-                    'error' => "",
-                ], 422);
+                if($request->document_status == ConstantHelper::SUBMITTED) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Please add atleast one row in component table.',
+                        'error' => "",
+                    ], 422);
+                } else{
+                    // No items left — reset all values
+                    $mrn->total_discount = 0.00;
+                    $mrn->taxable_amount = 0.00;
+                    $mrn->total_taxes = 0.00;
+                    $mrn->total_after_tax_amount = 0.00;
+                    $mrn->expense_amount = 0.00;
+                    $mrn->total_amount = 0.00;
+                    $mrn->total_item_amount = 0.00;
+                    $mrn->save();
+                }
             }
 
             /*Store currency data*/
@@ -1631,7 +1584,16 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+            
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
+                ->pluck('config_value', 'config_key'); 
+            
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
+            ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
@@ -2282,14 +2244,14 @@ class GateEntryController extends Controller
             $headerHistory->save();
 
             // Detail History
-            $GateEntryDetails = GateEntryDetail::where('header_id', $GateEntryHeader->id)->get();
-            if(!empty($GateEntryDetails)){
-                foreach($GateEntryDetails as $key => $detail){
-                    $GateEntryDetailData = $detail->toArray();
-                    unset($GateEntryDetailData['id']); // You might want to remove the primary key, 'id'
-                    $GateEntryDetailData['source_id'] = $detail->id;
-                    $GateEntryDetailData['header_id'] = $headerHistoryId;
-                    $detailHistory = GateEntryDetailHistory::create($GateEntryDetailData);
+            $gateEntryDetails = GateEntryDetail::where('header_id', $GateEntryHeader->id)->get();
+            if(!empty($gateEntryDetails)){
+                foreach($gateEntryDetails as $key => $detail){
+                    $gateEntryDetailData = $detail->toArray();
+                    unset($gateEntryDetailData['id']); // You might want to remove the primary key, 'id'
+                    $gateEntryDetailData['source_id'] = $detail->id;
+                    $gateEntryDetailData['header_id'] = $headerHistoryId;
+                    $detailHistory = GateEntryDetailHistory::create($gateEntryDetailData);
                     $detailHistoryId = $detailHistory->id;
 
                     // Attribute History
@@ -2383,98 +2345,52 @@ class GateEntryController extends Controller
         }
     }
 
+    // Validate Order Qty For Frontend
     public function validateQuantity(Request $request)
     {
-        $errorMessage = '';
-        $item = Item::find($request->item_id);
-        $type = $request->type;
+        $inputData = [
+            'item_id'            => $request->item_id,
+            'purchase_order_id'  => $request->purchase_order_id,
+            'po_detail_id'       => $request->po_detail_id,
+            'job_order_id'       => $request->job_order_id,
+            'jo_detail_id'       => $request->jo_detail_id,
+            'sale_order_id'      => $request->sale_order_id,
+            'so_detail_id'       => $request->so_detail_id,
+            'ge_detail_id'       => $request->ge_detail_id,
+            'asn_detail_id'      => $request->asn_detail_id,
+            'qty'                => $request->qty,
+            'type'               => $request->type,
+        ];
 
-        if (!$item) {
-            return response()->json(['message' => 'Item not found.'], 422);
-        }
-
-        $inputQty = floatval($request->qty ?? 0);
-        $poDetail = null;
-
-        if ($type === ConstantHelper::JO_SERVICE_ALIAS) {
-            $poDetail = JoProduct::find($request->jo_detail_id);
-            $orderQty = $poDetail->order_qty;
-        } elseif ($type === ConstantHelper::SO_SERVICE_ALIAS) {
-            $poDetail = ErpSoJobWorkItem::find($request->so_detail_id);
-            $orderQty = $poDetail->qty;
+        $checkService = new GeCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        if ($data['status'] === 'success') {
+            return response()->json(['message' => $data['message'], 'status' => 200, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
         } else {
-            $poDetail = PoItem::find($request->po_detail_id);
-            $orderQty = $poDetail->order_qty;
+            return response()->json(['message' => $data['message'], 'status' => 422, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
         }
+    }
 
-        // === Case 1: MRN Detail Flow ===
-        if (!empty($request->ge_detail_id)) {
-            $geDetail = GateEntryDetail::find($request->ge_detail_id);
-            if (!$geDetail) {
-                return response()->json([
-                    'message' => 'Gate Entry detail not found.',
-                    'order_qty' => $geDetail->accepted_qty ?? 0
-                ], 422);
-            }
+    # Validate Order Qty For Frontend
+    private static function validateQuantityBackend($component, $refType)
+    {
+        $inputData = [
+            'item_id'            => $component['item_id'] ?? null,
+            'purchase_order_id'  => $component['purchase_order_id'] ?? null,
+            'po_detail_id'       => $component['po_detail_id'] ?? null,
+            'job_order_id'       => $component['job_order_id']  ?? null,
+            'jo_detail_id'       => $component['jo_detail_id']  ?? null,
+            'sale_order_id'      => $component['sale_order_id'] ?? null,
+            'so_detail_id'       => $component['so_detail_id']  ?? null,
+            'ge_detail_id'       => $component['ge_detail_id'] ?? null,
+            'asn_detail_id'      => $component['asn_detail_id'] ?? null,
+            'qty'                => $component['order_qty'] ?? 0.00,
+            'type'               => $refType ?? 'po',
+        ];
 
-            if ($geDetail->mrn_qty > $inputQty) {
-                return response()->json([
-                    'message' => "Accepted qty cannot be less than ({$geDetail->mrn_qty}) as it has already been used.",
-                    'order_qty' => $geDetail->accepted_qty ?? 0
-                ], 422);
-            }
-
-            if ($poDetail) {
-                if ($inputQty > $orderQty) {
-                    return response()->json([
-                        'message' => "Accepted qty cannot be greater than $type quantity.",
-                        'order_qty' => $geDetail->accepted_qty ?? 0
-                    ], 422);
-                }
-
-                $availableQty = $orderQty - $poDetail->ge_qty;
-                $availInputQty = $inputQty - ($geDetail->accepted_qty ?? 0);
-
-                if ($availableQty < $availInputQty) {
-                    return response()->json([
-                        'message' => "You can add only {$availableQty} quantity. {$poDetail->ge_qty} already used, $type qty is {$poDetail->order_qty}.",
-                        'order_qty' => $geDetail->accepted_qty ?? 0
-                    ], 422);
-                }
-            }
-
-            // === Case 2: ASN / GE / Direct PO Flow ===
-        } else {
-            $balanceQty = 0;
-
-            if ($request->asn_detail_id) {
-                $asnDetail = VendorAsnItem::find($request->asn_detail_id);
-                $balanceQty = $asnDetail->supplied_qty - ($asnDetail->ge_qty ?? 0.00);
-                if ($balanceQty < $inputQty) {
-                    return response()->json([
-                        'message' => "Input qty cannot be greater than ASN qty ($balanceQty).",
-                        'order_qty' => $orderQty
-                    ], 422);
-                }
-            }
-
-            if ($poDetail) {
-                $grnQty = $poDetail->grn_qty ?? 0;
-                $totalQty = $inputQty + $grnQty;
-
-                if ($totalQty > $orderQty) {
-                    return response()->json([
-                        'message' => "Input qty cannot be greater than order qty ($orderQty).",
-                        'order_qty' => $orderQty
-                    ], 422);
-                }
-            }
-        }
-        return response()->json([
-            'status' => 200,
-            'message' => 'fetched',
-            'order_qty' => $inputQty
-        ]);
+        $checkService = new GeCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        return $data;
     }
 
     # Get PO Item List
@@ -2560,13 +2476,16 @@ class GateEntryController extends Controller
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
+        $asnNumber = $request->asn_number ?? null;
         $itemId = $request->item_id ?? null;
         $storeId = $request->store_id ?? null;
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $headerIds = $request->header_ids ?? null;
-        $detailsIds = $request->details_ids ?? null;
+        $headerIds = $request->header_ids ?? '';
+        $detailsIds = $request->details_ids ?? '';
+        $asnHeaderIds = $request->asn_header_ids ?? '';
+        $asnDetailsIds = $request->asn_details_ids ?? '';
 
         if (is_string($headerIds)) {
             $headerIds = array_filter(explode(',', $headerIds));
@@ -2576,17 +2495,23 @@ class GateEntryController extends Controller
             $detailsIds = array_filter(explode(',', $detailsIds));
         }
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_po_ids = json_decode($decoded, true) ?? [];
-        }
-        else{
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_po_ids = json_decode($decoded, true) ?? [];
+        $asnNumberList = [];
+
+        if (is_string($asnNumber)) {
+            $asnNumberList = array_filter(explode(',', $asnNumber));
         }
 
+        if (is_string($asnHeaderIds)) {
+            $asnHeaderIdList = array_filter(explode(',', $asnHeaderIds));
+            $asnNumberList = array_merge($asnNumberList, $asnHeaderIdList);
+        }
+        $asnNumber = $asnNumberList;
+
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_po_ids = json_decode($decoded, true) ?? [];
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+
         $poItems = PoItem::select(
                 'erp_po_items.*',
                 'erp_purchase_orders.id as po_id',
@@ -2598,9 +2523,8 @@ class GateEntryController extends Controller
             ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
             ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
             ->where('erp_purchase_orders.gate_entry_required', 'yes')
-            // ->whereIn('erp_purchase_orders.id', [7])
             ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item) use($itemSearch){
+            ->whereHas('item', function ($item) use ($itemSearch) {
                 $item->where('type', 'Goods');
                 if ($itemSearch) {
                     $item->where(function ($query) use ($itemSearch) {
@@ -2619,7 +2543,7 @@ class GateEntryController extends Controller
                     $po->where('erp_purchase_orders.book_id', $seriesId);
                 }
                 if ($docNumber) {
-                    $po->where('erp_purchase_orders.document_number', $docNumber);
+                    $po->where('erp_purchase_orders.id', $docNumber);
                 }
                 if ($vendorId) {
                     $po->where('erp_purchase_orders.vendor_id', $vendorId);
@@ -2629,19 +2553,28 @@ class GateEntryController extends Controller
                 }
             });
 
+        // 🔍 Apply ASN number filter (if present)
+        if (!empty($asnNumber)) {
+            $poItems->whereHas('asnItems.vendorAsn', function ($query) use ($asnNumber) {
+                $query->where('asn_for', 'po')
+                      ->whereIn('id', $asnNumber);
+            });
+        }
+
         if ($itemId) {
             $poItems->where('item_id', $itemId);
         }
 
-        if ($request->type == 'create' && count($selected_po_ids)) {
+        if ($request->type === 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-        } elseif ($request->type == 'edit') {
-            $poItems->whereIn('erp_po_items.purchase_order_id', $headerIds);
+        } elseif ($request->type === 'edit') {
+            // $poItems->whereIn('erp_po_items.purchase_order_id', $headerIds);
             $poItems->whereNotIn('erp_po_items.id', $detailsIds);
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
         }
 
         $poItems = $poItems->orderBy('po_id', 'desc')->get();
+
         $poItemMap = [];
         foreach ($poItems as $poItem) {
             if ($poItem->supp_invoice_required === 'yes') {
@@ -2651,7 +2584,7 @@ class GateEntryController extends Controller
                     ->get();
 
                 foreach ($siItems as $siItem) {
-                    $poItemId = $siItem->po_item_id. '+' .$siItem->vendor_asn_id ;
+                    $poItemId = $siItem->po_item_id . '+' . $siItem->vendor_asn_id;
 
                     if (!isset($poItemMap[$poItemId])) {
                         $poItem = $siItem->po_item;
@@ -2671,8 +2604,10 @@ class GateEntryController extends Controller
                 }
             }
         }
+
         return $poItemMap;
     }
+
 
     # Process PO Item list
     public function processPoItem(Request $request)
@@ -2904,21 +2839,41 @@ class GateEntryController extends Controller
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
+        $asnNumber = $request->asn_number ?? '';
         $itemId = $request->item_id ?? null;
         $storeId = $request->store_id ?? null;
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
+        $headerIds = $request->header_ids ?? '';
+        $detailsIds = $request->details_ids ?? '';
+        $asnHeaderIds = $request->asn_header_ids ?? '';
+        $asnDetailsIds = $request->asn_details_ids ?? '';
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_jo_ids = json_decode($decoded, true) ?? [];
+
+
+       if (is_string($headerIds)) {
+            $headerIds = array_filter(explode(',', $headerIds));
         }
-        else{
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_jo_ids = json_decode($decoded, true) ?? [];
+
+        if (is_string($detailsIds)) {
+            $detailsIds = array_filter(explode(',', $detailsIds));
         }
+
+        $asnNumberList = [];
+
+        if (is_string($asnNumber)) {
+            $asnNumberList = array_filter(explode(',', $asnNumber));
+        }
+
+        if (is_string($asnHeaderIds)) {
+            $asnHeaderIdList = array_filter(explode(',', $asnHeaderIds));
+            $asnNumberList = array_merge($asnNumberList, $asnHeaderIdList);
+        }
+        $asnNumber = $asnNumberList;
+
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_jo_ids = json_decode($decoded, true) ?? [];
 
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         $joItems = JoProduct::select(
@@ -2959,21 +2914,23 @@ class GateEntryController extends Controller
                     $po->where('erp_job_orders.store_id', $storeId);
                 }
             });
+        // 🔍 Apply ASN number filter (if present)
+        if (!empty($asnNumber)) {
+            $joItems->whereHas('asnItems.vendorAsn', function ($query) use ($asnNumber) {
+                $query->where('asn_for', 'jo')
+                        ->whereIn('id', $asnNumber);
+            });
+        }
 
         if ($itemId) {
             $joItems->where('item_id', $itemId);
         }
 
-        if ($request->type == 'create') {
-            if (count($selected_jo_ids)) {
-                $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
-                $joItems->whereNotIn('erp_jo_products.id',$selected_jo_ids);
-            }
-        } else if ($request->type == 'edit') {
-            if (count($selected_jo_ids)) {
-                $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
-                $joItems->whereIn('erp_jo_products.jo_id', $selected_jo_ids);
-            }
+        if ($request->type === 'create' && count($selected_jo_ids)) {
+            $joItems->whereNotIn('erp_jo_products.id', $selected_jo_ids);
+        } elseif ($request->type === 'edit') {
+            $joItems->whereNotIn('erp_jo_products.id', $detailsIds);
+            $joItems->whereNotIn('erp_jo_products.id', $selected_jo_ids);
         }
 
         $joItems = $joItems->orderby('erp_job_orders.id', 'desc')->get();
@@ -4184,6 +4141,97 @@ class GateEntryController extends Controller
                 'module_type' => $moduleType,
             ]
         ]);
+    }
+
+    # Process Job Order Component
+    private static function processJobOrderComponent($component, $item, $inputQty)
+    {
+        if (!empty($component['vendor_asn_dtl_id'])) {
+            $asn = VendorAsnItem::find($component['vendor_asn_dtl_id']);
+            $jo = JoProduct::find($asn?->jo_prod_id);
+            if (!$asn || !$jo) return self::notFoundResponse('ASN or Job Order');
+
+            if (($asn->supplied_qty - $asn->grn_qty) < $inputQty) {
+                DB::rollBack();
+                return self::exceedsQtyResponse();
+            }
+
+            $asn->ge_qty += $inputQty;
+            $asn->save();
+            return self::updatePoQty($item, $jo, $inputQty, 'supplier-invoice');
+        }
+
+        $jo = JoProduct::find($component['jo_detail_id']);
+        return $jo ? self::updatePoQty($item, $jo, $inputQty, 'job-order') : self::notFoundResponse('Job Order');
+    }
+
+    # Process Sale Order Component
+    private static function processSaleOrderComponent($component, $item, $inputQty)
+    {
+        $so = ErpSoJobWorkItem::find($component['po_detail_id']);
+        return $so ? self::updatePoQty($item, $so, $inputQty, 'sale-order') : self::notFoundResponse('Sale Order');
+    }
+
+    # Process Purchase Order Component
+    private static function processPurchaseOrderComponent($component, $item, $inputQty)
+    {
+        if (!empty($component['vendor_asn_dtl_id'])) {
+            $inv = VendorAsnItem::find($component['vendor_asn_dtl_id']);
+            $po = PoItem::find($component['po_detail_id']);
+
+            $inv->ge_qty += $inputQty;
+            $inv->save();
+            return self::updatePoQty($item, $po, $inputQty, 'supplier-invoice');
+        }
+
+        $po = PoItem::find($component['po_detail_id']);
+        return $po ? self::updatePoQty($item, $po, $inputQty, 'purchase-order') : self::notFoundResponse('PO Item');
+    }
+
+    // Update Purchase Order Quantity
+    private static function updatePoQty($item, $poDetail, $inputQty, $type)
+    {
+        $orderQty = floatval($poDetail->order_qty);
+        $geQty = floatval($poDetail->ge_qty ?? 0);
+        $totalQty = $geQty + $inputQty;
+
+        // $posTol = floatval($item->po_positive_tolerance);
+        // $negTol = floatval($item->po_negative_tolerance);
+
+        // $maxAllowed = $orderQty + $posTol;
+        // $minAllowed = max(0, $orderQty - $negTol);
+        // $remaining = $orderQty - $totalQty;
+
+        // if ($posTol > 0 || $negTol > 0) {
+        //     if ($totalQty > $maxAllowed) {
+        //         return response()->json(['message' => 'Order Qty cannot exceed positive tolerance.'], 422);
+        //     }
+
+        //     if ($remaining <= $negTol && $remaining >= 0) {
+        //         $poDetail->short_close_qty += $remaining;
+        //     }
+        // }
+        if ($totalQty > $orderQty) {
+            return response()->json(['message' => 'Order Qty cannot exceed PO Qty.'], 422);
+        }
+
+        $poDetail->ge_qty += $inputQty;
+        $poDetail->save();
+
+        return true;
+    }
+
+    # Helper Functions for Responses
+    private static function notFoundResponse($label)
+    {
+        \DB::rollBack();
+        return response()->json(['message' => "{$label} not found."], 422);
+    }
+
+    private static function exceedsQtyResponse()
+    {
+        \DB::rollBack();
+        return response()->json(['message' => 'Order qty cannot be greater than balance qty.'], 422);
     }
 
 }

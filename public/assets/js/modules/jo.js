@@ -1456,6 +1456,7 @@ function getLocation(locationId = '')
 }
 /*Vendor drop down*/
 function initializeAutocompleteVendor(selector, type) {
+    let store_id = $("[name='store_id']").val() || '';
     $(selector).autocomplete({
         minLength: 0,
         source: function(request, response) {
@@ -1465,7 +1466,8 @@ function initializeAutocompleteVendor(selector, type) {
                 dataType: 'json',
                 data: {
                     q: request.term,
-                    type:'vendor_list'
+                    type:'vendor_list',
+                    store_id: store_id,
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
@@ -1473,7 +1475,8 @@ function initializeAutocompleteVendor(selector, type) {
                             id: item.id,
                             label: item.company_name,
                             code: item.vendor_code,
-                            locations_count : item.locations_count
+                            // locations_count : item.locations_count,
+                            is_store_mapped : item.is_store_mapped
                         };
                     }));
                 },
@@ -1483,7 +1486,7 @@ function initializeAutocompleteVendor(selector, type) {
             });
         },
         select: function(event, ui) {
-            if(ui.item.locations_count <= 0) {
+            if(!ui.item.is_store_mapped) {
                 Swal.fire({
                     title: 'Error!',
                     text: 'Sub location is not mapped to this vendor',

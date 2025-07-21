@@ -25,26 +25,21 @@
 							<input type="text" id="vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
 							<input type="hidden" id="vendor_id_qt_val"></input>
 						</div>
-						<!-- <div class="mb-1">
-							<label class="form-label">Series</label>
-							<input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "book_id_qt_val"></input>
-						</div> -->
 					</div>
 					<div class="col">
 						<div class="mb-1">
-							<label class="form-label">Doc No.</label>
+							<label class="form-label">PO No.</label>
 							<input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
 							<input type = "hidden" id = "document_id_qt_val"></input>
 						</div>
 					</div>
-					<!-- <div class="col">
+                    <div class="col">
 						<div class="mb-1">
-							<label class="form-label">Sales Order</label>
-							<input type="text" id="po_so_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="pi_so_qt_val"></input>
+							<label class="form-label">ASN No.</label>
+							<input type="text" id="asn_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+							<input type = "hidden" id = "asn_id_qt_val"></input>
 						</div>
-					</div> -->
+					</div>
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Item</label>
@@ -55,26 +50,6 @@
 						<label class="form-label">&nbsp;</label><br/>
 						<button type="button" class="btn btn-warning btn-sm clearPoFilter"><i data-feather="x-circle"></i> Clear</button>
 					</div>
-					<!-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Item</label>
-							<input type="text" id="item_name_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "item_id_qt_val"></input>
-						</div>
-					</div>
-					<div class="col">
-						<div class="mb-1">
-							<label class="form-label">Vendor</label>
-							<input type="text" id="vendor_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type = "hidden" id = "vendor_id_qt_val"></input>
-						</div>
-					</div>
-					<div class="col mb-1">
-						<label class="form-label">&nbsp;</label><br/>
-						<button type = "button" class="btn btn-warning btn-sm searchPoBtn">
-							<i data-feather="search"></i> Search
-						</button>
-					</div> -->
 					<div class="col-md-12">
 						<div class="po-table-container">
 							<table class="table table-striped table-bordered po-order-detail myrequesttablecbox nowrap w-100">

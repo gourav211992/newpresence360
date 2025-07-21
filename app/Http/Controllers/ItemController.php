@@ -111,12 +111,6 @@ class ItemController extends Controller
 
                      return $subTypes;
                 })
-                ->addColumn('parent_category', function($row) {
-                    if ($row->subcategory_id && $row->subCategory && $row->subCategory->parent) {
-                        return $row->subCategory->parent->name; 
-                    }
-                    return 'N/A';
-                })
                 ->editColumn('uom', function ($item) {
                     return $item->uom ? $item->uom->name : 'N/A';
                 })
@@ -124,7 +118,7 @@ class ItemController extends Controller
                     return  $row->subCategory?->name;
                 })
                 ->editColumn('created_at', function ($row) {
-                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y') : 'N/A';
+                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->editColumn('created_by', function ($row) {
@@ -133,7 +127,7 @@ class ItemController extends Controller
                 })
                 
                 ->editColumn('updated_at', function ($row) {
-                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y') : 'N/A';
+                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y H:i:s') : 'N/A';
                 })
 
               ->editColumn('status', function ($row) {
@@ -217,6 +211,10 @@ class ItemController extends Controller
                     }
                 }
          }
+        }
+
+        if (count($services['services']) == 0) {
+            return redirect() -> route('/');
         }
         
         return view('procurement.item.create', [
@@ -325,7 +323,7 @@ class ItemController extends Controller
         }
 
         $item = Item::create($validatedData);
-
+        $item ->updated_at = null;
         if ($request->document_status === ConstantHelper::SUBMITTED) {
             $bookId = $item->book_id;
             $docId = $item->id;
@@ -342,7 +340,9 @@ class ItemController extends Controller
             $item->document_status = $document_status;
             $submittedStatus = $request->input('status') ?? ConstantHelper::ACTIVE;
             if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $item->status = ConstantHelper::ACTIVE;
+                  if ($revisionNumber == 0) {
+                        $item->status = ConstantHelper::ACTIVE;
+                  }
             } else {
                 $item->status = $document_status;
             }
@@ -651,7 +651,7 @@ class ItemController extends Controller
         $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        $bomCheckResult = ItemHelper::checkItemBomExists($item->id, [], 'bom', null);
+        $bomCheckResult = ItemHelper::checkBomForItem($item->id);
         $isBomExists = $bomCheckResult['status'] === 'bom_exists';
         $itemCodeType ='Manual';
         if ($services && $services['current_book']) {
@@ -790,8 +790,9 @@ class ItemController extends Controller
         if ($request->input('current_status') === ConstantHelper::SUBMITTED ) {
             $bookId = $item->book_id;
             $docId = $item->id;
-            $remarks = $item->remarks;
+            $remarks = $request->remarks;
             $attachments = $request->file('attachment');
+            $amendAttachments = $request->file('amend_attachments');
             $currentLevel = $item->approval_level ?? 1;
             $modelName = get_class($item);
             $submittedStatus = $request->input('status');
@@ -799,7 +800,7 @@ class ItemController extends Controller
             if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
                 $revisionNumber = $item->revision_number + 1;
                 $totalValue = 0; 
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $item->revision_number = $revisionNumber;
                 $item->approval_level = 1;
                 $item->revision_date = now();
@@ -824,7 +825,9 @@ class ItemController extends Controller
                 $document_status = $approveDocument['approvalStatus'];
                 $item->document_status = $document_status;
                if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                    $item->status = ConstantHelper::ACTIVE;
+                    if ($revisionNumber == 0) {
+                        $item->status = ConstantHelper::ACTIVE;
+                    }
                 } else {
                     $item->status = $document_status;
                 }

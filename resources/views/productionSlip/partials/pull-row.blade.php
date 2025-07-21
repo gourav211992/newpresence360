@@ -40,6 +40,30 @@ $currentOrderIndexVal = $index;
 <td><input type="text" id="item_sub_prime_qty_{{$currentOrderIndexVal}}" name = "item_sub_prime_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = ""/></td>
 @endif
 <td><input type="text" id="item_rejected_qty_{{$currentOrderIndexVal}}" name = "item_rejected_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
+@if($machines->isNotEmpty())
+<td>
+    <input type="hidden" name="machine_id[{{ $currentOrderIndexVal }}]" value="">
+    <select class="form-select select2"
+        multiple
+        name="machine_id[{{ $currentOrderIndexVal }}][]"
+        data-index="{{ $currentOrderIndexVal }}">
+        @foreach ($machines as $machine)
+            <option value="{{ $machine->id }}"
+                @if ($order->machine_id == $machine->id) selected @endif>
+                {{ $machine->name }}
+            </option>
+        @endforeach
+    </select>
+</td>
+<td>
+    <select class="form-select" name="cycle_count[{{$currentOrderIndexVal}}]">
+        <option value="">Select Cycle Count</option>
+        @for ($i = 1; $i <= 10; $i++)
+            <option value="{{$i}}">{{$i}}</option>
+        @endfor
+    </select>
+</td>
+@endif
 <td>
     <div class="d-flex">
             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$currentOrderIndexVal}}');">        

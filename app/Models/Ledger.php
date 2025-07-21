@@ -38,7 +38,9 @@ class Ledger extends Model
         'approval_level',
         'document_status',
         'revision_number',
-        'created_by'
+        'created_by',
+        'tcs_capping',
+        'tds_capping',
     ];
     public function costCenter()
     {

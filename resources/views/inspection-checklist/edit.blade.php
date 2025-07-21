@@ -386,6 +386,14 @@ $(document).ready(function() {
         updateRowNumbersAndValues();
     }
 
+    function attachEventListeners($row) {
+            $row.find('.mandatory-checkbox').off('change').on('change', function() {
+            var isChecked = $(this).is(':checked');
+            $(this).closest('tr').find('input[name$="[mandatory]"]').val(isChecked ? 1 : 0);
+        });
+    }
+   attachEventListeners($tableBody.find('tr'));
+
     function updateRowNumbersAndValues() {
         $('#listValueTableBody tr').each(function(index) {
             $(this).find('td:first').text(index + 1);
@@ -535,6 +543,7 @@ $(document).ready(function() {
 
         $tableBody.append($newRow);
         updateFieldDetailsNumbers();
+        attachEventListeners($newRow);
         applyCapsLock();
         $tableBody.find('.delete-row').show();
     });

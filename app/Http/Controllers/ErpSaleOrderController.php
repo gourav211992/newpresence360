@@ -52,6 +52,7 @@ use App\Models\OrganizationGroup;
 use App\Models\PoItem;
 use App\Models\ProductionRouteDetail;
 use App\Models\PurchaseOrder;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
@@ -1406,14 +1407,27 @@ class ErpSaleOrderController extends Controller
     {
         try {
             $customer = Customer::find($customerId);
+            if (!$customer) {
+                    return response()->json([
+                        'data' => array(
+                            'error_message' => 'Customer not found'
+                        )
+                    ]);
+                }
             if ($customer -> customer_type === ConstantHelper::CASH) {
                 $phoneNo = $request -> phone_no ?? null;
                 $cashCustomerDetail = CashCustomerDetail::where('phone_no', $phoneNo) -> first();
                 $billingAddresses = ErpAddress::where('addressable_id', $cashCustomerDetail ?-> id)->where('addressable_type', CashCustomerDetail::class)->whereIn('type', ['billing', 'both'])->get();
                 $shippingAddresses = ErpAddress::where('addressable_id', $cashCustomerDetail ?-> id)->where('addressable_type', CashCustomerDetail::class)->whereIn('type', ['shipping', 'both'])->get();
             } else {
-                $billingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['billing', 'both'])->get();
-                $shippingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)->whereIn('type', ['shipping', 'both'])->get();
+                $billingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)
+                ->where(function ($subQuery) {
+                    $subQuery -> whereIn('type', ['billing', 'both']) -> orWhere('is_billing', 1);
+                }) -> get();
+                $shippingAddresses = ErpAddress::where('addressable_id', $customerId)->where('addressable_type', Customer::class)
+                ->where(function ($subQuery) {
+                    $subQuery -> whereIn('type', ['shipping', 'both']) -> orWhere('is_shipping', 1);
+                }) -> get();
             }
             foreach ($billingAddresses as $billingAddress) {
                 $billingAddress->value = $billingAddress->id;
@@ -1605,7 +1619,7 @@ class ErpSaleOrderController extends Controller
         try {
             if ($request -> doc_type === ConstantHelper::PO_SERVICE_ALIAS) {
                 $pathUrl = route('po.index', ['po']);
-                $quotation = PurchaseOrder::with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
+                $quotation = PurchaseOrder::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
                     $subQuery->whereIn('id', $request->items_id);
                 })->with('items', function ($itemQuery) use ($request) {
                     $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted'])->with([
@@ -1640,7 +1654,7 @@ class ErpSaleOrderController extends Controller
                 }
             } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
                 $pathUrl = route('jo.index');
-                $quotation = JobOrder::with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
+                $quotation = JobOrder::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->with(['discount_ted', 'expense_ted'])->whereHas('items', function ($subQuery) use ($request) {
                     $subQuery->whereIn('id', $request->items_id);
                 })->with('items', function ($itemQuery) use ($request) {
                     $itemQuery->whereIn('id', $request->items_id)->with(['discount_ted', 'tax_ted'])->with([
@@ -1709,7 +1723,7 @@ class ErpSaleOrderController extends Controller
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
             if ($request -> doc_type === ConstantHelper::PO_SERVICE_ALIAS) {
                 $quotation = PoItem::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl, $orgId) {
-                    $subQuery->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                     ->whereIn('book_id', $applicableBookIds)->when($request->book_id, function ($bookQuery) use ($request) {
                         $bookQuery->where('book_id', $request->book_id);
                     })->when($request->document_id, function ($docQuery) use ($request) {
@@ -1735,7 +1749,7 @@ class ErpSaleOrderController extends Controller
             } else if ($request -> doc_type === ConstantHelper::JO_SERVICE_ALIAS) {
                 $joOrderType = SaleModuleHelper::getJoOrderTypeFromSoOrderType($request -> order_type);
                 $quotation = JoProduct::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds, $pathUrl, $orgId, $joOrderType) {
-                    $subQuery->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ->where('job_order_type', $joOrderType)
+                    $subQuery->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ->where('job_order_type', $joOrderType)
                     ->whereIn('book_id', $applicableBookIds)->when($request->book_id, function ($bookQuery) use ($request) {
                         $bookQuery->where('book_id', $request->book_id);
                     })->when($request->document_id, function ($docQuery) use ($request) {

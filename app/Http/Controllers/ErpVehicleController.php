@@ -37,7 +37,7 @@ class ErpVehicleController extends Controller
         $drivers = ErpDriver::where('organization_id',$user->organization_id)->where('status', 'active')->get();
 
         if ($request->ajax()) {
-            $vehicles = ErpVehicle::with('driver', 'vehicleType')
+            $vehicles = ErpVehicle::with('driver', 'vehicleType', 'auth_user')
                 ->withDefaultGroupCompanyOrg()
                 ->orderByDesc('id');
 
@@ -115,8 +115,9 @@ class ErpVehicleController extends Controller
                 })
                 ->editColumn('created_at', fn($row) => optional($row->created_at)->format('d-m-Y') ?? 'N/A')
    
-                ->addColumn('created_by', function ($row) {
-                    return optional($row->createdBy)->name ?? '-';
+                ->editColumn('created_by', function ($row) {
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    return $createdBy;
                 })
                 ->addColumn('driver_name', fn($row) => $row->driver->name ?? 'N/A')
                 ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? 'N/A')
@@ -206,7 +207,7 @@ class ErpVehicleController extends Controller
                     'organization_id' => $organization->id,
                     'group_id'        => $organization->group_id,
                     'company_id'      => $user->company_id ?? null,
-                    'created_by'      => $user->id,
+                    'created_by'      => $user->auth_user_id ,
                 ]
             ));
 
@@ -265,7 +266,7 @@ class ErpVehicleController extends Controller
                 'fuel_type'      => $request->fuel_type,
                 'purchase_date'  => $request->purchase_date,
                 'ownership'      => $request->ownership,
-                'updated_by'      => $user->id,
+                'updated_by'     => $user->auth_user_id ,
                 'status'         => $request->status,
             ]);
 

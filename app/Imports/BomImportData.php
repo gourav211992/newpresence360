@@ -42,6 +42,8 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
         $response = BookHelper::fetchBookDocNoAndParameters($this->bookId, $this->documentDate);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
         $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
+        $sectionRequired = isset($parameters['section_required']) && is_array($parameters['section_required']) && in_array('yes', array_map('strtolower', $parameters['section_required']));
+        $subSectionRequired = isset($parameters['sub_section_required']) && is_array($parameters['sub_section_required']) && in_array('yes', array_map('strtolower', $parameters['sub_section_required']));
         $trimmedRows = $rows->map(function ($row) {
             $rowArray = $row->toArray();
             while (end($rowArray) === null || end($rowArray) === '') {
@@ -120,9 +122,9 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     $stationId = $station?->id;
                     $vendorcode = $row['vendor_code'] ?? ''; 
                     $vendor = Vendor::where('vendor_code', $vendorcode)->first();
-                    if(!$vendor) {
-                        $errors[] = "Vendor not found";
-                    }
+                    // if(!$vendor) {
+                    //     $errors[] = "Vendor not found";
+                    // }
                     $vendorId = $vendor?->id;
                     $customerId = null;
                     if($this->moduleType == 'qbom') {
@@ -135,13 +137,13 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     }
                     $sectionName = $row['section'] ?? ''; 
                     $section = ProductSection::where('name', $sectionName)->first();
-                    if(!$section) {
+                    if(!$section && $sectionRequired) {
                         $errors[] = "Section not found";
                     }
                     $sectionId = $section?->id;
                     $subSectionName = $row['sub_section'] ?? ''; 
                     $subSection = ProductSectionDetail::where('name', $subSectionName)->first();
-                    if(!$subSection) {
+                    if(!$subSection && $subSectionRequired) {
                         $errors[] = "Sub section not found";
                     }
                     $subSectionId = $subSection?->id;
@@ -263,9 +265,9 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     if(!floatval($costPerUnit)) {
                         $costPerUnit = $itemCost; 
                     }
-                    if(!$costPerUnit) {
-                        $errors[] = "Item cost not defined";
-                    }
+                    // if(!$costPerUnit) {
+                    //     $errors[] = "Item cost not defined";
+                    // }
                     BomUpload::create(
                         [
                             'type' => $this->moduleType ?? 'bom',
@@ -300,9 +302,9 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                             'vendor_id' => $vendorId,
                             'vendor_code' => $vendorcode,
                             'vendor_name' => $vendor?->company_name,
-                            'customer_id' => $customerId,
-                            'customer_code' => $customercode,
-                            'customer_name' => $customer?->company_name,
+                            'customer_id' => $customerId ?? null,
+                            'customer_code' => $customercode ?? null,
+                            'customer_name' => $customer?->company_name ?? null,
                             'remark' => @$row['remark'],
                             'created_at' => now(),
                             'updated_at' => now()

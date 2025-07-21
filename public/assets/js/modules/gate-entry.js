@@ -22,11 +22,9 @@ $(document).on('click', '#reject-button', (e) => {
 
 /*Deviation modal*/
 $(document).on('click', '#deviation-button', (e) => {
-    let actionType = 'deviation';
-    let count = 15;
+    let actionType = 'deviation-closed';
     $("#deviateModal").find("#action_type").val(actionType);
-    $("#deviateModal #popupTitle").text("Close Job");
-    $("#deviateModal").find("#itemCountDisplay").val(count);
+    $("#deviateModal #popupTitle").text("Unloading Deviation");
     $("#deviateModal").modal('show');
 });
 
@@ -141,23 +139,8 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
     oldValue = e.target.value;  // Store the old value when the field gains focus
 });
 
-/*Order qty on change*/
-$(document).on('change',"[name*='order_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    checkDuplicateObjects(qty);
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let orderQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
-    let orderQty = parseFloat(qty.value);
-    orderQuantity.val(orderQty.toFixed(2));
-    acceptedQuantity.val(orderQty.toFixed(2));
-    rejectedQuantity.val('0.00');
-});
-
 /*qty on change*/
-$(document).on('blur change', "[name*='accepted_qty']", async function (e) {
+$(document).on('change', "[name*='accepted_qty']", async function (e) {
     const $tr = $(e.target).closest('tr');
     const $qtyInput = $(e.target);
     const orderQty = parseFloat($qtyInput.val()) || 0;
@@ -165,64 +148,70 @@ $(document).on('blur change', "[name*='accepted_qty']", async function (e) {
     let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
     checkDuplicateObjects($qtyInput);
 
+    // Validate Accepted Quantity
+    if (orderQty <= 0) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Accepted Qty. cannot be zero.',
+            icon: 'error',
+        });
+        return;
+    }
+
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+    const $acceptedQtyInput = $tr.find("[name*='accepted_qty']");
+    const $itemCost = $tr.find("[name*='rate']");
+    const $itemValue = $tr.find("[name*='basic_value']");
+    let itemValue = $tr.find("[name*='basic_value']");
+
     const getVal = (selector) => {
         const el = $tr.find(selector);
         return el.length ? el.val() : '';
     };
 
-    // // Validate Accepted Quantity
-    // if (orderQty <= 0) {
-    //     Swal.fire({
-    //         title: 'Error!',
-    //         text: 'Accepted Qty. cannot be zero.',
-    //         icon: 'error',
-    //     });
-    //     return;
-    // }
+    const data = {};
+    const safeSet = (key, val) => { if (val) data[key] = val; };
 
-    const itemId = getVal("[name*='item_id']");
-    const acceptedQtyInput = $tr.find("[name*='accepted_qty']");
-    let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='detail_id']").val() || '';
-    let poDetailId = $(e.target).closest('tr').find("[name*='po_detail_id']").val() || '';
-    let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
+    safeSet('item_id', itemId);
+    safeSet('purchase_order_id', getVal("[name*='[purchase_order_id]']"));
+    safeSet('po_detail_id', getVal("[name*='[po_detail_id]']"));
+    safeSet('job_order_id', getVal("[name*='[job_order_id]']"));
+    safeSet('jo_detail_id', getVal("[name*='[jo_detail_id]']"));
+    safeSet('sale_order_id', getVal("[name*='[sale_order_id]']"));
+    safeSet('so_detail_id', getVal("[name*='[so_detail_id]']"));
+    safeSet('ge_detail_id', getVal("[name*='[detail_id]']"));
+    safeSet('asn_detail_id', getVal("[name*='[vendor_asn_dtl_id]']"));
+    safeSet('qty', getVal("[name*='[accepted_qty]']"));
+    safeSet('type', currentProcessType);
 
-    const data = {
-        item_id: itemId,
-        purchase_order_id: getVal("[name*='[purchase_order_id]']"),
-        po_detail_id: getVal("[name*='[po_detail_id]']"),
-        job_order_id: getVal("[name*='[job_order_id]']"),
-        jo_detail_id: getVal("[name*='[jo_detail_id]']"),
-        sale_order_id: getVal("[name*='[sale_order_id]']"),
-        so_detail_id: getVal("[name*='[so_detail_id]']"),
-        asn_header_id: getVal("[name*='[vendor_asn_id]']"),
-        asn_detail_id: getVal("[name*='[vendor_asn_dtl_id]']"),
-        ge_header_id: getVal("[name*='[header_id]']"),
-        ge_detail_id: getVal("[name*='[detail_id]']"),
-        qty: getVal("[name*='[accepted_qty]']"),
-        type: currentProcessType,
-    };
-    let response = await fetch('/gate-entries/validate-quantity?' + new URLSearchParams(data).toString());
-    const result = await response.json();
+    try {
+        const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+        const result = await response.json();
 
-    let resultQty = parseFloat(result.order_qty) || 0;
-    let receiptQty = (resultQty.toFixed(2));
-    let acceptedQty = (resultQty.toFixed(2));
-    let rejectedQty = (receiptQty - acceptedQty).toFixed(2);
-    // If validation failed
-    if (result.status !== 200 && result.message) {
-        Swal.fire({
-            title: 'Error!',
-            text: result.message,
-            icon: 'error',
-        });
-        $qtyInput.val(receiptQty);
-        $acceptedQtyInput.val(acceptedQty);
-        $rejectedQtyInput.val(rejectedQty);
-    } else{
-        $qtyInput.val(receiptQty);
-        $acceptedQtyInput.val(acceptedQty);
-        $rejectedQtyInput.val(rejectedQty);
+        const resultQty = parseFloat(result.order_qty) || 0;
+        const finalQty = resultQty.toFixed(2);
+        $qtyInput.val(finalQty);
+
+        let acceptedQty = resultQty;
+
+        $acceptedQtyInput.val(acceptedQty.toFixed(2));
+        
+        if (Number($itemCost.val())) {
+            let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
+            $itemValue.val(totalValue.toFixed(2));
+        } else {
+            $itemValue.val('');
+        }
+
+        if (result.status !== 200 && result.message) {
+            Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
+            return false;
+        }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ title: 'Error!', text: 'Quantity validation failed.', icon: 'error' });
     }
 });
 
@@ -310,7 +299,11 @@ $(document).on('click', '.addDiscountBtn', (e) => {
 });
 
 // Set Each Row Item Calculation
-function setTableCalculation(edit = false) {
+function setTableCalculation(edit = null) {
+    if (edit === null) {
+        edit = window.location.pathname.includes('/edit');
+    }
+    
     const reference_type = $('.reference_type').val();
     let totalItemValue = 0;
     let totalItemDiscount = 0;

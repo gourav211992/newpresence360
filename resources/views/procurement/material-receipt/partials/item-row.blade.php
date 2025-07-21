@@ -31,10 +31,10 @@
         <input type="number" step="any"  class="form-control mw-100 order_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][order_qty]" />
     </td>
     <td>
-        <input type="number" step="any" class="form-control mw-100 accepted_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" />
+        <input type="number" step="any" class="form-control mw-100 accepted_qty text-end checkNegativeVal"  name="components[{{$rowCount}}][accepted_qty]" readonly />
     </td>
     <td>
-        <input type="number" step="any" class="form-control mw-100 rejected_qty text-end checkNegativeVal" readonly name="components[{{$rowCount}}][rejected_qty]" />
+        <input type="number" step="any" class="form-control mw-100 rejected_qty text-end checkNegativeVal" name="components[{{$rowCount}}][rejected_qty]" readonly />
     </td>
     <td>
         <input type="number" step="any" name="components[{{$rowCount}}][rate]" class="form-control mw-100 text-end checkNegativeVal" />
