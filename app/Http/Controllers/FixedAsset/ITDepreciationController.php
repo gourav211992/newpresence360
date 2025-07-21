@@ -45,14 +45,13 @@ class ITDepreciationController extends Controller
                 $endDate = Carbon::parse($dateRange[1])->format('Y-m-d');
             }
         }
-        //$rdv = self::getIncomeTaxRDV('01-12-2025', $$request->date_range);
-       // dd($rdv);
+
         $asset_details = [];
         $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
-                $query->where('current_value_after_dep', '>', 0);
-                $query->whereNotNull('expiry_date');
-                $query->whereColumn('expiry_date', '!=', 'last_dep_date');
+                $query->where('current_value_after_dep', '>', 0)
+                    ->whereNotNull('expiry_date')
+                    ->whereColumn('expiry_date', '!=', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->withWhereHas('ledger')
@@ -65,9 +64,22 @@ class ITDepreciationController extends Controller
             ->withWhereHas('it_category.setup')
             ->orderBy('last_dep_date', 'asc')
             ->whereNotNull('it_category_id')
-            ->get()->values();
+            ->with('subAsset') // ensure subAsset is eager loaded
+            ->get()
+            ->map(function ($asset) {
+                // Compute and assign the value here
+                foreach ($asset->subAsset as $sub) {
+                    $sub->rdv = self::getIncomeTaxRDV(
+                        $sub->capitalize_date,
+                        $asset->it_category->setup->dep_percentage ?? 0,
+                        $sub->current_value
+                    );
+                }
+                return $asset;
+            })->values();
 
         return response()->json($asset_details);
+
     }
     function getPeriods($startDate, $endDate, $period)
     {
@@ -136,33 +148,50 @@ class ITDepreciationController extends Controller
 
         return $periods;
     }
-    public static function getIncomeTaxRDV(string $date, $range)
+    public static function getIncomeTaxRDV(string $date, $depPercentage, $value)
     {
-        $start = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-                $end = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-                $startFormatted = date('d-m-Y', strtotime($start));
-                $endFormatted = date('d-m-Y', strtotime($end));
-                $frange = $startFormatted . ' to ' . $endFormatted;
-        $rdv = null;
-        while (true) {
+        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+        $capDate = new DateTime($date);
+        $type = null;
+        $month = (int) $capDate->format('m');
+        $day = (int) $capDate->format('d');
+        $mmdd = ($month * 100) + $day;
+        if (($mmdd >= 1004 && $mmdd <= 1231) || ($mmdd >= 101 && $mmdd <= 331)) {
+            $type = "half";
+        }
 
-            $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
+
+        $startFormatted = date('d-m-Y', strtotime($financialYear['start_date']));
+        $endFormatted = date('d-m-Y', strtotime($financialYear['end_date']));
+        $range = $startFormatted . ' to ' . $endFormatted;
+        $rdv_value = $value;
+
+        while (true) {
+            $financialYearDate = ErpFinancialYear::where('start_date', '<=', $date)
                 ->where('end_date', '>=', $date)
                 ->first();
-            
-
-            if (isset($financialYear)) {
-                $rdv[$range] = 1;
-            } else {
-                $rdv[$range] = null;
-            }
-            if($range == $frange)
+            if (!$financialYearDate) {
                 break;
-            else
-            $date = (new DateTime($date))->modify('+1 year')->format('Y-m-d');
+            }
 
+            $start = date('d-m-Y', strtotime($financialYearDate->start_date));
+            $end = date('d-m-Y', strtotime($financialYearDate->end_date));
+            $frange = $start . ' to ' . $end;
+
+            if ($range === $frange) {
+                break;
+            }
+
+            $totalDepreciation = ($depPercentage / 100) * $rdv_value;
+            if ($type == "half")
+                $totalDepreciation = $totalDepreciation / 2;
+
+            $rdv_value = $rdv_value - $totalDepreciation;
+            $date = (new DateTime($date))->modify('+1 year')->format('Y-m-d');
         }
-        return $rdv;
+
+        return $rdv_value;
     }
+
 
 }
