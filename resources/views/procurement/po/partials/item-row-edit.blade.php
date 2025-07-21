@@ -22,7 +22,7 @@
      </div>
  </td>
  <td class="poprod-decpt"> 
-    <input type="text" {{$po_item->po_item_id ? 'readonly' : ''}} {{$po_item?->pi_item_mappings?->count() ? 'readonly' : ''}} name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$po_item->item_code}}" />
+    <input type="text" {{$po_item?->pi_item_mappings?->count() ? 'readonly' : ''}} name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct comp_item_code " value="{{$po_item->item_code}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$po_item->item_id}}" />
     <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$po_item->item_code}}" /> 
     <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->name}}" />
@@ -50,11 +50,11 @@
 <td>
     <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$po_item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
 </td>
-<td class="poprod-decpt attributeBtn" {{$po_item->po_item_id ? 'data-disabled="true"' : ''}} {{$po_item->pi_item_mappings?->count() ? 'data-disabled="true"' : ''}} id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}"> 
+<td class="poprod-decpt attributeBtn" {{$po_item->pi_item_mappings?->count() ? 'data-disabled="true"' : ''}} id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$po_item->item_attributes_array()}}"> 
 </td>
 <td>
     <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$po_item->inventoty_uom_id}}">
-    <select {{$po_item->po_item_id ? 'disabled' : ''}} {{$po_item?->pi_item_mappings?->count() ? 'disabled' : ''}} class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
+    <select {{$po_item?->pi_item_mappings?->count() ? 'disabled' : ''}} class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
          <option value="{{$po_item?->uom?->id}}">{{ucfirst($po_item?->uom?->name)}}</option>
          @foreach($po_item?->item?->alternateUOMs as $alternateUOM)
          <option value="{{$alternateUOM?->uom?->id}}" {{$alternateUOM?->uom?->id == $po_item->inventory_uom_id ? 'selected' : '' }}>{{$alternateUOM?->uom?->name}}</option>
@@ -86,17 +86,11 @@
     <input type="hidden" value="{{$po_item_tax->id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][id]">
     <input type="hidden" value="{{$po_item_tax->ted_id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_d_id]">
     <input type="hidden" value="{{$po_item_tax->applicable_type}}" name="components[1][taxes][{{$tax_key + 1}}][applicability_type]">
-    {{-- <input type="hidden" value="" name="components[1][taxes][1][t_code]"> --}}
     <input type="hidden" value="{{$po_item_tax->ted_name}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_type]">
     <input type="hidden" value="{{$po_item_tax->ted_perc}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_perc]">
     <input type="hidden" value="{{$po_item_tax->ted_amount}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_value]">
     @endforeach
 </td>
-{{-- @if(isset($shortClose) && $shortClose)
-<td>
-    <input value="{{$po_item->short_close_qty}}" type="number" step="any" name="components[{{$rowCount}}][short_close_qty]" class="form-control mw-100 text-end short-close-qty">
-</td>
-@endif --}}
 <td>
     <input type="date" value="{{ $po_item?->delivery_date }}" name="components[{{ $rowCount }}][delivery_date]" class="form-control mw-100" />
 </td>
@@ -118,6 +112,8 @@
 <input type="hidden" name="components[{{$rowCount}}][po_item_id]" value="{{$po_item->id}}">
 <input type="hidden" name="components[{{$rowCount}}][pi_item_id]" value="{{$po_item->pi_item_id}}">
 <input type="hidden" name="components[{{$rowCount}}][grn_qty]" value="{{$po_item->grn_qty}}">
+<input type="hidden" name="components[{{$rowCount}}][ge_qty]" value="{{$po_item->ge_qty}}">
+<input type="hidden" name="components[{{$rowCount}}][asn_qty]" value="{{$po_item->asn_qty}}">
 <input type="hidden" name="components[{{$rowCount}}][pi_item_hidden_ids]" @if(isset($piMappingData['pi_item_ids'])) value="{{ $piMappingData['pi_item_ids'] }}" @endif>
 </tr>
 @endforeach

@@ -76,6 +76,9 @@ use App\Jobs\SendEmailJob;
 use App\Services\InspectionService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PurchaseReturnExport;
+use App\Helpers\CommonHelper;
+use App\Lib\Services\WHM\WhmJob;
+use App\Models\Configuration;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -94,7 +97,6 @@ class InspectionController extends Controller
     public function index()
     {
         $parentUrl = request() -> segments()[0];
-        // dd($parentUrl);
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $orderType = ConstantHelper::INSPECTION_SERVICE_ALIAS;
         request() -> merge(['type' => $orderType]);
@@ -107,7 +109,7 @@ class InspectionController extends Controller
                     'vendor',
                 ]
             )
-            ->withDefaultGroupCompanyOrg()
+            // ->withDefaultGroupCompanyOrg()
             ->withDraftListingLogic()
             ->bookViewAccess($parentUrl)
             ->latest();
@@ -758,6 +760,15 @@ class InspectionController extends Controller
             if(($inspection->document_status == ConstantHelper::POSTED)) {
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $inspection->id . '/pdf');
+            }
+
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+
+            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+                (new WhmJob)->createJob($inspection->id,'App\Models\InspectionHeader');
             }
 
             DB::commit();

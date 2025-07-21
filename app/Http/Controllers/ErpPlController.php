@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ApiGenericException;
+use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\FinancialPostingHelper;
@@ -12,6 +13,7 @@ use App\Helpers\ItemHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
+use App\Helpers\Inventory\StockReservation;
 use App\Helpers\TransactionReportHelper;
 use App\Helpers\UserHelper;
 use App\Http\Requests\ErpPlRequest;
@@ -29,6 +31,7 @@ use App\Models\ErpPlHeader;
 use App\Models\ErpPlHeaderHistory;
 use App\Models\ErpMaterialReturnHeader;
 use App\Models\ErpPlItem;
+use App\Models\ErpPlItemDetail;
 use App\Models\ErpPlItemAttribute;
 use App\Models\ErpPlItemLocation;
 use App\Models\ErpPlItemLotDetail;
@@ -62,6 +65,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use stdClass;
+use App\Helpers\Configuration\Helper as ConfigurationHelper;
+use App\Helpers\Configuration\Constants as ConfigurationConstant;
+use App\Models\Configuration;
 use Yajra\DataTables\DataTables;
 
 class ErpPlController extends Controller
@@ -164,8 +170,11 @@ class ErpPlController extends Controller
                 ->addColumn('store',function($row){
                     return $row?->store?->store_name??" ";
                 })
-                ->addColumn('sub_store',function($row){
-                    return $row?->sub_store?->name??" ";
+                ->addColumn('main_sub_store',function($row){
+                    return $row?->main_sub_store?->name??" ";
+                })
+                ->addColumn('staging_sub_store',function($row){
+                    return $row?->staging_sub_store?->name??" ";
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -184,6 +193,7 @@ class ErpPlController extends Controller
         }
         $parentURL = request() -> segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+
         $create_button = (isset($servicesBooks['services'])  && count($servicesBooks['services']) > 0 && isset($selectedfyYear['authorized']) && $selectedfyYear['authorized'] && !$selectedfyYear['lock_fy']) ? true : false;
         return view('PL.index', ['typeName' => $typeName, 'redirect_url' => $redirectUrl, 'create_route' => $createRoute, 'create_button' => $create_button,'filterArray' => TransactionReportHelper::FILTERS_MAPPING[ConstantHelper::PL_SERVICE_ALIAS],
             'autoCompleteFilters' => $autoCompleteFilters,]);
@@ -224,7 +234,7 @@ class ErpPlController extends Controller
         $user = Helper::getAuthenticatedUser();
         $typeName = ConstantHelper::PL_SERVICE_NAME;
         $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
-        $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR]);
+        $stores = InventoryHelper::getAccessibleLocations([ConstantHelper::STOCKK]);
         $vendors = Vendor::select('id', 'company_name') -> withDefaultGroupCompanyOrg() 
         -> where('status', ConstantHelper::ACTIVE) -> get();
         $departments = UserHelper::getDepartments($user -> auth_user_id);
@@ -400,7 +410,10 @@ class ErpPlController extends Controller
             }
             $PL = null;
             $store = ErpStore::find($request -> store_id);
-            $subStore = ErpSubStore::find($request -> sub_store_id??null);
+            $mainSubStore = ErpSubStore::find($request -> main_sub_store_id);
+            $stagingSubStore = ErpSubStore::find($request -> staging_sub_store_id);
+            $enforceUicScanning = ConfigurationHelper::getConfigurationValueOfOrg(ConfigurationConstant::ORG_CONFIG_ENFORCE_UIC_SCANNING, $organizationId);
+
             if ($request -> pl_header_id) { //Update
                 $PL = ErpPlHeader::find($request -> pl_header_id);
                 $PL -> document_date = $request -> document_date;
@@ -413,7 +426,7 @@ class ErpPlController extends Controller
                 {
                     $revisionData = [
                         ['model_type' => 'header', 'model_name' => 'ErpPlHeader', 'relation_column' => ''],
-                        ['model_type' => 'detail', 'model_name' => 'ErpPlItem', 'relation_column' => 'pl_header_id'],
+                        ['model_type' => 'detail', 'model_name' => 'ErpPlItemDetail', 'relation_column' => 'pl_header_id'],
                         ['model_type' => 'sub_detail', 'model_name' => 'ErpPlItemAttribute', 'relation_column' => 'pl_item_id'],
                     ];
                     $a = Helper::documentAmendment($revisionData, $PL->id);
@@ -427,7 +440,7 @@ class ErpPlController extends Controller
                 }
 
                 if (count($deletedData['deletedSiItemIds'])) {
-                    $PLItems = ErpPlItem::whereIn('id',$deletedData['deletedSiItemIds'])->get();
+                    $PLItems = ErpPlItemDetail::whereIn('id',$deletedData['deletedSiItemIds'])->get();
                     # all ted remove item level
                     foreach($PLItems as $PLItem) {
                         $PLItem->attributes()->delete();
@@ -443,8 +456,11 @@ class ErpPlController extends Controller
                     'book_code' => $request->book_code,
                     'store_id' => $request->store_id ?? null,
                     'store_code' => $store?->store_name ?? null,
-                    'sub_store_id' => $request->sub_store_id ?? null,
-                    'sub_store_code' => $substore?->name ?? null,
+                    'main_sub_store_id' => $mainSubStore -> id,
+                    'main_sub_store_code' => $mainSubStore -> name,
+                    'staging_sub_store_id' => $stagingSubStore -> id,
+                    'staging_sub_store_code' => $stagingSubStore -> name,
+                    'enforce_uic_scanning' => $enforceUicScanning,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
                     'doc_prefix' => $numberPatternData['prefix'],
@@ -490,7 +506,7 @@ class ErpPlController extends Controller
                 //Seperate array to store each item calculation
                 $itemsData = array();
                 if ($request->selected_deliveries && count($request->selected_deliveries) > 0) {
-                    $itemsToDelete = ErpPlItem::where('pl_header_id', $PL->id)->get();
+                    $itemsToDelete = ErpPlItemDetail::where('pl_header_id', $PL->id)->get();
                     foreach ($itemsToDelete as $item) {
                         $soItem = $item->soItem; // Access the related ErpSoItem
                         if ($soItem) {
@@ -536,10 +552,16 @@ class ErpPlController extends Controller
                                 'remarks' => isset($request->item_remarks[$Dkey]) ? $request->item_remarks[$Dkey] : null,
                             ];
 
-                            $PLItem = ErpPlItem::updateOrCreate(
-                                ['order_item_delivery_id' => $request->selected_deliveries[$Dkey]],
-                                $PLItemData
-                            );
+                            if (isset($request -> pl_item_id[$Dkey])) {
+                                $oldPlItem = ErpPlItemDetail::find($request -> pl_item_id[$Dkey]);
+                                $PLItem = ErpPlItemDetail::updateOrCreate(['id' => $request -> pl_item_id[$Dkey]], $PLItemData);
+                            } else {
+                                $PLItem = ErpPlItemDetail::create($PLItemData);
+                            }
+                            // $PLItem = ErpPlItemDetail::updateOrCreate(
+                            //     ['order_item_delivery_id' => $request->selected_deliveries[$Dkey], 'pl_header_id' => $PL -> id],
+                            //     $PLItemData
+                            // );
                             if($item)
                             {
                                 $item->picked_qty +=$request->picked_qty[$Dkey];
@@ -598,9 +620,12 @@ class ErpPlController extends Controller
                     'pl_item_id' => $PLItem -> id,
                 ]) -> whereNotIn('id', $itemAttributeIds) -> delete();
 
-                ErpPlItem::whereNotIn('order_item_delivery_id', $request->selected_deliveries)
+                ErpPlItemDetail::whereNotIn('order_item_delivery_id', $request->selected_deliveries)
                     ->where('pl_header_id', $PL->id)
                     ->delete();
+
+                self::buildItemSummary($PL -> id);
+
                 if ($request->pl_header_id) { // Update condition
                     $bookId = $PL->book_id;
                     $docId = $PL->id;
@@ -681,17 +706,6 @@ class ErpPlController extends Controller
                         $mediaFiles = $PL->uploadDocuments($singleFile, 'PL_header', false);
                     }
                 }
-                // Maintain Stock Ledger
-                // if($PL->document_status == ConstantHelper::APPROVED || $PL->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
-                // {
-                //     $status = self::maintainStockLedger($PL);
-                //     if (!$status) {     
-                //         DB::rollBack();
-                //         return response() -> json([
-                //                 'message' => 'Stock not available'
-                //             ], 422);
-                //     }
-                // }
                 //Dynamic Fields
                 $status = DynamicFieldHelper::saveDynamicFields(ErpPlDynamicField::class, $PL -> id, $request -> dynamic_field ?? []);
                 if ($status && !$status['status'] ) {
@@ -701,6 +715,24 @@ class ErpPlController extends Controller
                         'error' => ''
                     ], 422);
                 }
+                // Maintain Stock Ledger
+                    $errorMessage = self::maintainStockLedger($PL);
+                    if ($errorMessage) {     
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => $errorMessage
+                        ], 422);
+                    }
+                
+                $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+
+                if(in_array($PL->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+                    (new WhmJob)->createJob($PL->id,'App\Models\ErpPlHeader');
+                }
+                
                 DB::commit();
                 $module = "Pick List";
                 return response() -> json([
@@ -716,33 +748,26 @@ class ErpPlController extends Controller
         }
     }
 
-    private static function maintainStockLedger(ErpPlHeader $PL)
+    private static function maintainStockLedger(ErpPlHeader $header)
     {
-        $items = $PL->items;
-        $issueDetailIds = $items -> where('adjusted_qty',"<",0) -> pluck('id') -> toArray();
-        $receiptDetailIds = $items -> where('adjusted_qty',">",0) -> pluck('id') -> toArray();
-        $issueRecords = InventoryHelper::settlementOfInventoryAndStock($PL->id, $issueDetailIds, ConstantHelper::PL_SERVICE_ALIAS, $PL->document_status, 'issue');
-        $receiptRecords = InventoryHelper::settlementOfInventoryAndStock($PL->id, $receiptDetailIds, ConstantHelper::PL_SERVICE_ALIAS, $PL->document_status, 'receipt');
-        
-        if((!empty($issueRecords['data']) && (count($issueRecords['data']) > 0 && count($issueDetailIds)>0))||(($receiptRecords['message'] == 'success' || $receiptRecords['message']['status'] == 'success') && count($receiptDetailIds)>0) ){
-            // $stockLedgers = StockLedger::where('book_type',ConstantHelper::PL_SERVICE_ALIAS)
-            //                     ->where('document_header_id',$PL->id)
-            //                     ->where('organization_id',$PL->organization_id)
-            //                     ->where('transaction_type','issue')
-            //                     ->selectRaw('document_detail_id,sum(org_currency_cost) as cost')
-            //                     ->groupBy('document_detail_id')
-            //                     ->get();
-
-            // foreach($stockLedgers as $stockLedger) {
-            //     $PLItem = ErpPlItem::find($stockLedger->document_detail_id);
-            //     // dd(floatval($stockLedger->cost) , floatval($PLItem->issue_qty));
-            //     $PLItem->confirmed_qty = $PLItem->verified_qty;
-            //     $PLItem->save();
-            // }
-            return true;
+        $items = $header->inv_items;
+        $issueDetailIds = $items -> pluck('id') -> toArray();
+        if ($header -> enforce_uic_scanning == 'yes') {
+            $stockReservation = StockReservation::stockReservation(ConstantHelper::PL_SERVICE_ALIAS, $header -> id, $items);
+            if ($stockReservation['status'] == 'error') {
+                return $stockReservation['message'];
+            }
         } else {
-            return false;
+            $issueRecords = InventoryHelper::settlementOfInventoryAndStock($header->id, $issueDetailIds, ConstantHelper::PL_SERVICE_ALIAS, $header->document_status, 'issue');
+            if ($issueRecords['status'] === 'error') {
+                return $issueRecords['message'];
+            }
+            $receiptRecords = InventoryHelper::settlementOfInventoryAndStock($header->id, $issueDetailIds, ConstantHelper::PL_SERVICE_ALIAS, $header->document_status, 'receipt');
+            if ($receiptRecords['status'] === 'error') {
+                return $receiptRecords['message'];
+            }
         }
+        return "";
     }
 
     public function revokePL(Request $request)
@@ -796,6 +821,8 @@ class ErpPlController extends Controller
     {
         try {
             $storeids = $request->store_id ?? null;
+            $subStoreId = $request->sub_store_id ?? null;
+            $showAll = $request->show_all ?? true;
             $orderItems = ErpSoItemDelivery::with(['item' => function ($query) {
                 $query->with(['header' => function ($subQuery) {
                     $subQuery->with(['store', 'customer']);
@@ -858,7 +885,7 @@ class ErpPlController extends Controller
                     $displayName = $short ?? $groupName;
                     return "<span class='badge rounded-pill badge-light-primary'><strong>{$displayName}: {$selectedValue}</strong></span>";
                 })->implode(' ');
-                $orderItem->avl_stock = $orderItem->item->getStockBalanceQty();
+                $orderItem->avl_stock = $orderItem->item->getStockBalanceQty($storeids, $subStoreId);
                 $orderItem->store_location_code = $orderItem->item->header?->store_location?->store_name;
                 $orderItem->department_code = $orderItem->item->header?->department?->name;
                 $orderItem->station_name = $orderItem->item->header?->station?->name;
@@ -987,7 +1014,7 @@ class ErpPlController extends Controller
         //             }, '=', 1); // Ensure only one attribute exists
         //         })
         //         ->get();
-        //     $issue_items_ids = ErpPlItem::whereIn('pl_header_id',[$issue_data->pluck('id')])->pluck('id');
+        //     $issue_items_ids = ErpPlItemDetail::whereIn('pl_header_id',[$issue_data->pluck('id')])->pluck('id');
         //     $return_data = ErpMrItem::whereIn('pl_item_id',[$issue_items_ids])->get();
         //     return view('PL.report',[
         //         'issues' =>$issue_data,
@@ -1037,7 +1064,7 @@ class ErpPlController extends Controller
                     ->get();
 
                 // Get all issue item IDs
-                $issue_data = ErpPlItem::with(['header'])->whereIn('pl_header_id', $docs->pluck('id'))->orderByDesc('id')->get();
+                $issue_data = ErpPlItemDetail::with(['header'])->whereIn('pl_header_id', $docs->pluck('id'))->orderByDesc('id')->get();
                 $issue_item_ids = $issue_data -> pluck('id');
                 // Fetch corresponding return data
                 $return_data = ErpMrItem::whereIn('pl_item_id', $issue_item_ids)
@@ -1147,7 +1174,7 @@ class ErpPlController extends Controller
     {
         $pathUrl = route('PL.index');
         $orderType = [ConstantHelper::PL_SERVICE_ALIAS];
-        $PL = ErpPlItem::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
+        $PL = ErpPlItemDetail::whereHas('header', function ($headerQuery) use($orderType, $pathUrl, $request) {
             $headerQuery -> withDefaultGroupCompanyOrg() -> withDraftListingLogic();
             //Book Filter
             $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
@@ -1389,6 +1416,87 @@ class ErpPlController extends Controller
                 'message' => 'An error occurred while processing the file.',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    private static function buildItemSummary(int $headerId)
+    {
+        $plItems = ErpPlItemDetail::with('item_attributes') -> where('pl_header_id', $headerId) -> get();
+        $grouped = $plItems->groupBy(function ($item) {
+            // Convert related attributes to a sorted associative array
+            $attributeArray = $item->item_attributes
+                ->sortBy('attr_name')
+                ->pluck('attr_value', 'attr_name')
+                ->toArray();
+
+            // Build a unique grouping key from item_id, uom_id, and attribute JSON
+            return json_encode([
+                'item_id' => $item->item_id,
+                'uom_id' => $item->uom_id,
+                'attributes' => $attributeArray
+            ]);
+        });
+        // $grouped = DB::table(function ($query) use($headerId) {
+        //         $query->from('erp_pl_item_details')
+        //             ->leftJoin('erp_pl_item_attributes', 'erp_pl_item_details.id', '=', 'erp_pl_item_attributes.pl_item_id') // Use LEFT JOIN
+        //             ->select(
+        //                 'erp_pl_item_details.item_id',
+        //                 'erp_pl_item_details.uom_id',
+        //                 'erp_pl_item_details.inventory_uom_qty',
+        //                 DB::raw("GROUP_CONCAT(
+        //                     CONCAT(erp_pl_item_attributes.item_attribute_id, ':', erp_pl_item_attributes.attribute_value)
+        //                     ORDER BY erp_pl_item_attributes.item_attribute_id SEPARATOR ', '
+        //                 ) as attributes"),
+        //             )
+        //             ->where('erp_pl_item_details.pl_header_id', $headerId)
+        //             ->groupBy('erp_pl_item_details.item_id', 'erp_pl_item_details.uom_id');
+        //     })
+        //     ->select(
+        //         'item_id',
+        //         'uom_id',
+        //         DB::raw("IFNULL(attributes, '') as attributes"),
+        //         DB::raw("SUM(inventory_uom_qty) as total_qty")
+        //     )
+        //     ->groupBy('item_id', 'uom_id', 'attributes')
+        //     ->get();
+
+        foreach ($grouped as $groupedItemKey => $groupedItems) {
+            $groupedItem = $groupedItems[0];
+            $totalInvQty = 0;
+            foreach ($groupedItems as $item) {
+                $totalInvQty += $item -> inventory_uom_qty;
+            }
+            // $existingPlItem = ErpPlItem::where('item_id', $groupedItem -> item_id) 
+            // -> where('pl_header_id', $headerId) -> where('inventory_uom_id', $groupedItem -> inventory_uom_id) -> first();
+            // if ($existingPlItem) {
+            //     //NEED TO ADD LOGIC
+            // } else {
+                $attributesArray = [];
+                foreach ($groupedItem -> item_attributes as $attribute) {
+                    array_push($attributesArray, [
+                        'item_attribute_id' => $attribute -> item_attribute_id,
+                        'attribute_group_id' => $attribute -> attr_name,
+                        'attribute_group' => $attribute -> attribute_name,
+                        'attribute_value_id' => $attribute -> attr_value,
+                        'attribute_value' => $attribute -> attribute_value,
+                    ]);
+                }
+                $inventoryUom = Unit::find($groupedItem -> inventory_uom_id);
+                $data = ErpPlItem::create([
+                    'pl_header_id' => $headerId,
+                    'item_id' => $groupedItem -> item_id,
+                    'item_code' => $groupedItem -> item_code,
+                    'item_name' => $groupedItem -> item_name,
+                    'attributes' => $attributesArray,
+                    'inventory_uom_id' => $inventoryUom ?-> id,
+                    'inventory_uom_code' => $inventoryUom ?-> name,
+                    'inventory_uom_qty' => $totalInvQty,
+                ]);
+                foreach ($groupedItems as $item) {
+                    ErpPlItemDetail::where('id', $item -> id) -> update(['pl_item_id' => $data -> id]);
+                }
+                // ErpPlItemDetail::where('item_id', $groupedKeys['item_id']) -> where('uom_id', $groupedKeys['uom_id']) -> where('')
+            // }
         }
     }
 }

@@ -23,6 +23,7 @@
     <form class="ajax-input-form" method="POST" action="{{ route('item.update', $item->id) }}" id="item_form" data-redirect="{{ route('item.index') }}">
     <input type="hidden" name="item_id" value="{{ $item->id ?? '' }}">
     <input type="hidden" name="item_code_type" value="{{ $itemCodeType }}">
+    <input type="hidden" id="documentStatus" name="document_status" value="{{ $item->documentStatus ?? '' }}">
     @csrf
     @method('PUT')
     @php
@@ -30,7 +31,6 @@
         $statusValue = isset($item) && ($item->status == 'Active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
         $tables=$tablesToCheck;
-        $matchedAttributeIds = []; 
     @endphp
 
     <div class="app-content content">
@@ -129,7 +129,7 @@
                                                     <div class="d-flex align-items-center"> 
                                                         <a href="{{route('bill.of.material.index')}}"  target="_blank" class="text-primary add-contactpeontxt mt-25 me-1"><i data-feather='file-text'></i> Bill of Material</a>
                                                         <div class="form-check form-check-primary form-switch statusactiinactive me-1">
-                                                            <input type="hidden" name="status" id="status_hidden_input" value="{{ $statusValue ??''}}">
+                                                            <input type="hidden" name="status" id="status_hidden_input" value="">
                                                             <input type="checkbox" class="form-check-input" id="customSwitch3" {{ $isChecked }} {{ $isItemReferenced ? 'disabled' : '' }} >
                                                             <span class="itemactive">Active</span>
                                                             <span class="itemactive iteminactive">Inactive</span>
@@ -328,7 +328,7 @@
                                                                 <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
                                                                 @if(!isset(request()->revisionNumber) && $item->document_status !== 'draft')
                                                                     <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                        <select class="form-select" id="revisionNumber">
+                                                                        <select class="form-select cannot_disable" id="revisionNumber">
                                                                             @for($i=$item->revision_number; $i >= 0; $i--)
                                                                                 <option value="{{$i}}" {{request('revisionNumber', $item->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
                                                                             @endfor
@@ -336,7 +336,7 @@
                                                                     </strong>
                                                                 @else
                                                                     @if ($item->document_status !== 'draft')
-                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect cannot_disable">
                                                                             Rev. No. {{ request()->revisionNumber }}
                                                                         </strong>
                                                                     @endif
@@ -479,16 +479,10 @@
                                                                     </thead>
                                                                     <tbody>
                                                                         @if (!$item->itemAttributes->isEmpty())
-                                                                            @php
-                                                                              $matchedAttributeIds = []; 
-                                                                            @endphp
                                                                             @foreach ($item->itemAttributes as $index => $attribute)
                                                                             @php
                                                                                 $usageResults = $attribute->checkAttributeUsage($attribute->id, $attribute->attribute_group_id, $attribute->attribute_id, $tables);
                                                                                 $isGroupUsed = $usageResults['group_match']; 
-                                                                                $isAttributeUsed = $usageResults['attribute_match'];
-                                                                                $matchedAttributeId = $usageResults['matched_attribute_ids']; 
-                                                                                $matchedAttributeIds = array_merge($matchedAttributeId, $matchedAttributeIds); 
                                                                             @endphp
                                                                             <tr data-index="{{ $index }}">
                                                                             <input type="hidden" name="attributes[{{ $index }}][id]" value="{{ $attribute->id }}">
@@ -1237,7 +1231,7 @@
                     <div class = "col-md-8">
                         <div class="mb-1">
                             <label class="form-label">Upload Document</label>
-                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                            <input type="file" name = "attachment[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
                         </div>
                     </div>
                     <div class = "col-md-4" style = "margin-top:19px;">
@@ -1936,46 +1930,48 @@
         feather.replace();
         let isBomExists = @json($isBomExists);
         if (isBomExists) {
-            $('#attributesTable').css({
+            $('#attributesTable .add-row, #attributesTable .remove-row').css({
                 'pointer-events': 'none',
-                'opacity': '0.9',
+                'opacity': '0.5',
                 'cursor': 'not-allowed'
             });
         }
         let rowIndex = $('#attributesTable tbody tr').length + 1;
         const attributeGroups = @json($attributeGroups);
-        const matchedAttributeIds = @json($matchedAttributeIds) || [];
         const attributesMap = {};
         attributeGroups.forEach(group => attributesMap[group.id] = []);
         let selectedGroupIds = [];
-        function bindCheckboxEvents($row) {
+       function bindCheckboxEvents($row) {
             const $checkbox = $row.find('.all-checked');
-            const $visibleSelect = $row.find('.attribute-value');
-            const $hiddenSelect = $row.find('.attribute-values-hidden');
+            const $select = $row.find('.attribute-values');
+            const $visibleSelect = $row.find('.attribute-value'); 
+            const $hiddenSelect = $row.find('.attribute-values-hidden'); 
+            const isChecked = $checkbox.prop('checked');
+            $checkbox.val(isChecked ? '1' : '0');
+            $select.prop('disabled', isChecked);
 
-            $checkbox.on('change', function () {
+            if (isChecked) {
+                $visibleSelect.hide();
+                $hiddenSelect.show();
+            } else {
+                $visibleSelect.show();
+                $hiddenSelect.hide();
+            }
+            $checkbox.off('change').on('change', function () {
                 const isChecked = $(this).prop('checked');
-                $(this).val(isChecked ? '1' : '0');
-
+                $(this).val(isChecked ? '1' : '0'); 
+                $select.prop('disabled', isChecked); 
                 if (isChecked) {
-                    $visibleSelect.prop('disabled', true).hide();
-                    $hiddenSelect.prop('disabled', false).show();
+                    $visibleSelect.hide();
+                    $hiddenSelect.show();
+                    $select.val(['1']).trigger('change'); 
                 } else {
-                    $visibleSelect.prop('disabled', false).show();
-                    $hiddenSelect.prop('disabled', true).hide();
+                    $visibleSelect.show();
+                    $hiddenSelect.hide();
+                    $select.val([]).trigger('change'); 
                 }
             });
-
-            // Initialize the state
-            if ($checkbox.prop('checked')) {
-                $visibleSelect.prop('disabled', true).hide();
-                $hiddenSelect.prop('disabled', false).show();
-            } else {
-                $visibleSelect.prop('disabled', false).show();
-                $hiddenSelect.prop('disabled', true).hide();
-            }
         }
-
         function populateOptions(selectElement, options, defaultOption, textField, valueField) {
             selectElement.empty().append(new Option(defaultOption.text, defaultOption.value));
             options.forEach(option => {
@@ -2016,15 +2012,15 @@
                 </tr>`;
 
             const $newRow = $(newRow);
+            bindCheckboxEvents($newRow);
             const $attributeGroupSelect = $newRow.find('.attribute-group');
             const $attributeValuesSelect = $newRow.find('.attribute-values');
 
             $attributeGroupSelect.select2();
             $attributeValuesSelect.select2();
-
             populateOptions($attributeGroupSelect, attributeGroups, { text: 'Select', value: '' }, 'name', 'id');
             $('#attributesTable tbody').append($newRow);
-            bindCheckboxEvents($newRow);
+       
             rowIndex++;
             disableSelectedOptions();
 
@@ -2185,12 +2181,9 @@
             }
             const $select = $row.find('.attribute-values');
             const selectedAttributeIds = $select.val() || [];
-            const matchedIds = matchedAttributeIds.map(String);
             $select.find('option').each(function () {
                 const optionVal = $(this).val();
-                const isMatched = matchedIds.includes(optionVal);
-
-                if (isMatched && selectedAttributeIds.includes(optionVal)) {
+                if (selectedAttributeIds.includes(optionVal)) {
                     $(this).attr('data-readonly', 'true');
                     $(this).css('color', 'gray');
                     $(this).prop('selected', true);
@@ -2199,12 +2192,6 @@
                 }
             });
             $select.select2();
-            $select.on('select2:unselecting', function (e) {
-                const val = e.params.args.data.id;
-                if (matchedIds.includes(val)) {
-                    e.preventDefault();
-                }
-            });
         });
         if ($('#attributesTable tbody tr').length === 0) {
             addRow(true);
@@ -2403,10 +2390,11 @@
             if (rawMaterialChecked || wipChecked || finishedGoodsChecked || assetChecked || expenseChecked || rawTradeChecked) {
                 checkboxes.not(':checked').not($('input[name="is_traded_item"]')).not($('input[name="is_asset"]')).prop('disabled', true);
             }
-            if (isItemReferenced){
-                checkboxes.prop('disabled', isItemReferenced);
-                $('input[name="is_traded_item"]').prop('disabled', isItemReferenced);
-                $('input[name="is_asset"]').prop('disabled', isItemReferenced);
+           const status = document.getElementById('documentStatus')?.value;
+            if (isItemReferenced || status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
+                checkboxes.prop('disabled', true);
+                $('input[name="is_traded_item"]').prop('disabled', true);
+                $('input[name="is_asset"]').prop('disabled', true);
             }
             $('a[href="#UOM"]').removeClass('d-none').css('display', '');
             $('a[href="#Details"]').removeClass('d-none').css('display', '');
@@ -2927,19 +2915,59 @@
     {
         $('#' + id).modal('show');
     }
-    function enableAmendmentFields() {
-        const fieldsToEnable = [        
-            'category_name',    
-            'item_name',       
-            'item_initial',   
-            'hsn_name',
-           
+    function disableAllFieldsAndTabs() {
+        document.querySelectorAll('input, select, textarea').forEach(el => {
+            if (el.classList.contains('cannot_disable')) {
+                return;
+            }
+            el.disabled = true;
+        });
+        $('#attributesTable tbody tr').each(function () {
+            const $row = $(this);
+            const $select = $row.find('.attribute-values');
+            $select.prop('disabled', true);
+        });
+
+        let isBomExists = @json($isBomExists);
+        if (isBomExists) {
+            $('#attributesTable .add-row, #attributesTable .remove-row').css({
+                'pointer-events': 'none',
+                'opacity': '0.5',
+                'cursor': 'not-allowed'
+            });
+        }
+    }
+
+    $(document).ready(function () {
+        const status = document.getElementById('documentStatus').value;
+        if (status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
+            disableAllFieldsAndTabs();
+        }
+    });
+
+   function enableAmendmentFields() {
+        const fieldsToDisable = [
+            'item_code',
+            'uom_id',
+            'sub_types[]',
+            'type',
+            'is_traded_item',
+            'is_asset'
         ];
-        fieldsToEnable.forEach(fieldName => {
+        
+        document.querySelectorAll('input, select, textarea').forEach(field => {
+            field.disabled = false;
+            field.readOnly = false;
+        });
+        document.querySelectorAll('.attribute-values-hidden select').forEach(select => {
+            select.disabled = true;
+        });
+        
+        fieldsToDisable.forEach(fieldName => {
             const fields = document.querySelectorAll(`[name="${fieldName}"]`);
             fields.forEach(field => {
-                field.disabled = false;
-                field.readOnly = false;
+                field.disabled = true;
+                field.readOnly = true;
             });
         });
 
@@ -2947,12 +2975,18 @@
         if (checkbox) {
             checkbox.disabled = false;
         }
+
         let isBomExists = @json($isBomExists);
         if (isBomExists) {
             $('#attributesTable').css({
                 'pointer-events': '',
                 'opacity': '',
                 'cursor': ''
+            });
+            $('#attributesTable .add-row, #attributesTable .remove-row').css({
+                'pointer-events': 'none',
+                'opacity': '0.5',
+                'cursor': 'not-allowed'
             });
         }
     }
@@ -3090,14 +3124,18 @@
             });
         }
     }
-    document.addEventListener('DOMContentLoaded', function () {
+     document.addEventListener('DOMContentLoaded', function () {
         const switchInput = document.getElementById('customSwitch3');
         const hiddenInput = document.getElementById('status_hidden_input');
-        hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
-        switchInput.addEventListener('change', function () {
-            hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
-        });
+
+        if (switchInput && hiddenInput) {
+            // सिर्फ जब user manually switch करेगा, तभी value set होगी
+            switchInput.addEventListener('change', function () {
+                hiddenInput.value = this.checked ? 'active' : 'inactive';
+            });
+        }
     });
+
  //approval-end
 </script>
 @endsection

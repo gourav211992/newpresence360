@@ -95,7 +95,7 @@
                                                     <label class="form-label">Sub Type(s)<span class="text-danger">*</span></label>
                                                 </div>
                                                 <div class="col-md-5">
-                                                    <select name="stock_store_types" class="form-select select2" id = "stock-store-type">
+                                                    <select name="stock_store_types" class="form-select select2" id = "stock-store-type" oninput = "subTypeChange(this);">
                                                         @foreach ($stockStoreTypes as $stockStoreTypeVal => $stockStoreTypeLabel)
                                                             <option value="{{ $stockStoreTypeVal }}" {{$stockStoreTypeVal == $selectedStockStoreType ? 'selected' : ''}}>
                                                                 {{ ($stockStoreTypeLabel) }}
@@ -215,6 +215,20 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         typeChange(document.getElementById('store-location-type'));
+        subTypeChange(document.getElementById('stock-store-type'));
     });
+
+    function subTypeChange(element)
+    {
+        let warehouseFieldElement = document.getElementById('is_warehouse_required_header');
+        let warehouseFieldInput = document.getElementById('is_warehouse_required_input');
+
+        if (element.value === "{{App\Helpers\SubStore\Constants::MAIN_STORE_VALUE}}") {
+            warehouseFieldElement.classList.remove('d-none');
+        } else {
+            warehouseFieldElement.classList.add('d-none');
+            warehouseFieldInput.checked = false;
+        }
+    }
  </script>
 @endsection

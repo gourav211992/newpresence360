@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
 use App\Helpers\Helper;
 
 class LorryReceiptRequest extends FormRequest
@@ -41,16 +42,17 @@ class LorryReceiptRequest extends FormRequest
             'destination_id'   => 'required|numeric|exists:erp_logistics_route_masters,id',
             'customer_id'      => 'required|numeric|exists:erp_customers,id',
             'consignee_id'     => 'required|numeric|exists:erp_customers,id',
+            'vehicle_type_name'=> 'required',
             'vehicle_type_id'  => 'required|numeric|exists:erp_vehicle_types,id',
-            'distance'         => 'required|numeric|min:1',
-            'freight_charges'  => 'required|numeric|min:0',
+            'distances'        => 'required', 'numeric', 'regex:/^\d{1,4}(\.\d{1,2})?$/',
+            'freight_charge'   => 'required|numeric|min:0',
             'driver_id'        => 'required|numeric|exists:erp_drivers,id',
             'driver_cash'      => 'nullable|numeric|min:0',
             'fuel_price'       => 'nullable|numeric|min:0',
             'invoice_no'       => 'nullable|string|max:255',
             'invoice_value'    => 'nullable|numeric|min:0',
             'no_of_bundles'    => 'required|numeric|min:1',
-            'weight'           => 'required|numeric|min:1',
+            'weight'           => 'required', 'numeric', 'regex:/^\d{1,4}(\.\d{1,2})?$/',
             'ewaybill_no'      => 'required|string|max:255',
             'gst_paid_by'      => 'required|in:Consignor,Consignee,Transporter',
             'lr_type'          => 'required',
@@ -99,16 +101,17 @@ class LorryReceiptRequest extends FormRequest
             'consignee_id.required' => 'The consignee is required.',
             'consignee_id.exists' => 'The selected consignee is invalid.',
 
-            'vehicle_type_id.required' => 'The vehicle type is required.',
-            'vehicle_type_id.exists' => 'The selected vehicle type is invalid.',
+            'vehicle_type_name.required' => 'The vehicle type is required.',
+            'vehicle_type_name.exists' => 'The selected vehicle type is invalid.',
 
-            'distance.required' => 'The distance is required.',
-            'distance.numeric' => 'The distance must be a number.',
-            'distance.min' => 'The distance must be at least 1 km.',
+            'distances.required' => 'The distance is required.',
+            'distances.numeric' => 'The distance must be a number.',
+            'distances.min' => 'The distance must be at least 1 km.',
+            'distances.regex' => 'Distance must be a number with up to 4 digits and up to 2 decimal places.',
 
-            'freight_charges.required' => 'The freight charges are required.',
-            'freight_charges.numeric' => 'The freight charges must be a number.',
-            'freight_charges.min' => 'The freight charges must be at least 0.',
+            'freight_charge.required' => 'The freight charges are required.',
+            'freight_charge.numeric' => 'The freight charges must be a number.',
+            'freight_charge.min' => 'The freight charges must be at least 0.',
 
             'driver_id.required' => 'The driver is required.',
             'driver_id.exists' => 'The selected driver is invalid.',
@@ -130,6 +133,8 @@ class LorryReceiptRequest extends FormRequest
             'weight.required' => 'The weight is required.',
             'weight.numeric' => 'The weight must be a number.',
             'weight.min' => 'The weight must be at least 1 kg.',
+            'weight.regex' => 'Weight must be a number with up to 4 digits and up to 2 decimal places.',
+
 
             'ewaybill_no.required' => 'The E-Waybill number is required.',
             'ewaybill_no.max' => 'The E-Waybill number may not be greater than 255 characters.',
@@ -164,4 +169,27 @@ class LorryReceiptRequest extends FormRequest
             'lorry_file.max' => 'File may not be greater than 2 MB.',
         ];
     }
+
+      public function withValidator(Validator $validator)
+{
+    $validator->after(function ($validator) {
+        if (
+            $this->input('source_id') &&
+            $this->input('destination_id') &&
+            $this->input('source_id') == $this->input('destination_id')
+        ) {
+            $validator->errors()->add('destination_id', 'Source and destination location cannot be the same.');
+        }
+
+        $locations = collect($this->input('locations', []))
+            ->pluck('location_id')
+            ->filter();
+
+        $duplicates = $locations->duplicates();
+
+        foreach ($duplicates as $index => $value) {
+            $validator->errors()->add("locations.$index.location_id", 'Duplicate locations are not allowed.');
+        }
+    });
+}
 }

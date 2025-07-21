@@ -197,7 +197,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control income_field" name="dep_percentage" id="dep_percentage" min=1 max=100
+                                                        <input type="number" class="form-control income-field" name="dep_percentage" id="dep_percentage" min=1 max=100
                                                             required />
                                                     </div>
                                                 </div>
@@ -221,7 +221,7 @@
                                                         <label class="form-label">Maintenance Schedule</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select company-field" name="maintenance_schedule">
+                                                        <select class="form-select" name="maintenance_schedule">
                                                             <option value=""
                                                                 {{ old('maintenance_schedule') == '' ? 'selected' : '' }}>
                                                                 Select</option>

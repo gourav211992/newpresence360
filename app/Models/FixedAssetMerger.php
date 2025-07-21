@@ -124,6 +124,7 @@ class FixedAssetMerger extends Model
             'asset_name' => $request->asset_name,
             'quantity' => $request->quantity,
             'category_id' => $request->category_id,
+            'it_category_id'=>$request->it_category_id??null,
             'reference_doc_id' => $request->id,
             'reference_series' => 'fixed-asset-merger',
             'ledger_id' => $request->ledger_id,

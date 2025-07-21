@@ -26,7 +26,7 @@ class ErpDriverController extends Controller
         $companyId = $organization?->company_id ?? null;
 
         if ($request->ajax()) {
-            $drivers = ErpDriver::with('employee')
+            $drivers = ErpDriver::with('employee','auth_user')
                 ->withDefaultGroupCompanyOrg()
                 ->orderByDesc('id');
 
@@ -72,8 +72,9 @@ class ErpDriverController extends Controller
                 })
                 ->editColumn('created_at', fn($row) => optional($row->created_at)->format('d-m-Y') ?? 'N/A')
    
-                ->addColumn('created_by', function ($row) {
-                    return optional($row->createdBy)->name ?? '-';
+                ->editColumn('created_by', function ($row) {
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    return $createdBy;
                 })
 
                 ->editColumn('employee_code', fn($row) => $row->employee->employee_code ?? 'N/A')
@@ -128,7 +129,7 @@ class ErpDriverController extends Controller
             'experience_years'    => $validated['experience_years'] ?? null,
             'license_no'          => $validated['license_no'],
             'license_expiry_date' => $validated['license_expiry_date'],
-            'created_by'          => $user->id,
+            'created_by'          => $user->auth_user_id ,
             'status'              => $request->status,
         ]);
 
@@ -222,7 +223,7 @@ class ErpDriverController extends Controller
                 'experience_years'    => $validated['experience_years'] ?? null,
                 'license_no'          => $validated['license_no'],
                 'license_expiry_date' => $validated['license_expiry_date'],
-                'updated_by'          => $user->id,
+                'updated_by'          => $user->auth_user_id ,
                 'status'              => $request->status,
             ]);
 

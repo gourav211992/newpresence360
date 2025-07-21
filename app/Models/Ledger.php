@@ -26,6 +26,7 @@ class Ledger extends Model
         'status',
         'group_id',
         'company_id',
+        'book_id',
         'organization_id',
         'ledger_code_type',
         'tax_type',
@@ -33,7 +34,13 @@ class Ledger extends Model
         'tds_section',
         'tds_percentage',
         'tcs_section',
-        'tcs_percentage'
+        'tcs_percentage',
+        'approval_level',
+        'document_status',
+        'revision_number',
+        'created_by',
+        'tcs_capping',
+        'tds_capping',
     ];
     public function costCenter()
     {

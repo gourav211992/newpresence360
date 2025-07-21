@@ -107,9 +107,14 @@ class MergerController extends Controller
         $locations = InventoryHelper::getAccessibleLocations();
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->whereHas('assets')->select('id', 'name')->get();
         $new_categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
-        
+        $it_categories = ErpAssetCategory::where('status', 1)
+            ->whereHas('setup', function ($q) {
+                $q->where(function ($subQuery) {
+                    $subQuery->where('act_type', 'income_tax');
+                });
+            })->get();
 
-        return view('fixed-asset.merger.create', compact('locations', 'new_categories','assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.merger.create', compact('locations', 'new_categories','assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
@@ -206,8 +211,14 @@ class MergerController extends Controller
 $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         
         $locations = InventoryHelper::getAccessibleLocations();
+        $it_categories = ErpAssetCategory::where('status', 1)
+            ->whereHas('setup', function ($q) {
+                $q->where(function ($subQuery) {
+                    $subQuery->where('act_type', 'income_tax');
+                });
+            })->get();
 
-        return view('fixed-asset.merger.show', compact('categories','locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
+        return view('fixed-asset.merger.show', compact('categories','it_categories','locations', 'assets', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number'));
     }
 
     /**
@@ -248,8 +259,14 @@ $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('i
         $dep_method = $organization->dep_method;
         $data = FixedAssetMerger::find($id);
         $locations = InventoryHelper::getAccessibleLocations();
+        $it_categories = ErpAssetCategory::where('status', 1)
+            ->whereHas('setup', function ($q) {
+                $q->where(function ($subQuery) {
+                    $subQuery->where('act_type', 'income_tax');
+                });
+            })->get();
         
-        return view('fixed-asset.merger.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.merger.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
 

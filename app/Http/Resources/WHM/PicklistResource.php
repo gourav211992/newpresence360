@@ -24,6 +24,7 @@ class PicklistResource extends JsonResource
             'organization_id' => $this->organization_id,
             'status' => $this->status ? ucwords(str_replace('_',' ',$this->status)) : '',
             'header_id' => $this->morphable_id,
+            'type' => $this->type,
             'store_id' => optional($morphable)->store_id,
             'store_name' => optional(optional($morphable)->store)->store_name,
             'doc_no' => optional($morphable)->document_number,

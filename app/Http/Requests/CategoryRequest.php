@@ -84,6 +84,7 @@ class CategoryRequest extends FormRequest
 
             $categoryId = $this->route('id'); 
             $categoryName = $this->input('name');
+            $parent_id = $this->input('parent_id');
             $category = null; 
             if ($categoryId) {
                 $category = Category::find($categoryId); 
@@ -98,7 +99,6 @@ class CategoryRequest extends FormRequest
 
             $existing = Category::where('name', $categoryName)
                 ->where('group_id', $this->group_id)
-                ->whereNull('parent_id')
                 ->whereNull('deleted_at')
                 ->when($categoryId, function ($query) use ($categoryId) {
                     return $query->where('id', '!=', $categoryId);

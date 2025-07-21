@@ -14,10 +14,12 @@ use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
 use Illuminate\Validation\Rule;
+use App\Traits\ProcessesComponentJson;
 
 
 class MaterialReceiptRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -33,7 +35,7 @@ class MaterialReceiptRequest extends FormRequest
      */
 
     protected $organization_id;
-    protected $group_id; 
+    protected $group_id;
 
      protected function prepareForValidation()
      {
@@ -41,7 +43,8 @@ class MaterialReceiptRequest extends FormRequest
          $organization = $user->organization;
          $this->organization_id = $organization ? $organization->id : null;
          $this->group_id = $organization ? $organization->group_id : null;
-     } 
+         $this->processComponentJson('components_json');
+     }
 
     public function rules(): array
     {
@@ -144,12 +147,12 @@ class MaterialReceiptRequest extends FormRequest
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
-        if ($this->input('components.*.is_inspection') === 0) {
-            $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
-        }
+        // if ($this->input('components.*.is_inspection') === 0) {
+        //     $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
+        // }
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
-        
+
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
@@ -193,9 +196,9 @@ class MaterialReceiptRequest extends FormRequest
             'components.*.order_qty.required' => 'Order Qty is required',
             'components.*.order_qty.numeric' => 'Order Qty must be a number.',
             'components.*.order_qty.gt' => 'Order Qty must be greater than zero.',
-            'components.*.accepted_qty.required' => 'Accepted Qty is required',
-            'components.*.accepted_qty.numeric' => 'Accepted Qty must be a number.',
-            'components.*.accepted_qty.gt' => 'Accepted Qty must be greater than zero.',
+            // 'components.*.accepted_qty.required' => 'Accepted Qty is required',
+            // 'components.*.accepted_qty.numeric' => 'Accepted Qty must be a number.',
+            // 'components.*.accepted_qty.gt' => 'Accepted Qty must be greater than zero.',
             'components.*.rate.required' => 'Rate is required',
             'components.*.rate.numeric' => 'Rate must be a number.',
             'components.*.rate.gt' => 'Rate must be greater than zero.',
@@ -228,7 +231,7 @@ class MaterialReceiptRequest extends FormRequest
                     'jo' => $component['job_order_id'] ?? null,
                     default => null,
                 };
-                
+
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;
@@ -316,7 +319,7 @@ class MaterialReceiptRequest extends FormRequest
                         })
                         ->selectRaw('SUM(order_qty - grn_qty) as balance_qty')
                         ->value('balance_qty') ?? 0;
-                    
+
                     if($mrnItem) {
                         $inputQty = (floatval($component['accepted_qty']) - $mrnItem->accepted_qty) ?? 0;
                     } else {

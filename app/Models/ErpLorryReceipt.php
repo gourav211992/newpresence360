@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\ErpDriver;
 use App\Models\ErpVehicleType;
+use App\Traits\DateFormatTrait;
 use App\Models\ErpRouteMaster;
 use App\Models\ErpLogisticsLrLocation;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use App\Traits\DefaultGroupCompanyOrg;
 
 class ErpLorryReceipt extends Model
 {
-    use HasFactory, DefaultGroupCompanyOrg;
+    use HasFactory, DefaultGroupCompanyOrg, DateFormatTrait;
 
     protected $table = 'erp_logistics_lorry_receipt';
 

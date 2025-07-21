@@ -88,10 +88,23 @@
             const file = allFiles[i];
             const fileExtension = file.name.split('.').pop().toLowerCase();
 
-            if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
-                invalidFile.message = 'Please select valid files';
+            // if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+            //     invalidFile.message = 'Please select valid files';
+            //     break;
+            // }
+            const mimeIsInvalid = file.type && !ALLOWED_MIME_TYPES.includes(file.type);
+            const extensionIsInvalid = !ALLOWED_EXTENSIONS.includes(fileExtension);
+            console.log(`File: ${file.name}, Extension: ${fileExtension}, MIME Type: ${file.type}`);
+            if (!file.type) {
+                console.warn(`MIME type missing for file: ${file.name}`);
+            }
+            if (extensionIsInvalid || mimeIsInvalid) {
+                invalidFile = {
+                    message: 'Please select valid files'
+                };
                 break;
             }
+
             const fileSize = (file.size / 1024).toFixed(2);
             if (fileSize > MAX_FILE_SIZE) {
                 invalidFile.message = 'Please select files with size not more than 5MB';

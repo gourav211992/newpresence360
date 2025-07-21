@@ -327,7 +327,7 @@
                                                                 <input type="text" class="form-control" name="asset_code"
                                                                     id="asset_code" value="{{ old('asset_code') }}"
                                                                     oninput="this.value = this.value.toUpperCase();"
-                                                                    required readonly/>
+                                                                    required/>
                                                                 <span class="text-danger code_error" style="font-size:12px" style="font-size:12px"></span>
                                                             </div>
                                                         </div>

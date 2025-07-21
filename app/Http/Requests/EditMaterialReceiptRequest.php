@@ -12,9 +12,11 @@ use App\Models\MrnDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
 use Illuminate\Validation\Rule;
+use App\Traits\ProcessesComponentJson;
 
 class EditMaterialReceiptRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -28,6 +30,10 @@ class EditMaterialReceiptRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {
@@ -94,9 +100,9 @@ class EditMaterialReceiptRequest extends FormRequest
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
-        if ($this->input('components.*.is_inspection') === 0) {
-            $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
-        }
+        // if ($this->input('components.*.is_inspection') === 0) {
+        //     $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
+        // }
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
 
@@ -135,14 +141,14 @@ class EditMaterialReceiptRequest extends FormRequest
             'uom_id' => 'The unit of measure must be a string.',
             'component_item_name.*.required' => 'Required',
             'components.*.order_qty.required' => 'Order Qty is required',
-            'components.*.accepted_qty.required' => 'Accepted Qty is required',
+            // 'components.*.accepted_qty.required' => 'Accepted Qty is required',
             'components.*.rate.required' => 'Rate is required',
             'components.*.attr_group_id.*.attr_name.required' => 'Select Attribute',
             'components.*.order_qty.numeric' => 'Order Qty must be integer',
-            'components.*.accepted_qty.numeric' => 'Accepted Qty must be integer',
+            // 'components.*.accepted_qty.numeric' => 'Accepted Qty must be integer',
             'components.*.rate.numeric' => 'Rate must be integer',
         ];
- 
+
     }
 
     /**

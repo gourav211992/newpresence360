@@ -1,7 +1,27 @@
 @extends('layouts.app')
 
 @section('content')
-    <!-- BEGIN: Content-->
+<style>
+        .middleinputerror {
+        padding-bottom: 30px;
+        }
+        .middleinputerror span.text-danger {
+            font-size: 12px;
+            position: absolute;
+            top: 38px;
+        }
+        .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+        .iteminactive {  left: 24px; color: #999 } 
+        .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+        .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+        .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+        
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+    </style>
+    
+
+<!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
@@ -37,10 +57,41 @@
                                 <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </a>
-                                <a href="javascript:void(0);"
-                                    id="checkAndOpenModal"class="btn btn-primary btn-sm mb-50 mb-sm-0">
-                                    <i data-feather="check-circle"></i> Update
+                               
+                                @if(!isset(request()->revisionNumber))
+                                    @if (isset($data))
+                                       @if($buttons['delete'])
+                                            <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                                data-url="{{ route('ledgers.destroy', $data->id) }}" 
+                                                data-redirect="{{ route('ledgers.index') }}"
+                                                data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                            </button>
+                                        @endif
+                                         @if ($buttons['submit'])
+                                          <a href="javascript:void(0);"
+                                    id="checkAndOpenModal" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                    <i data-feather="check-circle"></i> Submit
                                 </a>
+                                         @endif
+                                       @if ($buttons['approve'])
+                                        <a type="button" id="reject-button" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setReject();"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                                data-feather="x-circle"></i> Reject</a>
+                                        <a type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setApproval();"><i
+                                                data-feather="check-circle"></i> Approve</a>
+                                    @endif
+                                       @if ($buttons['amend'])
+                                        <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                            Amendment</a>
+                                    @endif
+                                    
+                                    @endif
+                            @endif
+                          
                             </div>
                         </div>
                     </div>
@@ -53,11 +104,23 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div class="newheader border-bottom mb-2 pb-25">
+                                            <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                <div>
                                                     <h4 class="card-title text-theme">Basic Information</h4>
                                                     <p class="card-text">Fill the details</p>
                                                 </div>
+                                               
+                                                <div>
+                                                    <div class="d-flex align-items-center"> 
+                                                        <div class="form-check form-check-primary form-switch statusactiinactive me-1">
+                                                            <input type="checkbox" name="status" class="form-check-input" id="customSwitch3" {{$data->status==1?'checked':''}}>
+                                                            <span class="itemactive">Active</span>
+                                                            <span class="itemactive iteminactive">Inactive</span>
+                                                        </div>
+                                                    </div>    
+                                                </div>
                                             </div>
+                                        </div> 
 
                                             <div class="col-md-9">
                                                 <div class="row align-items-center mb-1">
@@ -129,32 +192,77 @@
                                                     </div>
                                                 </div>
                                             </div>
-
                                             <div class="col-md-3 border-start">
-                                                <div class="row align-items-center mb-2">
-                                                    <div class="col-md-12">
-                                                        <label
-                                                            class="form-label text-primary"><strong>Status</strong></label>
-                                                        <div class="demo-inline-spacing">
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="customColorRadio3" value="1"
-                                                                    name="status" class="form-check-input"
-                                                                    {{ $data->status == 1 ? 'checked' : '' }}>
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="customColorRadio3">Active</label>
-                                                            </div>
-                                                            <div class="form-check form-check-primary mt-25">
-                                                                <input type="radio" id="customColorRadio4"
-                                                                    value="0" name="status"
-                                                                    class="form-check-input"
-                                                                    {{ $data->status == 0 ? 'checked' : '' }}>
-                                                                <label class="form-check-label fw-bolder"
-                                                                    for="customColorRadio4">Inactive</label>
-                                                            </div>
+                                            @if(isset($data) && ($data->document_status !== "draft"))
+                                                @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($data->revision_number))
+                                                        <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                            <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                                <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                                @if(!isset(request()->revisionNumber) && $data->document_status !== 'draft')
+                                                                    <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
+                                                                        <select class="form-select" id="revisionNumber">
+                                                                            @for($i=$data->revision_number; $i >= 0; $i--)
+                                                                                <option value="{{$i}}" {{request('revisionNumber', $data->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
+                                                                            @endfor
+                                                                        </select>
+                                                                    </strong>
+                                                                @else
+                                                                    @if ($data->document_status !== 'draft')
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                            Rev. No. {{ request()->revisionNumber }}
+                                                                        </strong>
+                                                                    @endif
+
+                                                                @endif
+                                                            </h5>
+                                                            <ul class="timeline ms-50 newdashtimline ">
+                                                                @foreach($approvalHistory as $approvalHist)
+                                                                    <li class="timeline-item">
+                                                                        <span class="timeline-point timeline-point-indicator"></span>
+                                                                        <div class="timeline-event">
+                                                                            <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                                <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
+                                                                                @if($approvalHist->approval_type == 'approve')
+                                                                                    <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @elseif($approvalHist->approval_type == 'submit')
+                                                                                    <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @elseif($approvalHist->approval_type == 'reject')
+                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @else
+                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                @endif
+                                                                            </div>
+                                                                            @if($approvalHist->approval_date)
+                                                                                <h6>
+                                                                                    {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
+                                                                                </h6>
+                                                                            @endif
+                                                                            @if($approvalHist->remarks)
+                                                                                <p>{!! $approvalHist->remarks !!}</p>
+                                                                            @endif
+                                                                            @if ($approvalHist->media && count($approvalHist->media) > 0)
+                                                                                @foreach ($approvalHist->media as $mediaFile)
+                                                                                    <p><a href="{{ $mediaFile->file_url }}" target="_blank">
+                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
+                                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                                                                <polyline points="7 10 12 15 17 10"></polyline>
+                                                                                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                                                            </svg>
+                                                                                        </a></p>
+                                                                                @endforeach
+                                                                            @endif
+                                                                        </div>
+                                                                    </li>
+                                                                @endforeach
+
+                                                            </ul>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                                @endif
+                                            @endif
+                                            {{-- Approval History Section --}}
+                                        </div>
+
+                                          
                                         </div>
 
                                         <div class="mt-2" id="gst" style="display: none">
@@ -195,7 +303,7 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tax_percentage" name="tax_percentage"
-                                                                value="{{ $data->tax_percentage }}" />
+                                                                value="{{ $data->tax_percentage }}" step="any" />
                                                         </div>
                                                     </div>
 
@@ -228,7 +336,17 @@
                                                                 value="{{ $data->tds_percentage }}" />
                                                         </div>
                                                     </div>
+                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TDS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
 
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_capping" name="tds_capping" step="any" value="{{ $data->tds_capping }}" />
+                                                        </div>
+                                                    </div>
                                                     <div class="row align-items-center mb-1" id="tcs_section_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label">TCS Section Type<span
@@ -258,6 +376,17 @@
                                                                 value="{{ $data->tcs_percentage }}" />
                                                         </div>
                                                     </div>
+                                                    <div class="row align-items-center mb-1" id="tcs_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TCS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tcs_capping" name="tcs_capping"  step="any" value="{{ $data->tcs_capping }}" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -267,6 +396,8 @@
                         </div>
                     </section>
                 </div>
+          
+
             </form>
         </div>
     </div>
@@ -336,7 +467,65 @@
             </div>
         </div>
     </div>
-    <!-- END: Content-->
+  <!-- END: Content-->
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form class="ajax-input-form" method="POST" action="{{ route('approveLedger') }}"
+                    data-redirect="{{ route('ledgers.index') }}" enctype='multipart/form-data'>
+                    @csrf
+                    <input type="hidden" name="action_type" id="action_type">
+                    <input type="hidden" name="id" value="{{ $data->id }}">
+                    <div class="modal-header">
+                        <div>
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17"></h4>
+                            <p class="mb-0 fw-bold voucehrinvocetxt mt-0">{{ Carbon\Carbon::now()->format('d-m-Y') }}
+                            </p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
+                            <div class="col-md-12">
+                                <div class="mb-1">
+                                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                                    <textarea name="remarks" class="form-control"></textarea>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Upload Document</label>
+                                    <input type="file" multiple class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="submit-button">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Amendment Modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1"
+        aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Ledger</strong>? After Amendment
+                        this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>    <!-- END: Content-->
 @endsection
 
 @section('scripts')
@@ -386,9 +575,9 @@
                 // Hide all sections first
                 $('#tax_type, #tax_percentage,#tax_type_label,#tax_percentage_label').attr('required', false)
             .hide();
-                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required', false)
+                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required', false)
                     .hide();
-                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required', false)
+                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required', false)
                     .hide();
 
                 // Check which special group is selected (only one can be selected)
@@ -398,11 +587,11 @@
                         .show();
                 } else if ({{ $tds_group_id }} != null && selectedOptions.includes("{{ $tds_group_id }}")) {
                     showGst = true;
-                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required',
+                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required',
                         true).show();
                 } else if ({{ $tcs_group_id }} != null && selectedOptions.includes("{{ $tcs_group_id }}")) {
                     showGst = true;
-                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required',
+                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required',
                         true).show();
                 }
 
@@ -681,5 +870,54 @@
 
             generateItemCode();
         }
+    function setApproval() {
+            document.getElementById('action_type').value = "approve";
+            $('#myModalLabel17').text('Approve Voucher');
+
+        }
+
+        function setReject() {
+            document.getElementById('action_type').value = "reject";
+            $('#myModalLabel17').text('Reject Voucher');
+
+        }
+         $(document).on('click', '#amendmentSubmit', (e) => {
+            let actionUrl = "{{ route('ledgers.amendment', $data->id) }}";
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 200) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: data.message,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error'
+                        });
+                    }
+                    location.reload();
+                });
+            });
+        });
+        @if(!$buttons['submit'])
+        $('#formUpdate').find('input, select').prop('disabled', true);
+        $('#revisionNumber').prop('disabled', false);
+        @endif
+
+         $(function() {
+            $("#revisionNumber").change(function() {
+                const fullUrl = "{{ route('ledgers.edit', $data->id) }}?revisionNumber=" +
+                    $(this)
+                    .val();
+                window.open(fullUrl, "_blank");
+            });
+        });
+
+
+    
+       
     </script>
 @endsection

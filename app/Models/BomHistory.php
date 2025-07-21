@@ -141,7 +141,7 @@ class BomHistory extends Model
 
     public function bomItems()
     {
-        return $this->hasMany(BomDetailHistory::class, 'bom_id');
+        return $this->hasMany(BomDetailHistory::class, 'bom_id')->orderBy('sequence_no');
     }   
 
     public function bomOverheadAllItems()

@@ -1,6 +1,8 @@
 <?php
 namespace App\Helpers;
 
+use App\Models\ErpPlHeader;
+use App\Models\ErpPlItem;
 use App\Models\ErpPsvHeader;
 use App\Models\ErpPsvItem;
 use App\Models\MrnJoItem;
@@ -70,6 +72,8 @@ use App\Models\PoItem;
 use Illuminate\Support\Collection;
 use App\Models\PslipBomConsumption;
 use Illuminate\Support\Facades\Log;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
+use App\Models\AuthUser;
 use stdClass;
 class InventoryHelper
 {
@@ -89,7 +93,7 @@ class InventoryHelper
 
     public static function settlementOfInventoryAndStock($documentHeaderId, $documentDetailId=NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
     {
-        DB::beginTransaction();
+        // DB::beginTransaction();
         try {
             $user = Helper::getAuthenticatedUser();
             $message = '';
@@ -127,6 +131,10 @@ class InventoryHelper
             }
             else if($bookType == ConstantHelper::MATERIAL_RETURN_SERVICE_ALIAS_NAME){
                 $documentDetail = self::settlementForMRForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
+            } else if($bookType == ConstantHelper::PL_SERVICE_ALIAS && $transactionType === 'issue'){
+                $documentDetail = self::settlementForPlForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
+            } else if($bookType == ConstantHelper::PL_SERVICE_ALIAS && $transactionType === 'receipt'){
+                $documentDetail = self::settlementForPlForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType);
             }
             else {
                 $message = "Invalid Book Type";
@@ -136,7 +144,6 @@ class InventoryHelper
                     'invoiceLedger' => ''
                 ];
             }
-            // dd($documentDetail);
             if (isset($documentDetail['status']) && ($documentDetail['status'] == 'success') && empty($records)) {
                 if($transactionType == 'issue'){
                     $invoiceIds = StockLedger::withDefaultGroupCompanyOrg()
@@ -166,13 +173,13 @@ class InventoryHelper
 
                 $data = self::successResponse($documentDetail['message'], $records);
             } else{
-                DB::rollBack();
+                // DB::rollBack();
                 $data = self::errorResponse($documentDetail['message'] ?? 'An error occurred while processing the request.');
             }
-            DB::commit();
+            // DB::commit();
             return $data;
         } catch (\Exception $e) {
-            DB::rollBack();
+            // DB::rollBack();
             Log::error('Error in settlementOfInventoryAndStock: ' . $e->getMessage());
 
             $data = self::errorResponse($e->getMessage());
@@ -197,7 +204,7 @@ class InventoryHelper
 
         // Apply attribute filtering if needed
         if (!empty($attributeGroups) && !empty($selectedAttr)) {
-            // sort($selectedAttr);
+            sort($selectedAttr);
             foreach ($attributeGroups as $key => $group) {
                 // Ensure index exists and handle type consistency
                 if (isset($selectedAttr[$key])) {
@@ -208,7 +215,7 @@ class InventoryHelper
                 }
             }
         }
-
+        
         // Filters for Store, Rack, Shelf, and Bin (if needed)
         if ($storeId) {
             $stockLedger->where('store_id', $storeId);
@@ -232,6 +239,7 @@ class InventoryHelper
         $pendingStocksQuery = clone $stockLedger;
         $confirmedStocksQuery = clone $stockLedger;
         $reservedStocksQuery = clone $stockLedger;
+        $stockLedgerIdQuery = clone $stockLedger;
 
         $pendingStocks = $pendingStocksQuery
             ->whereNotIn('document_status', ['approved', 'posted', 'approval_not_required'])
@@ -255,6 +263,10 @@ class InventoryHelper
                 $reservedStocks += $stock->reservations->sum('quantity');
             }
         }
+
+        $stockLedgers = $stockLedgerIdQuery->where('document_status', ['approved', 'posted', 'approval_not_required']) 
+            -> selectRaw('SUM(receipt_qty - reserved_qty) as qty, id') -> get();
+
         $rate = $stockLedger->pluck('cost_per_unit')->first();
         $pendingStockAltUom = $pendingStocks;
         $reservedStockAltUom = $reservedStocks;
@@ -273,6 +285,7 @@ class InventoryHelper
             'pendingStockAltUom' => $pendingStockAltUom ?? 0,
             'reservedStockAltUom' => $reservedStockAltUom ?? 0,
             'confirmedStockAltUom' => $confirmedStockAltUom ?? 0,
+            'stockLedgers' => $stockLedgers,
             'rate' => $rate ?? 0,
         ];
         return $data;
@@ -382,9 +395,9 @@ class InventoryHelper
         if ($orderId) {
             $stocks = $reservedStocksQuery
                 ->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
-                ->with(['reservations' => function ($q) use ($orderId) {
-                    $q->where('so_item_id', $orderId);
-                }])
+                // ->with(['reservations' => function ($q) use ($orderId) {
+                //     $q->where('so_item_id', $orderId);
+                // }])
                 ->get();
 
             foreach ($stocks as $stock) {
@@ -470,6 +483,7 @@ class InventoryHelper
             DB::raw('SUM(receipt_qty - reserved_qty) as total_receipt_qty'),
             DB::raw('SUM(org_currency_cost) as total_org_currency_cost')
         ])
+        ->orderBy('original_receipt_date')
         ->orderBy('id')
         ->groupBy([
             'item_id',
@@ -807,6 +821,7 @@ class InventoryHelper
                     $stockLedger->store_id = $documentHeader->store_id ?? null;
                     $stockLedger->store = $documentHeader?->store?->store_code;
                     $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+                    $stockLedger->original_receipt_date = $documentHeader->document_date;
 
                     if(!$documentHeader->is_last_station) {
                         $stockLedger->stock_type = 'W';
@@ -865,6 +880,45 @@ class InventoryHelper
 
                 if(($transactionType == 'receipt') && ($documentDetail->to_station_id)){
                     $stockLedger->station_id = $documentDetail->to_station_id ?? null;
+                }
+
+            }
+            if($bookType == ConstantHelper::PL_SERVICE_ALIAS){
+                $qty = @$documentItemLocation->inventory_uom_qty;
+                $documentHeader = ErpPlHeader::find($documentItemLocation->pl_header_id);
+                $detailId = $documentItemLocation->id;
+                $documentDetail = ErpPlItem::with(['header'])->find($detailId);
+                $stockLedger->vendor_id = @$documentHeader->vendor_id;
+                $stockLedger->vendor_code = @$documentHeader->vendor_code;
+                if ($transactionType == 'issue') {
+                    $stockLedger->issue_qty = @$qty;
+                }
+                if ($transactionType == 'receipt') {
+                    $stockLedger->receipt_qty = @$qty;
+                    $stockLedger->original_receipt_date = @$utlStockLedger->original_receipt_date;
+                    $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+
+                }
+                $stockLedger->book_id = @$documentHeader->book_id;
+                $totalItemCost = ($documentDetail->inventory_uom_qty*1); // PL RATE TO BE DYNAMIC
+                // $totalItemCost = ($documentDetail->inventory_uom_qty*$documentDetail->rate);
+                $costPerUnit = $totalItemCost/$qty;
+
+                $stockLedger->stock_type='R';
+                $stockLedger->wip_station_id=null;
+
+                // Item Location Data
+                $stockLedger->store_id = $documentHeader->store_id ?? null;
+                $stockLedger->store = @$documentDetail->store->store_name;
+
+                if(($transactionType == 'issue') && $documentHeader->main_sub_store_id){
+                    $stockLedger->sub_store_id = $documentHeader->main_sub_store_id ?? null;
+                    $stockLedger->sub_store = @$documentHeader->main_sub_store->name;
+                }
+
+                if(($transactionType == 'receipt') && ($documentHeader->main_sub_store_id && $documentHeader->staging_sub_store_id)){
+                    $stockLedger->sub_store_id = $documentHeader->staging_sub_store_id ?? null;
+                    $stockLedger->sub_store = @$documentHeader->staging_sub_store ?-> name;
                 }
 
             }
@@ -935,7 +989,8 @@ class InventoryHelper
                 }
                 if ($transactionType == 'receipt') {
                     $stockLedger->receipt_qty = @$qty;
-                    $stockLedger->original_receipt_date = @$utlStockLedger->original_receipt_date;
+                    $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
+                    $stockLedger->original_receipt_date = $documentHeader->document_date;
                 }
                 $stockLedger->book_id = @$documentHeader->book_id;
                 $totalItemCost = ($qty*$documentDetail->rate) - ($documentDetail?->item_discount_amount + $documentDetail->header_discount_amount);
@@ -958,8 +1013,6 @@ class InventoryHelper
                     $stockLedger->sub_store_id = $documentDetail->header->sub_store_id ?? null;
                     $stockLedger->sub_store = @$documentDetail->header->sub_store->store_code;
                 }
-
-
             }
 
             //Header Data
@@ -986,7 +1039,7 @@ class InventoryHelper
             $stockLedger->group_currency_id = @$documentHeader->group_currency_id;
             $stockLedger->group_currency_code = @$documentHeader->group_currency_code;
             $stockLedger->group_currency_exg_rate = @$documentHeader->group_currency_exg_rate;
-            $stockLedger->original_receipt_date = @$documentHeader->document_date;
+            // $stockLedger->original_receipt_date = @$documentHeader->document_date;
 
             //  Detail Data
             $itemId = '';
@@ -1058,7 +1111,7 @@ class InventoryHelper
                         }
                     }
                 }
-            } else {
+            } else {              
                 if(isset($documentDetail->attributes) && !empty($documentDetail->attributes)){
                     foreach($documentDetail->attributes as $key1 => $attribute) {
                         $attributeName = @$attribute->attr_name ?? @$attribute->attribute_group_id ?? @$attribute->attribute_name;
@@ -1069,6 +1122,11 @@ class InventoryHelper
                             $itemAttributeId = $attribute['attribute_id'];
                             $attributeName = $attribute['attribute_name'];
                             $attributeValue = $attribute['attribute_value'];
+                        }
+                        if($bookType == ConstantHelper::PL_SERVICE_ALIAS) {
+                            $itemAttributeId = $attribute['item_attribute_id'];
+                            $attributeName = $attribute['attribute_group_id'];
+                            $attributeValue = $attribute['attribute_value_id'];
                         }
 
                         $ledgerAttribute = new StockLedgerItemAttribute();
@@ -1101,6 +1159,14 @@ class InventoryHelper
             $stockLedger->item_attributes = $attributeArray;
             $stockLedger->json_item_attributes = $attributeJsonArray;
             $stockLedger->save();
+
+            if(($stockLedger->transaction_type == 'receipt') && !$stockLedger->original_receipt_date){
+                return [
+                    'status' => 'error',
+                    'message' => 'Error while inserting stock ledger: Original Receipt Date can not be empty.',
+                    'invoiceLedger' => ''
+                ];
+            }
 
             // Store Storage Points If Available
             // $storagePoint = StoragePointHelper::saveStoragePoints($stockLedger, $documentDetail->storage_points ?? []);
@@ -1156,7 +1222,10 @@ class InventoryHelper
                     ->where('stock_type', $invoiceLedger -> stock_type)
                     ->whereNull('utilized_id')
                     ->whereRaw('receipt_qty > 0')
-                    ->orderBy('document_date', 'ASC');
+                    ->orderBy('original_receipt_date')
+                    ->orderBy('document_date')
+                    ->orderBy('id');
+
                     if (isset($invoiceLedger -> station_id) && $invoiceLedger -> station_id) {
                         $approvedStockLedger = $approvedStockLedger -> where('station_id', $invoiceLedger -> station_id);
                     }
@@ -1190,6 +1259,17 @@ class InventoryHelper
                         foreach ($approvedStockLedger as $val) {
                             $stockLedger = StockLedger::find($val -> id);
                             if(isset($stockReservation) && ($stockReservation == 'yes')){
+                                if ($stockLedger->reserved_qty < $balanceQty) {
+                                    $receiptQty = $stockLedger->reserved_qty;
+                                    $reservedQty = $stockLedger->reserved_qty;
+                                    $balanceQty -= $reservedQty;
+                                } else {
+                                    $receiptQty = $balanceQty;
+                                    $reservedQty = $balanceQty;
+                                    $extraQty = $stockLedger->receipt_qty - $balanceQty;
+                                    $extraReservedQty = $stockLedger->reserved_qty - $balanceQty;
+                                    $balanceQty = 0; // Fully issued
+                                }
                                 if ($stockLedger->reserved_qty < $balanceQty) {
                                     $receiptQty = $stockLedger->reserved_qty;
                                     $reservedQty = $stockLedger->reserved_qty;
@@ -2183,14 +2263,21 @@ class InventoryHelper
         //Retrieve Editable Store
         $employee = Helper::getAuthenticatedUser();
         $editStore = ErpStore::with('address') -> find($storeId);
+        $authUser = AuthUser::find($employee->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $employee->organization;
+        $groupId = $organization?->group_id;
 
-        $stores = ErpStore::withDefaultGroupCompanyOrg()
-        ->withWhereHas('address')
+        $stores = ErpStore::withWhereHas('address')
         ->where(function($query) use($storeId) {
             $query->where('status',ConstantHelper::ACTIVE);
             if($storeId) {
                 $query->orWhere('id', $storeId);
             }
+        })
+        ->when($isSuperAdmin && $groupId, function ($query) use ($groupId) {
+            $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId);
         })
         ->when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
@@ -2223,8 +2310,25 @@ class InventoryHelper
 
     public static function getAccesibleSubLocations(int $storeId, int|null $itemId = null, string| array $locationType = [ConstantHelper::STOCKK, ConstantHelper::SHOP_FLOOR], $subStoreId = NULL, string $subTypes = null )
     {
-        $subStoreIds = ErpSubStoreParent::withDefaultGroupCompanyOrg()->where('store_id', $storeId)
-            -> get() -> pluck('sub_store_id') -> toArray();
+        $user = Helper::getAuthenticatedUser();
+        $authUser = AuthUser::find($user->auth_user_id);
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $user->organization;
+        $groupId = $organization?->group_id;
+
+         if ($isSuperAdmin) {
+               $subStoreIds = ErpSubStoreParent::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('group_id', $groupId)
+                ->where('store_id', $storeId)
+                ->get()
+                ->pluck('sub_store_id')
+                ->toArray();
+            } else {
+               $subStoreIds = ErpSubStoreParent::where('store_id', $storeId)
+                ->get()
+                ->pluck('sub_store_id')
+                ->toArray();
+        }
         $subStores = ErpSubStore::select('id', 'name', 'code','station_wise_consumption','is_warehouse_required') -> whereIn('id', $subStoreIds) -> when($locationType, function ($typeQuery) use($locationType) {
             if (is_string($locationType)) {
                 $typeQuery = $typeQuery -> where('type', $locationType);
@@ -2291,7 +2395,6 @@ class InventoryHelper
                 $stockLedger = new StockLedger();
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
             } else{
-                dd('Inventory UOM Qty is less than utilized qty', $documentItemLocation->inventory_uom_qty, $utilizedQty);
                 $invoiceLedger = [
                     'status' => 'error',
                     'message' => 'Error inserting stock ledger: ',
@@ -2363,7 +2466,7 @@ class InventoryHelper
     private static function settlementForSaleInvoice($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $stockReservation)
     {
         $user = Helper::getAuthenticatedUser();
-
+        $updatedInvoiceLedger = [];
         try{
             $transactionType = 'issue';
             $documentItemLocations = ErpInvoiceItem::where('sale_invoice_id',$documentHeaderId)
@@ -2396,7 +2499,8 @@ class InventoryHelper
 
         }
         $message = 'success';
-        return $message;
+        return $updatedInvoiceLedger;
+        // return $message;
     }
 
     // Settlement For Purchase Return (Issue)
@@ -2591,6 +2695,41 @@ class InventoryHelper
         $message = 'success';
         return $updatedInvoiceLedger;
     }
+
+    public static function settlementForPlForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $updatedInvoiceLedger = [];
+        try{
+            $documentItems = ErpPlItem::where('pl_header_id',$documentHeaderId)
+                ->with('header','item') ->get();
+
+            if(isset($documentItems) && $documentItems){
+                foreach ($documentItems as $documentItem) {
+                    if($documentItem->header->main_sub_store_id){
+                        $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                            ->where('document_header_id',$documentHeaderId)
+                            ->where('document_detail_id',$documentItem->id)
+                            ->where('book_type','=',$bookType)
+                            ->first();
+                        if(!$stockLedger){
+                            $stockLedger = new StockLedger();
+                        }
+                        $utilizedQty = 0;
+                        $issueQty = $stockLedger->issue_qty;
+                        $invoiceLedger = self::insertStockLedger($stockLedger, $documentItem,  $bookType, $documentStatus, $transactionType, $utilizedQty);
+                        $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $errorMsg = "ERROR: " . $e->getMessage();
+            return self::errorResponse($errorMsg);
+
+        }
+        $message = 'success';
+        return $updatedInvoiceLedger;
+    }
     // Settlement For Psv For Issue
     private static function settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
@@ -2706,27 +2845,88 @@ class InventoryHelper
                     ->sum('receipt_qty');
                 if($documentItemLocation->inventory_uom_qty > $utilizedQty){
                     $stockLedger = new StockLedger();
-                    $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
-                    // $issueStockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                    //     ->where('document_header_id',$documentHeaderId)
-                    //     ->where('document_detail_id',$documentDetailId)
-                    //     ->where('book_type','=',$bookType)
-                    //     ->where('transaction_type','=','issue')
-                    //     ->first();
-                    // if($issueStockLedger){
-                    //     $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
-                    //         ->where('utilized_id',$issueStockLedger->id)
-                    //         ->where('transaction_type','=','receipt')
-                    //         ->get();
-                    //     if(!empty($utilizedStockLedger)){
-                    //         foreach($utilizedStockLedger as $utlStockLedger){
-                    //             $stockLedger = new StockLedger();
-                    //             $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger);
-                    //         }
-                    //     }
-                    // }
+                    // $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
+                    $issueStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                        ->where('document_header_id',$documentHeaderId)
+                        ->where('document_detail_id',$documentDetailId)
+                        ->where('book_type','=',$bookType)
+                        ->where('transaction_type','=','issue')
+                        ->first();
+                    if($issueStockLedger){
+                        $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                            ->where('utilized_id',$issueStockLedger->id)
+                            ->where('transaction_type','=','receipt')
+                            ->get();
+                        if(!empty($utilizedStockLedger)){
+                            foreach($utilizedStockLedger as $utlStockLedger){
+                                $stockLedger = new StockLedger();
+                                $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger);
+                            }
+                        }
+                    }
                 }
             }
+        // } catch (\Exception $e) {
+        //     $errorMsg = "ERROR: " . $e->getMessage();
+        //     return self::errorResponse($errorMsg);
+
+        // }
+        $message = 'success';
+        return $invoiceLedger;
+    }
+
+    private static function settlementForPlForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $invoiceLedger = [];
+        // try{
+            $documentItemLocation = ErpPlItem::where('id', $documentDetailId) -> first();
+            $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                ->where('document_header_id',$documentHeaderId)
+                ->whereIn('document_detail_id',$documentDetailId)
+                ->where('book_type','=',$bookType)
+                ->where('transaction_type','=',$transactionType)
+                ->where('document_status','draft')
+                ->whereNull('utilized_id')
+                ->get();
+
+            foreach($stockLedger as $val){
+                StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
+                $val->delete();
+            }
+
+            // foreach ($documentItemLocations as $documentItemLocation) {
+                $utilizedQty = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where('document_header_id',$documentHeaderId)
+                    ->where('document_detail_id',$documentDetailId)
+                    ->where('book_type','=',$bookType)
+                    ->where('transaction_type','=',$transactionType)
+                    // ->where('document_status','draft')
+                    ->whereNotNull('utilized_id')
+                    ->sum('receipt_qty');
+                if($documentItemLocation->inventory_uom_qty > $utilizedQty){
+                    // $stockLedger = new StockLedger();
+                    // $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = null);
+                    $issueStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                        ->where('document_header_id',$documentHeaderId)
+                        ->where('document_detail_id',$documentDetailId)
+                        ->where('book_type','=',$bookType)
+                        ->where('transaction_type','=','issue')
+                        ->first();
+                    if($issueStockLedger){
+                        $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+                            ->where('utilized_id',$issueStockLedger->id)
+                            ->where('transaction_type','=','receipt')
+                            ->get();
+                        if(!empty($utilizedStockLedger)){
+                            foreach($utilizedStockLedger as $utlStockLedger){
+                                $stockLedger = new StockLedger();
+                                $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger);
+                            }
+                        }
+                    }
+                }
+            // }
         // } catch (\Exception $e) {
         //     $errorMsg = "ERROR: " . $e->getMessage();
         //     return self::errorResponse($errorMsg);
@@ -2940,7 +3140,7 @@ class InventoryHelper
     public static function settlementForMIForIssueFromMrn($document, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
-        \DB::beginTransaction();
+        // \DB::beginTransaction();
         try{
             $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('document_header_id',$document->mrn_header_id)
@@ -2956,7 +3156,7 @@ class InventoryHelper
             $stockReservation = null;
             $invoiceLedger = self::insertStockLedger($stockLedger, $document,  $bookType, $documentStatus, $transactionType, $utilizedQty, NULL, "R");
             if($invoiceLedger['status'] == 'error'){
-                DB::rollBack();
+                // DB::rollBack();
                 $data = self::errorResponse($invoiceLedger['message']);
             }
 
@@ -2964,14 +3164,13 @@ class InventoryHelper
             if (($documentDetail['status'] == 'success') && empty($records)) {
                 $data = self::successResponse($documentDetail['message'], $records);
             } else{
-                DB::rollBack();
+                // DB::rollBack();
                 $data = self::errorResponse($documentDetail['message']);
             }
-            DB::commit();
+            // DB::commit();
             return $data;
         } catch (\Exception $e) {
-            dd($e->getLine(), $e->getMessage());
-            DB::rollBack();
+            // DB::rollBack();
             Log::error('Error in settlementOfInventoryAndStock: ' . $e->getMessage());
 
             $data = self::errorResponse($e->getMessage());

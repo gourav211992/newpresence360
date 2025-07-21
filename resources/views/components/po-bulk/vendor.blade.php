@@ -3,7 +3,7 @@
         <option value=""></option>
     @endif
     @foreach ($vendors as $vendor)
-        <option value="{{ $vendor->id }}" {{ !$defaultOption && $vendor->id == $firstVendorId ? 'selected' : '' }}>
+        <option value="{{ $vendor->id }}" {{ $vendor->id == $firstVendorId ? 'selected' : '' }}>
             {{ $vendor?->company_name ?? '' }}
         </option>
     @endforeach

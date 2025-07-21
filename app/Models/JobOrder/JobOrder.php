@@ -11,11 +11,13 @@ use App\Models\Department;
 use App\Models\ErpAddress;
 use App\Models\ErpPoDynamicField;
 use App\Models\ErpStore;
+use App\Models\GateEntryHeader;
 use App\Models\JobOrder\JoTerm;
 use App\Models\Organization;
 use App\Models\PaymentTerm;
 use App\Models\PiPoMapping;
 use App\Models\Vendor;
+use App\Models\VendorAsn;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
@@ -29,13 +31,13 @@ class JobOrder extends Model
     protected $table = 'erp_job_orders';
     protected $fillable = [
         'job_order_type',
-        'organization_id', 
-        'group_id', 
+        'organization_id',
+        'group_id',
         'company_id',
         'department_id',
         'store_id',
-        'book_id', 
-        'book_code', 
+        'book_id',
+        'book_code',
         'document_number',
         'document_date',
         'revision_number',
@@ -315,5 +317,15 @@ class JobOrder extends Model
     public function dynamic_fields()
     {
         return $this->hasMany(ErpPoDynamicField::class, 'header_id');
+    }
+
+    public function gateEntry()
+    {
+        return $this->hasMany(GateEntryHeader::class, 'job_order_id');
+    }
+
+    public function vendorAsn()
+    {
+        return $this->hasMany(VendorAsn::class, 'job_order_id');
     }
 }

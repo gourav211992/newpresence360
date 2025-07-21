@@ -1,6 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+        .middleinputerror {
+        padding-bottom: 30px;
+        }
+        .middleinputerror span.text-danger {
+            font-size: 12px;
+            position: absolute;
+            top: 38px;
+        }
+        .itemactive { position: absolute; left: 6px; font-size: 11px; top: 6px; color: #fff } 
+        .iteminactive {  left: 24px; color: #999 } 
+        .customernewsection-form .statusactiinactive .form-check-input { width: 80px; cursor: pointer}
+        .customernewsection-form .statusactiinactive .form-check-input:checked + .itemactive { display: inline-block}
+        .customernewsection-form .statusactiinactive .form-check-input:checked ~ .iteminactive { display: none }
+        
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) + .itemactive { display: none}
+        .customernewsection-form .statusactiinactive .form-check-input:not(:checked) ~ .iteminactive { display: inline-block }
+    </style>
     <!-- BEGIN: Content-->
     <div class="app-content content ">
         <div class="content-overlay"></div>
@@ -10,6 +28,7 @@
             <form id="ledgerForm" action="{{ route('ledgers.store') }}" method="POST">
                 @csrf
                 <input type="hidden" name="ledger_code_type" value="{{ $itemCodeType }}">
+                <input type="hidden" name="book_id" value="{{ $book_id }}">
                 <input type="hidden" name="prefix" />
                                                        
                 <div class="content-header pocreate-sticky">
@@ -49,10 +68,22 @@
 
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div class="newheader  border-bottom mb-2 pb-25">
-                                                    <h4 class="card-title text-theme">Basic Information</h4>
-                                                    <p class="card-text">Fill the details</p>
-                                                </div>
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                    <div>
+                                                        <h4 class="card-title text-theme">Basic Information</h4>
+                                                        <p class="card-text">Fill the details</p>
+                                                    </div>
+                                                  
+                                                    <div>
+                                                        <div class="d-flex align-items-center"> 
+                                                            <div class="form-check form-check-primary form-switch statusactiinactive">
+                                                                <input type="checkbox" name="status"  checked class="form-check-input" id="customSwitch3" />
+                                                                <span class="itemactive">Active</span>
+                                                                <span class="itemactive iteminactive">Inactive</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div> 
                                             </div>
 
                                             <div class="col-md-9">
@@ -134,7 +165,7 @@
 
                                             </div>
 
-                                            <div class="col-md-3 border-start">
+                                            {{-- <div class="col-md-3 border-start">
                                                 <div class="row align-items-center mb-2">
                                                     <div class="col-md-12">
                                                         <label
@@ -158,7 +189,7 @@
                                                 </div>
 
 
-                                            </div>
+                                            </div> --}}
 
                                         </div>
 
@@ -201,7 +232,7 @@
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
-                                                                id="tax_percentage" name="tax_percentage" />
+                                                                id="tax_percentage" name="tax_percentage" step="any" />
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_section_label">
@@ -235,6 +266,18 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="row align-items-center mb-1" id="tds_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TDS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tds_capping" name="tds_capping" step="any" />
+                                                        </div>
+                                                    </div>
+
                                                     <div class="row align-items-center mb-1" id="tcs_section_label">
                                                         <div class="col-md-2">
                                                             <label class="form-label">TCS Section Type<span
@@ -263,6 +306,17 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tcs_percentage" name="tcs_percentage" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="row align-items-center mb-1" id="tcs_capping_label">
+                                                        <div class="col-md-2">
+                                                            <label class="form-label"> TCS Capping <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <input type="number" class="form-control"
+                                                                id="tcs_capping" name="tcs_capping"  step="any"/>
                                                         </div>
                                                     </div>
 
@@ -367,9 +421,9 @@
                 // Hide all sections first
                 $('#tax_type, #tax_percentage,#tax_type_label,#tax_percentage_label').attr('required', false)
                     .hide();
-                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required', false)
+                $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required', false)
                     .hide();
-                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required', false)
+                $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required', false)
                     .hide();
 
                 // Check which special group is selected (only one can be selected)
@@ -379,11 +433,11 @@
                         .show();
                 } else if ({{ $tds_group_id }} != null && selectedOptions.includes("{{ $tds_group_id }}")) {
                     showGst = true;
-                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label').attr('required',
+                    $('#tds_section, #tds_percentage,#tds_section_label, #tds_percentage_label,#tds_capping_label').attr('required',
                         true).show();
                 } else if ({{ $tcs_group_id }} != null && selectedOptions.includes("{{ $tcs_group_id }}")) {
                     showGst = true;
-                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label').attr('required',
+                    $('#tcs_section, #tcs_percentage,#tcs_section_label, #tcs_percentage_label,#tcs_capping_label').attr('required',
                         true).show();
                 }
 
@@ -544,6 +598,7 @@
 
                 generateItemCode();
             }
+        
    
           
     </script>

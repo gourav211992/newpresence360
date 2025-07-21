@@ -147,6 +147,7 @@ class ErpProductionSlipController extends Controller
         $organization = Organization::find($authUser ?->organization_id);
         $organizationId = $organization ?-> id ?? null;
         $shifts = Shift::where('organization_id',$organizationId)->where("status", ConstantHelper::ACTIVE)->get();
+        $machines = collect();
         $data = [
             'user' => $user,
             'services' => $servicesBooks['services'],
@@ -157,7 +158,8 @@ class ErpProductionSlipController extends Controller
             'startingBundleNo' => $startingBundleNo,
             'editableBundle' => $editableBundle,
             'redirect_url' => $redirectUrl,
-            'shifts' => $shifts
+            'shifts' => $shifts,
+            'machines' => $machines
         ];
 
         return view('productionSlip.create_edit', $data);
@@ -224,6 +226,13 @@ class ErpProductionSlipController extends Controller
             $organization = Organization::find($authUser ?->organization_id);
             $organizationId = $organization ?-> id ?? null;
             $shifts = Shift::where('organization_id',$organizationId)->where("status", ConstantHelper::ACTIVE)->get();
+            $machines = collect();
+            $productionBom = $doc?->mo?->productionRoute ?? null;
+            if($productionBom) {
+                $machines = $productionBom?->machines()
+                ->where('status', ConstantHelper::ACTIVE)
+                ->get(); 
+            }
             $data = [
                 'user' => $user,
                 'shifts' => $shifts,
@@ -239,8 +248,10 @@ class ErpProductionSlipController extends Controller
                 'services' => $servicesBooks['services'],
                 'startingBundleNo' => $startingBundleNo,
                 'editableBundle' => $editableBundle,
-                'redirect_url' => $redirect_url
+                'redirect_url' => $redirect_url,
+                'machines' => $machines
             ];
+
             return view('productionSlip.create_edit', $data);  
         } catch(Exception $ex) {
             dd($ex -> getMessage());
@@ -509,6 +520,8 @@ class ErpProductionSlipController extends Controller
                                 'accepted_qty' => isset($request -> item_accepted_qty[$itemKey]) ? $request -> item_accepted_qty[$itemKey] : null,
                                 'subprime_qty' => isset($request -> item_sub_prime_qty[$itemKey]) ? $request -> item_sub_prime_qty[$itemKey] : null,
                                 'rejected_qty' => isset($request -> item_rejected_qty[$itemKey]) ? $request -> item_rejected_qty[$itemKey] : null,
+                                'machine_id' => isset($request -> machine_id[$itemKey]) ? $request -> machine_id[$itemKey] : [],
+                                'cycle_count' => isset($request -> cycle_count[$itemKey]) ? $request -> cycle_count[$itemKey] : null,
                             ]);
                         }
                     }
@@ -540,6 +553,8 @@ class ErpProductionSlipController extends Controller
                             'accepted_qty' => $itemDataValue['accepted_qty'] ?? 0,
                             'subprime_qty' => $itemDataValue['subprime_qty'] ?? 0,
                             'rejected_qty' => $itemDataValue['rejected_qty'] ?? 0,
+                            'machine_id' => $itemDataValue['machine_id'] ?? [],
+                            'cycle_count' => $itemDataValue['cycle_count'] ?? null,
                         ];
                         if (isset($request -> pslip_item_id[$itemDataKey])) {
                             $pslipItemExit = ErpPslipItem::where('id', $request -> pslip_item_id[$itemDataKey])
@@ -1072,11 +1087,20 @@ class ErpProductionSlipController extends Controller
                 $mo['mo_type'] = $order[0]->mo->is_last_station == true ? 'Final' : 'WIP';
                 $mo['mo_station_id'] = $order[0]->mo->station_id ?? '';
                 $mo['mo_station_name'] = $order[0]->mo->station?->name ?? '';
+                $mo['mo_machine_id'] = $order[0]->mo->machine_id ?? '';
             }
             $stationWise = $request->station_wise_consumption ?? 'no';
+            $productionBom = $order[0]->mo->productionRoute ?? null;
+
+            $machines = collect();
+            if($productionBom) {
+                $machines = $productionBom?->machines()
+                ->where('status', ConstantHelper::ACTIVE)
+                ->get(); 
+            }
             $consumptions = MoBomMapping::whereIn('mo_product_id',$docIds)->orderBy('mo_product_id')->get();
             $consHtml = view('productionSlip.partials.process-consumtion', ['consumptions' => $consumptions])->render();
-            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo])->render();
+            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo, 'machines' => $machines])->render();
             return response() -> json([
                 'message' => 'Data found',
                 'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml],

@@ -2,15 +2,22 @@
 
 namespace App\Http\Controllers\WHM;
 
+use App\Exceptions\ApiGenericException;
 use App\Helpers\CommonHelper;
+use App\Helpers\ConstantHelper;
+use App\Helpers\Helper;
+use App\Helpers\Inventory\StockReservation;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\WHM\PicklistResource;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\ErpPlItem;
+use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use DB;
 
 class PicklistTaskController extends Controller
 {
@@ -37,6 +44,7 @@ class PicklistTaskController extends Controller
                         });
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
+                    ->orderBy('id','desc')
                     ->paginate(CommonHelper::PAGE_LENGTH_10);
 
         $jobResources = PicklistResource::collection($jobs->getCollection());
@@ -59,7 +67,303 @@ class PicklistTaskController extends Controller
 
     public function items(Request $request){
         $validator = Validator::make($request->all(),[
-            'job_id' => ['required']
+            'job_id' => ['required'],
+            'store_id' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required',
+            'store_id.required' => 'Store id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $job = ErpWhmJob::where('morphable_type','App\Models\ErpPlHeader')->where('id',$request->job_id)->first();
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $morphableId = $job->morphable_id;
+        $storeId = $request->store_id;
+
+        $items = ErpPlItem::where('pl_header_id', $morphableId)
+                        ->whereHas('header', function($q) use($storeId){
+                            $q->where('store_id',$storeId);
+                        })
+                        ->select(
+                            'id as pl_item_id',
+                            'pl_header_id',
+                            'item_id',
+                            'item_name',
+                            'item_code',
+                            DB::raw('CAST(inventory_uom_qty AS UNSIGNED) as quanity'),
+                            'attributes',
+                            DB::raw("(
+                                SELECT COUNT(*)
+                                FROM erp_item_unique_codes
+                                WHERE morphable_id = erp_pl_items.id
+                                AND morphable_type = '" . addslashes(ErpPlItem::class) . "'
+                                AND status = '" . CommonHelper::SCANNED . "'
+                            ) as scanned_count")
+                        )
+                        ->paginate(CommonHelper::PAGE_LENGTH_10);
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => $items,
+        ];
+
+    }
+
+    public function itemDetail(Request $request){
+        $validator = Validator::make($request->all(),[
+            'store_id' => ['required'],
+            'pl_item_id' => ['required'],
+        ],[
+            'store_id.required' => 'Store id is required',
+            'pl_item_id.required' => 'Pl item id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $storeId = $request->store_id;
+        $plItem = ErpPlItem::whereHas('header', function($q) use($storeId){
+                            $q->where('store_id',$storeId);
+                        })
+                        ->where('id', $request->pl_item_id)
+                        ->select('id as pl_item_id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
+                        ->first();
+        $plItemId = $plItem->pl_item_id;
+
+        if($plItem){
+            $itemId = $plItem->item_id;
+
+            // STEP 1: Fetch quantities grouped by storage_point_id
+            $storageData = ErpItemUniqueCode::where('item_id', $itemId)
+                ->where('store_id', $storeId)
+                ->where('job_type', CommonHelper::PUTAWAY)
+                ->where('doc_type', CommonHelper::RECEIPT)
+                // ->whereNull('utilized_id')
+                ->select('storage_point_id', DB::raw('COUNT(*) as quantity'))
+                ->groupBy('storage_point_id')
+                ->get();
+
+            // STEP 2: Map storage point detail with quantity
+            $plItem->storage_points = $storageData->map(function ($record) use($storeId, $itemId, $plItemId){
+                $detailsResponse = StoragePointHelper::getStoragePointDetailById($record->storage_point_id);
+                $scannedPackets = self::scannedPackets($storeId, $itemId, $record->storage_point_id, $plItemId);
+
+                return [
+                    'quantity' => $record->quantity,
+                    'details' => $detailsResponse['data'] ?? null,
+                    'scannedPacketsCount' => $scannedPackets ? $scannedPackets->count() : null,
+                    'scannedPackets' => $scannedPackets ?? null,
+                ];
+            });
+
+        } else {
+            $plItem->storage_points = null;
+            $plItem->scannedPacketsCount = 0;
+            $plItem->scannedPackets = null;
+        }
+
+        return [
+            'data' => $plItem,
+            'message' => "Record fetched successfully.",
+        ];
+
+    }
+
+    private function scannedPackets($storeId, $itemId, $storagePointId, $plItemId){
+
+        $packets = ErpItemUniqueCode::where('item_id', $itemId)
+            ->where('store_id', $storeId)
+            ->where('storage_point_id', $storagePointId)
+            ->where('morphable_type', 'App\Models\ErpPlItem')
+            ->where('morphable_id', $plItemId)
+            ->where('doc_type', CommonHelper::ISSUE)
+            ->where('status',CommonHelper::SCANNED)
+            ->select('uid','item_uid')
+            ->get();
+
+        return $packets;
+    }
+
+    public function saveAsDraft(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'pl_item_id' => ['required'],
+            'packet_ids' => ['required', 'array'],
+            'storage_point_id' => ['required']
+        ],[
+            'job_id.required' => 'Job id is required',
+            'pl_item_id.required' => 'Picklist item id is required',
+            'packet_ids.required' => 'Packet ids are required',
+            'storage_point_id.required' => 'Storage point id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $job = ErpWhmJob::where('id',$request->job_id)
+            ->where('type',CommonHelper::PICKING)
+            ->first();
+
+        if(!$job){
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $detail = ErpPlItem::find($request->pl_item_id);
+        if(!$detail){
+            throw ValidationException::withMessages([
+                'pl_item_id' => ['Item not found.'],
+            ]);
+        }
+
+        $packets = ErpItemUniqueCode::whereIn('item_uid', $request->packet_ids)
+            ->where('storage_point_id',$request->storage_point_id)
+            ->where('item_id',$detail->item_id)
+            ->whereNull('utilized_id')
+            ->where('job_type', CommonHelper::PUTAWAY)
+            ->pluck('item_uid')
+            ->toArray();
+
+        $invalidPackets = array_diff($request->packet_ids, $packets);
+
+        if (!empty($invalidPackets)) {
+            throw ValidationException::withMessages([
+                'packet_ids' => ['Invalid or mismatched packet IDs: ' . implode(', ', $invalidPackets)],
+            ]);
+        }
+
+        // custom validation after
+        $alreadyScanned = ErpItemUniqueCode::where('job_id', $request->job_id)
+            ->whereIn('item_uid', $request->packet_ids)
+            ->where('status', CommonHelper::SCANNED)
+            ->where('job_type', CommonHelper::PICKING)
+            ->pluck('item_uid')
+            ->toArray();
+
+        if (!empty($alreadyScanned)) {
+            throw ValidationException::withMessages([
+                'packet_ids' => ['Some packets are already scanned: ' . implode(', ', $alreadyScanned)],
+            ]);
+        }
+
+        $count = count($request->packet_ids);
+        $stockRes = StockReservation::validateReservedStock(ConstantHelper::PL_SERVICE_ALIAS,$job->morphable_id,$request->pl_item_id,$count);
+        if($stockRes['status'] == 'error'){
+            throw ValidationException::withMessages([
+                'pl_item_id' => [$stockRes['message']],
+            ]);
+        }
+       
+
+        \DB::beginTransaction();
+        try {
+            // Get Login User
+            $user = Helper::getAuthenticatedUser();
+            
+            // Update Job Status
+            if($job->status != CommonHelper::DEVIATION){
+                $job->status = CommonHelper::IN_PROGRESS;
+                $job->save();
+            }
+
+            $header = $job->morphable;
+            (new WhmJob())->generateQRCodesForPickList($detail, $header, $job->id, $request->packet_ids, $request->storage_point_id, $user, CommonHelper::PICKING);
+
+
+            \DB::commit();
+            return [
+                'message' => 'Task saved in draft'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
+
+    public function updateStatus(Request $request){
+        $validator = Validator::make($request->all(),[
+            'packet_id' => ['required'],
+            'job_id' => ['required'],
+            'storage_point_id' => ['required'],
+        ],[
+            'packet_id.required' => 'Packet id is required',
+            'job_id.required' => 'Job id is required',
+            'storage_point_id.required' => 'Storage point id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $job = ErpWhmJob::where('id',$request->job_id)->where('morphable_type','App\Models\ErpPlHeader')->first();
+
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $uniqueCode = ErpItemUniqueCode::where('item_uid', $request->packet_id)
+                        ->where('job_id',$request->job_id)
+                        ->where('storage_point_id',$request->storage_point_id)
+                        ->where('morphable_type', 'App\Models\ErpPlItem')
+                        ->where('status',CommonHelper::SCANNED)
+                        ->first();
+        if (!$uniqueCode) {
+            throw ValidationException::withMessages([
+                'packet_id' => ['Packet ID not found.'],
+            ]);
+        }
+
+        if ($job->status == CommonHelper::DEVIATION) {
+            throw ValidationException::withMessages([
+                'job_id' => ['The job status is deviation.'],
+            ]);
+        }
+
+        \DB::beginTransaction();
+        try {
+
+            $mrnDetail = ErpItemUniqueCode::where('item_uid', $request->packet_id)
+                ->where('storage_point_id',$request->storage_point_id)
+                ->where('morphable_type', 'App\Models\MrnDetail')
+                ->where('status',CommonHelper::SCANNED)
+                ->where('utilized_id',$uniqueCode->uid)
+                ->first();
+
+            if($mrnDetail){
+                $mrnDetail->utilized_id = NULL;
+                $mrnDetail->save();
+                $uniqueCode->delete();
+            }
+
+            \DB::commit();
+            return [
+                'data' => $request->packet_id,
+                'message' => 'Packet deleted successfully.'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+
+    }
+
+    public function closeJob(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'deviation' => ['required'],
         ],[
             'job_id.required' => 'Job id is required'
         ]);
@@ -68,52 +372,58 @@ class PicklistTaskController extends Controller
             throw new ValidationException($validator);
         }
 
+        // custom validation after
         $job = ErpWhmJob::find($request->job_id);
-        $morphableId = $job->morphable_id;
-
-        $items = ErpPlItem::with([
-                            'item_attributes' => function($q){
-                                $q->select('pl_item_id','attribute_name','attribute_value');
-                        }])
-                        ->where('pl_header_id', $morphableId)
-                        ->select('id','pl_header_id','item_id','item_name','item_code','picked_qty')
-                        ->get();
-        return [
-            'message' => 'Records fetched successfully',
-            "data" => [
-                'records' => $items
-            ],
-        ];
-
-    }
-
-    public function itemLocation(Request $request){
-        $validator = Validator::make($request->all(),[
-            'store_id' => ['required'],
-            'item_id' => ['required'],
-        ],[
-            'store_id.required' => 'Store id is required',
-            'item_id.required' => 'Item id is required',
-        ]);
-
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
-        }
-
-        $storeId = $request->store_id;
-        $itemId = $request->item_id;
-        $response = StoragePointHelper::getStoragePoints($itemId, $storeId);
-        
-        if($response['code'] == 500){
+        if (!$job) {
             throw ValidationException::withMessages([
-                'item_id' => [$response['message']],
+                'job_id' => ['Job not found.'],
             ]);
         }
 
-        return [
-            'data' => $response['data'],
-            'message' => $response['message'],
-        ];
+        // Check if job is already closed with deviation=0 and incoming deviation=0
+        if ($job->job_closed_at !== null ) {
+            if ($job->deviation_qty == $request->deviation) {
+                throw ValidationException::withMessages([
+                    'job_id' => ['Job already closed.'],
+                ]);
+            }
+        }
 
+
+        \DB::beginTransaction();
+        try {
+
+            $job = ErpWhmJob::find($request->job_id);
+            $job->status = CommonHelper::CLOSED;
+            $job->job_closed_at = now();
+            $job->deviation_qty = $request->deviation;
+            $message = 'Job closed successfully.';
+
+            // Update status based on deviation
+            if($request->deviation > 0){
+                $job->status = CommonHelper::DEVIATION;
+                $message = 'Job closed with deviation '.$request->deviation.'.';
+            }
+
+            $job->save();
+
+            $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
+            $header = $job->morphable;
+            $bookId = $header->book_id;
+            $docId = $header->id;
+            $docValue = $header->total_amount;
+            $currentLevel = $header->approval_level;
+            $revisionNumber = $header->revision_number ?? 0;
+            $modelName = $job->morphable_type;
+            Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
+
+            \DB::commit();
+            return [
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
     }
 }

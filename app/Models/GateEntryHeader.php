@@ -356,23 +356,67 @@ class GateEntryHeader extends Model
         return $this -> hasMany(ErpGeDynamicField::class, 'header_id');
     }
 
-    public function deviationPendingItems()
+    // Item Unique Codes
+    public function itemUniqueCodes()
     {
         $job = $this->deviationJob;
 
         if (!$job) {
-            return collect();
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
         }
 
-        return ErpItemUniqueCode::where('job_id', $job->id)
-            ->where('status', 'pending')
-            ->get();
+        $itemIds = GateEntryDetail::where('header_id', $this->id)->pluck('id')->toArray();
+
+        if (empty($itemIds)) {
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
+        }
+
+        $baseQuery = ErpItemUniqueCode::where('job_id', $job->id)
+            ->where('morphable_type', GateEntryDetail::class)
+            ->whereIn('morphable_id', $itemIds);
+
+        $total = $baseQuery->count();
+
+        if ($total === 0) {
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
+        }
+
+        $scanned = (clone $baseQuery)->where('status', 'scanned')->count();
+
+        return [
+            'total_unique_codes' => $total,
+            'scanned_unique_codes' => $scanned,
+            'pending_unique_codes' => $total - $scanned,
+        ];
     }
 
     public function deviationJob()
     {
         return $this->morphOne(ErpWhmJob::class, 'morphable')
                     ->where('status', 'deviation');
+    }
+
+    public function closedJob()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable')
+                    ->where('status', 'closed');
+    }
+
+    public function job()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable');
     }
 
 }

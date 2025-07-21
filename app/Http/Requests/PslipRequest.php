@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
+use App\Models\MfgOrder;
 use App\Models\MoBomMapping;
 use App\Models\PslipBomConsumption;
 use App\Traits\ProcessesComponentJson;
@@ -67,6 +69,19 @@ class PslipRequest extends FormRequest
         //         }
         //     }
         // }
+        $moId = $this->mo_id ?? null;
+        $machines = collect();
+        $mo = MfgOrder::where('id', $moId)->first();
+        $productionBom = $mo?->productionRoute ?? null;
+        if($productionBom) {
+            $machines = $productionBom?->machines()
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get(); 
+        }
+        if($machines->isNotEmpty()) {
+            $rules['machine_id.*'] = 'required|array|min:1';
+            $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
+        }
         return $rules;
     }
 

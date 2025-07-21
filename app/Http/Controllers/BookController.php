@@ -109,7 +109,13 @@ class BookController extends Controller
         $userType = Helper::userCheck()['type'];
         $services = OrganizationService::withDefaultGroupCompanyOrg()->get();
         //Get Org Access of logged in USER
-        $orgIds = $authUser -> organizations() -> pluck('organizations.id') -> toArray();
+        $authOrganization = Organization::find($authUser -> organization_id);
+        $groupId = $authOrganization ?-> group_id;
+        if ($authUser -> user_type === ConstantHelper::IAM_SUPER_ADMIN && $groupId) {
+            $orgIds = Organization::where('group_id', $groupId) -> pluck('id') -> toArray();
+        } else {
+            $orgIds = $authUser -> organizations() -> pluck('organizations.id') -> toArray();
+        }
         array_push($orgIds, $authUser?->organization_id);
         //Get Company according to Org
         $companyIds = Organization::whereIn('id', $orgIds)->where('status', ConstantHelper::ACTIVE)->get()->pluck('company_id');
@@ -468,15 +474,20 @@ class BookController extends Controller
     public function edit_book($id)
     {
         $auth = Helper::getAuthenticatedUser();
+        $userRole = $auth -> user_type;
         $book = Book::with([
             'common_parameters',
             'gl_parameters',
             'patterns',
-            'levels' => function ($l) use($auth) {
-                $l->where('organization_id', $auth -> organization_id) -> with(['approvers']);
+            'levels' => function ($l) use($auth, $userRole) {
+                $l -> when($userRole != ConstantHelper::IAM_SUPER_ADMIN, function ($subQuery) use($auth) {
+                    $subQuery->where('organization_id', $auth -> organization_id) -> with(['approvers']);
+                });
             },
-            'amendments' => function ($l) use($auth) {
-                $l->where('organization_id', $auth -> organization_id) -> with(['approvers']);
+            'amendments' => function ($l) use($auth, $userRole) {
+                $l -> when($userRole != ConstantHelper::IAM_SUPER_ADMIN, function ($subQuery) use($auth) {
+                    $subQuery->where('organization_id', $auth -> organization_id) -> with(['approvers']);
+                });
             }
         ])->findOrFail($id);
         if (isset($book)) {
@@ -777,10 +788,16 @@ class BookController extends Controller
                 $book -> manual_entry_editable_message = "";
             }
         }
-        $authUser = Helper::getAuthenticatedUser();
+        $authUser = $auth;
         $userType = Helper::userCheck()['type'];
         //Get Org Access of logged in USER
-        $orgIds = $authUser -> organizations() -> pluck('organizations.id') -> toArray();
+        $authOrganization = Organization::find($authUser -> organization_id);
+        $groupId = $authOrganization ?-> group_id;
+        if ($authUser -> user_type === ConstantHelper::IAM_SUPER_ADMIN && $groupId) {
+            $orgIds = Organization::where('group_id', $groupId) -> pluck('id') -> toArray();
+        } else {
+            $orgIds = $authUser -> organizations() -> pluck('organizations.id') -> toArray();
+        }
         array_push($orgIds, $authUser?->organization_id);
        //Get Company according to Org
        $companyIds = Organization::whereIn('id', $orgIds) -> where('status', ConstantHelper::ACTIVE) -> get() -> pluck('company_id');
@@ -813,13 +830,13 @@ class BookController extends Controller
 
         try {
             DB::beginTransaction();
-            $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
+            // $organization = Organization::where('id', Helper::getAuthenticatedUser()->organization_id)->first();
 
             // Find and update the book
             $update = Book::find($id);
             $update->book_name = $request->book_name;
             $update->status = $request->status;
-            $update->group_id = $organization->group_id;
+            // $update->group_id = $organization->group_id;
             // $update->company_id = $organization->company_id;
             // $update->organization_id = $organization->id;
             $update->manual_entry = $request->manual_entry === "yes" ? 1 : 0;

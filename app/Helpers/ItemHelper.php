@@ -652,6 +652,50 @@ class ItemHelper
         return $processedItems;
     }
 
+  public static function checkBomForItem(int $itemId): array
+    {
+        $bomHeader = Bom::withDefaultGroupCompanyOrg()
+            ->where('item_id', $itemId)
+            ->whereIn('document_status', [
+                ConstantHelper::APPROVED,
+                ConstantHelper::APPROVAL_NOT_REQUIRED
+            ])
+            ->first();
+
+        if ($bomHeader) {
+            return [
+                'status' => 'bom_exists',
+                'bom_id' => $bomHeader->id,
+                'message' => 'BOM exists for this item in BOM header',
+            ];
+        }
+
+        $bomDetail = BomDetail::where('item_id', $itemId)
+            ->withWhereHas('bom', function ($query) {
+                $query->withDefaultGroupCompanyOrg()
+                    ->whereIn('document_status', [
+                        ConstantHelper::APPROVED,
+                        ConstantHelper::APPROVAL_NOT_REQUIRED
+                    ]);
+            })
+            ->first();
+
+        if ($bomDetail && $bomDetail->bom) {
+            return [
+                'status' => 'bom_exists',
+                'bom_id' => $bomDetail->bom->id,
+                'message' => 'BOM exists for this item in BOM detail',
+            ];
+        }
+        
+        return [
+            'status' => 'bom_not_exists',
+            'bom_id' => null,
+            'message' => 'BOM does not exist for this item',
+        ];
+    }
+
+
     // public static function generateOrgLocStoreWiseItemStock(Item $item, array $itemAttributes, int $uomId, ErpStore $location)
     // {
     //     $processedItems = new Collection();

@@ -479,14 +479,18 @@ document.addEventListener('input', function (e) {
     });
 });
 
-const vehicleTypes = [
+    const vehicleTypes = [
+   @if($vehicleTypes->isNotEmpty())
     @foreach($vehicleTypes as $vt)
         {
-            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
-            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name }})",
+            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
+            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
             id: {{ $vt->id }}
-        },
+        }@if(!$loop->last),@endif
     @endforeach
+@else
+    null
+@endif
 ];
 
    $(document).on('focus', '.vehicle-type-autocomplete', function () {

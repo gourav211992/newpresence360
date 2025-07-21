@@ -3,6 +3,8 @@ namespace App\Models;
 
 use App\Models\PO\PoHeader;
 use App\Models\PO\PoDetail;
+use App\Models\WHM\ErpItemUniqueCode;
+
 use App\Helpers\ConstantHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -221,5 +223,10 @@ class InspectionDetail extends Model
     public function ted_tax()
     {
         return $this->hasOne(InspectionTed::class,'detail_id')->where('ted_type','Tax')->latest();
+    }
+
+    public function uniqueCodes()
+    {
+        return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
     }
 }

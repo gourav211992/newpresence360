@@ -3,11 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header d-flex justify-content-between align-items-start">
 				<div>
-					@if(request()->type == 'supplier-invoice')
-						<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Order</h4>
-					@else
-						<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Indent</h4>
-					@endif
+					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="prModal">Select Purchase Indent</h4>
 					<p class="mb-0">Select from the below list</p>
 				</div>
 				<div class="d-flex align-items-start gap-2">
@@ -26,35 +22,13 @@
 							<input type="hidden" id="vendor_id_qt_val"></input>
 						</div>
 					</div>
-					{{-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Location</label>
-							<input type="text" id="store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="store_id_po"></input>
-						</div>
-					</div> --}}
-					{{-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Requester</label>
-							<input type="text" id="sub_store_po" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="sub_store_id_po"></input>
-						</div>
-					</div> --}}
-					{{-- <div class="col">
-						<div class="mb-1">
-							<label class="form-label">Series</label>
-							<input type="text" id="book_code_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
-							<input type="hidden" id="book_id_qt_val"></input>
-						</div>
-					</div> --}}
 					<div class="col">
 						<div class="mb-1">
-							<label class="form-label">@if(request()->type == 'supplier-invoice') Doc @else Indent @endif No.</label>
+							<label class="form-label">Indent No.</label>
 							<input type="text" id="document_no_input_qt" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
 							<input type="hidden" id="document_id_qt_val"></input>
 						</div>
 					</div>
-					@if(request()->type != 'supplier-invoice')
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Sales Order</label>
@@ -62,7 +36,6 @@
 							<input type="hidden" id="pi_so_qt_val"></input>
 						</div>
 					</div>
-					@endif
 					<div class="col">
 						<div class="mb-1">
 							<label class="form-label">Item</label>
@@ -85,8 +58,8 @@
 											</div>
 										</th>
 										<th>Series</th>
-										<th>@if(request()->type == 'supplier-invoice') Doc @else Indent @endif No.</th>
-										<th>@if(request()->type == 'supplier-invoice') Doc @else Indent @endif Date</th>
+										<th>Indent No.</th>
+										<th>Indent Date</th>
 										<th>Item Code</th>
 										<th>Item Name</th>
 										<th>Attributes</th>
@@ -95,14 +68,10 @@
 										<th>Pending PO</th>
 										<th>Avl Stock</th>
 										<th style="min-width: 250px; max-width: 350px;">Vendor</th>
-										@if(request()->type != 'supplier-invoice')
-											<th>Sales Order</th>
-										@endif
+										<th>Sales Order</th>
 										<th>Location</th>
 										<th>Requester</th>
-										@if(request()->type != 'supplier-invoice')
-											<th>Remarks</th>
-										@endif
+										<th>Remarks</th>
 									</tr>
 								</thead>
 								<tbody id="prDataTable"></tbody>

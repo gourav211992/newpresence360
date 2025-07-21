@@ -1339,7 +1339,7 @@ class ErpMaterialIssueController extends Controller
                 ->addColumn('station_name', function ($item) use($request) {
                     if ($request->doc_type === ConstantHelper::MO_SERVICE_ALIAS) {
                         if ($item?->rm_type === 'sf') {
-                            return ($item->item_name . '-' . ($item->station?->name ?? ''));
+                            return ($item?->item?->item_name . '-' . ($item->station?->name ?? ''));
                         }
                     }
                     return $item->header?->station?->name ?? '';

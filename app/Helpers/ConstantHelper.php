@@ -11,6 +11,7 @@ class ConstantHelper
     // Vendor Status
     const IAM_VENDOR_USER = 'IAM-VENDOR';
     const IAM_ROOT_USER = 'IAM-ROOT';
+    const IAM_SUPER_ADMIN = 'IAM-SUPER';
     const ACTIVE = 'active';
     const INACTIVE = 'inactive';
     const PENDING = 'pending';

@@ -1,6 +1,15 @@
 let prevBalance = 0;
-$('#store_id_input').on('change', function () {
-    let selectedValue = $(this).val();
+let subStoreUrl = window.routes.subStores;
+
+// $('#store_id_input').on('change', function () {
+//     storeIdOnchange(this);
+// });
+
+locationChange(document.getElementById('store_id_input'));
+
+function storeIdOnchange(element)
+{
+    let selectedValue = element.value;
     const tableBody = $('#itemTable tbody');
     $('#so_book_code_input_qt').val('');
     $('#so_document_no_input_qt').val('');
@@ -11,7 +20,7 @@ $('#store_id_input').on('change', function () {
     $.ajax({
         url: "/pick-list/so/get/items",
         type: 'GET',
-        data: { store_id: selectedValue },
+        data: { store_id: selectedValue, sub_store_id: $("#main_sub_store_id_input").val() },
         success: function (response) {
             populateOrderTable(response.data);
         },
@@ -25,7 +34,7 @@ $('#store_id_input').on('change', function () {
             tableBody.html('<tr><td colspan="12" class="text-center">Failed to load data.</td></tr>');
         }
     });
-});
+}
 
 if(order && order.document_status=="draft" && order.store_id)
 {
@@ -57,8 +66,9 @@ function populateOrderTable(orders) {
                     <td class='no-wrap'>${norder.attributes || 'N/A'}</td>
                     <td class='no-wrap'>${norder.item.uom.name || 'N/A'}</td>
                     <td class="text-end">${norder.item.order_qty || '0.00'}</td>
-                    <td class="text-end balance-qty-cell">${norder.item.balance_qty || '0.00'}</td>
+                    <td class="text-end">${norder.item.picked_balance_qty || '0.00'}</td>
                     <td class="text-end">${norder.avl_stock || '0.00'}</td>
+                    <td class="text-end balance-qty-cell">${norder.item.balance_qty || '0.00'}</td>
                     <td>${norder.item.rate || 'N/A'}</td>
                     <td class='no-wrap'>${norder.item.header.customer_code || 'N/A'}</td>
                 </tr>
@@ -186,49 +196,145 @@ $(".clearPiFilter").on('click',function(){
 $('#delivery_date_filter, #so_document_no_input_qt, #document_date_filter, #customer_code_input_qt').val('');
 $('#delivery_date_filter, #so_document_no_input_qt, #document_date_filter, #customer_code_input_qt').trigger('change');
 });
-let subStoreUrl = window.routes.subStores;
-console.log('subStoreUrl', subStoreUrl);
-var sub_store_element = document.getElementById('sub_store_id_input');
-if (sub_store_element) {
-    console.log('sub_store_element', sub_store_element);
-    $("#store_id_input").on('change', function() {
-        const storeId = $(this).val();
-        $("#item_header").html('');
-        const sub_store_id  = order ? order.sub_store_id : null;
-        $('#sub_store_id_input').empty();
-        if (storeId) {
-            $.ajax({
-                url: subStoreUrl,
-                method: 'GET',
-                dataType: 'json',
-                data: {
-                store_id: storeId,
-                types : Stockk,
-                },
-                success: function(data) {
-                console.log('Sub-stores fetched successfully:', data);
-                if (data.data && data.data.length > 0) {
-                    let options = '<option value="" disabled selected>Select</option>';
-                    data.data.forEach(function(subStore) {
-                        options += `<option value="${subStore.id}" ${subStore.id == sub_store_id ? 'selected' : ''}>${subStore.name}</option>`;
-                    });
-                    $('#sub_store_id_input').empty().html(options);
-                }
-                else{
-                    $('#sub_store_id_input').empty();
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'No Store Found On this Location.',
-                        icon: 'warning',
-                    });
-                }
-                // Handle the response data as needed
-                },
-                error: function(xhr) {
-                console.error('Error fetching sub-stores:', xhr.responseText);
-                }
+
+function locationChange(element)
+    {
+        $.ajax({
+            url: subStoreUrl,
+            method: 'GET',
+            dataType: 'json',
+            data: {
+            store_id: element.value,
+            sub_type : "main",
+            },
+            success: function(data) {
+            if (data.data && data.data.length > 0) {
+                let options = '';
+                data.data.forEach(function(subStore) {
+                    options += `<option value="${subStore.id}">${subStore.name}</option>`;
+                });
+                $('#main_sub_store_id_input').empty().html(options);
+                storeIdOnchange(element);
+            }
+            else{
+                $('#main_sub_store_id_input').empty();
+                storeIdOnchange(element);
+                // Swal.fire({
+                //     title: 'Error!',
+                //     text: 'No Store Found On this Location.',
+                //     icon: 'warning',
+                // });
+            }
+            // Handle the response data as needed
+            },
+            error: function(xhr) {
+            console.error('Error fetching sub-stores:', xhr.responseText);
+            }
+        });
+        $.ajax({
+            url: subStoreUrl,
+            method: 'GET',
+            dataType: 'json',
+            data: {
+            store_id: element.value,
+            sub_type : "packing",
+            },
+            success: function(data) {
+            if (data.data && data.data.length > 0) {
+                let options = '';
+                data.data.forEach(function(subStore) {
+                    options += `<option value="${subStore.id}">${subStore.name}</option>`;
+                });
+                $('#staging_sub_store_id_input').empty().html(options);
+            }
+            else{
+                $('#staging_sub_store_id_input').empty();
+                // Swal.fire({
+                //     title: 'Error!',
+                //     text: 'No Store Found On this Location.',
+                //     icon: 'warning',
+                // });
+            }
+            // Handle the response data as needed
+            },
+            error: function(xhr) {
+            console.error('Error fetching sub-stores:', xhr.responseText);
+            }
+        });
+    }
+
+
+    function subStoreIdOnchange(element)
+{
+    let selectedValue = element.value;
+    const tableBody = $('#itemTable tbody');
+    $('#so_book_code_input_qt').val('');
+    $('#so_document_no_input_qt').val('');
+    $('#document_date_filter').val('');
+    $('#customer_code_input_qt').val('');
+    tableBody.html('<tr><td colspan="15" class="text-center">Loading...</td></tr>');
+
+    $.ajax({
+        url: "/pick-list/so/get/items",
+        type: 'GET',
+        data: { store_id: $("#store_id_input").val() , sub_store_id: selectedValue },
+        success: function (response) {
+            populateOrderTable(response.data);
+        },
+        error: function (xhr, status, error) {
+            console.error('Error fetching orders:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to fetch orders. Please try again.',
+                icon: 'error',
             });
+            tableBody.html('<tr><td colspan="12" class="text-center">Failed to load data.</td></tr>');
         }
     });
 }
+
+
+// var sub_store_element = document.getElementById('sub_store_id_input');
+// if (sub_store_element) {
+//     console.log('sub_store_element', sub_store_element);
+//     $("#store_id_input").on('change', function() {
+//         const storeId = $(this).val();
+//         $("#item_header").html('');
+//         const sub_store_id  = order ? order.sub_store_id : null;
+//         $('#sub_store_id_input').empty();
+//         if (storeId) {
+//             $.ajax({
+//                 url: subStoreUrl,
+//                 method: 'GET',
+//                 dataType: 'json',
+//                 data: {
+//                 store_id: storeId,
+//                 types : Stockk,
+//                 },
+//                 success: function(data) {
+//                 console.log('Sub-stores fetched successfully:', data);
+//                 if (data.data && data.data.length > 0) {
+//                     let options = '<option value="" disabled selected>Select</option>';
+//                     data.data.forEach(function(subStore) {
+//                         options += `<option value="${subStore.id}" ${subStore.id == sub_store_id ? 'selected' : ''}>${subStore.name}</option>`;
+//                     });
+//                     $('#sub_store_id_input').empty().html(options);
+//                 }
+//                 else{
+//                     $('#sub_store_id_input').empty();
+//                     Swal.fire({
+//                         title: 'Error!',
+//                         text: 'No Store Found On this Location.',
+//                         icon: 'warning',
+//                     });
+//                 }
+//                 // Handle the response data as needed
+//                 },
+//                 error: function(xhr) {
+//                 console.error('Error fetching sub-stores:', xhr.responseText);
+//                 }
+//             });
+//         }
+//     });
+// }
 

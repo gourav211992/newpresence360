@@ -192,7 +192,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="number" class="form-control income_field"
+                                                        <input type="number" class="form-control income-field"
                                                             name="dep_percentage" id="dep_percentage" value="{{$data->dep_percentage}}" required/>
                                                     </div>
                                                 </div>

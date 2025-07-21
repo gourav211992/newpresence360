@@ -184,7 +184,7 @@ $(document).ready(function() {
         if (codeType === 'Hsn') {
             filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['GST', 'TCS']));
         } else if (codeType === 'Sac') {
-            filteredTaxGroups = @json($taxGroups->where('tax_category', 'TDS'));
+           filteredTaxGroups = @json($taxGroups->whereIn('tax_category', ['GST', 'TDS'])->values());
         }
 
         return filteredTaxGroups;
