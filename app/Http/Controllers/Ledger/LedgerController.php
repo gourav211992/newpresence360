@@ -437,7 +437,7 @@ class LedgerController extends Controller
             ],
             'tax_percentage' => [
                 'nullable',
-                'int',
+                'numeric',
                 'max:255',
             ],
             'tds_section' => [
@@ -454,6 +454,14 @@ class LedgerController extends Controller
                 'nullable',
                 'string',
                 'max:255',
+            ],
+            'tcs_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            'tds_capping' => [
+                'nullable',
+                'numeric',
             ],
             'tcs_percentage' => [
                 'nullable',
@@ -472,9 +480,9 @@ class LedgerController extends Controller
             ],
         ]);
         $user = Helper::getAuthenticatedUser();
-        $request->merge([
-            'created_by' => $user->auth_user_id,
-        ]);
+        // $request->merge([
+        //     'created_by' => $user->auth_user_id,
+        // ]);
         $existingName = Ledger::where('code', $request->name)
             ->first();
 
@@ -505,11 +513,13 @@ class LedgerController extends Controller
         if (!in_array('tds', $groupNames)) {
             $request->request->remove('tds_section');
             $request->request->remove('tds_percentage');
+            $request->request->remove('tds_capping');
         }
 
         if (!in_array('tcs', $groupNames)) {
             $request->request->remove('tcs_section');
             $request->request->remove('tcs_percentage');
+            $request->request->remove('tcs_capping');
         }
 
         if (!in_array('gst', $groupNames)) {
@@ -553,13 +563,13 @@ class LedgerController extends Controller
         
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
             $document_status = $approveDocument['approvalStatus'];
-            $ledger->document_status = $document_status;
-            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                $ledger->status = 0;
-            }
-            else{
-                $ledger->status = 1;
-            }
+            // $ledger->document_status = $document_status;
+            // if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+            //     $ledger->status = 0;
+            // }
+            // else{
+            //     $ledger->status = 1;
+            // }
             $ledger->save();
     
 
