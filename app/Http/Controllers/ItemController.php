@@ -651,7 +651,7 @@ class ItemController extends Controller
         $fixedAssetCategories = FixedAssetSetup::with('assetCategory')->where('status', ConstantHelper::ACTIVE)->select('id', 'asset_category_id')->get();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
-        $bomCheckResult = ItemHelper::checkItemBomExists($item->id, [], 'bom', null);
+        $bomCheckResult = ItemHelper::checkBomForItem($item->id);
         $isBomExists = $bomCheckResult['status'] === 'bom_exists';
         $itemCodeType ='Manual';
         if ($services && $services['current_book']) {

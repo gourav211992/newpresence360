@@ -1966,7 +1966,6 @@
                     $hiddenSelect.show();
                     $select.val(['1']).trigger('change'); 
                 } else {
-                    alert("ok");
                     $visibleSelect.show();
                     $hiddenSelect.hide();
                     $select.val([]).trigger('change'); 
