@@ -483,9 +483,9 @@ class LedgerController extends Controller
             ],
         ]);
         $user = Helper::getAuthenticatedUser();
-        // $request->merge([
-        //     'created_by' => $user->auth_user_id,
-        // ]);
+        $request->merge([
+            'created_by' => $user->auth_user_id,
+        ]);
         $existingName = Ledger::where('code', $request->name)
             ->first();
 

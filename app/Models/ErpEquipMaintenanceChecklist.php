@@ -8,4 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 class ErpEquipMaintenanceChecklist extends Model
 {
     use HasFactory;
+    
+    protected $fillable = [
+        'erp_equip_maintenance_id',
+        'name',
+        'description',
+        'type',
+        'status',
+        'created_by',
+        'updated_by',
+        'deleted_by'
+    ];
+
+    public function maintenanceDetail()
+    {
+        return $this->belongsTo(ErpEquipMaintenanceDetail::class, 'erp_equip_maintenance_id');
+    }
 }
