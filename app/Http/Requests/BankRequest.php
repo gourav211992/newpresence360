@@ -16,6 +16,8 @@ class BankRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -23,11 +25,33 @@ class BankRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
         $bankId = $this->route('id');
+        $uniqueBankCodeRule = Rule::unique('erp_banks', 'bank_code')
+        ->ignore($bankId)
+        ->whereNull('deleted_at');
+
+        if ($this->group_id !== null) {
+            $uniqueBankCodeRule->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $uniqueBankCodeRule->where(function ($query) {
+                $query->where('company_id', $this->company_id)
+                    ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $uniqueBankCodeRule->where(function ($query) {
+                $query->where('organization_id', $this->organization_id)
+                    ->orWhereNull('organization_id');
+            });
+        }
         return [
             'bank_name' => [
                 'required',
@@ -40,12 +64,7 @@ class BankRequest extends FormRequest
                 'string',
                 'max:255',
                 'regex:/^[A-Z0-9]+$/',
-                Rule::unique('erp_banks', 'bank_code')
-                    ->ignore($bankId) 
-                    ->where(function ($query) {
-                        return $query->where('group_id', $this->group_id); 
-                    })
-                    ->whereNull('deleted_at'), 
+                $uniqueBankCodeRule,
             ],
             'ledger_id' => 'nullable|exists:erp_ledgers,id',
             'ledger_group_id' => 'nullable|exists:erp_groups,id',

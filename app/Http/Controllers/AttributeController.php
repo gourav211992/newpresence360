@@ -21,7 +21,7 @@ class AttributeController extends Controller
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
         if ($request->ajax()) {
-            $attributeGroups = AttributeGroup::WithDefaultGroupCompanyOrg()->with('attributes')->orderBy('id', 'desc');
+            $attributeGroups = AttributeGroup::with('attributes')->orderBy('id', 'desc');
             return DataTables::of($attributeGroups)
                 ->addIndexColumn()
                 ->addColumn('attributes', function ($row) {
@@ -82,12 +82,12 @@ class AttributeController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         $attributeGroup = AttributeGroup::create([
@@ -164,12 +164,12 @@ class AttributeController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
             $attributeGroup = AttributeGroup::findOrFail($id);

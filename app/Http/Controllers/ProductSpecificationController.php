@@ -22,7 +22,7 @@ class ProductSpecificationController extends Controller
         $companyId = $organization?->company_id ?? null;
     
         if ($request->ajax()) {
-            $query = ProductSpecification::WithDefaultGroupCompanyOrg(); 
+            $query = ProductSpecification::query();
             $productSpecifications = $query->orderBy('id', 'desc'); 
     
             return DataTables::of($productSpecifications)
@@ -78,12 +78,12 @@ class ProductSpecificationController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         $productSpecification = ProductSpecification::create($validatedData);
@@ -145,12 +145,12 @@ class ProductSpecificationController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         $productSpecification->update($validatedData);

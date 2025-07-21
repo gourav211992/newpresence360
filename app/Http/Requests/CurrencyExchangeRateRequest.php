@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Helpers\Helper;
 
 class CurrencyExchangeRateRequest extends FormRequest
 {
@@ -12,8 +13,49 @@ class CurrencyExchangeRateRequest extends FormRequest
         return true;
     }
 
+    protected $organization_id;
+    protected $company_id;
+    protected $group_id;
+
+      protected function prepareForValidation()
+    {
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $this->organization_id = $organization ? $organization->id : null;
+        $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
+    }
+
     public function rules(): array
     {
+
+        $exchangeId = $this->route('exchangeId');
+        
+        $uniqueRateRule = Rule::unique('erp_currency_exchanges')
+            ->ignore($exchangeId)
+            ->whereNull('deleted_at')
+            ->where('from_currency_id', $this->from_currency_id)
+            ->where('upto_currency_id', $this->upto_currency_id)
+            ->where('from_date', $this->from_date);
+
+        if ($this->group_id !== null) {
+            $uniqueRateRule->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $uniqueRateRule->where(function ($query) {
+                $query->where('company_id', $this->company_id)
+                    ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $uniqueRateRule->where(function ($query) {
+                $query->where('organization_id', $this->organization_id)
+                    ->orWhereNull('organization_id');
+            });
+        }
+
         return [
             'organization_id' => 'nullable|exists:organizations,id',
             'group_id' => 'nullable|exists:groups,id',
@@ -23,13 +65,7 @@ class CurrencyExchangeRateRequest extends FormRequest
                 'required',
                 'exists:mysql_master.currency,id',
                 'different:from_currency_id',
-                Rule::unique('erp_currency_exchanges')->where(function ($query) {
-                    return $query->where('from_currency_id', $this->from_currency_id)
-                                 ->where('upto_currency_id', $this->upto_currency_id)
-                                 ->where('from_date', $this->from_date)
-                                 ->where('organization_id', $this->organization_id)
-                                 ->whereNull('deleted_at');
-                })->ignore($this->route('exchangeId')), 
+                $uniqueRateRule
             ],
             'from_date' => 'required|date',
             'exchange_rate' => 'required|numeric|min:0|regex:/^\d+(\.\d{1,2})?$/',

@@ -16,8 +16,8 @@ class StoreRequest extends FormRequest
     }
 
     protected $organization_id;
-    protected $group_id;
     protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -25,28 +25,27 @@ class StoreRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
-        $this->company_id = $organization ? $organization->company_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
         $storeId = $this->route('id');
-        $uniqueScope = function ($query) {
+        $isUpdate = $this->isMethod('put') || $this->isMethod('patch');
+         $uniqueScope = function ($query) {
             if ($this->group_id !== null) {
                 $query->where('group_id', $this->group_id);
             }
 
             if ($this->company_id !== null) {
                 $query->where(function ($q) {
-                    $q->where('company_id', $this->company_id)
-                      ->orWhereNull('company_id');
+                    $q->where('company_id', $this->company_id)->orWhereNull('company_id');
                 });
             }
 
             if ($this->organization_id !== null) {
                 $query->where(function ($q) {
-                    $q->where('organization_id', $this->organization_id)
-                        ->orWhereNull('organization_id');
+                    $q->where('organization_id', $this->organization_id)->orWhereNull('organization_id');
                 });
             }
         };
@@ -55,24 +54,22 @@ class StoreRequest extends FormRequest
                 'required', 
             ],
             'store_id' => 'nullable|integer|exists:erp_stores,id',
-           'store_code' => [
+            'store_code' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('erp_stores')
-                    ->ignore($storeId)
-                    ->whereNull('deleted_at')
-                    ->where($uniqueScope),
+                $isUpdate
+                    ? Rule::unique('erp_stores', 'store_code')->ignore($storeId)->whereNull('deleted_at')->where($uniqueScope)
+                    : Rule::unique('erp_stores', 'store_code')->whereNull('deleted_at')->where($uniqueScope)
             ],
 
             'store_name' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('erp_stores')
-                ->ignore($storeId)
-                ->whereNull('deleted_at')
-                ->where($uniqueScope),
+                $isUpdate
+                    ? Rule::unique('erp_stores', 'store_name')->ignore($storeId)->whereNull('deleted_at')->where($uniqueScope)
+                    : Rule::unique('erp_stores', 'store_name')->whereNull('deleted_at')->where($uniqueScope)
             ],
 
             'status' => 'nullable|string|max:99',
@@ -96,10 +93,9 @@ class StoreRequest extends FormRequest
                 'nullable',
                 'max:255',
                 'regex:/^[\w\.\-]+@[a-zA-Z\d\-]+(\.[a-zA-Z\d\-]+)*\.[a-zA-Z]{2,7}$/',
-                Rule::unique('erp_stores') 
-                    ->ignore($storeId)
-                    ->whereNull('deleted_at')
-                    ->where($uniqueScope),
+                $isUpdate
+                    ? Rule::unique('erp_stores', 'contact_email')->ignore($storeId)->whereNull('deleted_at')->where($uniqueScope)
+                    : Rule::unique('erp_stores', 'contact_email')->whereNull('deleted_at')->where($uniqueScope)
             ],
 
             'billing_address' => 'nullable',
@@ -124,6 +120,7 @@ class StoreRequest extends FormRequest
        
         ];
     }
+
 
     public function messages()
     {

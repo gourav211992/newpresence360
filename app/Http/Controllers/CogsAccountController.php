@@ -28,16 +28,10 @@ class CogsAccountController extends Controller
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
         $ledgerGroups = Group::all();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()
-        ->where('status', '1') 
-        ->get();  
-        $items = Item::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get();
-        $cogsAccounts = CogsAccount::withDefaultGroupCompanyOrg()->get();
-        $erpBooks = Book::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get(); 
+        $ledgers = Ledger::where('status', '1') ->get();  
+        $items = Item::where('status', 'active') ->get();
+        $cogsAccounts = CogsAccount::query()->get();
+        $erpBooks = Book::where('status', 'active') ->get(); 
 
         return view('procurement.cogs-account.index', compact(
             'companies', 'ledgerGroups', 'ledgers', 'items', 'cogsAccounts', 'erpBooks','orgIds'

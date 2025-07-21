@@ -23,7 +23,7 @@ class InspectionChecklistController extends Controller
         $companyId = $organization?->company_id ?? null;
 
         if ($request->ajax()) {
-            $query = InspectionChecklist::withDefaultGroupCompanyOrg();
+            $query = InspectionChecklist::query();
             $inspectionChecklists = $query->orderBy('id', 'desc');
 
             return DataTables::of($inspectionChecklists)
@@ -82,12 +82,12 @@ class InspectionChecklistController extends Controller
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
             $inspectionChecklist = InspectionChecklist::create($validatedData);
@@ -168,12 +168,12 @@ class InspectionChecklistController extends Controller
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
     

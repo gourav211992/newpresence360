@@ -39,7 +39,7 @@ class TaxController extends Controller
         $companyId = $organization?->company_id ?? null;
     
         if ($request->ajax()) {
-            $taxes = Tax::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+            $taxes = Tax::orderBy('id', 'desc');
             return DataTables::of(source: $taxes)
                 ->addIndexColumn() 
                 ->addColumn('status', function($row) {
@@ -79,7 +79,6 @@ class TaxController extends Controller
         $gstSections = ConstantHelper::GST_TYPES;
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->get(); 
         return view('procurement.tax.create', [
             'applicationTypes' => $applicationTypes,
             'supplyTypes' => $supplyTypes,
@@ -88,7 +87,6 @@ class TaxController extends Controller
             'gstSections'=>$gstSections,
             'tdsSections'=>$tdsSections,
             'tcsSections'=>$tcsSections,
-            'ledgers' => $ledgers,
         ]);
     }
     
@@ -111,12 +109,12 @@ class TaxController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         DB::beginTransaction();
@@ -228,7 +226,6 @@ class TaxController extends Controller
         $gstSections = ConstantHelper::GST_TYPES;
         $tdsSections = ConstantHelper::getTdsSections();
         $tcsSections = ConstantHelper::getTcsSections();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()->get();
         $ledgerId = $tax->ledger_id;
         $ledger = Ledger::find($ledgerId);
         $ledgerGroups = $ledger ? $ledger->groups() : collect(); 
@@ -258,7 +255,6 @@ class TaxController extends Controller
             'gstSections'=>$gstSections,
             'tdsSections'=>$tdsSections,
             'tcsSections'=>$tcsSections,
-            'ledgers' => $ledgers,
             'ledgerGroups' => $ledgerGroups,
             'matchedSection'=>$matchedSection,
         ]);
@@ -282,12 +278,12 @@ class TaxController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
     
@@ -405,8 +401,8 @@ class TaxController extends Controller
         $taxPercentage  = $request->input('tax_percentage');
         $transactionType = $request->input('transaction_type');
     
-        $query = Ledger::where('status', operator: 1)
-            ->withDefaultGroupCompanyOrg();
+         $query = Ledger::query()
+         ->where('status', 1);
 
         if (!empty($searchTerm)) {
             $query->where(function ($q) use ($searchTerm) {

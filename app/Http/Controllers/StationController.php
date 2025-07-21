@@ -25,8 +25,7 @@ class StationController extends Controller
     $companyId = $organization?->company_id ?? null;
 
     if ($request->ajax()) {
-        $stations = Station::WithDefaultGroupCompanyOrg()
-            ->whereNull('parent_id')
+        $stations = Station::whereNull('parent_id')
             ->orderBy('id', 'desc');
 
         return DataTables::of($stations)
@@ -64,7 +63,7 @@ class StationController extends Controller
 
     public function create()
     {
-        $stations = Station::whereNull('parent_id')->WithDefaultGroupCompanyOrg()->get();
+        $stations = Station::whereNull('parent_id')->get();
         $stationGroups = StationGroup::where('status', 'active')->get();
         $status = ConstantHelper::STATUS;
         return view('procurement.station.create', compact('stations','stationGroups', 'status'));
@@ -90,12 +89,12 @@ class StationController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -144,7 +143,7 @@ class StationController extends Controller
     {
         $station = Station::with('subStations')->findOrFail($id);
         $stationGroups = StationGroup::where('status', 'active')->get();
-        $stations = Station::whereNull('parent_id')->WithDefaultGroupCompanyOrg()->get();
+        $stations = Station::whereNull('parent_id')->get();
         $status = ConstantHelper::STATUS;
         return view('procurement.station.edit', compact('station', 'stations','stationGroups', 'status'));
     }
@@ -169,12 +168,12 @@ class StationController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -314,7 +313,7 @@ class StationController extends Controller
 
     public function getSubstations($stationId)
     {
-        $substations = Station::where('parent_id', $stationId)->WithDefaultGroupCompanyOrg()->get();
+        $substations = Station::where('parent_id', $stationId)->get();
         return response()->json($substations);
     }
 
