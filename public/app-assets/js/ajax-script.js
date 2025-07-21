@@ -705,7 +705,8 @@ let originalGstin = '';
 
 $(document).ready(function() {
     originalGstin = $('input[name="compliance[gstin_no]"]').val() || '';
-    const status = document.getElementById('documentStatus').value;
+    const statusElem = document.getElementById('documentStatus');
+    const status = statusElem ? statusElem.value : null;
     let previousGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
     if (status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
         disableGstFields(false); 
