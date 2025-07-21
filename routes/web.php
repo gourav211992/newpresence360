@@ -1,8 +1,6 @@
 <?php
 
 use App\Helpers\Helper;
-use App\Http\Controllers\ErpMaintenanceTypeController;
-use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -173,6 +171,7 @@ use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\PutAwayController;
 use App\Http\Controllers\ErpMaintenanceTypeController;
 use App\Http\Controllers\ErpDefectTypeController;
+use App\Http\Controllers\ErpEquipmentController;
 
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
@@ -2849,6 +2848,13 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
+    });
+
+    Route::prefix('equipment')->group(function () {
+
+        Route::get('/create', [ErpEquipmentController::class, 'create'])->name('equipment.create');
+        Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
+
     });
 });
 
