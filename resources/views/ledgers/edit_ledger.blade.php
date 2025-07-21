@@ -71,7 +71,7 @@
                                          @if ($buttons['submit'])
                                           <a href="javascript:void(0);"
                                     id="checkAndOpenModal" class="btn btn-primary btn-sm mb-50 mb-sm-0">
-                                    <i data-feather="check-circle"></i> Update
+                                    <i data-feather="check-circle"></i> Submit
                                 </a>
                                          @endif
                                        @if ($buttons['approve'])

@@ -1456,6 +1456,9 @@ class MoController extends Controller
             if($itemId) {
                 $query->where('item_id', $itemId);
             }
+            $query->whereHas('bom', function ($subQuery) {
+                $subQuery->whereIn('production_type', ['In-house']);
+            });
             if(count($selectedPwoIds)) {
                 $query->whereNotIn('id', $selectedPwoIds);
             }
@@ -1525,12 +1528,9 @@ class MoController extends Controller
             if($itemId){
                 $query->where('item_id', $itemId);
             } 
-            // else {
-            //     $query->whereHas('bom', function ($subQuery) {
-            //         $subQuery->whereIn('production_type', ['In-house'])
-            //             ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-            //     });
-            // }
+            $query->whereHas('bom', function ($subQuery) {
+                $subQuery->whereIn('production_type', ['In-house']);
+            });
             $query->where('store_id', $storeId);
             if($soSeriesId) {
                 $query->whereHas('so', function ($soQuery) use ($soSeriesId) {

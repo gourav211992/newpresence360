@@ -49,6 +49,8 @@
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
+                                                <th>Main Store</th>
+                                                <th>Staging Store</th>
                                                 <th>Rev No</th>
                                                 <th>Items</th>
                                                 <th style = 'text-align:center'>Status</th>
@@ -126,6 +128,14 @@
             }
         },
         { data: 'store', name: 'store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'main_sub_store', name: 'main_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'staging_sub_store', name: 'staging_sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                 $(td).addClass('no-wrap');
             }
         },

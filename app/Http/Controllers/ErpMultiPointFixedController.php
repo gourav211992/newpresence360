@@ -102,7 +102,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id      = json_encode($request->vehicle_type_id); 
         $multiPricing->customer_id           = $request->customer_id;
-        $multiPricing->created_by            = $user->id;
+        $multiPricing->created_by            = $user->auth_user_id ;
         $multiPricing->status                = $request->status;
         $multiPricing->save();
 
@@ -149,7 +149,7 @@ class ErpMultiPointFixedController extends Controller
         $multiPricing->destination_route_id   = $request->destination_route_id;
         $multiPricing->vehicle_type_id       = json_encode($request->vehicle_type_id);
         $multiPricing->customer_id           = $request->customer_id;
-        $multiPricing->updated_by            = $user->id;
+        $multiPricing->updated_by            = $user->auth_user_id ;
         $multiPricing->status                = $request->status;
         $multiPricing->save();
 

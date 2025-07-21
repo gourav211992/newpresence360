@@ -145,7 +145,9 @@ class Bom extends Model
 
     public function bomItems()
     {
-        return $this->hasMany(BomDetail::class, 'bom_id');
+        return $this->hasMany(BomDetail::class, 'bom_id')
+        ->orderBy('sequence_no')
+        ->orderBy('id');
     }   
 
     public function bomOverheadAllItems()

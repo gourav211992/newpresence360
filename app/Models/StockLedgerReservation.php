@@ -12,11 +12,13 @@ class StockLedgerReservation extends Model
     protected $table = 'stock_ledger_reservations';
 
     protected $fillable = [
+        'issue_header_id', 
+        'issue_detail_id',
+        'receipt_header_id', 
+        'receipt_detail_id',
+        'issue_book_type',
+        'receipt_book_type',
         'stock_ledger_id',
-        'mo_id',
-        'mo_production_item_id',
-        'so_id',
-        'so_item_id',
         'quantity'
     ];
     // Define relationships

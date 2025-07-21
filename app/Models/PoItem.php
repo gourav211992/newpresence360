@@ -25,8 +25,9 @@ class PoItem extends Model
         'uom_id',
         'uom_code',
         'order_qty',
-        'ge_qty',
         'grn_qty',
+        'ge_qty',
+        'asn_qty',
         'short_close_qty',
         'inventory_uom_id',
         'inventory_uom_code',
@@ -50,7 +51,7 @@ class PoItem extends Model
         'hsn' => 'hsn_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
-    
+
     protected $appends = [
         'cgst_value',
         'sgst_value',
@@ -106,12 +107,12 @@ class PoItem extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
-    
+
     public function items()
     {
         return $this->hasOne(Item::class, 'item_id');
     }
-    
+
     public function hsn()
     {
         return $this->belongsTo(Hsn::class, 'hsn_id');
@@ -264,7 +265,7 @@ class PoItem extends Model
         $maxQty = max($this->invoice_quantity,$this->grn_qty);
         // $maxQty = max((float) $this->invoice_quantity, (float) $this->grn_qty) - (float) $this->short_close_qty;
         $balance = max(($this->order_qty - $maxQty - $this->short_close_qty),0);
-        return $balance; 
+        return $balance;
     }
 
     public function supplierPoItems()
@@ -323,11 +324,21 @@ class PoItem extends Model
     }
 
     public function getPendingPoAttribute()
-    {   
+    {
         $itemId       = $this->item_id;
-        $selectedAttr = $this->attributes; 
+        $selectedAttr = $this->attributes;
         $uomId        = $this->uom_id;
         $storeId      = $this?->po?->store_id;
         return InventoryHelper::getPendingPo($itemId, $uomId, $selectedAttr, $storeId);
+    }
+
+    public function asnItems()
+    {
+        return $this->hasMany(VendorAsnItem::class, 'po_item_id', 'id');
+    }
+
+    public function geItems()
+    {
+        return $this->hasMany(GateEntryDetail::class, 'purchase_order_item_id', 'id');
     }
 }

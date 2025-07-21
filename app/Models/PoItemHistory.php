@@ -24,6 +24,8 @@ class PoItemHistory extends Model
         'uom_code',
         'order_qty',
         'grn_qty',
+        'ge_qty',
+        'asn_qty',
         'short_close_qty',
         'inventory_uom_id',
         'inventory_uom_code',

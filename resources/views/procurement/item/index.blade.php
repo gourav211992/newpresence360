@@ -50,7 +50,6 @@
                                                 <th>HSN</th>
                                                 <th>Type</th>
                                                 <th>SubType</th>
-                                                <th>Parent Group</th>
                                                 <th>Group</th>
                                                 <th>Created At</th>
                                                 <th>Created By</th>
@@ -169,7 +168,6 @@ $(document).ready(function() {
                 { data: 'hsn.code', name: 'hsn.code', render: renderData }, 
                 { data: 'type', name: 'type', render: renderData },
                 { data: 'subtypes', name: 'subtypes', render: renderData },
-                { data: 'parent_category', name: 'parent_category', render: renderData }, 
                 { data: 'subCategoryName', name: 'subCategoryName', render: renderData },  
                 { data: 'created_at', name: 'created_at', render: function(data) {
                  return data ? data : 'N/A'; 

@@ -138,6 +138,7 @@ class FixedAssetSplit extends Model
                 'capitalize_date' => $firstItem->capitalize_date,
                 'last_dep_date' => $firstItem->capitalize_date,
                 'currency_id' => $request->currency_id,
+                'it_category_id'=>$asset->it_category_id??null,
                 'location_id' => $request->location_id,
                 'cost_center_id' => $request->cost_center_id,
                 'maintenance_schedule' => $request->maintenance_schedule,

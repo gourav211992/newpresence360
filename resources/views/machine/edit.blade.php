@@ -68,6 +68,7 @@
                                                             @if(count($attributes) > 1)
                                                                 <option value="" disabled selected>Select Attribute</option>
                                                             @else
+                                                                <option value="">Select</option>
                                                                 @foreach ($attributes as $attribute)
                                                                 <option value="{{ $attribute->id }}" {{$attribute->id == $machine->attribute_group_id ? 'selected' : ''}}>{{ $attribute->name }}</option>
                                                                 @endforeach
@@ -115,7 +116,7 @@
                                                     </div>
                                                 </div>
                                                 <!-- Machine Details Table -->
-                                                <div class="table-responsive-md">
+                                                <div class="table-responsive-md {{$machine->details->count() ? '' : 'd-none'}}" id="tableDiv">
                                                     <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
                                                         <thead>
                                                             <tr>
@@ -204,32 +205,43 @@ function headerFilled()
     }
     return true;
 }
+$(document).on('change','#attribute_group_id',(e) => {
+    if(e.target.value) {
+        getAttributeValues();
+    } else {
+        $("#tableDiv").addClass('d-none');
+    }
+});
 function getAttributeValues() {
     let attributeGroupId = $('#attribute_group_id').val() || '';
     let actionUrl = "{{ route('machine.attribute.values') }}"+'?attribute_group_id='+attributeGroupId;
+    if(attributeGroupId) {
+        fetch(actionUrl)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 200) {
+                let options = '<option value="">Select Attribute</option>';
+                data.data.values.forEach(attribute => {
+                    options += `<option value="${attribute.id}">${attribute.value}</option>`;
+                });
+    
+                // Save to master and set initial dropdown
+                $('#attribute-options-master').html(options);
+                $('.attribute-values').html(options);
+                $("#tableDiv").removeClass('d-none');
+                updateAttributeDropdowns();
 
-    fetch(actionUrl)
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 200) {
-            let options = '<option value="">Select Attribute</option>';
-            data.data.values.forEach(attribute => {
-                options += `<option value="${attribute.id}">${attribute.value}</option>`;
-            });
-
-            // Save to master and set initial dropdown
-            $('#attribute-options-master').html(options);
-            $('.attribute-values').html(options);
-
-            updateAttributeDropdowns();
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error'
-            });
-        }
-    });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message,
+                    icon: 'error'
+                });
+            }
+        });
+    } else {
+        $("#tableDiv").addClass('d-none');
+    }
 }
 
 let isEdit = true;
@@ -336,7 +348,7 @@ function updateAttributeDropdowns() {
         $this.html(options);
     });
 }
-
+updateAttributeDropdowns();
 // 👂 On attribute change, refresh dropdowns
 $(document).on('change', '.attribute-values', function () {
     updateAttributeDropdowns();

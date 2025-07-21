@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ApiGenericException;
+use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Models\ErpRouteMaster;
@@ -51,6 +52,7 @@ class ErpLorryReceiptController extends Controller
                 'auth_user'
             ])
             ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic() 
             ->orderByDesc('id');
 
         // Apply filters if needed
@@ -81,14 +83,15 @@ class ErpLorryReceiptController extends Controller
         return DataTables::of($lrs)
             ->addIndexColumn()
             ->editColumn('document_date', function ($row) {
-                return $row->document_date ? \Carbon\Carbon::parse($row->document_date)->format('d-m-Y') : '-';
+                return $row->getFormattedDate('document_date') ?? 'N/A';
             })
 
             ->addColumn('source_name', fn($row) => $row->source->name ?? '-')
             ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
             ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
             ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? '-')
-             ->editColumn('created_by', function ($row) {
+            
+            ->editColumn('created_by', function ($row) {
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
                     return $createdBy;
                 })
@@ -111,7 +114,7 @@ class ErpLorryReceiptController extends Controller
                         <div class="dropdown-menu dropdown-menu-end">
                             <a class="dropdown-item" href="' . route('logistics.lorry-receipt.edit', $row->id) . '">
                                 <i data-feather="edit-3" class="me-50"></i>
-                                <span>Edit</span>
+                                <span>View/Edit Detail</span>
                             </a>
                         </div>
                     </div>';
@@ -194,7 +197,7 @@ class ErpLorryReceiptController extends Controller
     $drivers       = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $locations     = InventoryHelper::getAccessibleLocations();
     $vehicleTypes  = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $userType = Helper::userCheck();
+    $userType      = Helper::userCheck();
     $routeMasters  = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $revision_number = $lr->revision_number;
     $buttons = Helper::actionButtonDisplay($lr->book_id,$lr->document_status , $lr->id, $lr->total_charges, $lr->approval_level, $lr->created_by ?? 0, $userType['type']);
@@ -260,13 +263,45 @@ class ErpLorryReceiptController extends Controller
         DB::beginTransaction();
 
         try {
+            
+            $parameters = [];
+            $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
+            if ($response['status'] === 200) {
+                $parameters = json_decode(json_encode($response['data']['parameters']), true);
+            }
             // Create LR record
             $lr = new ErpLorryReceipt();
             $lr->organization_id   = $organization->id;
             $lr->group_id          = $organization->group_id;
             $lr->company_id        = $user->company_id ?? null;
             $lr->book_id           = $request->book_id;
-            $lr->document_number   = $request->document_number;
+            $document_number = $request->document_number ?? null;
+
+             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
+            if (!isset($numberPatternData)) {
+                return response()->json([
+                    'message' => "Invalid Book",
+                    'error' => "",
+                ], 422);
+            }
+            $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
+            $regeneratedDocExist = ErpLorryReceipt::where('book_id',$request->book_id)
+                ->where('document_number',$document_number)->first();
+                //Again check regenerated doc no
+                if (isset($regeneratedDocExist)) {
+                    return response()->json([
+                        'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
+                        'error' => "",
+                    ], 422);
+            }
+
+            $lr->doc_number_type = $numberPatternData['type'];
+            $lr->doc_reset_pattern = $numberPatternData['reset_pattern'];
+            $lr->doc_prefix = $numberPatternData['prefix'];
+            $lr->doc_suffix = $numberPatternData['suffix'];
+            $lr->doc_no = $numberPatternData['doc_no'];
+               
+            $lr->document_number = $document_number;
             $lr->document_date     = $request->document_date;
             $lr->location_id       = $request->location;
             $lr->cost_center_id    = $request->cost_center_id;
@@ -292,7 +327,7 @@ class ErpLorryReceiptController extends Controller
             $lr->lr_charges        = $request->lr_charges ?? 0;
             $lr->sub_total         = $request->sub_total ?? 0;
             $lr->total_charges     = $request->total_freight ?? 0;
-             $lr->remarks           = $request->remarks;
+            $lr->remarks           = $request->remarks;
             $lr->document_status   = $request->status;
             $lr->created_by        = $user->auth_user_id ;
             $lr->save();
@@ -337,9 +372,15 @@ class ErpLorryReceiptController extends Controller
     DB::beginTransaction();
 
     try {
+
+        $parameters = [];
+        $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
+        if ($response['status'] === 200) {
+            $parameters = json_decode(json_encode($response['data']['parameters']), true);
+        }
         $lr = ErpLorryReceipt::findOrFail($id);
         $currentStatus = $lr->document_status;
-        $actionType = $request->action_type ?? 'submit'; 
+        $actionType = $request->action_type; 
         $amendRemarks = $request->amend_remarks ?? null;
 
         if (($lr->document_status == ConstantHelper::APPROVED || $lr->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
@@ -351,16 +392,11 @@ class ErpLorryReceiptController extends Controller
                 
             ];
 
-            Helper::documentAmendment($revisionData, $lr->id);
+            Helper::documentAmendment($revisionData, $id);
         }
 
 
         // Update main LR fields
-        $lr->organization_id   = $organization->id;
-        $lr->group_id          = $organization->group_id;
-        $lr->company_id        = $user->company_id ?? null;
-        $lr->book_id           = $request->book_id;
-        $lr->document_number   = $request->document_number;
         $lr->document_date     = $request->document_date;
         $lr->location_id       = $request->location;
         $lr->cost_center_id    = $request->cost_center_id;
@@ -387,44 +423,45 @@ class ErpLorryReceiptController extends Controller
         $lr->sub_total         = $request->sub_total ?? 0;
         $lr->total_charges     = $request->total_freight ?? 0;
         $lr->remarks           = $request->remarks;
-        $lr->document_status   = $request->status;
+        $lr->document_status   = $request->document_status ?? ConstantHelper::DRAFT;
         $lr->updated_by        = $user->auth_user_id ;
-
-
-
-         if ($request->input('status') === ConstantHelper::SUBMITTED ) {
-            $bookId = $lr->book_id;
-            $docId = $lr->id;
-            $remarks = $lr->remarks;
-            $attachments = $request->file('attachment');
-            $currentLevel = $lr->approval_level ?? 1;
-            $modelName = get_class($lr);
-            
-    
-            if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
-                $revisionNumber =  $lr->revision_number + 1;
-                $totalValue = 0; 
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-                $lr->approval_level = 1;
-                $lr->revision_date = now();
-        
-                $statusAfterApproval = $approveDocument['approvalStatus'] ?? $lr->document_status;
-
-                $lr->document_status = $statusAfterApproval;
-            } else {
-                $revisionNumber = $lr->revision_number ?? 0;
-                $totalValue = 0;
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-                $document_status = $approveDocument['approvalStatus'];
-                $lr->document_status = $document_status;
-            }
-        
-        } else {
-            $document_status = $request->current_status ?? ConstantHelper::DRAFT;
-            $lr->document_status = $document_status;
-           
-        }
         $lr->save();
+
+        $bookId = $lr->book_id;
+        $docId = $lr->id;
+        $remarks = $lr->remarks;
+        $amendAttachments = $request->file('amend_attachments');
+        $attachments = $request->file('attachment');
+        $currentLevel = $lr->approval_level ?? 1;
+        $modelName = get_class($lr);
+            
+     
+        if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
+            $revisionNumber =  $lr->revision_number + 1;
+            $actionType = 'amendment';
+            $totalValue =      $lr->total_charges ?? 0;
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $lr->revision_number = $revisionNumber;
+            $lr->approval_level = 1;
+            $lr->revision_date = now();
+            $amendAfterStatus = $approveDocument['approvalStatus'] ?? $currentStatus;
+            $lr->document_status = $amendAfterStatus;
+            $lr->save();
+        } else {
+            if ($request->document_status == ConstantHelper::SUBMITTED) {
+            $revisionNumber = $lr->revision_number ?? 0;
+            $actionType = 'submit';
+            $totalValue =  $lr->total_charges ?? 0;
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $lr->document_status = $document_status;
+            } else {
+                $lr->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            }
+        }
+        
+      
+       
         $this->handleLorryMediaUploads($request, $lr);
 
 
@@ -446,7 +483,7 @@ class ErpLorryReceiptController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => 'Record updated successfully',
+                'message' => 'Record created successfully',
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -463,8 +500,6 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
 {
     $fileInputs = [
         'attachments'          => 'attachments',
-        'amend_attachments'    => 'amend_attachments',
-        'approval_attachments' => 'approval_attachments',
     ];
 
     foreach ($fileInputs as $inputKey => $collectionName) {
@@ -553,7 +588,7 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
         try {
             $lr = ErpLorryReceipt::find($request->id);
             if (isset($lr)) {
-                $revoke = Helper::approveDocument($lr->book_id, $lr->id, 0, '', [], 0, ConstantHelper::REVOKE, 0, get_class($lr));
+                 $revoke = Helper::approveDocument($lr->book_id, $lr->id, $lr->revision_number, '', [], 0, ConstantHelper::REVOKE, $lr->total_charges, get_class($lr));
                 if ($revoke['message']) {
                     DB::rollBack();
                     return response()->json([

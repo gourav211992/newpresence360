@@ -9,7 +9,9 @@ use App\Models\Bom;
 use App\Models\Item;
 use App\Models\JobOrder\JoProduct;
 use App\Models\NumberPattern;
+use App\Models\Organization;
 use App\Models\PwoSoMapping;
+use App\Models\Vendor;
 use Illuminate\Foundation\Http\FormRequest;
 use Spatie\FlareClient\Flare;
 use App\Traits\ProcessesComponentJson;
@@ -139,7 +141,24 @@ class JoRequest extends FormRequest
 
     protected function withValidator($validator)
     {
-        $validator->after(function ($validator) {
+        $authUser = Helper::getAuthenticatedUser();
+        $organization = Organization::where('id', $authUser->organization_id)->first();
+        $organizationId = $organization ?-> id ?? null;
+
+        $validator->after(function ($validator) use($organizationId) {
+            #check vendor location mapping
+            $vendorId = $this->input('vendor_id');
+            $locationId = $this->input('store_id');
+            if ($vendorId && $locationId) {
+                $vendor = Vendor::with(['locations' => function ($query) use ($organizationId, $locationId) {
+                    $query->where('organization_id', $organizationId)
+                    ->where('location_id', $locationId);
+                }])->find($vendorId);
+                if (!$vendor || $vendor->locations->isEmpty()) {
+                    $validator->errors()->add('vendor_id', 'Vendor is not mapped to the selected store.');
+                }
+            }
+
             $components = $this->input('components', []);
             $items = [];
             foreach ($components as $key => $component) {

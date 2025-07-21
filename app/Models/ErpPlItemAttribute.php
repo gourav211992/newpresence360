@@ -36,6 +36,16 @@ class ErpPlItemAttribute extends Model
 
     public function pl_item()
     {
-        return $this->hasOne(ErpPlItem::class,'pl_item_id');
+        return $this->hasOne(ErpPlItemDetail::class,'pl_item_id');
+    }
+
+    public function attributeName()
+    {
+        return $this->belongsTo(ErpAttributeGroup::class, 'attr_name');
+    }
+
+    public function attributeValue()
+    {
+        return $this->belongsTo(ErpAttribute::class, 'attr_value');
     }
 }

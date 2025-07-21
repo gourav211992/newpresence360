@@ -262,15 +262,17 @@ class Vendor extends Model
         $locIds = [];
         $subLocIds = [];
         foreach ($storeIds as $storeId) {
-            VendorLocation::updateOrCreate([
-                'vendor_id' => $this -> id,
-                'organization_id' => $storeId['organization_id'],
-                'location_id' => $storeId['location_id'],
-                'store_id' => $storeId['store_id'],
-            ]);
-            array_push($orgIds, $storeId['organization_id']);
-            array_push($locIds, $storeId['location_id']);
-            array_push($subLocIds, $storeId['store_id']);
+            if (isset($storeId['organization_id']) && isset($storeId['location_id']) && isset($storeId['store_id'])) {
+                VendorLocation::updateOrCreate([
+                    'vendor_id' => $this -> id,
+                    'organization_id' => $storeId['organization_id'],
+                    'location_id' => $storeId['location_id'],
+                    'store_id' => $storeId['store_id'],
+                ]);
+                array_push($orgIds, $storeId['organization_id']);
+                array_push($locIds, $storeId['location_id']);
+                array_push($subLocIds, $storeId['store_id']);
+            }
         }
         VendorLocation::where('vendor_id', $this -> id) -> whereNotIn('organization_id', $orgIds) 
         -> whereNotIn('location_id', $locIds) -> whereNotIn('store_id', $subLocIds) -> delete();

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\ConstantHelper;
+use App\Models\JobOrder\JobOrder;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
@@ -23,6 +24,8 @@ class GateEntryHeaderHistory extends Model
         'group_id',
         'company_id',
         'purchase_order_id',
+        'job_order_id',
+        'sale_order_id',
         'series_id',
         'book_id',
         'book_code',
@@ -147,6 +150,16 @@ class GateEntryHeaderHistory extends Model
     public function shippingAddress()
     {
         return $this->belongsTo(Address::class, 'ship_to');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function jobOrder()
+    {
+        return $this->belongsTo(JobOrder::class, 'job_order_id');
     }
 
     public function attachment(): void
