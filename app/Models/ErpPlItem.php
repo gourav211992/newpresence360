@@ -36,4 +36,9 @@ class ErpPlItem extends Model
     {
         return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
     }
+
+    public function stockReservation()
+    {
+        return $this->hasMany(StockLedgerReservation::class, 'issue_detail_id','id');
+    }
 }

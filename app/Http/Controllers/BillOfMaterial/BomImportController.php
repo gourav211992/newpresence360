@@ -20,6 +20,18 @@ use DB;
 
 class BomImportController extends Controller
 {
+    // downloadSample
+    public function downloadSample(Request $request)
+    {
+        $filePath = public_path('templates/Bom_Sample.xlsx');
+        $fileName = 'Bom_Sample.xlsx';
+
+        return response()->download($filePath, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
+        ]);
+    }
+
     public function import(Request $request)
     {
         $parentUrl = request()->segments()[0];

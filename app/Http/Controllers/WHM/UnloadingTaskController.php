@@ -258,13 +258,14 @@ class UnloadingTaskController extends Controller
             $job->save();
 
             $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
-            $gateEntry = $job->morphable;
-            $bookId = $gateEntry->series_id;
-            $docId = $gateEntry->id;
-            $docValue = $gateEntry->total_amount;
-            $currentLevel = $gateEntry->approval_level;
-            $revisionNumber = $gateEntry->revision_number ?? 0;
+            $header = $job->morphable;
+            $bookId = $header->series_id;
+            $docId = $header->id;
+            $docValue = $header->total_amount;
+            $currentLevel = $header->approval_level;
+            $revisionNumber = $header->revision_number ?? 0;
             $modelName = $job->morphable_type;
+            // dd($actionType,$bookId,$docId,$docValue,$currentLevel,$revisionNumber,$modelName);
             Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
 
             \DB::commit();

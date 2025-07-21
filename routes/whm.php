@@ -51,6 +51,7 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/picklist/tasks', 'index')->name('whm.picklist.tasks');
         Route::get('/picklist/items', 'items')->name('whm.picklist.items');
         Route::get('/picklist/item-detail', 'itemDetail')->name('whm.picklist.item-detail');
+        Route::get('/picklist/pending-tasks', 'pendingTasks')->name('whm.picklist.pending-tasks');
         Route::post('/picklist/save-as-draft', 'saveAsDraft')->name('whm.picklist.save-as-draft');
         Route::post('/picklist/update-status', 'updateStatus')->name('whm.picklist.update-status');
         Route::post('/picklist/close-job', 'closeJob')->name('whm.picklist.close-job');
@@ -63,6 +64,15 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/dispatch/scanned-packets', 'scannedPackets')->name('whm.dispatch.scanned-packets');
         Route::post('/dispatch/close-job', 'closeJob')->name('whm.dispatch.close-job');
         Route::post('/dispatch/update-status/packet', 'updateStatus')->name('whm.dispatch.update-status');
+    });
+
+    Route::controller(BinTransferController::class)->group(function () {
+        Route::get('/bin/items', 'index')->name('whm.bin.items');
+        // Route::get('/dispatch/pending-tasks', 'pendingTasks')->name('whm.dispatch.pending-tasks');
+        // Route::post('/dispatch/save-as-draft', 'saveAsDraft')->name('whm.dispatch.save-as-draft');
+        // Route::get('/dispatch/scanned-packets', 'scannedPackets')->name('whm.dispatch.scanned-packets');
+        // Route::post('/dispatch/close-job', 'closeJob')->name('whm.dispatch.close-job');
+        // Route::post('/dispatch/update-status/packet', 'updateStatus')->name('whm.dispatch.update-status');
     });
     
     

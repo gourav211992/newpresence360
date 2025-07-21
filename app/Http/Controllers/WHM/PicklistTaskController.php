@@ -9,9 +9,11 @@ use App\Helpers\Helper;
 use App\Helpers\Inventory\StockReservation;
 use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\WHM\PicklistItemResource;
 use App\Http\Resources\WHM\PicklistResource;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\ErpPlItem;
+use App\Models\StockLedgerReservation;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Illuminate\Http\Request;
@@ -134,11 +136,18 @@ class PicklistTaskController extends Controller
                             $q->where('store_id',$storeId);
                         })
                         ->where('id', $request->pl_item_id)
-                        ->select('id as pl_item_id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
+                        ->select('id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
                         ->first();
-        $plItemId = $plItem->pl_item_id;
+        
+        $plItemId = $plItem->id;
 
         if($plItem){
+            $mrnIds = $plItem->stockReservation()
+                ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+                ->where('issue_header_id',$plItem->pl_header_id)
+                ->pluck('receipt_detail_id')
+                ->toArray();
+
             $itemId = $plItem->item_id;
 
             // STEP 1: Fetch quantities grouped by storage_point_id
@@ -147,6 +156,7 @@ class PicklistTaskController extends Controller
                 ->where('job_type', CommonHelper::PUTAWAY)
                 ->where('doc_type', CommonHelper::RECEIPT)
                 // ->whereNull('utilized_id')
+                ->whereIn('morphable_id',$mrnIds)
                 ->select('storage_point_id', DB::raw('COUNT(*) as quantity'))
                 ->groupBy('storage_point_id')
                 ->get();
@@ -171,7 +181,7 @@ class PicklistTaskController extends Controller
         }
 
         return [
-            'data' => $plItem,
+            'data' => new PicklistItemResource($plItem),
             'message' => "Record fetched successfully.",
         ];
 
@@ -425,5 +435,46 @@ class PicklistTaskController extends Controller
             \DB::rollback();
             throw new ApiGenericException($e->getMessage());
         }
+    }
+
+    public function pendingTasks(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'pl_item_id' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required',
+            'pl_item_id.required' => 'Picklist item id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $job = ErpWhmJob::find($request->job_id);
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        $plHeaderId = $job->morphable_id;
+
+        $mrnIds = StockLedgerReservation::where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+            ->where('issue_header_id',$plHeaderId)
+            ->where('issue_detail_id',$request->pl_item_id)
+            ->pluck('receipt_detail_id')
+            ->toArray();
+
+        $pendingTasks = ErpItemUniqueCode::whereIn('morphable_id',$mrnIds)
+            ->where('job_type',CommonHelper::PUTAWAY)
+            ->whereNull('utilized_id')
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id')
+            ->get();
+
+        return [
+            'message' => 'Records fetched successfully',
+            "data" => $pendingTasks,
+        ];
+
     }
 }
