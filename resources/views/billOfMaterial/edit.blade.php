@@ -1135,7 +1135,8 @@ function initializeAutocomplete2(selector, type) {
    });
 }
 $(document).on('click','#addNewItemBtn', (e) => {
-    let rowsLength = $("#itemTable > tbody > tr").length;
+    // let rowsLength = $("#itemTable > tbody > tr").length;
+    let rowsLength = getUniqueRowCount();
     /*Check header attribute required*/
     let itemCode = $("#item_code").val();
     let selectedAttrRequired = false; 
@@ -1234,7 +1235,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                // $("#submit-button").click();
                 if (rowsLength) {
                     // $("#itemTable > tbody > tr:last").after(data.data.html);
-                    if($("#itemTable > tbody > tr.trselected")) {
+                    if($("#itemTable > tbody > tr.trselected").length) {
                         $("#itemTable > tbody > tr.trselected").after(data.data.html);
                     }else {
                         $("#itemTable > tbody > tr:last").after(data.data.html);

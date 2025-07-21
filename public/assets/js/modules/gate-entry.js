@@ -22,11 +22,9 @@ $(document).on('click', '#reject-button', (e) => {
 
 /*Deviation modal*/
 $(document).on('click', '#deviation-button', (e) => {
-    let actionType = 'deviation';
-    let count = 15;
+    let actionType = 'deviation-closed';
     $("#deviateModal").find("#action_type").val(actionType);
-    $("#deviateModal #popupTitle").text("Close Job");
-    $("#deviateModal").find("#itemCountDisplay").val(count);
+    $("#deviateModal #popupTitle").text("Unloading Deviation");
     $("#deviateModal").modal('show');
 });
 

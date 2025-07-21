@@ -13,6 +13,8 @@ use App\Models\PoItem;
 use App\Models\GateEntryDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
+use Illuminate\Validation\Rule;
+
 use App\Traits\ProcessesComponentJson;
 
 class GateEntryRequest extends FormRequest
@@ -54,13 +56,26 @@ class GateEntryRequest extends FormRequest
             'payment_term_id' => 'required',
             'eway_bill_no' => 'nullable|max:50',
             'consignment_no' => 'nullable|max:50',
-            'supplier_invoice_no' => 'nullable|max:50',
+            'supplier_invoice_no' => [
+                'nullable',
+                'max:50',
+                Rule::unique('erp_gate_entry_headers')
+                    ->where(function ($query) {
+                        return $query
+                            ->where('group_id', $this->group_id)
+                            ->where('organization_id', $this->organization_id)
+                            ->whereNull('deleted_at');
+                    })
+                    ->ignore($mrnId), // ignore when updating
+            ],
             'supplier_invoice_date' => 'nullable|date',
             'transporter_name' => 'nullable|max:50',
             'vehicle_no' => [
                 'nullable',
                 'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
             ],
+
+
             'remarks' => 'nullable|max:500',
         ];
 

@@ -156,6 +156,8 @@
                                                         </select>
                                                     </div>
                                                 </div>
+                                               
+
 
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -297,7 +299,7 @@
                                                                             value="{{ $fixedAsset?->asset_code }} ({{ $fixedAsset?->asset_name }})"
                                                                             required />
                                                                         <input type="hidden" name="asset_id[]"
-                                                                            class="asset_id"
+                                                                            class="asset_id" onchange=""
                                                                             value="{{ $assetRow->asset_id }}"
                                                                             data-id="{{ $key }}"
                                                                             id="asset_id_{{ $key }}" />
@@ -306,7 +308,7 @@
                                                                     <td class="poprod-decpt">
 
 
-                                                                        <select name="sub_asset_id[]"
+                                                                        <select name="sub_asset_id[]" onchange="applyFixedPrefixToInputs()"
                                                                             id="sub_asset_id_{{ $key }}"
                                                                             class="form-select select2 sub_asset_id"
                                                                             multiple required
@@ -386,6 +388,24 @@
                                                                     <option value="{{ $category->id }}"
                                                                         {{ $data->category_id == $category->id ? 'selected' : '' }}>
                                                                         {{ $category->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                      <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">IT Act Category <span
+                                                                    class="text-danger"></span></label>
+                                                            <select class="form-select select2" name="it_category_id"
+                                                                id="it_category">
+                                                                <option value=""
+                                                                    {{ old('it_category') ? '' : 'selected' }}>
+                                                                    Select</option>
+                                                                @foreach ($it_categories as $it_category)
+                                                                    <option value="{{ $it_category->id }}"
+                                                                        {{ $data->it_category_id == $it_category->id ? 'selected' : '' }}>
+                                                                        {{ $it_category->name }}
                                                                     </option>
                                                                 @endforeach
                                                             </select>
@@ -660,6 +680,7 @@ $(document).on('keydown', function(e) {
         $('#add_new_sub_asset').on('click', function() {
             const subAssetCode = $('#sub_asset_id').val();
             genereateSubAssetRow(subAssetCode);
+            applyFixedPrefixToInputs();
         });
 
 
@@ -1092,7 +1113,7 @@ $(document).on('keydown', function(e) {
             <input type="hidden" name="asset_id[]" class="asset_id" data-id="${rowCount}" id="asset_id_${rowCount}"/> 
          </td>
         <td class="poprod-decpt">
-            <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" data-id="${rowCount}"
+            <select id="sub_asset_id_${rowCount}" name="sub_asset_id[]" onchange="applyFixedPrefixToInputs()" data-id="${rowCount}"
                 class="form-select mw-100 select2 sub_asset_id" multiple required>
                 <option disabled value="">Select</option>
                 <!-- Will be filled via AJAX -->
@@ -1526,6 +1547,7 @@ $(document).on('keydown', function(e) {
             });
         });
          $(document).ready(function() {
+            applyFixedPrefixToInputs();
             $(document).on('change', '.last_dep_date', function() {
                 const changedValue = $(this).val();
 
@@ -1588,17 +1610,17 @@ $(document).on('keydown', function(e) {
         function applyFixedPrefixToInputs() {
             const selector = '#asset_code';
             let prefix = $('.sub_asset_id').first().find('option:selected').first().text();
-            console.log(prefix);
+            //console.log("prefix"+prefix);
 
             if (!prefix) {
                 return; // Exit if prefix is not set
             }
 
             prefix = prefix.trim().split(/\s+/)[0] + "#M";
-            const inputs = document.querySelectorAll(selector);
+            prefix = trim(prefix);
+            const input = document.getElementById('asset_code');
 
-            inputs.forEach(input => {
-                // Set default value if needed
+            // Set default value if needed
                 if (!input.value.startsWith(prefix)) {
                     input.value = prefix+"01";
                 }
@@ -1610,14 +1632,13 @@ $(document).on('keydown', function(e) {
                     }
 
                     // Extract the numeric part after prefix
-                    let numericPart = this.value.slice(prefix.length).replace(/\D/g, '');
+                    let numericPart = this.value.slice(prefix.length).replace(/\D/g,'');
                     this.value = prefix + numericPart;
                 });
 
                 // Prevent deleting or navigating into the prefix
                 input.addEventListener("keydown", function(e) {
-                    if (
-                        this.selectionStart <= prefix.length &&
+                    if (this.selectionStart <= prefix.length &&
                         (e.key === "Backspace" || e.key === "Delete" || e.key === "ArrowLeft")
                     ) {
                         e.preventDefault();
@@ -1637,9 +1658,9 @@ $(document).on('keydown', function(e) {
                         this.setSelectionRange(prefix.length, prefix.length);
                     }
                 });
-            });
              $(selector).trigger('change');
         }
+        
        function validateAssetCodes() {
             let prefix = $('.sub_asset_id').first().find('option:selected').first().text();
             const inputs = document.getElementById('asset_code');

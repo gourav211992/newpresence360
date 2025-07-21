@@ -86,31 +86,7 @@ td .form-select {
                                 @endforeach 
                             </select> 
                             </div> 
-                        </div> 
-                        {{-- @if(request()->route("type") != 'supplier-invoice')
-                            <div class="row align-items-center mb-1">
-                                <div class="col-md-3"> 
-                                    <label class="form-label">Department <span class="text-danger">*</span></label>  
-                                </div>  
-                                <div class="col-md-5"> 
-                                    <select class="form-select" id="department_id" name="department_id">
-                                        <option value="">Select</option>
-                                    @foreach($departments as $department)
-                                    <option value="{{$department->id}}" {{$selectedDepartmentId == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                    @endforeach 
-                                </select> 
-                                </div> 
-                            </div>
-                        @endif --}}
-                        {{-- <div class="row align-items-center mb-1">
-                            <div class="col-md-3"> 
-                                <label class="form-label">Reference No </label>  
-                            </div>  
-                            <div class="col-md-5"> 
-                                <input type="text" name="reference_number" class="form-control">
-                            </div> 
-                        </div> --}}
-                        
+                        </div>                         
                         <div class="row align-items-center mb-1 d-none" id="reference_from"> 
                             <div class="col-md-3"> 
                                 <label class="form-label">Reference from</label>  
@@ -699,8 +675,7 @@ function setServiceParameters(parameters) {
     let reference_from_service = parameters.reference_from_service;
     if(reference_from_service.length) {
         let pi = '{{\App\Helpers\ConstantHelper::PI_SERVICE_ALIAS}}';
-        let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
-        if(reference_from_service.includes(pi) || reference_from_service.includes(po)) {
+        if(reference_from_service.includes(pi)) {
             $("#reference_from").removeClass('d-none');
         } else {
             $("#reference_from").addClass('d-none');
@@ -717,11 +692,7 @@ function setServiceParameters(parameters) {
             icon: 'error',
         });
         setTimeout(() => {
-            @if(request()->type == 'supplier-invoice')
-                location.href = '{{url('supplier-invoice')}}';
-            @else
-                location.href = '{{url("purchase-order")}}';
-            @endif
+            location.href = '{{url("purchase-order")}}';
         },1500);
     }
 }
@@ -1337,7 +1308,6 @@ function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1,
                         return {
                             id: item.id,
                             label: `${item[labelKey1]}${labelKey2 ? (item[labelKey2] ? '-' + item[labelKey2] : '') : ''}`,
-                            // label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
                             code: item[labelKey1] || '', 
                         };
                     }));
@@ -1409,70 +1379,37 @@ function getIndents()
 {
     const type = '{{ request()->route("type") }}';
     const ajaxUrl = '{{ route("po.get.pi", ["type" => ":type"]) }}'.replace(':type', type);
-    var columns = [];
-    if(type == 'purchase-order') {
-        columns = [
-            { data: 'id',visible: false, orderable: true, searchable: false},
-            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-            { data: 'book_name', name: 'book_name', render: renderData, orderable: false, searchable: false},
-            { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
-            { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
-            { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-            { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-            { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-            { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false,
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
-             },
-            { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
+    var columns = [
+        { data: 'id',visible: false, orderable: true, searchable: false},
+        { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+        { data: 'book_name', name: 'book_name', render: renderData, orderable: false, searchable: false},
+        { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+        { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+        { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+        { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+        { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+        { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
+        { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false,
+            createdCell: function (td, cellData, rowData, row, col) {
+                $(td).addClass('text-end');
+            } 
             },
-            { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
-            },
-            { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
-            { data: 'so_no', name: 'so_no', render: renderData, orderable: false, searchable: false },
-            { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
-            { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },
-            { data: 'remarks', name: 'remarks', render: renderData, orderable: false, searchable: false },
-        ];
-    } else {
-        var columns = [
-            { data: 'id',visible: false, orderable: true, searchable: false},
-            { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
-            { data: 'book_name', name: 'book_name', render: renderData, orderable: false, searchable: false },
-            { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
-            { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
-            { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
-            { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
-            { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
-            { data: 'uom', name: 'uom', render: renderData, orderable: false, searchable: false },
-            { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false,
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
-             },
-            { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
-            },
-            { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
-                createdCell: function (td, cellData, rowData, row, col) {
-                    $(td).addClass('text-end');
-                } 
-            },
-            { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
-            { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
-            { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },
-        ];
-    }
+        { data: 'pending_po', name: 'pending_po', render: renderData, orderable: false, searchable: false, 
+            createdCell: function (td, cellData, rowData, row, col) {
+                $(td).addClass('text-end');
+            } 
+        },
+        { data: 'avl_stock', name: 'avl_stock', render: renderData, orderable: false, searchable: false, 
+            createdCell: function (td, cellData, rowData, row, col) {
+                $(td).addClass('text-end');
+            } 
+        },
+        { data: 'vendor_select', name: 'vendor_select', render: renderData, orderable: false, searchable: false },
+        { data: 'so_no', name: 'so_no', render: renderData, orderable: false, searchable: false },
+        { data: 'location', name: 'location', render: renderData, orderable: false, searchable: false },
+        { data: 'requester', name: 'requester', render: renderData, orderable: false, searchable: false },
+        { data: 'remarks', name: 'remarks', render: renderData, orderable: false, searchable: false },
+    ];
     initializeDataTableCustom('#prModal .po-order-detail', 
         ajaxUrl,
         columns
@@ -1482,9 +1419,7 @@ function getIndents()
 $(document).on('keyup', '#item_name_search', (e) => {
     $('#prModal .po-order-detail').DataTable().ajax.reload();
 });
-
 /*Checkbox for pi item list*/
-@if($serviceAlias == 'po')
 $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
   if (e.target.checked) {
       if($('.pi_item_checkbox').first().closest('tr').find("[name='vend_name']").length) {
@@ -1514,15 +1449,6 @@ $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
       localStorage.removeItem('selectedVendorId');
   }
 });
-@else
-$(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-  if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-      $('.po-order-detail > thead .form-check-input').prop('checked', true);
-  } else {
-      $('.po-order-detail > thead .form-check-input').prop('checked', false);
-  }
-});
-@endif
 
 
 function getSelectedPiIDS()
@@ -1537,7 +1463,6 @@ function getSelectedPiIDS()
 $(document).ready(function () {
     localStorage.removeItem('selectedVendorId');
 });
-@if($serviceAlias == 'po')
 $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
     let selectedVendorId = localStorage.getItem('selectedVendorId') || null;
     let currentCheckedVendorId = $(this).closest('tr').find("[name='vend_name']").val();
@@ -1564,7 +1489,6 @@ $(document).on('change', '#prDataTable .pi_item_checkbox', function (e) {
         }
     }
 });
-@endif
 $(document).on('click', '.prProcess', (e) => {
     let ids = getSelectedPiIDS();
     if (!ids.length) {

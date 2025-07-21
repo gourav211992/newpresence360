@@ -7,6 +7,7 @@
         $geId = null;
         $geItemId = null;
         $readOnly = '';
+        $acceptedReadOnly = 'readonly';
         $poQty = $item->avail_order_qty ?? 0.00;
         $availableQty = $item->available_qty ?? 0.00;
         if($moduleType === 'gate-entry') {
@@ -25,7 +26,7 @@
         } elseif($moduleType === 'gate-entry'){
             $readOnly = 'readonly';
         } elseif($moduleType === 'p-order'){
-            $readOnly = (($item->po?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+            $readOnly = ($item->po?->partial_delivery == 'no') ? 'readonly' : '';
         } else {
             $readOnly = '';
         }
@@ -104,11 +105,11 @@
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{($item?->item?->is_inspection == 0) ? $availableQty : 0.00}}" step="any" {{ $readOnly }} />
+            value="{{($item?->item?->is_inspection == 0) ? $availableQty : 0.00}}" step="any" {{ $acceptedReadOnly }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"
-            {{ $readOnly }} />
+            {{ $acceptedReadOnly }} />
         </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />

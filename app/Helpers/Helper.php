@@ -1257,6 +1257,151 @@ class Helper
 
         ];
     }
+    public static function actionButtonDisplayLedger($bookId, $docStatus, $docId, $docValue, $docApprLevel, int $createdBy = 0, $creatorType = 'user', $revisionNumber = 0)
+    {
+        $draft = false;
+        $submit = false;
+        $approve = false;
+        $amend = false;
+        $amendDelete = false;
+        $delete = false;
+        $post = false;
+        $voucher = false;
+        $revoke = false;
+        $close = false;
+        $user = self::getAuthenticatedUser();
+        $print = false;
+        $book = Book::where('id', $bookId)->first();
+        $bookTypeServiceAlias = $book?->service?->alias;
+        $currUser = Helper::userCheck();
+
+        if ($docStatus == ConstantHelper::DRAFT || $docStatus == ConstantHelper::REJECTED) {
+            if ($user -> auth_user_id === $createdBy) {
+                $draft = true;
+                $submit = true;
+            }
+            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+                $delete = true;
+            }
+        }
+        if ($docStatus == ConstantHelper::SUBMITTED || $docStatus == ConstantHelper::REJECTED) {
+            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+                $delete = true;
+            }
+        }
+        if ($docStatus == ConstantHelper::SUBMITTED) {
+            $approvalWorkflow = BookLevel::where('book_id', $book->id)
+                ->where('organization_id', $user->organization_id)
+                ->where('level', 1)
+                ->where('min_value', '<=', $docValue)
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
+                        // ->where('user_type', $currUser['type']);
+                })
+                ->orderByDesc('min_value')
+                ->first();
+
+            if ($approvalWorkflow) {
+                $approve = true;
+            }
+            //Creator of document cannot approve
+            // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
+           
+            if ($user->auth_user_id === $createdBy) {
+                $approve = false;
+                $revoke = true;
+            }
+        }
+        if ($docStatus == ConstantHelper::APPROVED || $docStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) {
+            $amendmentWorkflow = AmendmentWorkflow::where('book_id', $book->id)
+                ->where('organization_id', $user->organization_id)
+                ->whereHas('approvers', function ($approvers) use ($user) {
+                    $approvers->where('user_id', $user -> auth_user_id);
+                        // ->where('user_type', $currUser['type']);
+                })
+                ->where('min_value', '<=', $docValue)
+                ->orderByDesc('min_value')
+                ->first();
+            if ($amendmentWorkflow) {
+                $amend = true;
+            }
+
+            if($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS ) {
+                $close = true;
+            } else {
+                $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
+                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                if (isset($postingRequiredParam)) {
+                    $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
+                    $post = $isPostingRequired;
+                }
+            }
+            if ($revisionNumber == 0 && $user -> auth_user_id === $createdBy) {
+                $amendDelete = true;
+            }
+            $print = true;
+        }
+        if ($docStatus == ConstantHelper::PARTIALLY_APPROVED) {
+            $approvalWorkflow = BookLevel::where('book_id', $book->id)
+                ->where('organization_id', $user->organization_id)
+                ->where('min_value', '<=', $docValue)
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user -> auth_user_id);
+                        // ->where('user_type', $currUser['type']);
+                })
+                ->orderByDesc('min_value')
+                ->first();
+            if ($approvalWorkflow) {
+                // $docApproval = DocumentApproval::where('document_type', '=', "$bookTypeServiceAlias")
+                //                 ->where('document_id', $docId)
+                //                 ->where('user_id', $user->id)
+                //                 ->where('user_type', $currUser['type'])
+                //                 ->where('revision_number', $revisionNumber)
+                //                 ->where('approval_type', 'approve')
+                //                 ->first();
+                $checkApproved = self::checkApprovedHistory($bookTypeServiceAlias, $docId, $revisionNumber, [$user->auth_user_id]);
+
+                if (!count($checkApproved)) {
+                    if ($approvalWorkflow->level == $docApprLevel) {
+                        $approve = true;
+                    }
+                }
+            }
+        }
+
+        if ($docStatus == ConstantHelper::CLOSED) {
+            if ($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS) {
+                $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
+                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                if (isset($postingRequiredParam)) {
+                    $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
+                    $post = $isPostingRequired;
+                }
+            }
+            $print = true;
+        }
+
+        if ($docStatus == ConstantHelper::POSTED) {
+            $voucher = true;
+            $print = true;
+        }
+
+        return [
+            'draft' => $draft,
+            'submit' => $submit,
+            'approve' => $approve,
+            'delete' => $delete,
+            'amend' => $amend,
+            'amendDelete' => $amendDelete,
+            'post' => $post,
+            'voucher' => $voucher,
+            'revoke' => $revoke,
+            'close' => $close,
+            'print' => $print,
+            'user' => $user
+
+        ];
+    }
 
     public static function actionButtonDisplayForLegal($bookId, $docStatus, $docId, $docApprLevel, int $createdBy = 0, $creatorType = 'user', $revisionNumber = 0)
     {

@@ -242,6 +242,11 @@
                                                                 <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_order_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Sales Order
                                                             </button>
+                                                        </div>
+                                                            <div class="col-md-2 action-button" id = "pl_selection"> 
+                                                                <button onclick = "openHeaderPullModal('pl');" disabled type = "button" id = "pl_button" data-bs-toggle="modal" data-bs-target="#pullPopUpPickList" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
+                                                                Pick List
+                                                            </button>
                                                             </div>
                                                             <div class="col-md-2 action-button" id = "packing_list_selection"> 
                                                                 <button onclick = "openHeaderPullModal('plist');" disabled type = "button" id = "pack_list_button" data-bs-toggle="modal" data-bs-target="#pullPopUpPlist" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
@@ -263,7 +268,6 @@
                                                                 Land Lease
                                                             </button>
                                                             </div>
-                                                        </div>
                                                         
                                             </div>
                                             
@@ -584,7 +588,7 @@
                                                                     <th width="240px">Item Name</th>
                                                                     <th>Attributes</th>
                                                                     <th>UOM</th>
-                                                                    <th class = "sub_store_dependent" width = "150px">Store</th>
+                                                                    <th width = "150px">Store</th>
                                                                     <th class = "numeric-alignment">Qty</th>
                                                                     <th class = "numeric-alignment">Rate</th>
                                                                     <th class = "numeric-alignment">Value</th> 
@@ -1132,6 +1136,97 @@
 											<th>Package No.</th>
 											<th>Items</th>
 											<th>Total Quantity</th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody>   
+                                    </tbody>
+								</table>
+							</div>
+						</div>
+                    </div>
+				</div>
+			</div>
+		</div>
+	</div>
+    <div class="modal fade text-start" id="pullPopUpPickList" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+			<div class="modal-content">
+				<div class="modal-header">
+                    <div class="col-md-9">
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select
+                            Document</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+                    <div class="text-end col-md-3 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
+                            data-feather="x-circle"></i> Cancel</button>
+                        <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder('pl');"
+                            data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+				<div class="modal-body">
+					 <div class="row">
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                <input type="text" id="customer_code_input_pl" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_pl_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input type="text" id="book_code_input_pl" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_pl_val"></input>
+                            </div>
+                        </div>
+                         
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                                <input type="text" id="document_no_input_pl" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_pl_val"></input>
+                            </div>
+                        </div>
+
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                                <input type="text" id="item_name_input_pl" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_pl_val"></input>
+                            </div>
+                        </div>
+                        <div class="col  mb-1">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button onclick="clearFilters('pl');" type="button" class="btn btn-danger btn-sm"><i data-feather="trash"></i> Clear</button>
+                        </div>
+                        <div class="col-md-12">
+							<div class="table-responsive">
+                                <input type = "hidden" id = "pl_invoice_table_value" value = "pl"> 
+                                <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="pl_invoice_table">
+									<thead>
+                                        <tr>
+											<th>
+												<!-- <div class="form-check form-check-inline me-0">
+													<input class="form-check-input" type="checkbox" id="checkAllPlistElement" onchange="checkAllPlist(this);">
+												</div>  -->
+											</th>  
+                                            <th>SO No.</th>
+											<th>So Date</th>
+                                            <th>Customer</th>
+											<th>Picking Series</th>
+											<th>Picking Document No.</th>
+											<th>Item Code</th>
+											<th>Item Name</th>
+											<th>Attributes</th>
+											<th>UOM</th>
+											<th>Rate</th>
+											<th>Qty</th>
+											<th>Available Qty</th>
+											<th>Available Stk</th>
                                         </tr>
                                     </thead>
                                     <tbody>   
@@ -3285,6 +3380,7 @@
         let qties = [];
         let documentDetails = [];
         let plistDetailIds = [];
+        let plItemDetailIds = [];
         for (let index = 0; index < allCheckBoxes.length; index++) {
             if (allCheckBoxes[index].checked) {
                 docId.push(allCheckBoxes[index].getAttribute('document-id'));
@@ -3298,6 +3394,7 @@
                 if (type === 'plist') {
                     plistDetailIds.push(allCheckBoxes[index].getAttribute('detail-id'))
                 }
+                plItemDetailIds.push(allCheckBoxes[index].getAttribute('pl_item_detail_id'))
             }
         }
         if (docId && soItemsId.length > 0) {
@@ -3312,7 +3409,8 @@
                     doc_type: openPullType,
                     document_details : JSON.stringify(documentDetails),
                     store_id : $("#store_id_input").val(),
-                    plist_detail_ids : plistDetailIds
+                    plist_detail_ids : plistDetailIds,
+                    pl_item_detail_ids : plItemDetailIds
                 },
                 success: function(data) {
                     const currentOrders = data.data;
@@ -3456,6 +3554,10 @@
                                         storesHTML += `<option value = "${store.id}">${store.store_name}</option>`
                                     }
                                 });
+                                if (currentOrder?.staging_sub_store_id) {
+                                    console.log("SALES ", currentOrder);
+                                    storesHTML += `<option value = "${currentOrder.staging_sub_store_id}" selected>${currentOrder?.staging_sub_store_code}</option>`
+                                }
 
                                 let subStoresHTML = ``;
                                 currentSubStoreArray.forEach(subStore => {
@@ -3508,7 +3610,7 @@
 
                                     </select> 
                                         </td>
-                                        <td class = "sub_store_dependent">
+                                        <td class = "">
                                         <select class="form-select" style = "min-width:100%;" name = "item_sub_store[${currentOrderIndexVal}]" id = "item_sub_store_${currentOrderIndexVal}" oninput = "getStoresData(${currentOrderIndexVal}, '', true)">
                                                                                         ${subStoresHTML}       
                                         </select>
@@ -3772,6 +3874,7 @@
                         document-id="${mainDocId}"
                         so-item-id="${soItemId}"
                         balance_qty="${row.balance_qty || 0}"
+                        pl_item_detail_id = "${row.id}"
                         detail-id="${row?.id}">
                 </div>`;
             }
@@ -3795,7 +3898,7 @@
                     { data: 'installment_cost', name: 'installment_cost' },
                     { data: 'due_date', name: 'due_date', render: d => moment(d).format('D/M/Y') }
                 ];
-            } else if (type === 'plist') {
+            } else if (type === 'pl') {
                 return [
                     checkboxColumn(),
                     {data: 'sale_order',name: 'sale_order',render: so => `${so?.book_code} - ${so?.document_number}`},
@@ -3803,9 +3906,17 @@
                     { data: 'sale_order.customer_code', name: 'customer_code' },
                     { data: 'header.book_code', name: 'book_code' },
                     { data: 'header.document_number', name: 'document_number' },
-                    { data: 'packing_number', name: 'packing_number'},
-                    { data: 'items_ui', name: 'items_ui' },
-                    { data: 'total_item_qty', name: 'total_item_qty'}
+                    { data: 'item_code', name: 'item_code' },
+                    { data: 'item_name', name: 'item_name' },
+                    {
+                        data: 'attributes_data',
+                        name: 'attributes_data',
+                    },
+                    { data: 'uom_name', name: 'uom_name'},
+                    { data: 'rate', name: 'rate'},
+                    { data: 'picked_qty', name: 'picked_qty'},
+                    { data: 'pl_avl_qty', name: 'pl_avl_qty'},
+                    { data: 'avl_stock', name: 'avl_stock'}
                 ];
             } else {
                 return [
@@ -3831,9 +3942,18 @@
                 ];
             }
         };
-         const tableSelector = type === 'plist' ? '#plist_invoice_table'
-            : type === 'land-lease' ? '#land_lease_invoice_table'
-            : '#so_invoice_table';
+
+        let tableSelector = "#so_invoice_table";
+        if (type === 'plist') {
+            tableSelector = "#plist_invoice_table";
+        } else if (type === 'pl') {
+            tableSelector = "#pl_invoice_table";
+        } else if (type === 'land-lease') {
+            tableSelector = "#land_lease_invoice_table";
+        } else  {
+            tableSelector = "#so_invoice_table";
+            $("#so_invoice_table_value").val(type);
+        }
        
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
             .map((_, i) => document.getElementById('qt_id_' + i)?.value)
@@ -3981,6 +4101,12 @@
             initializeAutocompleteQt("document_no_input_plist", "document_id_plist_val", "plist_document", "document_number");
             initializeAutocompleteQt("customer_code_input_plist", "customer_id_plist_val", "customer", "customer_code", "company_name");
             initializeAutocompleteQt("item_name_input_plist", "item_id_plist_val", "sale_module_items", "item_code", "item_name");
+        }else if (type === 'pl') {
+            openPullType = "pl";
+            initializeAutocompleteQt("book_code_input_pl", "book_id_pl_val", "book_pl", "book_code", "book_name");
+            initializeAutocompleteQt("document_no_input_pl", "document_id_pl_val", "pl_document", "document_number");
+            initializeAutocompleteQt("customer_code_input_pl", "customer_id_pl_val", "customer", "customer_code", "company_name");
+            initializeAutocompleteQt("item_name_input_pl", "item_id_pl_val", "sale_module_items", "item_code", "item_name");
         }else {
             openPullType = "so";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
@@ -4562,7 +4688,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         if (val === 'si') //SALES INVOICE
         {
             // generalInfoTab.style.display = 'none';
-            itemDetailTd.setAttribute('colspan', 8);
+            // itemDetailTd.setAttribute('colspan', 8);
             // invoiceSummaryTd.style.removeProperty('display');
             breadCrumbHeading.textContent = "Sales Invoice";
             for (let index = 0; index < leaseHiddenFields.length; index++) {
@@ -4572,7 +4698,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         else if (val === 'dnote') //DELIVERY NOTE
         {
             // generalInfoTab.style.removeProperty('display');
-            itemDetailTd.setAttribute('colspan', 8);
+            // itemDetailTd.setAttribute('colspan', 8);
             // invoiceSummaryTd.style.display = 'none';
             breadCrumbHeading.textContent = "Delivery Note";
             for (let index = 0; index < leaseHiddenFields.length; index++) {
@@ -4582,7 +4708,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         else if (val === 'lease-invoice')// LEASE INVOICE
         {
             // generalInfoTab.style.display = 'none';
-            itemDetailTd.setAttribute('colspan', 8);
+            // itemDetailTd.setAttribute('colspan', 8);
             // invoiceSummaryTd.style.removeProperty('display');
             breadCrumbHeading.textContent = "Lease Invoice";
             for (let index = 0; index < leaseHiddenFields.length; index++) {
@@ -4906,15 +5032,15 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             }  
         }
         if (currentDocType !== 'dnote') {
-            document.getElementById('item_row_colspan').setAttribute('colspan', 7);
-            document.getElementById('item_details_td').setAttribute('colspan', 7);
+            // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
+            // document.getElementById('item_details_td').setAttribute('colspan', 7);
         } else {
             if (currentSubStoreArray.length > 0) {
-                document.getElementById('item_row_colspan').setAttribute('colspan', 8);
-                document.getElementById('item_details_td').setAttribute('colspan', 8);
+                // document.getElementById('item_row_colspan').setAttribute('colspan', 8);
+                // document.getElementById('item_details_td').setAttribute('colspan', 8);
             } else {
-                document.getElementById('item_row_colspan').setAttribute('colspan', 7);
-                document.getElementById('item_details_td').setAttribute('colspan', 7);
+                // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
+                // document.getElementById('item_details_td').setAttribute('colspan', 7);
             }
             
         }

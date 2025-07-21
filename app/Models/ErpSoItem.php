@@ -306,7 +306,7 @@ class ErpSoItem extends Model
         ];
     }
 
-    public function getStockBalanceQty($storeId = null)
+    public function getStockBalanceQty($storeId = null, $subStoreId = null)
     {
         $itemId = $this -> getAttribute('item_id');
         $selectedAttributeIds = [];
@@ -318,7 +318,7 @@ class ErpSoItem extends Model
                 }
             }
         }
-        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,null,$storeId,null);
+        $stocks = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttributeIds,null,$storeId, $subStoreId);
         $stockBalanceQty = 0;
         if (isset($stocks) && isset($stocks['confirmedStocks'])) {
             $stockBalanceQty = $stocks['confirmedStocks'];

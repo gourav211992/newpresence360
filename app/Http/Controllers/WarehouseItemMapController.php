@@ -31,7 +31,7 @@ use Illuminate\Validation\Rule;
 use App\Http\Requests\WhItemMappingRequest;
 use Illuminate\Support\Facades\Auth as FacadesAuth;
 
-class WarehouseItemMappingController extends Controller
+class WarehouseItemMapController extends Controller
 {
 
     public function index(Request $request)

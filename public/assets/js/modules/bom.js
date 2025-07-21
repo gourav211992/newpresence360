@@ -634,3 +634,18 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
        });
    }
 }
+
+function getUniqueRowCount() {
+    let existingIndexes = [];
+    $("#itemTable > tbody > tr").each(function () {
+        let index = parseInt($(this).attr("data-index"));
+        if (!isNaN(index)) {
+            existingIndexes.push(index);
+        }
+    });
+    let rowCount = $("#itemTable > tbody > tr").length + 1;
+    while (existingIndexes.includes(rowCount)) {
+        rowCount++;
+    }
+    return rowCount - 1;
+}

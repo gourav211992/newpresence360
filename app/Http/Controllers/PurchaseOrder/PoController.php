@@ -95,9 +95,6 @@ class PoController extends Controller
             ->addColumn('book_name', function ($row) {
                 return $row->book ? $row->book?->book_code : 'N/A';
             })
-            // ->addColumn('department', function ($row) {
-            //     return $row->department ? $row->department?->name : 'N/A';
-            // })
             ->addColumn('sales_order', function ($row) {
                 $saleReferences = ErpSaleOrder::whereIn('id', $row->so_id ?? [])
                 ->get()
@@ -164,18 +161,10 @@ class PoController extends Controller
         $sub_menu = 'Add New';
         $short_title = '';
         $reference_from_title = '';
-
-        if($this->type == 'po') {
-            $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
-            $title = 'Purchase Order';
-            $short_title = 'PO';
-            $reference_from_title = 'Purchase Indent';
-        } else {
-            $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
-            $title = 'Supplier Invoice';
-            $short_title = 'SI';
-            $reference_from_title = 'Purchase Order';
-        }
+        $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
+        $title = 'Purchase Order';
+        $short_title = 'PO';
+        $reference_from_title = 'Purchase Indent';
         $user = Helper::getAuthenticatedUser();
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
 
@@ -433,13 +422,13 @@ class PoController extends Controller
             $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
             $regeneratedDocExist = PurchaseOrder::where('book_id',$request->book_id)
                 ->where('document_number',$document_number)->first();
-                //Again check regenerated doc no
-                if (isset($regeneratedDocExist)) {
-                    return response()->json([
-                        'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
-                        'error' => "",
-                    ], 422);
-                }
+            //Again check regenerated doc no
+            if (isset($regeneratedDocExist)) {
+                return response()->json([
+                    'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
+                    'error' => "",
+                ], 422);
+            }
 
             $po->doc_number_type = $numberPatternData['type'];
             $po->doc_reset_pattern = $numberPatternData['reset_pattern'];
@@ -507,6 +496,7 @@ class PoController extends Controller
                 ]);
                 $shippingAddress->save();
             }
+
             # Store location address
             $vendorDeliveryAddress = ErpAddress::find($request->delivery_address_id ?? null);
             if($vendorDeliveryAddress) {
@@ -567,24 +557,14 @@ class PoController extends Controller
                 $totalItemValueAfterDiscount = 0;
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    $po_item_id = null;
-                    $si_po_item_id = null;
+                    $pi_item_id = null;
                     if(isset($component['pi_item_id']) && $component['pi_item_id']) {
                         $piItem = PiItem::find($component['pi_item_id']);
-                        $po_item_id = $piItem->id ?? null;
+                        $pi_item_id = $piItem->id ?? null;
                         if($piItem) {
                             $piItem->order_qty = $piItem->order_qty + floatval($component['qty']);
                             $piItem->save();
                         }
-                    }
-                    if(isset($component['si_po_item_id']) && $component['si_po_item_id']) {
-                        $si_po_item_id = $component['si_po_item_id'];
-                        $si_po_item = PoItem::find($si_po_item_id);
-                        if($si_po_item) {
-                            $si_po_item->invoice_quantity = $si_po_item->invoice_quantity + floatval($component['qty']);
-                            $si_po_item->save();
-                        }
-
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
@@ -614,8 +594,7 @@ class PoController extends Controller
                     $poItemArr[] = [
                         'so_id' => $component['so_id'] ?? null,
                         'purchase_order_id' => $po->id,
-                        'pi_item_id' => $po_item_id,
-                        'po_item_id' => $si_po_item_id,
+                        'pi_item_id' => $pi_item_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -685,7 +664,6 @@ class PoController extends Controller
                     $poDetail->so_id = $poItem['so_id'];
                     $poDetail->purchase_order_id = $poItem['purchase_order_id'];
                     $poDetail->pi_item_id = $poItem['pi_item_id'];
-                    $poDetail->po_item_id = $poItem['po_item_id'];
                     $poDetail->item_id = $poItem['item_id'];
                     $poDetail->item_code = $poItem['item_code'];
                     $poDetail->hsn_id = $poItem['hsn_id'];
@@ -948,14 +926,10 @@ class PoController extends Controller
             $po->save();
             /*Po Attachment*/
             if ($request->hasFile('attachment')) {
-                if ($this->type == 'supplier-invoice') {
-                    $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'supplier-invoice', false);
-                } else {
-                    $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'po', false);
-                }
+                $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'po', false);
             }
             $redirectUrl = '';
-            if($type != ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS && $po->document_status == ConstantHelper::APPROVED) {
+            if($po->document_status == ConstantHelper::APPROVED) {
                 $redirectUrl = url(request()->route('type') . '/' . $po->id . '/pdf');
             }
 
@@ -1043,13 +1017,32 @@ class PoController extends Controller
             if (count($deletedData['deletedPiItemIds'])) {
                 $poItems = PoItem::whereIn('id',$deletedData['deletedPiItemIds'])->get();
                 foreach($poItems as $poItem) {
+                    if(floatval($poItem->grn_qty) > 0) {
+                        return response()->json([
+                            'message' => 'Can not delete: Item used in GRN.',
+                            'error' => "",
+                            'refresh_page' => true
+                        ], 422);
+                    }
+                    if(floatval($poItem->ge_qty) > 0) {
+                        return response()->json([
+                            'message' => 'Can not delete: Item used in Gate Entry.',
+                            'error' => "",
+                            'refresh_page' => true
+                        ], 422);
+                    }
+                    if(floatval($poItem->asn_qty) > 0) {
+                        return response()->json([
+                            'message' => 'Can not delete: Item used in ASN.',
+                            'error' => "",
+                            'refresh_page' => true
+                        ], 422);
+                    }
                     $poItem->teds()->delete();
                     $poItem->itemDelivery()->delete();
                     $poItem->attributes()->delete();
                     $updatedQty = $poItem?->order_qty;
-                    $piPoMappings = PiPoMapping::where('po_item_id',$poItem->id)
-                                    ->orderBy('id', 'desc')
-                                    ->get();
+                    $piPoMappings = PiPoMapping::where('po_item_id',$poItem->id)->orderBy('id', 'desc')->get();
                     foreach($piPoMappings as $piPoMapping) {
                         $pi_item = $piPoMapping->pi_item;
                         $balQty = $pi_item->order_qty;
@@ -1155,14 +1148,10 @@ class PoController extends Controller
                 $totalItemValueAfterDiscount = 0;
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    $po_item_id = null;
-                    $si_po_item_id = null;
+                    $pi_item_id = null;
                     if(isset($component['pi_item_id']) && $component['pi_item_id']) {
                         $piItem = PiItem::find($component['pi_item_id']);
-                        $po_item_id = $piItem->id ?? null;
-                    }
-                    if(isset($component['si_po_item_id']) && $component['si_po_item_id']) {
-                        $si_po_item_id = $component['si_po_item_id'];
+                        $pi_item_id = $piItem->id ?? null;
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
@@ -1193,8 +1182,7 @@ class PoController extends Controller
                     $poItemArr[] = [
                         'so_id' => $component['so_id'] ?? null,
                         'purchase_order_id' => $po->id,
-                        'pi_item_id' => $po_item_id,
-                        'po_item_id' => $si_po_item_id,
+                        'pi_item_id' => $pi_item_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -1293,7 +1281,6 @@ class PoController extends Controller
                     $poDetail->so_id = $poItem['so_id'];
                     $poDetail->purchase_order_id = $poItem['purchase_order_id'];
                     $poDetail->pi_item_id = $poItem['pi_item_id'];
-                    $poDetail->po_item_id = $poItem['po_item_id'];
                     $poDetail->item_id = $poItem['item_id'];
                     $poDetail->item_code = $poItem['item_code'];
                     $poDetail->hsn_id = $poItem['hsn_id'];
@@ -1621,16 +1608,11 @@ class PoController extends Controller
             }
             /*Po Attachment*/
             if ($request->hasFile('attachment')) {
-                if($this->type == 'supplier-invoice')
-                {
-                    $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'supplier-invoice', false);
-                } else {
-                    $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'po', false);
-                }
+                $mediaFiles = $po->uploadDocuments($request->file('attachment'), 'po', false);
             }
             $po->save();
             $redirectUrl = '';
-            if($type != ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS && $po->document_status == ConstantHelper::APPROVED) {
+            if($po->document_status == ConstantHelper::APPROVED) {
                 $redirectUrl = url(request()->route('type') . '/' . $po->id . '/pdf');
             }
 
@@ -1767,17 +1749,10 @@ class PoController extends Controller
         $short_title = '';
         $reference_from_title = '';
         $user = Helper::getAuthenticatedUser();
-        if($this->type == 'po') {
-            $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
-            $title = 'Purchase Order';
-            $short_title = 'PO';
-            $reference_from_title = 'Purchase Indent';
-        } else {
-            $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
-            $title = 'Supplier Invoice';
-            $short_title = 'SI';
-            $reference_from_title = 'Purchase Order';
-        }
+        $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
+        $title = 'Purchase Order';
+        $short_title = 'PO';
+        $reference_from_title = 'Purchase Indent';
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $po = PurchaseOrder::ofType($this->type)->where('id',$id)->first();
         if (!$po) {
@@ -1824,7 +1799,7 @@ class PoController extends Controller
             }
         }
         $pendingOrder = PoItem::where('purchase_order_id', $po->id)
-            ->whereRaw('order_qty > (grn_qty + short_close_qty)')
+            ->whereRaw('order_qty > (GREATEST(COALESCE(grn_qty, 0), COALESCE(ge_qty, 0), COALESCE(asn_qty, 0)) + COALESCE(short_close_qty, 0))')
             ->count();
         if($pendingOrder) {
             $shortClose = 1;
@@ -1891,15 +1866,8 @@ class PoController extends Controller
         $amountInWords = NumberHelper::convertAmountToWords($totalAmount);
         $imagePath = public_path('assets/css/midc-logo.jpg');
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$po->document_status] ?? '';
-        $fileName = '';
-        if ($type == 'supplier-invoice') {
-            $path = 'pdf.supplier-invoice2';
-            $fileName = 'Supplier-Invoice-' . date('Y-m-d') . '.pdf';
-        } else {
-            $path = 'pdf.po2';
-            $fileName = 'Purchase-Order-' . date('Y-m-d') . '.pdf';
-        }
-
+        $path = 'pdf.po2';
+        $fileName = 'Purchase-Order-' . date('Y-m-d') . '.pdf';
         $taxes = PurchaseOrderTed::where('purchase_order_id', $po->id)
         ->where('ted_type', 'Tax')
         ->select('ted_type','ted_id','ted_name', 'ted_perc', DB::raw('SUM(ted_amount) as total_amount'), DB::raw('SUM(assessment_amount) as total_assessment_amount'))
@@ -1958,74 +1926,42 @@ class PoController extends Controller
     {
         $storeId = $request->store_id ?? null;
         $query = $this->buildPiQuery($request);
-        if($this->type == 'po') {
-            return DataTables::of($query)
-            ->addColumn('select_checkbox', fn($row) => app(\App\View\Components\Po\CheckBox::class, ['row' => $row])->resolveView()->render())
-            ->addColumn('book_name', fn($row) => $row?->pi?->book?->book_name ?? '')
-            ->addColumn('doc_no', fn($row) => $row?->pi?->document_number ?? '')
-            ->addColumn('doc_date', fn($row) => $row?->pi?->getFormattedDate('document_date') ?? '')
-            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
-            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
-            ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
-            ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
-            ->addColumn('balance_qty', fn($row) => number_format(($row?->indent_qty - $row?->order_qty),2) ?? '')
-            ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
-            ->addColumn('avl_stock', fn($row) => number_format($row?->getAvlStock($storeId),2))
-            ->addColumn('vendor_select', fn($row) => app(\App\View\Components\Po\Vendor::class, [
-                'row' => $row,
-                'documentDate' => request()->get('document_date'),
-            ])->resolveView()->render())
-            ->addColumn('so_no', fn($row) => $row?->pi?->so?->book_code ?? '')
-            ->addColumn('location', fn($row) => $row?->pi?->sub_store_id ? $row?->pi?->sub_store?->name : $row?->pi?->requester?->name)
-            ->addColumn('requester', fn($row) => $row?->po?->department?->name ?? '')
-            ->addColumn('remarks', fn($row) => $row?->remarks ?? '')
-            ->rawColumns([
-                'book_name',
-                'doc_no',
-                'doc_date',
-                'item_code',
-                'item_name',
-                'attributes',
-                'uom',
-                'vendor_select',
-                'so_no',
-                'location',
-                'requester',
-                'remarks',
-                'select_checkbox'
-                ])
-            ->make(true);
-        } else {
-            return DataTables::of($query)
-            ->addColumn('select_checkbox', fn($row) => app(\App\View\Components\Po\CheckBox::class, ['row' => $row])->resolveView()->render())
-            ->addColumn('book_name', fn($row) => $row?->po?->book?->book_name ?? '')
-            ->addColumn('doc_no', fn($row) => $row?->po?->document_number ?? '')
-            ->addColumn('doc_date', fn($row) => $row?->po?->getFormattedDate('document_date') ?? '')
-            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
-            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
-            ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
-            ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
-            ->addColumn('balance_qty', fn($row) => number_format(($row?->indent_qty - $row?->order_qty),2) ?? '')
-            ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
-            ->addColumn('avl_stock', fn($row) => $row?->getAvlStock($storeId) ?? '')
-            ->addColumn('vendor_select', fn($row) => $row?->po?->vendor?->company_name ?? '')            
-            ->addColumn('location', fn($row) => $row?->po?->store_location?->store_name)
-            ->addColumn('requester', fn($row) => $row->po->department->name ?? '')
-            ->rawColumns([
-                'book_name',
-                'doc_no',
-                'doc_date',
-                'item_code',
-                'item_name',
-                'attributes',
-                'uom',
-                'vendor_select',
-                'location',
-                'requester',
-                'select_checkbox'
-                ])
-            ->make(true);
-        }
+        return DataTables::of($query)
+        ->addColumn('select_checkbox', fn($row) => app(\App\View\Components\Po\CheckBox::class, ['row' => $row])->resolveView()->render())
+        ->addColumn('book_name', fn($row) => $row?->pi?->book?->book_name ?? '')
+        ->addColumn('doc_no', fn($row) => $row?->pi?->document_number ?? '')
+        ->addColumn('doc_date', fn($row) => $row?->pi?->getFormattedDate('document_date') ?? '')
+        ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
+        ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
+        ->addColumn('attributes', fn($row) => app(\App\View\Components\Po\Attribute::class, ['row' => $row])->resolveView()->render())
+        ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
+        ->addColumn('balance_qty', fn($row) => number_format(($row?->indent_qty - $row?->order_qty),2) ?? '')
+        ->addColumn('pending_po', fn($row) => number_format($row?->pending_po,2) ?? '')
+        ->addColumn('avl_stock', fn($row) => number_format($row?->getAvlStock($storeId),2))
+        ->addColumn('vendor_select', fn($row) => app(\App\View\Components\Po\Vendor::class, [
+            'row' => $row,
+            'documentDate' => request()->get('document_date'),
+        ])->resolveView()->render())
+        ->addColumn('so_no', fn($row) => $row?->pi?->so?->book_code ?? '')
+        ->addColumn('location', fn($row) => $row?->pi?->sub_store_id ? $row?->pi?->sub_store?->name : $row?->pi?->requester?->name)
+        ->addColumn('requester', fn($row) => $row?->po?->department?->name ?? '')
+        ->addColumn('remarks', fn($row) => $row?->remarks ?? '')
+        ->rawColumns([
+            'book_name',
+            'doc_no',
+            'doc_date',
+            'item_code',
+            'item_name',
+            'attributes',
+            'uom',
+            'vendor_select',
+            'so_no',
+            'location',
+            'requester',
+            'remarks',
+            'select_checkbox'
+            ])
+        ->make(true);
     }
     # This for both bulk and single po
     protected function buildPiQuery(Request $request) 
@@ -2042,36 +1978,6 @@ class PoController extends Controller
         $requesterId = $request->requester_id ?? null;
         $piItems = null;
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        if($this->type == 'supplier-invoice') {
-            $selectColumn = ['id','purchase_order_id','so_id','po_item_id','item_id','item_code','uom_id','uom_code','order_qty','grn_qty','invoice_quantity','short_close_qty','remarks'];
-            $piItems = PoItem::where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $departmentId,$itemSearch) {
-                        $query->whereHas('item');
-                        $query->whereHas('po', function($pi) use ($seriesId,$applicableBookIds,$vendorId, $departmentId) {
-                            $pi->where('type','po');
-                            $pi->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                            if($seriesId) {
-                                $pi->where('book_id',$seriesId);
-                            } else {
-                                if(count($applicableBookIds)) {
-                                    $pi->whereIn('book_id',$applicableBookIds);
-                                }
-                            }
-                            if ($vendorId) {
-                                $pi->where('vendor_id', $vendorId);
-                            }
-                            if($departmentId) {
-                                $pi->where('department_id', $departmentId);
-                            }
-                        });
-                        if ($itemSearch) {
-                            $query->whereHas('item', function ($query) use ($itemSearch) {
-                                $query->searchByKeywords($itemSearch);
-                            });
-                        }
-
-                        $query->whereRaw('order_qty > invoice_quantity');
-                    });
-        } else {
         $selected_pi_ids = json_decode($request->selected_pi_ids) ?? [];
         $selectColumn = ['id','pi_id','so_id','item_id','item_code','item_name','uom_id','uom_code','vendor_id','indent_qty','order_qty','adjusted_qty','required_qty','remarks'];
         $piItems = PiItem::select($selectColumn)
@@ -2124,7 +2030,6 @@ class PoController extends Controller
                     }
                     $query->whereRaw('indent_qty > order_qty');
                 });
-        }
         return $piItems;
     }
 
@@ -2200,138 +2105,78 @@ class PoController extends Controller
         $vendor = null;
         $finalDiscounts = collect();
         $finalExpenses = collect();
-        if($this->type == 'supplier-invoice') {
-            $piItems = PoItem::whereIn('id', $ids)->get();
-            $uniquePoIds = PoItem::whereIn('id', $ids)
-                        ->distinct()
-                        ->pluck('purchase_order_id')
-                        ->toArray();
-            if(count($uniquePoIds) > 1) {
-                return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time supplier invoice create from one PO."]);
-            }
-            $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->get();
-            $discounts = collect();
-            $expenses = collect();
-            foreach ($pos as $po) {
-                foreach ($po->headerDiscount as $headerDiscount) {
-                    if (!intval($headerDiscount->ted_perc)) {
-                        $tedPerc = (floatval($headerDiscount->ted_amount) / floatval($headerDiscount->assessment_amount)) * 100;
-                        $headerDiscount['ted_perc'] = $tedPerc;
-                    }
-                    $discounts->push($headerDiscount);
-                }
-                foreach ($po->headerExpenses as $headerExpense) {
-                    if (!intval($headerExpense->ted_perc)) {
-                        $tedPerc = (floatval($headerExpense->ted_amount) / floatval($headerExpense->assessment_amount)) * 100;
-                        $headerExpense['ted_perc'] = $tedPerc;
-                    }
-                    $expenses->push($headerExpense);
-                }
-            }
-            $groupedDiscounts = $discounts
-                ->groupBy('ted_id')
-                ->map(function ($group) {
-                    return $group->sortByDesc('ted_perc')->first();
-                });
-            $groupedExpenses = $expenses
-                ->groupBy('ted_id')
-                ->map(function ($group) {
-                    return $group->sortByDesc('ted_perc')->first();
-                });
-            $finalDiscounts = $groupedDiscounts->values()->toArray();
-            $finalExpenses = $groupedExpenses->values()->toArray();
-            $poIds = $piItems->pluck('purchase_order_id')->all();
-            $vendorId = PurchaseOrder::whereIn('id',$poIds)->pluck('vendor_id')->toArray();
-            $vendorId = array_unique($vendorId);
-            if(count($vendorId) && count($vendorId) > 1) {
-                return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of PO item at time."]);
-            } else {
-            $vendorId = $vendorId[0];
-            $vendor = Vendor::find($vendorId);
-            $vendor->billing = $vendor->addresses()->where(function($query) {
-                $query->where('type', 'billing')->orWhere('type', 'both');
-            })->latest()->first();
-            $vendor->shipping = $vendor->addresses()->where(function($query) {
-                $query->where('type', 'shipping')->orWhere('type', 'both');
-            })->latest()->first();
-            $vendor->currency = $vendor->currency;
-            $vendor->paymentTerm = $vendor->paymentTerm;
-            $html = view('procurement.po.partials.invoice-po-item', ['poItems' => $piItems])->render();
-            }
-        } else {
-            $groupItems = json_decode($request->groupItems, TRUE) ?? [];
-            $piItemGrouped = DB::table(function ($query) use ($ids) {
-                $query->from('erp_pi_items')
-                    ->leftJoin('erp_pi_item_attributes', 'erp_pi_items.id', '=', 'erp_pi_item_attributes.pi_item_id') // Use LEFT JOIN
-                    ->select(
-                        'erp_pi_items.id as pi_item_id',
-                        'erp_pi_items.so_id',
-                        'erp_pi_items.item_id',
-                        'erp_pi_items.uom_id',
-                        'erp_pi_items.remarks',
-                        DB::raw("GROUP_CONCAT(
-                            CONCAT(erp_pi_item_attributes.item_attribute_id, ':', erp_pi_item_attributes.attribute_value)
-                            ORDER BY erp_pi_item_attributes.item_attribute_id SEPARATOR ', '
-                        ) as attributes"),
-                        'erp_pi_items.indent_qty',
-                        'erp_pi_items.order_qty'
-                    )
-                    ->whereIn('erp_pi_items.id', $ids)
-                    ->groupBy('erp_pi_items.id', 'erp_pi_items.item_id', 'erp_pi_items.uom_id', 'erp_pi_items.so_id');
-            })
-            ->select(
-                'item_id',
-                'so_id',
-                'uom_id',
-                DB::raw("IFNULL(attributes, '') as attributes"),
-                DB::raw("MIN(remarks) as remarks"),
-                DB::raw("SUM(indent_qty - order_qty) as total_qty"),
-                DB::raw("GROUP_CONCAT(pi_item_id ORDER BY pi_item_id SEPARATOR ',') as pi_item_ids")
-            )
-            ->groupBy('item_id', 'uom_id', 'attributes','so_id')
-            ->get();
-            $updatedGroupItems = [];
-            $newItems = [];
-            foreach ($piItemGrouped as $piItem) {
-                $found = false;
-                foreach ($groupItems as &$groupItem) {
-                    if (
-                        $groupItem['item_id'] == $piItem->item_id &&
-                        $groupItem['uom_id'] == $piItem->uom_id &&
-                        $groupItem['attributes'] == $piItem->attributes && 
-                        $groupItem['so_id'] == $piItem->so_id 
-                    ) {
-                        $groupItem['total_qty'] += $piItem->total_qty;
-                        $existingIds = explode(',', $groupItem['pi_item_ids'] ?? '');
-                        $newIds = explode(',', $piItem->pi_item_ids);
-                        $mergedIds = array_unique(array_merge($existingIds, $newIds));
-                        $groupItem['pi_item_ids'] = implode(',', $mergedIds);
-                        $updatedGroupItems[] = $groupItem;
-                        $found = true;
-                        break;
-                    }
-                }
-                if (!$found) {
-                    $newItems[] = (array)$piItem;
+        $groupItems = json_decode($request->groupItems, TRUE) ?? [];
+        $piItemGrouped = DB::table(function ($query) use ($ids) {
+            $query->from('erp_pi_items')
+                ->leftJoin('erp_pi_item_attributes', 'erp_pi_items.id', '=', 'erp_pi_item_attributes.pi_item_id') // Use LEFT JOIN
+                ->select(
+                    'erp_pi_items.id as pi_item_id',
+                    'erp_pi_items.so_id',
+                    'erp_pi_items.item_id',
+                    'erp_pi_items.uom_id',
+                    'erp_pi_items.remarks',
+                    DB::raw("GROUP_CONCAT(
+                        CONCAT(erp_pi_item_attributes.item_attribute_id, ':', erp_pi_item_attributes.attribute_value)
+                        ORDER BY erp_pi_item_attributes.item_attribute_id SEPARATOR ', '
+                    ) as attributes"),
+                    'erp_pi_items.indent_qty',
+                    'erp_pi_items.order_qty'
+                )
+                ->whereIn('erp_pi_items.id', $ids)
+                ->groupBy('erp_pi_items.id', 'erp_pi_items.item_id', 'erp_pi_items.uom_id', 'erp_pi_items.so_id');
+        })
+        ->select(
+            'item_id',
+            'so_id',
+            'uom_id',
+            DB::raw("IFNULL(attributes, '') as attributes"),
+            DB::raw("MIN(remarks) as remarks"),
+            DB::raw("SUM(indent_qty - order_qty) as total_qty"),
+            DB::raw("GROUP_CONCAT(pi_item_id ORDER BY pi_item_id SEPARATOR ',') as pi_item_ids")
+        )
+        ->groupBy('item_id', 'uom_id', 'attributes','so_id')
+        ->get();
+        $updatedGroupItems = [];
+        $newItems = [];
+        foreach ($piItemGrouped as $piItem) {
+            $found = false;
+            foreach ($groupItems as &$groupItem) {
+                if (
+                    $groupItem['item_id'] == $piItem->item_id &&
+                    $groupItem['uom_id'] == $piItem->uom_id &&
+                    $groupItem['attributes'] == $piItem->attributes && 
+                    $groupItem['so_id'] == $piItem->so_id 
+                ) {
+                    $groupItem['total_qty'] += $piItem->total_qty;
+                    $existingIds = explode(',', $groupItem['pi_item_ids'] ?? '');
+                    $newIds = explode(',', $piItem->pi_item_ids);
+                    $mergedIds = array_unique(array_merge($existingIds, $newIds));
+                    $groupItem['pi_item_ids'] = implode(',', $mergedIds);
+                    $updatedGroupItems[] = $groupItem;
+                    $found = true;
+                    break;
                 }
             }
-            $newItems = array_map(function ($item) {
-                return (object)$item;
-            }, $newItems);
-            $transactionDate = $request->d_date ?? date('Y-m-d');
-            $vendorId = $request->vendor_id ?? null;
-            $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
-            $vendor->paymentTerm = $vendor->paymentTerms;
-            $currencyId = $vendor?->currency->id ?? $request->currency_id ?? null;
-            $current_row_count = intval($request->current_row_count);
-            $html = view('procurement.po.partials.item-row-pi', [
-                'piItemGrouped' => $newItems,
-                'transactionDate' => $transactionDate,
-                'currencyId' => $currencyId,
-                'vendorId' => $vendorId,
-                'current_row_count' => $current_row_count
-                ])->render();
+            if (!$found) {
+                $newItems[] = (array)$piItem;
+            }
         }
+        $newItems = array_map(function ($item) {
+            return (object)$item;
+        }, $newItems);
+        $transactionDate = $request->d_date ?? date('Y-m-d');
+        $vendorId = $request->vendor_id ?? null;
+        $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+        $vendor->paymentTerm = $vendor->paymentTerms;
+        $currencyId = $vendor?->currency->id ?? $request->currency_id ?? null;
+        $current_row_count = intval($request->current_row_count);
+        $html = view('procurement.po.partials.item-row-pi', [
+            'piItemGrouped' => $newItems,
+            'transactionDate' => $transactionDate,
+            'currencyId' => $currencyId,
+            'vendorId' => $vendorId,
+            'current_row_count' => $current_row_count
+            ])->render();
         return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses, 'updatedGroupItems' => @$updatedGroupItems], 'status' => 200, 'message' => "fetched!"]);
     }
 
@@ -2430,18 +2275,10 @@ class PoController extends Controller
         $sub_menu = 'Add New';
         $short_title = '';
         $reference_from_title = '';
-
-        if($this->type == 'po') {
-            $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
-            $title = 'Purchase Order';
-            $short_title = 'PO';
-            $reference_from_title = 'Purchase Indent';
-        } else {
-            $serviceAlias = ConstantHelper::SUPPLIER_INVOICE_SERVICE_ALIAS;
-            $title = 'Supplier Invoice';
-            $short_title = 'SI';
-            $reference_from_title = 'Purchase Order';
-        }
+        $serviceAlias = ConstantHelper::PO_SERVICE_ALIAS;
+        $title = 'Purchase Order';
+        $short_title = 'PO';
+        $reference_from_title = 'Purchase Indent';
         $user = Helper::getAuthenticatedUser();
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)
                 ->whereHas('patterns', function($patternQuery){
@@ -2655,7 +2492,6 @@ class PoController extends Controller
                 $po->organization_id = $organization->id;
                 $po->group_id = $organization->group_id;
                 $po->company_id = $organization->company_id;
-                // $po->department_id = $request->department_id;
                 $po->store_id = $storeId;
                 $po->book_id = $bookId;
                 $po->book_code = $bookCode;
@@ -2762,7 +2598,6 @@ class PoController extends Controller
                     foreach($groupedData['pi_items'] as $piItemRow) {
                         $poDetail = new PoItem;
                         $poDetail->purchase_order_id = $po->id;
-                        // $poDetail->pi_item_id = $piItemRow['pi_item_id'];
                         $poDetail->so_id = $piItemRow['so_id'];
                         $poDetail->item_id = $piItemRow['item_id'];
                         $poDetail->item_code = $piItemRow['item_code'];

@@ -287,6 +287,10 @@ function disableHeader()
     if (orderButton) {
         orderButton.disabled = true;
     }
+    let plButton = document.getElementById('pl_button');
+    if (plButton) {
+        plButton.disabled = true;
+    }
     let plistButton = document.getElementById('pack_list_button');
     if (plistButton) {
         plistButton.disabled = true;
@@ -348,6 +352,10 @@ function enableHeader()
     let orderButton = document.getElementById('select_order_button');
     if (orderButton) {
         orderButton.disabled = false;
+    }
+    let plButton = document.getElementById('pl_button');
+    if (plButton) {
+        plButton.disabled = false;
     }
     let plistButton = document.getElementById('pack_list_button');
     if (plistButton) {
@@ -568,6 +576,10 @@ function resetParametersDependentElements(reset = true)
     if (selectionSectionSO) {
         selectionSectionSO.style.display = "none";
     }
+    var selectionSectionPl = document.getElementById('pl_selection');
+    if (selectionSectionPl) {
+        selectionSectionPl.style.display = "none";
+    }
     var selectionSectionSI = document.getElementById('sales_invoice_selection');
     if (selectionSectionSI) {
         selectionSectionSI.style.display = "none";
@@ -680,6 +692,7 @@ function enableDisableQtButton()
     let dnButton = document.getElementById('select_dn_button');
     let leaseButton = document.getElementById('select_lease_button');
     let orderButton = document.getElementById('select_order_button');
+    let plButton = document.getElementById('pl_button');
     let plistButton = document.getElementById('pack_list_button');
     let customerSection = document.getElementById('customer_code_input');
 
@@ -710,6 +723,9 @@ function enableDisableQtButton()
         }
         if (orderButton) {
             orderButton.disabled = false;
+        }
+        if (plButton) {
+            plButton.disabled = false;
         }
         if (plistButton) {
             plistButton.disabled = false;
@@ -852,6 +868,17 @@ function implementBookParameters(paramData)
                         selectionPopupElement.style.display = ""
                     }
                 }
+                if (selectSingleVal == 'pl') {
+                    var selectionSectionElement = document.getElementById('selection_section');
+                    if (selectionSectionElement) {
+                        selectionSectionElement.style.display = "";
+                    }
+                    var selectionPopupElement = document.getElementById('pl_selection');
+                    if (selectionPopupElement)
+                    {
+                        selectionPopupElement.style.display = ""
+                    }
+                }
                 if (selectSingleVal == 'd') {
                     // document.getElementById('add_item_section').style.display = "";
                 }
@@ -934,7 +961,10 @@ function implementBookParameters(paramData)
                     }
                 }
                 if (selectSingleVal == 'd') {
-                    document.getElementById('add_item_section').style.display = "";
+                    let addItemSection = document.getElementById('add_item_section');
+                    if (addItemSection) {
+                        addItemSection.style.display = "";
+                    }
                 }
             });
         }

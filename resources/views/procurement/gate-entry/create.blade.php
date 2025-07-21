@@ -1508,6 +1508,7 @@
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("asn_no_input_qt", "asn_id_qt_val", "po_asn_document_qt", "document_number", "");
             initializeAutocompleteQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
         }
 
@@ -1532,10 +1533,23 @@
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
                                 };
                             }));
                         },
@@ -1583,6 +1597,7 @@
                 header_book_id = '',
                 series_id = '',
                 document_number = '',
+                asn_number = '',
                 item_id = '',
                 vendor_id = '',
                 store_id = '',
@@ -1599,6 +1614,7 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#document_id_qt_val").val() || '',
+                asn_number = $("#asn_id_qt_val").val() || '',
                 item_id = $("#item_id_qt_val").val() || '',
                 vendor_id = $("#vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1616,6 +1632,7 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#jo_document_id_qt_val").val() || '',
+                asn_number = $("#jo_asn_id_qt_val").val() || '',
                 item_id = $("#jo_item_id_qt_val").val() || '',
                 vendor_id = $("#jo_vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1633,6 +1650,7 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#so_document_id_qt_val").val() || '',
+                asn_number = $("#so_asn_id_qt_val").val() || '',
                 item_id = $("#so_item_id_qt_val").val() || '',
                 vendor_id = $("#so_vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1645,6 +1663,7 @@
                 header_book_id: header_book_id,
                 series_id: series_id,
                 document_number: document_number,
+                asn_number: asn_number,
                 item_id: item_id,
                 vendor_id: vendor_id,
                 store_id: store_id,
@@ -1924,9 +1943,10 @@
 
         function openJoRequest()
         {
-            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "jo_vendor_list", "jo_vendor_code", "company_name");
-            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "jo_document_number", "");
-            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "jo_document_number");
+            initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "jo_vendor_code", "company_name");
+            initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "document_number", "");
+            initializeAutocompleteJoQt("jo_asn_no_input_qt", "jo_asn_id_qt_val", "jo_asn_document_qt", "document_number", "");
+            initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "document_number");
         }
 
         function initializeAutocompleteJoQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
@@ -1936,7 +1956,7 @@
                 modalType = '#joModal';
 
             $("#" + selector).autocomplete({
-                source: function(request, resjonse) {
+                source: function(request, response) {
                     $.ajax({
                         url: '/search',
                         method: 'GET',
@@ -1949,16 +1969,29 @@
                             store_id : $("#store_id_jo").val() || '',
                         },
                         success: function(data) {
-                            resjonse($.map(data, function(item) {
+                            response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
                                 };
                             }));
                         },
                         error: function(xhr) {
-                            console.error('Error fetching customer data:', xhr.resjonseText);
+                            console.error('Error fetching customer data:', xhr.responseText);
                         }
                     });
                 },
@@ -2117,7 +2150,7 @@
             function initializeAutocomplete2(selector, type) {
                 $(selector).autocomplete({
                     minLength: 0,
-                    source: function(request, resjonse) {
+                    source: function(request, response) {
                         let selectedAllItemIds = [];
                         $("#itemTable tbody [id*='row_']").each(function(index,item) {
                             if(Number($(item).find('[name*="[item_id]"]').val())) {
@@ -2134,7 +2167,7 @@
                                 selectedAllItemIds : JSON.stringify(selectedAllItemIds)
                             },
                             success: function(data) {
-                                resjonse($.map(data, function(item) {
+                                response($.map(data, function(item) {
                                     return {
                                         id: item.id,
                                         label: `${item.item_name} (${item.item_code})`,
@@ -2151,7 +2184,7 @@
                                 }));
                             },
                             error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.resjonseText);
+                                console.error('Error fetching customer data:', xhr.responseText);
                             }
                         });
                     },
@@ -2353,6 +2386,8 @@
             $("#document_id_qt_val").val('');
             $("#po_so_no_input_qt").val('');
             $("#po_so_qt_val").val('');
+            $("#asn_no_input_qt").val('');
+            $("#asn_id_qt_val").val('');
             $("#item_name_search").val('');
             $('#poModal .po-order-detail').DataTable().ajax.reload();
         });
@@ -2377,6 +2412,8 @@
             $("#jo_document_id_qt_val").val('');
             $("#jo_so_no_input_qt").val('');
             $("#jo_so_qt_val").val('');
+            $("#jo_asn_no_input_qt").val('');
+            $("#jo_asn_id_qt_val").val('');
             $("#jo_item_name_search").val('');
             $('#joModal .jo-order-detail').DataTable().ajax.reload();
         });

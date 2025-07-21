@@ -18,466 +18,444 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
 <input type="hidden" name="pi_item_ids" id="pi_item_ids" value="{{$pi_item_ids}}">
 <input type="hidden" name="short_close_ids" id="short_close_ids">
 <div class="app-content content ">
-        <div class="content-overlay"></div>
-        <div class="header-navbar-shadow"></div>
-        <div class="content-wrapper container-xxl p-0">
-            <div class="content-header pocreate-sticky">
-				<div class="row">
-					@include('layouts.partials.breadcrumb-add-edit',['title' => $title, 'menu' => $menu, 'menu_url' => $menu_url, 'sub_menu' => $sub_menu])
-					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right">
-                        <input type="hidden" name="document_status" value="{{$po->document_status}}" id="document_status">
-							<button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                            @if($buttons['draft'])
-                            <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+    <div class="content-overlay"></div>
+    <div class="header-navbar-shadow"></div>
+    <div class="content-wrapper container-xxl p-0">
+        <div class="content-header pocreate-sticky">
+            <div class="row">
+                @include('layouts.partials.breadcrumb-add-edit',['title' => $title, 'menu' => $menu, 'menu_url' => $menu_url, 'sub_menu' => $sub_menu])
+                <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+                    <div class="form-group breadcrumb-right">
+                    <input type="hidden" name="document_status" value="{{$po->document_status}}" id="document_status">
+                        <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+                        @if($buttons['draft'])
+                        <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                        @endif
+                        @if(!intval(request('amendment') ?? 0) && $po->document_status != \App\Helpers\ConstantHelper::DRAFT && $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
+                        <a href="{{ url(request()->route('type')) }}/{{$po->id}}/pdf" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
+                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                            <rect x="6" y="14" width="12" height="8"></rect></svg> Print
+                        </a>
+                        <button type = "button" onclick = "sendMailTo();"  class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
+                        @endif
+                        @if($buttons['submit'])
+                            <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
+                        @endif
+                        @if($buttons['approve'])
+                            <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
+                            <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
+                        @endif
+                        
+                        @if($buttons['amend'] && intval(request('amendment') ?? 0))
+                            <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
+                        @else
+                            @if($buttons['amend'])
+                                <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                             @endif
-                            @if(!intval(request('amendment') ?? 0) && $po->document_status != \App\Helpers\ConstantHelper::DRAFT && $po->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $po->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
-                            <a href="{{ url(request()->route('type')) }}/{{$po->id}}/pdf" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                <rect x="6" y="14" width="12" height="8"></rect></svg> Print
-                            </a>
-                            <button type = "button" onclick = "sendMailTo();"  class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
-                            @endif
-                            @if($buttons['submit'])
-                             <button type="submit" class="btn btn-primary btn-sm submit-button" name="action" value="submitted"><i data-feather="check-circle"></i> Submit</button>
-                            @endif
-                            @if($buttons['approve'])
-                             <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
-                             <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
-                            @endif
-                            
-                            @if($buttons['amend'] && intval(request('amendment') ?? 0))
-                                <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
-                            @else
-                                @if($buttons['amend'])
-                                 <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-                                @endif
-                            @endif
+                        @endif
 
-                            @if($buttons['revoke'])
-                                <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
-                            @endif
+                        @if($buttons['revoke'])
+                            <button id = "revokeButton" type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
+                        @endif
 
-						</div>
-					</div>
-				</div>
-			</div>
-            <div class="content-body">
-				<section id="basic-datatable">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card" id="basic_section">
-                                <div class="card-body customernewsection-form">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
-                                                <div>
-                                                    <h4 class="card-title text-theme">Basic Information</h4>
-                                                    <p class="card-text">Fill the details</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6 text-sm-end">
-                                            <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{$po->display_status}}</span>
-                                            </span>
-                                        </div>
-                                        <div class="col-md-8 basic-information">
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Series <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="hidden" name="book_id" value="{{$po->book_id}}">
-                                                    <select class="form-select" disabled id="book_id" name="book_id" readonly>
-                                                    @foreach($books as $book)
-                                                      <option value="{{$book->id}}" {{$book->id == $po->book_id ? 'selected' : ''}}>{{$book->book_code}}</option>
-                                                    @endforeach
-                                                    </select>
-                                                    <input type="hidden" name="book_code" id="{{$po->book->book_code}}" id="book_code">
-                                                </div>
-                                            </div>
-
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">{{$short_title}} No <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="text" readonly name="document_number" id="document_number" value="{{$po->document_number}}" class="form-control">
-                                                </div>
-                                            </div>
-
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">{{$short_title}} Date <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                    <input type="date" class="form-control" value="{{ $po->document_date }}" name="document_date">
-                                                </div>
-                                            </div>
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Location <span class="text-danger">*</span></label>  
-                                                </div>  
-                                                <div class="col-md-5"> 
-                                                    <select class="form-select" id="store_id" name="store_id">
-                                                    @foreach($locations as $location)
-                                                    <option value="{{$location->id}}" {{$po->store_id == $location->id ? 'selected' : '' }}>{{ $location?->store_name }}</option>
-                                                    @endforeach 
-                                                    </select>
-                                                </div> 
-                                            </div>
-                                            {{-- @if(request()->route("type") != 'supplier-invoice')
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3">
-                                                    <label class="form-label">Department <span class="text-danger">*</span></label>
-                                                </div>
-                                                <div class="col-md-5">
-                                                        <select class="form-select" id="department_id" name="department_id">
-                                                            <option value="">Select</option>
-                                                        @foreach($departments as $department)
-                                                        <option value="{{$department->id}}" {{$po->department_id == $department->id ? 'selected' : ''}}>{{ucfirst($department->name)}}</option>
-                                                        @endforeach 
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            @endif --}}
-                                            @if($saleOrders?->count())
-                                            <div class="row align-items-center mb-1">
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Sales Order</label>  
-                                                </div>  
-                                                <div class="col-md-5">  
-                                                    <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
-                                                </div>
-                                            </div>
-                                            @endif
-                                            
-                                            <div class="row align-items-center mb-1"> 
-                                                <div class="col-md-3"> 
-                                                    <label class="form-label">Reference from</label>  
-                                                </div> 
-                                                <div class="col-md-5 action-button"> 
-                                                    <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect"><i data-feather="plus-square"></i> {{$reference_from_title}}</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {{-- Approval History Section --}}
-                                        @include('partials.approval-history', ['document_status' => $po->document_status, 'revision_number' => $revision_number])       
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row" id="vendor_section">
-                                <div class="col-md-12">
-                                    <div class="card quation-card">
-                                        <div class="card-header newheader">
-                                            <div>
-                                                <h4 class="card-title">Vendor Details</h4>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row">
-                                                <div class="col-md-3">
-                                                    <div class="mb-1">
-                                                        <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                        <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly value="{{$po->vendor->company_name}}" />
-                                                        <input type="hidden" value="{{$po->vendor_id}}" id="vendor_id" name="vendor_id" />
-                                                        <input type="hidden" value="{{$po->vendor_code}}" id="vendor_code" name="vendor_code" />
-                                                        
-                                                        <input type="hidden" id="vendor_address_id" name="vendor_address_id" value="{{$po->latestShippingAddress()?->id}}" />
-                                                        <input type="hidden" id="billing_address_id" name="billing_address_id" value="{{$po->latestBillingAddress()?->id}}" />
-                                                        <input type="hidden" id="delivery_address_id" name="delivery_address_id" value="{{$po->latestDeliveryAddress()?->id}}" />
-
-                                                        <input type="hidden" value="{{$po->latestShippingAddress()?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                        <input type="hidden" value="{{$po->latestShippingAddress()?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
-                                                        <input type="hidden" id="delivery_country_id" name="delivery_country_id" />
-                                                        <input type="hidden" id="delivery_state_id" name="delivery_state_id" />
-                                                        <input type="hidden" id="delivery_city_id" name="delivery_city_id" />
-                                                        <input type="hidden" id="delivery_pincode" name="delivery_pincode" />
-                                                        <input type="hidden" id="delivery_address" name="delivery_address" />
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="mb-1">
-                                                        <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                                        <select disabled class="form-select" name="currency_id">
-                                                            <option value="{{$po->currency_id}}">{{$po->currency?->name}}</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="mb-1">
-                                                        <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
-                                                        <select disabled class="form-select" name="payment_term_id">
-                                                            <option value="{{$po->payment_term_id}}">{{$po->paymentTerm->name}}</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="mb-1">
-                                                        <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control mw-100 {{$isDifferentCurrency ? '' : 'disabled-input'}}" value="{{$po->org_currency_exg_rate}}" id="exchange_rate" name="exchange_rate" />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col-md-4">
-                                                    <div class="customer-billing-section h-100">
-                                                        <p>Vendor Address</p>
-                                                        <div class="bilnbody">
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> 
-                                                                    <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none {{$po->po_items->count() ? 'd-none' : ''}}" data-type="vendor_address"><i data-feather='edit-3'></i> Edit</a>
-                                                                </label>
-                                                                <div class="mrnaddedd-prim vendor_address">
-                                                                    {{$po->latestShippingAddress()->display_address}}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="customer-billing-section h-100">
-                                                        <p>Billing Address</p>
-                                                        <div class="bilnbody">  
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Billing Address <span class="text-danger">*</span> 
-                                                                </label>
-                                                                <div class="mrnaddedd-prim billing_address">
-                                                                    {{$po?->latestBillingAddress()?->display_address}}
-                                                                </div>   
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div> 
-                                                <div class="col-md-4">
-                                                    <div class="customer-billing-section h-100">
-                                                        <p>Delivery Address</p>
-                                                        <div class="bilnbody">  
-                                                            <div class="genertedvariables genertedvariablesnone">
-                                                                <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
-                                                                    <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="delivery_address"><i data-feather='edit-3'></i> Edit</a>
-                                                                </label>
-                                                                <div class="mrnaddedd-prim delivery_address">{{$po?->latestDeliveryAddress()?->display_address}}</div>   
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div> 
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                           <div class="card" id="item_section">
-                           <div class="card-body customernewsection-form"> 
-                            <div class="border-bottom mb-2 pb-25">
-                               <div class="row">
-                                <div class="col-md-6">
-                                    <div class="newheader ">
-                                        <h4 class="card-title text-theme">{{$short_title}} Item Wise Detail</h4>
-                                        <p class="card-text">Fill the details</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 text-sm-end">
-                                    @if($shortClose && $buttons['amend'])
-                                        <a href="javascript:;" id="shortCloseBtn" class="btn btn-sm btn-outline-danger me-50">
-                                        <i data-feather="x-circle"></i> Short Close</a>
-                                    @else
-                                        <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
-                                        <i data-feather="x-circle"></i> Delete</a>
-                                    @endif
-                                        <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary d-none">
-                                            <i data-feather="plus"></i> Add Item</a>
-                                        </div>
-                                    </div>
-                                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content-body">
+            <section id="basic-datatable">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card" id="basic_section">
+                            <div class="card-body customernewsection-form">
                                 <div class="row">
-                                   <div class="col-md-12">
-                                       <div class="table-responsive pomrnheadtffotsticky">
-                                           <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
-                                            data-json-key="components_json"
-                                            data-row-selector="tr[id^='row_']">
-                                            <thead>
-                                               <tr>
-                                                <th class="customernewsection-form">
-                                                    <div class="form-check form-check-primary custom-checkbox">
-                                                        <input type="checkbox" class="form-check-input" id="Email">
-                                                        <label class="form-check-label" for="Email"></label>
-                                                    </div>
-                                                </th>
-                                                <th width="150px">Item Code</th>
-                                                <th width="240px">Item Name</th>
-                                                <th max-width="180px">Attributes</th>
-                                                <th>UOM</th>
-                                                <th>Qty</th>
-                                                <th>Rate</th>
-                                                <th>Value</th>
-                                                <th>Discount</th>
-                                                {{-- <th>Tax</th> --}}
-                                                <th>Total</th>
-                                                <th>Delivery Date</th>
-                                                {{-- @if($shortClose)
-                                                <th width="100px">
-                                                    Short Close
-                                                </th>          
-                                                @endif                                       --}}
-                                                <th width="50px">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="mrntableselectexcel">
-                                            @include('procurement.po.partials.item-row-edit')
-                                        </tbody>
-                                        <tfoot>
-                                           <tr class="totalsubheadpodetail">
-                                            <td colspan="7"></td>
-                                            <td class="text-end" id="totalItemValue">0.00</td>
-                                            <td class="text-end" id="totalItemDiscount">0.00</td>
-                                            {{-- <td class="text-end" id="TotalEachRowTax">0.00</td> --}}
-                                            <td class="text-end" id="TotalEachRowAmount">0.00</td>
-                                            <td></td>
-                                        </tr>
-                                        <tr valign="top">
-                                            <td colspan="8" rowspan="10">
-                                                <table class="table border">
-                                                    <tbody id="itemDetailDisplay">
-                                                    <tr>
-                                                        <td class="p-0">
-                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                    <tr>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                            <td colspan="4">
-                                                <table class="table border mrnsummarynewsty">
-                                                    <tr>
-                                                        <td colspan="2" class="p-0">
-                                                            <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between"><strong>{{$short_title}} Summary</strong>
-                                                                <div class="addmendisexpbtn">
-                                                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
-                                                                </div>
-                                                            </h6>
-                                                        </td>
-                                                    </tr>
-                                                    <tr class="totalsubheadpodetail">
-                                                        <td width="55%"><strong>Sub Total</strong></td>
-                                                        <td class="text-end" id="f_sub_total">0.00</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Item Discount</strong></td>
-                                                        <td class="text-end" id="f_total_discount">0.00</td>
-                                                    </tr>
-                                                    @if($po->headerDiscount())
-                                                    <tr id="f_header_discount_hidden">
-                                                        <td><strong>Header Discount</strong></td>
-                                                        <td class="text-end" id="f_header_discount">{{$po->headerDiscount()->sum('ted_amount')}}</td>
-                                                    </tr>
-                                                    @else
-                                                    <tr class="d-none" id="f_header_discount_hidden">
-                                                        <td><strong>Header Discount</strong></td>
-                                                        <td class="text-end" id="f_header_discount">0.00</td>
-                                                    </tr>
-                                                    @endif
-                                                    <tr class="totalsubheadpodetail">
-                                                        <td><strong>Taxable Value</strong></td>
-                                                        <td class="text-end" id="f_taxable_value" amount="">0.00</td>
-                                                    </tr>
+                                    <div class="col-md-6">
+                                        <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                            <div>
+                                                <h4 class="card-title text-theme">Basic Information</h4>
+                                                <p class="card-text">Fill the details</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-sm-end">
+                                        <span class="badge rounded-pill badge-light-secondary forminnerstatus">
+                                            Status : <span class="{{$docStatusClass}}">{{$po->display_status}}</span>
+                                        </span>
+                                    </div>
+                                    <div class="col-md-8 basic-information">
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="hidden" name="book_id" value="{{$po->book_id}}">
+                                                <select class="form-select" disabled id="book_id" name="book_id" readonly>
+                                                @foreach($books as $book)
+                                                    <option value="{{$book->id}}" {{$book->id == $po->book_id ? 'selected' : ''}}>{{$book->book_code}}</option>
+                                                @endforeach
+                                                </select>
+                                                <input type="hidden" name="book_code" id="{{$po->book->book_code}}" id="book_code">
+                                            </div>
+                                        </div>
 
-                                                    <tr>
-                                                        <td><strong>Tax</strong></td>
-                                                        <td class="text-end" id="f_tax">0.00</td>
-                                                    </tr>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">{{$short_title}} No <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="text" readonly name="document_number" id="document_number" value="{{$po->document_number}}" class="form-control">
+                                            </div>
+                                        </div>
 
-                                                    <tr class="totalsubheadpodetail">
-                                                        <td><strong>Total After Tax</strong></td>
-                                                        <td class="text-end" id="f_total_after_tax">0.00</td>
-                                                    </tr>
-
-                                                    <tr>
-                                                        <td><strong>Expense</strong></td>
-                                                        <td class="text-end" id="f_exp">0.00</td>
-                                                    </tr>
-                                                    <tr class="voucher-tab-foot">
-                                                        <td class="text-primary"><strong>Grand Total</strong></td>
-                                                        <td>
-                                                            <div class="quottotal-bg justify-content-end">
-                                                                <h5 id="f_total_after_exp">0.00</h5>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    <tr class="voucher-tab-foot {{$isDifferentCurrency ? '' : 'd-none'}}" id="exchangeDiv">
-                                                        <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
-                                                        <td>
-                                                            <div class="quottotal-bg justify-content-end"> 
-                                                                <h5 id="f_total_after_exp_rate">0.00</h5>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                            <div class="col-md-6 mt-2">
-                                <div class="mb-1">
-                                    <label class="form-label">Terms & Conditions</label>
-                                    <select class="form-select select2" name="term_id[]" multiple>
-                                        @foreach($termsAndConditions as $termsAndCondition)
-                                        @if(in_array($termsAndCondition->id, $po->TermsConditions->pluck('term_id')->toArray()))
-                                        <option value="{{$termsAndCondition->id}}" selected>{{$termsAndCondition->term_name}}</option>
-                                        @else
-                                        <option value="{{$termsAndCondition->id}}">{{$termsAndCondition->term_name}}</option>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3">
+                                                <label class="form-label">{{$short_title}} Date <span class="text-danger">*</span></label>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <input type="date" class="form-control" value="{{ $po->document_date }}" name="document_date">
+                                            </div>
+                                        </div>
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Location <span class="text-danger">*</span></label>  
+                                            </div>  
+                                            <div class="col-md-5"> 
+                                                <select class="form-select" id="store_id" name="store_id">
+                                                @foreach($locations as $location)
+                                                <option value="{{$location->id}}" {{$po->store_id == $location->id ? 'selected' : '' }}>{{ $location?->store_name }}</option>
+                                                @endforeach 
+                                                </select>
+                                            </div> 
+                                        </div>
+                                        @if($saleOrders?->count())
+                                        <div class="row align-items-center mb-1">
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Sales Order</label>  
+                                            </div>  
+                                            <div class="col-md-5">  
+                                                <input type="text" readonly class="form-control" value="{{ $saleOrders->map(fn($saleOrder) => strtoupper($saleOrder->book_code) . ' - ' . $saleOrder->document_number)->join(', ') }}">
+                                            </div>
+                                        </div>
                                         @endif
-                                        @endforeach
-                                    </select>
+                                        
+                                        <div class="row align-items-center mb-1"> 
+                                            <div class="col-md-3"> 
+                                                <label class="form-label">Reference from</label>  
+                                            </div> 
+                                            <div class="col-md-5 action-button"> 
+                                                <button type="button" @if(!$isEdit) disabled @endif class="btn btn-outline-primary btn-sm mb-0 prSelect"><i data-feather="plus-square"></i> {{$reference_from_title}}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {{-- Approval History Section --}}
+                                    @include('partials.approval-history', ['document_status' => $po->document_status, 'revision_number' => $revision_number])       
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" id="vendor_section">
+                            <div class="col-md-12">
+                                <div class="card quation-card">
+                                    <div class="card-header newheader">
+                                        <div>
+                                            <h4 class="card-title">Vendor Details</h4>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Vendor <span class="text-danger">*</span></label>
+                                                    <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly value="{{$po->vendor->company_name}}" />
+                                                    <input type="hidden" value="{{$po->vendor_id}}" id="vendor_id" name="vendor_id" />
+                                                    <input type="hidden" value="{{$po->vendor_code}}" id="vendor_code" name="vendor_code" />
+                                                    
+                                                    <input type="hidden" id="vendor_address_id" name="vendor_address_id" value="{{$po->latestShippingAddress()?->id}}" />
+                                                    <input type="hidden" id="billing_address_id" name="billing_address_id" value="{{$po->latestBillingAddress()?->id}}" />
+                                                    <input type="hidden" id="delivery_address_id" name="delivery_address_id" value="{{$po->latestDeliveryAddress()?->id}}" />
+
+                                                    <input type="hidden" value="{{$po->latestShippingAddress()?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                    <input type="hidden" value="{{$po->latestShippingAddress()?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                    <input type="hidden" id="delivery_country_id" name="delivery_country_id" />
+                                                    <input type="hidden" id="delivery_state_id" name="delivery_state_id" />
+                                                    <input type="hidden" id="delivery_city_id" name="delivery_city_id" />
+                                                    <input type="hidden" id="delivery_pincode" name="delivery_pincode" />
+                                                    <input type="hidden" id="delivery_address" name="delivery_address" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                                    <select disabled class="form-select" name="currency_id">
+                                                        <option value="{{$po->currency_id}}">{{$po->currency?->name}}</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
+                                                    <select disabled class="form-select" name="payment_term_id">
+                                                        <option value="{{$po->payment_term_id}}">{{$po->paymentTerm->name}}</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-1">
+                                                    <label class="form-label">Exchange Rate <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control mw-100 {{$isDifferentCurrency ? '' : 'disabled-input'}}" value="{{$po->org_currency_exg_rate}}" id="exchange_rate" name="exchange_rate" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="customer-billing-section h-100">
+                                                    <p>Vendor Address</p>
+                                                    <div class="bilnbody">
+                                                        <div class="genertedvariables genertedvariablesnone">
+                                                            <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> 
+                                                                <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none {{$po->po_items->count() ? 'd-none' : ''}}" data-type="vendor_address"><i data-feather='edit-3'></i> Edit</a>
+                                                            </label>
+                                                            <div class="mrnaddedd-prim vendor_address">
+                                                                {{$po->latestShippingAddress()->display_address}}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="customer-billing-section h-100">
+                                                    <p>Billing Address</p>
+                                                    <div class="bilnbody">  
+                                                        <div class="genertedvariables genertedvariablesnone">
+                                                            <label class="form-label w-100">Billing Address <span class="text-danger">*</span> 
+                                                            </label>
+                                                            <div class="mrnaddedd-prim billing_address">
+                                                                {{$po?->latestBillingAddress()?->display_address}}
+                                                            </div>   
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div> 
+                                            <div class="col-md-4">
+                                                <div class="customer-billing-section h-100">
+                                                    <p>Delivery Address</p>
+                                                    <div class="bilnbody">  
+                                                        <div class="genertedvariables genertedvariablesnone">
+                                                            <label class="form-label w-100">Delivery Address <span class="text-danger">*</span>
+                                                                <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="delivery_address"><i data-feather='edit-3'></i> Edit</a>
+                                                            </label>
+                                                            <div class="mrnaddedd-prim delivery_address">{{$po?->latestDeliveryAddress()?->display_address}}</div>   
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div> 
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card" id="item_section">
+                        <div class="card-body customernewsection-form"> 
+                        <div class="border-bottom mb-2 pb-25">
+                            <div class="row">
+                            <div class="col-md-6">
+                                <div class="newheader ">
+                                    <h4 class="card-title text-theme">{{$short_title}} Item Wise Detail</h4>
+                                    <p class="card-text">Fill the details</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-sm-end">
+                                @if($shortClose && $buttons['amend'])
+                                    <a href="javascript:;" id="shortCloseBtn" class="btn btn-sm btn-outline-danger me-50">
+                                    <i data-feather="x-circle"></i> Short Close</a>
+                                @else
+                                    <a href="javascript:;" id="deleteBtn" class="btn btn-sm btn-outline-danger me-50">
+                                    <i data-feather="x-circle"></i> Delete</a>
+                                @endif
+                                    <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary d-none">
+                                        <i data-feather="plus"></i> Add Item</a>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-12">
-                                   <div class="row">
-                                       <div class="col-md-4">
-                                    <div class="mb-1">
-                                        <label class="form-label">Upload Document</label>
-                                        <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_po_preview')" multiple>
-                                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                                    </div>
-                                </div>
-                                @include('partials.document-preview',['documents' => $po->getDocuments(), 'document_status' => $po->document_status,'elementKey' => 'main_po_preview'])
-                                   </div>
-                            </div>
-                            <div class="col-md-12">
-                                <div class="mb-1">
-                                    <label class="form-label">Final Remarks</label>
-                                    <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $po->remarks !!}</textarea>
+                                    <div class="table-responsive pomrnheadtffotsticky">
+                                        <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                        data-json-key="components_json"
+                                        data-row-selector="tr[id^='row_']">
+                                        <thead>
+                                            <tr>
+                                            <th class="customernewsection-form">
+                                                <div class="form-check form-check-primary custom-checkbox">
+                                                    <input type="checkbox" class="form-check-input" id="Email">
+                                                    <label class="form-check-label" for="Email"></label>
+                                                </div>
+                                            </th>
+                                            <th width="150px">Item Code</th>
+                                            <th width="240px">Item Name</th>
+                                            <th max-width="180px">Attributes</th>
+                                            <th>UOM</th>
+                                            <th>Qty</th>
+                                            <th>Rate</th>
+                                            <th>Value</th>
+                                            <th>Discount</th>
+                                            <th>Total</th>
+                                            <th>Delivery Date</th>
+                                            <th width="50px">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="mrntableselectexcel">
+                                        @include('procurement.po.partials.item-row-edit')
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="totalsubheadpodetail">
+                                        <td colspan="7"></td>
+                                        <td class="text-end" id="totalItemValue">0.00</td>
+                                        <td class="text-end" id="totalItemDiscount">0.00</td>
+                                        <td class="text-end" id="TotalEachRowAmount">0.00</td>
+                                        <td></td>
+                                    </tr>
+                                    <tr valign="top">
+                                        <td colspan="8" rowspan="10">
+                                            <table class="table border">
+                                                <tbody id="itemDetailDisplay">
+                                                <tr>
+                                                    <td class="p-0">
+                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                                <tr>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        <td colspan="4">
+                                            <table class="table border mrnsummarynewsty">
+                                                <tr>
+                                                    <td colspan="2" class="p-0">
+                                                        <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between"><strong>{{$short_title}} Summary</strong>
+                                                            <div class="addmendisexpbtn">
+                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
+                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
+                                                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
+                                                            </div>
+                                                        </h6>
+                                                    </td>
+                                                </tr>
+                                                <tr class="totalsubheadpodetail">
+                                                    <td width="55%"><strong>Sub Total</strong></td>
+                                                    <td class="text-end" id="f_sub_total">0.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>Item Discount</strong></td>
+                                                    <td class="text-end" id="f_total_discount">0.00</td>
+                                                </tr>
+                                                @if($po->headerDiscount())
+                                                <tr id="f_header_discount_hidden">
+                                                    <td><strong>Header Discount</strong></td>
+                                                    <td class="text-end" id="f_header_discount">{{$po->headerDiscount()->sum('ted_amount')}}</td>
+                                                </tr>
+                                                @else
+                                                <tr class="d-none" id="f_header_discount_hidden">
+                                                    <td><strong>Header Discount</strong></td>
+                                                    <td class="text-end" id="f_header_discount">0.00</td>
+                                                </tr>
+                                                @endif
+                                                <tr class="totalsubheadpodetail">
+                                                    <td><strong>Taxable Value</strong></td>
+                                                    <td class="text-end" id="f_taxable_value" amount="">0.00</td>
+                                                </tr>
 
-                                </div>
-                            </div>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
+                                                <tr>
+                                                    <td><strong>Tax</strong></td>
+                                                    <td class="text-end" id="f_tax">0.00</td>
+                                                </tr>
+
+                                                <tr class="totalsubheadpodetail">
+                                                    <td><strong>Total After Tax</strong></td>
+                                                    <td class="text-end" id="f_total_after_tax">0.00</td>
+                                                </tr>
+
+                                                <tr>
+                                                    <td><strong>Expense</strong></td>
+                                                    <td class="text-end" id="f_exp">0.00</td>
+                                                </tr>
+                                                <tr class="voucher-tab-foot">
+                                                    <td class="text-primary"><strong>Grand Total</strong></td>
+                                                    <td>
+                                                        <div class="quottotal-bg justify-content-end">
+                                                            <h5 id="f_total_after_exp">0.00</h5>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <tr class="voucher-tab-foot {{$isDifferentCurrency ? '' : 'd-none'}}" id="exchangeDiv">
+                                                    <td class="text-primary"><strong>Grand Total ({{$currencyName}})</strong></td>  
+                                                    <td>
+                                                        <div class="quottotal-bg justify-content-end"> 
+                                                            <h5 id="f_total_after_exp_rate">0.00</h5>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div class="col-md-6 mt-2">
+                            <div class="mb-1">
+                                <label class="form-label">Terms & Conditions</label>
+                                <select class="form-select select2" name="term_id[]" multiple>
+                                    @foreach($termsAndConditions as $termsAndCondition)
+                                    @if(in_array($termsAndCondition->id, $po->TermsConditions->pluck('term_id')->toArray()))
+                                    <option value="{{$termsAndCondition->id}}" selected>{{$termsAndCondition->term_name}}</option>
+                                    @else
+                                    <option value="{{$termsAndCondition->id}}">{{$termsAndCondition->term_name}}</option>
+                                    @endif
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                <div class="mb-1">
+                                    <label class="form-label">Upload Document</label>
+                                    <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_po_preview')" multiple>
+                                    <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                </div>
+                            </div>
+                            @include('partials.document-preview',['documents' => $po->getDocuments(), 'document_status' => $po->document_status,'elementKey' => 'main_po_preview'])
+                                </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="mb-1">
+                                <label class="form-label">Final Remarks</label>
+                                <textarea maxlength="250" type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $po->remarks !!}</textarea>
+
+                            </div>
+                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
+                        </div>
                     </div>
-                </section>
-            </div>
+                </div>
+            </section>
         </div>
     </div>
+</div>
 
 {{-- Discount summary modal --}}
 @include('procurement.po.partials.summary-disc-modal')
@@ -1110,8 +1088,7 @@ function setServiceParameters(parameters) {
     let reference_from_service = parameters.reference_from_service;
     if(reference_from_service.length) {
         let pi = '{{\App\Helpers\ConstantHelper::PI_SERVICE_ALIAS}}';
-        let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
-        if(reference_from_service.includes(pi) || reference_from_service.includes(po)) {
+        if(reference_from_service.includes(pi)) {
             $("#reference_from").removeClass('d-none');
         } else {
             $("#reference_from").addClass('d-none');
@@ -1128,11 +1105,7 @@ function setServiceParameters(parameters) {
             icon: 'error',
         });
         setTimeout(() => {
-            @if(request()->type == 'supplier-invoice')
-                location.href = '{{url('supplier-invoice')}}';
-            @else
                 location.href = '{{url("purchase-order")}}';
-            @endif
         },1500);
     }
 }
@@ -1324,6 +1297,8 @@ $(document).on('click','#deleteBtn', (e) => {
     let editItemIds = [];
     let piItemIds = [];
     let grnQty = [];
+    let geQty = [];
+    let asnQty = [];
 
     $(".form-check-input:checked").each(function(index, item) {
         let tr = $(item).closest('tr');
@@ -1331,11 +1306,19 @@ $(document).on('click','#deleteBtn', (e) => {
         let pi_item_id = Number($(tr).find('[name*="[pi_item_id]"]').val()) || 0;
         let po_item_id = Number($(tr).find('[name*="[po_item_id]"]').val()) || 0;
         let grn_qty = Number($(tr).find('[name*="[grn_qty]"]').val()) || 0;
+        let ge_qty = Number($(tr).find('[name*="[ge_qty]"]').val()) || 0;
+        let asn_qty = Number($(tr).find('[name*="[asn_qty]"]').val()) || 0;
         if (pi_item_id > 0 && po_item_id > 0) {
             piItemIds.push({ index: trIndex + 1, pi_item_id: pi_item_id });
         }
         if(grn_qty > 0) {
             grnQty.push({ index: trIndex + 1, grn_qty: grn_qty });
+        }
+        if(ge_qty > 0) {
+            geQty.push({ index: trIndex + 1, ge_qty: ge_qty });
+        }
+        if(asn_qty > 0) {
+            asnQty.push({ index: trIndex + 1, asn_qty: asn_qty });
         }
     });
 
@@ -1352,10 +1335,30 @@ $(document).on('click','#deleteBtn', (e) => {
     
     if (grnQty.length) {
         e.preventDefault();
-        let rowNumbers = piItemIds.map(item => item.index).join(", ");
+        let rowNumbers = grnQty.map(item => item.index).join(", ");
         Swal.fire({
             title: 'Error!',
-            text: `You cannot delete po (using in MRN) item(s) at row(s): ${rowNumbers}`,
+            text: `Can not delete: Item used in GRN: ${rowNumbers}`,
+            icon: 'error',
+        });
+        return false;
+    }
+    if (geQty.length) {
+        e.preventDefault();
+        let rowNumbers = geQty.map(item => item.index).join(", ");
+        Swal.fire({
+            title: 'Error!',
+            text: `Can not delete: Item used in Gate Entry: ${rowNumbers}`,
+            icon: 'error',
+        });
+        return false;
+    }
+    if (asnQty.length) {
+        e.preventDefault();
+        let rowNumbers = asnQty.map(item => item.index).join(", ");
+        Swal.fire({
+            title: 'Error!',
+            text: `Can not delete: Item used in ASN: ${rowNumbers}`,
             icon: 'error',
         });
         return false;
@@ -1659,11 +1662,6 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
             if(data.status == 200) {
                 selectedDelivery = [];
                $("#itemDetailDisplay").html(data.data.html);
-            //    if ($(currentTr).find('.short-close-checkbox').is(':checked')) {
-            //         if(!Number($(currentTr).find("[name*='[short_close_qty]']").val())) {
-            //             $(currentTr).find("[name*='[short_close_qty]']").val(data.data.po_item.short_bal_qty);
-            //         }
-            //     }
             }
          });
       });

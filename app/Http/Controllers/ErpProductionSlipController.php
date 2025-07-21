@@ -520,7 +520,8 @@ class ErpProductionSlipController extends Controller
                                 'accepted_qty' => isset($request -> item_accepted_qty[$itemKey]) ? $request -> item_accepted_qty[$itemKey] : null,
                                 'subprime_qty' => isset($request -> item_sub_prime_qty[$itemKey]) ? $request -> item_sub_prime_qty[$itemKey] : null,
                                 'rejected_qty' => isset($request -> item_rejected_qty[$itemKey]) ? $request -> item_rejected_qty[$itemKey] : null,
-                                'machine_id' => isset($request -> machine_id[$itemKey]) ? $request -> machine_id[$itemKey] : null,
+                                'machine_id' => isset($request -> machine_id[$itemKey]) ? $request -> machine_id[$itemKey] : [],
+                                'cycle_count' => isset($request -> cycle_count[$itemKey]) ? $request -> cycle_count[$itemKey] : null,
                             ]);
                         }
                     }
@@ -552,7 +553,8 @@ class ErpProductionSlipController extends Controller
                             'accepted_qty' => $itemDataValue['accepted_qty'] ?? 0,
                             'subprime_qty' => $itemDataValue['subprime_qty'] ?? 0,
                             'rejected_qty' => $itemDataValue['rejected_qty'] ?? 0,
-                            'machine_id' => $itemDataValue['machine_id'],
+                            'machine_id' => $itemDataValue['machine_id'] ?? [],
+                            'cycle_count' => $itemDataValue['cycle_count'] ?? null,
                         ];
                         if (isset($request -> pslip_item_id[$itemDataKey])) {
                             $pslipItemExit = ErpPslipItem::where('id', $request -> pslip_item_id[$itemDataKey])
@@ -831,14 +833,14 @@ class ErpProductionSlipController extends Controller
                 
                 # Issue Raws Materials
                 if($productionSlip->fresh()->items->count()) {
-                    // $maintainStockLedger = self::maintainStockLedger($productionSlip);
-                    // if($maintainStockLedger['status'] == 'error') {
-                    //     DB::rollBack();
-                    //     return response()->json([
-                    //         'message' => $maintainStockLedger['message'],
-                    //         'error' => ''
-                    //     ], 422);
-                    // }
+                    $maintainStockLedger = self::maintainStockLedger($productionSlip);
+                    if($maintainStockLedger['status'] == 'error') {
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => $maintainStockLedger['message'],
+                            'error' => ''
+                        ], 422);
+                    }
                     // if($maintainStockLedger != 'Success') {
                     //     DB::rollBack();
                     //     return response() -> json([
@@ -878,14 +880,14 @@ class ErpProductionSlipController extends Controller
                     $moProdItemLocation->save();
                 }
                 if($productionSlip->fresh()->items->count()){
-                    // $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
-                    // if($moProdItemReceipt['status'] == 'error') {
-                    //     DB::rollBack();
-                    //     return response()->json([
-                    //         'message' => $moProdItemReceipt['message'],
-                    //         'error' => ''
-                    //     ], 422);
-                    // }
+                    $moProdItemReceipt = InventoryHelper::settlementOfInventoryAndStock($productionSlip->id, $detailIds, ConstantHelper::PRODUCTION_SLIP_SERVICE_ALIAS, $productionSlip->document_status, 'receipt');
+                    if($moProdItemReceipt['status'] == 'error') {
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => $moProdItemReceipt['message'],
+                            'error' => ''
+                        ], 422);
+                    }
                     // if($moProdItemReceipt['status'] != 'success') {
                     //     DB::rollBack();
                     //     return response() -> json([

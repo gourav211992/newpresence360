@@ -14,7 +14,7 @@ class Constants
     CONST DISPATCH_STORE_VALUE = "dispatch";
     CONST DISPATCH_STORE_LABEL = "Dispatch";
     CONST PACKING_STORE_VALUE = "packing";
-    CONST PACKING_STORE_LABEL = "Packing";
+    CONST PACKING_STORE_LABEL = "Picked Staging";
 
     CONST STOCK_STORE_TYPES = [
         self::RECEIVING_STORE_VALUE => self::RECEIVING_STORE_LABEL,

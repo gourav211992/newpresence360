@@ -6,9 +6,12 @@ use App\Helpers\TransactionReportHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
+use App\Models\Book;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\ErpInvoiceItemPacket;
+use App\Models\ErpPlHeader;
+use App\Models\ErpPlItemDetail;
 use App\Models\EwayBillMaster;
 use App\Models\PackingListDetail;
 use App\Models\PackingListItem;
@@ -17,6 +20,7 @@ use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\DynamicFieldHelper;
 use App\Models\ErpSiDynamicField;
 use App\Exceptions\ApiGenericException;
+use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
 use App\Helpers\EInvoiceHelper;
@@ -29,6 +33,7 @@ use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
 use App\Http\Requests\ErpSaleInvoiceRequest;
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\Country;
 use App\Models\Address;
 use App\Models\DiscountMaster;
@@ -61,6 +66,7 @@ use Carbon\Carbon;
 use DB;
 use Dompdf\Options;
 use App\Models\CashCustomerDetail;
+use App\Models\Configuration;
 use Http;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
@@ -502,7 +508,8 @@ class ErpSaleInvoiceController extends Controller
 
             DB::beginTransaction();
             $user = Helper::getAuthenticatedUser();
-            $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type ?? '');
+            $book = Book::find($request -> book_id);
+            $type = SaleModuleHelper::getAndReturnInvoiceType($book -> service -> alias);
             $request -> merge(['type' => $type]);
             $invoiceRequired = false;
             $store = ErpStore::find($request -> store_id);
@@ -1231,6 +1238,16 @@ class ErpSaleInvoiceController extends Controller
                                         $soItem -> save();
                                     }
                                 }
+                            } else if ($pullType === ConstantHelper::PL_SERVICE_ALIAS) {
+                                $plItemDetail = ErpPlItemDetail::find($request -> quotation_item_ids[$itemDataKey]);
+                                if ($plItemDetail) {
+                                    $soItem -> pl_item_id = $plItemDetail -> pl_item_id;
+                                    $soItem -> pl_item_detail_id = $plItemDetail -> id;
+                                    $soItem -> save();
+
+                                    $plItemDetail -> dnote_qty = ($plItemDetail -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                    $plItemDetail -> save();
+                                }
                             }
                            
                         }
@@ -1526,15 +1543,15 @@ class ErpSaleInvoiceController extends Controller
                 //     $actionType = 'submit'; // Approve // reject // submit
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
-                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                    $status = self::maintainStockLedger($saleInvoice);
-                    if (!$status) {     
-                        DB::rollBack();
-                        return response() -> json([
-                            'message' => 'Stock not available'
-                        ], 422);
-                    }
-                }
+                // if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                //     $status = self::maintainStockLedger($saleInvoice);
+                //     if (!$status) {     
+                //         DB::rollBack();
+                //         return response() -> json([
+                //             'message' => 'Stock not available'
+                //         ], 422);
+                //     }
+                // }
                 $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
                 if ($saleInvoice -> document_status === ConstantHelper::POSTED){
                     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
@@ -1554,6 +1571,18 @@ class ErpSaleInvoiceController extends Controller
                 $saleInvoice -> e_invoice_status = EInvoiceHelper::getEInvoicePendingDocumentStatus($saleInvoice, $saleInvoice -> gst_invoice_type);
                 $saleInvoice -> save();
                 SaleModuleHelper::cashCustomerMasterData($saleInvoice);
+
+                // Get configuration detail
+                $config = Configuration::where('type','organization')
+                    ->where('type_id', $user->organization_id)
+                    ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                    ->first();
+
+                // Create job
+                if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+                    (new WhmJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
+                }
+
                 DB::commit();
                 $module = "Invoice";
                 $redirect_url = route('sale.invoice.index');
@@ -1677,6 +1706,23 @@ class ErpSaleInvoiceController extends Controller
                         $nestedQuery -> where('item_id', $request -> item_id);
                     });
                 }) ->with('sale_order')-> whereNull('dn_item_id');
+            } else if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                $query = ErpPlItemDetail::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds) {
+                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
+                    -> when($request -> book_id, function ($bookQuery) use($request) {
+                        $bookQuery -> where('book_id', $request -> book_id);
+                    }) -> when($request -> document_id, function ($docQuery) use($request) {
+                        $docQuery -> where('id', $request -> document_id);
+                    });
+                }) -> when($request -> customer_id, function ($docQuery) use($request) {
+                    $docQuery -> whereHas('sale_order', function ($nestedQuery) use($request) {
+                        $nestedQuery -> where('customer_id', $request -> customer_id);
+                    });
+                }) -> when($request -> item_id, function ($custQuery) use($request) {
+                    $custQuery -> whereHas('items', function ($nestedQuery) use($request) {
+                        $nestedQuery -> where('item_id', $request -> item_id);
+                    });
+                }) ->with('sale_order')-> whereColumn('dnote_qty', '<', 'picked_qty');
             }
 
             // LAND_LEASE cannot be paginated without get()
@@ -1701,16 +1747,15 @@ class ErpSaleInvoiceController extends Controller
                 ->addColumn('document_date', fn($item) =>  method_exists($item?->header, 'getFormattedDate') ? $item->header->getFormattedDate("document_date") : '')
                 ->addColumn('so_no', fn($item) => ($item?->so?->book_code ?? '') . '-' . ($item?->so?->document_number ?? ''))
                 ->addColumn('item_name', function ($item) use ($request) {
-                    $name = $item->item->item_name ?? '';
-                    if (
-                        $request->doc_type === ConstantHelper::MO_SERVICE_ALIAS ||
-                        ($request->doc_type === ConstantHelper::JO_SERVICE_ALIAS && $request->mi_type === "Sub Contracting")
-                    ) {
-                        if ($item->rm_type === 'sf') {
-                            $name .= '-' . ($item->station?->name ?? '');
-                        }
-                    }
+                    $name = $item?->item?->item_name ?? '';
                     return $name;
+                })
+                ->addColumn('item_code', function ($item) use ($request) {
+                    $name = $item?->item?->item_code ?? '';
+                    return $name;
+                })
+                ->addColumn('uom_name', function ($item) use ($request) {
+                    return $item -> uom ?-> name;
                 })
                 ->addColumn('store_location_code', fn($item) => $item->header?->store_location?->store_name ?? '')
                 ->addColumn('sub_store_code', fn($item) => $item->header?->sub_store?->name ?? '')
@@ -1726,29 +1771,39 @@ class ErpSaleInvoiceController extends Controller
                 ->editColumn('balance_qty', fn($item) => number_format($item->balance_qty ?? 0, 2))
                 ->editColumn('rate', fn($item) => number_format($item->rate ?? 0, 2))
                 ->addColumn('attributes_array', function ($item) use ($request) {
-                    if (in_array($request->doc_type, [ConstantHelper::JO_SERVICE_ALIAS])) {
-                        return $item->attributes->map(fn($attr) => [
-                            'attribute_name' => $attr->headerAttribute?->name,
-                            'attribute_value' => $attr->headerAttributeValue?->value,
-                        ])->values();
-                    }
-                    if ($request->doc_type === PackingListConstants::SERVICE_ALIAS) {
-                        return $item->items->flatMap(function ($detailItem) {
-                            return $detailItem->attributes->map(fn($attr) => [
-                                'attribute_name' => $attr->attr_name,
-                                'attribute_value' => $attr->attr_value,
-                            ]);
-                        })->values();
-                    }
                     return $item->attributes->map(fn($attr) => [
                         'attribute_name' => $attr->attr_name,
                         'attribute_value' => $attr->attribute_value,
                     ])->values();
                 })
+                ->addColumn('attributes_data', function ($item) use ($request) {
+                    $attributesUI = "";
+                    if (ConstantHelper::PL_SERVICE_ALIAS) {
+                        foreach($item -> attributes as $attr)
+                        {
+                            $attributeName = $attr -> attribute_name;
+                            $attributeVal = $attr -> attribute_value;
+                            $attributesUI .= "<span class='badge rounded-pill badge-light-primary'>$attributeName : $attributeVal </span>";
+                        }
+                    }
+                    return $attributesUI;
+                })
+                ->addColumn('pl_avl_qty', function ($item) use ($request) {
+                    $plAvlQty = 0;
+                    if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                        $plAvlQty =  $item -> picked_qty - $item -> dnote_qty;
+                    }
+                    return $plAvlQty;
+                })
                 ->addColumn('stock_qty', function ($item) use ($request) {
-                    return method_exists($item, 'getStockBalanceQty') 
+                    if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                        return $item -> picked_qty;
+                    } else {
+                        return method_exists($item, 'getStockBalanceQty')
                         ? $item->getStockBalanceQty($request->store_id ?? 0, $request->sub_store_id ?? 0) ?? 0 
                         : 0;
+                    }
+                    
                 })
                 ->addColumn('sale_order', function ($item) {
                     return [
@@ -1813,7 +1868,7 @@ class ErpSaleInvoiceController extends Controller
                     }
                     return 0;
                 })
-                ->rawColumns(['items_ui'])
+                ->rawColumns(['items_ui', 'attributes_data'])
                 ->make( true);
 
 
@@ -2131,6 +2186,61 @@ class ErpSaleInvoiceController extends Controller
 
                         }
                     }
+                } else if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
+                    $plItemDetailIds = $request -> pl_item_detail_ids;
+                    $headers = ErpPlHeader::withwhereHas('items', function ($itemQuery) use($plItemDetailIds) {
+                        $itemQuery -> whereIn('id', $plItemDetailIds) -> with(['item' => function ($itemSubQuery) {
+                            $itemSubQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                        }]);
+                    }) -> get();
+                    foreach ($headers as $header) {
+                        foreach($header -> items as $item) {
+                            $header -> document_type = "pl";
+                            $header -> discount_ted = $item ?-> sale_order ?-> discount_ted ?? [];
+                            $header -> expense_ted = $item ?-> sale_order ?-> expense_ted ?? [];
+                            $header -> billing_address_details = $item ?-> sale_order ?-> billing_address_details ?? null;
+                            $header -> shipping_address_details = $item ?-> sale_order ?-> shipping_address_details ?? null;
+                            $header -> customer = $item ?-> sale_order ?-> customer ?? null;
+                            $header -> customer_code = $item ?-> sale_order ?-> customer_code ?? null;
+                            $header -> customer_id = $item ?-> sale_order ?-> customer_id ?? null;
+                            $header -> consignee_name = $item ?-> sale_order ?-> consignee_name ?? null;
+                            $header -> customer_phone_no = $item ?-> sale_order ?-> customer_phone_no ?? null;
+                            $header -> customer_phone_no = $item ?-> sale_order ?-> customer_phone_no ?? null;
+                            $header -> customer_email = $item ?-> sale_order ?-> customer_email ?? null;
+                            $header -> customer_gstin = $item ?-> sale_order ?-> customer_gstin ?? null;
+                            $header -> customer -> currency = $item ?-> sale_order ?-> customer ?-> currency ?? null;
+                            $header -> customer -> payment_terms = $item ?-> sale_order ?-> customer ?-> payment_terms ?? null;
+                            $item -> discount_ted = [];
+                            $item -> item_attributes_array = $item -> item_attributes_array();
+                            $item -> order_qty = $item -> picked_qty - $item -> dnote_qty; 
+                            $item -> balance_qty = $item -> picked_qty - $item -> dnote_qty; 
+                            $item -> stock_qty = $item -> picked_qty - $item -> dnote_qty; 
+
+                        }
+                    }
+                    // $saleOrderIds = $request -> order_id;
+                    // $packingListDetailIds = $request -> pl_detail_ids;
+                    // $headers = ErpSaleOrder::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
+                    //     $sQuery -> with(['currency', 'payment_terms']);
+                    // }) -> with('items', function ($itemQuery) use($request, $actualSoItemIds) {
+                    //     $itemQuery -> whereIn('id', $actualSoItemIds) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
+                    //         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
+                    //     }]);
+                    // }) -> whereIn('id', $saleOrderIds) -> get();
+                    // foreach ($headers as $header) {
+                    //     foreach ($header -> items as $orderItemKey => &$orderItem) {
+                    //         $orderItem -> stock_qty = $orderItem -> getStockBalanceQty($request -> store_id ?? 0);
+                    //         $orderItem -> item_attributes_array = $orderItem -> item_attributes_array();
+                    //         $plistItem = ErpPlItemDetail::find($orderItem -> plist_item_id);
+                    //         if (isset($plistItem)) {
+                    //             $orderItem -> order_qty = $plistItem -> qty;
+                    //             $orderItem -> balance_qty = $plistItem -> qty;   
+                    //             $orderItem -> package = $plistItem -> detail ?-> packing_number;
+                    //             $orderItem -> package_id = $plistItem -> detail ?-> id;
+                    //         }
+
+                    //     }
+                    // }
                 }
             }
             return response() -> json([

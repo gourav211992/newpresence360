@@ -147,9 +147,9 @@ class MaterialReceiptRequest extends FormRequest
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
-        if ($this->input('components.*.is_inspection') === 0) {
-            $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
-        }
+        // if ($this->input('components.*.is_inspection') === 0) {
+        //     $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
+        // }
         $rules['components.*.rate'] = 'required|numeric|min:0.01';
         $rules['components.*.remark'] = 'nullable|max:250';
 
@@ -196,9 +196,9 @@ class MaterialReceiptRequest extends FormRequest
             'components.*.order_qty.required' => 'Order Qty is required',
             'components.*.order_qty.numeric' => 'Order Qty must be a number.',
             'components.*.order_qty.gt' => 'Order Qty must be greater than zero.',
-            'components.*.accepted_qty.required' => 'Accepted Qty is required',
-            'components.*.accepted_qty.numeric' => 'Accepted Qty must be a number.',
-            'components.*.accepted_qty.gt' => 'Accepted Qty must be greater than zero.',
+            // 'components.*.accepted_qty.required' => 'Accepted Qty is required',
+            // 'components.*.accepted_qty.numeric' => 'Accepted Qty must be a number.',
+            // 'components.*.accepted_qty.gt' => 'Accepted Qty must be greater than zero.',
             'components.*.rate.required' => 'Rate is required',
             'components.*.rate.numeric' => 'Rate must be a number.',
             'components.*.rate.gt' => 'Rate must be greater than zero.',

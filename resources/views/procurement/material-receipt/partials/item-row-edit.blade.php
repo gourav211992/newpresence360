@@ -2,14 +2,15 @@
    @php
       $rowCount = $key + 1;
       $readonly = '';
+      $acceptedReadOnly = 'readonly';
       if($item->gate_entry_detail_id){
          $readOnly = 'readonly';
       }elseif($item->vendor_asn_dtl_id){
          $readOnly = 'readonly';
       }elseif(($item->purchase_order_item_id) && ($item->mrnHeader->reference_type == 'po')){
-         $readOnly = (($item->po?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+         $readOnly = ($item->po?->partial_delivery == 'no') ? 'readonly' : '';
       }elseif(($item->job_order_item_id) && ($item->mrnHeader->reference_type == 'jo')){
-         $readOnly = (($item->jo?->partial_delivery == 'no') || ($item?->item?->is_inspection == 1)) ? 'readonly' : '';
+         $readOnly = ($item->jo?->partial_delivery == 'no') ? 'readonly' : '';
       }else {
          $readOnly = '';
       }
@@ -78,13 +79,15 @@
       </td>
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any"
-         {{ $readOnly }} />
+         {{ $acceptedReadOnly }} />
       </td>
       <td>
-         <input type="number" class="form-control mw-100 text-end rejected_qty" readonly name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any"
-         {{ $readOnly }}/>
+         <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" value="{{$item->rejected_qty}}" step="any"
+         {{ $acceptedReadOnly }} />
       </td>
-      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
+      <td>
+         <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" />
+      </td>
       <td>
          <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->accepted_qty*$item->rate)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
       </td>

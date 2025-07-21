@@ -67,7 +67,50 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
     {
         return $this->failedVendors;
     }
+   protected function getServiceData($organization, $services)
+    {
+        $validatedData = [];
+        $vendorCodeType = 'Manual';
 
+        if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
+            $firstService = $services['services']->first();
+            $serviceId = $firstService->service_id;
+            $policyData = Helper::getPolicyByServiceId($serviceId);
+            if ($policyData && isset($policyData['policyLevelData'])) {
+                $policyLevelData = $policyData['policyLevelData'];
+                $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
+                $validatedData['company_id'] = $policyLevelData['company_id'] ?? null;
+                $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
+            } else {
+                $validatedData['group_id'] = $organization->group_id;
+                $validatedData['company_id'] = null;
+                $validatedData['organization_id'] = null;
+            }
+        } else {
+            $validatedData['group_id'] = $organization->group_id;
+            $validatedData['company_id'] = null;
+            $validatedData['organization_id'] = null;
+        }
+
+        if ($services && isset($services['current_book'])) {
+            $book = $services['current_book'];
+            if ($book) {
+                $parameters = new stdClass();
+                foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                    $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                    $parameters->{$paramName} = $param;
+                }
+                if (isset($parameters->vendor_code_type) && is_array($parameters->vendor_code_type)) {
+                    $vendorCodeType = $parameters->vendor_code_type[0] ?? null;
+                }
+            }
+        }
+
+        return [
+            'validatedData' => $validatedData,
+            'vendorCodeType' => $vendorCodeType,
+        ];
+    }
     public function model(array $row)
     {
       
@@ -85,42 +128,10 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
             $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $vendorCodeType = 'Manual';
         
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
-                $policyData = Helper::getPolicyByServiceId($serviceId);
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validatedData['group_id'] = $policyLevelData['group_id'] ?? $organization->group_id;
-                    $validatedData['company_id'] = $policyLevelData['company_id'] ?? null;
-                    $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
-                } else {
-                    $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = $organization->company_id;
-                    $validatedData['organization_id'] = null;
-                }
-            } else {
-                $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = $organization->company_id;
-                $validatedData['organization_id'] = null;
-            }
-    
-            if ($services && $services['current_book']) {
-                if (isset($services['current_book'])) {
-                    $book = $services['current_book'];
-                    if ($book) {
-                        $parameters = new stdClass(); 
-                        foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
-                            $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
-                            $parameters->{$paramName} = $param;
-                        }
-                        if (isset($parameters->vendor_code_type) && is_array($parameters->vendor_code_type)) {
-                            $vendorCodeType = $parameters->vendor_code_type[0] ?? null;
-                        }
-                    }
-                }
-            }
-    
+            // Use the common function to get both validatedData and vendorCodeType
+            $serviceData = $this->getServiceData($organization, $services);
+            $validatedData = $serviceData['validatedData'];
+            $vendorCodeType = $serviceData['vendorCodeType'];
             $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3)); 
 
             $gstinRegDate = $row['gstin_reg_date'] ?? null;
@@ -354,8 +365,8 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'credit_days' => $uploadedVendor->credit_days ?? null,
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedVendor->group_id ?? null,
-                'company_id' => $uploadedVendor->company_id ?? null,
-                'organization_id' => $uploadedVendor->organization_id ?? null,
+                'company_id' => null,
+                'organization_id' => null,
                 'gst_applicable' =>$uploadedVendor->gst_applicable ?? 0,
                 'gstin_no' => $uploadedVendor->gstin_no ?? null,
                 'gst_registered_name' => $uploadedVendor->gst_registered_name ?? null,

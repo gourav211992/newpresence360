@@ -58,11 +58,20 @@
         
         @if($machines->isNotEmpty())
         <td>
-            <select class="form-select" name="machine_id[{{$slipItemIndex}}]">
+            <input type="hidden" name="machine_id[{{ $slipItemIndex }}]" value="">
+            <select class="form-select select2"  multiple name="machine_id[{{$slipItemIndex}}][]" data-index="{{ $slipItemIndex }}" multiple>
                 <option value="">Select Machine</option>
                 @foreach ($machines as $machine)
-                    <option value="{{$machine->id}}" {{$machine->id == $slipItem->machine_id ? 'selected' : ''}}>{{$machine?->name}}</option>
+                    <option value="{{$machine->id}}" {{ in_array($machine->id, $slipItem->machine_id ?? []) ? 'selected' : '' }}>{{$machine?->name}}</option>
                 @endforeach
+            </select>
+        </td>
+        <td>
+            <select class="form-select" name="cycle_count[{{$slipItemIndex}}]">
+                <option value="">Select Cycle Count</option>
+                @for ($i = 1; $i <= 10; $i++)
+                    <option value="{{$i}}" {{$i == $slipItem->cycle_count ? 'selected' : ''}}>{{$i}}</option>
+                @endfor
             </select>
         </td>
         @endif

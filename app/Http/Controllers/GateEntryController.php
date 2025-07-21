@@ -46,6 +46,7 @@ use App\Models\PurchaseOrderTed;
 use App\Helpers\Helper;
 use App\Helpers\TaxHelper;
 use App\Helpers\BookHelper;
+use App\Helpers\CommonHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
@@ -57,6 +58,7 @@ use App\Jobs\SendEmailJob;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\AuthUser;
 use App\Models\Category;
+use App\Models\Configuration;
 use App\Models\Employee;
 use App\Models\ErpGeDynamicField;
 use App\Models\ErpItem;
@@ -107,10 +109,10 @@ class GateEntryController extends Controller
                     'jobOrder'
                 ]
             )
-            ->withDefaultGroupCompanyOrg()
-            // ->withDraftListingLogic()
+            // ->withDefaultGroupCompanyOrg()
+            ->withDraftListingLogic()
             ->bookViewAccess($parentUrl)
-            ->where('company_id', $organization->company_id)
+            // ->where('company_id', $organization->company_id)
             ->latest();
             return DataTables::of($records)
                 ->addIndexColumn()
@@ -430,7 +432,7 @@ class GateEntryController extends Controller
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
                 foreach($request->all()['components'] as $c_key => $component) {
-                    
+
                     $refType = $request->input('reference_type');
                     $inputQty = floatval($component['accepted_qty'] ?? $component['order_qty'] ?? 0);
                     $item = Item::find($component['item_id'] ?? null);
@@ -445,20 +447,20 @@ class GateEntryController extends Controller
                         case ConstantHelper::JO_SERVICE_ALIAS:
                             $result = self::processJobOrderComponent($component, $item, $inputQty);
                             break;
-                    
+
                         case ConstantHelper::SO_SERVICE_ALIAS:
                             $result = self::processSaleOrderComponent($component, $item, $inputQty);
                             break;
-                    
+
                         default:
                             $result = self::processPurchaseOrderComponent($component, $item, $inputQty);
                             break;
                     }
-                    
+
                     if ($result !== true) {
                         return $result; // return response from updatePoQty or entry logic
                     }
-                    
+
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -489,7 +491,7 @@ class GateEntryController extends Controller
                         'po_id' => $component['purchase_order_id'] ?? null,
                         'job_order_item_id' => $component['jo_detail_id'] ?? null,
                         'jo_id' => $component['job_order_id'] ?? null,
-                        'vendor_asn_id' => $component['job_order_id'] ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
                         'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
                         'so_id' => $so_id ?? null,
                         'item_id' => $component['item_id'] ?? null,
@@ -795,7 +797,16 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
+                ->pluck('config_value', 'config_key'); 
+                
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
+            ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
@@ -878,24 +889,34 @@ class GateEntryController extends Controller
 
         $headerField = null;
         $detailsField = null;
+        $asnHeaderField = null;
+        $asnDetailsField = null;
 
         switch ($referenceType) {
             case 'po':
                 $headerField = 'po_id';
                 $detailsField = 'purchase_order_item_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
                 break;
             case 'jo':
                 $headerField = 'jo_id';
                 $detailsField = 'job_order_item_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
                 break;
             case 'so':
                 $headerField = 'so_id';
                 $detailsField = 'sale_order_item_id';
+                $asnHeaderField = null;
+                $asnDetailsField = null;
                 break;
         }
 
         $headerIds = [];
         $detailsIds = [];
+        $asnHeaderIds = [];
+        $asnDetailsIds = [];
 
         if ($headerField && $detailsField) {
             $headerIds = collect($items)
@@ -911,9 +932,21 @@ class GateEntryController extends Controller
                 ->unique()
                 ->values()
                 ->all();
+            $asnHeaderIds = collect($items)
+                ->pluck($asnHeaderField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $asnDetailsIds = collect($items)
+                ->pluck($asnDetailsField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
         }
 
-        $deviationPendingItems = $mrn->deviationPendingItems();
+        $itemUniqueCodes = $mrn->itemUniqueCodes();
 
         $totalItemValue = $mrn->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
@@ -965,9 +998,11 @@ class GateEntryController extends Controller
             'servicesBooks' => $servicesBooks,
             'erpStores' => $erpStores,
             'dynamicFieldsUI' => $dynamicFieldsUI,
-            'deviationPendingItems' => $deviationPendingItems,
+            'itemUniqueCodes' => $itemUniqueCodes,
             'headerIds' => $headerIds,
-            'detailsIds' => $detailsIds
+            'detailsIds' => $detailsIds,
+            'asnHeaderIds' => $asnHeaderIds,
+            'asnDetailsIds' => $asnDetailsIds
         ]);
     }
 
@@ -1139,7 +1174,10 @@ class GateEntryController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $po_detail_id = null;
-                    $gateEntryDetail = GateEntryDetail::find($component['detail_id']);
+                    if(isset($component['detail_id']) && $component['detail_id']) {
+                        $gateEntryDetail = GateEntryDetail::find($component['detail_id']);
+                    }
+
                     $validateQty = self::validateQuantityBackend($component, $mrn->reference_type);
                     if ($validateQty['status'] === 'error') {
                         \DB::rollBack();
@@ -1149,13 +1187,12 @@ class GateEntryController extends Controller
                     }
                     $inputQty = floatval($component['accepted_qty'] ?? 0);
                     if(isset($component['po_detail_id']) && $component['po_detail_id']) {
-                        $poItem = PoItem::find($component['po_detail_id'] ?? $gateEntryDetail->purchase_order_item_id);
+                        $poItem = PoItem::find($component['po_detail_id'] ?? @$gateEntryDetail->purchase_order_item_id);
                         if(isset($poItem) && $poItem) {
                             if(isset($poItem->id) && $poItem->id) {
-                                $orderQty = floatval($gateEntryDetail->accepted_qty);
+                                $orderQty = floatval(@$gateEntryDetail->accepted_qty)?? 0.00;
                                 $componentQty = floatval($component['accepted_qty'] ?? $component['order_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
-                                // dd($qtyDifference);
                                 if($qtyDifference) {
                                     $poItem->ge_qty += $qtyDifference;
                                 }
@@ -1165,10 +1202,10 @@ class GateEntryController extends Controller
                             $poItem->save();
                         }
                     } else if(isset($component['jo_detail_id']) && $component['jo_detail_id']) {
-                        $joItem = JoProduct::find($component['jo_detail_id'] ?? $gateEntryDetail->job_order_item_id);
+                        $joItem = JoProduct::find($component['jo_detail_id'] ?? @$gateEntryDetail->job_order_item_id);
                         if(isset($joItem) && $joItem) {
                             if(isset($joItem->id) && $joItem->id) {
-                                $orderQty = floatval($gateEntryDetail->accepted_qty);
+                                $orderQty = floatval(@$gateEntryDetail->accepted_qty)?? 0;
                                 $componentQty = floatval($component['accepted_qty'] ?? $component['order_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
                                 if($qtyDifference) {
@@ -1211,7 +1248,7 @@ class GateEntryController extends Controller
                         'po_id' => $component['purchase_order_id'] ?? null,
                         'job_order_item_id' => $component['jo_detail_id'] ?? null,
                         'jo_id' => $component['job_order_id'] ?? null,
-                        'vendor_asn_id' => $component['job_order_id'] ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
                         'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
@@ -1286,6 +1323,12 @@ class GateEntryController extends Controller
 
                     $gateEntryDetail->header_id = $mrnItem['header_id'];
                     $gateEntryDetail->purchase_order_item_id = $mrnItem['purchase_order_item_id'];
+                    $gateEntryDetail->po_id = $mrnItem['po_id'];
+                    $gateEntryDetail->job_order_item_id = $mrnItem['job_order_item_id'];
+                    $gateEntryDetail->jo_id = $mrnItem['jo_id'];
+                    // $gateEntryDetail->so_id = $mrnItem['so_id'];
+                    $gateEntryDetail->vendor_asn_id = $mrnItem['vendor_asn_id'];
+                    $gateEntryDetail->vendor_asn_item_id = $mrnItem['vendor_asn_item_id'];
                     $gateEntryDetail->item_id = $mrnItem['item_id'];
                     $gateEntryDetail->item_code = $mrnItem['item_code'];
                     $gateEntryDetail->hsn_id = $mrnItem['hsn_id'];
@@ -1316,7 +1359,6 @@ class GateEntryController extends Controller
                             $mrnAttr = GateEntryAttribute::where('detail_id', $gateEntryDetail->id)
                                 ->where('item_attribute_id', $itemAttribute->id)
                                 ->first();
-
                             $data = [
                                 'header_id' => $mrn->id,
                                 'detail_id' => $gateEntryDetail->id,
@@ -1327,7 +1369,7 @@ class GateEntryController extends Controller
                                 'attr_value' => $mrnAttrName ?? null
                             ];
 
-                            if ($mrnAttr->item_code != $component['item_code']) {
+                            if (@$mrnAttr->item_code != $component['item_code']) {
                                 $mrnAttr?->delete();
                                 GateEntryAttribute::create($data);
                             } else {
@@ -1542,7 +1584,16 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
+            
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
+                ->pluck('config_value', 'config_key'); 
+            
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
+            ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
             }
 
@@ -2310,7 +2361,7 @@ class GateEntryController extends Controller
             'qty'                => $request->qty,
             'type'               => $request->type,
         ];
-        
+
         $checkService = new GeCheckAndUpdateService();
         $data = $checkService->validateOrderQuantity($inputData);
         if ($data['status'] === 'success') {
@@ -2336,7 +2387,7 @@ class GateEntryController extends Controller
             'qty'                => $component['order_qty'] ?? 0.00,
             'type'               => $refType ?? 'po',
         ];
-        
+
         $checkService = new GeCheckAndUpdateService();
         $data = $checkService->validateOrderQuantity($inputData);
         return $data;
@@ -2425,13 +2476,16 @@ class GateEntryController extends Controller
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
+        $asnNumber = $request->asn_number ?? null;
         $itemId = $request->item_id ?? null;
         $storeId = $request->store_id ?? null;
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $headerIds = $request->header_ids ?? null;
-        $detailsIds = $request->details_ids ?? null;
+        $headerIds = $request->header_ids ?? '';
+        $detailsIds = $request->details_ids ?? '';
+        $asnHeaderIds = $request->asn_header_ids ?? '';
+        $asnDetailsIds = $request->asn_details_ids ?? '';
 
         if (is_string($headerIds)) {
             $headerIds = array_filter(explode(',', $headerIds));
@@ -2441,17 +2495,23 @@ class GateEntryController extends Controller
             $detailsIds = array_filter(explode(',', $detailsIds));
         }
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_po_ids = json_decode($decoded, true) ?? [];
-        }
-        else{
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_po_ids = json_decode($decoded, true) ?? [];
+        $asnNumberList = [];
+
+        if (is_string($asnNumber)) {
+            $asnNumberList = array_filter(explode(',', $asnNumber));
         }
 
+        if (is_string($asnHeaderIds)) {
+            $asnHeaderIdList = array_filter(explode(',', $asnHeaderIds));
+            $asnNumberList = array_merge($asnNumberList, $asnHeaderIdList);
+        }
+        $asnNumber = $asnNumberList;
+
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_po_ids = json_decode($decoded, true) ?? [];
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+
         $poItems = PoItem::select(
                 'erp_po_items.*',
                 'erp_purchase_orders.id as po_id',
@@ -2463,9 +2523,8 @@ class GateEntryController extends Controller
             ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
             ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
             ->where('erp_purchase_orders.gate_entry_required', 'yes')
-            // ->whereIn('erp_purchase_orders.id', [7])
             ->whereRaw('((order_qty - short_close_qty) > ge_qty)')
-            ->whereHas('item', function($item) use($itemSearch){
+            ->whereHas('item', function ($item) use ($itemSearch) {
                 $item->where('type', 'Goods');
                 if ($itemSearch) {
                     $item->where(function ($query) use ($itemSearch) {
@@ -2484,7 +2543,7 @@ class GateEntryController extends Controller
                     $po->where('erp_purchase_orders.book_id', $seriesId);
                 }
                 if ($docNumber) {
-                    $po->where('erp_purchase_orders.document_number', $docNumber);
+                    $po->where('erp_purchase_orders.id', $docNumber);
                 }
                 if ($vendorId) {
                     $po->where('erp_purchase_orders.vendor_id', $vendorId);
@@ -2494,19 +2553,28 @@ class GateEntryController extends Controller
                 }
             });
 
+        // 🔍 Apply ASN number filter (if present)
+        if (!empty($asnNumber)) {
+            $poItems->whereHas('asnItems.vendorAsn', function ($query) use ($asnNumber) {
+                $query->where('asn_for', 'po')
+                      ->whereIn('id', $asnNumber);
+            });
+        }
+
         if ($itemId) {
             $poItems->where('item_id', $itemId);
         }
 
-        if ($request->type == 'create' && count($selected_po_ids)) {
+        if ($request->type === 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-        } elseif ($request->type == 'edit') {
-            $poItems->whereIn('erp_po_items.purchase_order_id', $headerIds);
+        } elseif ($request->type === 'edit') {
+            // $poItems->whereIn('erp_po_items.purchase_order_id', $headerIds);
             $poItems->whereNotIn('erp_po_items.id', $detailsIds);
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
         }
 
         $poItems = $poItems->orderBy('po_id', 'desc')->get();
+
         $poItemMap = [];
         foreach ($poItems as $poItem) {
             if ($poItem->supp_invoice_required === 'yes') {
@@ -2516,7 +2584,7 @@ class GateEntryController extends Controller
                     ->get();
 
                 foreach ($siItems as $siItem) {
-                    $poItemId = $siItem->po_item_id. '+' .$siItem->vendor_asn_id ;
+                    $poItemId = $siItem->po_item_id . '+' . $siItem->vendor_asn_id;
 
                     if (!isset($poItemMap[$poItemId])) {
                         $poItem = $siItem->po_item;
@@ -2536,8 +2604,10 @@ class GateEntryController extends Controller
                 }
             }
         }
+
         return $poItemMap;
     }
+
 
     # Process PO Item list
     public function processPoItem(Request $request)
@@ -2769,21 +2839,41 @@ class GateEntryController extends Controller
         $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
+        $asnNumber = $request->asn_number ?? '';
         $itemId = $request->item_id ?? null;
         $storeId = $request->store_id ?? null;
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
+        $headerIds = $request->header_ids ?? '';
+        $detailsIds = $request->details_ids ?? '';
+        $asnHeaderIds = $request->asn_header_ids ?? '';
+        $asnDetailsIds = $request->asn_details_ids ?? '';
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_jo_ids = json_decode($decoded, true) ?? [];
+
+
+       if (is_string($headerIds)) {
+            $headerIds = array_filter(explode(',', $headerIds));
         }
-        else{
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_jo_ids = json_decode($decoded, true) ?? [];
+
+        if (is_string($detailsIds)) {
+            $detailsIds = array_filter(explode(',', $detailsIds));
         }
+
+        $asnNumberList = [];
+
+        if (is_string($asnNumber)) {
+            $asnNumberList = array_filter(explode(',', $asnNumber));
+        }
+
+        if (is_string($asnHeaderIds)) {
+            $asnHeaderIdList = array_filter(explode(',', $asnHeaderIds));
+            $asnNumberList = array_merge($asnNumberList, $asnHeaderIdList);
+        }
+        $asnNumber = $asnNumberList;
+
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_jo_ids = json_decode($decoded, true) ?? [];
 
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
         $joItems = JoProduct::select(
@@ -2824,21 +2914,23 @@ class GateEntryController extends Controller
                     $po->where('erp_job_orders.store_id', $storeId);
                 }
             });
+        // 🔍 Apply ASN number filter (if present)
+        if (!empty($asnNumber)) {
+            $joItems->whereHas('asnItems.vendorAsn', function ($query) use ($asnNumber) {
+                $query->where('asn_for', 'jo')
+                        ->whereIn('id', $asnNumber);
+            });
+        }
 
         if ($itemId) {
             $joItems->where('item_id', $itemId);
         }
 
-        if ($request->type == 'create') {
-            if (count($selected_jo_ids)) {
-                $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
-                $joItems->whereNotIn('erp_jo_products.id',$selected_jo_ids);
-            }
-        } else if ($request->type == 'edit') {
-            if (count($selected_jo_ids)) {
-                $joData = JoProduct::with('jo')->whereIn('id', $selected_jo_ids)->first();
-                $joItems->whereIn('erp_jo_products.jo_id', $selected_jo_ids);
-            }
+        if ($request->type === 'create' && count($selected_jo_ids)) {
+            $joItems->whereNotIn('erp_jo_products.id', $selected_jo_ids);
+        } elseif ($request->type === 'edit') {
+            $joItems->whereNotIn('erp_jo_products.id', $detailsIds);
+            $joItems->whereNotIn('erp_jo_products.id', $selected_jo_ids);
         }
 
         $joItems = $joItems->orderby('erp_job_orders.id', 'desc')->get();
@@ -4086,7 +4178,7 @@ class GateEntryController extends Controller
         if (!empty($component['vendor_asn_dtl_id'])) {
             $inv = VendorAsnItem::find($component['vendor_asn_dtl_id']);
             $po = PoItem::find($component['po_detail_id']);
-        
+
             $inv->ge_qty += $inputQty;
             $inv->save();
             return self::updatePoQty($item, $po, $inputQty, 'supplier-invoice');
@@ -4118,7 +4210,7 @@ class GateEntryController extends Controller
         //     if ($remaining <= $negTol && $remaining >= 0) {
         //         $poDetail->short_close_qty += $remaining;
         //     }
-        // } 
+        // }
         if ($totalQty > $orderQty) {
             return response()->json(['message' => 'Order Qty cannot exceed PO Qty.'], 422);
         }
