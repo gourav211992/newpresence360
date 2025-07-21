@@ -1,8 +1,6 @@
 <?php
 
 use App\Helpers\Helper;
-use App\Http\Controllers\ErpMaintenanceTypeController;
-use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -171,6 +169,9 @@ use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\PutAwayController;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
+use App\Http\Controllers\ErpEquipmentController;
 
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
@@ -2059,6 +2060,18 @@ Route::middleware(['user.auth'])->group(function () {
         Route::delete('/{id}', 'destroy')->name('expense-masters.destroy');
     });
 
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+    Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });
+
     Route::get('/search', [AutocompleteController::class, 'search'])->name('search');
 
     Route::get('/countries', [CountryController::class, 'countries'])->name('countries.get');
@@ -2835,6 +2848,13 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
+    });
+
+    Route::prefix('equipment')->group(function () {
+
+        Route::get('/create', [ErpEquipmentController::class, 'create'])->name('equipment.create');
+        Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
+
     });
 });
 
