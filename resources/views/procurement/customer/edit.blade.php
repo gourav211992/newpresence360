@@ -266,7 +266,7 @@
                                                                     <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
                                                                     @if(!isset(request()->revisionNumber) && $customer->document_status !== 'draft')
                                                                         <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                            <select class="form-select" id="revisionNumber">
+                                                                            <select class="form-select cannot_disable" id="revisionNumber">
                                                                                 @for($i=$customer->revision_number; $i >= 0; $i--)
                                                                                     <option value="{{$i}}" {{request('revisionNumber', $customer->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
                                                                                 @endfor
@@ -274,7 +274,7 @@
                                                                         </strong>
                                                                     @else
                                                                         @if ($customer->document_status !== 'draft')
-                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">
+                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect cannot_disable">
                                                                                 Rev. No. {{ request()->revisionNumber }}
                                                                             </strong>
                                                                         @endif
@@ -1347,7 +1347,7 @@
                     <div class = "col-md-8">
                         <div class="mb-1">
                             <label class="form-label">Upload Document</label>
-                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                            <input type="file" name = "attachment[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
                         </div>
                     </div>
                     <div class = "col-md-4" style = "margin-top:19px;">

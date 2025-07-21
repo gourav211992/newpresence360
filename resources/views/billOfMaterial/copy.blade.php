@@ -934,7 +934,8 @@ function initializeAutocomplete2(selector, type) {
 initializeAutocomplete2('.comp_item_code');
 /*Add New Row*/
 $(document).on('click','#addNewItemBtn', (e) => {
-    let rowsLength = $("#itemTable > tbody > tr").length;
+    // let rowsLength = $("#itemTable > tbody > tr").length;
+    let rowsLength = getUniqueRowCount();
     /*Check header attribute required*/
     let itemCode = $("#item_code").val();
     let selectedAttrRequired = false; 
@@ -1049,7 +1050,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
             if (data.status == 200) {
                 if (rowsLength) {
                     // $("#itemTable > tbody > tr:last").after(data.data.html);
-                    if($("#itemTable > tbody > tr.trselected")) {
+                    if($("#itemTable > tbody > tr.trselected").length) {
                         $("#itemTable > tbody > tr.trselected").after(data.data.html);
                     }else {
                         $("#itemTable > tbody > tr:last").after(data.data.html);

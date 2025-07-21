@@ -119,7 +119,7 @@ class StoragePointHelper
             $records = \DB::table('erp_wh_item_mappings')
                 ->when($locationId, fn($q) => $q->where('store_id', $locationId))
                 ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
-                ->when($itemId, fn($q) => $q->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [$itemId]))
+                ->when($itemId, fn($q) => $q->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string) $itemId]))
                 ->get();
             
             // Step 2: If no records found → try sub_category_id, then category_id

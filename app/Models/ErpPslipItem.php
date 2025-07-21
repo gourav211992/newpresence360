@@ -42,7 +42,8 @@ class ErpPslipItem extends Model
         'accepted_qty',
         'subprime_qty',
         'rejected_qty',
-        'machine_id'
+        'machine_id',
+        'cycle_count'
     ];
 
     public $referencingRelationships = [
@@ -55,7 +56,9 @@ class ErpPslipItem extends Model
     
     protected $hidden = ['deleted_at'];
     protected $with = ['mo_product.mo'];
-
+    protected $casts = [
+        'machine_id' => 'array'
+    ];
     public function getItemValueAttribute()
     {
         return $this->qty * $this->rate;

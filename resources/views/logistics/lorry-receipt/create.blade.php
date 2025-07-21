@@ -16,7 +16,7 @@
 							<div class="col-12">
 								<h2 class="content-header-title float-start mb-0">Lorry Receipt</h2>
 								<div class="breadcrumb-wrapper">
-									<ol class="breadcrumb">Home</a>
+									<ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url('/') }}">Home</a>
 										</li>  
 										<li class="breadcrumb-item active">Add New</li>
 
@@ -86,6 +86,7 @@
                                                             </select>
 
                                                         </div>
+                                                        <input type = "hidden" name = "book_code" id = "book_code_input" value = ""></input>
                                                      </div>
 
                                                     <div class="row align-items-center mb-1">
@@ -1368,17 +1369,17 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     const fileName = fileUrl.split('/').pop();
 
     const previewHtml = `
-        <div class="col-4 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
-            <div class="card border">
-                <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                    <div class="text-truncate small" title="${fileName}">
-                        <i class="fa fa-paperclip me-1 text-secondary"></i> ${fileName}
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFilePreview(this, '${previewElementId}', '${fileName}')">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-file-text me-2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
         </div>
     `;
 

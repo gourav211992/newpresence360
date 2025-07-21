@@ -225,6 +225,17 @@ $(document).on('submit', '.ajax-input-form', function (e) {
             if (currentFrom.dataset.completionfunction) {
                 window[currentFrom.dataset.completionfunction]();
             }
+            if (error.responseJSON && error.responseJSON.refresh_page) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.responseJSON.message || 'Something went wrong!',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload();
+                });
+                return;
+            }
             submitButton.disabled = false;
             submitButton.innerHTML = submitButtonHtml;
             loader.style.display = "none";
@@ -514,7 +525,18 @@ function show_validation_error(msg) {
                     "</span>"
                 );
         } else if ($('form [name="' + name + '[]"]').length > 0) {
-            $('form [name="' + name + '[]"]')
+            if($('form [name="' + name + '[]"]').next('.select2-container').length > 0) {
+                $('form [name="' + name + '[]"]')
+                .addClass("is-invalid error");
+                $('form [name="' + name + '[]"]')
+                    .next('.select2-container')
+                    .after(
+                        '<span class="ajax-validation-error-span form-label text-danger" style="font-size:12px">' +
+                        value +
+                        "</span>"
+                    );
+            } else {
+                $('form [name="' + name + '[]"]')
                 // .closest(".input-group")
                 .addClass("is-invalid error");
             $('form [name="' + name + '[]"]')
@@ -524,6 +546,8 @@ function show_validation_error(msg) {
                     value +
                     "</span>"
                 );
+            }
+            
         } else if ($('form [name="' + name + '"]').length > 0) {
             if ($('form [name="' + name + '"]').is('select')) {
                 $('form [name="' + name + '"]').addClass("is-invalid error");
@@ -681,24 +705,30 @@ let originalGstin = '';
 
 $(document).ready(function() {
     originalGstin = $('input[name="compliance[gstin_no]"]').val() || '';
+    const status = document.getElementById('documentStatus').value;
     let previousGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
-    if (previousGstApplicable === 0) {
-        disableGstFields();
+    if (status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
+        disableGstFields(false); 
     } else {
-        enableGstFields();
+        if (previousGstApplicable === 1) {
+            enableGstFields();  
+        } else {
+            disableGstFields(true); 
+        }
     }
+
     $('#gstinNo').on('input blur', function() {
         handleGstInputOrChange();
     });
 
 
-    $('input[name="compliance[gst_applicable]"]').on('change', function() {
+     $('input[name="compliance[gst_applicable]"]').on('change', function() {
         const currentGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
-        if (currentGstApplicable === 1 && previousGstApplicable === 0) {
+         if (currentGstApplicable === 0 && previousGstApplicable === 1) {
+           disableGstFields(true);  
+        } else if (currentGstApplicable === 1 && previousGstApplicable === 0) {
             handleGstApplicableChange();
-            enableGstFields();
-        }else {
-            disableGstFields();
+            enableGstFields(); 
         }
         previousGstApplicable = currentGstApplicable;
     });
@@ -725,10 +755,16 @@ function handleGstInputOrChange() {
     }
 }
 
-function disableGstFields() {
-    $('input[name="compliance[gstin_no]"]').val('').prop('disabled', true);
-    $('input[name="compliance[gstin_registration_date]"]').val('').prop('disabled', true);
-    $('input[name="compliance[gst_registered_name]"]').val('').prop('disabled', true);
+function disableGstFields(resetValues = true) {
+    $('input[name="compliance[gstin_no]"]').prop('disabled', true);
+    $('input[name="compliance[gstin_registration_date]"]').prop('disabled', true);
+    $('input[name="compliance[gst_registered_name]"]').prop('disabled', true);
+
+    if (resetValues) {
+        $('input[name="compliance[gstin_no]"]').val('');
+        $('input[name="compliance[gstin_registration_date]"]').val('');
+        $('input[name="compliance[gst_registered_name]"]').val('');
+    }
 }
 
 function enableGstFields() {

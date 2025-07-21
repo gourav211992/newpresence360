@@ -3,8 +3,10 @@
 namespace App\Models\WHM;
 
 use App\Models\Attribute;
+use App\Models\Employee;
 use App\Models\ErpVendor;
 use App\Models\Item;
+use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -41,6 +43,7 @@ class ErpItemUniqueCode extends Model
         'status',
         'action_by',
         'action_at',
+        'job_type',
     ];
 
     // protected  $casts = [
@@ -55,6 +58,11 @@ class ErpItemUniqueCode extends Model
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
+    }
+
+    public function actionBy()
+    {
+        return $this->belongsTo(Employee::class, 'action_by');
     }
 
     public function vendor()

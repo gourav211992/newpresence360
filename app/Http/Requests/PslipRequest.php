@@ -79,7 +79,8 @@ class PslipRequest extends FormRequest
             ->get(); 
         }
         if($machines->isNotEmpty()) {
-            $rules['machine_id.*'] = 'required';
+            $rules['machine_id.*'] = 'required|array|min:1';
+            $rules['machine_id.*.*'] = 'required|integer|exists:erp_machines,id';
         }
         return $rules;
     }
@@ -125,7 +126,7 @@ class PslipRequest extends FormRequest
                 );
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
                 if ($requiredQty > $stockBalanceQty) {
-                    // $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
+                    $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
             }
         });

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Helpers\CommonHelper;
 use App\Helpers\ConstantHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\ErpMaterialIssueHeader;
@@ -18,11 +19,13 @@ use DB;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
-
+use App\Lib\Services\WHM\WhmJob;
 use App\Models\Bom;
+use App\Models\Configuration;
 use App\Models\ErpSaleOrder;
 use App\Models\ErpLorryReceipt;
 use App\Models\MrnDetail;
+use App\Models\GateEntryDetail;
 use App\Models\ExpenseHeader;
 use App\Models\ErpSaleReturn;
 use App\Models\ErpInvoiceItem;
@@ -515,7 +518,18 @@ class DocumentApprovalController extends Controller
             $mrn->document_status = $approveDocument['approvalStatus'];
             $mrn->save();
 
+            // Get login user detail
+            $user = Helper::getAuthenticatedUser();
 
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
+                ->first();
+
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
+                (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
+            }
 
             DB::commit();
             return response()->json([
@@ -523,7 +537,6 @@ class DocumentApprovalController extends Controller
                 'data' => $mrn,
             ]);
         } catch (Exception $e) {
-            dd($e);
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType mrn document.",
@@ -541,11 +554,22 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
-            $expense = GateEntryHeader::find($request->id);
-            $bookId = $expense->series_id;
-            $docId = $expense->id;
-            $docValue = $expense->total_amount;
-            if($request->action_type == 'deviation')
+
+            // Get login user detail
+            $user = Helper::getAuthenticatedUser();
+
+            // Get configuration detail
+            $config = Configuration::where('type','organization')
+                ->where('type_id', $user->organization_id)
+                ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
+                ->pluck('config_value', 'config_key'); 
+
+
+            $gateEntry = GateEntryHeader::find($request->id);
+            $bookId = $gateEntry->series_id;
+            $docId = $gateEntry->id;
+            $docValue = $gateEntry->total_amount;
+            if($request->action_type == 'deviation-closed')
             {
                 $remarks = $request->closing_remarks;
                 $attachments = [];
@@ -555,35 +579,88 @@ class DocumentApprovalController extends Controller
                 $remarks = $request->remarks;
                 $attachments = $request->file('attachment');
             }
-            $currentLevel = $expense->approval_level;
+            $currentLevel = $gateEntry->approval_level;
             $actionType = $request->action_type;
-            $revisionNumber = $expense->revision_number ?? 0;
-            $modelName = get_class($expense);
+            $revisionNumber = $gateEntry->revision_number ?? 0;
+            $modelName = get_class($gateEntry);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
-            $expense->approval_level = $approveDocument['nextLevel'];
-            if($request->action_type != 'deviation')
+            $gateEntry->approval_level = $approveDocument['nextLevel'];
+            if($request->action_type != 'deviation-closed')
             {
-                $expense->document_status = $approveDocument['approvalStatus'];
+                $gateEntry->document_status = $approveDocument['approvalStatus'];
             }
-            $expense->save();
-            if ($request->action_type === 'deviation') {
-                $jobData = ErpWhmJob::find($request->closing_job_id);
-                if ($jobData) {
-                    ErpItemUniqueCode::where('job_id', $jobData->id)
-                        ->where('status', 'pending')
-                        ->delete();
-                    $hasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
-                        ->where('status', 'pending')
-                        ->exists();
-                    if (!$hasPending) {
-                        $jobData->update(['status' => 'closed']);
+            $gateEntry->save();
+
+            // Create Job
+            if(in_array($gateEntry->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
+            ){
+                (new WhmJob)->createJob($gateEntry->id,'App\Models\GateEntryHeader');
+            }
+            
+            if ($request->action_type === 'deviation-closed') {
+                $gateEntryItemIds = $gateEntry->items->pluck('id')->toArray();
+            
+                if (!empty($gateEntryItemIds)) {
+                    $gateEntryItems = GateEntryDetail::whereIn('id', $gateEntryItemIds)->get();
+                    $jobData = ErpWhmJob::find($request->closing_job_id);
+            
+                    if ($jobData) {
+                        foreach ($gateEntryItems as $item) {
+                            $pendingCodes = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->get();
+            
+                            $pendingQty = $pendingCodes->sum('qty');
+            
+                            // If no pending codes for this item, skip to next
+                            if ($pendingCodes->isEmpty()) {
+                                continue;
+                            }
+            
+                            // Delete all pending codes for this job
+                            $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->delete();
+            
+                            // Check if any pending still exists for this job in this item
+                            $hasPending = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->exists();
+            
+                            if (!$hasPending) {
+                                // Adjust accepted qty only once per item
+                                $item->decrement('accepted_qty', $pendingQty);
+                                if($gateEntry->reference_type == 'po'){
+                                    $item->po_item->decrement('ge_qty', $pendingQty);
+                                }
+                                if($gateEntry->reference_type == 'jo'){
+                                    $item->jo_item->decrement('ge_qty', $pendingQty);
+                                }
+                                if($gateEntry->reference_type == 'so'){
+                                    $item->soItem->decrement('ge_qty', $pendingQty);
+                                }
+                            }
+                        }
+            
+                        // Final check for pending status across all items
+                        $jobHasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
+                            ->where('status', 'pending')
+                            ->exists();
+                        
+                        $jobData->status = $jobHasPending ? 'deviation' : 'closed';
+                        $jobData->save();
                     }
                 }
-            }
+            }            
             DB::commit();
             return response()->json([
                 'message' => "Document $actionType successfully!",
-                'data' => $expense,
+                'data' => $gateEntry,
             ]);
         } catch (Exception $e) {
             DB::rollBack();

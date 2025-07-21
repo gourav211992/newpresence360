@@ -23,9 +23,12 @@ class ErpPlHeader extends Model
         'book_id',
         'book_code',
         'store_id',
-        'sub_store_id',
         'store_code',
-        'sub_store_code',
+        'main_sub_store_id',
+        'main_sub_store_code',
+        'staging_sub_store_id',
+        'staging_sub_store_code',
+        'enforce_uic_scanning',
         'doc_number_type',
         'doc_reset_pattern',
         'doc_prefix',
@@ -78,6 +81,10 @@ class ErpPlHeader extends Model
 
     public function items()
     {
+        return $this->hasMany(ErpPlItemDetail::class, 'pl_header_id');
+    }
+    public function inv_items()
+    {
         return $this->hasMany(ErpPlItem::class, 'pl_header_id');
     }
 
@@ -111,5 +118,14 @@ class ErpPlHeader extends Model
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpPlDynamicField::class, 'header_id');
+    }
+
+    public function main_sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'main_sub_store_id');
+    }
+    public function staging_sub_store()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'staging_sub_store_id');
     }
 }

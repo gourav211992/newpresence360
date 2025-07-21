@@ -1624,6 +1624,8 @@
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("asn_no_input_qt", "asn_id_qt_val", "po_asn_document_qt", "document_number", "");
+            initializeAutocompleteQt("ge_no_input_qt", "ge_id_qt_val", "po_ge_document_qt", "document_number", "");
             initializeAutocompleteQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
         }
 
@@ -1709,6 +1711,8 @@
                 header_book_id = '',
                 series_id = '',
                 document_number = '',
+                asn_number = '',
+                ge_number = '',
                 item_id = '',
                 vendor_id = '',
                 store_id = '',
@@ -1724,6 +1728,8 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#document_id_qt_val").val() || '',
+                asn_number = $("#asn_id_qt_val").val() || '',
+                ge_number = $("#ge_id_qt_val").val() || '',
                 item_id = $("#item_id_qt_val").val() || '',
                 vendor_id = $("#vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1740,6 +1746,8 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#jo_document_id_qt_val").val() || '',
+                asn_number = $("#jo_asn_id_qt_val").val() || '',
+                ge_number = $("#jo_ge_id_qt_val").val() || '',
                 item_id = $("#jo_item_id_qt_val").val() || '',
                 vendor_id = $("#jo_vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1756,6 +1764,8 @@
                 header_book_id = $("#book_id").val() || '',
                 series_id = $("#book_id_qt_val").val() || '',
                 document_number = $("#so_document_id_qt_val").val() || '',
+                asn_number = $("#so_asn_id_qt_val").val() || '',
+                ge_number = $("#so_ge_id_qt_val").val() || '',
                 item_id = $("#so_item_id_qt_val").val() || '',
                 vendor_id = $("#so_vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
@@ -1768,6 +1778,8 @@
                     header_book_id: header_book_id,
                     series_id: series_id,
                     document_number: document_number,
+                    asn_number: asn_number,
+                    ge_number: ge_number,
                     item_id: item_id,
                     vendor_id: vendor_id,
                     store_id: store_id,
@@ -2063,6 +2075,8 @@
         {
             initializeAutocompleteJoQt("jo_vendor_code_input_qt", "jo_vendor_id_qt_val", "vendor_list", "jo_vendor_code", "company_name");
             initializeAutocompleteJoQt("jo_document_no_input_qt", "jo_document_id_qt_val", "jo_document_qt", "jo_document_number", "");
+            initializeAutocompleteJoQt("jo_asn_no_input_qt", "jo_asn_id_qt_val", "jo_asn_document_qt", "document_number", "");
+            initializeAutocompleteJoQt("jo_ge_no_input_qt", "jo_ge_id_qt_val", "jo_ge_document_qt", "document_number", "");
             initializeAutocompleteJoQt("jo_so_no_input_qt", "jo_so_qt_val", "jo_so_qt", "jo_book_code", "jo_document_number");
         }
 
@@ -3169,6 +3183,10 @@
             $("#book_id_qt_val").val('');
             $("#document_no_input_qt").val('');
             $("#document_id_qt_val").val('');
+            $("#asn_no_input_qt").val('');
+            $("#asn_id_qt_val").val('');
+            $("#ge_no_input_qt").val('');
+            $("#ge_id_qt_val").val('');
             $("#po_so_no_input_qt").val('');
             $("#po_so_qt_val").val('');
             $("#item_name_search").val('');
@@ -3193,6 +3211,10 @@
             $("#jo_book_id_qt_val").val('');
             $("#jo_document_no_input_qt").val('');
             $("#jo_document_id_qt_val").val('');
+            $("#jo_asn_no_input_qt").val('');
+            $("#jo_asn_id_qt_val").val('');
+            $("#jo_ge_no_input_qt").val('');
+            $("#jo_ge_id_qt_val").val('');
             $("#jo_so_no_input_qt").val('');
             $("#jo_so_qt_val").val('');
             $("#jo_item_name_search").val('');

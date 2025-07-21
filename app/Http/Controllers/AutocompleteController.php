@@ -66,6 +66,8 @@ use App\Models\ErpSubStoreParent;
 use App\Models\ItemAttribute;
 use App\Models\InspectionChecklist;
 use App\Models\Attribute;
+use App\Models\GateEntryHeader;
+use App\Models\VendorAsn;
 use Auth;
 use DB;
 use Illuminate\Console\Events\CommandStarting;
@@ -885,6 +887,7 @@ class AutocompleteController extends Controller
                 }
             } elseif ($type === 'vendor_list') {
                 $itemId = $request->item_id;
+                $locationId = $request->store_id ?? null;
                 $vendorIds = VendorItem::where('item_id', $itemId)->pluck('vendor_id')->toArray();
                 $subQuery = Vendor::where(function($query) use ($vendorIds) {
                                 if (count($vendorIds)) {
@@ -893,7 +896,16 @@ class AutocompleteController extends Controller
                             })
                             ->where('status', ConstantHelper::ACTIVE)
                             ->with(['currency:id,short_name', 'paymentTerms:id,name'])
-                            ->withCount('locations');
+                            ->withCount('locations')
+                            ->addSelect([
+                                'is_store_mapped' => function ($query) use ($organizationId, $locationId) {
+                                    $query->select(DB::raw('CASE WHEN COUNT(*) > 0 THEN true ELSE false END'))
+                                        ->from('erp_vendor_stores')
+                                        ->whereColumn('erp_vendor_stores.vendor_id', 'erp_vendors.id')
+                                        ->where('organization_id', $organizationId)
+                                        ->where('location_id', $locationId);
+                                }
+                            ]);
 
                 $results = $subQuery->where('company_name', 'LIKE', "%$term%")
                     ->get(['id', 'company_name', 'vendor_code','currency_id','payment_terms_id']);
@@ -909,6 +921,7 @@ class AutocompleteController extends Controller
                         'payment_terms_id' => $vendor->paymentTerms->id ?? null,
                         'payment_terms_name' => $vendor->paymentTerms->name ?? null,
                         'locations_count' => $vendor->locations_count ?? 0,
+                        'is_store_mapped' => $vendor->is_store_mapped ?? false,
                     ];
                 });
 
@@ -927,6 +940,8 @@ class AutocompleteController extends Controller
                             'currency_name' => $vendor->currency->name ?? null,
                             'payment_terms_id' => $vendor->paymentTerms->id ?? null,
                             'payment_terms_name' => $vendor->paymentTerms->name ?? null,
+                            'is_store_mapped' => false,
+                            'locations_count' => 0,
                         ];
                     });
                 }
@@ -1308,6 +1323,46 @@ class AutocompleteController extends Controller
 
                 if ($results->isEmpty()) {
                     $results = ErpSaleOrder::limit(10)
+                        ->get(['id', 'document_number', 'book_code']);
+                }
+            } else if ($type === "po_asn_document_qt") {
+                $results = VendorAsn::where(DB::raw("CONCAT(book_code, '-', document_number)"), $term)
+                    ->where('asn_for', ConstantHelper::PO_SERVICE_ALIAS)
+                    ->get(['id', 'document_number', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = VendorAsn::limit(10)
+                        ->where('asn_for', ConstantHelper::PO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
+                }
+            } else if ($type === "jo_asn_document_qt") {
+                $results = VendorAsn::where(DB::raw("CONCAT(book_code, '-', document_number)"), $term)
+                    ->where('asn_for', ConstantHelper::JO_SERVICE_ALIAS)
+                    ->get(['id', 'document_number', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = VendorAsn::limit(10)
+                        ->where('asn_for', ConstantHelper::JO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
+                }
+            } else if ($type === "po_ge_document_qt") {
+                $results = GateEntryHeader::where(DB::raw("CONCAT(book_code, '-', document_number)"), $term)
+                    ->where('reference_type', ConstantHelper::PO_SERVICE_ALIAS)
+                    ->get(['id', 'document_number', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = GateEntryHeader::limit(10)
+                        ->where('reference_type', ConstantHelper::PO_SERVICE_ALIAS)
+                        ->get(['id', 'document_number', 'book_code']);
+                }
+            } else if ($type === "jo_ge_document_qt") {
+                $results = GateEntryHeader::where(DB::raw("CONCAT(book_code, '-', document_number)"), $term)
+                    ->where('reference_type', ConstantHelper::JO_SERVICE_ALIAS)
+                    ->get(['id', 'document_number', 'book_code']);
+
+                if ($results->isEmpty()) {
+                    $results = GateEntryHeader::limit(10)
+                        ->where('reference_type', ConstantHelper::JO_SERVICE_ALIAS)
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "mrn_document_qt") {
@@ -1901,6 +1956,27 @@ class AutocompleteController extends Controller
                 }) -> whereHas('sub_type', function ($subTypeQuery) {
                         $subTypeQuery -> where('type', SubStoreConstants::MAIN_STORE_VALUE);
                     }) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
+            }elseif ($type === 'vendor_locations') {
+                $selectedOrg = $request -> organization_id ?? null;
+                $results = ErpStore::select('id', 'store_name')
+                ->when(($authUser->authenticable_type == "employee"), function ($locationQuery) use($authUser) { // Location with same country and state
+                    $locationQuery->whereHas('employees', function ($employeeQuery) use ($authUser) {
+                        $employeeQuery->where('employee_id', $authUser->id);
+                    });
+                }) -> withWhereHas('subStores', function ($subStoreQuery) {
+                        $subStoreQuery -> where('type', ConstantHelper::VENDOR_STORE);
+                    })  -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('store_name', 'LIKE', '%'.$term.'%');
+                }) -> where('organization_id', $selectedOrg) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
+            } elseif ($type === 'vendor_sub_stores') {
+                $selectedLocation = $request -> location_id ?? null;
+                $results = ErpSubStore::select('id', 'name') -> when(true, function ($locationQuery) use($selectedLocation) {
+                    $locationQuery -> whereHas('parents', function ($parentQuery) use($selectedLocation) {
+                        $parentQuery -> where('store_id', $selectedLocation);
+                    });
+                }) -> when($term, function ($termQuery) use($term) {
+                    $termQuery -> where('name', 'LIKE', '%'.$term.'%');
+                }) -> where('type', ConstantHelper::VENDOR_STORE) -> where('status', ConstantHelper::ACTIVE) -> limit(10) -> get();
             } elseif ($type === 'stock_items') {
                 $item_ids = $request -> item_ids ?? [];
                 $results = Item::withDefaultGroupCompany() -> whereIn('id', $item_ids) -> select('id', 'item_name', 'item_code')

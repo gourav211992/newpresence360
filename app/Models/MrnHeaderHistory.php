@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Address;
 use App\Models\Customer;
 use App\Models\InvoiceBook;
+use App\Models\JobOrder\JobOrder;
 use App\Models\Organization;
 use App\Traits\DateFormatTrait;
 use App\Traits\DefaultGroupCompanyOrg;
@@ -27,6 +28,8 @@ class MrnHeaderHistory extends Model
         'company_id',
         'vendor_id',
         'purchase_order_id',
+        'job_order_id',
+        'sale_order_id',
         'cost_center_id',
         'mrn_code',
         'mrn_no',
@@ -154,6 +157,21 @@ class MrnHeaderHistory extends Model
     public function attributes()
     {
         return $this->hasMany(MrnAttributeHistory::class, 'mrn_header_history_id');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
+    }
+
+    public function jobOrder()
+    {
+        return $this->belongsTo(JobOrder::class, 'job_order_id');
+    }
+
+    public function saleOrder()
+    {
+        return $this->belongsTo(ErpSaleOrder::class, 'sale_order_id');
     }
 
     public function mrn_ted()

@@ -121,6 +121,10 @@
                                         @endif
                                     @endif
                                 @endif
+                                @if (@$mrn->deviationJob)
+                                    <button type="button" data-bs-toggle="modal" id="deviation-button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
+                                        Deviation</button>
+                                @endif
                                 @if ($buttons['revoke'])
                                     <button id = "revokeButton" type="button"
                                         class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>
@@ -205,9 +209,8 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                {{-- @if (
-                                                        ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected') &&
-                                                        !is_null($mrn->reference_type) && !empty($mrn->reference_type)
+                                                @if (
+                                                        ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected')
                                                     )
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
@@ -215,24 +218,19 @@
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-5 action-button">
-                                                            @if ($mrn->reference_type == 'po')
                                                                 <button type="button"
                                                                     class="btn btn-outline-primary btn-sm mb-0 poSelect">
                                                                     <i data-feather="plus-square"></i>
                                                                     Outstanding PO
                                                                 </button>
-                                                            @elseif($mrn->reference_type == 'jo')
                                                                 <button type="button"
                                                                     class="btn btn-outline-primary btn-sm mb-0 joSelect">
                                                                     <i data-feather="plus-square"></i>
                                                                     Outstanding JO
                                                                 </button>
-                                                            @endif
                                                         </div>
                                                     </div>
-                                                @endif --}}
-
-                                                @if (!is_null($mrn->reference_type) && !empty($mrn->reference_type))
+                                                @endif
                                                     <div class="row align-items-center mb-1" id="referenceNoDiv">
                                                         {{-- <div class="col-md-3">
                                                             <label class="form-label">Reference No.<span
@@ -246,12 +244,11 @@
 
                                                             <input type="hidden" name="reference_type"
                                                                 class="form-control reference_type" id="reference_type_input"
-                                                                value="{{ $mrn->reference_type }}" readonly>
+                                                                readonly>
                                                             <input type="hidden" name="purchase_order_id" class="form-control"
                                                             value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
                                                         </div>
                                                     </div>
-                                                @endif
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', [
@@ -1050,9 +1047,9 @@
     </div>
 
     <!-- Close Deviation Modal -->
-    <div class="modal fade" id="deviateModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+    <div class="modal fade" id="deviateModal" tabindex="-1" aria-labelledby="deviateModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
+            <div class="modal-content border-0 shadow-lg">
                 <form class="ajax-input-form"
                     method="POST"
                     action="{{ route('document.approval.gate-entry') }}"
@@ -1061,44 +1058,64 @@
 
                     @csrf
                     <input type="hidden" name="action_type" id="action_type">
-                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn->deviationJob?->id ?? ''}}">
+                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn->deviationJob?->id ?? '' }}">
                     <input type="hidden" name="id" value="{{ $mrn->id ?? '' }}">
 
                     <!-- Modal Header -->
                     <div class="modal-header bg-light">
-                        <h5 class="modal-title fw-bold text-dark" id="popupTitle">Close Application</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title fw-bold" id="deviateModalLabel">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Unloading Deviation
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
 
                     <!-- Modal Body -->
-                    <div class="modal-body">
-                        <div class="row mb-3 align-items-center">
-                            <label class="col-auto col-form-label fw-semibold">No. of Jobs</label>
-                            <div class="col-auto">
-                                <input type="text" readonly class="form-control" value="{{ count($deviationPendingItems) ?? 0 }}">
+                    <div class="modal-body px-4 py-3">
+                        <div class="row text-center mb-4">
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Total Packets</h6>
+                                    <h5 class="mb-0 fw-bold text-dark">{{ $itemUniqueCodes['total_unique_codes'] }}</h5>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Scanned Packets</h6>
+                                    <h5 class="mb-0 fw-bold text-dark">{{ $itemUniqueCodes['scanned_unique_codes'] }}</h5>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Deviation</h6>
+                                    <h5 class="mb-0 fw-bold {{ ($itemUniqueCodes['pending_unique_codes'] > 0) ? 'text-danger' : 'text-dark' }}">{{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- Remarks -->
                         <div class="mb-3">
-                            <label for="remarks" class="form-label fw-semibold">Remarks</label>
-                            <textarea maxlength="250" name="closing_remarks" id="remarks" class="form-control" rows="4" placeholder="Enter your remarks here..."></textarea>
+                            <label for="remarks" class="form-label fw-semibold text-dark">Remarks</label>
+                            <textarea maxlength="250" name="closing_remarks" id="remarks" class="form-control" rows="4"
+                                    placeholder="Enter your remarks here..."></textarea>
+                            <!-- <div class="form-text text-muted">Max 250 characters</div> -->
                         </div>
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="modal-footer justify-content-center">
-                        <button type="button" class="btn btn-outline-secondary me-2" data-bs-dismiss="modal">
+                    <div class="modal-footer border-0 justify-content-center pb-4">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
                             Cancel
                         </button>
-                        <button type="submit" class="btn btn-primary">
-                            Submit
+                        <button type="submit" class="btn btn-primary px-5">
+                            Close Deviation
                         </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+
+
+
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -1113,16 +1130,41 @@
     <script>
 
         let tableRowCount = $('.mrntableselectexcel tr').length;
-        let currentProcessType = @json($mrn->reference_type)
+        let currentProcessType = @json($mrn->reference_type);
+
 
         window.onload = () => {
+            currentProcessType = @json($mrn->reference_type);
+            $("#reference_type_input").val(currentProcessType);
+            if(currentProcessType === null)
+            {
+                $(".joSelect").show();
+                $(".poSelect").show();
+                $(".asn-container").show();
+            }
+            else{
+                if (currentProcessType === 'po') {
+                    $(".joSelect").hide();
+                    $(".poSelect").show();
+                    $(".asn-container").hide();
+                } else if (currentProcessType === 'jo') {
+                    $(".joSelect").show();
+                    $(".poSelect").hide();
+                    $(".asn-container").hide();
+                } else {
+                    $(".joSelect").show();
+                    $(".poSelect").show();
+                    $(".asn-container").show();
+                }
+            }
+
             ['selectedPoIds', 'selectedJoIds', 'selectedSoIds'].forEach(key => localStorage.removeItem(key));
 
-            const type = @json($mrn->reference_type);
+            // const type = @json($mrn->reference_type);
             const ids = @json($detailsIds);
 
-            if (['po', 'jo', 'so'].includes(type)) {
-                localStorage.setItem(`selected${type.charAt(0).toUpperCase() + type.slice(1)}Ids`, JSON.stringify(ids));
+            if (['po', 'jo', 'so'].includes(currentProcessType)) {
+                localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
             }
         };
 
@@ -1140,6 +1182,10 @@
         $("#add_new_head_dis").remove();
         $("#add_new_head_exp").remove();
         $(".deleteExpRow").remove();
+        let header_ids = @json($headerIds);
+        let details_ids = @json($detailsIds);
+        let asn_header_ids = @json($asnHeaderIds);
+        let asn_details_ids = @json($asnDetailsIds);
         @if ($buttons['amend'] && intval(request('amendment') ?? 0))
         @else
             @if ($mrn->document_status != 'draft' && $mrn->document_status != 'rejected')
@@ -1585,28 +1631,19 @@
             let itemIds = [];
             let editItemIds = [];
             let poItemIds = [];
+
             $('.form-check-input:checked').each(function(index, item) {
                 let tr = $(item).closest('tr');
                 let trIndex = tr.index();
+                let del_header_id = Number($(tr).find('[name*="[header_id]"]').val()) || 0;
+                let del_detail_id = Number($(tr).find('[name*="[detail_id]"]').val()) || 0;
+                let purchase_order_id = Number($(tr).find('[name*="[purchase_order_id]"]').val()) || 0;
                 let po_detail_id = Number($(tr).find('[name*="[po_detail_id]"]').val()) || 0;
-                let mrn_detail_id = Number($(tr).find('[name*="[mrn_detail_id]"]').val()) || 0;
-                if (po_detail_id > 0 && mrn_detail_id > 0) {
-                    poItemIds.push({
-                        index: trIndex + 1,
-                        po_detail_id: po_detail_id
-                    });
-                }
+                let job_order_id = Number($(tr).find('[name*="[job_order_id]"]').val()) || 0;
+                let jo_detail_id = Number($(tr).find('[name*="[jo_detail_id]"]').val()) || 0;
+                let del_vendor_asn_dtl_id = Number($(tr).find('[name*="[vendor_asn_dtl_id]"]').val()) || 0;
+                let del_vendor_asn_id = Number($(tr).find('[name*="[vendor_asn_id]"]').val()) || 0;
             });
-            // if (poItemIds.length) {
-            //     e.preventDefault();
-            //     let rowNumbers = poItemIds.map(item => item.index).join(", ");
-            //     Swal.fire({
-            //         title: 'Error!',
-            //         text: `You cannot delete mrn item(s) at row(s): ${rowNumbers}`,
-            //         icon: 'error',
-            //     });
-            //     return false;
-            // }
 
             $('#itemTable > tbody .form-check-input').each(function() {
                 if ($(this).is(":checked")) {
@@ -1636,7 +1673,6 @@
             }
             if (!$("tr[id*='row_']").length) {
                 $("#itemTable > thead .form-check-input").prop('checked', false);
-                // $(".prSelect").prop('disabled',false);
             }
             setTableCalculation(true);
         });
@@ -1902,8 +1938,6 @@
         /*Delete server side rows*/
         $(document).on('click', '#deleteConfirm', (e) => {
             let ids = e.target.getAttribute('data-ids');
-            console.log('ids--->>', ids);
-
             ids = JSON.parse(ids);
             localStorage.setItem('deletedMrnItemIds', JSON.stringify(ids));
             $("#deleteComponentModal").modal('hide');
@@ -1911,460 +1945,25 @@
             if (ids.length) {
                 ids.forEach((id, index) => {
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
+                    if (['po', 'jo', 'so'].includes(currentProcessType)) {
+                        localStorage.removeItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(id));
+                    }
                 });
             }
+
             setTableCalculation(true);
+
             if (!$("#itemTable [id*=row_]").length) {
+                $(".joSelect").show();
+                $(".poSelect").show();
+                $(".asn-container").show();
+                $("#reference_type_input").val('');
                 $("th .form-check-input").prop('checked', false);
                 $('#vendor_name').prop('readonly', false);
                 $("#editBillingAddressBtn").show();
                 $("#editShippingAddressBtn").show();
             }
-        });
 
-        // addDeliveryScheduleBtn
-        $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-            let rowCount = e.target.closest('div').getAttribute('data-row-count');
-            $('#store-row-id').val(rowCount);
-            let qty = Number($("#itemTable #row_" + rowCount).find("[name*='[accepted_qty]']").val());
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            if (!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add store location.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-            let rowHtml = '';
-            let curDate = new Date().toISOString().split('T')[0];
-            if (!$("#itemTable #row_" + rowCount).find("[name*='[store_qty]']").length) {
-
-                let rowHtml = `<tr class="display_delivery_row">
-                                    <td>1</td>
-                                    <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_1" name="components[${rowCount}][erp_store][1][erp_shelf_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_1" name="components[${rowCount}][erp_store][1][erp_bin_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][1][store_qty]" id="store_qty_1" class="form-control mw-100" value="${qty}"  data-id="1" />
-                                    <td>
-                                    <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                                </td>
-                                </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-                $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-                loadStoreDropdowns(store_id, rowCount);
-                // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
-            } else {
-                if ($("#itemTable #row_" + rowCount).find("[name*=store_qty]").length) {
-                    $(".display_delivery_row").remove(); // Remove all rows if present
-                } else {
-                    // Remove all rows except the first one, and reset the quantity
-                    $('.display_delivery_row').not(':first').remove();
-                    $(".display_delivery_row").find("[name*=store_qty]").val('');
-                }
-                let rackVal = '';
-                let shelfVal = '';
-                let binVal = '';
-                // Iterate over each store_qty field to build dynamic rows
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    let storeVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"]`).val();
-                    let rackVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"]`).val();
-                    let shelfVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
-                    let binVal = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
-                    let storeQty = $(item).closest('td').find(
-                        `[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
-                    // $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
-                    // $(`#erp_rack_id_${index+1}`).val(rackVal);
-                    // $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-                    // $(`#erp_bin_id_${index+1}`).val(binVal);
-                    $(`#erp_rack_id_${index+1}`).val(rackVal);
-                    $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-                    $(`#erp_bin_id_${index+1}`).val(binVal);
-
-                    // Generate HTML for the new row with dynamic data
-                    rowHtml += `<tr class="display_delivery_row">
-                                    <td>${index + 1}</td>
-                                    <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated racks -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated shelves -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated bins -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${index+1}][store_qty]" id="store_qty_${index+1}" class="form-control mw-100" value="${storeQty}" data-id="${index+1}" />
-                                    </td>
-                                    <td>
-                                        <a data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                        </a>
-                                    </td>
-                                </tr>`;
-                });
-
-                // Append the dynamically created rows
-                $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-
-                // Trigger change event to re-populate dependent dropdowns after the rows are added
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    count = index + 1;
-                    loadStoreDropdowns(store_id, count, rackVal, shelfVal, binVal);
-                    // $(`#erp_store_id_${index+1}`).trigger('change');
-                });
-            }
-            $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty', qty);
-            $("#deliveryScheduleModal").modal('show');
-            totalScheduleQty();
-        });
-
-        function loadStoreDropdowns(store_id, rowCount, rackVal, shelfVal, binVal) {
-            if (store_id) {
-                let erp_rack_id = rackVal || $(`#erp_rack_id_${rowCount}`)
-                    .val();
-                let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowCount}`)
-                    .val();
-                let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
-                    .val();
-
-                var data = {
-                    store_code_id: store_id
-                };
-
-                $.ajax({
-                    type: 'POST',
-                    data: data,
-                    url: '/gate-entrys/get-store-racks',
-                    success: function(data) {
-                        $('#erp_rack_id_' + rowCount).empty();
-                        $.each(data.storeRacks, function(key, value) {
-                            $('#erp_rack_id_' + rowCount).append('<option value="' + key + '">' +
-                                value + '</option>');
-                            if (erp_rack_id && key == erp_rack_id) {
-                                $(`#erp_rack_id_${rowCount}`).val(
-                                    erp_rack_id); // Set the selected rack value
-                            } else {
-                                erp_rack_id = key;
-                            }
-                        });
-
-                        // Empty and populate the bins dropdown
-                        $('#erp_bin_id_' + rowCount).empty();
-                        $.each(data.storeBins, function(key, value) {
-                            // Append bin options and maintain the selected value if it matches the provided or default value
-                            $('#erp_bin_id_' + rowCount).append('<option value="' + key + '">' + value +
-                                '</option>');
-                            if (erp_bin_id && key == erp_bin_id) {
-                                $(`#erp_bin_id_${rowCount}`).val(
-                                    erp_bin_id); // Set the selected bin value
-                            }
-                        });
-
-                        // If a rack is selected, load shelves for the selected rack
-                        if (erp_rack_id) {
-                            loadShelvesForRack(rowCount, erp_rack_id, rackVal, shelfVal, binVal);
-                        }
-                    }
-                });
-            }
-        }
-
-        function loadShelvesForRack(rowKey, rack_code_id, rackVal, shelfVal, binVal) {
-            let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowKey}`)
-                .val(); // Use shelfVal if provided, else fallback to form value
-            let erp_bin_id = binVal || $(`#erp_bin_id_${rowKey}`).val(); // Maintain the bin value as well
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/gate-entrys/get-rack-shelfs',
-                success: function(data) {
-                    // Clear the shelf dropdown and populate it with new options
-                    $('#erp_shelf_id_' + rowKey).empty();
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_' + rowKey).append('<option value="' + key + '">' + value +
-                            '</option>');
-                        if (erp_shelf_id && key == erp_shelf_id) {
-                            $(`#erp_shelf_id_${rowKey}`).val(
-                                erp_shelf_id); // Set the selected shelf value
-                        }
-                    });
-
-                    // Trigger change event for shelf dropdown after population
-                    $('#erp_shelf_id_' + rowKey).trigger('change');
-
-                    // After shelves are loaded, set the selected bin value as well
-                    if (erp_bin_id) {
-                        $(`#erp_bin_id_${rowKey}`).val(erp_bin_id); // Set the selected bin value correctly
-                    }
-                }
-            });
-        }
-
-        /*Total delivery schedule qty*/
-        function totalScheduleQty() {
-            let total = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                total = total + Number($(item).val());
-            });
-            $("#deliveryFooter #total").text(total.toFixed(2));
-        }
-
-        // addTaxItemRow add row
-        $(document).on('click', '.addTaxItemRow', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            let store_code = $("#itemTable #row_" + rowCount).find("[name*='[erp_store_code]']").val();
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            if (!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            if (!$("#deliveryScheduleTable [name*='[store_qty]']:last").val()) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            if (qty > itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot add more than the available item quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            if (qty != itemQty) {
-                let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
-                // let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-                let rowHtml = `<tr class="display_delivery_row">
-                                    <td>${tblRowCount}</td>
-                                    <td>
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_store_id]" data-id="${tblRowCount}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_rack_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_shelf_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_bin_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${tblRowCount}][store_qty]" id="store_qty_${tblRowCount}" class="form-control mw-100" data-id="${tblRowCount}" />
-                                    <td>
-                                    <a data-row-count="${rowCount}" data-index="${tblRowCount}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                                </td>
-                                </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
-                loadStoreDropdowns(store_id, tblRowCount);
-                // $('#erp_store_id_'+tblRowCount).trigger('change');
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Qunatity not available.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            totalScheduleQty();
-        });
-
-        /*itemDeliveryScheduleSubmit */
-        $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            if (qty < itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Store quantity can not be less than accepted quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            let hiddenHtml = '';
-            $("#deliveryScheduleTable .display_delivery_row").each(function(index, item) {
-                let storeId = $(item).find("[name*='erp_store_id']").val();
-                let rackId = $(item).find("[name*='erp_rack_id']").val();
-                let shelfId = $(item).find("[name*='erp_shelf_id']").val();
-                let binId = $(item).find("[name*='erp_bin_id']").val();
-                let dQty = $(item).find("[name*='store_qty']").val();
-                hiddenHtml +=
-                    `<input type="hidden" value="${storeId}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"/>
-                                <input type="hidden" value="${rackId}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"/>
-                                <input type="hidden" value="${shelfId}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"/>
-                                <input type="hidden" value="${binId}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"/>
-                                <input type="hidden" value="${dQty}" name="components[${rowCount}][erp_store][${index+1}][store_qty]"/>`;
-
-            });
-            $("#itemTable #row_" + rowCount).find("[name*='erp_store_id']").remove();
-            $("#itemTable #row_" + rowCount).find("[name*='erp_rack_id']").remove();
-            $("#itemTable #row_" + rowCount).find("[name*='erp_shelf_id']").remove();
-            $("#itemTable #row_" + rowCount).find("[name*='erp_bin_id']").remove();
-            $("#itemTable #row_" + rowCount).find("[name*='store_qty']").remove();
-            $("#itemTable #row_" + rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
-            $("#deliveryScheduleModal").modal('hide');
-        });
-
-        /*Remove delivery row*/
-        $(document).on('click', '.deleteItemDeliveryRow', (e) => {
-            let id = e.target.getAttribute('data-index');
-            // let id = $(`.display_discount_row`).find(`.deleteItemDeliveryRow`).getAttribute('data-index');
-
-            let dataRowId = Number(e.target.getAttribute('data-row-count'));
-            if ($(e.target).closest('tbody').find('.display_delivery_row').length == 1) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot first row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            $(e.target).closest('tr').remove();
-            let ids = JSON.parse(localStorage.getItem('deletedItemLocationIds')) || [];
-
-            if (!ids.includes(id)) {
-                ids.push(id);
-            }
-            localStorage.setItem('deletedItemLocationIds', JSON.stringify(ids));
-            totalScheduleQty();
-        });
-
-        /*Delivery qty on input*/
-        $(document).on('change input', '.display_delivery_row [name*="store_qty"]', (e) => {
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            let inputQty = 0;
-            let remainingQty = itemQty;
-            $('.display_delivery_row [name*="store_qty"]').each(function(index, item) {
-                inputQty = inputQty + Number($(item).val());
-                if (inputQty > itemQty) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'You cannot add more than the available item quantity.',
-                        icon: 'error',
-                    });
-                    $(item).val(remainingQty);
-                    return false;
-                }
-                remainingQty = remainingQty - Number($(item).val());
-            });
-            totalScheduleQty();
-        });
-
-        $(document).on('change', '.item_store_code', function() {
-            var rowKey = $(this).data('id');
-            var store_code_id = $(this).val();
-            $('#erp_store_id_' + rowKey).val(store_code_id).select2();
-
-            var data = {
-                store_code_id: store_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/gate-entrys/get-store-racks',
-                success: function(data) {
-                    $('#erp_rack_id_' + rowKey).empty();
-                    // $('#erp_rack_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeRacks, function(key, value) {
-                        $('#erp_rack_id_' + rowKey).append('<option value="' + key + '">' +
-                            value + '</option>');
-                    });
-                    $('#erp_rack_id_' + rowKey).trigger('change');
-
-                    $('#erp_bin_id_' + rowKey).empty();
-                    // $('#erp_bin_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeBins, function(key, value) {
-                        $('#erp_bin_id_' + rowKey).append('<option value="' + key + '">' +
-                            value + '</option>');
-                    });
-                }
-            });
-        });
-
-        $(document).on('change', '.item_rack_code', function() {
-            var rowKey = $(this).data('id');
-            var rack_code_id = $(this).val();
-            $('#erp_rack_id_' + rowKey).val(rack_code_id).select2();
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/gate-entrys/get-rack-shelfs',
-                success: function(data) {
-                    $('#erp_shelf_id_' + rowKey).empty();
-                    // $('#erp_shelf_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_' + rowKey).append('<option value="' + key + '">' +
-                            value + '</option>');
-                    });
-
-                    $('#erp_shelf_id_' + rowKey).trigger('change');
-                }
-            });
         });
 
         /*Remove item level discount*/
@@ -2878,6 +2477,7 @@
         /*Open Po model*/
         let poOrderTable;
         $(document).on('click', '.poSelect', (e) => {
+            $("#reference_type_input").val('po');
             tableRowCount = $('.mrntableselectexcel tr').length;
             $("#poModal").modal('show');
             currentProcessType='po';
@@ -2906,6 +2506,7 @@
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
+            initializeAutocompleteQt("asn_no_input_qt", "asn_id_qt_val", "po_asn_document_qt", "document_number", "");
             initializeAutocompleteQt("po_so_no_input_qt", "po_so_qt_val", "po_so_qt", "book_code", "document_number");
         }
 
@@ -2930,10 +2531,23 @@
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
                                 };
                             }));
                         },
@@ -2987,8 +2601,8 @@
                 so_id = '',
                 item_search = '',
                 selected_po_ids = '';
-                header_ids = '';
-                details_ids = '';
+                // header_ids = '';
+                // details_ids = '';
 
             if(currentProcessType === 'po')
             {
@@ -3038,11 +2652,16 @@
                 item_search = $("#so_item_name_search").length ? $("#so_item_name_search").val() : '',
                 selected_po_ids = encodeURIComponent(selectedSoIds)
             }
-            if(@json($headerIds) && @json($detailsIds))
-            {
-                header_ids = encodeURIComponent(@json($headerIds))
-                details_ids = encodeURIComponent(@json($detailsIds))
-            }
+            // if(@json($headerIds) && @json($detailsIds))
+            // {
+            //     header_ids = encodeURIComponent(@json($headerIds))
+            //     details_ids = encodeURIComponent(@json($detailsIds))
+            //     if(@json($asnHeaderIds) && @json($asnDetailsIds))
+            //     {
+            //        asn_header_ids =  encodeURIComponent(@json($asnHeaderIds))
+            //        asn_details_ids =  encodeURIComponent(@json($asnDetailsIds))
+            //     }
+            // }
             return {
                 document_date: document_date,
                 header_book_id: header_book_id,
@@ -3054,8 +2673,10 @@
                 so_id: so_id,
                 item_search: item_search,
                 selected_po_ids: selected_po_ids,
-                header_ids: header_ids,
-                details_ids: details_ids
+                header_ids: encodeURIComponent(header_ids),
+                details_ids: encodeURIComponent(details_ids),
+                asn_header_ids: encodeURIComponent(asn_header_ids),
+                asn_details_ids: encodeURIComponent(asn_details_ids)
             };
         }
 
@@ -3297,6 +2918,7 @@
 
         let joOrderTable;
         $(document).on('click', '.joSelect', (e) => {
+            $("#reference_type_input").val('jo');
             tableRowCount = $('.mrntableselectexcel tr').length;
             $("#joModal").modal('show');
             currentProcessType = 'jo';
@@ -3663,6 +3285,47 @@
                 setAttributesUIHelper(currentIndex, "#itemTable");
             });
         }, 100);
+
+        $(document).on('click', '.clearPoFilter', (e) => {
+            $("#item_name_input_qt").val('');
+            $("#item_id_qt_val").val('');
+            $("#store_po").val('');
+            $("#store_id_po").val('');
+            $("#sub_store_po").val('');
+            $("#sub_store_id_po").val('');
+            $("#vendor_code_input_qt").val('');
+            $("#vendor_id_qt_val").val('');
+            $("#book_code_input_qt").val('');
+            $("#book_id_qt_val").val('');
+            $("#document_no_input_qt").val('');
+            $("#document_id_qt_val").val('');
+            $("#po_so_no_input_qt").val('');
+            $("#po_so_qt_val").val('');
+            $("#asn_no_input_qt").val('');
+            $("#asn_id_qt_val").val('');
+            $("#item_name_search").val('');
+            $('#poModal .po-order-detail').DataTable().ajax.reload();
+        });
+        $(document).on('click', '.clearJoFilter', (e) => {
+            $("#jo_item_name_input_qt").val('');
+            $("#jo_item_id_qt_val").val('');
+            $("#jo_store_jo").val('');
+            $("#jo_store_id_jo").val('');
+            $("#jo_sub_store_jo").val('');
+            $("#jo_sub_store_id_jo").val('');
+            $("#jo_vendor_code_input_qt").val('');
+            $("#jo_vendor_id_qt_val").val('');
+            $("#jo_book_code_input_qt").val('');
+            $("#jo_book_id_qt_val").val('');
+            $("#jo_document_no_input_qt").val('');
+            $("#jo_document_id_qt_val").val('');
+            $("#jo_so_no_input_qt").val('');
+            $("#jo_so_qt_val").val('');
+            $("#jo_asn_no_input_qt").val('');
+            $("#jo_asn_id_qt_val").val('');
+            $("#jo_item_name_search").val('');
+            $('#joModal .jo-order-detail').DataTable().ajax.reload();
+        });
 
         // ASN Process
         function asnProcess(asnData, moduleProcess) {

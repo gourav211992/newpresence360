@@ -1,8 +1,4 @@
 @extends('layouts.app')
-@section('styles')
-<style>
-</style>
-@endsection
 @section('content')
 <form class="ajax-input-form" data-module="po" method="POST" action="{{ url(request()->route('type')) }}/bulk-store"
     data-redirect="/{{ request()->route('type') }}" enctype="multipart/form-data">
@@ -134,13 +130,7 @@
                                             </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">
-                                                        @if (request()->type == 'supplier-invoice')
-                                                            Doc
-                                                        @else
-                                                            Indent
-                                                        @endif No.
-                                                    </label>
+                                                    <label class="form-label">Indent No.</label>
                                                     <input type="text" id="document_no_input_qt"
                                                         placeholder="Select"
                                                         class="form-control mw-100 ledgerselecct ui-autocomplete-input"
@@ -177,11 +167,6 @@
                                                     <table id="itemTable"  class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" 
                                                     data-json-key="components_json"
                                                     data-row-selector="tr[id^='row_']"> 
-                                                    
-                                                {{-- <div class="table-responsive">
-                                                    <table id="itemTable" class="table table-striped table-bordered myrequesttablecbox nowrap w-100" 
-                                                    data-json-key="components_json"
-                                                    data-row-selector="tr[id^='row_']"> --}}
                                                         <thead class="table-light header">
                                                             <tr>
                                                                 <th class="d-none">Id</th>
@@ -318,8 +303,7 @@
             let reference_from_service = parameters.reference_from_service;
             if (reference_from_service.length) {
                 let pi = '{{ \App\Helpers\ConstantHelper::PI_SERVICE_ALIAS }}';
-                let po = '{{ \App\Helpers\ConstantHelper::PO_SERVICE_ALIAS }}';
-                if (reference_from_service.includes(pi) || reference_from_service.includes(po)) {
+                if (reference_from_service.includes(pi)) {
                     $("#reference_from").removeClass('d-none');
                 } else {
                     $("#reference_from").addClass('d-none');
@@ -331,11 +315,7 @@
                     icon: 'error',
                 });
                 setTimeout(() => {
-                    @if (request()->type == 'supplier-invoice')
-                        location.href = '{{ url('supplier-invoice') }}';
-                    @else
-                        location.href = '{{ url('purchase-order') }}';
-                    @endif
+                    location.href = '{{ url('purchase-order') }}';
                 }, 1500);
             }
         }

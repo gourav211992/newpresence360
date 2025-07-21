@@ -532,8 +532,8 @@ class ServiceParametersHelper
     const DN_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS, ConstantHelper::PL_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS, PackingListConstants::SERVICE_ALIAS, ConstantHelper::PL_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
         ],
@@ -905,8 +905,8 @@ class ServiceParametersHelper
     const DN_CUM_INVOICE_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::PL_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS, ConstantHelper::PL_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
         ],
@@ -2226,30 +2226,30 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        [
-            "name" => self::GL_POSTING_REQUIRED_PARAM,
-            "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
-        ],
-        [
-            "name" => self::GL_POSTING_SERIES_PARAM,
-            "applicable_values" => [],
-            "default_value" => [],
-            'is_multiple' => true,
-            'service_level_visibility' => false,
-            'type' => self::GL_PARAMETERS
-        ],
-        [
-            "name" => self::POST_ON_ARROVE_PARAM,
-            "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
-            "default_value" => ['no'],
-            'is_multiple' => false,
-            'service_level_visibility' => true,
-            'type' => self::GL_PARAMETERS
-        ],
+        // [
+        //     "name" => self::GL_POSTING_REQUIRED_PARAM,
+        //     "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['no'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true,
+        //     'type' => self::GL_PARAMETERS
+        // ],
+        // [
+        //     "name" => self::GL_POSTING_SERIES_PARAM,
+        //     "applicable_values" => [],
+        //     "default_value" => [],
+        //     'is_multiple' => true,
+        //     'service_level_visibility' => false,
+        //     'type' => self::GL_PARAMETERS
+        // ],
+        // [
+        //     "name" => self::POST_ON_ARROVE_PARAM,
+        //     "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+        //     "default_value" => ['no'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true,
+        //     'type' => self::GL_PARAMETERS
+        // ],
     ];
     const APPLICABLE_SERVICE_PARAMETERS = [
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_SERVICE_PARAMETERS,

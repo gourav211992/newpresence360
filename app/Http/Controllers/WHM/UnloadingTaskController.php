@@ -47,6 +47,7 @@ class UnloadingTaskController extends Controller
                         });
                     })
                     ->whereIn('status',[CommonHelper::PENDING,CommonHelper::IN_PROGRESS, CommonHelper::DEVIATION])
+                    ->orderBy('id','desc')
                     ->paginate(CommonHelper::PAGE_LENGTH_10);
         $jobResources = UnloadingResource::collection($jobs->getCollection());
 
@@ -256,6 +257,16 @@ class UnloadingTaskController extends Controller
 
             $job->save();
 
+            $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
+            $gateEntry = $job->morphable;
+            $bookId = $gateEntry->series_id;
+            $docId = $gateEntry->id;
+            $docValue = $gateEntry->total_amount;
+            $currentLevel = $gateEntry->approval_level;
+            $revisionNumber = $gateEntry->revision_number ?? 0;
+            $modelName = $job->morphable_type;
+            Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
+
             \DB::commit();
             return [
                 'message' => $message
@@ -288,7 +299,7 @@ class UnloadingTaskController extends Controller
             ]);
         }
 
-        $uniqueCode = ErpItemUniqueCode::where('item_uid', $request->packet_id)->first();
+        $uniqueCode = ErpItemUniqueCode::where('job_id',$request->job_id)->where('item_uid', $request->packet_id)->first();
         if (!$uniqueCode) {
             throw ValidationException::withMessages([
                 'packet_id' => ['Packet ID not found.'],

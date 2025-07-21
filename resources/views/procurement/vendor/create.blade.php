@@ -1515,7 +1515,7 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type: 'stock_locations',
+                            type: 'vendor_locations',
                             organization_id : orgId
                         },
                         success: function(data) {
@@ -1551,7 +1551,7 @@
                         dataType: 'json',
                         data: {
                             q: request.term,
-                            type: 'stock_sub_locations',
+                            type: 'vendor_sub_stores',
                             organization_id : orgId,
                             location_id : locationId,
                             store_types : ['Vendor']

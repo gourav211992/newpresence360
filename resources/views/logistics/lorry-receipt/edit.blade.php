@@ -71,8 +71,7 @@
                                     <i data-feather="rotate-ccw"></i> Revoke
                               </button>
                            @endif
-
-                        @else
+                         @else
                            <button type="submit" onclick="submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button">
                               <i data-feather="save"></i> Save as Draft
                            </button>
@@ -103,7 +102,7 @@
                                  @if (isset($lr) && isset($docStatusClass))
                                        <div class="col-md-6 text-sm-end">
                                           <span class="badge rounded-pill badge-light-secondary forminnerstatus">
-                                                Status : <span class="{{$docStatusClass}}">{{$lr->document_status}}</span>
+                                                Status : <span class="{{$docStatusClass}}">{{ucfirst(string: $lr->document_status)}}</span>
                                           </span>
                                        </div>
                                           
@@ -116,13 +115,14 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="status" id="statusInput" value="{{ old('status', $lr->status ?? 'draft') }}">
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', $lr->status ?? 'draft') }}">
                                        <select class="form-select disable_on_edit" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
                                        @foreach ($series as $currentSeries)
                                        <option value="{{ $currentSeries->id }}" {{ old('book_id', $lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
                                        </select>
                                     </div>
+                                    <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($lr) ? $lr -> book_code : ''}}"></input>
                                  </div>
                                  <div class="row align-items-center mb-1">
                                     <div class="col-md-3"> 
@@ -164,76 +164,11 @@
                                     </div>
                                  </div>
                               </div>
-                              <div class="col-md-4">
+                             
                                   
-                               @if(isset($lr) && ($lr->document_status !== "draft"))
-                                                @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($lr->revision_number))
-                                                        <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                            <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                                <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                                @if(!isset(request()->revisionNumber) && $lr->document_status !== 'draft')
-                                                                    <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                        <select class="form-select" id="revisionNumber">
-                                                                            @for($i=$lr->revision_number; $i >= 0; $i--)
-                                                                                <option value="{{$i}}" {{request('revisionNumber', $lr->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
-                                                                            @endfor
-                                                                        </select>
-                                                                    </strong>
-                                                                @else
-                                                                    @if ($lr->document_status !== 'draft')
-                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
-                                                                            Rev. No. {{ request()->revisionNumber }}
-                                                                        </strong>
-                                                                    @endif
-
-                                                                @endif
-                                                            </h5>
-                                                            <ul class="timeline ms-50 newdashtimline ">
-                                                                @foreach($approvalHistory as $approvalHist)
-                                                                    <li class="timeline-item">
-                                                                        <span class="timeline-point timeline-point-indicator"></span>
-                                                                        <div class="timeline-event">
-                                                                            <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                                <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
-                                                                                @if($approvalHist->approval_type == 'approve')
-                                                                                    <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'submit')
-                                                                                    <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'reject')
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @else
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            @if($approvalHist->approval_date)
-                                                                                <h6>
-                                                                                    {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                                                </h6>
-                                                                            @endif
-                                                                            @if($approvalHist->remarks)
-                                                                                <p>{!! $approvalHist->remarks !!}</p>
-                                                                            @endif
-                                                                            @if ($approvalHist->media && count($approvalHist->media) > 0)
-                                                                                @foreach ($approvalHist->media as $mediaFile)
-                                                                                    <p><a href="{{ $mediaFile->file_url }}" target="_blank">
-                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
-                                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                                                                <polyline points="7 10 12 15 17 10"></polyline>
-                                                                                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                                                                                            </svg>
-                                                                                        </a></p>
-                                                                                @endforeach
-                                                                            @endif
-                                                                        </div>
-                                                                    </li>
-                                                                @endforeach
-
-                                                            </ul>
-                                                        </div>
-                                                @endif
-                                            @endif
+                               @include('partials.approval-history', ['document_status' => $lr->document_status, 'revision_number' => $lr->revision_number])
                                             {{-- Approval History Section --}}
-                              </div>
+                             
                            </div>
                         </div>
                      </div>
@@ -639,54 +574,70 @@
                                     </tfoot>
                                  </table>
                               </div>
-                               <div class="row mt-2">
+                              <div class="row mt-2">
                                 <div class="col-md-12">
-                                    <div class = "row">
-                                    <div class="col-md-4">
-                                        <div class="mb-1">
-                                            <label class="form-label">Upload Document</label>
-                                            <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_lorry_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
-                                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                                    <div class="row">
+                                        {{-- File Upload --}}
+                                        <div class="col-md-4">
+                                            <div class="mb-1">
+                                                <label class="form-label">Upload Document</label>
+                                                <input type="file" class="form-control" name="attachments[]" 
+                                                    onchange="addFiles(this, 'main_lorry_file_preview')" 
+                                                    max_file_count="{{ isset($maxFileCount) ? $maxFileCount : 10 }}" 
+                                                    multiple 
+                                                    @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                                <span class="text-primary small">{{ __("message.attachment_caption") }}</span>
+                                            </div>
                                         </div>
-                                    </div> 
-                                    <div class = "col-md-6" style = "margin-top:19px;">
-                                        <div class = "row" id = "main_lorry_file_preview">
-                                        </div>
-                                    </div>
-                                    </div>
-                             @if($lr->mediaAttachments && $lr->mediaAttachments->count())
-                                <div class="row">
-                                    @foreach($lr->mediaAttachments as $media)
-                                        @php
-                                            $url = $media->file_url;
-                                            $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
-                                        @endphp
 
-                                        <div class="col-md-3 mb-2">
-                                            @if(in_array($extension, ['jpg', 'jpeg', 'png', 'webp']))
-                                                <img src="{{ $url }}" alt="Attachment" class="img-fluid border rounded" style="max-height: 150px;">
-                                            @elseif($extension === 'pdf')
-                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-primary w-100">
-                                                    📄 View PDF
-                                                </a>
-                                            @else
-                                                <a href="{{ $url }}" target="_blank" class="btn btn-outline-secondary w-100">
-                                                    📎 {{ $media->file_name }}
-                                                </a>
-                                            @endif
+                                        {{-- Preview for newly added files --}}
+                                        <div class="col-md-6" style="margin-top:19px;">
+                                            <div class="row" id="main_lorry_file_preview">
+                                                @if($lr->mediaAttachments && $lr->mediaAttachments->count())
+                                                @foreach($lr->mediaAttachments as $media)
+                                                @php
+                                                    $url = $media->file_url;
+                                                    $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
+                                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
+                                                   // $label = $isImage ? 'Image File' : ($extension === 'pdf' ? 'PDF File' : $media->file_name);
+                                                @endphp
+
+                                                <div class="col-md-1 mb-1 d-flex align-items-center">
+                                                    <a href="{{ $url }}" target="_blank" class="d-flex align-items-center text-decoration-none me-3">
+                                                        {{-- SVG icon --}}
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                            class="feather feather-file-text me-2">
+                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                            <polyline points="14 2 14 8 20 8"/>
+                                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                                            <polyline points="10 9 9 9 8 9"/>
+                                                        </svg>
+                                                        
+                                                    </a>
+                                                </div>
+                                            @endforeach
+                                              @endif
+                                            </div>
                                         </div>
-                                    @endforeach
+                                    </div>
+
+                                  
+                                    {{-- Remarks --}}
+                                    <div class="col-md-12">
+                                        <div class="mb-1">  
+                                            <label class="form-label">Final Remarks</label> 
+                                            <textarea rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" 
+                                                @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                                {{ $lr->remarks ?? '' }}
+                                            </textarea> 
+                                        </div>
+                                    </div>
                                 </div>
-                            @endif
-
                             </div>
-                                 <div class="col-md-12">
-                                    <div class="mb-1">  
-                                       <label class="form-label">Final Remarks</label> 
-                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>{{$lr->remarks ?? '' }}</textarea> 
-                                    </div>
-                                 </div>
-                              </div>
+
                            </div>
                         </div>
                      </div>
@@ -699,7 +650,9 @@
    </div>
    </div>
    <!-- END: Content-->
-     <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        {{-- Amendment Modal --}}
+
+ <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -719,15 +672,15 @@
                         <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
                     </div>
                     <div class = "row">
-                        <div class = "col-md-8">
+                        <div class = "col-md-12">
                             <div class="mb-1">
                                 <label class="form-label">Upload Document</label>
                                 <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
                             </div>
                         </div>
-                        <div class = "col-md-4" style = "margin-top:19px;">
-                            <div class="row" id = "amend_files_preview">
-                            </div>
+                        <div class = "col-md-12" style = "margin-top:19px;">
+                            <!-- <div class="row" id = "amend_files_preview">
+                            </div> -->
                         </div>
                     </div>
                     <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
@@ -735,60 +688,72 @@
                 </div>
             </div>
             <div class="modal-footer justify-content-center">  
-                <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+                 <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
                 <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
             </div>
         </div>
     </div>
     </div>
 </form>
+<!-----------Approval Modal---------->
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-submit-2" method="POST" action="{{ route('document.approval.lorryReceipt') }}" data-redirect="{{ route('logistics.lorry-receipt.index') }}" enctype='multipart/form-data'>
-          @csrf
-          <input type="hidden" name="action_type" id="action_type">
-          <input type="hidden" name="id" value="{{isset($lr) ? $lr -> id : ''}}">
-         <div class="modal-header">
-            <div>
-               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
-               </h4>
+         <form class="ajax-input-form" method="POST" action="{{ route('document.approval.lorryReceipt') }}" data-redirect="{{ route('logistics.lorry-receipt.index') }}" enctype='multipart/form-data'>
+            @csrf
+            <input type="hidden" name="action_type" id="action_type">
+            <input type="hidden" name="id" value="{{$lr->id ?? ''}}">
+            <div class="modal-header">
+               <div>
+                  <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="popupTitle">Approve Application</h4>
+               </div>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-         </div>
-         <div class="modal-body pb-2">
-            <div class="row mt-1">
-               <div class="col-md-12">
-                  <div class="mb-1">
-                     <label class="form-label">Remarks</label>
-                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
+            <div class="modal-body pb-2">
+               <div class="row mt-1">
+                  <div class="col-md-12">
+                     <div class="mb-2">
+                        <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
+                        <textarea maxlength="250" name="remarks" class="form-control"></textarea>
+                     </div>
+                     <div class="mb-2" id="fileUploadSection">
+                        <label class="form-label">Upload Document</label>
+                        <input id="attachments" type="file" name="attachment[]" class="form-control" onchange="addFiles(this, 'lr_popup_file_preview')" multiple>
+                        <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                     </div>
+                     <div class="mt-2">
+                        <!-- <div class="row" id="lr_popup_file_preview">
+                        </div> -->
+                     </div>
                   </div>
-                  <div class="row">
-                    <div class = "col-md-8">
-                        <div class="mb-1">
-                            <label class="form-label">Upload Document</label>
-                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
-                        </div>
-                    </div>
-                    <div class = "col-md-4" style = "margin-top:19px;">
-                        <div class = "row" id = "approval_files_preview">
-
-                        </div>
-                    </div>
-                  </div>
-                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
                </div>
             </div>
-         </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
-            <button type="submit" class="btn btn-primary">Submit</button>
-         </div>
-       </form>
+            <div class="modal-footer justify-content-center">  
+               <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+               <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
+         </form>
       </div>
    </div>
 </div>
+
+ {{-- Amendment Modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Purchase Bill</strong>? After Amendment this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 @section('scripts')
 
@@ -1616,14 +1581,20 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
         });
     });
 
-     function setApproval() {
-        document.getElementById('action_type').value = "approve";
-        document.getElementById('approve_reject_heading_label').textContent = "Approve Item";
+      function setApproval() {
+        document.getElementById('popupTitle').innerText = 'Approve Lorry Receipt';
+        document.getElementById('action_type').value = 'approve';
+
+        // Show file upload section
+        document.getElementById('fileUploadSection').style.display = 'block';
     }
 
     function setReject() {
-        document.getElementById('action_type').value = "reject";
-        document.getElementById('approve_reject_heading_label').textContent = "Reject Item";
+        document.getElementById('popupTitle').innerText = 'Reject Lorry Receipt';
+        document.getElementById('action_type').value = 'reject';
+
+        // Hide file upload section
+        document.getElementById('fileUploadSection').style.display = 'none';
     }
 
       // Show modal by ID
@@ -1709,17 +1680,17 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     const fileName = fileUrl.split('/').pop();
 
     const previewHtml = `
-        <div class="col-4 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
-            <div class="card border">
-                <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                    <div class="text-truncate small" title="${fileName}">
-                        <i class="fa fa-paperclip me-1 text-secondary"></i> ${fileName}
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFilePreview(this, '${previewElementId}', '${fileName}')">
-                        <i class="fa fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-file-text me-2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
         </div>
     `;
 
@@ -1809,6 +1780,17 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
             });
         }
     }
+ /*Amendment modal open*/
+        $(document).on('click', '.amendmentBtn', (e) => {
+            $("#amendmentconfirm").modal('show');
+        });
+      $(document).on('click', '#amendmentSubmit', (e) => {
+            let url = new URL(window.location.href);
+            url.search = '';
+            url.searchParams.set('amendment', 1);
+            let amendmentUrl = url.toString();
+            window.location.replace(amendmentUrl);
+        });
 </script>
 
 @endsection
