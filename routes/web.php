@@ -1,6 +1,8 @@
 <?php
 
 use App\Helpers\Helper;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -2844,3 +2846,14 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
 
 Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
 
+Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });

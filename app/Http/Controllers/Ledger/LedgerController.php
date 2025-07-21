@@ -731,6 +731,15 @@ class LedgerController extends Controller
                 'numeric',
                 'max:255',
             ],
+            'tcs_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            'tds_capping' => [
+                'nullable',
+                'numeric',
+            ],
+            
             'tds_section' => [
                 'nullable',
                 'string',
@@ -786,11 +795,13 @@ class LedgerController extends Controller
         if (!in_array('tds', $groupNames)) {
             $request->request->remove('tds_section');
             $request->request->remove('tds_percentage');
+            $request->request->remove('tds_capping');
         }
 
         if (!in_array('tcs', $groupNames)) {
             $request->request->remove('tcs_section');
             $request->request->remove('tcs_percentage');
+            $request->request->remove('tcs_capping');
         }
 
         if (!in_array('gst', $groupNames)) {
@@ -811,6 +822,8 @@ class LedgerController extends Controller
         $update->tds_section = $request->tds_section ?? null;
         $update->tds_percentage = $request->tds_percentage ?? null;
         $update->tcs_section = $request->tcs_section ?? null;
+        $update->tds_capping = $request->tds_capping ?? null;
+        $update->tcs_capping = $request->tcs_capping ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
         $bookId = $update->book_id;
         $docId = $update->id;
