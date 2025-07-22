@@ -1289,6 +1289,11 @@ class Helper
                 $delete = true;
             }
         }
+         if ($docStatus == ConstantHelper::DRAFT) {
+            if ($revisionNumber == 1 && $createdBy === $user -> auth_user_id) {
+                $delete = true;
+            }
+        }
         if ($docStatus == ConstantHelper::SUBMITTED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)

@@ -82,6 +82,12 @@
 															<i data-feather="edit-3" class="me-50"></i>
 															<span>Edit</span>
 														</a>
+														<a class="delete-btn dropdown-item"
+                                    data-url="{{ route('ledger-groups.destroy', $item->id) }}"
+                                    data-redirect="{{ route('ledger-groups.index')}}"
+                                    data-message="Are you sure you want to delete this group?">
+                                <i data-feather="trash-2" class="me-50"></i> Delete
+                            </a>
 														{{-- <form action="{{ route('ledger-groups.destroy', $item->id) }}"
 															method="POST">
 															@csrf
