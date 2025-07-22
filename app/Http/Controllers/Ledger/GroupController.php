@@ -30,7 +30,7 @@ class GroupController extends Controller
             }
         ])->get();
 
-        $data = Helper::getGroupsQuery([],['active','inactive'])
+        $data = Helper::getGroupsQuery([], ['active', 'inactive'])
             ->with([
                 'parent' => function ($q) {
                     $q->select('id', 'name');
@@ -38,7 +38,7 @@ class GroupController extends Controller
             ])->orderBy('id', 'desc')
             ->get();
         Log::info('Group data result:', $data->toArray());
-        
+
         $non_editable = ConstantHelper::LEDGER_ACCOUNT_NON_EDITABLE;
 
         return view('ledgers.groups.view_groups', compact('data', 'parentGroup', 'non_editable'));
@@ -75,10 +75,10 @@ class GroupController extends Controller
             ->get();
 
 
-        $existingGroupname = Helper::getGroupsQuery([],['active','inactive'])
-        ->pluck('name')->map(function ($name) {
-            return strtolower($name);
-        })->values();
+        $existingGroupname = Helper::getGroupsQuery([], ['active', 'inactive'])
+            ->pluck('name')->map(function ($name) {
+                return strtolower($name);
+            })->values();
 
 
         return view('ledgers.groups.group-create', compact('parents', 'existingGroupname'));
@@ -89,8 +89,8 @@ class GroupController extends Controller
      */
     public function store(Request $request)
     {
-        $existingName = Helper::getGroupsQuery([],['active','inactive'])
-        ->where('name', $request->name)
+        $existingName = Helper::getGroupsQuery([], ['active', 'inactive'])
+            ->where('name', $request->name)
             ->first();
 
 
@@ -98,7 +98,7 @@ class GroupController extends Controller
         if ($existingName) {
             return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
         }
-         $existingPrefix = Helper::getGroupsQuery([],['active','inactive'])->where('prefix', $request->prefix)
+        $existingPrefix = Helper::getGroupsQuery([], ['active', 'inactive'])->where('prefix', $request->prefix)
             ->first();
 
 
@@ -165,8 +165,8 @@ class GroupController extends Controller
             $parents[] = Group::find($data_parent);
 
         $update = $data->edit;
-        
-        $existingGroupname = Helper::getGroupsQuery([],['active','inactive'])->where('id', '!=', $id) // exclude the one being edited
+
+        $existingGroupname = Helper::getGroupsQuery([], ['active', 'inactive'])->where('id', '!=', $id) // exclude the one being edited
             ->pluck('name')
             ->map(function ($name) {
                 return strtolower($name);
@@ -183,17 +183,17 @@ class GroupController extends Controller
     public function update(Request $request, string $id)
     {
 
-        $existingName = Helper::getGroupsQuery([],['active','inactive'])
-        ->where('id', '!=', (int)$id)
-        ->where('name', $request->name)->exists();
+        $existingName = Helper::getGroupsQuery([], ['active', 'inactive'])
+            ->where('id', '!=', (int) $id)
+            ->where('name', $request->name)->exists();
 
         if ($existingName) {
             return back()->withErrors(['name' => 'The name has already been taken.'])->withInput();
         }
 
-        $existingPrefix = Helper::getGroupsQuery([],['active','inactive'])
-        ->where('id', '!=', (int)$id)
-        ->where('prefix', $request->prefix)->exists();
+        $existingPrefix = Helper::getGroupsQuery([], ['active', 'inactive'])
+            ->where('id', '!=', (int) $id)
+            ->where('prefix', $request->prefix)->exists();
 
         if ($existingPrefix) {
             return back()->withErrors(['prefix' => 'The prefix has already been taken.'])->withInput();
@@ -241,9 +241,41 @@ class GroupController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        $grp = [];
+        $ledgers = Ledger::get();
+        foreach ($ledgers as $ledger) {
+            foreach ($ledger->groups() as $group) {
+                $grp[] = $group->id;
+            }
+        }
+        $mapped = array_values(array_unique($grp));
+
+        try {
+            $group = Group::findOrFail($id);
+            $parent = Group::where('parent_group_id',$id)->exists();
+            if(in_array($id,$mapped) || $parent){
+                return response()->json([
+                'status' => false,
+                'message' => "Record cannot be deleted because it is already in use.",
+            ], 500);
+            }
+            else{
+                $group->delete();
+                return response()->json([
+                'status' => true,
+                'message' => "Group Deleted"
+            ], 200);
+            }
+
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while deleting the group: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function delete_group($id)
@@ -254,7 +286,7 @@ class GroupController extends Controller
     }
     public function generate_prefix(Request $req)
     {
-        $prefix =  Group::generateuniquePrefix($req->name);
+        $prefix = Group::generateuniquePrefix($req->name);
         return response()->json(['prefix' => $prefix]);
     }
     public function checkPrefix(Request $req)
