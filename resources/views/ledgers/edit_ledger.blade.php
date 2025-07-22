@@ -33,6 +33,7 @@
                 <input type="hidden" name="updated_groups" id="updated_groups">
                 <input type="hidden" name="ledger_code_type" value="{{ $data->ledger_code_type }}">
                 <input type="hidden" name="prefix" value="{{$data->prefix}}" />
+                <input type="hidden" name="actionType" id="actionType" value="submit"/>
 
 
                 <div class="content-header pocreate-sticky">
@@ -57,6 +58,12 @@
                                 <a href="{{ route('ledgers.index') }}" class="btn btn-secondary btn-sm">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </a>
+                                 <button type="button" id="btnDelete" class="btn btn-danger d-none btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                                data-url="{{ route('ledgers.destroy', $data->id) }}" 
+                                                data-redirect="{{ route('ledgers.index') }}"
+                                                data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                            </button>
                                
                                 @if(!isset(request()->revisionNumber))
                                     @if (isset($data))
@@ -84,14 +91,18 @@
                                                 data-feather="check-circle"></i> Approve</a>
                                     @endif
                                        @if ($buttons['amend'])
-                                        <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                        <a type="button" data-bs-toggle="modal" id="btnAmend" data-bs-target="#amendmentconfirm"
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</a>
                                     @endif
                                     
                                     @endif
                             @endif
-                          
+                             <a href="javascript:void(0);"
+                                    id="btnSubmit" class="btn btn-primary btn-sm mb-50 mb-sm-0 d-none" >
+                                    <i data-feather="check-circle"></i> Submit
+                                </a>
+                            
                             </div>
                         </div>
                     </div>
@@ -521,7 +532,7 @@
                     <p>Are you sure you want to <strong>Amendment</strong> this <strong>Ledger</strong>? After Amendment
                         this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                    <button type="button" onclick="submitamend()" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
@@ -533,7 +544,36 @@
     <script>
         const existingLedgers = @json($existingLedgers);
         $(document).ready(function() {
+            $('#amendConfirm').hide();
             $('#checkAndOpenModal').on('click', function() {
+                const currentCode = $('input[name="code"]').val()?.trim().toLowerCase();
+                const currentName = $('input[name="name"]').val()?.trim().toLowerCase();
+
+                const originalCode = $('input[name="code"]').attr('value')?.trim().toLowerCase();
+                const originalName = $('input[name="name"]').attr('value')?.trim().toLowerCase();
+                $('.preloader').show();
+                if (currentCode !== originalCode) {
+                    if (existingLedgers.some(l => l.code.toLowerCase() === currentCode)) {
+                        $('.preloader').hide();
+                        showToast('error', 'Ledger code already exists.', 'Duplicate Entry');
+                        return;
+                    }
+                }
+
+                if (currentName !== originalName) {
+                    if (existingLedgers.some(l => l.name.toLowerCase() === currentName)) {
+                        $('.preloader').hide();
+                        showToast('error', 'Ledger name already exists.', 'Duplicate Entry');
+                        return;
+                    }
+                }
+
+                // Passed all checks, show modal
+                const modal = new bootstrap.Modal(document.getElementById('postvoucher'));
+                $('.preloader').hide();
+                modal.show();
+            });
+            $('#btnSubmit').on('click', function() {
                 const currentCode = $('input[name="code"]').val()?.trim().toLowerCase();
                 const currentName = $('input[name="name"]').val()?.trim().toLowerCase();
 
@@ -915,6 +955,19 @@
                 window.open(fullUrl, "_blank");
             });
         });
+       function submitamend(){
+         $('#formUpdate').find('input, select').prop('disabled', false);
+        $('#revisionNumber').prop('disabled', false);
+        $('#btnSubmit').removeClass('d-none');
+        $('#btnAmend').hide();
+        $('#actionType').val('amendment');
+        $('#amendmentconfirm').modal('hide');
+        @if(App\Helpers\Helper::getAuthenticatedUser()->id == $data->created_by && $data->revision_number==0)
+        $('#btnDelete').removeClass('d-none');
+        @endif
+        
+       }
+       
 
 
     
