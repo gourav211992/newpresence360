@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ErpEquipmentRequest;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Models\ErpEquipMaintenanceChecklist;
+use App\Models\ErpEquipMaintenanceDetail;
 use App\Models\ErpMaintenanceType;
 use App\Models\ErpEquipment;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -42,16 +45,19 @@ class ErpEquipmentController extends Controller
             ],
         ];
 
+        $items = Item::get();
         // dd($organizations, $locations);
 
         // You can fetch dropdowns via AJAX or here (for demo, keeping empty)
-        return view('equipment.create', compact('userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'approval_history'));
+        return view('equipment.create', compact('userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'approval_history','items'));
     }
 
     public function store(ErpEquipmentRequest $request)
     {
         DB::beginTransaction();
         try {
+            $user = Helper::getAuthenticatedUser();
+            
             // Store Equipment
             $equipment = ErpEquipment::create([
                 'organization_id'   => $request->organization_id,
@@ -62,12 +68,12 @@ class ErpEquipmentController extends Controller
                 'name'              => $request->name,
                 'alias'             => $request->alias,
                 'description'       => $request->description,
-                'upload_document'   => $request->upload_document ?? null, // handle file upload below
+                'upload_document'   => null, // Will handle file upload below
                 'final_remarks'     => $request->final_remarks,
                 'book_id'           => 1, // Or get from elsewhere
                 'document_number'   => '', // Generate as needed
-                'document_status'   => 'Draft', // Or from request
-                'created_by'        => auth()->id(),
+                'document_status'   => $request->status, // From request
+                'created_by'        => $user->auth_user_id,
             ]);
 
             // If document uploaded
@@ -79,23 +85,36 @@ class ErpEquipmentController extends Controller
             }
 
             // Maintenance Details
-            if ($request->maintenance) {
-                foreach ($request->maintenance as $mRow) {
-                    $maintenance = $equipment->maintenanceDetails()->create([
-                        'type' => $mRow['type'],
+            if ($request->has('maintenance') && is_array($request->maintenance)) {
+                foreach ($request->maintenance as $rowId => $mRow) {
+                    // Skip rows without required fields
+                    if (empty($mRow['type']) || empty($mRow['frequency'])) {
+                        continue;
+                    }
+                    
+                    $maintenance_detail_item = ErpEquipMaintenanceDetail::create([
+                        'erp_equipment_id' => $equipment->id,
+                        'maintenance_type_id' => $mRow['type'],
                         'frequency' => $mRow['frequency'],
                         'time' => $mRow['time'] ?? null,
-                        'created_by' => auth()->id(),
+                        'created_by' => $user->auth_user_id,
                     ]);
 
                     // Checklist for this maintenance
-                    if (!empty($mRow['checklists'])) {
+                    if (!empty($mRow['checklists']) && is_array($mRow['checklists'])) {
                         foreach ($mRow['checklists'] as $check) {
-                            $maintenance->checklists()->create([
+                            // Skip if no ID or name
+                            if (empty($check['id']) && empty($check['name'])) {
+                                continue;
+                            }
+                            
+                            ErpEquipMaintenanceChecklist::create([
+                                'erp_equip_maintenance_id' => $maintenance_detail_item->id,
+                                'checklist_id' => $check['id'] ?? null,
                                 'name' => $check['name'],
                                 'description' => $check['description'] ?? null,
                                 'type' => $check['type'] ?? null,
-                                'created_by' => auth()->id(),
+                                'created_by' => $user->auth_user_id,
                             ]);
                         }
                     }
@@ -103,24 +122,46 @@ class ErpEquipmentController extends Controller
             }
 
             // Spare Parts
-            if ($request->spareparts) {
-                foreach ($request->spareparts as $sRow) {
+            if ($request->has('spareparts') && is_array($request->spareparts)) {
+                foreach ($request->spareparts as $rowId => $sRow) {
+                    // Skip rows without required fields
+                    if (empty($sRow['item_code']) || empty($sRow['item_name'])) {
+                        continue;
+                    }
+                    
+                    // Parse attributes JSON if it exists
+                    $attributes = [];
+                    // if (!empty($sRow['attributes'])) {
+                    //     try {
+                    //         if (is_string($sRow['attributes'])) {
+                    //             $attributes = json_decode($sRow['attributes'], true) ?? [];
+                    //         } else {
+                    //             $attributes = $sRow['attributes'];
+                    //         }
+                    //     } catch (\Exception $e) {
+                    //         // If JSON parsing fails, use empty array
+                    //         $attributes = [];
+                    //     }
+                    // }
+                    
                     $equipment->spareParts()->create([
                         'item_code' => $sRow['item_code'],
                         'item_name' => $sRow['item_name'],
-                        'attributes' => json_encode($sRow['attributes'] ?? []),
-                        'uom' => $sRow['uom'],
-                        'qty' => $sRow['qty'],
-                        'created_by' => auth()->id(),
+                        // 'attributes' => json_encode($attributes),
+                        'uom' => $sRow['uom'] ?? '',
+                        'qty' => $sRow['qty'] ?? 0,
+                        'created_by' => $user->auth_user_id,
                     ]);
                 }
             }
 
             DB::commit();
-            return redirect()->route('equipment.index')->with('success', 'Equipment created successfully');
+            
+            $message = $request->status == 'draft' ? 'Equipment saved as draft successfully' : 'Equipment submitted successfully';
+            return redirect()->back()->with('success', $message);
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->withErrors(['error' => $e->getMessage()]);
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
     }
 }

@@ -578,7 +578,7 @@
                         item.voucher_no,
                         item.balance ?? 0,
                         item.settle_amount ?? 0,
-                        item.series ?? null,
+                        // item.series ?? null,
                     ];
 
                      if (isSuccessTable) {

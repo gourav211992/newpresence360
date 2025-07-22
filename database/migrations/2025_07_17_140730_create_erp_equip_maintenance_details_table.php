@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('erp_equip_maintenance_details', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('erp_equipment_id')->index();
-            $table->string('type');
+            $table->unsignedBigInteger('maintenance_type_id')->nullable();
             $table->string('frequency');
             $table->time('time')->nullable();
 
