@@ -293,7 +293,7 @@
                             $('#store_id').val(paramObj[key]).select2();
                             var data = {
                                 store_id: paramObj[key],
-                                type : subStoreLocType,
+                                types : subStoreLocType,
                             };
                             $.ajax({
                                 type: 'GET',
@@ -526,13 +526,26 @@
                         `<td class='no-wrap text-end'>
                             ${report?.hold_qty ?? 0.00}
                         </td>`,
+                        // `<td class="no-wrap">
+                        //     ${documentStatusCssList[report?.document_status ?? ""] ?
+                        //         `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
+                        //             ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                        //         </span>` :
+                        //         `<span class='badge default-status-class'>${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}</span>`
+                        //     }
+                        // </td>`,
                         `<td class="no-wrap">
-                            ${documentStatusCssList[report?.document_status ?? ""] ?
-                                `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
-                                    ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
-                                </span>` :
-                                `<span class='badge default-status-class'>${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}</span>`
-                            }
+                            ${report?.document_status ? (
+                                documentStatusCssList[report.document_status]
+                                    ? `<span class='badge ${documentStatusCssList[report.document_status]}'>
+                                            ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                                    </span>`
+                                    : `<span class='badge default-status-class'>
+                                            ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                                    </span>`
+                            ) : (
+                                `<span class='badge default-status-class'>N/A</span>`
+                            )}
                         </td>`,
                     ];
 
@@ -779,7 +792,7 @@
                     }, 10);
                     var data = {
                         store_id: store_code_id,
-                        type: subStoreLocType,
+                        types: subStoreLocType,
                     };
                     $.ajax({
                         type: 'GET',

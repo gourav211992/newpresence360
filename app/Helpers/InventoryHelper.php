@@ -577,7 +577,6 @@ class InventoryHelper
     // Update document status while update mrn
     public static function updateInventoryAndStock($documentHeaderId, $bookType, $documentStatus)
     {
-        dd($documentHeaderId, $bookType, $documentStatus);
         $user = Helper::getAuthenticatedUser();
 
         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()

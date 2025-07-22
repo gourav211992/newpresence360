@@ -23,8 +23,9 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 
-class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
+class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows, WithChunkReading
 {
     protected $bookId;
     protected $documentDate;
@@ -127,6 +128,8 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                     // }
                     $vendorId = $vendor?->id;
                     $customerId = null;
+                    $customercode = null;
+                    $customer = null;
                     if($this->moduleType == 'qbom') {
                         $customercode = $row['customer_code'] ?? ''; 
                         $customer = Customer::where('customer_code', $customercode)->first();
@@ -184,10 +187,21 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
                                 $errors[] = "Item Attributes not specified";
                             } else {
                                 foreach($item?->itemAttributes as $itemAttrTwo) {
+                                    $attributeIds = is_array($itemAttrTwo->attribute_id)? $itemAttrTwo->attribute_id : json_decode($itemAttrTwo->attribute_id, true);
+                                    $attributeValueId = 0;
+                                    if ($itemAttrTwo->all_checked == 1) {
+                                        if (empty($attributeIds) || !isset($attributeIds[0])) {
+                                            $errors[] = "Attribute has no value found for item: {$item?->item_name} and attribute group: {$itemAttrTwo?->attributeGroup?->name}";
+                                            continue;
+                                        }
+                                    }
+                                    if (!empty($attributeIds) && isset($attributeIds[0])) {
+                                        $attributeValueId = intval($attributeIds[0]);
+                                    }
                                     $itemAttributes[] = [
                                         'item_attribute_id' => $itemAttrTwo?->id,
                                         'attribute_name_id' => $itemAttrTwo?->attribute_group_id,
-                                        'attribute_value_id' => intval($itemAttrTwo->attribute_id[0]) ?? 0,
+                                        'attribute_value_id' => $attributeValueId,
                                     ];
                                 }
                             }
@@ -376,6 +390,11 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows
             }
     }
     
+    public function chunkSize(): int
+    {
+        return 500; // or 1000 based on system capacity
+    }
+
     private function validateAttribute($item, $prodAttribute, int $index, $label): array
     {
         $attribute = null;

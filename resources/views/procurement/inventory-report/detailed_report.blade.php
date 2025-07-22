@@ -345,7 +345,7 @@
                             $('#store_id').val(paramValue).trigger('change');
                             $.ajax({
                                 type: 'GET',
-                                data: { store_id: paramValue, type: subStoreLocType },
+                                data: { store_id: paramValue, types: subStoreLocType },
                                 url: '/sub-stores/store-wise',
                                 success: function (data) {
                                     $('#sub_store_id').empty().append('<option value="">Select</option>');
@@ -563,13 +563,26 @@
                         `<td class='no-wrap text-end'>
                         ${report?.hold_qty ?? 0.00}
                         </td>`,
+                        // `<td class="no-wrap">
+                        //     ${documentStatusCssList[report?.document_status ?? ""] ?
+                        //         `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
+                        //             ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                        //             </span>` :
+                        //         `<span class='badge default-status-class'>${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}</span>`
+                        //     }
+                        // </td>`,
                         `<td class="no-wrap">
-                            ${documentStatusCssList[report?.document_status ?? ""] ?
-                                `<span class='badge ${documentStatusCssList[report?.document_status ?? ""]}'>
-                                    ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
-                                    </span>` :
-                                `<span class='badge default-status-class'>${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}</span>`
-                            }
+                            ${report?.document_status ? (
+                                documentStatusCssList[report.document_status]
+                                    ? `<span class='badge ${documentStatusCssList[report.document_status]}'>
+                                            ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                                    </span>`
+                                    : `<span class='badge default-status-class'>
+                                            ${report.document_status.charAt(0).toUpperCase() + report.document_status.slice(1).toLowerCase()}
+                                    </span>`
+                            ) : (
+                                `<span class='badge default-status-class'>N/A</span>`
+                            )}
                         </td>`,
                     ];
 
@@ -835,7 +848,7 @@
                     }, 10);
                     var data = {
                         store_id: store_code_id,
-                        type: subStoreLocType,
+                        types: subStoreLocType,
                     };
                     $.ajax({
                         type: 'GET',
