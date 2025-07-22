@@ -16,8 +16,7 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $categories = Category::WithDefaultGroupCompanyOrg()
-            ->orderBy('id', 'desc');
+            $categories = Category::orderBy('id', 'desc');
             return DataTables::of($categories)
                 ->addIndexColumn()
                 ->addColumn('parent_category', function($row) {
@@ -86,12 +85,12 @@ class CategoryController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -149,11 +148,10 @@ class CategoryController extends Controller
         $category = Category::with('subCategories')->findOrFail($id); 
         $categoryType = $category->type; 
         $allChildCategoryIds = $category->load('subCategories')->getAllNestedSubCategoryIds();
-        $usedCategoryIds = Item::whereNotNull('subcategory_id')->withDefaultGroupCompanyOrg()->pluck('subcategory_id')->toArray();
+        $usedCategoryIds = Item::whereNotNull('subcategory_id')->pluck('subcategory_id')->toArray();
         $excludeIds = array_merge([$category->id], $allChildCategoryIds,$usedCategoryIds);
         $categories = Category::select('id', 'name', 'parent_id')
             ->with('parent')
-            ->withDefaultGroupCompanyOrg()
             ->whereNotIn('id', $excludeIds)
             ->where(function ($query) use ($categoryType) {
                 if ($categoryType === 'Product') {
@@ -196,12 +194,12 @@ class CategoryController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         if (!empty($validatedData['parent_id'])) {
@@ -249,10 +247,9 @@ class CategoryController extends Controller
     public function getCategoriesByType(Request $request)
     {
         $type = $request->input('type');
-        $usedCategoryIds = Item::whereNotNull('subcategory_id')->withDefaultGroupCompanyOrg()->pluck('subcategory_id')->toArray();
+        $usedCategoryIds = Item::whereNotNull('subcategory_id')->pluck('subcategory_id')->toArray();
         $categories = Category::where('type', $type)
             ->with('parent')
-            ->withDefaultGroupCompanyOrg() 
             ->where('status', ConstantHelper::ACTIVE)
             ->whereNotIn('id', $usedCategoryIds) 
             ->select('id','parent_id','name')
@@ -267,7 +264,6 @@ class CategoryController extends Controller
     
         $parentCategory = Category::where('id', $parentId)
             ->with('hsn') 
-            ->withDefaultGroupCompanyOrg()
             ->where('status', ConstantHelper::ACTIVE)
             ->first();
     
@@ -351,7 +347,6 @@ class CategoryController extends Controller
     public function getSubcategories($categoryId)
     {
         $subcategories = Category::where('parent_id', $categoryId)
-            ->WithDefaultGroupCompanyOrg()
             ->get();
     
         return response()->json($subcategories);

@@ -23,7 +23,7 @@ class HsnController extends Controller
         $companyId = $organization->company_id;
     
         if ($request->ajax()) {
-            $hsns = Hsn::withDefaultGroupCompanyOrg()->orderBy('id', 'desc');
+            $hsns = Hsn::orderBy('id', 'desc');
             return DataTables::of($hsns)
                 ->addIndexColumn()
                 ->editColumn('status', function($row) {
@@ -52,7 +52,7 @@ class HsnController extends Controller
     
     public function create()
     {
-        $taxGroups = Tax::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $taxGroups = Tax::where('status', ConstantHelper::ACTIVE)->get();
         $status = ConstantHelper::STATUS;
         $hsnCodeType = ConstantHelper::HSN_CODE_TYPE;
         return view('procurement.hsn.create', compact('taxGroups', 'status','hsnCodeType'));
@@ -134,7 +134,7 @@ class HsnController extends Controller
     public function edit($id)
     {
         $hsn = Hsn::with('taxPatterns')->findOrFail($id);
-        $taxGroups = Tax::where('status', ConstantHelper::ACTIVE)->withDefaultGroupCompanyOrg()->get();
+        $taxGroups = Tax::where('status', ConstantHelper::ACTIVE)->get();
         $status = ConstantHelper::STATUS;
         $hsnCodeType = ConstantHelper::HSN_CODE_TYPE;
         return view('procurement.hsn.edit', compact('hsn', 'taxGroups', 'status','hsnCodeType'));

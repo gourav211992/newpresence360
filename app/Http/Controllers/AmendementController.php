@@ -33,7 +33,7 @@ class AmendementController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            dd($request->id);
+            // dd($request->id);
             $mrnHeader = MrnHeader::find($request->id);
             if(!$mrnHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
@@ -42,9 +42,9 @@ class AmendementController extends Controller
             unset($mrnHeaderData['id']); // You might want to remove the primary key, 'id'
             $mrnHeaderData['mrn_header_id'] = $mrnHeader->id;
             $headerHistory = MrnHeaderHistory::create($mrnHeaderData);
-            $headerHistoryId = $headerHistory->id;   
-            
-            // Detail History         
+            $headerHistoryId = $headerHistory->id;
+
+            // Detail History
             $mrnDetails = MrnDetail::where('mrn_header_id', $mrnHeader->id)->get();
             if(!empty($mrnDetails)){
                 foreach($mrnDetails as $key => $detail){
@@ -53,9 +53,9 @@ class AmendementController extends Controller
                     $mrnDetailData['mrn_detail_id'] = $detail->id;
                     $mrnDetailData['mrn_header_history_id'] = $headerHistoryId;
                     $detailHistory = MrnDetailHistory::create($mrnDetailData);
-                    $detailHistoryId = $detailHistory->id;  
+                    $detailHistoryId = $detailHistory->id;
 
-                    // Attribute History         
+                    // Attribute History
                     $mrnAttributes = MrnAttribute::where('mrn_header_id', $mrnHeader->id)
                         ->where('mrn_detail_id', $detail->id)
                         ->get();
@@ -67,11 +67,11 @@ class AmendementController extends Controller
                             $mrnAttributeData['mrn_header_history_id'] = $headerHistoryId;
                             $mrnAttributeData['mrn_detail_history_id'] = $detailHistoryId;
                             $attributeHistory = MrnAttributeHistory::create($mrnAttributeData);
-                            $attributeHistoryId = $attributeHistory->id;  
+                            $attributeHistoryId = $attributeHistory->id;
                         }
                     }
 
-                    // Item Locations History         
+                    // Item Locations History
                     $itemLocations = MrnItemLocation::where('mrn_header_id', $mrnHeader->id)
                         ->where('mrn_detail_id', $detail->id)
                         ->get();
@@ -83,7 +83,7 @@ class AmendementController extends Controller
                             $itemLocationData['mrn_header_history_id'] = $headerHistoryId;
                             $itemLocationData['mrn_detail_history_id'] = $detailHistoryId;
                             $itemLocationHistory = MrnItemLocationHistory::create($itemLocationData);
-                            $itemLocationHistoryId = $itemLocationHistory->id;  
+                            $itemLocationHistoryId = $itemLocationHistory->id;
                         }
                     }
 
@@ -133,7 +133,7 @@ class AmendementController extends Controller
 
             /*Create document submit log*/
             if ($mrnHeader->document_status == ConstantHelper::SUBMITTED) {
-                $bookId = $mrnHeader->series_id; 
+                $bookId = $mrnHeader->series_id;
                 $docId = $mrnHeader->id;
                 $remarks = $mrnHeader->remarks;
                 $attachments = $request->file('attachment');
@@ -176,9 +176,9 @@ class AmendementController extends Controller
             unset($expenseHeaderData['id']); // You might want to remove the primary key, 'id'
             $expenseHeaderData['header_id'] = $expenseHeader->id;
             $headerHistory = ExpenseHeaderHistory::create($expenseHeaderData);
-            $headerHistoryId = $headerHistory->id;   
-            
-            // Detail History         
+            $headerHistoryId = $headerHistory->id;
+
+            // Detail History
             $expenseDetails = ExpenseDetail::where('expense_header_id', $expenseHeader->id)->get();
             if(!empty($expenseDetails)){
                 foreach($expenseDetails as $key => $detail){
@@ -188,9 +188,9 @@ class AmendementController extends Controller
                     $expenseDetailData['detail_id'] = $detail->id;
                     $expenseDetailData['header_history_id'] = $headerHistoryId;
                     $detailHistory = ExpenseDetailHistory::create($expenseDetailData);
-                    $detailHistoryId = $detailHistory->id;  
+                    $detailHistoryId = $detailHistory->id;
 
-                    // Attribute History         
+                    // Attribute History
                     $expenseAttributes = ExpenseItemAttribute::where('expense_header_id', $expenseHeader->id)
                         ->where('expense_detail_id', $detail->id)
                         ->get();
@@ -204,7 +204,7 @@ class AmendementController extends Controller
                             $expenseAttributeData['header_history_id'] = $headerHistoryId;
                             $expenseAttributeData['detail_history_id'] = $detailHistoryId;
                             $attributeHistory = ExpenseItemAttributeHistory::create($expenseAttributeData);
-                            $attributeHistoryId = $attributeHistory->id;  
+                            $attributeHistoryId = $attributeHistory->id;
                         }
                     }
 
@@ -257,7 +257,7 @@ class AmendementController extends Controller
 
             /*Create document submit log*/
             if ($expenseHeader->document_status == ConstantHelper::SUBMITTED) {
-                $bookId = $expenseHeader->series_id; 
+                $bookId = $expenseHeader->series_id;
                 $docId = $expenseHeader->id;
                 $remarks = $expenseHeader->remarks;
                 $attachments = $request->file('attachment');

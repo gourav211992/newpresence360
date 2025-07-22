@@ -23,7 +23,7 @@ class TermsAndConditionController extends Controller
     $companyId = $organization?->company_id ?? null;
 
     if ($request->ajax()) {
-        $terms = TermsAndCondition::withDefaultGroupCompanyOrg()
+        $terms = TermsAndCondition::query()
             ->orderBy('id', 'DESC')
             ->get();
 
@@ -86,12 +86,12 @@ class TermsAndConditionController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -146,12 +146,12 @@ class TermsAndConditionController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 

@@ -101,7 +101,7 @@ class DispatchController extends Controller
             // Fetch Scanned Packets
             $scannedPackets = ErpItemUniqueCode::where('job_id',$request->job_id)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_name','item_code','item_attributes','status')
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status')
             ->get();
 
             \DB::commit();

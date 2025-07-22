@@ -29,8 +29,7 @@ class ExchangeRateController extends Controller
     $companyId = $organization?->company_id ?? null;
 
     if ($request->ajax()) {
-        $exchangeRates = ErpCurrencyExchange::WithDefaultGroupCompanyOrg()
-            ->with(['fromCurrency', 'uptoCurrency'])
+        $exchangeRates = ErpCurrencyExchange::with(['fromCurrency', 'uptoCurrency'])
             ->orderBy('id', 'desc');
 
         return DataTables::of($exchangeRates)
@@ -95,12 +94,12 @@ class ExchangeRateController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
     
@@ -132,12 +131,12 @@ class ExchangeRateController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
         $exchangeRate->update($validated);

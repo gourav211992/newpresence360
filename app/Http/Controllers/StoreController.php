@@ -30,19 +30,8 @@ class StoreController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $user = Helper::getAuthenticatedUser(); 
-            $useRole = AuthUser::where('id', $user->auth_user_id)->first();
-            $isSuperAdmin = ($useRole && isset($useRole->user_type) && $useRole->user_type === 'IAM-SUPER');
-            $organization = $user->organization;
-            $groupId = $organization?->group_id;
-
-            if ($isSuperAdmin) {
-                  $stores = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                    ->where('group_id', $groupId)
-                    ->orderBy('id', 'desc');
-            } else {
-                $stores = ErpStore::orderBy('id', 'desc');
-            }
+            $stores = ErpStore::query()
+            ->orderBy('id', 'desc'); 
     
             return DataTables::of($stores)
                 ->addIndexColumn()

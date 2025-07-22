@@ -29,16 +29,10 @@ class PurchaseReturnAccountController extends Controller
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
         $ledgerGroups = Group::all();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()
-        ->where('status', '1') 
-        ->get();  
-        $items = Item::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get();
-        $purchaseReturnAccounts = PurchaseReturnAccount::withDefaultGroupCompanyOrg()->get();
-        $erpBooks = Book::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get(); 
+        $ledgers = Ledger::where('status', '1') ->get();  
+        $items = Item::where('status', 'active') ->get();
+        $purchaseReturnAccounts = PurchaseReturnAccount::query()->get();
+        $erpBooks = Book::where('status', 'active') ->get(); 
 
         return view('procurement.purchase-return-account.index', compact(
             'companies', 'ledgerGroups', 'ledgers', 'items', 'purchaseReturnAccounts', 'erpBooks','orgIds'

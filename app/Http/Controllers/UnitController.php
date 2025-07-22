@@ -23,7 +23,7 @@ class UnitController extends Controller
         $companyId = $organization?->company_id ?? null;
     
         if ($request->ajax()) {
-            $query = Unit::WithDefaultGroupCompanyOrg() 
+            $query = Unit::query()
                 ->orderBy('id', 'desc');
            
             return DataTables::of($query)

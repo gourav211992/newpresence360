@@ -234,7 +234,7 @@ class EInvoiceHelper
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_HTTPHEADER, $requestHeader);
-            $result = curl_exec(handle: $curl);
+            $result = curl_exec($curl);
             $decodedResult = json_decode($result, true);
             if (isset($decodedResult['error']) && $decodedResult['error'] === false) {
                 $final_result = EInvoiceHelper::formatGstinResponse($result);

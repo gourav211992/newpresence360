@@ -16,6 +16,7 @@ class InspectionChecklistRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
     protected $group_id;
 
 
@@ -25,21 +26,31 @@ class InspectionChecklistRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null;
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules()
     {
         $inspectionChecklistId = $this->route('id');
+        $uniqueRule = Rule::unique('erp_inspection_checklists')
+            ->ignore($inspectionChecklistId)
+            ->whereNull('deleted_at');
 
+        if ($this->company_id !== null) {
+            $uniqueRule->where('company_id', $this->company_id);
+        }
+        if ($this->group_id !== null) {
+            $uniqueRule->where('group_id', $this->group_id);
+        }
+        if ($this->organization_id !== null) {
+            $uniqueRule->where('organization_id', $this->organization_id);
+        }
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_inspection_checklists')
-                    ->ignore($inspectionChecklistId)
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at'),
+                $uniqueRule,
             ],
             'description' => [
                 'nullable',

@@ -34,26 +34,15 @@ class WipAccountController extends Controller
             ->pluck('company_id')
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
-        $categories = Category::withDefaultGroupCompanyOrg()
-        ->where('status', 'active')
-        ->get();  
-    
-        $subCategories = Category::withDefaultGroupCompanyOrg()
-            ->where('status', 'active') 
-            ->whereNotNull('parent_id') 
-            ->get();
-    
+        $categories = Category::where('status', 'active')->get();  
+        $subCategories = Category::where('status', 'active')
+         ->whereNotNull('parent_id') 
+         ->get();
         $ledgerGroups = Group::all();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()
-        ->where('status', '1') 
-        ->get();  
-        $items = Item::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get();
-        $wipAccount = WipAccount::withDefaultGroupCompanyOrg()->get();
-        $erpBooks = Book::withDefaultGroupCompanyOrg()
-        ->where('status', 'active') 
-        ->get(); 
+        $ledgers = Ledger::where('status', '1') ->get();  
+        $items = Item::where('status', 'active') ->get();
+        $wipAccount = WipAccount::query()->get();
+        $erpBooks = Book::where('status', 'active') ->get(); 
         
         if ($request->ajax()) {
             $wipAccounts = WipAccount::with([

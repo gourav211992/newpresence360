@@ -8,20 +8,8 @@ use App\Helpers\Helper;
 
 class PriceVarianceAccountRequest extends FormRequest
 {
-    protected $organization_id;
-    protected $group_id;
-
-    protected function prepareForValidation()
-    {
-        $user = Helper::getAuthenticatedUser();
-        $organization = $user->organization;
-        $this->organization_id = $organization ? $organization->id : null;
-        $this->group_id = $organization ? $organization->group_id : null;
-    }
-
     public function rules()
     {
-        $priceVarianceAccount = $this->route('id'); 
 
         return [
             'price_variance_accounts' => 'array', 

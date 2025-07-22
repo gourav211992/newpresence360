@@ -20,7 +20,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0">
+                <div class="content-header-right text-md-end col-md-6 mb-50 mb-sm-0 d-none">
                     <div class="form-group breadcrumb-right">
                         <a href="{{route('finance.fixed-asset.depreciation.index')}}"
                             class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</a>
@@ -39,6 +39,7 @@
                             <input type="hidden" name="asset_details" id="asset_json" value="">
 
                             <input type="hidden" id="to_date_param">
+                            <input type="hidden" id="from_date_param">
                             <input type="hidden" id="days">
                             <input type="hidden" name="book_code" id="book_code_input">
                             <input type="hidden" name="doc_number_type" id="doc_number_type">
@@ -74,7 +75,7 @@
 
 
                                             <div class="col-md-8">
-                                                <div class="row align-items-center mb-1">
+                                                <div class="row align-items-center mb-1  d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Location <span
                                                                 class="text-danger">*</span></label>
@@ -92,7 +93,7 @@
                                                     </div>
 
                                                 </div>
-                                                <div class="row align-items-center mb-1 cost_center">
+                                                <div class="row align-items-center mb-1 cost_center d-none">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Cost Center <span
                                                                 class="text-danger">*</span></label>
@@ -115,7 +116,7 @@
 
                                                     <div class="col-md-5">
                                                         <select id="period" name="period" class="form-select" required>
-                                                            <option value="">Select</option>
+                                                           
                                                             @php
                                                                 $periodCollection = collect($periods);
                                                             @endphp
@@ -398,6 +399,17 @@
                         $('#submit-btn').hide();
 
                     }
+                    resultDate = endDate;
+
+
+                    let frmDates = new Date(startDate); // or your date
+                    let dayf = String(frmDates.getDate()).padStart(2, '0');
+                    let monthf = String(frmDates.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+                    let yearf = frmDates.getFullYear();
+                    let formatted_frm = `${yearf}-${monthf}-${dayf}`;
+                    $('#from_date_param').val(formatted_frm);
+
+
 
 
 
@@ -416,6 +428,7 @@
                     $('#days').val(totalDays);
                 }
             });
+             $('#period').trigger('change');
 
 
             function showToast(icon, title) {
@@ -522,8 +535,14 @@
 
                                         let fromDateObj = parseYMD(sub_asset.last_dep_date);
                                         let toDateObj = parseYMD($('#to_date_param').val());
+                                        let rangefrom =  parseYMD($('#from_date_param').val());
                                         let fromDateObjCap = parseYMD(sub_asset.capitalize_date);
                                         let expiryDate = parseYMD(sub_asset.expiry_date); // Months are 0-indexed
+
+                                        if(rangefrom>fromDateObjCap)
+                                        fromDateObj = rangefrom;
+                                        
+
                                         let to_date = formatDate(toDateObj);
                                         let from_date = formatDate(fromDateObj);
 
@@ -547,9 +566,9 @@
                                             let value;
                                             let isCurrent = isDateInRange(sub_asset.capitalize_date, "{{$financialStartDate}}", "{{$financialEndDate}}");
                                             if (isCurrent)
-                                                value = sub_asset.current_value;
+                                                value = sub_asset.rdv;
                                             else
-                                                value = sub_asset.current_value;
+                                                value = sub_asset.rdv;
 
                                             let totalDepreciation = ((parseFloat(asset.it_category.setup.dep_percentage / 100) * parseFloat(value)));
                                             const capitalizeDate = new Date(sub_asset.capitalize_date);
@@ -571,14 +590,14 @@
                                             }
                                           
 
-                                            let after_dep_value = parseFloat(sub_asset.current_value_after_dep) - totalDepreciation;
+                                            let after_dep_value = parseFloat(sub_asset.rdv) - totalDepreciation;
                                             let salv = parseFloat(sub_asset.salvage_value);
                                             let diff = parseFloat(after_dep_value) - salv;
 
-                                            if (expire && (diff > 0.0) && (depType === "WDV")) {
-                                                totalDepreciation = parseFloat(totalDepreciation) + parseFloat(diff);
-                                                after_dep_value = parseFloat(sub_asset.current_value_after_dep) - totalDepreciation;
-                                            }
+                                            // if (expire && (diff > 0.0) && (depType === "WDV")) {
+                                            //     totalDepreciation = parseFloat(totalDepreciation) + parseFloat(diff);
+                                            //     after_dep_value = parseFloat(sub_asset.rdv) - totalDepreciation;
+                                            // }
 
 
                                             let posted_days = 0;
@@ -609,8 +628,8 @@
                                                 to_date: to_date,
                                                 posted_days: posted_days,
                                                 days: diffDays,
-                                                current_value: sub_asset.current_value,
-                                                current_value_after_dep: sub_asset.current_value_after_dep,
+                                                current_value: sub_asset.rdv,
+                                                current_value_after_dep: sub_asset.rdv,
                                                 dep_amount: totalDepreciation,
                                                 after_dep_value: after_dep_value
                                             };
@@ -663,13 +682,13 @@
                                         </td>
                                         <td hidden class="text-end">
                                             <input type="hidden" name="current_value[]" 
-                                            value="${sub_asset.current_value}">
-                                            ${formatIndianNumber(sub_asset.current_value)}                                
+                                            value="${sub_asset.rdv}">
+                                            ${formatIndianNumber(sub_asset.rdv)}                                
                                         </td>
                                          <td class="text-end">
                                             <input type="hidden" name="current_value_after_dep[]" 
-                                            value="${sub_asset.current_value_after_dep}">
-                                            ${formatIndianNumber(sub_asset.current_value_after_dep)}                                
+                                            value="${sub_asset.rdv}">
+                                            ${formatIndianNumber(sub_asset.rdv)}                                
                                         </td>
                                         <td class="text-end">
                                             <input type="hidden" name="dep_amount[]" value="${totalDepreciation}">
@@ -686,8 +705,8 @@
 
 
                                             // Sum up totals
-                                            totalAfterDepCurrent += parseFloat(sub_asset.current_value_after_dep)
-                                            totalCurrentValue += parseFloat(sub_asset.current_value);
+                                            totalAfterDepCurrent += parseFloat(sub_asset.rdv)
+                                            totalCurrentValue += parseFloat(sub_asset.rdv);
                                             totalDepAmount += parseFloat(totalDepreciation);
                                             totalAfterDepValue += parseFloat(after_dep_value);
 

@@ -16,6 +16,8 @@ class VendorRequest extends FormRequest
         return true;
     }
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -23,12 +25,33 @@ class VendorRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
         $isUpdate = $this->isMethod('put') || $this->isMethod('patch');
         $vendorId = $this->route('id'); 
+
+        $uniqueScope = function ($query) {
+            if ($this->group_id !== null) {
+                $query->where('group_id', $this->group_id);
+            }
+
+            if ($this->company_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('company_id', $this->company_id)
+                      ->orWhereNull('company_id');
+                });
+            }
+
+            if ($this->organization_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('organization_id', $this->organization_id)
+                        ->orWhereNull('organization_id');
+                });
+            }
+        };
         return [
         # vendor book and supplier user
         'user_id' => [
@@ -59,12 +82,12 @@ class VendorRequest extends FormRequest
             'max:255',
             $isUpdate 
                 ? Rule::unique('erp_vendors', 'vendor_code')
-                    ->where('group_id', $this->group_id)
                     ->whereNull('deleted_at')
                     ->ignore($vendorId)
+                     ->where($uniqueScope)
                 : Rule::unique('erp_vendors', 'vendor_code')
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at'),
+                    ->whereNull('deleted_at')
+                     ->where($uniqueScope),
           ],
             'vendor_initial'=>'required',
             'vendor_code_type'=>'nullable',
@@ -83,12 +106,13 @@ class VendorRequest extends FormRequest
                     'max:255',
                     $isUpdate 
                         ? Rule::unique('erp_vendors', 'company_name')
-                            ->where('group_id', $this->group_id)
                             ->whereNull('deleted_at')
                             ->ignore($vendorId)
+                             ->where($uniqueScope)
                         : Rule::unique('erp_vendors', 'company_name')
-                            ->where('group_id', $this->group_id)
-                            ->whereNull('deleted_at'),
+                            ->where('company_id', $this->company_id)
+                            ->whereNull('deleted_at')
+                             ->where($uniqueScope),
                 ],
             'category_id' => 'nullable|exists:erp_categories,id',
             'subcategory_id' => 'nullable|exists:erp_categories,id',
@@ -127,12 +151,12 @@ class VendorRequest extends FormRequest
             'regex:/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/',
             $isUpdate
                 ? Rule::unique('erp_vendors')
-                    ->where('group_id', $this->group_id)
                     ->whereNull('deleted_at')
                     ->ignore($vendorId)
+                    ->where($uniqueScope)
                 : Rule::unique('erp_vendors')
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at'),
+                    ->whereNull('deleted_at')
+                     ->where($uniqueScope),
             ],
             'phone' => 'nullable|string|regex:/^\d{10,12}$/',
             'mobile' => 'nullable|string|regex:/^\d{10}$/',

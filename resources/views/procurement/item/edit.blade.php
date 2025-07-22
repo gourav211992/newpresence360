@@ -28,7 +28,7 @@
     @method('PUT')
     @php
         $isEditable = isset($item) && $item->status === 'draft';
-        $statusValue = isset($item) && ($item->status == 'Active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
+        $statusValue = isset($item) && (strtolower($item->status) === 'active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
         $tables=$tablesToCheck;
     @endphp
@@ -2391,7 +2391,7 @@
                 checkboxes.not(':checked').not($('input[name="is_traded_item"]')).not($('input[name="is_asset"]')).prop('disabled', true);
             }
            const status = document.getElementById('documentStatus')?.value;
-            if (isItemReferenced || status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
+            if (isItemReferenced) {
                 checkboxes.prop('disabled', true);
                 $('input[name="is_traded_item"]').prop('disabled', true);
                 $('input[name="is_asset"]').prop('disabled', true);
@@ -2946,6 +2946,7 @@
     });
 
    function enableAmendmentFields() {
+     const isItemReferenced = @json($isItemReferenced);
         const fieldsToDisable = [
             'item_code',
             'uom_id',
@@ -2963,13 +2964,23 @@
             select.disabled = true;
         });
         
-        fieldsToDisable.forEach(fieldName => {
-            const fields = document.querySelectorAll(`[name="${fieldName}"]`);
-            fields.forEach(field => {
-                field.disabled = true;
-                field.readOnly = true;
+        if (isItemReferenced) {
+            fieldsToDisable.forEach(fieldName => {
+                const fields = document.querySelectorAll(`[name="${fieldName}"]`);
+                fields.forEach(field => {
+                    field.disabled = true;
+                    field.readOnly = true;
+                });
             });
-        });
+        } else {
+            fieldsToDisable.forEach(fieldName => {
+                const fields = document.querySelectorAll(`[name="${fieldName}"]`);
+                fields.forEach(field => {
+                    field.disabled = false;
+                    field.readOnly = false;
+                });
+            });
+        }
 
         const checkbox = document.getElementById('customSwitch3');
         if (checkbox) {

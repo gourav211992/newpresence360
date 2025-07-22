@@ -20,7 +20,7 @@
     @method('PUT') 
     @php
         $isEditable = isset($vendor) && $vendor->status === 'draft';
-        $statusValue = isset($vendor) && ($vendor->status == 'Active') && ($vendor->document_status == 'approval_not_required' || $vendor->document_status == 'approved') ? 'active' : 'inactive';
+        $statusValue = isset($vendor) && (strtolower($vendor->status) === 'active') && ($vendor->document_status == 'approval_not_required' || $vendor->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
     @endphp
     <div class="app-content content ">

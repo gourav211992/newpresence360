@@ -29,37 +29,40 @@ class StationGroupRequest extends FormRequest
     public function rules(): array
     {
         $stationGroupId = $this->route('id'); 
+
+        $uniqueScope = Rule::unique('erp_station_groups')
+            ->ignore($stationGroupId)
+            ->whereNull('deleted_at');
+        if ($this->group_id !== null) {
+            $uniqueScope->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $uniqueScope->where(function($query) {
+                $query->where('company_id', $this->company_id)
+                    ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $uniqueScope->where(function($query) {
+                $query->where('organization_id', $this->organization_id)
+                    ->orWhereNull('organization_id');
+            });
+        }
         
         return [
             'name' => [
                 'required',
                 'string',
                 'max:50',
-                $stationGroupId
-                    ? Rule::unique('erp_station_groups', 'name')
-                        ->where('group_id', $this->group_id)
-                        ->whereNull('deleted_at')
-                        ->ignore($stationGroupId)
-                    : Rule::unique('erp_station_groups', 'name')
-                        ->where('group_id', $this->group_id)
-                        ->whereNull('deleted_at'),
+                $uniqueScope
             ],
             'alias' => [
                 'required',
                 'string',
                 'max:50',
-                $stationGroupId
-                    ? Rule::unique('erp_station_groups', 'alias')
-                        ->where('group_id', $this->group_id)
-                        ->where('company_id', $this->company_id)
-                        ->where('organization_id', $this->organization_id)
-                        ->whereNull('deleted_at')
-                        ->ignore($stationGroupId)
-                    : Rule::unique('erp_station_groups', 'alias')
-                        ->where('group_id', $this->group_id)
-                        ->where('company_id', $this->company_id)
-                        ->where('organization_id', $this->organization_id)
-                        ->whereNull('deleted_at'),
+               $uniqueScope
             ],
             'status' => 'nullable|in:active,inactive', 
         ];

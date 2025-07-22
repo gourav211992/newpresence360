@@ -17,6 +17,8 @@ class PaymentTermRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -24,21 +26,43 @@ class PaymentTermRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules()
     {
         $paymentTermId = $this->route('id');
 
+          $uniqueRule = Rule::unique('erp_payment_terms', 'name')
+            ->ignore($paymentTermId)
+            ->whereNull('deleted_at');
+
+        if ($this->group_id !== null) {
+            $uniqueRule->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $companyId = $this->company_id;
+            $uniqueRule->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                      ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $orgId = $this->organization_id;
+            $uniqueRule->where(function ($query) use ($orgId) {
+                $query->where('organization_id', $orgId)
+                      ->orWhereNull('organization_id');
+            });
+        }
+
         return [
           'name' => [
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('erp_payment_terms', 'name')
-                    ->ignore($paymentTermId)
-                    ->where('group_id', $this->group_id) 
-                    ->whereNull('deleted_at'), 
+                $uniqueRule, 
             ],
 
             'alias' => [

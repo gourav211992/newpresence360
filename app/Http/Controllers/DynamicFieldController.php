@@ -23,7 +23,7 @@ class DynamicFieldController extends Controller
         $companyId = $organization?->company_id ?? null;
 
         if ($request->ajax()) {
-            $query = DynamicField::withDefaultGroupCompanyOrg();
+            $query = DynamicField::query();
             $dynamicFields = $query->orderBy('id', 'desc');
 
             return DataTables::of($dynamicFields)
@@ -82,12 +82,12 @@ class DynamicFieldController extends Controller
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
             $dynamicField = DynamicField::create($validatedData);
@@ -124,7 +124,7 @@ class DynamicFieldController extends Controller
                 'message' => 'Record created successfully',
                 'data' => $dynamicField,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
@@ -168,12 +168,12 @@ class DynamicFieldController extends Controller
                     $validatedData['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = null;
+                    $validatedData['company_id'] = $organization->company_id;
                     $validatedData['organization_id'] = null;
                 }
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
     
@@ -249,7 +249,7 @@ class DynamicFieldController extends Controller
                 'message' => 'Record updated successfully',
                 'data' => $dynamicField,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'status' => false,
@@ -346,7 +346,7 @@ class DynamicFieldController extends Controller
             $dynamicFieldIds = $request -> dynamic_field_ids ?? [];
             $dynamicFields = DynamicFieldDetail::select('id', 'header_id', 'name', 'data_type') -> whereIn('header_id', $dynamicFieldIds) 
             -> whereHas('header', function ($headerQuery) {
-                $headerQuery -> withDefaultGroupCompanyOrg() -> where('status', ConstantHelper::ACTIVE);
+               $headerQuery->where('status', ConstantHelper::ACTIVE);
             }) -> get();
             return response() -> json([
                 'status' => 'success',

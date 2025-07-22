@@ -10,6 +10,8 @@ use Auth;
 class DiscountMasterRequest extends FormRequest
 {
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     public function authorize(): bool
     {
@@ -22,12 +24,32 @@ class DiscountMasterRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
 
         $discountId = $this->route('id');
+            $uniqueScope = function ($query) {
+            if ($this->group_id !== null) {
+                $query->where('group_id', $this->group_id);
+            }
+
+            if ($this->company_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('company_id', $this->company_id)
+                      ->orWhereNull('company_id');
+                });
+            }
+
+            if ($this->organization_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('organization_id', $this->organization_id)
+                      ->orWhereNull('organization_id');
+                });
+            }
+        };
 
         return [
            'name' => [
@@ -37,8 +59,8 @@ class DiscountMasterRequest extends FormRequest
                 'regex:/^[a-zA-Z0-9\s]+$/',
                 Rule::unique('erp_discount_master', 'name')
                     ->ignore($discountId)
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at'), 
+                    ->whereNull('deleted_at')
+                    ->where($uniqueScope),
             ],
             'alias' => [
                 'nullable',
@@ -47,8 +69,8 @@ class DiscountMasterRequest extends FormRequest
                 'regex:/^[a-zA-Z0-9\s]+$/',
                 Rule::unique('erp_discount_master', 'alias')
                     ->ignore($discountId)
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at'), 
+                    ->whereNull('deleted_at')
+                    ->where($uniqueScope),
             ],
             'percentage' => [
                 'required',

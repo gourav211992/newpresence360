@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Helpers\BookHelper;
+use App\Rules\ValidExcelFile;
 use Illuminate\Foundation\Http\FormRequest;
 
 class BomImportRequest extends FormRequest
@@ -32,7 +33,8 @@ class BomImportRequest extends FormRequest
             'book_id' => 'required',
             'document_date' => 'required|date',
             'document_number' => 'required',
-            'attachment' => 'required|file|mimes:xlsx,xls,csv,docx|max:2048',
+            'attachment'      => ['required', 'file', new ValidExcelFile(), 'max:5120'],
+            // 'attachment' => 'required|file|mimes:xlsx,xls,csv,docx|max:2048',
         ];
         $today = now()->toDateString();
         $isPast = false;

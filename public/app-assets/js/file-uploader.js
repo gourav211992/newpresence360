@@ -17,7 +17,8 @@
         'application/vnd.ms-excel', // For .xls files
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // For .xlsx files
         'application/vnd.oasis.opendocument.spreadsheet', // For .ods files
-        'text/csv' // For .csv files
+        'text/csv', // For .csv files
+        'application/kset' // some special case for window excel file
     ];
 
     const MAX_FILE_SIZE = 5120; //In KBs

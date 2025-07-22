@@ -2335,19 +2335,27 @@ class PoController extends Controller
         $selectedVendorIds = array_unique($selectedVendorIds);
         $vendorCheck = 0;
         foreach($selectedVendorIds as $selectedVendorId) {
-            $validVendor = ItemHelper::validateVendor($selectedVendorId, $request->input('document_date'));
-            if(!$validVendor) {
-                $vendorCheck = $selectedVendorId;
-                break;
+            $checkVendor = Vendor::find($selectedVendorId);
+            if($checkVendor->addresses()->count() == 0) {
+                return response()->json([
+                    'message' => "{$checkVendor->company_name} vendor does not have any address."
+                ], 422);
+
             }
+
+            // $validVendor = ItemHelper::validateVendor($selectedVendorId, $request->input('document_date'));
+            // if(!$validVendor) {
+            //     $vendorCheck = $selectedVendorId;
+            //     break;
+            // }
         }
 
-        if($vendorCheck) {
-            $vendorGet = Vendor::find(intval($vendorCheck)); 
-            return response()->json([
-                'message' => "{$vendorGet->company_name} vendor is not updated."
-            ], 422);
-        }
+        // if($vendorCheck) {
+        //     $vendorGet = Vendor::find(intval($vendorCheck)); 
+        //     return response()->json([
+        //         'message' => "{$vendorGet->company_name} vendor is not updated."
+        //     ], 422);
+        // }
 
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
@@ -2373,12 +2381,12 @@ class PoController extends Controller
                 $vendorId = $component['vendor_id'] ?? null;
                 $vendor = Vendor::find($vendorId); 
                 if (!isset($groupedDatas[$vendorId])) {
-                    $shipping = $vendor?->addresses()->where(function($query) {
-                        $query->where('type', 'shipping')->orWhere('type', 'both');
-                    })->latest()->first();
-                    $billing = $vendor?->addresses()->where(function($query) {
-                                $query->where('type', 'billing')->orWhere('type', 'both');
-                            })->latest()->first();
+                    $shipping = ErpAddress::where('addressable_id', $vendorId)
+                    ->where('addressable_type', Vendor::class)
+                    ->latest()
+                    ->first();
+                    $store = ErpStore::find($request->store_id ?? null);
+                    $billing = $store?->address;
                     $groupedDatas[$vendorId] = [
                         'vendor_id' => $vendorId,
                         'vendor_code' => $vendor?->vendor_code,

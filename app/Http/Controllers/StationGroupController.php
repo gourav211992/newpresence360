@@ -20,8 +20,7 @@ class StationGroupController extends Controller
         $companyId = $organization?->company_id ?? null;
     
         if ($request->ajax()) {
-            $query = StationGroup::WithDefaultGroupCompanyOrg() 
-                ->orderBy('id', 'ASC');
+            $query = StationGroup::orderBy('id', 'ASC');
             $stationGroups = $query->get();
     
             return DataTables::of($stationGroups)
@@ -78,12 +77,12 @@ class StationGroupController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
         $stationGroup = StationGroup::create($validated);
@@ -132,12 +131,12 @@ class StationGroupController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
         $stationGroup = StationGroup::findOrFail($id);

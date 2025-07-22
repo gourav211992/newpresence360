@@ -572,7 +572,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('edit/{id}', 'edit')->name('edit');
             Route::post('update/{id}', 'update')->name('update');
             # get bom item cost child item
-            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+            Route::get('/{id}/pdf/{pattern}', 'generatePdf')->name('generate-pdf');
             Route::get('get-posting', 'getPostingDetails')->name('posting.get');
             Route::get('post-mo', 'postMo')->name('posting.post');
             Route::get('get-pwo', 'getPwo')->name('get.pwo');
@@ -1330,6 +1330,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('import','import')->name('import');
             Route::post('import-save','importSave')->name('import.save');
             Route::get('import-error','importError')->name('import.error');
+            Route::get('download-sample','downloadSample')->name('download.sample');
         });
 
     Route::prefix('quotation-bom')
@@ -1339,6 +1340,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('import','import')->name('import');
             Route::post('import-save','importSave')->name('import.save');
             Route::get('import-error','importError')->name('import.error');
+            Route::get('download-sample','downloadSample')->name('download.sample');
         });
 
     # All type documents approval

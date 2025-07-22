@@ -15,6 +15,7 @@ class HsnRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
     protected $group_id;
 
     protected function prepareForValidation()
@@ -23,26 +24,43 @@ class HsnRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
+        
     }
 
     public function rules()
     {
         $hsnId = $this->route('id');
-        
+        $uniqueRule = Rule::unique('erp_hsns', 'code')
+            ->ignore($hsnId)
+            ->whereNull('deleted_at');
+
+        if ($this->group_id !== null) {
+            $uniqueRule->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $companyId = $this->company_id;
+            $uniqueRule->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                      ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $orgId = $this->organization_id;
+            $uniqueRule->where(function ($query) use ($orgId) {
+                $query->where('organization_id', $orgId)
+                      ->orWhereNull('organization_id');
+            });
+        }
         return [
             'type' => 'required|string|max:255',
             'code' => [
                     'required',
                     'string',
                     'max:255',
-                    $hsnId 
-                        ? Rule::unique('erp_hsns', 'code')
-                            ->where('group_id', $this->group_id)
-                            ->whereNull('deleted_at')
-                            ->ignore($hsnId)  
-                        : Rule::unique('erp_hsns', 'code')
-                            ->where('group_id', $this->group_id)
-                            ->whereNull('deleted_at'),
+                    $uniqueRule,
                 ],
             'description' => 'nullable|string',
             'group_id' => 'nullable|exists:groups,id', 
@@ -98,7 +116,7 @@ class HsnRequest extends FormRequest
             'code.required' => 'The HSN code is required.',
             'code.string' => 'The HSN code must be a valid string.',
             'code.max' => 'The HSN code may not be longer than 255 characters.',
-            'code.unique' => 'The HSN code has already been taken for this organization.',
+            'code.unique' => 'The HSN code has already been taken.',
             'description.string' => 'The description must be a valid string.',
             'group_id.exists' => 'The selected group is invalid.',
             'organization_id.exists' => 'The selected organization is invalid.',

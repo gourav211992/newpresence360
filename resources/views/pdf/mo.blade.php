@@ -14,7 +14,7 @@
     </style>
 </head>
 <body>
-    <div style="width:700px; font-size: 11px; font-family:Arial;">
+    <div style="width:100%; font-size: 11px; font-family:Arial;">
 
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
             <tr>
@@ -52,7 +52,7 @@
                         <tr>
                             <!-- Left Column -->
                             <td style="width: 50%; vertical-align: top;">
-                                <table style="width: 50%;" cellspacing="0" cellpadding="2">
+                                <table style="width: 100%;" cellspacing="0" cellpadding="2">
                                     @if($order->store_location?->store_name)
                                     <tr>
                                         <td><b>Location:</b></td>
@@ -79,7 +79,7 @@
                                     @if($order->document_date)
                                     <tr>
                                         <td><b>Document Date:</b></td>
-                                        <td>{{ date('d-M-y', strtotime($order->document_date)) }}</td>
+                                        <td>{{ $order->document_date ? date('d-M-y H:i:s', strtotime($order->document_date)) : '' }}</td>
                                     </tr>
                                     @endif
 
@@ -113,14 +113,17 @@
                                             @endif
                                         </td>
                                     </tr>
+                                    @if($order->createdBy)
                                     <tr>
                                         <td><b>Created By:</b></td>
                                         <td>{{ $order?->createdBy?->name }}</td>
                                     </tr>
+                                    @endif
                                     <tr>
-                                        <td><b>Printed By:</b></td>
+                                        <td><b>CRM Name:</b></td>
                                         <td>{{ $user->name }}</td>
                                     </tr>
+                                    
                                     <tr>
                                         <td><b>Approved By:</b></td>
                                         <td>{{$approvedBy}}</td>
@@ -147,9 +150,8 @@
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tbody>
-                <tr>
                     @php
-                        $colspan = 9;
+                        $colspan = 7;
                         $sheet_check = $products->filter(function($prod){
                                 return $prod->number_of_sheet;
                             });
@@ -165,16 +167,22 @@
                             $colspan++;
                         }
                     @endphp
-                    <td colspan='{{$colspan}}' style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">
-                        Product(s)
+                <tr>
+                    <td colspan="{{ $colspan - 1 }}" style="padding: 6px; border-left: 1px solid #000; background: #80808070; text-align: left; font-weight: bold">
+                        So NO : {{ isset($order) ? $order->book_code . '-' . $order->document_number : '' }}<br>
+                        So Date : {{ $order?->document_date ? date('d-M-y', strtotime($order->document_date)) : '' }}
+                    </td>
+                    <td colspan="1" style="padding: 6px; border-right: 1px solid #000; background: #80808070; text-align: left; font-weight: bold">
+                        Delivery Date : {{ $order?->delivery_date ? date('d-M-y', strtotime($order->delivery_date)) : '' }}
                     </td>
                 </tr>
+
                 <tr>
                     <td style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold;">
                     #
                     </td>
-                    <td style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        <div style="">Product</div>
+                    <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                        Customer
                     </td>
                     <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                         Attribute
@@ -195,16 +203,8 @@
                         Sheets#
                     </td>
                     @endif
-                    <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        Customer
-                    </td>
-                    <td
-                    style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        <div style="">So No.</div>
-                    </td>
-                    <td
-                    style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        <div style="">So Date.</div>
+                    <td style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                        <div style="">Product</div>
                     </td>
                     <td
                     style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
@@ -218,17 +218,8 @@
                         {{ $key + 1 }}
                     </td>
                     <td
-                    style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                        <b> {{ isset($val->item_name) ? @$val -> item_name : "" }}</b><br>
-                        <b> {{ isset($val->item_code) ? @$val -> item_code : "" }}</b><br>
-                        @if(isset($val->item->specifications))
-                        @foreach($val->item->specifications as $data)
-                        @if(isset($data->value))
-                        {{$data->specification_name}}:{{$data->value}}<br>
-                        @endif
-                        @endforeach
-                        @endif
-                        {{@$val->remarks}}
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{@$val->customer->company_name}}
                     </td>
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
@@ -272,21 +263,22 @@
                         </td>
                     @endif
                     <td
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        {{@$val->customer->company_name}}
+                    style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        <b> {{ isset($val->item_name) ? @$val -> item_name : "" }}</b><br>
+                        <b> {{ isset($val->item_code) ? @$val -> item_code : "" }}</b><br>
+                        @if(isset($val->item->specifications))
+                        @foreach($val->item->specifications as $data)
+                        @if(isset($data->value))
+                        {{$data->specification_name}}:{{$data->value}}<br>
+                        @endif
+                        @endforeach
+                        @endif
+                        {{@$val->remarks}}
                     </td>
                     <td
-                    style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                    {{ isset($val->so) ? strtoupper($val->so->book_code . "-" . $val->so->document_number) : " " }}
-                </td>
-                <td
-                    style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                    {{ isset($val->so) ? strtoupper($val->so->document_date) : " " }}
-                </td>
-                <td
-                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                    {{ isset($val->so) ? strtoupper($val->so->reference_no) : " " }}
-                </td>
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                        {{ isset($val->so) ? strtoupper($val->so->reference_no) : " " }}
+                    </td>
                 </tr>
                 @endforeach
             </tbody>
@@ -396,13 +388,15 @@
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                             <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
-                          <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
+                            <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
+                            <td style="padding: 5px; border: 1px solid black; border-left: none; text-align: center; font-weight: bold;"><p></p></td>
                         </tr>
                         <tr>
                             <td style="padding: 5px; border: 1px solid black; border-top: none; text-align: center; font-weight: bold;">Store</td>
+                            <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">PPC</td>
                             <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">Production</td>
                             <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">Operation</td>
-                            <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">PPC</td>
+                            <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">Quality</td>
                             <td style="padding: 5px; border: 1px solid black; border-top: none; border-left: none; text-align: center; font-weight: bold;">Approved By</td>
                         </tr>
                     </table>

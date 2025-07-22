@@ -55,9 +55,12 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 d-flex align-items-center justify-content-end">
-                                                    <a download href="{{asset('templates/Bom_Sample.xlsx')}}" class="btn btn-outline-primary">
+                                                    <a href="{{ url($routeAlias) }}/download-sample" class="btn btn-outline-primary waves-effect">
                                                         <i class="fas fa-download me-1"></i> Download Sample
                                                     </a>
+                                                    {{-- <a download href="{{asset('templates/Bom_Sample.xlsx')}}" class="btn btn-outline-primary">
+                                                        <i class="fas fa-download me-1"></i> Download Sample
+                                                    </a> --}}
                                                 </div>
                                             </div>
                                         </div>

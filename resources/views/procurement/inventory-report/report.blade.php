@@ -396,6 +396,9 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function () {
+                $('#applyBtn').trigger('click');
+            }, 100);
             feather.replace();
             let filterData = {};
             $('.attributeBtn').hide();
@@ -490,7 +493,7 @@
                     $('#store_id').val(storeId).select2();
                     var data = {
                         store_id: storeId,
-                        type: subStoreLocType
+                        types: subStoreLocType
 
                     };
                     $.ajax({

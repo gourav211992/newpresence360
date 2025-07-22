@@ -9,6 +9,9 @@ use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\FixedAssetRegistration;
 use App\Helpers\InventoryHelper;
+use App\Models\ErpFinancialYear;
+
+
 use DateTime;
 
 class ITDepreciationController extends Controller
@@ -28,7 +31,7 @@ class ITDepreciationController extends Controller
 
         $locations = InventoryHelper::getAccessibleLocations();
 
-        
+
         return view('fixed-asset.it_depreciation.create', compact('financialEndDate', 'financialStartDate', 'locations', 'periods', 'fy', 'dep_type'));
     }
 
@@ -42,27 +45,41 @@ class ITDepreciationController extends Controller
                 $endDate = Carbon::parse($dateRange[1])->format('Y-m-d');
             }
         }
+
         $asset_details = [];
         $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
-                $query->where('current_value_after_dep', '>', 0);
-                $query->whereNotNull('expiry_date');
-                $query->whereColumn('expiry_date', '!=', 'last_dep_date');
+                $query->where('current_value_after_dep', '>', 0)
+                    ->whereNotNull('expiry_date')
+                    ->whereColumn('expiry_date', '!=', 'last_dep_date');
             })
             ->whereNotNull('depreciation_percentage')
             ->withWhereHas('ledger')
-           ->whereNotNull('capitalize_date')
+            ->whereNotNull('capitalize_date')
             ->where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
                     ->orWhereNotNull('reference_doc_id');
             })
             ->withWhereHas('category.setup')
             ->withWhereHas('it_category.setup')
-            ->orderBy('last_dep_date','asc')
-             ->whereNotNull('it_category_id')
-            ->get()->values();
+            ->orderBy('last_dep_date', 'asc')
+            ->whereNotNull('it_category_id')
+            ->with('subAsset') // ensure subAsset is eager loaded
+            ->get()
+            ->map(function ($asset) {
+                // Compute and assign the value here
+                foreach ($asset->subAsset as $sub) {
+                    $sub->rdv = self::getIncomeTaxRDV(
+                        $sub->capitalize_date,
+                        $asset->it_category->setup->dep_percentage ?? 0,
+                        $sub->current_value
+                    );
+                }
+                return $asset;
+            })->values();
 
         return response()->json($asset_details);
+
     }
     function getPeriods($startDate, $endDate, $period)
     {
@@ -99,7 +116,8 @@ class ITDepreciationController extends Controller
                 $quarterStart = clone $start;
                 while ($quarterStart <= $end) {
                     $quarterEnd = (clone $quarterStart)->modify('+2 months')->modify('last day of this month');
-                    if ($quarterEnd > $end) $quarterEnd = clone $end;
+                    if ($quarterEnd > $end)
+                        $quarterEnd = clone $end;
 
                     $periods[] = (object) [
                         "value" => $quarterStart->format("d-m-Y") . " to " . $quarterEnd->format("d-m-Y"),
@@ -113,7 +131,8 @@ class ITDepreciationController extends Controller
                 $monthStart = clone $start;
                 while ($monthStart <= $end) {
                     $monthEnd = (clone $monthStart)->modify('last day of this month');
-                    if ($monthEnd > $end) $monthEnd = clone $end;
+                    if ($monthEnd > $end)
+                        $monthEnd = clone $end;
 
                     $periods[] = (object) [
                         "value" => $monthStart->format("d-m-Y") . " to " . $monthEnd->format("d-m-Y"),
@@ -128,5 +147,51 @@ class ITDepreciationController extends Controller
         }
 
         return $periods;
-       }
- }
+    }
+    public static function getIncomeTaxRDV(string $date, $depPercentage, $value)
+    {
+        $financialYear = Helper::getFinancialYear(date('Y-m-d'));
+        $capDate = new DateTime($date);
+        $type = null;
+        $month = (int) $capDate->format('m');
+        $day = (int) $capDate->format('d');
+        $mmdd = ($month * 100) + $day;
+        if (($mmdd >= 1004 && $mmdd <= 1231) || ($mmdd >= 101 && $mmdd <= 331)) {
+            $type = "half";
+        }
+
+
+        $startFormatted = date('d-m-Y', strtotime($financialYear['start_date']));
+        $endFormatted = date('d-m-Y', strtotime($financialYear['end_date']));
+        $range = $startFormatted . ' to ' . $endFormatted;
+        $rdv_value = $value;
+
+        while (true) {
+            $financialYearDate = ErpFinancialYear::where('start_date', '<=', $date)
+                ->where('end_date', '>=', $date)
+                ->first();
+            if (!$financialYearDate) {
+                break;
+            }
+
+            $start = date('d-m-Y', strtotime($financialYearDate->start_date));
+            $end = date('d-m-Y', strtotime($financialYearDate->end_date));
+            $frange = $start . ' to ' . $end;
+
+            if ($range === $frange) {
+                break;
+            }
+
+            $totalDepreciation = ($depPercentage / 100) * $rdv_value;
+            if ($type == "half")
+                $totalDepreciation = $totalDepreciation / 2;
+
+            $rdv_value = $rdv_value - $totalDepreciation;
+            $date = (new DateTime($date))->modify('+1 year')->format('Y-m-d');
+        }
+
+        return $rdv_value;
+    }
+
+
+}
