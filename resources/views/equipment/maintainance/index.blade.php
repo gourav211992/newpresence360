@@ -5,7 +5,7 @@
 @endsection
 
 @section('content')
-<div class="app-content content ">
+ <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
@@ -13,11 +13,11 @@
                 <div class="content-header-left col-md-5 mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
-                            <h2 class="content-header-title float-start mb-0">Equipment</h2>
+                            <h2 class="content-header-title float-start mb-0">Maintenance</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
-                                    <li class="breadcrumb-item active">Equipment List</li>
+                                    <li class="breadcrumb-item"><a href="{{ route('maintainance.index') }}">Home</a></li>  
+                                    <li class="breadcrumb-item active">Maintenance List</li>
                                 </ol>
                             </div>
                         </div>
@@ -26,7 +26,7 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('equipment.create') }}"><i data-feather="plus-circle"></i> Add New</a>
+						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('maintainance.create') }}"><i data-feather="plus-circle"></i> Add New</a>
                     </div>
                 </div>
             </div>
@@ -44,58 +44,181 @@
 									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed newerptabledesignlisthome"> 
                                         <thead>
                                              <tr>
-												<th>#</th>
+												<th height="18">#</th>
+												<th>Date</th>
+												<th>Series</th>
+												<th>Doc NO</th>
 												<th>Equipment</th>
-												<th>Organization</th>
-												<th>Location</th>
-												<th>Alias</th>
 												<th>CAtegory</th>
-												<th>Checklist Name</th>
-												<th>LAst MAint Date</th>
-												<th>MAint Due Date</th>
+												<th>Checklists</th>
+												<th>Defects</th>
+												<th>Due Date</th>
 												<th>Action</th>
 											  </tr>
 											</thead>
 											<tbody>
-    @foreach($equipments as $index => $equipment)
-        <tr>
-            <td>{{ $index + 1 }}</td>
-            <td class="fw-bolder text-dark">{{ $equipment->name ?? '' }}</td>
-            <td>{{ $equipment->organization->name ?? '' }}</td>
-            <td>
-                <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
-                    {{ $equipment->location->city ?? '' }}
-                </div>
-            </td>
-            <td>{{ $equipment->alias ?? '' }}</td>
-            <td>{{ $equipment->category->name ?? '' }}</td>
-            <td>{{ $equipment->checklist_name ?? '' }}</td>
-            <td>{{ $equipment->last_maint_date ?? '' }}</td>
-            <td>{{ $equipment->maint_due_date ?? '' }}</td>
-            <td class="tableactionnew">
-                <div class="dropdown">
-                    <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                        <i data-feather="more-vertical"></i>
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                        {{-- <a class="dropdown-item" href="#">
-                            <i data-feather="edit" class="me-50"></i>
-                            <span>View Detail</span>
-                        </a> --}}
-                        <a class="dropdown-item" href="{{ route('equipment.edit', $equipment->id) }}">
-                            <i data-feather="edit-3" class="me-50"></i>
-                            <span>Edit</span>
-                        </a>
-                        {{-- <a class="dropdown-item" href="#">
-                            <i data-feather="trash-2" class="me-50"></i>
-                            <span>Delete</span>
-                        </a> --}}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    @endforeach
-											</tbody>
+												 <tr>
+													<td>1</td>
+													<td class="fw-bolder text-dark">08-07-2025</td>
+													<td>PL</td>
+													<td>1</td>
+													<td>Plant</td>
+													<td>Machinery</td>
+                                                     <td>10</td>
+                                                     <td>7</td>
+                                                     <td>15-08-2025</td>
+                                                    <td class="tableactionnew">
+														<div class="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+																<i data-feather="more-vertical"></i>
+															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View Detail</span>
+																</a>
+																<a class="dropdown-item" href="{{ {{ route('maintainance.edit', 1) }} }}"> 
+                                  {{-- make id dynamic instead of 1 --}}
+																	<i data-feather="edit-3" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="trash-2" class="me-50"></i>
+																	<span>Delete</span>
+																</a> 
+															</div>
+														</div>
+													</td>
+												  </tr>
+												  <tr>
+													<td>2</td>
+													<td class="fw-bolder text-dark">08-07-2025</td>
+													<td>PL</td>
+													<td>2</td>
+													<td>Plant</td>
+													<td>Machinery</td>
+													<td>10</td>
+													<td>7</td>
+													<td>15-08-2025</td>
+													<td class="tableactionnew">
+														<div class="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+																<i data-feather="more-vertical"></i>
+															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View Detail</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit-3" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="trash-2" class="me-50"></i>
+																	<span>Delete</span>
+																</a> 
+															</div>
+														</div>
+													</td>
+												  </tr>
+												  <tr>
+													<td>3</td>
+													<td class="fw-bolder text-dark">08-07-2025</td>
+													<td>PL</td>
+													<td>3</td>
+													<td>Plant</td>
+													<td>Machinery</td>
+													<td>10</td>
+													<td>7</td>
+													<td>15-08-2025</td>
+													<td class="tableactionnew">
+														<div class="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+																<i data-feather="more-vertical"></i>
+															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View Detail</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit-3" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="trash-2" class="me-50"></i>
+																	<span>Delete</span>
+																</a> 
+															</div>
+														</div>
+													</td>
+												  </tr>
+												  <tr>
+													<td>4</td>
+													<td class="fw-bolder text-dark">08-07-2025</td>
+													<td>PL</td>
+													<td>4</td>
+													<td>Plant</td>
+													<td>Machinery</td>
+													<td>10</td>
+													<td>7</td>
+													<td>15-08-2025</td>
+													<td class="tableactionnew">
+														<div class="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+																<i data-feather="more-vertical"></i>
+															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View Detail</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit-3" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="trash-2" class="me-50"></i>
+																	<span>Delete</span>
+																</a> 
+															</div>
+														</div>
+													</td>
+												  </tr>
+												  <tr>
+													<td>5</td>
+													<td class="fw-bolder text-dark">08-07-2025</td>
+													<td>PL</td>
+													<td>5</td>
+													<td>Plant</td>
+													<td>Machinery</td>
+													<td>10</td>
+													<td>7</td>
+													<td>15-08-2025</td>
+													<td class="tableactionnew">
+														<div class="dropdown">
+															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+																<i data-feather="more-vertical"></i>
+															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit" class="me-50"></i>
+																	<span>View Detail</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="edit-3" class="me-50"></i>
+																	<span>Edit</span>
+																</a>
+																<a class="dropdown-item" href="#">
+																	<i data-feather="trash-2" class="me-50"></i>
+																	<span>Delete</span>
+																</a> 
+															</div>
+														</div>
+													</td>
+												  </tr>
+											   </tbody>
 
 
 									</table>
@@ -149,8 +272,9 @@
 
             </div>
         </div>
-</div>
+    </div>
 	 
+   	 
     <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
 		<div class="modal-dialog sidebar-sm">
 			<form class="add-new-record modal-content pt-0"> 

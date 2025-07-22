@@ -2,447 +2,580 @@
 
 @section('content')
     <!-- BEGIN: Content-->
-    <div class="app-content content ">
+     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-            <form id="equipmentForm" action="{{ route('equipment.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="content-header pocreate-sticky">
+            <div class="content-header pocreate-sticky">
+				<div class="row">
+					<div class="content-header-left col-md-6 mb-2">
+						<div class="row breadcrumbs-top">
+							<div class="col-12">
+								<h2 class="content-header-title float-start mb-0">Maintenance</h2>
+								<div class="breadcrumb-wrapper">
+									<ol class="breadcrumb">
+										<li class="breadcrumb-item"><a href="index.html">Home</a>
+										</li>  
+										<li class="breadcrumb-item active">Add New</li> 
+									</ol>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+						<div class="form-group breadcrumb-right">   
+							<button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+                            <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button> 
+                            <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
+<!--
+                            <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button> 
+							<button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button>  
+-->
+							<button onClick="javascript: history.go(-1)" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
+						</div>
+					</div>
+				</div>
+			</div>
+            <div class="content-body">
+                 
+                
+				
+				<section id="basic-datatable">
                     <div class="row">
-                        <div class="content-header-left col-md-6 mb-2">
-                            <div class="row breadcrumbs-top">
-                                <div class="col-12">
-                                    <h2 class="content-header-title float-start mb-0">Equipment</h2>
-                                    <div class="breadcrumb-wrapper">
-                                        <ol class="breadcrumb">
-                                            <li class="breadcrumb-item"><a href="index.html">Home</a>
-                                            </li>
-                                            <li class="breadcrumb-item active">Add New</li>
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-                            <div class="form-group breadcrumb-right">
-                                <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                        data-feather="arrow-left-circle"></i> Back</button>
-                                {{-- <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
-                                    Draft</button> --}}
-                                <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" style="display: none;"><i data-feather='edit'></i> Amendment</button>
-                                <!-- <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button>
-                                        <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button> -->
-                            <button type="button" onclick="submitForm('draft');" id="draft"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
-                                        Draft</button>
-                                    <button type="button" onclick="submitForm('submitted');"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i
-                                            data-feather="check-circle"></i>
-                                        Submit</button>
-                                    <input id="submitButton" type="submit" value="Submit" class="hidden" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <input type="hidden" name="status" id="status">
-                @if (session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
-
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                <ul>
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
-
-                <div class="content-body">
-                    <section id="basic-datatable">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card">
-                                    <div class="card-body customernewsection-form">
+                        <div class="col-12">
+                            
+                            
+                            <div class="card">
+								 <div class="card-body customernewsection-form">  
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div
-                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Organization <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select" id="organization_id" name="organization_id">
-                                                            <option value="">Select</option>
+                                                    </div> 
+                                                </div> 
+                                            </div> 
 
-                                                            @foreach ($userOrganizations as $organization)
-                                                                <option value="{{ $organization->id }}">
-                                                                    {{ $organization->name }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-                                                </div>
 
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Location <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select" id="location_id" name="location_id">
-                                                            <option value="">Select</option>
-                                                            {{-- Populated by JS --}}
-                                                        </select>
-                                                    </div>
-                                                </div>
+                                            <div class="col-md-8"> 
+												
+													<div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                        </div>  
 
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Category <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <select class="form-select" id="category_id" name="category_id">
-                                                            <option value="">Select</option>
-                                                            @foreach($categories as $category)
-                                                            <option value="{{ $category->id}}">{{ $category->name }}</option>
-                                                            @endforeach
-                                                            {{-- Populated by JS --}}
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Name <span
-                                                                class="text-danger">*</span></label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="name">
-                                                    </div>
-                                                </div>
-
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Alias</label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="alias">
-                                                    </div>
-                                                </div>
-
-                                                <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Description</label>
-                                                    </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="description">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-4" style="display: none;">
-                                                <div
-                                                    class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                    <h5
-                                                        class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                        <strong><i data-feather="arrow-right-circle"></i> Approval
-                                                            History</strong>
-                                                        <strong
-                                                            class="badge rounded-pill badge-light-secondary amendmentselect">Rev.
-                                                            No.
+                                                        <div class="col-md-5">  
                                                             <select class="form-select">
-                                                                <option>00</option>
-                                                                <option>01</option>
-                                                                <option>02</option>
-                                                                <option>03</option>
+                                                                <option>Select</option> 
                                                             </select>
-                                                        </strong>
-                                                    </h5>
-                                                    <ul class="timeline ms-50 newdashtimline ">
-                                                        <li class="timeline-item">
-                                                            <span class="timeline-point timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deepak Kumar</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-primary">Amendment</span>
-                                                                </div>
-                                                                <h5>(2 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span class="timeline-point timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Aniket Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-danger">Rejected</span>
-                                                                </div>
-                                                                <h5>(2 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-warning timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deewan Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-warning">Pending</span>
-                                                                </div>
-                                                                <h5>(5 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-info timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Brijesh Kumar</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-success">Approved</span>
-                                                                </div>
-                                                                <h5>(10 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-danger timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deepender Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-success">Approved</span>
-                                                                </div>
-                                                                <h5>(5 day ago)</h5>
-                                                                <p><a href="#"><i data-feather="download"></i></a>
-                                                                    Description will come here </p>
-                                                            </div>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="card">
-                                    <div class="card-body customernewsection-form">
-
-                                        <div class="border-bottom mb-2 pb-25">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="newheader ">
-                                                        <h4 class="card-title text-theme">Maintenance and Spare Part Detail
-                                                        </h4>
-                                                        <p class="card-text">Fill the details</p>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6 text-sm-end">
-                                                    <a href="javascript:void(0);" id="deleteRowBtn"
-                                                        class="btn btn-sm btn-outline-danger me-50">
-                                                        <i data-feather="x-circle"></i> Delete</a>
-                                                    <a href="javascript:void(0);" id="addRowBtn"
-                                                        class="btn btn-sm btn-outline-primary">
-                                                        <i data-feather="plus"></i> Add New Item</a>
-
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="step-custhomapp bg-light">
-                                            <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-                                                <li class="nav-item">
-                                                    <a class="nav-link active" data-bs-toggle="tab"
-                                                        href="#Maintenance">Maintenance</a>
-                                                </li>
-                                                <li class="nav-item">
-                                                    <a class="nav-link" data-bs-toggle="tab" href="#Spare">Spare Part</a>
-                                                </li>
-                                            </ul>
-                                        </div>
-
-                                        <div class="tab-content pb-1">
-                                            <div class="tab-pane active" id="Maintenance">
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="table-responsive pomrnheadtffotsticky">
-                                                            <table
-                                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th width="62" class="customernewsection-form">
-                                                                            <div
-                                                                                class="form-check form-check-primary custom-checkbox">
-                                                                                <input type="checkbox"
-                                                                                    class="form-check-input" id="Email">
-                                                                                <label class="form-check-label"
-                                                                                    for="Email"></label>
-                                                                            </div>
-                                                                        </th>
-                                                                        <th width="285">Type</th>
-                                                                        <th width="208">Frequency</th>
-                                                                        <th width="269">Time</th>
-                                                                        <th width="329">Checklist</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody class="mrntableselectexcel" id="maintenanceRows">
-
-                                                                </tbody>
-                                                            </table>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- Spare Part Tab -->
-                                            <div class="tab-pane" id="Spare">
-                                                <div class="row">
-                                                    <div class="col-md-12">
-                                                        <div class="table-responsive pomrnheadtffotsticky">
-                                                            <table
-                                                                class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th width="62" class="customernewsection-form">
-                                                                            <div
-                                                                                class="form-check form-check-primary custom-checkbox">
-                                                                                <input type="checkbox"
-                                                                                    class="form-check-input" id="Email">
-                                                                                <label class="form-check-label"
-                                                                                    for="Email"></label>
-                                                                            </div>
-                                                                        </th>
-                                                                        <th width="285">Item Code</th>
-                                                                        <th width="208">Item Name</th>
-                                                                        <th width="269">Attributes</th>
-                                                                        <th width="329">UOM</th>
-                                                                        <th>Qty</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody class="mrntableselectexcel" id="spareRows">
-                                                                </tbody>
+                                                     </div>
 
-                                                                <tfoot>
-                                                                    <tr class="totalsubheadpodetail">
-                                                                        <td colspan="6"></td>
-                                                                    </tr>
-                                                                    <tr valign="top">
-                                                                        <td colspan="6">
-                                                                            <table class="table border">
-                                                                                <tr>
-                                                                                    <td class="p-0">
-                                                                                        <h6
-                                                                                            class="text-dark mb-0 bg-light-primary py-1 px-50">
-                                                                                            <strong>Part Details</strong>
-                                                                                        </h6>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class=" mw-100">
-                                                                                            <strong>Name</strong>:
-                                                                                            <span id="part-detail-name"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:
-                                                                                            <span id="part-detail-hsn"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary">
-                                                                                            <strong>Color</strong>:
-                                                                                            <span id="part-detail-color"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Size</strong>:
-                                                                                            <span id="part-detail-size"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Inv.
-                                                                                                UOM</strong>:
-                                                                                            <span id="part-detail-uom"></span>
-                                                                                        </div>
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
-                                                                                            <span id="part-detail-qty"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                                <tr>
-                                                                                    <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class="badge rounded-pill badge-light-secondary">
-                                                                                            <strong>Remarks</strong>:
-                                                                                            <span id="part-detail-remarks"></span>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-                                                                            </table>
-                                                                        </td>
-                                                                    </tr>
-                                                                </tfoot>
-                                                            </table>
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Doc No <span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5"> 
+                                                            <input type="text" class="form-control">
+                                                        </div> 
+                                                     </div>  
+
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Doc Date <span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5"> 
+                                                            <input type="date" class="form-control">
+                                                        </div> 
+                                                     </div>  
+												
+													
+													<div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Category <span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select">
+                                                                <option>Select</option> 
+                                                            </select>
                                                         </div>
+                                                     </div>
+
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Equipment <span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select">
+                                                                <option>Select</option> 
+                                                            </select>
+                                                        </div>
+                                                     </div>
+
+                                                     
+												
+
+<!--
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5"> 
+                                                            <select class="form-select">
+                                                                <option>Select</option> 
+                                                            </select>
+                                                        </div> 
+                                                     </div>  
+
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Due Date </label>  
+                                                        </div>  
+
+                                                        <div class="col-md-5"> 
+                                                            <input type="date" class="form-control">
+                                                        </div> 
+                                                     </div> 
+--> 
+
+
+                                            </div> 
+                                            
+                                            <div class="col-md-4"> 
+
+                                                    <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                        <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                            <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No. 
+                                                                <select class="form-select">
+                                                                    <option>00</option>
+                                                                    <option>01</option>
+                                                                    <option>02</option>
+                                                                    <option>03</option>
+                                                                </select>
+                                                            </strong>
+                                                            
+                                                        </h5>
+                                                        <ul class="timeline ms-50 newdashtimline ">
+                                                            <li class="timeline-item">
+                                                                <span class="timeline-point timeline-point-indicator"></span>
+                                                                <div class="timeline-event">
+                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                        <h6>Deepak Kumar</h6> 
+                                                                        <span class="badge rounded-pill badge-light-primary">Amendment</span>
+                                                                    </div>
+                                                                    <h5>(2 min ago)</h5>
+                                                                    <p>Description will come here</p> 
+                                                                </div>
+                                                            </li>
+                                                            <li class="timeline-item">
+                                                                <span class="timeline-point timeline-point-indicator"></span>
+                                                                <div class="timeline-event">
+                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                        <h6>Aniket Singh</h6> 
+                                                                        <span class="badge rounded-pill badge-light-danger">Rejected</span>
+                                                                    </div>
+                                                                    <h5>(2 min ago)</h5>
+                                                                    <p>Description will come here</p> 
+                                                                </div>
+                                                            </li>
+                                                            <li class="timeline-item">
+                                                                <span class="timeline-point timeline-point-warning timeline-point-indicator"></span>
+                                                                <div class="timeline-event">
+                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                        <h6>Deewan Singh</h6>
+                                                                        <span class="badge rounded-pill badge-light-warning">Pending</span>
+                                                                    </div>
+                                                                    <h5>(5 min ago)</h5>
+                                                                    <p>Description will come here</p> 
+                                                                </div>
+                                                            </li>
+                                                            <li class="timeline-item">
+                                                                <span class="timeline-point timeline-point-info timeline-point-indicator"></span>
+                                                                <div class="timeline-event">
+                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                        <h6>Brijesh Kumar</h6>
+                                                                        <span class="badge rounded-pill badge-light-success">Approved</span>
+                                                                    </div>
+                                                                    <h5>(10 min ago)</h5>
+                                                                    <p>Description will come here</p> 
+                                                                </div>
+                                                            </li> 
+                                                            <li class="timeline-item">
+                                                                <span class="timeline-point timeline-point-danger timeline-point-indicator"></span>
+                                                                <div class="timeline-event">
+                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                        <h6>Deepender Singh</h6>
+                                                                       <span class="badge rounded-pill badge-light-success">Approved</span>
+                                                                    </div>
+                                                                    <h5>(5 day ago)</h5>
+                                                                    <p><a href="#"><i data-feather="download"></i></a> Description will come here </p> 
+                                                                </div>
+                                                            </li>
+                                                        </ul>
                                                     </div>
+
                                                 </div>
-                                            </div>
-                                            <!-- End Spare Part Tab -->
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="col-md-4">
-                                                    <div class="mb-1">
-                                                        <label class="form-label">Upload Document</label>
-                                                        <input type="file" class="form-control">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <div class="mb-1">
-                                                    <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+
+                                        </div> 
                                 </div>
                             </div>
+                            
+                              
+                            
+                            
+							
+                            <div class="card">
+								 <div class="card-body customernewsection-form"> 
+                                     
+                                     
+                                            <div class="border-bottom mb-2 pb-25">
+                                                     <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="newheader "> 
+                                                                <h4 class="card-title text-theme">Checklist and Defect Detail</h4>
+                                                                <p class="card-text">Fill the details</p>
+                                                            </div>
+                                                        </div>
+<!--
+                                                        <div class="col-md-6 text-sm-end">
+                                                            <a href="#" class="btn btn-sm btn-outline-danger me-50">
+                                                                <i data-feather="x-circle"></i> Delete</a>
+                                                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                                                <i data-feather="plus"></i> Add New Item</a>
+                                                         </div>
+-->
+                                                    </div> 
+                                             </div>
+											 
+											 
+											  
+									 		<div class="step-custhomapp bg-light">
+												<ul class="nav nav-tabs my-25 custapploannav" role="tablist">
+													<li class="nav-item">
+														<a class="nav-link active" data-bs-toggle="tab" href="#payment">Checklist</a>
+													</li>
+													<li class="nav-item">
+														<a class="nav-link" data-bs-toggle="tab" href="#attachment">Defect</a>
+													</li> 
+												</ul>
+											</div>
+									 
+									 		<div class="tab-content pb-1">
+												<div class="tab-pane active" id="payment">
+                                                	<div class="row">  
+														 <div class="col-md-12"> 
+															 <div class="table-responsive pomrnheadtffotsticky">
+																 <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+																	<thead>
+																		 <tr>
+																			<th style="width: 30px">#</th>
+																			<th width="200">Maintenance Type</th>
+																			<th width="300px">Checklist</th>
+																			<th>Frequency</th>
+																		  </tr>
+																		</thead>
+																		<tbody class="mrntableselectexcel">
+																			  <tr>
+																				  <td>1</td>
+																				  <td class="poprod-decpt p-50"><strong class="font-small-4">Running</strong></td>
+																				  <td class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td>
+																				  <td class="poprod-decpt p-50">Monthly</td>
+																			     
+																			  </tr>
+
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 1</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																				 <td></td>
+																			  </tr>
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 2</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																				 <td></td>
+																			  </tr>
+																			
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 3</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																				 <td></td>
+																			  </tr>
+																			  
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 4</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																				 <td></td>
+																			  </tr>
+
+																			 <tr>
+																				 <td>1</td>
+																				 <td class="poprod-decpt p-50"><strong class="font-small-4">Running</strong></td>
+																				 <td class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td>	
+																				 <td class="poprod-decpt p-50">Monthly</td>
+																			     
+																			  </tr>
+
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 1</td>
+																			     <td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
+																				 </td>
+																				 <td></td>
+																			  </tr>
+
+																			  <tr>
+																				 <td></td>
+																				 <td class="ps-1">Checklist 2</td>
+																			     <td class="poprod-decpt">
+																					<div class="form-check form-check-primary custom-checkbox ms-50">
+																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
+																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
+																					</div> 
+																				 </td>
+																				 <td></td>
+																			  </tr>
+																			 
+																	 </tbody>
+
+
+
+
+																</table>
+															</div> 
+														</div>  
+													 </div>
+												</div>
+												<div class="tab-pane" id="attachment">
+                                                	<div class="row">  
+														 <div class="col-md-12"> 
+															 <div class="table-responsive pomrnheadtffotsticky">
+																 <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+																	<thead>
+																		 <tr>
+																			<th>
+																				#
+																			</th>
+																			<th width="150">Item Code</th>
+																			<th width="150">Item Name</th>
+																			<th>Attribute</th>
+																			<th>UOM</th>
+																			<th>Qty</th>
+																			<th>Defect Type</th>
+																			<th>Priority</th>
+																			<th>Due Date</th>
+																			<th>Description</th>
+																		  </tr>
+																		</thead>
+																		<tbody class="mrntableselectexcel">
+																			 <tr>
+																				 <td>1</td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt">
+																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
+																				 </td>
+																				 <td><select class="form-select">
+																				   <option>Select</option>
+																				   <option selected>KG</option>
+																				 </select></td>
+																				 <td class="poprod-decpt">5</td>
+																				 <td>
+																					 <select class="form-select mw-100">
+																					   <option>Select</option> 
+																					 </select>
+																				</td>
+																				<td class="poprod-decpt">High</td>
+																				<td class="poprod-decpt">
+																					08-10-2025
+																				</td>
+																				<td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
+																				</td>
+																			  </tr>
+
+
+																			 <tr>
+																				 <td>2</td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt">
+																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
+																				 </td>
+																				 <td><select class="form-select">
+																				   <option>Select</option>
+																				   <option selected>KG</option>
+																				 </select></td>
+																				 <td class="poprod-decpt">4</td>
+																				 <td>
+																					 <select class="form-select mw-100">
+																					   <option>Select</option> 
+																					 </select>
+																				</td>
+																				<td class="poprod-decpt">Medium</td>
+																				<td class="poprod-decpt">
+																					08-10-2025
+																				</td>
+																				<td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
+																				</td>
+																			  </tr>
+
+																			<tr>
+																				 <td>3</td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt">
+																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
+																				 </td>
+																				 <td><select class="form-select">
+																				   <option>Select</option>
+																				   <option selected>KG</option>
+																				 </select></td>
+																				 <td class="poprod-decpt">7</td>
+																				 <td>
+																					 <select class="form-select mw-100">
+																					   <option>Select</option> 
+																					 </select>
+																				</td>
+																				<td class="poprod-decpt">Low</td>
+																				<td class="poprod-decpt">
+																					08-10-2025
+																				</td>
+																				<td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
+																				</td>
+																			  </tr>
+
+																			<tr>
+																				<td>4</td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
+																				 <td class="poprod-decpt">
+																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
+																				 </td>
+																				 <td><select class="form-select">
+																				   <option>Select</option>
+																				   <option selected>KG</option>
+																				 </select></td>
+																				 <td class="poprod-decpt">7</td>
+																				 <td>
+																					 <select class="form-select mw-100">
+																					   <option>Select</option> 
+																					 </select>
+																				</td>
+																				<td class="poprod-decpt">High</td>
+																				<td class="poprod-decpt">
+																					08-10-2025
+																				</td>
+																				<td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
+																				</td>
+																			  </tr>
+
+																			<tr>
+																				<td>5</td>
+																				 <td class="poprod-decpt">-</td>
+																				 <td class="poprod-decpt">-</td>
+																				 <td>-</td>
+																				 <td>-</td>
+																				 <td class="poprod-decpt">-</td>
+																				 <td>
+																					 <select class="form-select mw-100">
+																					   <option>Select</option> 
+																					 </select>
+																				</td>
+																				<td class="poprod-decpt">Medium</td>
+																				<td class="poprod-decpt">
+																					08-10-2025
+																				</td>
+																				<td class="poprod-decpt">
+																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
+																				</td>
+																			  </tr>
+
+
+																	 </tbody>
+
+
+
+
+																</table>
+															</div>
+ 
+														</div> 
+
+													 </div>
+												</div>
+									 		</div>
+									 
+									 		<div class="row mt-2"> 
+													<div class="col-md-12">
+														 <div class="col-md-4">
+															<div class="mb-1">
+																<label class="form-label">Upload Document</label>
+																<input type="file" class="form-control">
+															</div>
+														</div> 
+												 </div>
+
+
+
+													<div class="col-md-12">
+														<div class="mb-1">  
+															<label class="form-label">Final Remarks</label> 
+															<textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+
+														</div>
+													</div>
+
+												 </div>
+  
+											
+											 
+								</div>
+                            </div>
+                            
+                            
+                            
+                             
+                            
+                            
                         </div>
-                        <!-- Modal to add new record -->
-                    </section>
-                </div>
-            </form>
+                    </div>
+                    <!-- Modal to add new record -->
+                     
+                </section>
+                 
+
+            </div>
         </div>
     </div>
     <!-- END: Content-->

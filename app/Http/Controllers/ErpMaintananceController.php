@@ -14,12 +14,13 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class ErpEquipmentController extends Controller
+class ErpMaintananceController extends Controller
 {
     public function index()
     {
-        $equipments = ErpEquipment::with(['spareParts', 'maintenanceDetails.checklists'])->get();
-        return view('equipment.index', compact('equipments'));
+        // $equipments = ErpEquipment::with(['spareParts', 'maintenanceDetails.checklists'])->get();
+        // return view('equipment.index', compact('equipments'));
+        return view('equipment.maintainance.index');
     }
     public function create()
     {
@@ -89,7 +90,7 @@ class ErpEquipmentController extends Controller
         // dd($organizations, $locations);
 
         // You can fetch dropdowns via AJAX or here (for demo, keeping empty)
-        return view('equipment.create', compact('userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'approval_history','items', 'checklists'));
+        return view('equipment.maintainance.create', compact('userOrganizations', 'locations', 'categories', 'maintenanceTypes', 'approval_history','items', 'checklists'));
     }
 
     public function store(ErpEquipmentRequest $request)
@@ -243,7 +244,7 @@ class ErpEquipmentController extends Controller
             ],
         ];
 
-        return view('equipment.edit', compact(
+        return view('equipment.maintainance.edit', compact(
             'equipment',
             'userOrganizations',
             'locations',

@@ -172,6 +172,7 @@ use App\Http\Controllers\PutAwayController;
 use App\Http\Controllers\ErpMaintenanceTypeController;
 use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpEquipmentController;
+use App\Http\Controllers\ErpMaintananceController;
 
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
@@ -2859,6 +2860,16 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
         Route::get('/edit/{id}', [ErpEquipmentController::class, 'edit'])->name('equipment.edit');
         Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
+
+    });
+
+    Route::prefix('maintainance')->group(function () {
+
+        Route::get('/', [ErpMaintananceController::class, 'index'])->name('maintainance.index');
+        Route::get('/create', [ErpMaintananceController::class, 'create'])->name('maintainance.create');
+        Route::post('/store', [ErpMaintananceController::class, 'store'])->name('maintainance.store');
+        Route::get('/edit/{id}', [ErpMaintananceController::class, 'edit'])->name('maintainance.edit');
+        Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintainance.update');
 
     });
 });
