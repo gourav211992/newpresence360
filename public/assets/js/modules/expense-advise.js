@@ -337,7 +337,6 @@ function setTableCalculation() {
     let totalAfterTax = 0;
     let totalHeaderExp = 0;
     let grandTotal = 0;
-    let applicability_type = '';
     $("#itemTable [id*='row_']").each(function (index, item) {
         let rowCount = Number($(item).attr('data-index'));
         let qty = $(item).find("[name*='[accepted_qty]']").val() || 0;
@@ -482,7 +481,6 @@ function setTableCalculation() {
                     .then(data => {
                         $(item3).find("[name*='t_d_id']").remove();
                         $(item3).find("[name*='t_code']").remove();
-                        $(item3).find("[name*='applicability_type']").remove();
                         $(item3).find("[name*='t_type']").remove();
                         $(item3).find("[name*='t_perc']").remove();
                         $(item3).find("[name*='t_value']").remove();
@@ -500,7 +498,6 @@ function setTableCalculation() {
         } else {
             $(item3).find("[name*='t_d_id']").remove();
             $(item3).find("[name*='t_code']").remove();
-            $(item3).find("[name*='applicability_type']").remove();
             $(item3).find("[name*='t_type']").remove();
             $(item3).find("[name*='t_perc']").remove();
             $(item3).find("[name*='t_value']").remove();
@@ -521,7 +518,6 @@ function setTableCalculation() {
 
             let totalAmountAfterItemDis = itemValue4 - itemDisc4;
             if (isTax) {
-                applicability_type = $(item4).find("[name*='applicability_type']").val();
                 if($(item4).find("[name*='[t_perc]']").length && totalAmountAfterItemDis) {
                     let taxAmountRow = 0.00;
                     $(item4).find("[name*='[t_perc]']").each(function(index,eachItem) {
@@ -533,20 +529,19 @@ function setTableCalculation() {
                         } else {
                             $(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
                         }
-                        taxAmountRow += eachTaxTypePrice;
+                        if($(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][applicability_type]"]`).val() == 'collection') {
+                            taxAmountRow += eachTaxTypePrice;
+                        } else {
+                            taxAmountRow -= eachTaxTypePrice;
+                        }
                     });
                     totalTax += taxAmountRow;
-                    if ($.trim(applicability_type).toLowerCase() === 'collection') {
-                        finaltotalTax = Number(finaltotalTax) + Number(taxAmountRow);
-                    } else {
-                        finaltotalTax = Number(finaltotalTax) - Number(taxAmountRow);
-                    }
                 }
             }
         });
 
         totalAfterBothDisc = Number(totalItemValue || 0)-Number(totalItemDiscount || 0)-Number(totalHeaderDiscount || 0);
-        totalAfterTax = Number(totalItemValue || 0) - Number(totalItemDiscount || 0) - Number(totalHeaderDiscount || 0) + Number(finaltotalTax || 0);
+        totalAfterTax = Number(totalItemValue || 0)-Number(totalItemDiscount || 0)-Number(totalHeaderDiscount || 0)+Number(totalTax || 0);
         $("#f_taxable_value")
             .attr('amount',totalAfterBothDisc.toFixed(2))
             .text(totalAfterBothDisc.toFixed(2))

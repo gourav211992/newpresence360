@@ -1039,7 +1039,7 @@ class MoController extends Controller
     }
 
     // genrate pdf
-    public function generatePdf(Request $request, $id)
+    public function generatePdf(Request $request, $id , $pattern = "potrait")
     {
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
@@ -1068,10 +1068,7 @@ class MoController extends Controller
         $approvedBy = Helper::getDocStatusUser(get_class($mo), $mo -> id, $mo -> document_status);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$mo->document_status] ?? '';
         $dynamicFields = $mo -> dynamic_fields ?? [];
-        $pdf = PDF::loadView(
-        // return view(
-        'pdf.mo',
-        [
+        $dataArray=[
             'order'=> $mo,
             'items' => $items,
             'user'=>$user,
@@ -1085,8 +1082,13 @@ class MoController extends Controller
             'specifications' => $specifications,
             'docStatusClass' => $docStatusClass,
             'dynamicFields' => $dynamicFields
-        ]
-        );
+        ];
+        if($pattern == "landscape")
+        {
+            $pdf =  PDF::loadView('pdf.mo',$dataArray)->setPaper('a4', 'landscape');
+        } else {
+            $pdf =  PDF::loadView('pdf.mo',$dataArray)->setPaper('a4', 'potrait');
+        }
         // $pdf->setPaper('a4', 'landscape');
         // $pdf->setOption('isHtml5ParserEnabled', true);
         return $pdf->stream('MfgOrder-' . date('Y-m-d') . '.pdf');

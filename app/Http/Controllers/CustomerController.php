@@ -231,7 +231,6 @@ class CustomerController extends Controller
     public function create()
     {
         $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-        $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
         $titles = ConstantHelper::TITLES;
@@ -270,7 +269,6 @@ class CustomerController extends Controller
         }
         return view('procurement.customer.create', [
             'organizationTypes' => $organizationTypes,
-            'categories' => $categories,
             'titles' => $titles,
             'currencies' => $currencies,
             'paymentTerms' => $paymentTerms,
@@ -308,7 +306,7 @@ class CustomerController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
              // Insert Book ID (if current_book exists)
@@ -324,7 +322,7 @@ class CustomerController extends Controller
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         $companyName = $validatedData['company_name'] ?? ''; 
@@ -483,7 +481,6 @@ class CustomerController extends Controller
         $state = $gstStateId ? State::find($gstStateId) : null;
         $country = $state ? Country::find($state->country_id) : null;
         $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
-        $subcategories = Category::where('status', ConstantHelper::ACTIVE)->whereNotNull('parent_id')->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
         $titles = ConstantHelper::TITLES;
@@ -540,7 +537,6 @@ class CustomerController extends Controller
         return view('procurement.customer.edit', [
             'customer' => $customer,
             'organizationTypes' => $organizationTypes,
-            'subcategories' => $subcategories,
             'titles' => $titles,
             'currencies' => $currencies,
             'paymentTerms' => $paymentTerms,
@@ -586,7 +582,7 @@ class CustomerController extends Controller
                 $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
              // Insert Book ID (if current_book exists)
@@ -602,7 +598,7 @@ class CustomerController extends Controller
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
         $companyName = $validatedData['company_name'] ?? ''; 

@@ -15,6 +15,8 @@ class StationRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -22,11 +24,33 @@ class StationRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
         $stationId = $this->route('id'); 
+        $uniqueScope = Rule::unique('erp_stations')
+            ->ignore($stationId)
+            ->whereNull('deleted_at')
+            ->whereNull('parent_id');
+        if ($this->group_id !== null) {
+            $uniqueScope->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $uniqueScope->where(function($query) {
+                $query->where('company_id', $this->company_id)
+                    ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $uniqueScope->where(function($query) {
+                $query->where('organization_id', $this->organization_id)
+                    ->orWhereNull('organization_id');
+            });
+        }
 
         return [
             'parent_id' => 'nullable|exists:erp_stations,id',
@@ -38,11 +62,7 @@ class StationRequest extends FormRequest
                 'required',
                 'string',
                 'max:100',
-                Rule::unique('erp_stations')
-                    ->ignore($stationId)
-                    ->where('group_id', $this->group_id) 
-                    ->whereNull('parent_id')
-                    ->whereNull('deleted_at'), 
+                $uniqueScope
             ],
             'alias' => [
                 'max:50',

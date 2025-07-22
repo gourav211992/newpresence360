@@ -15,6 +15,8 @@ class TermsAndConditionRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
@@ -22,19 +24,43 @@ class TermsAndConditionRequest extends FormRequest
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
         $this->group_id = $organization ? $organization->group_id : null; 
+        $this->company_id = $organization ? $organization->company_id : null;
+        
     }
 
     public function rules()
     {
+         $termId = $this->route('id');
+         $uniqueRule = Rule::unique('erp_terms_and_conditions', 'term_name')
+            ->ignore($termId)
+            ->whereNull('deleted_at');
+
+        if ($this->group_id !== null) {
+            $uniqueRule->where('group_id', $this->group_id);
+        }
+
+        if ($this->company_id !== null) {
+            $companyId = $this->company_id;
+            $uniqueRule->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                      ->orWhereNull('company_id');
+            });
+        }
+
+        if ($this->organization_id !== null) {
+            $orgId = $this->organization_id;
+            $uniqueRule->where(function ($query) use ($orgId) {
+                $query->where('organization_id', $orgId)
+                      ->orWhereNull('organization_id');
+            });
+        }
+
         return [
            'term_name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('erp_terms_and_conditions', 'term_name')
-                    ->ignore($this->route('id')) 
-                    ->where('group_id', $this->group_id)
-                    ->whereNull('deleted_at') 
+                $uniqueRule
             ],
             'term_detail' => 'required|string|min:10', 
             'status' => 'required|in:active,inactive', 

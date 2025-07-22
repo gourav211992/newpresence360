@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Rules\AtLeastOneRequired;
 use Illuminate\Validation\Rule;
 use App\Helpers\Helper;
 use Auth;
@@ -18,19 +17,41 @@ class ItemRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $company_id;
+    protected $group_id;
 
     protected function prepareForValidation()
     {
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $this->organization_id = $organization ? $organization->id : null;
-        $this->group_id = $organization ? $organization->group_id : null; 
+        $this->group_id = $organization ? $organization->group_id : null;
+        $this->company_id = $organization ? $organization->company_id : null;
     }
 
     public function rules(): array
     {
         $itemId = $this->route('id'); 
 
+        $uniqueScope = function ($query) {
+            if ($this->group_id !== null) {
+                $query->where('group_id', $this->group_id);
+            }
+
+            if ($this->company_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('company_id', $this->company_id)
+                      ->orWhereNull('company_id'); 
+                });
+            }
+
+            if ($this->organization_id !== null) {
+                $query->where(function ($q) {
+                    $q->where('organization_id', $this->organization_id)
+                      ->orWhereNull('organization_id'); 
+                });
+            }
+        };
 
         return [
             'type' => 'required|string|in:Goods,Service',
@@ -51,8 +72,8 @@ class ItemRequest extends FormRequest
             'max:255',
             Rule::unique('erp_items', 'item_code')
                 ->ignore($itemId)  
-                ->where('group_id',  $this->group_id) 
-                ->whereNull('deleted_at'), 
+                ->whereNull('deleted_at') 
+                ->where($uniqueScope),
            ],
            'item_name' => [
                 'required',
@@ -60,8 +81,8 @@ class ItemRequest extends FormRequest
                 'max:200',
                 Rule::unique('erp_items', 'item_name')
                     ->ignore($itemId)  
-                    ->where('group_id', $this->group_id) 
-                    ->whereNull('deleted_at'),
+                    ->whereNull('deleted_at')
+                    ->where($uniqueScope),
             ],
             'item_initial'=>[
                 'required',

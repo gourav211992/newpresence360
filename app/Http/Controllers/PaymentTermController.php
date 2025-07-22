@@ -21,9 +21,7 @@ class PaymentTermController extends Controller
         $companyId = $organization?->company_id ?? null;
     
         if ($request->ajax()) {
-            $paymentTerms = PaymentTerm::WithDefaultGroupCompanyOrg()
-                ->get();
-    
+         $paymentTerms = PaymentTerm::orderBy('id', 'desc')->get();
             return DataTables::of($paymentTerms)
                 ->addIndexColumn()
                 ->addColumn('status', function ($row) {
@@ -76,12 +74,12 @@ class PaymentTermController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
     
@@ -135,12 +133,12 @@ class PaymentTermController extends Controller
                 $validated['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
         } else {
             $validated['group_id'] = $organization->group_id;
-            $validated['company_id'] = null;
+            $validated['company_id'] = $organization->company_id;
             $validated['organization_id'] = null;
         }
         $paymentTerm->update($validated);

@@ -22,7 +22,6 @@ class DiscountMasterController extends Controller
         $organizationId = $organization?->id ?? null;
         if ($request->ajax()) {
             $discountMasters = DiscountMaster::with(['erpLedger'])
-                ->withDefaultGroupCompanyOrg()
                 ->orderBy('id', 'desc');
     
                 return DataTables::of($discountMasters)
@@ -95,8 +94,7 @@ class DiscountMasterController extends Controller
                 ->rawColumns(['status', 'actions']) 
                 ->make(true);
         }
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->where('status', 1) 
+        $ledgers = Ledger::where('status', 1) 
             ->get();
          $status = ConstantHelper::STATUS;
     
@@ -123,12 +121,12 @@ class DiscountMasterController extends Controller
                     $validated['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validated['group_id'] = $organization->group_id;
-                    $validated['company_id'] = null;
+                    $validated['company_id'] = $organization->company_id;
                     $validated['organization_id'] = null;
                 }
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
 
@@ -171,12 +169,12 @@ class DiscountMasterController extends Controller
                     $validated['organization_id'] = $policyLevelData['organization_id'];
                 } else {
                     $validated['group_id'] = $organization->group_id;
-                    $validated['company_id'] = null;
+                    $validated['company_id'] = $organization->company_id;
                     $validated['organization_id'] = null;
                 }
             } else {
                 $validated['group_id'] = $organization->group_id;
-                $validated['company_id'] = null;
+                $validated['company_id'] = $organization->company_id;
                 $validated['organization_id'] = null;
             }
 

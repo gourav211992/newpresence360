@@ -2215,6 +2215,7 @@ class ErpSaleInvoiceController extends Controller
                             $item -> order_qty = $item -> picked_qty - $item -> dnote_qty; 
                             $item -> balance_qty = $item -> picked_qty - $item -> dnote_qty; 
                             $item -> stock_qty = $item -> picked_qty - $item -> dnote_qty; 
+                            $item -> item_discount_amount = 0; 
 
                         }
                     }

@@ -3554,18 +3554,21 @@
                                         storesHTML += `<option value = "${store.id}">${store.store_name}</option>`
                                     }
                                 });
-                                if (currentOrder?.staging_sub_store_id) {
-                                    console.log("SALES ", currentOrder);
-                                    storesHTML += `<option value = "${currentOrder.staging_sub_store_id}" selected>${currentOrder?.staging_sub_store_code}</option>`
-                                }
 
                                 let subStoresHTML = ``;
                                 currentSubStoreArray.forEach(subStore => {
                                     if (subStoreId == subStore.id) {
-                                        console.log("THIS IS HEREEE");
+                                        subStoresHTML += `<option value = ${subStore.id} ${subStore.id == subStoreId ? 'selected' : ''}> ${subStore.name} </option>`;
                                     }
-                                    subStoresHTML += `<option value = ${subStore.id} ${subStore.id == subStoreId ? 'selected' : ''}> ${subStore.name} </option>`;
                                 });
+
+                                if (currentOrder?.staging_sub_store_id) {
+                                    subStoresHTML += `<option value = "${currentOrder.staging_sub_store_id}" selected>${currentOrder?.staging_sub_store_code}</option>`
+                                }
+
+                                if (currentOrder?.sub_store_id) {
+                                    subStoresHTML += `<option value = "${currentOrder.sub_store_id}" selected>${currentOrder?.sub_store_code}</option>`
+                                }
 
                                 mainTableItem.innerHTML += `
                                 <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');">

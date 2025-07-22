@@ -29,17 +29,12 @@ class ServiceAccountController extends Controller
             ->toArray();
         $companies = OrganizationCompany::whereIn('id', $companyIds)->get();
         $ledgerGroups = Group::all();
-        $ledgers = Ledger::withDefaultGroupCompanyOrg()
-            ->where('status', '1') 
-            ->get();  
-        $items = Item::withDefaultGroupCompanyOrg()
-            ->where('type', 'Service')
+        $ledgers = Ledger::where('status', '1') ->get();  
+        $items = Item::where('type', 'Service')
             ->where('status', 'active') 
             ->get();
-        $serviceAccounts = ServiceAccount::withDefaultGroupCompanyOrg()->get();  
-        $erpBooks = Book::withDefaultGroupCompanyOrg()
-            ->where('status', 'active') 
-            ->get(); 
+        $serviceAccounts = ServiceAccount::query()->get();
+        $erpBooks = Book::where('status', 'active') ->get(); 
         return view('procurement.service-account.index', compact(
             'companies', 'ledgerGroups', 'ledgers', 'items', 'serviceAccounts','erpBooks','orgIds'
         ));
@@ -148,8 +143,6 @@ class ServiceAccountController extends Controller
         // Ledger fetch
         $ledgers = Ledger::query()
             ->where('status', '1')
-            ->withDefaultGroupCompanyOrg()  
-    
             ->when($organizationId, function ($query) use ($organizationId) {
                 $exists = Ledger::where('organization_id', $organizationId)
                     ->where('status', '1')
@@ -164,7 +157,6 @@ class ServiceAccountController extends Controller
         // Book fetch
         $erpBooks = Book::query()
             ->where('status', 'active')
-            ->withDefaultGroupCompanyOrg() 
             ->when($organizationId, function ($query) use ($organizationId) {
                 $exists = Book::where('organization_id', $organizationId)
                     ->where('status', 'active')
@@ -180,7 +172,6 @@ class ServiceAccountController extends Controller
         $items = Item::query()
             ->where('status', 'active')
             ->where('type', 'Service')
-            ->withDefaultGroupCompanyOrg() 
             ->when($organizationId, function ($query) use ($organizationId) {
                 $exists = Item::where('organization_id', $organizationId)
                     ->where('status', 'active')
@@ -208,8 +199,7 @@ class ServiceAccountController extends Controller
             ->with('parent')
             ->doesntHave('subCategories')
             ->where('type', 'Product')
-            ->where('status', 'active')
-            ->withDefaultGroupCompanyOrg(); 
+            ->where('status', 'active');
     
         $query->when($organizationId, function ($q) use ($organizationId) {
             $exists = Category::query()
@@ -263,7 +253,6 @@ class ServiceAccountController extends Controller
                 $items = Item::where('subcategory_id', $categoryId)
                     ->where('status', 'active')
                     ->where('type', 'Service') 
-                    ->withDefaultGroupCompanyOrg() 
                     ->get();
             }
         } else {
@@ -279,8 +268,7 @@ class ServiceAccountController extends Controller
     {
         $searchTerm = $request->input('search', '');
         $query = Ledger::query()
-            ->where('status', '1')
-            ->withDefaultGroupCompanyOrg(); 
+            ->where('status', '1');
 
         $query->when($organizationId, function ($q) use ($organizationId) {
             $exists = Ledger::where('organization_id', $organizationId)
@@ -341,7 +329,7 @@ class ServiceAccountController extends Controller
             return response()->json(['message' => 'No ledger id provided.'], 400);
         }
 
-        $ledger = Ledger::withDefaultGroupCompanyOrg()->find($ledgerId);
+        $ledger = Ledger::find($ledgerId);
 
         if (!$ledger) {
             return response()->json(['message' => 'Ledger not found for the provided id.'], 404);

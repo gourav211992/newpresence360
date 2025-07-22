@@ -17,7 +17,7 @@
         @method('PUT') 
     @php
       $isEditable = isset($customer) && $customer->status === 'draft';
-      $statusValue = isset($customer) && ($customer->status == 'Active') && ($customer->document_status == 'approval_not_required' || $customer->document_status == 'approved') ? 'active' : 'inactive';
+      $statusValue = isset($customer) && (strtolower($customer->status) == 'active') && ($customer->document_status == 'approval_not_required' || $customer->document_status == 'approved') ? 'active' : 'inactive';
       $isChecked = $statusValue == 'active' ? 'checked' : '';
     @endphp
     <input type="hidden" name="customer_id" value="{{ $customer->id ?? '' }}">

@@ -1011,10 +1011,8 @@ class DocumentApprovalController extends Controller
             $document_status = $approveDocument['approvalStatus'];
             $status = $request->status;
             $item->document_status = $document_status;
-            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                if ($status === ConstantHelper::INACTIVE) {
-                    $item->status = ConstantHelper::INACTIVE;
-                } else {
+            if (in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ) {
+                if ($revisionNumber == 0) {
                     $item->status = ConstantHelper::ACTIVE;
                 }
             } else {
@@ -1036,6 +1034,7 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
+
 
     public function vendor(Request $request)
     {
@@ -1061,9 +1060,7 @@ class DocumentApprovalController extends Controller
             $status = $request->status;
             $vendor->document_status = $approvalStatus;
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                if ($status === ConstantHelper::INACTIVE) {
-                    $vendor->status = ConstantHelper::INACTIVE;
-                } else {
+                if ($revisionNumber == 0) {
                     $vendor->status = ConstantHelper::ACTIVE;
                 }
             } else {
@@ -1084,6 +1081,7 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
+
 
     public function customer(Request $request)
     {
@@ -1111,14 +1109,13 @@ class DocumentApprovalController extends Controller
             $customer->document_status = $approvalStatus;
 
             if (in_array($approvalStatus, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                 if ($status === ConstantHelper::INACTIVE) {
-                    $customer->status = ConstantHelper::INACTIVE;
-                } else {
+                 if ($revisionNumber == 0) {
                     $customer->status = ConstantHelper::ACTIVE;
-                }
+                 }
             } else {
                 $customer->status = $approvalStatus;
             }
+            
             $customer->save();
 
             DB::commit();
@@ -1134,7 +1131,6 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
-
 
 
      public function lorryReceipt(Request $request)

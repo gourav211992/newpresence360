@@ -28,7 +28,7 @@
     @method('PUT')
     @php
         $isEditable = isset($item) && $item->status === 'draft';
-        $statusValue = isset($item) && ($item->status == 'Active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
+        $statusValue = isset($item) && (strtolower($item->status) === 'active') && ($item->document_status == 'approval_not_required' || $item->document_status == 'approved') ? 'active' : 'inactive';
         $isChecked = $statusValue === 'active' ? 'checked' : '';
         $tables=$tablesToCheck;
     @endphp
