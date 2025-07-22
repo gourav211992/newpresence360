@@ -169,28 +169,27 @@ class CloseFyController extends Controller
 
 
     private function showMonths($start, $end)
-    {
-        $startDate = Carbon::parse($start);
-        $endDate = Carbon::parse($end);
-        $today     = Carbon::now();
+{
+    $startDate = Carbon::parse($start);
+    $endDate = Carbon::parse($end);
+    $today = Carbon::now();
 
-        // If end_date is in the future, use current month as end_date
-        if ($endDate->greaterThan($today)) {
-            $endDate = $today->copy()->startOfMonth();
-        }
+    // Always set end_date to the start of this month (so last month is the max included)
+    $endDate = $today->copy()->startOfMonth()->subMonth();
 
-        $months = [];
-        $current = $endDate->copy();
+    $months = [];
+    $current = $endDate->copy();
 
-        while ($current >= $startDate) {
-            $months[] = [
-                'value' => $current->format('Y-m'),
-                'label' => $current->format('F Y'),
-            ];
-            $current->subMonth();
-        }
-        return $months;
+    while ($current >= $startDate) {
+        $months[] = [
+            'value' => $current->format('Y-m'),
+            'label' => $current->format('F Y'),
+        ];
+        $current->subMonth();
     }
+    return $months;
+}
+
 
     public function getFyInitialGroups(Request $r)
     {

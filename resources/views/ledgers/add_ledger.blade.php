@@ -232,7 +232,8 @@
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
-                                                                id="tax_percentage" name="tax_percentage" step="any" />
+                                                                id="tax_percentage" name="tax_percentage" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_section_label">
@@ -262,7 +263,8 @@
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
-                                                                id="tds_percentage" name="tds_percentage" />
+                                                                id="tds_percentage" name="tds_percentage" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
 
@@ -305,7 +307,8 @@
 
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
-                                                                id="tcs_percentage" name="tcs_percentage" />
+                                                                id="tcs_percentage" name="tcs_percentage" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$"/>
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tcs_capping_label">

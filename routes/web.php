@@ -2854,8 +2854,11 @@ Route::middleware(['user.auth'])->group(function () {
 
     Route::prefix('equipment')->group(function () {
 
+        Route::get('/', [ErpEquipmentController::class, 'index'])->name('equipment.index');
         Route::get('/create', [ErpEquipmentController::class, 'create'])->name('equipment.create');
         Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
+        Route::get('/edit/{id}', [ErpEquipmentController::class, 'edit'])->name('equipment.edit');
+        Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
 
     });
 });

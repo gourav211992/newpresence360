@@ -169,11 +169,13 @@ class ConstantHelper
     const SUPPLY = 'Supply';
     const CUSTOMER = 'Customer';
     const VENDOR = 'Vendor';
+    const EQUIPMENT = 'Equipment';
 
     const CATEGORY_TYPES = [
         self::PRODUCT,
         self::CUSTOMER,
         self::VENDOR,
+        self::EQUIPMENT,
     ];
 
     const SHIPPING = 'shipping';
