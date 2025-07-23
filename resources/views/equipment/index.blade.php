@@ -16,7 +16,7 @@
                             <h2 class="content-header-title float-start mb-0">Equipment</h2>
                             <div class="breadcrumb-wrapper">
                                 <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="index.html">Home</a></li>  
+                                    <li class="breadcrumb-item"><a href="{{ route('equipment.index') }}">Home</a></li>
                                     <li class="breadcrumb-item active">Equipment List</li>
                                 </ol>
                             </div>
@@ -31,15 +31,10 @@
                 </div>
             </div>
             <div class="content-body">
-                 
-                
-				
 				<section id="basic-datatable">
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-								
-								   
                                 <div class="table-responsive">
 									<table class="datatables-basic table myrequesttablecbox tableistlastcolumnfixed newerptabledesignlisthome"> 
                                         <thead>
@@ -57,54 +52,47 @@
 											  </tr>
 											</thead>
 											<tbody>
-    @foreach($equipments as $index => $equipment)
-        <tr>
-            <td>{{ $index + 1 }}</td>
-            <td class="fw-bolder text-dark">{{ $equipment->name ?? '' }}</td>
-            <td>{{ $equipment->organization->name ?? '' }}</td>
-            <td>
-                <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
-                    {{ $equipment->location->city ?? '' }}
-                </div>
-            </td>
-            <td>{{ $equipment->alias ?? '' }}</td>
-            <td>{{ $equipment->category->name ?? '' }}</td>
-            <td>{{ $equipment->checklist_name ?? '' }}</td>
-            <td>{{ $equipment->last_maint_date ?? '' }}</td>
-            <td>{{ $equipment->maint_due_date ?? '' }}</td>
-            <td class="tableactionnew">
-                <div class="dropdown">
-                    <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                        <i data-feather="more-vertical"></i>
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                        {{-- <a class="dropdown-item" href="#">
-                            <i data-feather="edit" class="me-50"></i>
-                            <span>View Detail</span>
-                        </a> --}}
-                        <a class="dropdown-item" href="{{ route('equipment.edit', $equipment->id) }}">
-                            <i data-feather="edit-3" class="me-50"></i>
-                            <span>Edit</span>
-                        </a>
-                        {{-- <a class="dropdown-item" href="#">
-                            <i data-feather="trash-2" class="me-50"></i>
-                            <span>Delete</span>
-                        </a> --}}
-                    </div>
-                </div>
-            </td>
-        </tr>
-    @endforeach
+                                                @foreach($equipments as $index => $equipment)
+                                                    <tr>
+                                                        <td>{{ $index + 1 }}</td>
+                                                        <td class="fw-bolder text-dark">{{ $equipment->name ?? '' }}</td>
+                                                        <td>{{ $equipment->organization->name ?? '' }}</td>
+                                                        <td>
+                                                            <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
+                                                                {{ $equipment->location->name ?? '' }}
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ $equipment->alias ?? '' }}</td>
+                                                        <td>{{ $equipment->category->name ?? '' }}</td>
+                                                        <td>{{ $equipment->checklist_name ?? '' }}</td>
+                                                        <td>{{ $equipment->maintenanceDetails->last()?->created_at?->format('Y-m-d') ?? '' }}</td>
+                                                        <td>{{ $equipment->maint_due_date ?? '' }}</td>
+                                                        <td class="tableactionnew">
+                                                            <div class="dropdown">
+                                                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                                                                    <i data-feather="more-vertical"></i>
+                                                                </button>
+                                                                <div class="dropdown-menu dropdown-menu-end">
+                                                                    {{-- <a class="dropdown-item" href="#">
+                                                                        <i data-feather="edit" class="me-50"></i>
+                                                                        <span>View Detail</span>
+                                                                    </a> --}}
+                                                                    <a class="dropdown-item" href="{{ route('equipment.edit', $equipment->id) }}">
+                                                                        <i data-feather="edit-3" class="me-50"></i>
+                                                                        <span>Edit</span>
+                                                                    </a>
+                                                                    {{-- <a class="dropdown-item" href="#">
+                                                                        <i data-feather="trash-2" class="me-50"></i>
+                                                                        <span>Delete</span>
+                                                                    </a> --}}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
 											</tbody>
-
-
 									</table>
 								</div>
-								
-								
-								
-								
-								
                             </div>
                         </div>
                     </div>
@@ -224,35 +212,11 @@
           text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
           buttons: [
             {
-              extend: 'print',
-              text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'csv',
-              text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
               extend: 'excel',
               text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
               className: 'dropdown-item',
               exportOptions: { columns: [3, 4, 5, 6, 7] }
             },
-            {
-              extend: 'pdf',
-              text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            },
-            {
-              extend: 'copy',
-              text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
-              className: 'dropdown-item',
-              exportOptions: { columns: [3, 4, 5, 6, 7] }
-            }
           ],
           init: function (api, node, config) {
             $(node).removeClass('btn-secondary');

@@ -6,8 +6,9 @@
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-            <form id="equipmentForm" action="{{ route('equipment.store') }}" method="POST" enctype="multipart/form-data">
+            <form id="equipmentForm" action="{{ route('equipment.update', $equipment->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                @method('PUT')
                 <div class="content-header pocreate-sticky">
                     <div class="row">
                         <div class="content-header-left col-md-6 mb-2">
@@ -16,9 +17,9 @@
                                     <h2 class="content-header-title float-start mb-0">Equipment</h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
-                                            <li class="breadcrumb-item"><a href="index.html">Home</a>
+                                            <li class="breadcrumb-item"><a href="{{ route('equipment.index') }}">Home</a>
                                             </li>
-                                            <li class="breadcrumb-item active">Add New</li>
+                                            <li class="breadcrumb-item active">Edit</li>
                                         </ol>
                                     </div>
                                 </div>
@@ -90,7 +91,7 @@
                                                             <option value="">Select</option>
 
                                                             @foreach ($userOrganizations as $organization)
-                                                                <option value="{{ $organization->id }}">
+                                                                <option value="{{ $organization->id }}" @selected(old('organization_id', $equipment->organization_id) == $organization->id)>
                                                                     {{ $organization->name }}</option>
                                                             @endforeach
                                                         </select>
@@ -105,7 +106,13 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="location_id" name="location_id">
                                                             <option value="">Select</option>
-                                                            {{-- Populated by JS --}}
+                                                            @foreach ($locations as $loc)
+                                                                @if ($loc->organization_id == $equipment->organization_id)
+                                                                    <option value="{{ $loc->id }}" {{ $equipment->location_id == $loc->id ? 'selected' : '' }}>
+                                                                        {{ $loc->store_name }}
+                                                                    </option>
+                                                                @endif
+                                                            @endforeach
                                                         </select>
                                                     </div>
                                                 </div>
@@ -119,9 +126,12 @@
                                                         <select class="form-select" id="category_id" name="category_id">
                                                             <option value="">Select</option>
                                                             @foreach($categories as $category)
-                                                            <option value="{{ $category->id}}">{{ $category->name }}</option>
+                                                                @if ($category->organization_id == $equipment->organization_id)
+                                                                    <option value="{{ $category->id}}" {{ $equipment->category_id == $category->id ? 'selected' : '' }}>
+                                                                        {{ $category->name }}
+                                                                    </option>
+                                                                @endif
                                                             @endforeach
-                                                            {{-- Populated by JS --}}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -132,7 +142,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="name">
+                                                        <input type="text" class="form-control" name="name" value="{{ old('name', $equipment->name) }}">
                                                     </div>
                                                 </div>
 
@@ -141,7 +151,7 @@
                                                         <label class="form-label">Alias</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="alias">
+                                                        <input type="text" class="form-control" name="alias" value="{{ old('alias', $equipment->alias) }}">
                                                     </div>
                                                 </div>
 
@@ -150,7 +160,7 @@
                                                         <label class="form-label">Description</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" name="description">
+                                                        <input type="text" class="form-control" name="description" value="{{ old('description', $equipment->description) }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -431,7 +441,7 @@
                                             <div class="col-md-12">
                                                 <div class="mb-1">
                                                     <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea>
+                                                    <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here...">{{ old('remarks', $equipment->remarks) }}</textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -702,6 +712,27 @@
             var allLocations = @json($locations);
             // var allCategories = @json($categories);
             var maintenanceTypes = @json($maintenanceTypes);
+            let items = @json($items);
+
+            var existingMaintenanceDetails = @json($equipment->maintenanceDetails);
+            var existingSpareParts = @json($equipment->spareParts);
+
+            console.log(existingMaintenanceDetails)
+            if (existingMaintenanceDetails.length > 0) {
+                existingMaintenanceDetails.forEach((m) => {
+                    $('#maintenanceRows').append(getMaintenanceRow(m));
+                });
+            } else {
+                $('#maintenanceRows').append(getMaintenanceRow());
+            }
+
+            if (existingSpareParts.length > 0) {
+                existingSpareParts.forEach((p) => {
+                    $('#spareRows').append(getSparePartRow(p));
+                });
+            } else {
+                $('#spareRows').append(getSparePartRow());
+            }
 
             // On organization change, filter locations
             $('#organization_id').on('change', function () {
@@ -751,21 +782,32 @@
                     });
                 }
             });
-        });
 
 
-        $(document).ready(function () {
-            var maintenanceTypes = @json($maintenanceTypes);
-
-            function getMaintenanceRow() {
+            function getMaintenanceRow(data = {}) {
                 const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
 
                 // Build options from maintenanceTypes
                 let typeOptions = `<option value="">Select</option>`;
                 maintenanceTypes.forEach(function (type) {
-                    typeOptions += `<option value="${type.id}">${type.name}</option>`;
+                    typeOptions += `<option value="${type.id}" ${data.type == type.id ? 'selected' : ''}>${type.name}</option>`;
+                });
+                console.log(data, data.checklists)
+
+                let selectedNames = data.checklists.map(checklist => checklist.name || '');
+
+                let selectedIds = data.checklists.map(checklist => checklist.id || '').join(',');
+
+                let badgesHtml = '';
+                selectedNames.slice(0, 2).forEach(function (name) {
+                    badgesHtml +=
+                            `<span class="badge rounded-pill badge-light-primary">${name}</span> `;
                 });
 
+                if (selectedNames.length > 2) {
+                    badgesHtml +=
+                            `<span class="badge rounded-pill badge-light-primary">+${selectedNames.length - 2}</span>`;
+                }
                 let row = `<tr data-row-id="${rowId}">
                             <td class="customernewsection-form">
                                 <div class="form-check form-check-primary custom-checkbox">
@@ -781,21 +823,21 @@
                             <td class="poprod-decpt">
                                 <select name="maintenance[${rowId}][frequency]" class="form-select mw-100">
                                     <option value="">Select</option>
-                                    <option value="Daily">Daily</option>
-                                    <option value="Weekly">Weekly</option>
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Semi-Annually">Semi-Annually</option>
-                                    <option value="Annually">Annually</option>
+                                    <option value="Daily" ${data.frequency == 'Daily' ? 'selected' : ''}>Daily</option>
+                                    <option value="Weekly" ${data.frequency == 'Weekly' ? 'selected' : ''}>Weekly</option>
+                                    <option value="Monthly" ${data.frequency == 'Monthly' ? 'selected' : ''}>Monthly</option>
+                                    <option value="Quarterly" ${data.frequency == 'Quarterly' ? 'selected' : ''}>Quarterly</option>
+                                    <option value="Semi-Annually" ${data.frequency == 'Semi-Annually' ? 'selected' : ''}>Semi-Annually</option>
+                                    <option value="Annually" ${data.frequency == 'Annually' ? 'selected' : ''}>Annually</option>
                                 </select>
                             </td>
                             <td class="poprod-decpt">
-                                <input type="time" name="maintenance[${rowId}][time]" placeholder="Enter Time" class="form-control mw-100 mb-25" />
+                                <input type="time" name="maintenance[${rowId}][time]" value="${data.time || ''}" placeholder="Enter Time" class="form-control mw-100 mb-25" />
                             </td>
                             <td class="poprod-decpt checklist-cell">
-                                <span class="checklist-badges"></span>
+                                <span class="checklist-badges">${badgesHtml}</span>
                                 <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                                <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="" />
+                                <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="${selectedIds}" />
                             </td>
                         </tr>`;
 
@@ -921,16 +963,21 @@
             //                 <td><input type="text" value="10" class="form-control mw-100" /></td>
             //             </tr>`;
             // }
-            let items = @json($items);
 
-            function getSparePartRow() {
-                console.log(items)
+            function getSparePartRow(data = {}) {
                 let itemOptions = `<option value="">Select</option>`;
                 items.forEach(function (item) {
-                    itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}">${item.item_code}</option>`;
+                    itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}" ${data.item_code == item.id ? 'selected' : ''}>${item.item_code}</option>`;
                 });
 
                 const rowId = 'spare-' + Math.random().toString(36).substring(2, 10);
+                let badgeHtml = '';
+                console.log(data, data.attributes)
+
+                let attributes = JSON.parse(data.attributes);
+                Object.entries(attributes).forEach(([key, value]) => {
+                    badgeHtml += `<span class="badge rounded-pill badge-light-primary">${key}: ${value}</span> `;
+                });
                 return `<tr data-row-id="${rowId}">
                     <td class="customernewsection-form">
                         <div class="form-check form-check-primary custom-checkbox">
@@ -944,23 +991,24 @@
                         </select>
                     </td>
                     <td class="poprod-decpt">
-                        <input type="text" class="form-control mw-100 item-name-input" name="spareparts[${rowId}][item_name]" />
+                        <input type="text" class="form-control mw-100 item-name-input" name="spareparts[${rowId}][item_name]" value="${data.item_name}" />
                     </td>
                     <td class="poprod-decpt">
+                        ${badgeHtml}
                         <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-secondary open-attribute-modal" style="font-size: 10px">Attributes</button>
-                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value="{}" />
+                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value="${data.attributes}" />
                     </td>
                     <td>
                         <select class="form-select" name="spareparts[${rowId}][uom]">
                             <option value="">Select</option>
-                            <option value="KG">KG</option>
-                            <option value="PCS">PCS</option>
-                            <option value="BOX">BOX</option>
-                            <option value="UNIT">UNIT</option>
+                            <option value="KG" ${data.uom == 'KG' ? 'selected' : ''}>KG</option>
+                            <option value="PCS" ${data.uom == 'PCS' ? 'selected' : ''}>PCS</option>
+                            <option value="BOX" ${data.uom == 'BOX' ? 'selected' : ''}>BOX</option>
+                            <option value="UNIT" ${data.uom == 'UNIT' ? 'selected' : ''}>UNIT</option>
                         </select>
                     </td>
                     <td>
-                        <input type="number" name="spareparts[${rowId}][qty]" value="1" min="0" step="0.01" class="form-control mw-100" />
+                        <input type="number" name="spareparts[${rowId}][qty]" value="1" min="0" step="0.01" class="form-control mw-100" value="${data.qty}" />
                     </td>
                 </tr>`;
             }
@@ -1154,129 +1202,160 @@
                 var checked = $(this).is(':checked');
                 tbody.find('input.row-checkbox').prop('checked', checked);
             });
+
+            function submitForm(status) {
+                $('#status').val(status);
+
+                let isValid = true;
+                let errorMessage = '';
+
+                // Basic Information validation
+                if ($('#organization_id').val() === '') {
+                    isValid = false;
+                    errorMessage += 'Organization is required.<br>';
+                }
+
+                if ($('#location_id').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Location is required.<br>';
+                }
+
+                if ($('#category_id').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Category is required.<br>';
+                }
+
+                if ($('input[name="name"]').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Name is required.<br>';
+                }
+
+                // Validate maintenance rows if any exist
+                $('#maintenanceRows tr').each(function () {
+                    const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
+                    const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
+
+                    if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
+                        if (typeSelect.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
+                        }
+
+                        if (frequencyInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Frequency is required for all maintenance rows.<br>';
+                        }
+                    }
+                });
+
+                // Validate spare parts rows if any exist
+                $('#spareRows tr').each(function () {
+                    const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
+                    const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
+                    const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
+                    const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
+
+                    if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
+                        if (itemCodeSelect.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Item code is required for all spare part rows.<br>';
+                        }
+
+                        if (itemNameInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Item name is required for all spare part rows.<br>';
+                        }
+
+                        if (uomInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'UOM is required for all spare part rows.<br>';
+                        }
+
+                        if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
+                            isValid = false;
+                            errorMessage += 'Valid quantity is required for all spare part rows.<br>';
+                        }
+                    }
+                });
+
+                if (!isValid) {
+                    Swal.fire({
+                        title: 'Validation Error',
+                        html: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+
+                // If draft, confirm with user
+                if (status === 'draft') {
+                    Swal.fire({
+                        title: 'Save as Draft',
+                        text: 'Are you sure you want to save this equipment as draft?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, save it!',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#submitButton').click();
+                        }
+                    });
+                } else {
+                    // If submitting, confirm with user
+                    Swal.fire({
+                        title: 'Submit Equipment',
+                        text: 'Are you sure you want to submit this equipment?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, submit it!',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#submitButton').click();
+                        }
+                    });
+                }
+            }
+
+            function check_amount() {
+
+                $('#draft').attr('disabled', true);
+                $('#submitted').attr('disabled', true);
+                $('.preloader').show();
+            }
+
+            function showToast(icon, title) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    },
+                });
+                Toast.fire({
+                    icon,
+                    title
+                });
+            }
+
+            @if (session('success'))
+            showToast("success", "{{ session('success') }}");
+            @endif
+
+            @if (session('error'))
+            showToast("error", "{{ session('error') }}");
+            @endif
+
+            @if ($errors->any())
+            showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
+            @endif
         });
 
-        function submitForm(status) {
-            $('#status').val(status);
-
-            let isValid = true;
-            let errorMessage = '';
-
-            // Basic Information validation
-            if ($('#organization_id').val() === '') {
-                isValid = false;
-                errorMessage += 'Organization is required.<br>';
-            }
-
-            if ($('#location_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Location is required.<br>';
-            }
-
-            if ($('#category_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Category is required.<br>';
-            }
-
-            if ($('input[name="name"]').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Name is required.<br>';
-            }
-
-            // Validate maintenance rows if any exist
-            $('#maintenanceRows tr').each(function () {
-                const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
-                const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
-
-                if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
-                    if (typeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
-                    }
-
-                    if (frequencyInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Frequency is required for all maintenance rows.<br>';
-                    }
-                }
-            });
-
-            // Validate spare parts rows if any exist
-            $('#spareRows tr').each(function () {
-                const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
-                const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
-                const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
-                const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
-
-                if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
-                    if (itemCodeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item code is required for all spare part rows.<br>';
-                    }
-
-                    if (itemNameInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item name is required for all spare part rows.<br>';
-                    }
-
-                    if (uomInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'UOM is required for all spare part rows.<br>';
-                    }
-
-                    if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
-                        isValid = false;
-                        errorMessage += 'Valid quantity is required for all spare part rows.<br>';
-                    }
-                }
-            });
-
-            if (!isValid) {
-                Swal.fire({
-                    title: 'Validation Error',
-                    html: errorMessage,
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-                return false;
-            }
-
-            // If draft, confirm with user
-            if (status === 'draft') {
-                Swal.fire({
-                    title: 'Save as Draft',
-                    text: 'Are you sure you want to save this equipment as draft?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, save it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            } else {
-                // If submitting, confirm with user
-                Swal.fire({
-                    title: 'Submit Equipment',
-                    text: 'Are you sure you want to submit this equipment?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, submit it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            }
-        }
-
-        function check_amount() {
-
-            $('#draft').attr('disabled', true);
-            $('#submitted').attr('disabled', true);
-            $('.preloader').show();
-        }
     </script>
 @endsection

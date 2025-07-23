@@ -702,6 +702,11 @@
             var allLocations = @json($locations);
             // var allCategories = @json($categories);
             var maintenanceTypes = @json($maintenanceTypes);
+            let items = @json($items);
+
+
+            $('#maintenanceRows').append(getMaintenanceRow());
+            $('#spareRows').append(getSparePartRow());
 
             // On organization change, filter locations
             $('#organization_id').on('change', function () {
@@ -751,11 +756,7 @@
                     });
                 }
             });
-        });
 
-
-        $(document).ready(function () {
-            var maintenanceTypes = @json($maintenanceTypes);
 
             function getMaintenanceRow() {
                 const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
@@ -921,10 +922,8 @@
             //                 <td><input type="text" value="10" class="form-control mw-100" /></td>
             //             </tr>`;
             // }
-            let items = @json($items);
 
             function getSparePartRow() {
-                console.log(items)
                 let itemOptions = `<option value="">Select</option>`;
                 items.forEach(function (item) {
                     itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}">${item.item_code}</option>`;
@@ -1154,129 +1153,160 @@
                 var checked = $(this).is(':checked');
                 tbody.find('input.row-checkbox').prop('checked', checked);
             });
+
+            function submitForm(status) {
+                $('#status').val(status);
+
+                let isValid = true;
+                let errorMessage = '';
+
+                // Basic Information validation
+                if ($('#organization_id').val() === '') {
+                    isValid = false;
+                    errorMessage += 'Organization is required.<br>';
+                }
+
+                if ($('#location_id').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Location is required.<br>';
+                }
+
+                if ($('#category_id').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Category is required.<br>';
+                }
+
+                if ($('input[name="name"]').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Name is required.<br>';
+                }
+
+                // Validate maintenance rows if any exist
+                $('#maintenanceRows tr').each(function () {
+                    const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
+                    const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
+
+                    if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
+                        if (typeSelect.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
+                        }
+
+                        if (frequencyInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Frequency is required for all maintenance rows.<br>';
+                        }
+                    }
+                });
+
+                // Validate spare parts rows if any exist
+                $('#spareRows tr').each(function () {
+                    const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
+                    const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
+                    const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
+                    const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
+
+                    if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
+                        if (itemCodeSelect.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Item code is required for all spare part rows.<br>';
+                        }
+
+                        if (itemNameInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'Item name is required for all spare part rows.<br>';
+                        }
+
+                        if (uomInput.val() === '') {
+                            isValid = false;
+                            errorMessage += 'UOM is required for all spare part rows.<br>';
+                        }
+
+                        if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
+                            isValid = false;
+                            errorMessage += 'Valid quantity is required for all spare part rows.<br>';
+                        }
+                    }
+                });
+
+                if (!isValid) {
+                    Swal.fire({
+                        title: 'Validation Error',
+                        html: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    return false;
+                }
+
+                // If draft, confirm with user
+                if (status === 'draft') {
+                    Swal.fire({
+                        title: 'Save as Draft',
+                        text: 'Are you sure you want to save this equipment as draft?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, save it!',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#submitButton').click();
+                        }
+                    });
+                } else {
+                    // If submitting, confirm with user
+                    Swal.fire({
+                        title: 'Submit Equipment',
+                        text: 'Are you sure you want to submit this equipment?',
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, submit it!',
+                        cancelButtonText: 'No, cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $('#submitButton').click();
+                        }
+                    });
+                }
+            }
+
+            function check_amount() {
+
+                $('#draft').attr('disabled', true);
+                $('#submitted').attr('disabled', true);
+                $('.preloader').show();
+            }
+
+            function showToast(icon, title) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    },
+                });
+                Toast.fire({
+                    icon,
+                    title
+                });
+            }
+
+            @if (session('success'))
+                showToast("success", "{{ session('success') }}");
+            @endif
+
+            @if (session('error'))
+                showToast("error", "{{ session('error') }}");
+            @endif
+
+            @if ($errors->any())
+                showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
+            @endif
         });
 
-        function submitForm(status) {
-            $('#status').val(status);
-
-            let isValid = true;
-            let errorMessage = '';
-
-            // Basic Information validation
-            if ($('#organization_id').val() === '') {
-                isValid = false;
-                errorMessage += 'Organization is required.<br>';
-            }
-
-            if ($('#location_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Location is required.<br>';
-            }
-
-            if ($('#category_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Category is required.<br>';
-            }
-
-            if ($('input[name="name"]').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Name is required.<br>';
-            }
-
-            // Validate maintenance rows if any exist
-            $('#maintenanceRows tr').each(function () {
-                const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
-                const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
-
-                if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
-                    if (typeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
-                    }
-
-                    if (frequencyInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Frequency is required for all maintenance rows.<br>';
-                    }
-                }
-            });
-
-            // Validate spare parts rows if any exist
-            $('#spareRows tr').each(function () {
-                const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
-                const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
-                const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
-                const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
-
-                if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
-                    if (itemCodeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item code is required for all spare part rows.<br>';
-                    }
-
-                    if (itemNameInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item name is required for all spare part rows.<br>';
-                    }
-
-                    if (uomInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'UOM is required for all spare part rows.<br>';
-                    }
-
-                    if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
-                        isValid = false;
-                        errorMessage += 'Valid quantity is required for all spare part rows.<br>';
-                    }
-                }
-            });
-
-            if (!isValid) {
-                Swal.fire({
-                    title: 'Validation Error',
-                    html: errorMessage,
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-                return false;
-            }
-
-            // If draft, confirm with user
-            if (status === 'draft') {
-                Swal.fire({
-                    title: 'Save as Draft',
-                    text: 'Are you sure you want to save this equipment as draft?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, save it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            } else {
-                // If submitting, confirm with user
-                Swal.fire({
-                    title: 'Submit Equipment',
-                    text: 'Are you sure you want to submit this equipment?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, submit it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            }
-        }
-
-        function check_amount() {
-
-            $('#draft').attr('disabled', true);
-            $('#submitted').attr('disabled', true);
-            $('.preloader').show();
-        }
     </script>
 @endsection

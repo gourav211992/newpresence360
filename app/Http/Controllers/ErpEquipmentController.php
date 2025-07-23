@@ -18,7 +18,7 @@ class ErpEquipmentController extends Controller
 {
     public function index()
     {
-        $equipments = ErpEquipment::with(['spareParts', 'maintenanceDetails.checklists'])->get();
+        $equipments = ErpEquipment::with(['organization', 'location', 'spareParts', 'maintenanceDetails.checklists'])->get();
         return view('equipment.index', compact('equipments'));
     }
     public function create()
@@ -243,6 +243,39 @@ class ErpEquipmentController extends Controller
             ],
         ];
 
+        $checklists = [
+            (object)[
+                'id' => 1,
+                'name' => 'Checklist 1',
+                'description' => 'Description will come here',
+                'type' => 'Text'
+            ],
+            (object)[
+                'id' => 2,
+                'name' => 'Checklist 2',
+                'description' => 'Description will come here',
+                'type' => 'Text'
+            ],
+            (object)[
+                'id' => 3,
+                'name' => 'Checklist 3',
+                'description' => 'Description will come here',
+                'type' => 'Text'
+            ],
+            (object)[
+                'id' => 4,
+                'name' => 'Checklist 4',
+                'description' => 'Description will come here',
+                'type' => 'Text'
+            ],
+            (object)[
+                'id' => 5,
+                'name' => 'Checklist 5',
+                'description' => 'Description will come here',
+                'type' => 'Text'
+            ],
+        ];
+
         return view('equipment.edit', compact(
             'equipment',
             'userOrganizations',
@@ -250,7 +283,8 @@ class ErpEquipmentController extends Controller
             'categories',
             'maintenanceTypes',
             'approval_history',
-            'items'
+            'items',
+            'checklists'
         ));
     }
 
