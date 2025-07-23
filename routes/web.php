@@ -1,8 +1,6 @@
 <?php
 
 use App\Helpers\Helper;
-use App\Http\Controllers\ErpMaintenanceTypeController;
-use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -171,6 +169,10 @@ use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\PutAwayController;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
+use App\Http\Controllers\ErpEquipmentController;
+use App\Http\Controllers\ErpMaintananceController;
 
 use App\Http\Controllers\CloseFy\CloseFyController;
 //Reports
@@ -729,71 +731,71 @@ Route::middleware(['user.auth'])->group(function () {
     });
 
 
-Route::prefix('stakeholder')->controller(StakeholderController::class)->group(function () {
-    Route::get('/', 'index')->name('stakeholder.index');
-    Route::get('/create', 'create')->name('stakeholder.create');
-    Route::post('/', 'store')->name('stakeholder.store');
-    Route::get('/{id}', 'show')->name('stakeholder.show');
-    Route::get('/{id}/edit', 'edit')->name('stakeholder.edit');
-    Route::put('/{id}', 'update')->name('stakeholder.update');
-    Route::delete('/{id}', 'destroy')->name('stakeholder.destroy');
-});
-Route::prefix('complaint')->controller(ComplaintManagementController::class)->group(function () {
-    Route::get('/', 'index')->name('complaint.index');
-    Route::get('/create', 'create')->name('complaint.create');
-    Route::post('/', 'store')->name('complaint.store');
-    Route::get('/{id}', 'show')->name('complaint.show');
-    Route::get('/{id}/edit', 'edit')->name('complaint.edit');
-    Route::put('/{id}', 'update')->name('complaint.update');
-    Route::delete('/{id}', 'destroy')->name('complaint.destroy');
-});
-Route::prefix('feedback-process')->controller(FeedbackProcessController::class)->group(function () {
-    Route::get('/', 'index')->name('feedback-process.index');
-    Route::get('/create', 'create')->name('feedback-process.create');
-    Route::post('/', 'store')->name('feedback-process.store');
-    Route::get('/{id}', 'show')->name('feedback-process.show');
-    Route::get('/{id}/edit', 'edit')->name('feedback-process.edit');
-    Route::put('/{id}', 'update')->name('feedback-process.update');
-    Route::delete('/{id}', 'destroy')->name('feedback-process.destroy');
-});
+    Route::prefix('stakeholder')->controller(StakeholderController::class)->group(function () {
+        Route::get('/', 'index')->name('stakeholder.index');
+        Route::get('/create', 'create')->name('stakeholder.create');
+        Route::post('/', 'store')->name('stakeholder.store');
+        Route::get('/{id}', 'show')->name('stakeholder.show');
+        Route::get('/{id}/edit', 'edit')->name('stakeholder.edit');
+        Route::put('/{id}', 'update')->name('stakeholder.update');
+        Route::delete('/{id}', 'destroy')->name('stakeholder.destroy');
+    });
+    Route::prefix('complaint')->controller(ComplaintManagementController::class)->group(function () {
+        Route::get('/', 'index')->name('complaint.index');
+        Route::get('/create', 'create')->name('complaint.create');
+        Route::post('/', 'store')->name('complaint.store');
+        Route::get('/{id}', 'show')->name('complaint.show');
+        Route::get('/{id}/edit', 'edit')->name('complaint.edit');
+        Route::put('/{id}', 'update')->name('complaint.update');
+        Route::delete('/{id}', 'destroy')->name('complaint.destroy');
+    });
+    Route::prefix('feedback-process')->controller(FeedbackProcessController::class)->group(function () {
+        Route::get('/', 'index')->name('feedback-process.index');
+        Route::get('/create', 'create')->name('feedback-process.create');
+        Route::post('/', 'store')->name('feedback-process.store');
+        Route::get('/{id}', 'show')->name('feedback-process.show');
+        Route::get('/{id}/edit', 'edit')->name('feedback-process.edit');
+        Route::put('/{id}', 'update')->name('feedback-process.update');
+        Route::delete('/{id}', 'destroy')->name('feedback-process.destroy');
+    });
 
-Route::prefix('engagement-tracking')->controller(\App\Http\Controllers\ErpEngagementTrackingController::class)->group(function () {
-    Route::get('/', 'index')->name('engagement-tracking.index');
-    Route::get('/create', 'create')->name('engagement-tracking.create');
-    Route::post('/', 'store')->name('engagement-tracking.store');
-    Route::get('/{id}', 'show')->name('engagement-tracking.show');
-    Route::get('/{id}/edit', 'edit')->name('engagement-tracking.edit');
-    Route::put('/{id}', 'update')->name('engagement-tracking.update');
-    Route::delete('/{id}', 'destroy')->name('engagement-tracking.destroy');
-});
-Route::prefix('relation-management')->controller(\App\Http\Controllers\ErpInvestorRelationManagementController::class)->group(function () {
-    Route::get('/', 'index')->name('relation-management.index');
-    Route::get('/create', 'create')->name('relation-management.create');
-    Route::post('/', 'store')->name('relation-management.store');
-    Route::get('/{id}', 'show')->name('relation-management.show');
-    Route::get('/{id}/edit', 'edit')->name('relation-management.edit');
-    Route::put('/{id}', 'update')->name('relation-management.update');
-    Route::delete('/{id}', 'destroy')->name('relation-management.destroy');
-});
-Route::prefix('gov-relation-management')->controller(\App\Http\Controllers\ErpGovRelationManagementController::class)->group(function () {
-    Route::get('/', 'index')->name('gov-relation-management.index');
-    Route::get('/create', 'create')->name('gov-relation-management.create');
-    Route::post('/', 'store')->name('gov-relation-management.store');
-    Route::get('/{id}', 'show')->name('gov-relation-management.show');
-    Route::get('/{id}/edit', 'edit')->name('gov-relation-management.edit');
-    Route::put('/{id}', 'update')->name('gov-relation-management.update');
-    Route::delete('/{id}', 'destroy')->name('gov-relation-management.destroy');
-});
+    Route::prefix('engagement-tracking')->controller(\App\Http\Controllers\ErpEngagementTrackingController::class)->group(function () {
+        Route::get('/', 'index')->name('engagement-tracking.index');
+        Route::get('/create', 'create')->name('engagement-tracking.create');
+        Route::post('/', 'store')->name('engagement-tracking.store');
+        Route::get('/{id}', 'show')->name('engagement-tracking.show');
+        Route::get('/{id}/edit', 'edit')->name('engagement-tracking.edit');
+        Route::put('/{id}', 'update')->name('engagement-tracking.update');
+        Route::delete('/{id}', 'destroy')->name('engagement-tracking.destroy');
+    });
+    Route::prefix('relation-management')->controller(\App\Http\Controllers\ErpInvestorRelationManagementController::class)->group(function () {
+        Route::get('/', 'index')->name('relation-management.index');
+        Route::get('/create', 'create')->name('relation-management.create');
+        Route::post('/', 'store')->name('relation-management.store');
+        Route::get('/{id}', 'show')->name('relation-management.show');
+        Route::get('/{id}/edit', 'edit')->name('relation-management.edit');
+        Route::put('/{id}', 'update')->name('relation-management.update');
+        Route::delete('/{id}', 'destroy')->name('relation-management.destroy');
+    });
+    Route::prefix('gov-relation-management')->controller(\App\Http\Controllers\ErpGovRelationManagementController::class)->group(function () {
+        Route::get('/', 'index')->name('gov-relation-management.index');
+        Route::get('/create', 'create')->name('gov-relation-management.create');
+        Route::post('/', 'store')->name('gov-relation-management.store');
+        Route::get('/{id}', 'show')->name('gov-relation-management.show');
+        Route::get('/{id}/edit', 'edit')->name('gov-relation-management.edit');
+        Route::put('/{id}', 'update')->name('gov-relation-management.update');
+        Route::delete('/{id}', 'destroy')->name('gov-relation-management.destroy');
+    });
 
-Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationController::class)->group(function () {
-    Route::get('/', 'index')->name('public-outreach.index');
-    Route::get('/create', 'create')->name('public-outreach.create');
-    Route::post('/', 'store')->name('public-outreach.store');
-    Route::get('/{id}', 'show')->name('public-outreach.show');
-    Route::get('/{id}/edit', 'edit')->name('public-outreach.edit');
-    Route::put('/{id}', 'update')->name('public-outreach.update');
-    Route::delete('/{id}', 'destroy')->name('public-outreach.destroy');
-});
+    Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationController::class)->group(function () {
+        Route::get('/', 'index')->name('public-outreach.index');
+        Route::get('/create', 'create')->name('public-outreach.create');
+        Route::post('/', 'store')->name('public-outreach.store');
+        Route::get('/{id}', 'show')->name('public-outreach.show');
+        Route::get('/{id}/edit', 'edit')->name('public-outreach.edit');
+        Route::put('/{id}', 'update')->name('public-outreach.update');
+        Route::delete('/{id}', 'destroy')->name('public-outreach.destroy');
+    });
 
 
     Route::prefix('attributes')->controller(AttributeController::class)->group(function () {
@@ -2061,6 +2063,18 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::delete('/{id}', 'destroy')->name('expense-masters.destroy');
     });
 
+    Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-types.index');
+        Route::post('/', 'store')->name('maintenance-types.store');
+        Route::delete('/', 'delete')->name('maintenance-types.delete');
+    });
+
+    Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
+        Route::get('/', 'index')->name('defect-types.index');
+        Route::post('/', 'store')->name('defect-types.store');
+        Route::delete('/', 'delete')->name('defect-types.delete');
+    });
+
     Route::get('/search', [AutocompleteController::class, 'search'])->name('search');
 
     Route::get('/countries', [CountryController::class, 'countries'])->name('countries.get');
@@ -2837,6 +2851,26 @@ Route::prefix('public-outreach')->controller(ErpPublicOutreachAndCommunicationCo
         Route::post('store/{version}', 'bulkUploadOrders')->name('import.store');
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
+    });
+
+    Route::prefix('equipment')->group(function () {
+
+        Route::get('/', [ErpEquipmentController::class, 'index'])->name('equipment.index');
+        Route::get('/create', [ErpEquipmentController::class, 'create'])->name('equipment.create');
+        Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
+        Route::get('/edit/{id}', [ErpEquipmentController::class, 'edit'])->name('equipment.edit');
+        Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
+
+    });
+
+    Route::prefix('maintainance')->group(function () {
+
+        Route::get('/', [ErpMaintananceController::class, 'index'])->name('maintainance.index');
+        Route::get('/create', [ErpMaintananceController::class, 'create'])->name('maintainance.create');
+        Route::post('/store', [ErpMaintananceController::class, 'store'])->name('maintainance.store');
+        Route::get('/edit/{id}', [ErpMaintananceController::class, 'edit'])->name('maintainance.edit');
+        Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintainance.update');
+
     });
 });
 
