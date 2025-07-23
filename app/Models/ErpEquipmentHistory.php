@@ -10,12 +10,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\Deletable;
 
-class ErpEquipment extends Model
+class ErpEquipmentHistory extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, Deletable;
 
 
-    protected $table = 'erp_equipment';
+    protected $table = 'erp_equipment_history';
     protected $guarded = [];
 
     public function organization(): BelongsTo
@@ -44,17 +44,13 @@ class ErpEquipment extends Model
 
     public function spareParts(): HasMany
     {
-        return $this->hasMany(
-            related: ErpEquipSparepartDetail::class,
-            foreignKey: 'erp_equipment_id',
+        return $this->hasMany(ErpEquipSparepartDetailHistory::class,'erp_equipment_id','source_id'
         );
     }
 
     public function maintenanceDetails(): HasMany
     {
-        return $this->hasMany(
-            related: ErpEquipMaintenanceDetail::class,
-            foreignKey: 'erp_equipment_id',
+        return $this->hasMany(ErpEquipMaintenanceDetailHistory::class,'erp_equipment_id','source_id'
         );
     }
 

@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('erp_equip_sparepart_details', function (Blueprint $table) {
+        Schema::create('erp_equip_sparepart_detail_histories', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('erp_equipment_id')->index();
             $table->string('item_code')->nullable();
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('erp_equip_sparepart_details');
+        Schema::dropIfExists('erp_equip_sparepart_detail_histories');
     }
 };

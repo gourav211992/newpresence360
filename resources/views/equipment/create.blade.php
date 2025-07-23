@@ -8,6 +8,12 @@
         <div class="content-wrapper container-xxl p-0">
             <form id="equipmentForm" action="{{ route('equipment.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+                      <input type ="hidden" name="book_code" id ="book_code_input">
+                                <input type="hidden" name="doc_number_type" id="doc_number_type">
+                                <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+                                <input type="hidden" name="doc_prefix" id="doc_prefix">
+                                <input type="hidden" name="doc_suffix" id="doc_suffix">
+                                <input type="hidden" name="doc_no" id="doc_no">
                 <div class="content-header pocreate-sticky">
                     <div class="row">
                         <div class="content-header-left col-md-6 mb-2">
@@ -26,42 +32,45 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
-                                        data-feather="arrow-left-circle"></i> Back</button>
-                                {{-- <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
+                                <button onClick="javascript: history.go(-1)"
+                                    class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i>
+                                    Back</button>
+                                {{-- <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i
+                                        data-feather='save'></i> Save as
                                     Draft</button> --}}
                                 <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" style="display: none;"><i data-feather='edit'></i> Amendment</button>
+                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" style="display: none;"><i
+                                        data-feather='edit'></i> Amendment</button>
                                 <!-- <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button>
-                                        <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button> -->
-                            <button type="button" onclick="submitForm('draft');" id="draft"
-                                        class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
-                                        Draft</button>
-                                    <button type="button" onclick="submitForm('submitted');"
-                                        class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i
-                                            data-feather="check-circle"></i>
-                                        Submit</button>
-                                    <input id="submitButton" type="submit" value="Submit" class="hidden" />
+                                            <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button> -->
+                                <button type="button" onclick="submitForm('draft');" id="draft"
+                                    class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
+                                    Draft</button>
+                                <button type="button" onclick="submitForm('submitted');"
+                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i
+                                        data-feather="check-circle"></i>
+                                    Submit</button>
+                                <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
                         </div>
                     </div>
                 </div>
                 <input type="hidden" name="status" id="status">
                 @if (session('success'))
-                            <div class="alert alert-success">
-                                {{ session('success') }}
-                            </div>
-                        @endif
+                    <div class="alert alert-success">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
-                        @if ($errors->any())
-                            <div class="alert alert-danger">
-                                <ul>
-                                    @foreach ($errors->all() as $error)
-                                        <li>{{ $error }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 <div class="content-body">
                     <section id="basic-datatable">
@@ -81,17 +90,50 @@
                                             </div>
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label" for="book_id">Series <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <select class="form-select" name="book_id" id="book_id" required>
+                                                                @if ($series)
+                                                                    @foreach ($series as $index => $ser)
+                                                                        <option value="{{ $ser->id }}"
+                                                                            {{ old('book_id') == $ser->id ? 'selected' : '' }}>
+                                                                            {{ $ser->book_code }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label" for="document_number">Doc No <span
+                                                                    class="text-danger">*</span></label>
+                                                        </div>
+                                                        <div class="col-md-5">
+                                                            <input type="text" class="form-control" name="document_number"
+                                                                id="document_number" value="{{ old('document_number') }}"
+                                                                readonly required>
+                                                        </div>
+                                                    </div>
+
+                                                <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Organization <span
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select" id="organization_id" name="organization_id">
+                                                        <select class="form-select" id="organization_id"
+                                                            name="organization_id">
                                                             <option value="">Select</option>
 
                                                             @foreach ($userOrganizations as $organization)
-                                                                <option value="{{ $organization->id }}">
-                                                                    {{ $organization->name }}</option>
+                                                                <option value="{{ $organization->organization->id }}" {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
+                                                                    {{ $organization->organization->name }}
+                                                                </option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -104,7 +146,6 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select" id="location_id" name="location_id">
-                                                            <option value="">Select</option>
                                                             {{-- Populated by JS --}}
                                                         </select>
                                                     </div>
@@ -119,7 +160,8 @@
                                                         <select class="form-select" id="category_id" name="category_id">
                                                             <option value="">Select</option>
                                                             @foreach($categories as $category)
-                                                            <option value="{{ $category->id}}">{{ $category->name }}</option>
+                                                                <option value="{{ $category->id}}">{{ $category->name }}
+                                                                </option>
                                                             @endforeach
                                                             {{-- Populated by JS --}}
                                                         </select>
@@ -362,40 +404,49 @@
                                                                                 </tr>
                                                                                 <tr>
                                                                                     <td class="poprod-decpt">
-                                                                                        <div
-                                                                                            class=" mw-100">
+                                                                                        <div class=" mw-100">
                                                                                             <strong>Name</strong>:
-                                                                                            <span id="part-detail-name"></span>
+                                                                                            <span
+                                                                                                id="part-detail-name"></span>
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
                                                                                 <tr>
                                                                                     <td class="poprod-decpt">
                                                                                         <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:
-                                                                                            <span id="part-detail-hsn"></span>
+                                                                                            class="badge rounded-pill badge-light-primary">
+                                                                                            <strong>HSN</strong>:
+                                                                                            <span
+                                                                                                id="part-detail-hsn"></span>
                                                                                         </div>
                                                                                         <div
                                                                                             class="badge rounded-pill badge-light-primary">
                                                                                             <strong>Color</strong>:
-                                                                                            <span id="part-detail-color"></span>
+                                                                                            <span
+                                                                                                id="part-detail-color"></span>
                                                                                         </div>
                                                                                         <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Size</strong>:
-                                                                                            <span id="part-detail-size"></span>
+                                                                                            class="badge rounded-pill badge-light-primary">
+                                                                                            <strong>Size</strong>:
+                                                                                            <span
+                                                                                                id="part-detail-size"></span>
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
                                                                                 <tr>
                                                                                     <td class="poprod-decpt">
                                                                                         <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Inv.
+                                                                                            class="badge rounded-pill badge-light-primary">
+                                                                                            <strong>Inv.
                                                                                                 UOM</strong>:
-                                                                                            <span id="part-detail-uom"></span>
+                                                                                            <span
+                                                                                                id="part-detail-uom"></span>
                                                                                         </div>
                                                                                         <div
-                                                                                            class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
-                                                                                            <span id="part-detail-qty"></span>
+                                                                                            class="badge rounded-pill badge-light-primary">
+                                                                                            <strong>Qty.</strong>:
+                                                                                            <span
+                                                                                                id="part-detail-qty"></span>
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
@@ -404,7 +455,8 @@
                                                                                         <div
                                                                                             class="badge rounded-pill badge-light-secondary">
                                                                                             <strong>Remarks</strong>:
-                                                                                            <span id="part-detail-remarks"></span>
+                                                                                            <span
+                                                                                                id="part-detail-remarks"></span>
                                                                                         </div>
                                                                                     </td>
                                                                                 </tr>
@@ -431,7 +483,8 @@
                                             <div class="col-md-12">
                                                 <div class="mb-1">
                                                     <label class="form-label">Final Remarks</label>
-                                                    <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea>
+                                                    <textarea type="text" rows="4" class="form-control"
+                                                        placeholder="Enter Remarks here..."></textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -447,72 +500,72 @@
     </div>
     <!-- END: Content-->
     <!-- Modal for Attributes -->
-      <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-		<div class="modal-dialog  modal-dialog-centered">
-			<div class="modal-content">
-				<div class="modal-header p-0 bg-transparent">
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
-					<p class="text-center">Enter the details below.</p>
+    <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal-dialog  modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-sm-2 mx-50 pb-2">
+                    <h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
+                    <p class="text-center">Enter the details below.</p>
 
-					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
-									<thead>
-										 <tr>  
-											<th>Attribute Name</th>
-											<th>Attribute Value</th>
-										  </tr>
-										</thead>
-										<tbody>
-                                        <tr>
-                                            <td>Color</td>
-                                            <td>
-                                                <select class="form-select select2 attribute-select" data-attribute="color">
-                                                    <option>Select</option>
-                                                    <option>Black</option>
-                                                    <option>White</option>
-                                                    <option>Red</option>
-                                                    <option>Golden</option>
-                                                    <option>Silver</option>
-                                                </select>
-                                            </td>
-                                        </tr>
+                    <div class="table-responsive-md customernewsection-form">
+                        <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                            <thead>
+                                <tr>
+                                    <th>Attribute Name</th>
+                                    <th>Attribute Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Color</td>
+                                    <td>
+                                        <select class="form-select select2 attribute-select" data-attribute="color">
+                                            <option>Select</option>
+                                            <option>Black</option>
+                                            <option>White</option>
+                                            <option>Red</option>
+                                            <option>Golden</option>
+                                            <option>Silver</option>
+                                        </select>
+                                    </td>
+                                </tr>
 
-                                        <tr>
-                                            <td>Size</td>
-                                            <td>
-                                                <select class="form-select select2 attribute-select" data-attribute="size">
-                                                    <option>Select</option>
-                                                    <option>5.11"</option>
-                                                    <option>5.10"</option>
-                                                    <option>5.09"</option>
-                                                    <option>5.00"</option>
-                                                    <option>6.20"</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-											
-											
-											 
-											 
-
-									   </tbody>
+                                <tr>
+                                    <td>Size</td>
+                                    <td>
+                                        <select class="form-select select2 attribute-select" data-attribute="size">
+                                            <option>Select</option>
+                                            <option>5.11"</option>
+                                            <option>5.10"</option>
+                                            <option>5.09"</option>
+                                            <option>5.00"</option>
+                                            <option>6.20"</option>
+                                        </select>
+                                    </td>
+                                </tr>
 
 
-								</table>
-							</div>
-				</div>
-				
-				<div class="modal-footer justify-content-center">  
-                    <button type="button" class="btn btn-outline-secondary me-1" data-bs-dismiss="modal" >Cancel</button>
-					<button type="button" class="btn btn-primary" data-bs-dismiss="modal" >Select</button>
-				</div>
-			</div>
-		</div>
-	</div>
-    
+
+
+
+                            </tbody>
+
+
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-1" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Select</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="attributeModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -523,7 +576,7 @@
                 <div class="modal-body">
                     <p class="text-center">Enter the attribute details for this item.</p>
                     <input type="hidden" id="attribute-row-id" value="">
-                    
+
                     <div class="table-responsive customernewsection-form">
                         <table class="mt-1 table myrequesttablecbox table-striped">
                             <thead>
@@ -576,7 +629,7 @@
                                         </select>
                                     </td>
                                 </tr>
-                                
+
                                 <tr>
                                     <td>Material</td>
                                     <td>
@@ -595,8 +648,10 @@
                     </div>
 
                     <div class="d-flex mt-2 justify-content-end">
-                        <button type="button" class="btn btn-outline-secondary me-1" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
-                        <button type="button" class="btn btn-primary" id="save-attributes"><i data-feather="check-circle"></i> Save</button>
+                        <button type="button" class="btn btn-outline-secondary me-1" data-bs-dismiss="modal"><i
+                                data-feather="x-circle"></i> Cancel</button>
+                        <button type="button" class="btn btn-primary" id="save-attributes"><i
+                                data-feather="check-circle"></i> Save</button>
                     </div>
                 </div>
             </div>
@@ -604,8 +659,7 @@
     </div> --}}
     <!-- END: Modal for Attributes -->
     <!-- Modal for Checklist -->
-    <div class="modal fade text-start" id="checklist" tabindex="-1" aria-labelledby="myModalLabel17"
-        aria-hidden="true">
+    <div class="modal fade text-start" id="checklist" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -654,13 +708,16 @@
                                             <tr class="trail-bal-tabl-none">
                                                 <td class="customernewsection-form">
                                                     <div class="form-check form-check-primary custom-checkbox">
-                                                        <input type="checkbox" value="{{ $checklist->id }}" class="form-check-input" id="Email">
+                                                        <input type="checkbox" value="{{ $checklist->id }}"
+                                                            class="form-check-input" id="Email">
                                                         <label class="form-check-label" for="Email"></label>
                                                     </div>
                                                 </td>
                                                 <td>{{ $checklist->name }}</td>
                                                 <td>{{ $checklist->description }}</td>
-                                                <td><span class="badge rounded-pill badge-light-secondary">{{ $checklist->type }}</span></td>
+                                                <td><span
+                                                        class="badge rounded-pill badge-light-secondary">{{ $checklist->type }}</span>
+                                                </td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -670,8 +727,8 @@
                     </div>
                 </div>
                 <div class="modal-footer text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
-                            data-feather="x-circle"></i> Cancel</button>
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i>
+                        Cancel</button>
                     <button class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i data-feather="check-circle"></i>
                         Submit</button>
                 </div>
@@ -691,7 +748,7 @@
             background-position: right calc(0.3625em + 0.219rem) center;
             background-size: calc(0.725em + 0.438rem) calc(0.725em + 0.438rem);
         }
-        
+
         .hidden {
             display: none;
         }
@@ -708,373 +765,313 @@
             $('#maintenanceRows').append(getMaintenanceRow());
             $('#spareRows').append(getSparePartRow());
 
+            $('#book_id').on('change', function() {
+                    let currentDate = new Date().toISOString().split('T')[0];
+                    let bookId = $('#book_id').val();
+                    let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
+                        "&document_date=" + currentDate;
+                    fetch(actionUrl).then(response => {
+                        return response.json().then(data => {
+                            if (data.status == 200) {
+                                $("#book_code_input").val(data.data.book_code);
+                                if (!data.data.doc.document_number) {
+                                    $("#document_number").val('');
+                                    $('#doc_number_type').val('');
+                                    $('#doc_reset_pattern').val('');
+                                    $('#doc_prefix').val('');
+                                    $('#doc_suffix').val('');
+                                    $('#doc_no').val('');
+                                } else {
+                                    $("#document_number").val(data.data.doc.document_number);
+                                    $('#doc_number_type').val(data.data.doc.type);
+                                    $('#doc_reset_pattern').val(data.data.doc.reset_pattern);
+                                    $('#doc_prefix').val(data.data.doc.prefix);
+                                    $('#doc_suffix').val(data.data.doc.suffix);
+                                    $('#doc_no').val(data.data.doc.doc_no);
+                                }
+                                if (data.data.doc.type == 'Manually') {
+                                    $("#document_number").attr('readonly', false);
+                                } else {
+                                    $("#document_number").attr('readonly', true);
+                                }
+
+                            }
+                            if (data.status == 404) {
+                                $("#document_number").val('');
+                                $('#doc_number_type').val('');
+                                $('#doc_reset_pattern').val('');
+                                $('#doc_prefix').val('');
+                                $('#doc_suffix').val('');
+                                $('#doc_no').val('');
+                                showToast('error', data.message);
+                            }
+                        });
+                    });
+                });
+                $('#book_id').trigger('change');
+
+        
+
             // On organization change, filter locations
             $('#organization_id').on('change', function () {
                 var orgId = $(this).val();
                 var locationSelect = $('#location_id');
-                locationSelect.html('<option value="">Select</option>');
-                // $('#category_id').html('<option value="">Select</option>');
                 console.log(allLocations, orgId);
                 if (orgId) {
                     console.log(allLocations, orgId);
                     allLocations.forEach(function (loc) {
                         if (loc.organization_id == orgId) {
                             locationSelect.append('<option value="' + loc.id + '">' + loc
-                                            .store_name +
-                                    '</option>');
-                        }
-                    });
-                }
-            });
-
-            $('#location_id').on('change', function () {
-                var locationId = $(this).val();
-                var categorySelect = $('#category_id');
-                categorySelect.html('<option value="">Select</option>');
-                var categories = [
-                    {
-                        id: 1,
-                        store_name: 'Category 1'
-                    },
-                    {
-                        id: 2,
-                        store_name: 'Category 2'
-                    },
-                    {
-                        id: 3,
-                        store_name: 'Category 3'
-                    }
-                ];
-
-                if (locationId) {
-                    categories.forEach(function (cat) {
-                        // if (cat.id == locationId) {
-                        categorySelect.append('<option value="' + cat.id + '">' + cat
-                                        .store_name +
+                                .store_name +
                                 '</option>');
-                        // }
+                        }
                     });
+                }
+                 
+              });
+            $('#organization_id').trigger('change');
+
+
+
+
+        
+
+
+        function getMaintenanceRow() {
+            const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
+
+            // Build options from maintenanceTypes
+            let typeOptions = `<option value="">Select</option>`;
+            maintenanceTypes.forEach(function (type) {
+                typeOptions += `<option value="${type.id}">${type.name}</option>`;
+            });
+
+            let row = `<tr data-row-id="${rowId}">
+                                <td class="customernewsection-form">
+                                    <div class="form-check form-check-primary custom-checkbox">
+                                        <input type="checkbox" class="form-check-input row-checkbox">
+                                        <label class="form-check-label"></label>
+                                    </div>
+                                </td>
+                                <td class="poprod-decpt">
+                                    <select name="maintenance[${rowId}][type]" class="form-select mw-100 maintenance-type">
+                                        ${typeOptions}
+                                    </select>
+                                </td>
+                                <td class="poprod-decpt">
+                                    <select name="maintenance[${rowId}][frequency]" class="form-select mw-100">
+                                        <option value="">Select</option>
+                                        <option value="Daily">Daily</option>
+                                        <option value="Weekly">Weekly</option>
+                                        <option value="Monthly">Monthly</option>
+                                        <option value="Quarterly">Quarterly</option>
+                                        <option value="Semi-Annually">Semi-Annually</option>
+                                        <option value="Annually">Annually</option>
+                                    </select>
+                                </td>
+                                <td class="poprod-decpt">
+                                    <input type="time" name="maintenance[${rowId}][time]" placeholder="Enter Time" class="form-control mw-100 mb-25" />
+                                </td>
+                                <td class="poprod-decpt checklist-cell">
+                                    <span class="checklist-badges"></span>
+                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
+                                    <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="" />
+                                </td>
+                            </tr>`;
+
+            $(function () {
+                $(".ledgerselecct").autocomplete({
+                    source: maintenanceTypes.map(item => item.name),
+                    minLength: 0
+                }).focus(function () {
+                    if (this.value == "") {
+                        $(this).autocomplete("search");
+                    }
+                });
+            });
+
+            return row;
+        }
+
+        let checklistRowRef = null;
+
+        $(document).on('click', '.open-checklist-modal', function () {
+            checklistRowRef = $(this).closest('tr');
+
+            // Get current selection from hidden input in the row
+            let selected = checklistRowRef.find('.selected-checklists').val().split(',').filter(Boolean);
+
+            console.log(selected)
+            // Uncheck all first
+            $('#checklist .modal-body input[type="checkbox"]').prop('checked', false);
+
+            // Pre-check those which are already selected
+            $('#checklist .modal-body input[type="checkbox"]').each(function () {
+                if (selected.includes($(this).val())) {
+                    $(this).prop('checked', true);
                 }
             });
 
+            $('#checklist').modal('show');
 
-            function getMaintenanceRow() {
-                const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
+            $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
+                console.log('erer');
+                var tbody = $(this).closest('table').find('tbody');
+                var checked = $(this).is(':checked');
+                tbody.find('input.form-check-input').prop('checked', checked);
+            });
+        });
 
-                // Build options from maintenanceTypes
-                let typeOptions = `<option value="">Select</option>`;
-                maintenanceTypes.forEach(function (type) {
-                    typeOptions += `<option value="${type.id}">${type.name}</option>`;
+        $('#checklist').on('hide.bs.modal', function (e) {
+            // Only proceed if we just clicked submit
+            if ($(document.activeElement).hasClass('btn-primary')) {
+                let selectedIds = [];
+                let selectedNames = [];
+                let selectedData = [];
+
+                $('#checklist .modal-body input[type="checkbox"]:checked').each(function () {
+                    const checklistId = $(this).val();
+                    const checklistName = $(this).closest('tr').find('td:nth-child(2)').text().trim();
+                    const checklistDesc = $(this).closest('tr').find('td:nth-child(3)').text().trim() || null;
+                    const checklistType = $(this).closest('tr').find('td:nth-child(4)').text().trim() || null;
+
+                    selectedIds.push(checklistId);
+                    selectedNames.push(checklistName);
+                    selectedData.push({
+                        id: checklistId,
+                        name: checklistName,
+                        description: checklistDesc,
+                        type: checklistType
+                    });
                 });
 
-                let row = `<tr data-row-id="${rowId}">
-                            <td class="customernewsection-form">
-                                <div class="form-check form-check-primary custom-checkbox">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                    <label class="form-check-label"></label>
-                                </div>
-                            </td>
-                            <td class="poprod-decpt">
-                                <select name="maintenance[${rowId}][type]" class="form-select mw-100 maintenance-type">
-                                    ${typeOptions}
-                                </select>
-                            </td>
-                            <td class="poprod-decpt">
-                                <select name="maintenance[${rowId}][frequency]" class="form-select mw-100">
-                                    <option value="">Select</option>
-                                    <option value="Daily">Daily</option>
-                                    <option value="Weekly">Weekly</option>
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Semi-Annually">Semi-Annually</option>
-                                    <option value="Annually">Annually</option>
-                                </select>
-                            </td>
-                            <td class="poprod-decpt">
-                                <input type="time" name="maintenance[${rowId}][time]" placeholder="Enter Time" class="form-control mw-100 mb-25" />
-                            </td>
-                            <td class="poprod-decpt checklist-cell">
-                                <span class="checklist-badges"></span>
+                // Store data in hidden field in row
+                if (checklistRowRef) {
+                    const rowId = checklistRowRef.data('row-id');
+
+                    let badgesHtml = '';
+                    selectedNames.slice(0, 2).forEach(function (name) {
+                        badgesHtml +=
+                            `<span class="badge rounded-pill badge-light-primary">${name}</span> `;
+                    });
+
+                    if (selectedNames.length > 2) {
+                        badgesHtml +=
+                            `<span class="badge rounded-pill badge-light-primary">+${selectedNames.length - 2}</span>`;
+                    }
+
+                    // Create hidden inputs for each checklist
+                    let hiddenInputs = '';
+                    selectedData.forEach(function (checklist, index) {
+                        hiddenInputs += `
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][id]" value="${checklist.id}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][name]" value="${checklist.name}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][description]" value="${checklist.description || ''}">
+                                    <input type="hidden" name="maintenance[${rowId}][checklists][${index}][type]" value="${checklist.type || ''}">
+                                `;
+                    });
+
+                    console.log(selectedIds)
+                    // Put badges and button back in the cell
+                    checklistRowRef.find('.checklist-cell').html(
+                        `<span class="checklist-badges">${badgesHtml}</span>
                                 <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                                <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="" />
-                            </td>
-                        </tr>`;
-
-                $(function () {
-                    $(".ledgerselecct").autocomplete({
-                        source: maintenanceTypes.map(item => item.name),
-                        minLength: 0
-                    }).focus(function () {
-                        if (this.value == "") {
-                            $(this).autocomplete("search");
-                        }
-                    });
-                });
-
-                return row;
-            }
-
-            let checklistRowRef = null;
-
-            $(document).on('click', '.open-checklist-modal', function () {
-                checklistRowRef = $(this).closest('tr');
-
-                // Get current selection from hidden input in the row
-                let selected = checklistRowRef.find('.selected-checklists').val().split(',').filter(Boolean);
-
-                console.log(selected)
-                // Uncheck all first
-                $('#checklist .modal-body input[type="checkbox"]').prop('checked', false);
-
-                // Pre-check those which are already selected
-                $('#checklist .modal-body input[type="checkbox"]').each(function () {
-                    if (selected.includes($(this).val())) {
-                        $(this).prop('checked', true);
-                    }
-                });
-
-                $('#checklist').modal('show');
-
-                $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
-                    console.log('erer');
-                    var tbody = $(this).closest('table').find('tbody');
-                    var checked = $(this).is(':checked');
-                    tbody.find('input.form-check-input').prop('checked', checked);
-                });
-            });
-
-            $('#checklist').on('hide.bs.modal', function (e) {
-                // Only proceed if we just clicked submit
-                if ($(document.activeElement).hasClass('btn-primary')) {
-                    let selectedIds = [];
-                    let selectedNames = [];
-                    let selectedData = [];
-
-                    $('#checklist .modal-body input[type="checkbox"]:checked').each(function () {
-                        const checklistId = $(this).val();
-                        const checklistName = $(this).closest('tr').find('td:nth-child(2)').text().trim();
-                        const checklistDesc = $(this).closest('tr').find('td:nth-child(3)').text().trim() || null;
-                        const checklistType = $(this).closest('tr').find('td:nth-child(4)').text().trim() || null;
-
-                        selectedIds.push(checklistId);
-                        selectedNames.push(checklistName);
-                        selectedData.push({
-                            id: checklistId,
-                            name: checklistName,
-                            description: checklistDesc,
-                            type: checklistType
-                        });
-                    });
-
-                    // Store data in hidden field in row
-                    if (checklistRowRef) {
-                        const rowId = checklistRowRef.data('row-id');
-
-                        let badgesHtml = '';
-                        selectedNames.slice(0, 2).forEach(function (name) {
-                            badgesHtml +=
-                                    `<span class="badge rounded-pill badge-light-primary">${name}</span> `;
-                        });
-
-                        if (selectedNames.length > 2) {
-                            badgesHtml +=
-                                    `<span class="badge rounded-pill badge-light-primary">+${selectedNames.length - 2}</span>`;
-                        }
-
-                        // Create hidden inputs for each checklist
-                        let hiddenInputs = '';
-                        selectedData.forEach(function (checklist, index) {
-                            hiddenInputs += `
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][id]" value="${checklist.id}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][name]" value="${checklist.name}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][description]" value="${checklist.description || ''}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][type]" value="${checklist.type || ''}">
-                            `;
-                        });
-
-                        console.log(selectedIds)
-                        // Put badges and button back in the cell
-                        checklistRowRef.find('.checklist-cell').html(
-                                `<span class="checklist-badges">${badgesHtml}</span>
-                            <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                            <input type="hidden" class="selected-checklists" value="${selectedIds.join(',')}" />
-                            ${hiddenInputs}`
-                        );
-                    }
+                                <input type="hidden" class="selected-checklists" value="${selectedIds.join(',')}" />
+                                ${hiddenInputs}`
+                    );
                 }
-            });
-
-            // Template row for Spare Part
-            // function getSparePartRow() {
-            //     return `<tr>
-            //                 <td class="customernewsection-form">
-            //                     <div class="form-check form-check-primary custom-checkbox">
-            //                         <input type="checkbox" class="form-check-input row-checkbox">
-            //                         <label class="form-check-label"></label>
-            //                     </div>
-            //                 </td>
-            //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
-            //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
-            //                 <td class="poprod-decpt">
-            //                     <button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-            //                 </td>
-            //                 <td><select class="form-select"><option>Select</option><option selected>KG</option></select></td>
-            //                 <td><input type="text" value="10" class="form-control mw-100" /></td>
-            //             </tr>`;
-            // }
-
-            function getSparePartRow() {
-                let itemOptions = `<option value="">Select</option>`;
-                items.forEach(function (item) {
-                    itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}">${item.item_code}</option>`;
-                });
-
-                const rowId = 'spare-' + Math.random().toString(36).substring(2, 10);
-                return `<tr data-row-id="${rowId}">
-                    <td class="customernewsection-form">
-                        <div class="form-check form-check-primary custom-checkbox">
-                            <input type="checkbox" class="form-check-input row-checkbox">
-                            <label class="form-check-label"></label>
-                        </div>
-                    </td>
-                    <td class="poprod-decpt">
-                        <select class="form-select mw-100 item-code-dropdown" name="spareparts[${rowId}][item_code]">
-                            ${itemOptions}
-                        </select>
-                    </td>
-                    <td class="poprod-decpt">
-                        <input type="text" class="form-control mw-100 item-name-input" name="spareparts[${rowId}][item_name]" />
-                    </td>
-                    <td class="poprod-decpt">
-                        <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-secondary open-attribute-modal" style="font-size: 10px">Attributes</button>
-                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value="{}" />
-                    </td>
-                    <td>
-                        <select class="form-select" name="spareparts[${rowId}][uom]">
-                            <option value="">Select</option>
-                            <option value="KG">KG</option>
-                            <option value="PCS">PCS</option>
-                            <option value="BOX">BOX</option>
-                            <option value="UNIT">UNIT</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" name="spareparts[${rowId}][qty]" value="1" min="0" step="0.01" class="form-control mw-100" />
-                    </td>
-                </tr>`;
             }
+        });
 
-            let attributeRowRef = null;
-            $(document).on('click', '.open-attribute-modal', function () {
-                attributeRowRef = $(this).closest('tr');
+        // Template row for Spare Part
+        // function getSparePartRow() {
+        //     return `<tr>
+        //                 <td class="customernewsection-form">
+        //                     <div class="form-check form-check-primary custom-checkbox">
+        //                         <input type="checkbox" class="form-check-input row-checkbox">
+        //                         <label class="form-check-label"></label>
+        //                     </div>
+        //                 </td>
+        //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
+        //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
+        //                 <td class="poprod-decpt">
+        //                     <button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
+        //                 </td>
+        //                 <td><select class="form-select"><option>Select</option><option selected>KG</option></select></td>
+        //                 <td><input type="text" value="10" class="form-control mw-100" /></td>
+        //             </tr>`;
+        // }
 
-                const rowId = attributeRowRef.data('row-id');
-
-                $('.attribute-select').val('');
-
-                // Load existing attributes if any
-                const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                if (input.length && input.val()) {
-                    try {
-                        const attributes = JSON.parse(input.val());
-                        Object.entries(attributes).forEach(([key, value]) => {
-                            $(`.attribute-select[data-attribute="${key}"]`).val(value);
-                        });
-                    } catch (e) {
-                        console.error('Invalid JSON in attributes input:', e);
-                    }
-                }
-
-
-                $('#attribute').modal('show');
-
+        function getSparePartRow() {
+            let itemOptions = `<option value="">Select</option>`;
+            items.forEach(function (item) {
+                itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}">${item.item_code}</option>`;
             });
 
-            $('#attribute').on('hide.bs.modal', function (e) {
-                if ($(document.activeElement).hasClass('btn-primary')) {
-                    if (!attributeRowRef) return;
+            const rowId = 'spare-' + Math.random().toString(36).substring(2, 10);
+            return `<tr data-row-id="${rowId}">
+                        <td class="customernewsection-form">
+                            <div class="form-check form-check-primary custom-checkbox">
+                                <input type="checkbox" class="form-check-input row-checkbox">
+                                <label class="form-check-label"></label>
+                            </div>
+                        </td>
+                        <td class="poprod-decpt">
+                            <select class="form-select mw-100 item-code-dropdown" name="spareparts[${rowId}][item_code]">
+                                ${itemOptions}
+                            </select>
+                        </td>
+                        <td class="poprod-decpt">
+                            <input type="text" class="form-control mw-100 item-name-input" name="spareparts[${rowId}][item_name]" />
+                        </td>
+                        <td class="poprod-decpt">
+                            <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-secondary open-attribute-modal" style="font-size: 10px">Attributes</button>
+                            <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value="{}" />
+                        </td>
+                        <td>
+                            <select class="form-select" name="spareparts[${rowId}][uom]">
+                                <option value="">Select</option>
+                                <option value="KG">KG</option>
+                                <option value="PCS">PCS</option>
+                                <option value="BOX">BOX</option>
+                                <option value="UNIT">UNIT</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" name="spareparts[${rowId}][qty]" value="1" min="0" step="0.01" class="form-control mw-100" />
+                        </td>
+                    </tr>`;
+        }
 
-                    const attributes = {};
+        let attributeRowRef = null;
+        $(document).on('click', '.open-attribute-modal', function () {
+            attributeRowRef = $(this).closest('tr');
 
-                    // Collect all selected attributes
-                    $('.attribute-select').each(function () {
-                        const attrName = $(this).data('attribute');
-                        const attrValue = $(this).val();
+            const rowId = attributeRowRef.data('row-id');
 
-                        if (attrValue) {
-                            attributes[attrName] = attrValue;
-                        }
-                    });
+            $('.attribute-select').val('');
 
-                    const rowId = attributeRowRef.data('row-id');
-
-                    // Store as JSON in the hidden input
-                    const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                    input.val(JSON.stringify(attributes));
-
-                    // Display selected attributes in the same row (column 4)
-                    let badgeHtml = '';
+            // Load existing attributes if any
+            const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
+            if (input.length && input.val()) {
+                try {
+                    const attributes = JSON.parse(input.val());
                     Object.entries(attributes).forEach(([key, value]) => {
-                        badgeHtml += `<span class="badge rounded-pill badge-light-primary">${key}: ${value}</span> `;
+                        $(`.attribute-select[data-attribute="${key}"]`).val(value);
                     });
-
-                    const cellHtml = `
-                        ${badgeHtml}
-                        <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-primary open-attribute-modal" style="font-size: 10px">Attributes </button>
-                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value='${JSON.stringify(attributes)}' />
-                    `;
-
-                    $(`tr[data-row-id="${rowId}"]`).find('td').eq(3).html(cellHtml);
-
+                } catch (e) {
+                    console.error('Invalid JSON in attributes input:', e);
                 }
-            });
+            }
 
-            $(document).on('change', '.item-code-dropdown', function () {
-                let selectedOption = $(this).find('option:selected');
-                let itemName = selectedOption.data('name') || '';
-                $(this).closest('tr').find('.item-name-input').val(itemName);
 
-                let selectedItem = items.find(item => item.id === parseInt(selectedOption.val()));
-                console.log(selectedItem, selectedOption.val())
-                if (selectedItem) {
-                    $('#part-detail-name').html(selectedItem.item_name);
-                    $('#part-detail-hsn').html(selectedItem.hsn_id);
-                    $('#part-detail-color').html(selectedItem.color ?? 'N/A');
-                    $('#part-detail-size').html(selectedItem.size ?? 'N/A');
-                    $('#part-detail-uom').html(selectedItem.uom_id ?? 'N/A');
-                    $('#part-detail-qty').html(selectedItem.qty ?? 'N/A');
-                    $('#part-detail-remarks').html(selectedItem.item_remark ?? 'N/A');
-                }
-            });
+            $('#attribute').modal('show');
 
-            $(document).on('click', '.open-attribute-modal', function () {
-                const rowId = $(this).data('row-id');
-                $('#attribute-row-id').val(rowId);
+        });
 
-                // Reset all attribute selects
-                $('.attribute-select').val('');
-
-                // Load existing attributes if any
-                const attributesInput = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                if (attributesInput.length && attributesInput.val()) {
-                    try {
-                        const attributes = JSON.parse(attributesInput.val());
-
-                        // Set values in the modal
-                        for (const [key, value] of Object.entries(attributes)) {
-                            $(`.attribute-select[data-attribute="${key}"]`).val(value);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing attributes:', e);
-                    }
-                }
-
-                $('#attribute').modal('show');
-            });
-
-            $('#save-attributes').on('click', function () {
-                const rowId = $('#attribute-row-id').val();
-                if (!rowId) return;
+        $('#attribute').on('hide.bs.modal', function (e) {
+            if ($(document.activeElement).hasClass('btn-primary')) {
+                if (!attributeRowRef) return;
 
                 const attributes = {};
 
@@ -1088,225 +1085,307 @@
                     }
                 });
 
+                const rowId = attributeRowRef.data('row-id');
+
                 // Store as JSON in the hidden input
-                $(`input[name="spareparts[${rowId}][attributes]"]`).val(JSON.stringify(attributes));
+                const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
+                input.val(JSON.stringify(attributes));
 
-                // Show a visual indicator that attributes are set
-                const attributeCount = Object.keys(attributes).length;
-                const attributeBtn = $(`.open-attribute-modal[data-row-id="${rowId}"]`);
-
-                if (attributeCount > 0) {
-                    attributeBtn.removeClass('btn-outline-secondary').addClass('btn-outline-primary');
-                    attributeBtn.html(`Attributes (${attributeCount})`);
-                } else {
-                    attributeBtn.removeClass('btn-outline-primary').addClass('btn-outline-secondary');
-                    attributeBtn.html('Attributes');
-                }
-
-                // Close the modal
-                $('#attribute').modal('hide');
-            });
-
-
-            // Add row based on active tab
-            $('#addRowBtn').on('click', function (e) {
-                e.preventDefault();
-                var activeTab = $('.tab-pane.active').attr('id');
-                if (activeTab === 'Maintenance') {
-                    $('#maintenanceRows').append(getMaintenanceRow());
-                } else if (activeTab === 'Spare') {
-                    $('#spareRows').append(getSparePartRow());
-                }
-            });
-
-            // Delete selected rows from active tab
-            $('#deleteRowBtn').on('click', function (e) {
-                e.preventDefault();
-
-                let activeTab = $('.tab-pane.active').attr('id');
-                let checkboxes, table;
-
-                if (activeTab === 'Maintenance') {
-                    checkboxes = $('#maintenanceRows').find('input.row-checkbox:checked');
-                    table = $('#maintenanceRows').closest('table');
-                } else if (activeTab === 'Spare') {
-                    checkboxes = $('#spareRows').find('input.row-checkbox:checked');
-                    table = $('#spareRows').closest('table');
-                }
-
-                if (checkboxes.length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'No rows selected',
-                        text: 'Please select at least one row to delete.',
-                    });
-                    return;
-                }
-
-                checkboxes.closest('tr').remove();
-                table.find('thead input[type="checkbox"]').prop('checked', false);
-            });
-
-            // (Optional) "Select All" checkbox per table
-            $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
-                var tbody = $(this).closest('table').find('tbody');
-                var checked = $(this).is(':checked');
-                tbody.find('input.row-checkbox').prop('checked', checked);
-            });
-
-            function submitForm(status) {
-                $('#status').val(status);
-
-                let isValid = true;
-                let errorMessage = '';
-
-                // Basic Information validation
-                if ($('#organization_id').val() === '') {
-                    isValid = false;
-                    errorMessage += 'Organization is required.<br>';
-                }
-
-                if ($('#location_id').val() === '' && isValid) {
-                    isValid = false;
-                    errorMessage += 'Location is required.<br>';
-                }
-
-                if ($('#category_id').val() === '' && isValid) {
-                    isValid = false;
-                    errorMessage += 'Category is required.<br>';
-                }
-
-                if ($('input[name="name"]').val() === '' && isValid) {
-                    isValid = false;
-                    errorMessage += 'Name is required.<br>';
-                }
-
-                // Validate maintenance rows if any exist
-                $('#maintenanceRows tr').each(function () {
-                    const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
-                    const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
-
-                    if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
-                        if (typeSelect.val() === '') {
-                            isValid = false;
-                            errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
-                        }
-
-                        if (frequencyInput.val() === '') {
-                            isValid = false;
-                            errorMessage += 'Frequency is required for all maintenance rows.<br>';
-                        }
-                    }
+                // Display selected attributes in the same row (column 4)
+                let badgeHtml = '';
+                Object.entries(attributes).forEach(([key, value]) => {
+                    badgeHtml += `<span class="badge rounded-pill badge-light-primary">${key}: ${value}</span> `;
                 });
 
-                // Validate spare parts rows if any exist
-                $('#spareRows tr').each(function () {
-                    const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
-                    const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
-                    const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
-                    const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
+                const cellHtml = `
+                            ${badgeHtml}
+                            <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-primary open-attribute-modal" style="font-size: 10px">Attributes </button>
+                            <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value='${JSON.stringify(attributes)}' />
+                        `;
 
-                    if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
-                        if (itemCodeSelect.val() === '') {
-                            isValid = false;
-                            errorMessage += 'Item code is required for all spare part rows.<br>';
-                        }
+                $(`tr[data-row-id="${rowId}"]`).find('td').eq(3).html(cellHtml);
 
-                        if (itemNameInput.val() === '') {
-                            isValid = false;
-                            errorMessage += 'Item name is required for all spare part rows.<br>';
-                        }
-
-                        if (uomInput.val() === '') {
-                            isValid = false;
-                            errorMessage += 'UOM is required for all spare part rows.<br>';
-                        }
-
-                        if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
-                            isValid = false;
-                            errorMessage += 'Valid quantity is required for all spare part rows.<br>';
-                        }
-                    }
-                });
-
-                if (!isValid) {
-                    Swal.fire({
-                        title: 'Validation Error',
-                        html: errorMessage,
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
-                    return false;
-                }
-
-                // If draft, confirm with user
-                if (status === 'draft') {
-                    Swal.fire({
-                        title: 'Save as Draft',
-                        text: 'Are you sure you want to save this equipment as draft?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, save it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $('#submitButton').click();
-                        }
-                    });
-                } else {
-                    // If submitting, confirm with user
-                    Swal.fire({
-                        title: 'Submit Equipment',
-                        text: 'Are you sure you want to submit this equipment?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, submit it!',
-                        cancelButtonText: 'No, cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $('#submitButton').click();
-                        }
-                    });
-                }
             }
-
-            function check_amount() {
-
-                $('#draft').attr('disabled', true);
-                $('#submitted').attr('disabled', true);
-                $('.preloader').show();
-            }
-
-            function showToast(icon, title) {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: "top-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    didOpen: (toast) => {
-                        toast.onmouseenter = Swal.stopTimer;
-                        toast.onmouseleave = Swal.resumeTimer;
-                    },
-                });
-                Toast.fire({
-                    icon,
-                    title
-                });
-            }
-
-            @if (session('success'))
-                showToast("success", "{{ session('success') }}");
-            @endif
-
-            @if (session('error'))
-                showToast("error", "{{ session('error') }}");
-            @endif
-
-            @if ($errors->any())
-                showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
-            @endif
         });
 
+        $(document).on('change', '.item-code-dropdown', function () {
+            let selectedOption = $(this).find('option:selected');
+            let itemName = selectedOption.data('name') || '';
+            $(this).closest('tr').find('.item-name-input').val(itemName);
+
+            let selectedItem = items.find(item => item.id === parseInt(selectedOption.val()));
+            console.log(selectedItem, selectedOption.val())
+            if (selectedItem) {
+                $('#part-detail-name').html(selectedItem.item_name);
+                $('#part-detail-hsn').html(selectedItem.hsn_id);
+                $('#part-detail-color').html(selectedItem.color ?? 'N/A');
+                $('#part-detail-size').html(selectedItem.size ?? 'N/A');
+                $('#part-detail-uom').html(selectedItem.uom_id ?? 'N/A');
+                $('#part-detail-qty').html(selectedItem.qty ?? 'N/A');
+                $('#part-detail-remarks').html(selectedItem.item_remark ?? 'N/A');
+            }
+        });
+
+        $(document).on('click', '.open-attribute-modal', function () {
+            const rowId = $(this).data('row-id');
+            $('#attribute-row-id').val(rowId);
+
+            // Reset all attribute selects
+            $('.attribute-select').val('');
+
+            // Load existing attributes if any
+            const attributesInput = $(`input[name="spareparts[${rowId}][attributes]"]`);
+            if (attributesInput.length && attributesInput.val()) {
+                try {
+                    const attributes = JSON.parse(attributesInput.val());
+
+                    // Set values in the modal
+                    for (const [key, value] of Object.entries(attributes)) {
+                        $(`.attribute-select[data-attribute="${key}"]`).val(value);
+                    }
+                } catch (e) {
+                    console.error('Error parsing attributes:', e);
+                }
+            }
+
+            $('#attribute').modal('show');
+        });
+
+        $('#save-attributes').on('click', function () {
+            const rowId = $('#attribute-row-id').val();
+            if (!rowId) return;
+
+            const attributes = {};
+
+            // Collect all selected attributes
+            $('.attribute-select').each(function () {
+                const attrName = $(this).data('attribute');
+                const attrValue = $(this).val();
+
+                if (attrValue) {
+                    attributes[attrName] = attrValue;
+                }
+            });
+
+            // Store as JSON in the hidden input
+            $(`input[name="spareparts[${rowId}][attributes]"]`).val(JSON.stringify(attributes));
+
+            // Show a visual indicator that attributes are set
+            const attributeCount = Object.keys(attributes).length;
+            const attributeBtn = $(`.open-attribute-modal[data-row-id="${rowId}"]`);
+
+            if (attributeCount > 0) {
+                attributeBtn.removeClass('btn-outline-secondary').addClass('btn-outline-primary');
+                attributeBtn.html(`Attributes (${attributeCount})`);
+            } else {
+                attributeBtn.removeClass('btn-outline-primary').addClass('btn-outline-secondary');
+                attributeBtn.html('Attributes');
+            }
+
+            // Close the modal
+            $('#attribute').modal('hide');
+        });
+
+
+        // Add row based on active tab
+        $('#addRowBtn').on('click', function (e) {
+            e.preventDefault();
+            var activeTab = $('.tab-pane.active').attr('id');
+            if (activeTab === 'Maintenance') {
+                $('#maintenanceRows').append(getMaintenanceRow());
+            } else if (activeTab === 'Spare') {
+                $('#spareRows').append(getSparePartRow());
+            }
+        });
+
+        // Delete selected rows from active tab
+        $('#deleteRowBtn').on('click', function (e) {
+            e.preventDefault();
+
+            let activeTab = $('.tab-pane.active').attr('id');
+            let checkboxes, table;
+
+            if (activeTab === 'Maintenance') {
+                checkboxes = $('#maintenanceRows').find('input.row-checkbox:checked');
+                table = $('#maintenanceRows').closest('table');
+            } else if (activeTab === 'Spare') {
+                checkboxes = $('#spareRows').find('input.row-checkbox:checked');
+                table = $('#spareRows').closest('table');
+            }
+
+            if (checkboxes.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No rows selected',
+                    text: 'Please select at least one row to delete.',
+                });
+                return;
+            }
+
+            checkboxes.closest('tr').remove();
+            table.find('thead input[type="checkbox"]').prop('checked', false);
+        });
+
+        // (Optional) "Select All" checkbox per table
+        $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
+            var tbody = $(this).closest('table').find('tbody');
+            var checked = $(this).is(':checked');
+            tbody.find('input.row-checkbox').prop('checked', checked);
+        });
+    });
+
+        function submitForm(status) {
+            $('#status').val(status);
+
+            let isValid = true;
+            let errorMessage = '';
+
+            // Basic Information validation
+            if ($('#organization_id').val() === '') {
+                isValid = false;
+                errorMessage += 'Organization is required.<br>';
+            }
+
+            if ($('#location_id').val() === '' && isValid) {
+                isValid = false;
+                errorMessage += 'Location is required.<br>';
+            }
+
+            if ($('#category_id').val() === '' && isValid) {
+                isValid = false;
+                errorMessage += 'Category is required.<br>';
+            }
+
+            if ($('input[name="name"]').val() === '' && isValid) {
+                isValid = false;
+                errorMessage += 'Name is required.<br>';
+            }
+
+            // Validate maintenance rows if any exist
+            $('#maintenanceRows tr').each(function () {
+                const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
+                const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
+
+                if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
+                    if (typeSelect.val() === '') {
+                        isValid = false;
+                        errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
+                    }
+
+                    if (frequencyInput.val() === '') {
+                        isValid = false;
+                        errorMessage += 'Frequency is required for all maintenance rows.<br>';
+                    }
+                }
+            });
+
+            // Validate spare parts rows if any exist
+            $('#spareRows tr').each(function () {
+                const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
+                const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
+                const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
+                const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
+
+                if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
+                    if (itemCodeSelect.val() === '') {
+                        isValid = false;
+                        errorMessage += 'Item code is required for all spare part rows.<br>';
+                    }
+
+                    if (itemNameInput.val() === '') {
+                        isValid = false;
+                        errorMessage += 'Item name is required for all spare part rows.<br>';
+                    }
+
+                    if (uomInput.val() === '') {
+                        isValid = false;
+                        errorMessage += 'UOM is required for all spare part rows.<br>';
+                    }
+
+                    if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
+                        isValid = false;
+                        errorMessage += 'Valid quantity is required for all spare part rows.<br>';
+                    }
+                }
+            });
+
+            if (!isValid) {
+                Swal.fire({
+                    title: 'Validation Error',
+                    html: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                return false;
+            }
+
+            // If draft, confirm with user
+            if (status === 'draft') {
+                Swal.fire({
+                    title: 'Save as Draft',
+                    text: 'Are you sure you want to save this equipment as draft?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, save it!',
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#submitButton').click();
+                    }
+                });
+            } else {
+                // If submitting, confirm with user
+                Swal.fire({
+                    title: 'Submit Equipment',
+                    text: 'Are you sure you want to submit this equipment?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, submit it!',
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#submitButton').click();
+                    }
+                });
+            }
+        }
+
+        function check_amount() {
+
+            $('#draft').attr('disabled', true);
+            $('#submitted').attr('disabled', true);
+            $('.preloader').show();
+        }
+
+        function showToast(icon, title) {
+            const Toast = Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                },
+            });
+            Toast.fire({
+                icon,
+                title
+            });
+        }
+
+        @if (session('success'))
+            showToast("success", "{{ session('success') }}");
+        @endif
+
+        @if (session('error'))
+            showToast("error", "{{ session('error') }}");
+        @endif
+
+        @if ($errors->any())
+            showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
+        @endif
+           
     </script>
 @endsection

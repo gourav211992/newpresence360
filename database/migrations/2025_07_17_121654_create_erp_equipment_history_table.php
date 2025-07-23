@@ -12,8 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('erp_equipment', function (Blueprint $table) {
+        Schema::create('erp_equipment_history', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('source_id');
             $table->unsignedBigInteger('book_id');
             $table->string('document_number');
             $table->date('document_date')->nullable();
@@ -53,6 +54,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('erp_equipment');
+        Schema::dropIfExists('erp_equipment_history');
     }
 };

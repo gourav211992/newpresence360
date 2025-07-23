@@ -8,7 +8,6 @@
         <div class="content-wrapper container-xxl p-0">
             <form id="equipmentForm" action="{{ route('equipment.update', $equipment->id) }}" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
                 <div class="content-header pocreate-sticky">
                     <div class="row">
                         <div class="content-header-left col-md-6 mb-2">
@@ -27,22 +26,36 @@
                         </div>
                         <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
                             <div class="form-group breadcrumb-right">
-                                <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
+                                <button onClick="javascript: history.go(-1)" id="back" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i
                                         data-feather="arrow-left-circle"></i> Back</button>
-                                {{-- <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
-                                    Draft</button> --}}
-                                <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
-                                    class="btn btn-primary btn-sm mb-50 mb-sm-0" style="display: none;"><i data-feather='edit'></i> Amendment</button>
-                                <!-- <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button>
-                                        <button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button> -->
-                            <button type="button" onclick="submitForm('draft');" id="draft"
+                              
+                                @if($buttons['submit'])
+                                    <button type="button" onclick="submitForm('draft');" id="draft"
                                         class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as
                                         Draft</button>
-                                    <button type="button" onclick="submitForm('submitted');"
+                                   
+                                        <button type="button" onclick="submitForm('submitted');"
                                         class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i
                                             data-feather="check-circle"></i>
                                         Submit</button>
-                                    <input id="submitButton" type="submit" value="Submit" class="hidden" />
+                                        @endif
+                                    @if ($buttons['approve'])
+                                        <a type="button" id="reject-button" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setReject();"
+                                            class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i
+                                                data-feather="x-circle"></i> Reject</a>
+                                        <a type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#approveModal" onclick = "setApproval();"><i
+                                                data-feather="check-circle"></i> Approve</a>
+                                    @endif
+                    
+                  
+                    @if($buttons['amend'])
+                    <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</a>
+                    @endif
+                    
+                                   
+                                        <input id="submitButton" type="submit" value="Submit" class="hidden" />
                             </div>
                         </div>
                     </div>
@@ -72,15 +85,64 @@
                                     <div class="card-body customernewsection-form">
                                         <div class="row">
                                             <div class="col-md-12">
-                                                <div
-                                                    class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+                                                 <div
+                                                    class="newheader d-flex justify-content-between border-bottom mb-2 pb-25">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
+                                                    <div class="header-right">
+                                                        @php
+                                                            use App\Helpers\Helper;
+                                                        @endphp
+                                                        <div class="col-md-6 text-sm-end">
+                                                            <span class="badge rounded-pill {{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$equipment->document_status] ?? ''}} forminnerstatus">
+                                                                <span class="text-dark">Status</span>
+                                                                 : <span class="{{App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS[$equipment->document_status] ?? ''}}">
+                                                                    @if ($equipment->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                    Approved
+                                                                @else
+                                                                    {{ ucfirst($equipment->document_status) }}
+                                                                @endif
+                                                            </span>
+                                                            </span>        
+                                                    </div>
+                                             </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-8">
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label" for="book_id">Series <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select" name="book_id" id="book_id" disabled
+                                                            required>
+                                                            @if ($series)
+                                                                @foreach ($series as $index => $ser)
+                                                                    <option value="{{ $ser->id }}"
+                                                                        {{ $equipment->book_id == $ser->id ? 'selected' : '' }}>
+                                                                        {{ $ser->book_code }}
+                                                                    </option>
+                                                                @endforeach
+                                                            @endif
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label" for="document_number">Doc No <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" class="form-control" name="document_number"
+                                                            id="document_number" value="{{ $equipment->document_number }}"
+                                                            disabled required>
+                                                    </div>
+                                                </div>
+
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Organization <span
@@ -91,8 +153,8 @@
                                                             <option value="">Select</option>
 
                                                             @foreach ($userOrganizations as $organization)
-                                                                <option value="{{ $organization->id }}" @selected(old('organization_id', $equipment->organization_id) == $organization->id)>
-                                                                    {{ $organization->name }}</option>
+                                                                <option value="{{ $organization->organization->id }}" @selected (old('organization_id', $equipment->organization_id) == $organization->organization->id) >
+                                                                    {{ $organization->organization->name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -164,97 +226,8 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-4" style="display: none;">
-                                                <div
-                                                    class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                    <h5
-                                                        class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                        <strong><i data-feather="arrow-right-circle"></i> Approval
-                                                            History</strong>
-                                                        <strong
-                                                            class="badge rounded-pill badge-light-secondary amendmentselect">Rev.
-                                                            No.
-                                                            <select class="form-select">
-                                                                <option>00</option>
-                                                                <option>01</option>
-                                                                <option>02</option>
-                                                                <option>03</option>
-                                                            </select>
-                                                        </strong>
-                                                    </h5>
-                                                    <ul class="timeline ms-50 newdashtimline ">
-                                                        <li class="timeline-item">
-                                                            <span class="timeline-point timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deepak Kumar</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-primary">Amendment</span>
-                                                                </div>
-                                                                <h5>(2 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span class="timeline-point timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Aniket Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-danger">Rejected</span>
-                                                                </div>
-                                                                <h5>(2 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-warning timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deewan Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-warning">Pending</span>
-                                                                </div>
-                                                                <h5>(5 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-info timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Brijesh Kumar</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-success">Approved</span>
-                                                                </div>
-                                                                <h5>(10 min ago)</h5>
-                                                                <p>Description will come here</p>
-                                                            </div>
-                                                        </li>
-                                                        <li class="timeline-item">
-                                                            <span
-                                                                class="timeline-point timeline-point-danger timeline-point-indicator"></span>
-                                                            <div class="timeline-event">
-                                                                <div
-                                                                    class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                    <h6>Deepender Singh</h6>
-                                                                    <span
-                                                                        class="badge rounded-pill badge-light-success">Approved</span>
-                                                                </div>
-                                                                <h5>(5 day ago)</h5>
-                                                                <p><a href="#"><i data-feather="download"></i></a>
-                                                                    Description will come here </p>
-                                                            </div>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
+                                        @include('partials.approval-history', ['document_status' =>$equipment->document_status, 'revision_number' => $equipment->revision_number])
+                                 
                                         </div>
                                     </div>
                                 </div>
@@ -271,7 +244,7 @@
                                                         <p class="card-text">Fill the details</p>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-6 text-sm-end">
+                                                <div class="col-md-6 text-sm-end @if(!$buttons['submit']) d-none @endif">
                                                     <a href="javascript:void(0);" id="deleteRowBtn"
                                                         class="btn btn-sm btn-outline-danger me-50">
                                                         <i data-feather="x-circle"></i> Delete</a>
@@ -680,6 +653,7 @@
                     </div>
                 </div>
                 <div class="modal-footer text-end">
+                    
                     <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i
                             data-feather="x-circle"></i> Cancel</button>
                     <button class="btn btn-primary btn-sm" data-bs-dismiss="modal"><i data-feather="check-circle"></i>
@@ -688,6 +662,65 @@
             </div>
         </div>
     </div>
+      <!-- END: Content-->
+    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form class="ajax-input-form" method="POST" action="{{ route('equipment.approval') }}"
+                    data-redirect="{{ route('equipment.index') }}" enctype='multipart/form-data'>
+                    @csrf
+                    <input type="hidden" name="action_type" id="action_type">
+                    <input type="hidden" name="id" value="{{ $equipment->id }}">
+                    <div class="modal-header">
+                        <div>
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17"></h4>
+                            <p class="mb-0 fw-bold voucehrinvocetxt mt-0">{{ Carbon\Carbon::now()->format('d-m-Y') }}
+                            </p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pb-2">
+                        <div class="row mt-1">
+                            <div class="col-md-12">
+                                <div class="mb-1">
+                                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
+                                    <textarea name="remarks" class="form-control"></textarea>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Upload Document</label>
+                                    <input type="file" multiple class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="submit-button">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Amendment Modal --}}
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header p-0 bg-transparent">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body alertmsg text-center warning">
+                    <i data-feather='alert-circle'></i>
+                    <h2>Are you sure?</h2>
+                    <p>Are you sure you want to <strong>Amendment</strong> this <strong>Equipment</strong>? After Amendment this action cannot be undone.</p>
+                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                </div>
+            </div>
+        </div>
+      </div>
+        <!-- END: Content-->
+
     <!-- END: Modal for Checklist -->
 @endsection
 
@@ -708,14 +741,15 @@
     </style>
     <script>
         $(document).ready(function () {
+            
 
             var allLocations = @json($locations);
             // var allCategories = @json($categories);
             var maintenanceTypes = @json($maintenanceTypes);
             let items = @json($items);
 
-            var existingMaintenanceDetails = @json($equipment->maintenanceDetails);
-            var existingSpareParts = @json($equipment->spareParts);
+            var existingMaintenanceDetails = @json($equipment->maintenanceDetails)??{};
+            var existingSpareParts = @json($equipment->spareParts)??{};
 
             console.log(existingMaintenanceDetails)
             if (existingMaintenanceDetails.length > 0) {
@@ -733,6 +767,22 @@
             } else {
                 $('#spareRows').append(getSparePartRow());
             }
+
+             @if(!$buttons['submit'])
+        $('#equipmentForm').find('input, select,button,textarea').prop('disabled', true);
+       
+        $('#revisionNumber').prop('disabled', false);
+        $('#back').prop('disabled', false);
+        @endif
+
+         $(function() {
+            $("#revisionNumber").change(function() {
+                const fullUrl = "{{ route('equipment.edit', $equipment->id) }}?revisionNumber=" +
+                    $(this)
+                    .val();
+                window.open(fullUrl, "_blank");
+            });
+        });
 
             // On organization change, filter locations
             $('#organization_id').on('change', function () {
@@ -965,7 +1015,7 @@
             // }
 
             function getSparePartRow(data = {}) {
-                let itemOptions = `<option value="">Select</option>`;
+               let itemOptions = `<option value="">Select</option>`;
                 items.forEach(function (item) {
                     itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}" ${data.item_code == item.id ? 'selected' : ''}>${item.item_code}</option>`;
                 });
@@ -974,7 +1024,9 @@
                 let badgeHtml = '';
                 console.log(data, data.attributes)
 
-                let attributes = JSON.parse(data.attributes);
+                let attributes = JSON.parse(data.attributes??null);
+                if(attributes==null) return;
+               
                 Object.entries(attributes).forEach(([key, value]) => {
                     badgeHtml += `<span class="badge rounded-pill badge-light-primary">${key}: ${value}</span> `;
                 });
@@ -1202,6 +1254,7 @@
                 var checked = $(this).is(':checked');
                 tbody.find('input.row-checkbox').prop('checked', checked);
             });
+        });
 
             function submitForm(status) {
                 $('#status').val(status);
@@ -1355,7 +1408,43 @@
             @if ($errors->any())
             showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
             @endif
+
+            function setApproval() {
+            document.getElementById('action_type').value = "approve";
+            $('#myModalLabel17').text('Approve Voucher');
+
+        }
+
+        function setReject() {
+            document.getElementById('action_type').value = "reject";
+            $('#myModalLabel17').text('Reject Voucher');
+
+        }
+         $(document).on('click', '#amendmentSubmit', (e) => {
+            let actionUrl = "{{ route('equipment.amendment', $equipment->id) }}";
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if (data.status == 200) {
+                        Swal.fire({
+                            title: 'Success!',
+                            text: data.message,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Error!',
+                            text: data.message,
+                            icon: 'error'
+                        });
+                    }
+                    location.reload();
+                });
+            });
         });
+        
+       
+       
+        
 
     </script>
 @endsection

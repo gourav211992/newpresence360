@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ErpEquipMaintenanceDetail extends Model
+class ErpEquipMaintenanceDetailHistory extends Model
 {
     use HasFactory;
 
@@ -23,10 +23,10 @@ class ErpEquipMaintenanceDetail extends Model
 
     public function equipment()
     {
-        return $this->belongsTo(ErpEquipment::class, 'erp_equipment_id');
+        return $this->belongsTo(ErpEquipmentHistory::class, 'erp_equipment_id','source_id');
     }
     public function checklists()
     {
-        return $this->hasMany(ErpEquipMaintenanceChecklist::class, 'erp_equip_maintenance_id');
+        return $this->hasMany(ErpEquipMaintenanceChecklistHistory::class, 'erp_equip_maintenance_id');
     }
 }

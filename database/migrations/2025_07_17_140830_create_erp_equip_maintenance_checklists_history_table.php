@@ -12,16 +12,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('erp_equip_sparepart_details', function (Blueprint $table) {
+        Schema::create('erp_equip_maintenance_checklists_history', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('erp_equipment_id')->index();
-            $table->string('item_code')->nullable();
-            $table->string('item_name')->nullable();
-            $table->unsignedBigInteger('item_id')->nullable();
-            $table->json('attributes')->nullable();
-            $table->string('uom');
-            $table->integer('qty');
-
+            $table->unsignedBigInteger('erp_equip_maintenance_id');
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('type')->nullable();
+            
             $table->string('status')->default('active')->index();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
@@ -36,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('erp_equip_sparepart_details');
+        Schema::dropIfExists('erp_equip_maintenance_checklists_history');
     }
 };

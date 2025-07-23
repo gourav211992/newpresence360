@@ -481,8 +481,55 @@
             </div>
         </div>
     </div>
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form class="ajax-submit-2" method="POST" action="{{ route('approveLedger') }}" data-redirect="{{ route('item.index') }}" enctype='multipart/form-data'>
+          @csrf
+          <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
+          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($item) ? $item -> id : ''}}">
+         <div class="modal-header">
+            <div>
+               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
+               </h4>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         </div>
+         <div class="modal-body pb-2">
+            <div class="row mt-1">
+               <div class="col-md-12">
+                  <div class="mb-1">
+                     <label class="form-label">Remarks</label>
+                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
+                  </div>
+                  <div class="row">
+                    <div class = "col-md-8">
+                        <div class="mb-1">
+                            <label class="form-label">Upload Document</label>
+                            <input type="file" name = "attachment[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                        </div>
+                    </div>
+                    <div class = "col-md-4" style = "margin-top:19px;">
+                        <div class = "row" id = "approval_files_preview">
+
+                        </div>
+                    </div>
+                  </div>
+                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                  
+               </div>
+            </div>
+         </div>
+         <div class="modal-footer justify-content-center">  
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick="closeModal('approveModal')">Cancel</button> 
+            <button type="submit" class="btn btn-primary">Submit</button>
+         </div>
+       </form>
+      </div>
+   </div>
+</div>
   <!-- END: Content-->
-    <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+    <div class="modal fade" id="approveModal2" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form class="ajax-input-form" method="POST" action="{{ route('approveLedger') }}"
@@ -913,17 +960,17 @@
 
             generateItemCode();
         }
-    function setApproval() {
-            document.getElementById('action_type').value = "approve";
-            $('#myModalLabel17').text('Approve Voucher');
+    function setApproval()
+    {
+        document.getElementById('action_type').value = "approve";
+        document.getElementById('approve_reject_heading_label').textContent = "Approve Ledger";
 
-        }
-
-        function setReject() {
-            document.getElementById('action_type').value = "reject";
-            $('#myModalLabel17').text('Reject Voucher');
-
-        }
+    }
+    function setReject()
+    {
+        document.getElementById('action_type').value = "reject";
+        document.getElementById('approve_reject_heading_label').textContent = "Reject Ledger";
+    }
          $(document).on('click', '#amendmentSubmit', (e) => {
             let actionUrl = "{{ route('ledgers.amendment', $data->id) }}";
             fetch(actionUrl).then(response => {
@@ -970,6 +1017,101 @@
         @endif
         
        }
+        function closeModal(id)
+    {
+        $('#' + id).modal('hide');
+    }
+    function openModal(id)
+    {
+        $('#' + id).modal('show');
+    }
+    function addFiles(element, previewElementId) {
+        const input = element;
+        const allowedMaxFilesCount = Number(element.getAttribute('max_file_count') ? element.getAttribute('max_file_count') : 1);
+        const files = Array.from(input.files); // Convert new FileList to array
+        const dt = new DataTransfer();
+        const inputId = input.name.replace('[]','');
+        // Initialize storage for this input if not already initialized
+        if (!fileInputData[inputId]) {
+            fileInputData[inputId] = [];
+            addedFilesCount = 0;
+        } else {
+            addedFilesCount = fileInputData[inputId].length;
+        }
+
+        if ((files.length + fileInputData[inputId].length) > allowedMaxFilesCount) 
+        {
+            Swal.fire({
+                title: 'Error!',
+                text: "Maximum " + allowedMaxFilesCount + " files are allowed",
+                icon: 'error',
+            });
+            let prevAllFiles = fileInputData[inputId] ? fileInputData[inputId] : [];
+            let tempDt = new DataTransfer();
+            prevAllFiles.forEach((fileElement) => {
+                tempDt.items.add(fileElement);
+            });
+            input.files = tempDt.files;
+            return;
+        }
+
+        // Combine old and new files
+        let allFiles = [...fileInputData[inputId], ...files];
+        var invalidFile = {};
+
+        // Validate files
+        for (let i = 0; i < allFiles.length; i++) {
+            const file = allFiles[i];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+                invalidFile.message = 'Please select valid files';
+                break;
+            }
+            const fileSize = (file.size / 1024).toFixed(2);
+            if (fileSize > MAX_FILE_SIZE) {
+                invalidFile.message = 'Please select files with size not more than 5MB';
+                break;
+            }
+        }
+
+        // Stop if there's an invalid file
+        if (invalidFile && invalidFile.message) {
+            Swal.fire({
+                title: 'Error!',
+                text: invalidFile.message,
+                icon: 'error',
+            });
+            element.value = ''; // Reset file input
+            return;
+        } else {
+            // Add all files to DataTransfer and rebuild the preview
+            allFiles.forEach((file, i) => {
+                dt.items.add(file);
+                if (!fileInputData[inputId].some(f => f.name === file.name && f.size === file.size)) {
+                    const fileUrl = URL.createObjectURL(file);
+                    appendFilePreviews(fileUrl, previewElementId, i);
+                }
+            });
+
+            // Update the global object for this input
+            fileInputData[inputId] = allFiles.reduce((unique, file) => {
+                if (!unique.some(f => f.name === file.name && f.size === file.size)) {
+                    unique.push(file);
+                }
+                return unique;
+            }, []);
+
+            // Update the file input's FileList
+            input.files = dt.files;
+
+            // Reset and re-render SVG icons (if applicable)
+            feather.replace({
+                width: 20,
+                height: 20,
+            });
+        }
+    }
        
 
 
