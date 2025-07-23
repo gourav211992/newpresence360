@@ -56,6 +56,10 @@ class InspectionChecklistRequest extends FormRequest
                 'nullable',
                 'string',
             ],
+            'type' => [
+                'nullable',
+                'string',
+            ],
             'status' => [
                 'required',
                 Rule::in(ConstantHelper::STATUS),

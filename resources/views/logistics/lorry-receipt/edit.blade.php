@@ -24,8 +24,8 @@
                   </div>
                </div>
                <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-                  <div class="form-group breadcrumb-right">
-                    <a href="{{ route('logistics.lorry-receipt.index') }}" class="btn btn-secondary btn-sm">
+                  <div class="form-group breadcrumb-right" id="buttonsDiv">
+                    <a href="{{ route('logistics.lorry-receipt.index') }}" class="btn btn-secondary btn-sm" >
                         <i data-feather="arrow-left-circle"></i> Back
                         </a>
                         @if(auth()->check() && $lr->created_by == optional(auth()->user())->auth_user_id)
@@ -40,13 +40,13 @@
                      @if(!isset(request()->revisionNumber))
                         @if(isset($buttons) && is_array($buttons) && isset($lr))
                            @if($buttons['draft'] ?? false)
-                               <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" onclick="setStatusAndSubmit('draft')">
+                               <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" onclick="setStatusAndSubmit('draft')">
                                 <i data-feather='save'></i> Save as Draft
                             </button>
                            @endif
 
                            @if($buttons['submit'] ?? false)
-                              <button type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0" onclick="setStatusAndSubmit('submitted')">
+                              <button type="submit" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" onclick="setStatusAndSubmit('submitted')">
                                 <i data-feather="check-circle"></i> Submit
                             </button>
                            @endif
@@ -61,9 +61,9 @@
                            @endif
 
                            @if($buttons['amend'] ?? false)
-                              <button type="button" class="btn btn-primary btn-sm mb-50 mb-sm-0" id="amendShowButton">
-                              <i data-feather="edit"></i> Amendment
-                           </button>
+                           <button type="button" id="amendShowButton" onclick="openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                                <i data-feather='edit'></i> Amendment
+                         </button>
                            @endif
 
                            @if($buttons['revoke'] ?? false)
@@ -72,10 +72,10 @@
                               </button>
                            @endif
                          @else
-                           <button type="submit" onclick="submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button">
+                           <button type="submit" onclick="submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button">
                               <i data-feather="save"></i> Save as Draft
                            </button>
-                           <button type="submit" onclick="submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submit-button">
+                           <button type="submit" onclick="submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0 submit-button" id="submit-button">
                               <i data-feather="check-circle"></i> Submit
                            </button>
                         @endif
@@ -115,8 +115,8 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', $lr->status ?? 'draft') }}">
-                                       <select class="form-select disable_on_edit" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', $lr->document_status ?? 'draft') }}">
+                                       <select class="form-select disable_on_edit editable-field" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" >
                                        @foreach ($series as $currentSeries)
                                        <option value="{{ $currentSeries->id }}" {{ old('book_id', $lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
@@ -129,7 +129,7 @@
                                        <label class="form-label">Doc No <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="text" class="form-control" id="document_number" name="document_number" value="{{ old('document_number', $lr->document_number) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                       <input type="text" class="form-control editable-field" id="document_number" name="document_number" value="{{ old('document_number', $lr->document_number) }}" >
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -137,7 +137,7 @@
                                        <label class="form-label">Doc Date <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="date" class="form-control" id="document_date" name="document_date" value="{{ old('document_date', $lr->document_date ? \Carbon\Carbon::parse($lr->document_date)->format('Y-m-d') : now()->format('Y-m-d')) }}">
+                                       <input type="date" class="form-control editable-field" id="document_date" name="document_date" value="{{ old('document_date', $lr->document_date ? \Carbon\Carbon::parse($lr->document_date)->format('Y-m-d') : now()->format('Y-m-d')) }}">
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -145,7 +145,7 @@
                                        <label class="form-label">Location <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5">
-                                       <select class="form-select select2" name="location" id="locationId" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                       <select class="form-select select2 editable-field" name="location" id="locationId" >
                                           <option value="">Select Location</option>
                                           @foreach($locations as $location)
                                           <option value="{{ $location->id }}" {{ old('location', $lr->location_id) == $location->id ? 'selected' : '' }}>{{ $location->store_name }}</option>
@@ -158,7 +158,7 @@
                                        <label class="form-label">Cost Center <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5">
-                                       <select name="cost_center_id" id="cost_center_id" class="form-select select2" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                       <select name="cost_center_id" id="cost_center_id" class="form-select select2 editable-field" >
                                           <option value="">Select Cost Center</option>
                                        </select>
                                     </div>
@@ -166,7 +166,72 @@
                               </div>
                              
                                   
-                               @include('partials.approval-history', ['document_status' => $lr->document_status, 'revision_number' => $lr->revision_number])
+                             @if(isset($lr) && ($lr->document_status !== "draft"))
+                                                        @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($lr->revision_number))
+                                                        <div class="col-md-4">
+                                                            <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
+                                                                <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
+                                                                    <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
+                                                                    @if(!isset(request()->revisionNumber) && $lr->document_status !== 'draft')
+                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
+                                                                            <select class="form-select cannot_disable" id="revisionNumber">
+                                                                                @for($i=$lr->revision_number; $i >= 0; $i--)
+                                                                                    <option value="{{$i}}" {{request('revisionNumber', $lr->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
+                                                                                @endfor
+                                                                            </select>
+                                                                        </strong>
+                                                                    @else
+                                                                        @if ($lr->document_status !== 'draft')
+                                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect cannot_disable">
+                                                                                Rev. No. {{ request()->revisionNumber }}
+                                                                            </strong>
+                                                                        @endif
+                                                                    @endif
+                                                                </h5>
+                                                                <ul class="timeline ms-50 newdashtimline ">
+                                                                    @foreach($approvalHistory as $approvalHist)
+                                                                        <li class="timeline-item">
+                                                                            <span class="timeline-point timeline-point-indicator"></span>
+                                                                            <div class="timeline-event">
+                                                                                <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
+                                                                                    <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
+                                                                                    @if($approvalHist->approval_type == 'approve')
+                                                                                        <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'submit')
+                                                                                        <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @elseif($approvalHist->approval_type == 'reject')
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @else
+                                                                                        <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
+                                                                                    @endif
+                                                                                </div>
+                                                                                @if($approvalHist->approval_date)
+                                                                                    <h6>
+                                                                                        {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
+                                                                                    </h6>
+                                                                                @endif
+                                                                                @if($approvalHist->remarks)
+                                                                                    <p>{!! $approvalHist->remarks !!}</p>
+                                                                                @endif
+                                                                                @if ($approvalHist->media && count($approvalHist->media) > 0)
+                                                                                    @foreach ($approvalHist->media as $mediaFile)
+                                                                                        <p><a href="{{ $mediaFile->file_url }}" target="_blank">
+                                                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
+                                                                                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                                                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                                                                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                                                                </svg>
+                                                                                            </a></p>
+                                                                                    @endforeach
+                                                                                @endif
+                                                                            </div>
+                                                                        </li>
+                                                                    @endforeach
+                                                                </ul>
+                                                            </div>
+                                                            </div>
+                                                        @endif
+                                                    @endif
                                             {{-- Approval History Section --}}
                              
                            </div>
@@ -185,134 +250,134 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="source">Source <span class="text-danger">*</span></label>
-                                          <input type="text" name="source_name" class="form-control mw-100 route-master-autocomplete"
+                                          <input type="text" name="source_name" class="form-control mw-100 route-master-autocomplete editable-field"
                                              placeholder="Start typing  locations..." data-type="source"
-                                             value="{{ old('source_name', $lr->source->name ?? '') }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" name="source_id" class="route-master-id" data-type="source"
-                                             value="{{ old('source_id', $lr->source_id) }}" id="sourceIdInput" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                             value="{{ old('source_name', $lr->source->name ?? '') }}" />
+                                          <input type="hidden" name="source_id" class="route-master-id editable-field" data-type="source"
+                                             value="{{ old('source_id', $lr->origin_id) }}" id="sourceIdInput" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="destination">Destination <span class="text-danger">*</span></label>
-                                          <input type="text" name="destination_name" class="form-control mw-100 route-master-autocomplete"
+                                          <input type="text" name="destination_name" class="form-control mw-100 route-master-autocomplete editable-field"
                                              placeholder="Start typing  locations." data-type="destination"
-                                             value="{{ old('destination_name', $lr->destination->name ?? '') }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
-                                          <input type="hidden" name="destination_id" class="route-master-id" data-type="destination"
-                                             value="{{ old('destination_id', $lr->destination_id) }}" id="destinationIdInput" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                             value="{{ old('destination_name', $lr->destination->name ?? '') }}" />
+                                          <input type="hidden" name="destination_id" class="route-master-id editable-field" data-type="destination"
+                                             value="{{ old('destination_id', $lr->destination_id) }}" id="destinationIdInput" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="consignor">Consignor <span class="text-danger">*</span></label>
-                                          <input type="text" name="customer_name" class="form-control mw-100 customer-autocomplete"
+                                          <input type="text" name="customer_name" class="form-control mw-100 customer-autocomplete editable-field"
                                              data-type="consignor" placeholder="Start typing customer..."
-                                             value="{{ old('customer_name', $lr->consignor->company_name ?? '') }}"  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" name="customer_id" class="customer-id" data-type="consignor"
-                                             value="{{ old('customer_id', $lr->consignor_id) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                             value="{{ old('customer_name', $lr->consignor->company_name ?? '') }}"  />
+                                          <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
+                                             value="{{ old('customer_id', $lr->consignor_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="consignee">Consignee <span class="text-danger">*</span></label>
-                                          <input type="text" name="consignee_name" class="form-control mw-100 customer-autocomplete"
+                                          <input type="text" name="consignee_name" class="form-control mw-100 customer-autocomplete editable-field"
                                              data-type="consignee" placeholder="Start typing consignee..."
-                                             value="{{ old('consignee_name', $lr->consignee->company_name ?? '') }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" name="consignee_id" class="customer-id" data-type="consignee"
-                                             value="{{ old('consignee_id', $lr->consignee_id) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                             value="{{ old('consignee_name', $lr->consignee->company_name ?? '') }}" />
+                                          <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
+                                             value="{{ old('consignee_id', $lr->consignee_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="vehicle">Vehicle <span class="text-danger">*</span></label>
-                                          <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-type-autocomplete"
+                                          <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-type-autocomplete editable-field"
                                              placeholder="Select Vehicle" id="vehicle_type_name"
-                                             value="{{ old('vehicle_type_name', $lr->vehicleType->name ?? '') }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" name="vehicle_type_id" class="vehicle-type-id"
+                                             value="{{ old('vehicle_type_name', $lr->vehicleType->name ?? '') }}" />
+                                          <input type="hidden" name="vehicle_type_id" class="vehicle-type-id editable-field"
                                              value="{{ old('vehicle_type_id', $lr->vehicle_type_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="distance">Distance (Km) <span class="text-danger">*</span></label>
-                                          <input type="text" class="form-control" id="distance" name="distances"
-                                             placeholder="Enter Distance (Km)" value="{{ old('distances', $lr->distance) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" class="form-control" id="distanceInput" name="distance"
+                                          <input type="text" class="form-control editable-field" id="distance" name="distances"
+                                             placeholder="Enter Distance (Km)" value="{{ old('distances', $lr->distance) }}" />
+                                          <input type="hidden" class="form-control editable-field" id="distanceInput" name="distance"
                                              value="{{ old('distance', $lr->distance) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="freight_charges">Freight Charges (Rs) <span class="text-danger">*</span></label>
-                                          <input type="number" class="form-control" id="freight_charges" name="freight_charge"
-                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', $lr->freight_charges) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
-                                          <input type="hidden" class="form-control" id="freightCharges" name="freight_charges"
+                                          <input type="number" class="form-control editable-field" id="freight_charges" name="freight_charge"
+                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', $lr->freight_charges) }}" >
+                                          <input type="hidden" class="form-control editable-field" id="freightCharges" name="freight_charges"
                                              value="{{ old('freight_charges', $lr->freight_charges) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="driver">Driver <span class="text-danger">*</span></label>
-                                          <input type="text" name="driver_name" class="form-control mw-100 driver-autocomplete"
+                                          <input type="text" name="driver_name" class="form-control mw-100 driver-autocomplete editable-field"
                                              placeholder="Select Driver" data-type="driver"
-                                             value="{{ old('driver_name', $lr->driver->name ?? '') }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
-                                          <input type="hidden" name="driver_id" class="driver-id" data-type="driver"
+                                             value="{{ old('driver_name', $lr->driver->name ?? '') }}" />
+                                          <input type="hidden" name="driver_id" class="driver-id editable-field" data-type="driver"
                                              value="{{ old('driver_id', $lr->driver_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="driver_cash">Driver Cash (Rs)</label>
-                                          <input type="number" class="form-control" id="driver_cash" name="driver_cash"
-                                             placeholder="Enter Driver Cash (Rs)" value="{{ old('driver_cash', $lr->driver_cash) }}"  @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="number" class="form-control editable-field" id="driver_cash" name="driver_cash"
+                                             placeholder="Enter Driver Cash (Rs)" value="{{ old('driver_cash', $lr->driver_cash) }}"  />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="fuel_price">Fuel Price (Rs)</label>
-                                          <input type="number" class="form-control" id="fuel_price" name="fuel_price"
-                                             placeholder="Enter Fuel Price (Rs)" value="{{ old('fuel_price', $lr->fuel_price) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="number" class="form-control editable-field" id="fuel_price" name="fuel_price"
+                                             placeholder="Enter Fuel Price (Rs)" value="{{ old('fuel_price', $lr->fuel_price) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="invoice_no">Invoice No.</label>
-                                          <input type="text" class="form-control" id="invoice_no" name="invoice_no"
-                                             placeholder="Enter Invoice No." value="{{ old('invoice_no', $lr->invoice_no) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="text" class="form-control editable-field" id="invoice_no" name="invoice_no"
+                                             placeholder="Enter Invoice No." value="{{ old('invoice_no', $lr->invoice_no) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="invoice_value">Invoice Value</label>
-                                          <input type="text" class="form-control" id="invoice_value" name="invoice_value"
-                                             placeholder="Enter Invoice Value" value="{{ old('invoice_value', $lr->invoice_value) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="text" class="form-control editable-field" id="invoice_value" name="invoice_value"
+                                             placeholder="Enter Invoice Value" value="{{ old('invoice_value', $lr->invoice_value) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="no_of_bundles">No of Article/Bundles <span class="text-danger">*</span></label>
-                                          <input type="number" class="form-control" id="no_of_bundles" name="no_of_bundles"
-                                             placeholder="Enter No of Article/Bundles" value="{{ old('no_of_bundles', $lr->no_of_bundles) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="number" class="form-control editable-field" id="no_of_bundles" name="no_of_bundles"
+                                             placeholder="Enter No of Article/Bundles" value="{{ old('no_of_bundles', $lr->no_of_bundles) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="weight">Weight (kg) <span class="text-danger">*</span></label>
-                                          <input type="number" class="form-control" id="weight" name="weight"
-                                             placeholder="Enter Weight (kg)" value="{{ old('weight', $lr->weight) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="number" class="form-control editable-field" id="weight" name="weight"
+                                             placeholder="Enter Weight (kg)" value="{{ old('weight', $lr->weight) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="ewaybill_no">E-Waybill No. <span class="text-danger">*</span></label>
-                                          <input type="text" class="form-control" id="ewaybill_no" name="ewaybill_no"
-                                             placeholder="Enter E-Waybill No." value="{{ old('ewaybill_no', $lr->ewaybill_no) }}" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif/>
+                                          <input type="text" class="form-control editable-field" id="ewaybill_no" name="ewaybill_no"
+                                             placeholder="Enter E-Waybill No." value="{{ old('ewaybill_no', $lr->ewaybill_no) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="gst_paid_by">GST Paid By <span class="text-danger">*</span></label>
-                                          <select class="form-select select2" id="gst_paid_by" name="gst_paid_by" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <select class="form-select select2 editable-field" id="gst_paid_by" name="gst_paid_by" >
                                              <option value="">Select</option>
                                              <option value="Consignor" {{ old('gst_paid_by', $lr->gst_paid_by) == 'Consignor' ? 'selected' : '' }}>Consignor</option>
                                              <option value="Consignee" {{ old('gst_paid_by', $lr->gst_paid_by) == 'Consignee' ? 'selected' : '' }}>Consignee</option>
@@ -323,7 +388,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="lr_type">LR Type <span class="text-danger">*</span></label>
-                                          <select class="form-select select2" id="lr_type" name="lr_type" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <select class="form-select select2 editable-field" id="lr_type" name="lr_type" >
                                              <option value="">Select</option>
                                              <option value="Inward" {{ old('lr_type', $lr->lr_type) == 'Inward' ? 'selected' : '' }}>Inward</option>
                                              <option value="Outward" {{ old('lr_type', $lr->lr_type) == 'Outward' ? 'selected' : '' }}>Outward</option>
@@ -333,7 +398,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="billing_type">Billed or Pay <span class="text-danger">*</span></label>
-                                          <select class="form-select select2" id="billing_type" name="billing_type" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <select class="form-select select2 editable-field" id="billing_type" name="billing_type" >
                                              <option value="">Select</option>
                                              <option value="To be Billed" {{ old('billing_type', $lr->billing_type) == 'To be Billed' ? 'selected' : '' }}>To be Billed</option>
                                              <option value="To Pay" {{ old('billing_type', $lr->billing_type) == 'To Pay' ? 'selected' : '' }}>To Pay</option>
@@ -343,7 +408,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="load_type">Load Type</label>
-                                          <select class="form-select" id="load_type" name="load_type" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <select class="form-select editable-field" id="load_type" name="load_type" >
                                              <option value="">Select</option>
                                              @foreach(['FTL','Bulk','CEP','FCL','LCP','LTL'] as $type)
                                              <option value="{{ $type }}" {{ old('load_type', $lr->load_type) == $type ? 'selected' : '' }}>{{ $type }}</option>
@@ -354,7 +419,7 @@
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="lr_charges">LR Charges</label>
-                                          <select class="form-select" id="lr_charges" name="lr_charges" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                          <select class="form-select editable-field" id="lr_charges" name="lr_charges">
                                              <option value="">Select</option>
                                              @foreach($lorryCharges as $value)
                                              <option value="{{ $value }}" {{ old('lr_charges', $lr->lr_charges) == $value ? 'selected' : '' }}>{{ $value }}</option>
@@ -380,15 +445,7 @@
                                  </div>
                               </div>
                               <div class="col-md-6 text-sm-end">
-                                 @if($lr->document_status == 'submitted' || $lr->document_status == 'approved')
-
-                                 <a href="#" class="btn btn-sm btn-outline-danger me-50" >
-                                 <i data-feather="x-circle"></i> Delete
-                                 </a>
-                                 <a href="#"  class="btn btn-sm btn-outline-primary">
-                                 <i data-feather="plus"></i> Add New Item
-                                 </a>
-                                 @else
+                                
                                  <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
                                     <i data-feather="x-circle"></i> Delete
                                 </button>
@@ -396,7 +453,7 @@
                                  <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
                                  <i data-feather="plus"></i> Add New Item
                                  </a>
-                                 @endif
+                                
                               </div>
                            </div>
                         </div>
@@ -440,26 +497,26 @@
                                     <td class="poprod-decpt">
                                         <input type="hidden" name="locations[{{ $rowIndex }}][id]" value="{{ old("locations.$rowIndex.id", $location->id ?? '') }}">
                                         <input type="text" name="locations[{{ $rowIndex }}][location_name]" value="{{ old("locations.$rowIndex.location_name", optional($location->route)->name) }}" 
-                                            placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete"
-                                            data-type="source" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                            placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete editable-field"
+                                            data-type="source"  />
                                         <input type="hidden" name="locations[{{ $rowIndex }}][location_id]" value="{{ $location->location_id ?? '' }}"
                                             class="route-master-id" data-type="source" />
                                     </td>
                                     <td>
-                                        <select class="form-select mw-100" name="locations[{{ $rowIndex }}][type]" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                        <select class="form-select mw-100 editable-field" name="locations[{{ $rowIndex }}][type]" >
                                             <option value="">Select</option>
                                             <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
                                             <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                        <input type="text" name="locations[{{ $rowIndex }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" class="form-control mw-100 editable-field" />
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][weight]" value="{{ $location->weight ?? '' }}" class="form-control mw-100" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                        <input type="text" name="locations[{{ $rowIndex }}][weight]" value="{{ $location->weight ?? '' }}" class="form-control mw-100 editable-field"  />
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][freight]" value="{{ $location->amount ?? '' }}" class="form-control mw-100 text-end" @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif />
+                                        <input type="text" name="locations[{{ $rowIndex }}][freight]" value="{{ $location->amount ?? '' }}" class="form-control mw-100 text-end editable-field" />
                                     </td>
                                     </tr>
                                     @php $rowIndex++; @endphp
@@ -581,11 +638,10 @@
                                         <div class="col-md-4">
                                             <div class="mb-1">
                                                 <label class="form-label">Upload Document</label>
-                                                <input type="file" class="form-control" name="attachments[]" 
+                                                <input type="file" class="form-control editable-field" name="attachments[]" 
                                                     onchange="addFiles(this, 'main_lorry_file_preview')" 
                                                     max_file_count="{{ isset($maxFileCount) ? $maxFileCount : 10 }}" 
-                                                    multiple 
-                                                    @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                                    multiple >
                                                 <span class="text-primary small">{{ __("message.attachment_caption") }}</span>
                                             </div>
                                         </div>
@@ -593,44 +649,57 @@
                                         {{-- Preview for newly added files --}}
                                         <div class="col-md-6" style="margin-top:19px;">
                                             <div class="row" id="main_lorry_file_preview">
-                                                @if($lr->mediaAttachments && $lr->mediaAttachments->count())
-                                                @foreach($lr->mediaAttachments as $media)
-                                                @php
-                                                    $url = $media->file_url;
-                                                    $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
-                                                    $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
-                                                   // $label = $isImage ? 'Image File' : ($extension === 'pdf' ? 'PDF File' : $media->file_name);
-                                                @endphp
+                                            @if($lr->mediaAttachments && $lr->mediaAttachments->count())
+                                                @foreach($lr->mediaAttachments as $key => $media)
+                                                    @php
+                                                        $url = $media->file_url;
+                                                        $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
+                                                        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp']);
+                                                    @endphp
 
-                                                <div class="col-md-1 mb-1 d-flex align-items-center">
-                                                    <a href="{{ $url }}" target="_blank" class="d-flex align-items-center text-decoration-none me-3">
-                                                        {{-- SVG icon --}}
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                            class="feather feather-file-text me-2">
-                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                                            <polyline points="14 2 14 8 20 8"/>
-                                                            <line x1="16" y1="13" x2="8" y2="13"/>
-                                                            <line x1="16" y1="17" x2="8" y2="17"/>
-                                                            <polyline points="10 9 9 9 8 9"/>
-                                                        </svg>
-                                                        
-                                                    </a>
-                                                </div>
-                                            @endforeach
-                                              @endif
+                                                    <div class="col-md-2 mb-2 d-flex  image-uplodasection expenseadd-sign">
+                                                        <a href="{{ $url }}" target="_blank" class="d-flex align-items-center text-decoration-none me-2">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
+                                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                                    class="feather feather-file-text">
+                                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                                    <polyline points="14 2 14 8 20 8"/>
+                                                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                                                    <polyline points="10 9 9 9 8 9"/>
+                                                                </svg>
+                                                             </a>
+
+                                                        @if($lr->document_status == \App\Helpers\ConstantHelper::DRAFT || intval(request('amendment')))
+                                                            <div class="delete-img text-danger"
+                                                                data-edit-flag="true"
+                                                                data-index="{{ $key + 1 }}"
+                                                                data-id="{{ $media->id }}">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                                    class="feather feather-x">
+                                                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                                                </svg>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            @endif
+
                                             </div>
                                         </div>
                                     </div>
 
-                                  
+                                  <input type="hidden" name="removed_media_ids" value="">
+
                                     {{-- Remarks --}}
                                     <div class="col-md-12">
                                         <div class="mb-1">  
                                             <label class="form-label">Final Remarks</label> 
-                                            <textarea rows="4" class="form-control" placeholder="Enter Remarks here..." name="remarks" 
-                                                @if($lr->document_status == 'submitted' || $lr->document_status == 'approved') disabled @endif>
+                                            <textarea rows="4" class="form-control editable-field" placeholder="Enter Remarks here..." name="remarks" >
                                                 {{ $lr->remarks ?? '' }}
                                             </textarea> 
                                         </div>
@@ -650,6 +719,22 @@
    </div>
    </div>
    <!-- END: Content-->
+    <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
+  <div class="modal-dialog">
+      <div class="modal-content">
+          <div class="modal-header p-0 bg-transparent">
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body alertmsg text-center warning">
+              <i data-feather='alert-circle'></i>
+              <h2>Are you sure?</h2>
+              <p>Are you sure you want to <strong>Amend</strong> this <strong>{{request() -> type == "Lorry Receipt" ? "Lorry Receipt" : "Lorry Receipt"}}</strong>?</p>
+              <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
+          </div> 
+      </div>
+  </div>
+</div>
         {{-- Amendment Modal --}}
 
  <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
@@ -756,6 +841,38 @@
     </div>
 @endsection
 @section('scripts')
+<script>
+function handleFormStatusControl(status = null) {
+    const formStatus = status || document.querySelector("#statusInput")?.value || "draft";
+
+    // Enable/Disable fields
+    document.querySelectorAll('.editable-field').forEach(function (el) {
+        if (formStatus === 'submitted' || formStatus === 'approved') {
+            el.setAttribute('disabled', 'disabled');
+        } else {
+            el.removeAttribute('disabled');
+        }
+    });
+
+    // Show/Hide buttons
+    const deleteButton = document.querySelector("#deleteButton");
+    const addItemButton = document.querySelector("#addItemButton");
+
+    if (formStatus === 'submitted' || formStatus === 'approved') {
+        deleteButton?.classList.add('d-none');
+        addItemButton?.classList.add('d-none');
+    } else {
+        deleteButton?.classList.remove('d-none');
+        addItemButton?.classList.remove('d-none');
+    }
+}
+
+// Call on page load
+document.addEventListener("DOMContentLoaded", function () {
+    handleFormStatusControl();
+});
+</script>
+
 
 <script>
 
@@ -1032,9 +1149,9 @@ $(document).ready(function () {
     });
 }
 
-$(document).ready(function () {
-    getDocNumberByBookId();
-});
+// $(document).ready(function () {
+//     getDocNumberByBookId();
+// });
     </script>
     <script>
         const routeMasters = [
@@ -1213,49 +1330,57 @@ $(document).on('focus', '.driver-autocomplete', function () {
 
   // Make it globally accessible
 
-    function fetchFreightCharge() {
-        const sourceId = $('input[name="source_id"]').val();
-        const destinationId = $('input[name="destination_id"]').val();
+ function fetchFreightCharge() {
+    const sourceId = $('input[name="source_id"]').val();
+    const destinationId = $('input[name="destination_id"]').val();
+    const formStatus = getFormStatus();
 
-        if (!sourceId || !destinationId) return;
+    if (!sourceId || !destinationId) return;
 
-        $.ajax({
-            url: '/freight-charge-details',
-            method: 'GET',
-            data: {
-                source_id: sourceId,
-                destination_id: destinationId
-            },
-            success: function (response) {
-                $('#vehicle_type_name').val(response.vehicle_type_name).prop('disabled', true);
-                $('.vehicle-type-id').val(response.vehicle_type_id);
-                $('#distance').val(response.distance).prop('disabled', true);
-                $('#freight_charges').val(response.freight_charges).prop('disabled', true);
-                $('#distanceInput').val(response.distance);
-                $('#freightCharges').val(response.freight_charges);
+    $.ajax({
+        url: '/freight-charge-details',
+        method: 'GET',
+        data: {
+            source_id: sourceId,
+            destination_id: destinationId
+        },
+        success: function (response) {
+            $('#vehicle_type_name').val(response.vehicle_type_name);
+            $('.vehicle-type-id').val(response.vehicle_type_id);
+            $('#distance').val(response.distance);
+            $('#distanceInput').val(response.distance);
+            $('#freight_charges').val(response.freight_charges);
+            $('#freightCharges').val(response.freight_charges);
 
-                // ✅ Set text content for display
-                $('#routeVehicle').text(response.vehicle_type_name);
-                $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
-                $('#routeSource').text(response.source_name);
-                $('#routeDestination').text(response.destination_name);
-            },
-            error: function () {
-                $('#vehicle_type_name, #vehicle_type_id, #distance, #freight_charges').val('').prop('disabled', false);
+            // Set labels
+            $('#routeVehicle').text(response.vehicle_type_name);
+            $('#routeCapacity').text(response.vehicle_type_capacity + ' ' + response.vehicle_type_unit_name);
+            $('#routeSource').text(response.source_name);
+            $('#routeDestination').text(response.destination_name);
+
+            // Disable if status is not editable
+            if (formStatus === 'submitted' || formStatus === 'approved') {
+                $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', true);
             }
-        });
-    }
+        },
+        error: function () {
+            // Clear fields
+            $('#vehicle_type_name').val('');
+            $('.vehicle-type-id').val('');
+            $('#distance').val('');
+            $('#distanceInput').val('');
+            $('#freight_charges').val('');
+            $('#freightCharges').val('');
 
-    $(document).ready(function () {
-        $('input[name="source_name"], input[name="destination_name"]').on('blur', function () {
-            const sourceId = $('input[name="source_id"]').val();
-            const destId = $('input[name="destination_id"]').val();
-
-            if (sourceId && destId) {
-                fetchFreightCharge();
+            // Enable if fetch failed and editable
+            if (formStatus !== 'submitted' && formStatus !== 'approved') {
+                $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', false);
             }
-        });
+        }
     });
+}
+
+
 
     // ✅ This will now work globally:
     $(document).on('change', 'input[name*="[weight]"], input[name*="[no_of_articles]"]', function () {
@@ -1584,17 +1709,11 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
       function setApproval() {
         document.getElementById('popupTitle').innerText = 'Approve Lorry Receipt';
         document.getElementById('action_type').value = 'approve';
-
-        // Show file upload section
-        document.getElementById('fileUploadSection').style.display = 'block';
     }
 
     function setReject() {
         document.getElementById('popupTitle').innerText = 'Reject Lorry Receipt';
         document.getElementById('action_type').value = 'reject';
-
-        // Hide file upload section
-        document.getElementById('fileUploadSection').style.display = 'none';
     }
 
       // Show modal by ID
@@ -1603,26 +1722,20 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     }
 
     // Bind click on Amendment button
-    $(document).on('click', '#amendShowButton', function () {
-        openModal('amendConfirmPopup');
-    });
 
-    // Confirm amendment logic
-    window.amendConfirm = function () {
-        const amendButton = document.getElementById('amendShowButton');
+function amendConfirm() {
+     const amendButton = document.getElementById('amendShowButton');
         if (amendButton) {
             amendButton.style.display = "none";
         }
-
         const buttonParentDiv = document.getElementById('buttonsDiv');
         const newSubmitButton = document.createElement('button');
         newSubmitButton.type = "button";
         newSubmitButton.id = "amend-submit-button";
         newSubmitButton.className = "btn btn-primary btn-sm mb-50 mb-sm-0 submit-button";
         newSubmitButton.innerHTML = `<i data-feather="check-circle"></i> Submit`;
-        newSubmitButton.value = "submitted";
-
-        newSubmitButton.onclick = function () {
+        newSubmitButton.value = "submitted"; 
+        newSubmitButton.onclick = function() {
             openAmendConfirmModal();
         };
 
@@ -1630,13 +1743,16 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
             buttonParentDiv.appendChild(newSubmitButton);
         }
 
-        if (window.feather) {
+        if (feather) {
             feather.replace({
                 width: 14,
                 height: 14
             });
         }
-    };
+    // Re-apply form field enable logic if needed
+    handleFormStatusControl("draft");
+}
+
 
     // Show confirmation modal for amendment
     function openAmendConfirmModal() {
@@ -1645,6 +1761,7 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
 
     // Submit amendment form
     window.submitAmend = function () {
+        handleFormStatusControl("draft");
         let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
         $("#action_type_main").val("amendment");
         $("#amendConfirmPopup").modal('hide');
@@ -1663,8 +1780,8 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
     });
 //File related js code here
 
-      let fileInputData = {};
-      const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+    let fileInputData = {};
+    const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
     const ALLOWED_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -1673,14 +1790,14 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
     const MAX_FILE_SIZE = 5120; // in KB (5MB)
-    function appendFilePreviews(fileUrl, previewElementId, index, fileId = null) {
+    function appendFilePreviews(fileUrl, previewElementId, index, fileId = null, inputName = '') {
     const previewContainer = document.getElementById(previewElementId);
     if (!previewContainer) return;
 
     const fileName = fileUrl.split('/').pop();
 
     const previewHtml = `
-        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+        <div class="col-1 file-preview-item image-uplodasection expenseadd-sign" data-index="${index}" data-file-id="${fileId ?? ''}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -1691,95 +1808,163 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
                 <line x1="16" y1="17" x2="8" y2="17"/>
                 <polyline points="10 9 9 9 8 9"/>
             </svg>
+             <div class="delete-img text-danger" data-edit-flag="true" data-index="${index}" data-input-id="${previewElementId}" data-input-name="${inputName}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
         </div>
     `;
 
-    previewContainer.insertAdjacentHTML('beforeend', previewHtml);
+     previewContainer.insertAdjacentHTML('beforeend', previewHtml);
+    feather.replace({ width: 20, height: 20 });
 }
 
 
+function addFiles(element, previewElementId) {
+    const input = element;
+    const allowedMaxFilesCount = Number(input.getAttribute('max_file_count') || 1);
+    const inputId = input.name.replace('[]', '');
+    const files = Array.from(input.files);
 
-        function addFiles(element, previewElementId) {
-        const input = element;
-        const allowedMaxFilesCount = Number(element.getAttribute('max_file_count') ? element.getAttribute('max_file_count') : 1);
-        const files = Array.from(input.files); // Convert new FileList to array
-        const dt = new DataTransfer();
-        const inputId = input.name.replace('[]','');
-        // Initialize storage for this input if not already initialized
-        if (!fileInputData[inputId]) {
-            fileInputData[inputId] = [];
-            addedFilesCount = 0;
-        } else {
-            addedFilesCount = fileInputData[inputId].length;
+    if (!fileInputData[inputId]) {
+        fileInputData[inputId] = [];
+    }
+
+    const currentCount = fileInputData[inputId].length;
+
+    if ((files.length + currentCount) > allowedMaxFilesCount) {
+        Swal.fire({
+            title: 'Error!',
+            text: `Maximum ${allowedMaxFilesCount} files are allowed.`,
+            icon: 'error'
+        });
+        resetInput(inputId, input);
+        return;
+    }
+
+    let allFiles = [...fileInputData[inputId], ...files];
+    let invalidMessage = '';
+
+    for (const file of files) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const sizeKB = file.size / 1024;
+
+        if (!ALLOWED_EXTENSIONS.includes(ext) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+            invalidMessage = 'Please select valid file types.';
+            break;
         }
 
-        if ((files.length + fileInputData[inputId].length) > allowedMaxFilesCount) 
-        {
-            Swal.fire({
-                title: 'Error!',
-                text: "Maximum " + allowedMaxFilesCount + " files are allowed",
-                icon: 'error',
-            });
-            let prevAllFiles = fileInputData[inputId] ? fileInputData[inputId] : [];
-            let tempDt = new DataTransfer();
-            prevAllFiles.forEach((fileElement) => {
-                tempDt.items.add(fileElement);
-            });
-            input.files = tempDt.files;
-            return;
-        }
-
-        // Combine old and new files
-        let allFiles = [...fileInputData[inputId], ...files];
-        var invalidFile = {};
-
-        // Validate files
-        for (let i = 0; i < allFiles.length; i++) {
-            const file = allFiles[i];
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-
-            if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
-                invalidFile.message = 'Please select valid files';
-                break;
-            }
-            const fileSize = (file.size / 1024).toFixed(2);
-            if (fileSize > MAX_FILE_SIZE) {
-                invalidFile.message = 'Please select files with size not more than 5MB';
-                break;
-            }
-        }
-
-      
-        if (invalidFile && invalidFile.message) {
-            Swal.fire({
-                title: 'Error!',
-                text: invalidFile.message,
-                icon: 'error',
-            });
-            element.value = ''; 
-            return;
-        } else {
-            allFiles.forEach((file, i) => {
-                dt.items.add(file);
-                if (!fileInputData[inputId].some(f => f.name === file.name && f.size === file.size)) {
-                    const fileUrl = URL.createObjectURL(file);
-                    appendFilePreviews(fileUrl, previewElementId, i);
-                }
-            });
-
-            fileInputData[inputId] = allFiles.reduce((unique, file) => {
-                if (!unique.some(f => f.name === file.name && f.size === file.size)) {
-                    unique.push(file);
-                }
-                return unique;
-            }, []);
-            input.files = dt.files;
-            feather.replace({
-                width: 20,
-                height: 20,
-            });
+        if (sizeKB > MAX_FILE_SIZE) {
+            invalidMessage = 'Each file must be less than 5MB.';
+            break;
         }
     }
+
+    if (invalidMessage) {
+        Swal.fire({
+            title: 'Error!',
+            text: invalidMessage,
+            icon: 'error'
+        });
+        resetInput(inputId, input);
+        return;
+    }
+
+    // Remove duplicates by name + size
+    fileInputData[inputId] = allFiles.reduce((unique, file) => {
+        if (!unique.some(f => f.name === file.name && f.size === file.size)) {
+            unique.push(file);
+        }
+        return unique;
+    }, []);
+
+    // Create new DataTransfer object
+    const newDt = new DataTransfer();
+    fileInputData[inputId].forEach(file => newDt.items.add(file));
+    input.files = newDt.files;
+
+    // Refresh preview
+    refreshPreviews(previewElementId, inputId);
+
+    // Reinitialize Feather Icons
+    feather.replace({ width: 20, height: 20 });
+}
+
+function refreshPreviews(previewElementId, inputId) {
+    const previewWrapper = document.getElementById(previewElementId);
+    if (!previewWrapper) return;
+
+    // ✅ Remove only previews added via JS (new files), not Blade (existing files)
+    const jsPreviews = previewWrapper.querySelectorAll('.file-preview-item');
+    jsPreviews.forEach(el => el.remove());
+
+    fileInputData[inputId].forEach((file, index) => {
+        const fileUrl = URL.createObjectURL(file);
+        appendFilePreviews(fileUrl, previewElementId, index, null, inputId);
+    });
+}
+
+
+function resetInput(inputId, input) {
+    const tempDt = new DataTransfer();
+    fileInputData[inputId].forEach(file => tempDt.items.add(file));
+    input.files = tempDt.files;
+}
+
+document.addEventListener('click', function (e) {
+    const deleteIcon = e.target.closest('.delete-img');
+    if (!deleteIcon) return;
+
+    const isEditMode = deleteIcon.getAttribute('data-edit-flag') === 'true';
+
+    if (isEditMode && deleteIcon.hasAttribute('data-id')) {
+        // 🔴 Existing file: remove DOM + store ID in hidden input
+        const mediaId = deleteIcon.getAttribute('data-id');
+        const removeInput = document.querySelector('input[name="removed_media_ids"]');
+
+        if (removeInput) {
+            let existing = removeInput.value ? removeInput.value.split(',') : [];
+            if (!existing.includes(mediaId)) {
+                existing.push(mediaId);
+                removeInput.value = existing.join(',');
+            }
+        } else {
+            // Create hidden input if not exists
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'removed_media_ids';
+            input.value = mediaId;
+            document.querySelector('form').appendChild(input);
+        }
+
+        // Remove DOM only
+        deleteIcon.closest('.image-uplodasection').remove();
+        return;
+    }
+
+    // ✅ New file: remove from fileInputData and input.files
+    const index = parseInt(deleteIcon.getAttribute('data-index'));
+    const previewElementId = deleteIcon.getAttribute('data-input-id');
+    const inputId = deleteIcon.getAttribute('data-input-name');
+    const input = document.querySelector(`input[name="${inputId}[]"]`);
+
+    if (!fileInputData[inputId]) return;
+
+    // Remove file from array
+    fileInputData[inputId].splice(index, 1);
+
+    // Update input.files
+    const dt = new DataTransfer();
+    fileInputData[inputId].forEach(file => dt.items.add(file));
+    input.files = dt.files;
+
+    // ✅ Just remove the preview block
+    deleteIcon.closest('.image-uplodasection').remove();
+
+    feather.replace({ width: 20, height: 20 });
+});
+
+
+
  /*Amendment modal open*/
         $(document).on('click', '.amendmentBtn', (e) => {
             $("#amendmentconfirm").modal('show');

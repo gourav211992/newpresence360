@@ -107,8 +107,11 @@ class InventoryHelper
             else if($bookType == ConstantHelper::SR_SERVICE_ALIAS){
                 $documentDetail = self::settlementForSaleReturn($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
             }
-            else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS){
+            else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS && $transactionType === 'issue'){
                 $documentDetail = self::settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
+            } 
+            else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS && $transactionType === 'receipt'){
+                $documentDetail = self::settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
             }
             else if($bookType == ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS){
                 $documentDetail = self::settlementForPurchaseReturn($documentHeaderId, $documentDetailId, $bookType, $documentStatus);
@@ -254,9 +257,9 @@ class InventoryHelper
         if ($orderId) {
             $stocks = $reservedStocksQuery
                 ->whereIn('document_status', ['approved', 'posted', 'approval_not_required'])
-                ->with(['reservations' => function ($q) use ($orderId) {
-                    $q->where('so_item_id', $orderId);
-                }])
+                // ->with(['reservations' => function ($q) use ($orderId) {
+                //     $q->where('so_item_id', $orderId);
+                // }])
                 ->get();
 
             foreach ($stocks as $stock) {
@@ -2734,6 +2737,7 @@ class InventoryHelper
     private static function settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
+        $updatedInvoiceLedger = [];
 
         try{
             $documentItems = ErpPsvItem::whereIn('id',$documentDetailId)
@@ -2766,8 +2770,9 @@ class InventoryHelper
             $errorMsg = "ERROR: " . $e->getMessage();
             return self::errorResponse($errorMsg);
         }
-        $message = 'success';
-        return $message;
+        // $message = 'success';
+        return $updatedInvoiceLedger;
+        // return $message;
     }
 
     // Settlement For Material Issue For Issue
@@ -2938,7 +2943,7 @@ class InventoryHelper
     private static function settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
-
+        $invoiceLedger = [];
         try{
             $documentItem = ErpPsvItem::where('psv_header_id',$documentHeaderId)
                 ->whereIn('id',$documentDetailId)
@@ -2976,7 +2981,7 @@ class InventoryHelper
 
         }
         $message = 'success';
-        return $message;
+        return $invoiceLedger;
     }
 
     // Settlement For Material Issue For Receive

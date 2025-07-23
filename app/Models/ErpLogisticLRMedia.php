@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\FileUploadTrait;
 
 
 class ErpLogisticLRMedia extends Model
 {
-    use HasFactory;
+    use HasFactory, FileUploadTrait;
 
     protected $table = 'erp_logistics_lr_media';
 

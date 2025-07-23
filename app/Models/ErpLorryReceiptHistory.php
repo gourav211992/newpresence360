@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\ErpDriver;
@@ -14,13 +15,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Traits\DefaultGroupCompanyOrg;
 
-class ErpLorryReceipt extends Model
+class ErpLorryReceiptHistory extends Model
 {
     use HasFactory, DefaultGroupCompanyOrg,FileUploadTrait, DateFormatTrait;
 
-    protected $table = 'erp_logistics_lorry_receipt';
+     protected $table = 'erp_logistics_lorry_receipt_history';
 
     protected $fillable = [
+        'source_id',
         'organization_id',
         'group_id',
         'company_id',
@@ -119,6 +121,4 @@ class ErpLorryReceipt extends Model
     {
         return $this->morphMany(ErpLogisticLRMedia::class, 'model');
     }
-
-
 }

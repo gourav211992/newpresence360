@@ -283,4 +283,43 @@ class WhmJob
         }
     }
 
+    public function binTransfer($items, $storagePointId, $userId){
+        foreach($items as $item){
+            $newRecord = ErpItemUniqueCode::create([
+                'uid' => $this->generateUniqueUid(),
+                'job_id' => $item->job_id,
+                'organization_id' => $item->organization_id,
+                'group_id' => $item->group_id,
+                'company_id' => $item->company_id,
+                'morphable_type' => $item->morphable_type,
+                'morphable_id' => $item->morphable_id,
+                'job_type' => $item->job_type,
+                'doc_type' => $item->doc_type,
+                'doc_no' => $item->doc_no,
+                'doc_date' => $item->doc_date,
+                'book_id' => $item->book_id,
+                'store_id' => $item->store_id,
+                'sub_store_id' => $item->sub_store_id,
+                'book_code' => $item->book_code,
+                'item_attributes' => json_encode($item->item_attributes),
+                'item_id' => $item->item_id,
+                'item_name' => $item->item_name,
+                'item_code' => $item->item_code,
+                'vendor_id' => $item->vendor_id,
+                'item_uid' => $item->item_uid,
+                'type' => $item->type,
+                'qty' => $item->qty,
+                'status' => $item->status,
+                'storage_point_id' => $storagePointId,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'action_by' => $userId,
+                'action_at' => now()
+            ]);
+
+            $item->utilized_id = $newRecord->uid;
+            $item->status = CommonHelper::TRANSFERRED;
+            $item->save();
+        }
+    }
 }

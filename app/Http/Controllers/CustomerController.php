@@ -117,7 +117,7 @@ class CustomerController extends Controller
                     return $className ? '<span class="' . $className . '">' . $statusText . '</span>' : $statusText;
                 })
                 ->editColumn('created_at', function ($row) {
-                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y H:i:s') : 'N/A';
+                    return $row->created_at ? Carbon::parse($row->created_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->addColumn('created_by', function ($row) {
@@ -126,7 +126,7 @@ class CustomerController extends Controller
                 })
                 
                 ->editColumn('updated_at', function ($row) {
-                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y H:i:s') : 'N/A';
+                    return $row->updated_at ? Carbon::parse($row->updated_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->editColumn('status', function ($row) {
@@ -608,19 +608,27 @@ class CustomerController extends Controller
         } else {
             $validatedData['status'] = ConstantHelper::DRAFT;
         }
+        
         $gstnNo = $validatedData['compliance']['gstin_no'] ?? '';
-        if ($gstnNo) {
+        if (!$gstnNo) {
+            $validatedData['deregistration_date'] = null;
+            $validatedData['taxpayer_type'] = null;
+            $validatedData['gst_status'] = null;
+            $validatedData['block_status'] = null;
+            $validatedData['legal_name'] = null;
+            $validatedData['gst_state_id'] = null;
+        } else {
             $gstValidation = EInvoiceHelper::validateGstinName($gstnNo);
             if ($gstValidation['Status'] === 1) {
                 $gstData = json_decode($gstValidation['checkGstIn'], true);
-                $validatedData['deregistration_date'] = $gstData['DtDReg'] ??''; 
+                $validatedData['deregistration_date'] = $gstData['DtDReg'] ?? '';
                 $validatedData['taxpayer_type'] = $gstData['TxpType'] ?? '';
                 $validatedData['gst_status'] = $gstData['Status'] ?? '';
                 $validatedData['block_status'] = $gstData['BlkStatus'] ?? '';
                 $validatedData['legal_name'] = $gstData['LegalName'] ?? '';
                 $addresses = $validatedData['addresses'] ?? [];
                 if (!empty($addresses)) {
-                    $firstAddress = $addresses[0];  
+                    $firstAddress = $addresses[0];
                     if (isset($firstAddress['state_id'])) {
                         $validatedData['gst_state_id'] = $firstAddress['state_id'];
                     }

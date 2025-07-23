@@ -13,6 +13,7 @@ use App\Models\ErpLogisticsMultiFixedLocation;
 use App\Models\ErpLogisticsMultiPointPricing;
 use App\Models\ErpVehicleType;
 use App\Models\ErpLogisticLRMedia;
+use App\Models\ErpLorryReceiptHistory;
 use App\Models\ErpLorryReceipt;
 use App\Models\ErpLogisticsLrLocation;
 use Illuminate\Support\Facades\DB;
@@ -61,7 +62,7 @@ class ErpLorryReceiptController extends Controller
         }
 
         if ($request->filled('source_id')) {
-            $lrs->where('source_id', $request->source_id);
+            $lrs->where('origin_id', $request->source_id);
         }
 
         if ($request->filled('destination_id')) {
@@ -169,15 +170,42 @@ class ErpLorryReceiptController extends Controller
     $pathUrl = str_replace('/', '_', $pathUrl);
     $redirectUrl = route('logistics.lorry-receipt.edit', $id); 
     $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
+    if ($request->has('revisionNumber')) {
+            $historyLr = ErpLorryReceiptHistory::with(['consignor',
+            'consignee',
+            'driver',
+            'vehicleType',
+            'locations.route',
+            'mediaAttachments'])
+                ->where('source_id', $id)
+                ->where('revision_number', $request->revisionNumber)
+                ->firstOrFail();
+                
+            $lr = $historyLr;
+            if(empty($historyLr)){
+            $lr = ErpLorryReceipt::with([
+            'consignor',
+            'consignee',
+            'driver',
+            'vehicleType',
+            'locations.route',
+            'mediaAttachments'])
+            ->findOrFail($id);
+            }
+            
+        } else {
+              $historyLr = ErpLorryReceipt::with([
+            'consignor',
+            'consignee',
+            'driver',
+            'vehicleType',
+            'locations.route',
+            'mediaAttachments'
+        ])->where('id', $id)->withDefaultGroupCompanyOrg()->first();
+          $lr = $historyLr;  
+    }
 
-    $lr = ErpLorryReceipt::with([
-        'consignor',
-        'consignee',
-        'driver',
-        'vehicleType',
-        'locations.route',
-        'mediaAttachments'
-    ])->where('id', $id)->withDefaultGroupCompanyOrg()->first();
+  
 
     if (!$lr) {
         return redirect()->route('logistics.lorry-receipt.index')->with('error', 'Lorry Receipt not found.');
@@ -199,8 +227,8 @@ class ErpLorryReceiptController extends Controller
     $vehicleTypes  = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $userType      = Helper::userCheck();
     $routeMasters  = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $revision_number = $lr->revision_number;
-    $buttons = Helper::actionButtonDisplay($lr->book_id,$lr->document_status , $lr->id, $lr->total_charges, $lr->approval_level, $lr->created_by ?? 0, $userType['type']);
+    $revision_number = $historyLr->revision_number;
+    $buttons = Helper::actionButtonDisplay($historyLr->book_id,$historyLr->document_status , $historyLr->id, $historyLr->total_charges, $historyLr->approval_level, $historyLr->created_by ?? 0, $userType['type']);
     $revNo = $lr->revision_number;
         if($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
@@ -208,7 +236,7 @@ class ErpLorryReceiptController extends Controller
             $revNo = $lr->revision_number;
         }
    $approvalHistory = Helper::getApprovalHistory($lr->book_id, $lr->id, $revNo, $lr->total_charges, $lr -> created_by);
-    $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
+   $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
 
     return view('logistics.lorry-receipt.edit', compact(
         'lr',
@@ -305,7 +333,7 @@ class ErpLorryReceiptController extends Controller
             $lr->document_date     = $request->document_date;
             $lr->location_id       = $request->location;
             $lr->cost_center_id    = $request->cost_center_id;
-            $lr->source_id         = $request->source_id;
+            $lr->origin_id         = $request->source_id;
             $lr->destination_id    = $request->destination_id;
             $lr->consignor_id      = $request->customer_id;
             $lr->consignee_id      = $request->consignee_id;
@@ -389,6 +417,7 @@ class ErpLorryReceiptController extends Controller
             $revisionData = [
                 ['model_type' => 'header', 'model_name' => 'ErpLorryReceipt', 'relation_column' => ''],
                 ['model_type' => 'detail', 'model_name' => 'ErpLogisticsLrLocation', 'relation_column' => 'lorry_receipt_id'],
+              
                 
             ];
 
@@ -400,7 +429,7 @@ class ErpLorryReceiptController extends Controller
         $lr->document_date     = $request->document_date;
         $lr->location_id       = $request->location;
         $lr->cost_center_id    = $request->cost_center_id;
-        $lr->source_id         = $request->source_id;
+        $lr->origin_id         = $request->source_id;
         $lr->destination_id    = $request->destination_id;
         $lr->consignor_id      = $request->customer_id;
         $lr->consignee_id      = $request->consignee_id;
@@ -496,10 +525,26 @@ class ErpLorryReceiptController extends Controller
         }
 }
 
+
 protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr)
 {
+    
+    $removedMediaIds = explode(',', $request->input('removed_media_ids', ''));
+
+    foreach ($removedMediaIds as $mediaId) {
+        if (!$mediaId) continue;
+
+        $media = ErpLogisticLRMedia::find($mediaId);
+        if ($media) {
+            // Delete file from storage
+            Storage::disk($media->disk)->delete('lorry_files/' . $media->file_name);
+            $media->delete();
+        }
+    }
+
+    // ✅ 2. Handle new uploads
     $fileInputs = [
-        'attachments'          => 'attachments',
+        'attachments' => 'attachments',
     ];
 
     foreach ($fileInputs as $inputKey => $collectionName) {
@@ -528,6 +573,7 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
         }
     }
 }
+
 
 
 

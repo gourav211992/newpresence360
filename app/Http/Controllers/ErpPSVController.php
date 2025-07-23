@@ -610,9 +610,10 @@ class ErpPSVController extends Controller
             }
     
             if (in_array($psv->document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                if (!self::maintainStockLedger($psv)) {
+                $stock = self::maintainStockLedger($psv);
+                if ($stock) {
                     DB::rollBack();
-                    return response()->json(['message' => 'Stock not available'], 422);
+                    return response()->json(['message' => $stock], 422);
                 }
                 else{
                     $items = $psv->items->where('adjusted_qty',0);
@@ -704,13 +705,24 @@ class ErpPSVController extends Controller
         $items = $psv->items;
         $issueDetailIds = $items -> where('adjusted_qty',"<",0) -> pluck('id') -> toArray();
         $receiptDetailIds = $items -> where('adjusted_qty',">",0) -> pluck('id') -> toArray();
-        $issueRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $issueDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'issue');
-        $receiptRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $receiptDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'receipt');
-        if((!empty($issueRecords['data']) && (count($issueRecords['data']) > 0 && count($issueDetailIds)>0))||(($receiptRecords['message'] == 'success' || $receiptRecords['message']['status'] == 'success') && count($receiptDetailIds)>0) ){
-            return true;
-        } else {
-            return false;
+        if($issueDetailIds)
+        {
+            $issueRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $issueDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'issue');
+            if(!$issueRecords['status'] == 'success')
+            {
+                return $issueRecords['message'];                    
+            }
         }
+        if($receiptDetailIds)
+        {
+            $receiptRecords = InventoryHelper::settlementOfInventoryAndStock($psv->id, $receiptDetailIds, ConstantHelper::PSV_SERVICE_ALIAS, $psv->document_status, 'receipt');
+            if(!$receiptRecords['status'] == 'success')
+            {
+                return $receiptRecords['message'];                    
+            }
+        }
+        return null;
+        
     }
 
     public function revokePSV(Request $request)

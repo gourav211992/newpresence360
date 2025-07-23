@@ -94,7 +94,7 @@ class bomReportHelper
             'label' => 'Product',
             'id' => 'doc_number_filter',
             'requestName' => 'product_id',
-            'term' => 'report_products',
+            'term' => 'pr_item',
             'value_key' => 'id',
             'label_key' => 'item_name',
             'type' => 'auto_complete'
@@ -104,9 +104,19 @@ class bomReportHelper
             'label' => 'Item',
             'id' => 'item_filter',
             'requestName' => 'item_id',
-            'term' => 'report_items',
+            'term' => 'raw_items',
             'value_key' => 'id',
             'label_key' => 'item_name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Station',
+            'id' => 'station_filter',
+            'requestName' => 'station_id',
+            'term' => 'all_stations',
+            'value_key' => 'id',
+            'label_key' => 'name',
             'type' => 'auto_complete'
         ],
         [
