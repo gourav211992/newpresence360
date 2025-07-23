@@ -25,6 +25,7 @@ class GstStatusChecker
 
             if (!$compliance || !$compliance->gstin_no) {
                 Log::info("No GSTIN found for {$entity->company_name} (ID: {$entity->id})");
+                $entity->update(['gst_status' => null]);
                 continue;
             }
     
@@ -49,6 +50,7 @@ class GstStatusChecker
                 }
             } catch (\Exception $e) {
                 Log::error("Error validating GSTIN for {$entity->company_name} (ID: {$entity->id}): " . $e->getMessage());
+                $entity->update(['gst_status' => null]);
             }
         }
     

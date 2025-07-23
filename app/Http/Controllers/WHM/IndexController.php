@@ -123,7 +123,7 @@ class IndexController extends Controller
     public function storagePointDetail(Request $request){
         $validator = Validator::make($request->all(),[
             'storage_number' => ['required'],
-            'job_id' => ['required'],
+            'job_id' => ['nullable'],
         ],[
             'storage_number.required' => 'Storage number is required',
             'job_id.required' => 'Job id is required',

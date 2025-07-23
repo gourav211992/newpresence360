@@ -68,11 +68,8 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
 
     Route::controller(BinTransferController::class)->group(function () {
         Route::get('/bin/items', 'index')->name('whm.bin.items');
-        // Route::get('/dispatch/pending-tasks', 'pendingTasks')->name('whm.dispatch.pending-tasks');
-        // Route::post('/dispatch/save-as-draft', 'saveAsDraft')->name('whm.dispatch.save-as-draft');
-        // Route::get('/dispatch/scanned-packets', 'scannedPackets')->name('whm.dispatch.scanned-packets');
-        // Route::post('/dispatch/close-job', 'closeJob')->name('whm.dispatch.close-job');
-        // Route::post('/dispatch/update-status/packet', 'updateStatus')->name('whm.dispatch.update-status');
+        Route::post('/bin/transfer', 'binTransfer')->name('whm.bin.transfer');
+        Route::post('/bin/scan-packets', 'scanPackets')->name('whm.bin.scan-packets');
     });
     
     

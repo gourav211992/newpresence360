@@ -592,6 +592,7 @@ class PoController extends Controller
                     $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $unit = Unit::find($component['uom_id']);
                     $poItemArr[] = [
+                        'key' => $c_key,
                         'so_id' => $component['so_id'] ?? null,
                         'purchase_order_id' => $po->id,
                         'pi_item_id' => $pi_item_id,
@@ -685,7 +686,7 @@ class PoController extends Controller
                     $poDetail->remarks = $poItem['remarks'];
                     $poDetail->delivery_date = $poItem['delivery_date'];
                     $poDetail->save();
-                    $_key = $_key + 1;
+                    $_key = $poItem['key'] ?? $_key;
                     $component = $request->all()['components'][$_key] ?? [];
 
                     #Save component Attr
@@ -1180,6 +1181,7 @@ class PoController extends Controller
                     $unit = Unit::find($component['uom_id']);
 
                     $poItemArr[] = [
+                        'key' => $c_key,
                         'so_id' => $component['so_id'] ?? null,
                         'purchase_order_id' => $po->id,
                         'pi_item_id' => $pi_item_id,
@@ -1250,7 +1252,7 @@ class PoController extends Controller
 
                 foreach($poItemArr as $_key => $poItem) {
 
-                    $_key = $_key + 1;
+                    $_key = $poItem['key'] ?? $_key;
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemHeaderExp = floatval($poItem['expense_amount']);
                     $poDetail = PoItem::find($component['po_item_id'] ?? null) ?? new PoItem;

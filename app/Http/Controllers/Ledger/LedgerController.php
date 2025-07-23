@@ -694,7 +694,14 @@ class LedgerController extends Controller
      */
     public function update(Request $request, string $id)
     {
+           $update = Ledger::find($id);
+        
+           $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'Ledger', 'relation_column' => ''],
+            ];
 
+    if (($update->document_status == ConstantHelper::APPROVED || $update->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
+            && $request->actionType == 'amendment') {
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization?->company_id;
@@ -810,7 +817,6 @@ class LedgerController extends Controller
         }
 
 
-        $update = Ledger::find($id);
         $update->name = $request->name;
         $update->prefix = $request->prefix;
         $update->code = $request->code;
@@ -825,28 +831,18 @@ class LedgerController extends Controller
         $update->tds_capping = $request->tds_capping ?? null;
         $update->tcs_capping = $request->tcs_capping ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
-        $bookId = $update->book_id;
-        $docId = $update->id;
-        $remarks = $request->remarks ?? "";
-        $attachments = $request->file('attachment') ?? null;
-        $currentLevel = $update->approval_level ?? 1;
-        $revisionNumber = $update->revision_number ?? 0;
-        $actionType = 'submit';
-        $modelName = get_class($update);
-        $totalValue = 0;
-        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-        $document_status = $approveDocument['approvalStatus'];
-        $update->document_status = $document_status;
-        if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-            $update->status = 0;
-        } else
-            $update->status = 1;
-        $update->save();
-
-
-
-
-
+        $a = Helper::documentAmendment($revisionData, $id);
+            if ($a) {
+                $approveDocument = Helper::approveDocument($update->book_id, $update->id, $update->revision_number, 'Amendment', $request->file('attachment') ?? null, $update->approval_level, 'amendment',0,get_class($update));
+                $document_status = $approveDocument['approvalStatus']??$update->document_status;
+                $update->document_status = $document_status;
+                    if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                        $update->status = 0;
+                    } else
+                        $update->status = 1;
+                $update->revision_number = $update->revision_number + 1;
+                $update->save();
+            }
         $updatedGroups = json_decode($request->updated_groups, true); // Decode as an associative array
 
 
@@ -864,10 +860,12 @@ class LedgerController extends Controller
         if ($request->has('prefix') && $request->prefix != "")
             Group::updatePrefix($update->id, $request->prefix);
 
-
-
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
-    }
+            }
+            else
+                return redirect()->route('ledgers.index')->with('errors', 'Something went wrong');
+        
+        }
 
     public function getLedgerGroups(Request $request, $ledgerId)
     {
@@ -1074,9 +1072,6 @@ class LedgerController extends Controller
             $a = Helper::documentAmendment($revisionData, $id);
             if ($a) {
                 Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, 'Amendment', $request->file('attachment') ?? null, $voucher->approvalLevel, 'amendment');
-
-                $voucher->document_status = ConstantHelper::DRAFT;
-                //$voucher->status = 0;
                 $voucher->revision_number = $voucher->revision_number + 1;
                 $voucher->save();
             }

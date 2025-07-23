@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use App\Models\Book;
+use App\Models\DocumentApproval;
 use App\Models\Recruitment\ErpRecruitmentJobReferral;
 use App\Models\Recruitment\ErpRecruitmentJobRequestLog;
 
@@ -53,6 +55,7 @@ class CommonHelper
     const DISPATCH = 'dispatch';
     const UNLOADING_REQUIRED = 'unloading_required';
     const ENFORCE_UIC_SCANNING = 'enforce_uic_scanning';
+    const TRANSFERRED = 'transferred';
 
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,
@@ -162,5 +165,25 @@ class CommonHelper
         }
     
         return $type;
+    }
+
+    public static function approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName = null)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $book = Book::where('id', $bookId)->first();
+        $bookTypeServiceAlias = $book?->service->alias;
+        $docApproval = new DocumentApproval();
+        $docApproval->document_type = $bookTypeServiceAlias;
+        $docApproval->document_id = $docId;
+        $docApproval->document_name = $modelName;
+        $docApproval->approval_type = $actionType ?? null;
+        $docApproval->approval_date = now();
+        $docApproval->revision_number = $revisionNumber;
+        $docApproval->remarks = $remarks;
+        $docApproval->user_id = $user->auth_user_id;
+        $docApproval->user_type = $user -> authenticable_type;
+        $docApproval->save();
+
+        return $docApproval;
     }
 }

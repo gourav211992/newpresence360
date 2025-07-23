@@ -26,7 +26,7 @@
                                                     {{-- Show "Close F.Y" button only if FY is not already closed --}}
 
                                                     {{-- Show "Lock F.Y" button only if it's currently unlocked --}}
-                                                    @if ($financialYearMonth->lock_fy == false)
+                                                    @if ($financialYearMonth->lock_fy == false && request()->has('fmonth'))
                                                         <button class="btn mt-25 btn-danger btn-sm swal-action-btn"
                                                             data-type="lock" data-url="{{ route('close-fy.lock') }}"
                                                             type="submit">

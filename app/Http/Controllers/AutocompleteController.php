@@ -377,6 +377,29 @@ class AutocompleteController extends Controller
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code','uom_id']);
+            } elseif ($type === 'raw_items') {
+                $type = ['Raw Material', 'WIP/Semi Finished'];
+                $results = Item::whereHas('subTypes', function ($query) use ($type) {
+                        $query->whereHas('subType', function ($subTypeQuery) use($type) {
+                            $subTypeQuery -> whereIn('name', $type);
+                        });
+                    })
+                    ->searchByKeywords($term)
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->with(['itemAttributes:id'])
+                    ->with(['uom:id,name'])
+                    ->withCount('itemAttributes')
+                    ->limit(10)
+                    ->get(['id', 'item_name', 'item_code','uom_id']);
+            } elseif ($type === 'all_stations') {
+                $results =  Station::where('status', ConstantHelper::ACTIVE)
+                    ->where('name', 'LIKE', "%$term%")
+                    ->get(['id', 'name']);
+                if ($results->isEmpty()) {
+                    $results = Station::where('status', ConstantHelper::ACTIVE)
+                        ->limit(10);
+                    $results = $results->get(['id', 'name']);
+                }
             } elseif ($type === 'inventory_items') {
                 $results = Item::searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)

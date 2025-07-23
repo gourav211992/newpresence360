@@ -50,10 +50,12 @@
                                                 <label class="form-label">Voucher Type</label>
                                                 <select class="form-select select2" id="book_code">
                                                     <option value="">Select Type</option>
+                                                    @if(!empty($books_t))
                                                     @foreach ($books_t->unique('alias') as $book)
                                                         <option value="{{ $book->alias }}">{{ strtoupper($book->name) }}
                                                         </option>
                                                     @endforeach
+                                                    @endif
                                                 </select>
                                             </div>
                                         </div>
@@ -204,7 +206,7 @@
                             <option value="" disabled>Select</option>
                             @foreach ($mappings as $organization)
                                 <option value="{{ $organization->organization->id }}"
-                                    {{ $organization->organization->id == $organizationId ? 'selected' : '' }}>
+                                    {{ $organization->organization->id == $organizationId ? 'selected' : 'selected' }}>
                                     {{ $organization->organization->name }}
                                 </option>
                             @endforeach

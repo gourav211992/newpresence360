@@ -22,6 +22,9 @@ class CategoryController extends Controller
                 ->addColumn('parent_category', function($row) {
                     return $row->parent ? $row->parent->name : 'N/A';
                 })
+                 ->editColumn('type', function($row) {
+                    return $row->type ? $row->type : 'N/A';
+                })
                 ->addColumn('last_level', function($row) {
                     if ($row->subCategories()->exists()) {
                         return '-';
@@ -160,6 +163,8 @@ class CategoryController extends Controller
                     $query->where('type', 'Customer');
                 } elseif ($categoryType === 'Vendor') {
                     $query->where('type', 'Vendor');
+                } elseif ($categoryType === 'Equipment') {
+                    $query->where('type', 'Equipment');
                 }
             })
             ->get();

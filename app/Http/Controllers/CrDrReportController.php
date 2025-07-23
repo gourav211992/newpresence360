@@ -1859,12 +1859,9 @@ class CrDrReportController extends Controller
 
     public function getInvocies(Request $request)
     {
-        $organization_id = [];
+        $organizations = [];
         if ($request->organization_id) {
-
-            $organization_id = $request->organization_id;
-        } else {
-            $organization_id = Helper::getAuthenticatedUser()->organization_id;
+            $organizations = $request->organization_id;
         }
         $cus_type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
         $ledger_account = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
@@ -1914,8 +1911,9 @@ class CrDrReportController extends Controller
             $ledgerGroupIds = is_array($ledgerGroupIds)
                 ? $ledgerGroupIds
                 : [$ledger->ledger_group_id];
-            $data = Voucher::where("organization_id", Helper::getAuthenticatedUser()->organization_id)
-                ->with('ErpLocation', 'organization')
+            $data = Voucher::when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        })->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereIn('location', $locationIds)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledgerGroupIds, $cost_center_ids) {
@@ -1981,13 +1979,15 @@ class CrDrReportController extends Controller
                 ->select('id', 'amount', 'book_id', 'document_date as date', 'created_at', 'voucher_name', 'voucher_no', 'location', 'organization_id')
                 ->orderBy('id', 'desc')
                 ->get()
-                ->map(function ($voucher) use ($request, $ledger) {
+                ->map(function ($voucher) use ($request, $ledger,$organizations)  {
                     $voucher->date = date('d/m/Y', strtotime($voucher->date));
                     $voucher->document_date = $voucher->document_date;
 
                     $balance = VoucherReference::where('voucher_id', $voucher->id)
-                        ->withWhereHas('voucherPayRec', function ($query) {
-                            $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id);
+                        ->withWhereHas('voucherPayRec', function ($query) use ($organizations) {
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        });
                             $query->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                         })->where('party_id', $ledger->id);
 
@@ -2006,9 +2006,10 @@ class CrDrReportController extends Controller
 
             $advanceSum = PaymentVoucherDetails::where('type', $cus_type)
                 ->whereIn('reference', ['On Account'])
-                ->withWhereHas('voucher', function ($query) {
-                    $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-                        ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
+                ->withWhereHas('voucher', function ($query) use($organizations) {
+                  $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        })->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                 })
                 ->with('partyName')->get()->filter(function ($adv) use ($ledger, $ledgerGroupIds) {
                     if (is_null($adv->ledger_id)) {
@@ -2035,9 +2036,10 @@ class CrDrReportController extends Controller
 
             $advanceItems = PaymentVoucherDetails::where('type', $cus_type)
                 ->where('reference', 'Advance')
-                ->withWhereHas('voucher', function ($query) {
-                    $query->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-                        ->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
+                ->withWhereHas('voucher', function ($query) use ($organizations) {
+                    $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        })->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
                 })
                 ->with('partyName')->get()->filter(function ($adv) use ($ledger, $ledgerGroupIds) {
                     if (is_null($adv->ledger_id)) {
@@ -2083,7 +2085,7 @@ class CrDrReportController extends Controller
         }
 
 
-        return response()->json(['data' => $results, 'sum' => $advanceSum]);
+        return response()->json(['data' => $results]);
     }
 
     public function storeCrDrRowData(Request $request)

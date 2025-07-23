@@ -2375,7 +2375,6 @@
         
         function updateCheckboxStatesForGoods() {
             const rawMaterialChecked = $('#subType1').is(':checked');
-           
             const wipChecked = $('#subType2').is(':checked');
             const finishedGoodsChecked = $('#subType3').is(':checked');
             const assetChecked = $('#subType5').is(':checked');
@@ -2432,7 +2431,15 @@
 
         typeRadios.change(function() {
             checkboxes.prop('checked', false); 
-            checkboxes.prop('disabled', !isEditable); 
+           if (isItemReferenced) {
+                checkboxes.prop('disabled', true);
+                $('input[name="is_traded_item"]').prop('disabled', true);
+                $('input[name="is_asset"]').prop('disabled', true);
+            } else {
+                checkboxes.prop('disabled', false); 
+                $('input[name="is_traded_item"]').prop('disabled', false);
+                $('input[name="is_asset"]').prop('disabled', false);
+            }
             const selectedType = $(this).val();
             if (selectedType === 'Goods') {
                 $('#item_code_label').text('Item Code');
@@ -2451,7 +2458,14 @@
             }
         });
 
-        checkboxes.change(handleCheckboxChange);
+        checkboxes.change(function() {
+            if ($(this).is(':checked') && !$(this).is('input[name="is_traded_item"], input[name="is_asset"]')) {
+                checkboxes.not(this)
+                    .not('input[name="is_traded_item"], input[name="is_asset"]')
+                    .prop('checked', false);
+            }
+            handleCheckboxChange();
+        });
         handleCheckboxChange(); 
     });
 </script>
@@ -3041,7 +3055,6 @@
 
     function submitAmend()
     {
-        enableAmendmentFields();
         let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
         $("#action_type_main").val("amendment");
         $("#amendConfirmPopup").modal('hide');

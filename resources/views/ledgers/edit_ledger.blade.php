@@ -303,7 +303,8 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tax_percentage" name="tax_percentage"
-                                                                value="{{ $data->tax_percentage }}" step="any" />
+                                                                value="{{ $data->tax_percentage }}" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
 
@@ -333,7 +334,8 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tds_percentage" name="tds_percentage"
-                                                                value="{{ $data->tds_percentage }}" />
+                                                                value="{{ $data->tds_percentage }}"  step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$"/>
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tds_capping_label">
@@ -373,7 +375,8 @@
                                                         <div class="col-md-3">
                                                             <input type="number" class="form-control"
                                                                 id="tcs_percentage" name="tcs_percentage"
-                                                                value="{{ $data->tcs_percentage }}" />
+                                                                value="{{ $data->tcs_percentage }}" step="0.01"
+                                                            pattern="^\d+(\.\d{1,2})?$" />
                                                         </div>
                                                     </div>
                                                     <div class="row align-items-center mb-1" id="tcs_capping_label">

@@ -55,8 +55,13 @@ class InspectionChecklistController extends Controller
     public function create()
     {
         $status = ConstantHelper::STATUS;
+        $checklistTypes = ConstantHelper::INSPECTION_CHECKLIST_TYPES;
         $dataTypes = ConstantHelper::DATA_TYPES;
-        return view('inspection-checklist.create', compact('status','dataTypes'));
+       return view('inspection-checklist.create', [
+            'status' => $status,
+            'dataTypes' => $dataTypes,
+            'checklistTypes' => $checklistTypes,
+        ]);
     }
 
     // Use InspectionChecklistRequest for validation
@@ -99,6 +104,7 @@ class InspectionChecklistController extends Controller
                         $checklistDetail = $inspectionChecklist->details()->create([
                             'name' => $detail['name'],
                             'description' => $detail['description'],
+                            'type' => $detail['type'],
                             'data_type' => $detail['data_type'],
                             'mandatory' => $detail['mandatory']
                         ]);
@@ -139,8 +145,14 @@ class InspectionChecklistController extends Controller
     {
         $inspectionChecklist = InspectionChecklist::findOrFail($id);
         $status = ConstantHelper::STATUS;
+        $checklistTypes = ConstantHelper::INSPECTION_CHECKLIST_TYPES;
         $dataTypes = ConstantHelper::DATA_TYPES;
-        return view('inspection-checklist.edit', compact('inspectionChecklist', 'status','dataTypes'));
+        return view('inspection-checklist.edit', [
+            'inspectionChecklist' => $inspectionChecklist,
+            'status' => $status,
+            'checklistTypes' => $checklistTypes,
+            'dataTypes' => $dataTypes,
+        ]);
     }
 
     public function update(InspectionChecklistRequest $request, $id)
@@ -192,6 +204,7 @@ class InspectionChecklistController extends Controller
                             $existingDetail->update([
                                 'name' => $detail['name'],
                                 'description' => $detail['description'],
+                                'type' => $detail['type'],
                                 'data_type' => $detail['data_type'],
                                 'mandatory' => $detail['mandatory']
                             ]);
