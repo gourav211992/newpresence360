@@ -1644,87 +1644,84 @@ class BomController extends Controller
     {
         $pathUrl = route('bill.of.material.index');
         $orderType = ConstantHelper::BOM_SERVICE_ALIAS;
-        $bomItems = BomDetail::whereHas('bom', function ($headerQuery) use($orderType, $pathUrl, $request) {
-            
-            //Book Filter
-            $headerQuery = $headerQuery -> when($request -> book_id, function ($bookQuery) use($request) {
-                $bookQuery -> where('book_id', $request -> book_id);
-            });
-            //Document Id Filter
-            $headerQuery = $headerQuery -> when($request -> document_number, function ($docQuery) use($request) {
-                $docQuery -> where('document_number', 'LIKE', '%' . $request -> document_number . '%');
-            });
-            //Location Filter
-            $headerQuery = $headerQuery -> when($request -> location_id, function ($docQuery) use($request) {
-                $docQuery -> where('store_id', $request -> location_id);
-            });
-            //Company Filter
-            $headerQuery = $headerQuery -> when($request -> company_id, function ($docQuery) use($request) {
-                $docQuery -> where('store_id', $request -> company_id);
-            });
-            //Organization Filter
-            $headerQuery = $headerQuery -> when($request -> organization_id, function ($docQuery) use($request) {
-                $docQuery -> where('organization_id', $request -> organization_id);
-            });
-            //Document Status Filter
-            $headerQuery = $headerQuery -> when($request -> doc_status, function ($docStatusQuery) use($request) {
-                $searchDocStatus = [];
-                if ($request -> doc_status === ConstantHelper::DRAFT) {
-                    $searchDocStatus = [ConstantHelper::DRAFT];
-                } else if ($searchDocStatus === ConstantHelper::SUBMITTED) {
-                    $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
-                } else {
-                    $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
-                }
-                $docStatusQuery -> whereIn('document_status', $searchDocStatus);
-            });
-            //Date Filters
-            $dateRange = $request -> date_range ??  Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
-            $headerQuery = $headerQuery -> when($dateRange, function ($dateRangeQuery) use($request, $dateRange) {
-            $dateRanges = explode('to', $dateRange);
-            if (count($dateRanges) == 2) {
-                    $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
-                    $toDate = Carbon::parse(trim($dateRanges[1])) -> format('Y-m-d');
-                    $dateRangeQuery -> whereDate('document_date', ">=" , $fromDate) -> where('document_date', '<=', $toDate);
-            }
-            else{
-                $fromDate = Carbon::parse(trim($dateRanges[0])) -> format('Y-m-d');
-                $dateRangeQuery -> whereDate('document_date', $fromDate);
-            }
-            });
-            //Item Id Filter
-            $headerQuery = $headerQuery -> when($request -> item_id, function ($itemQuery) use($request) {
-                $itemQuery -> withWhereHas('bomItems', function ($itemSubQuery) use($request) {
-                    $itemSubQuery -> where('item_id', $request -> item_id)
-                    //Compare Item Category
-                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
-                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
-                            $itemRelationQuery -> where('category_id', $request -> category_id)
-                            //Compare Item Sub Category
-                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
-                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
-                            });
+        $bomItems = BomDetail::query()
+            // station_id filter directly on BomDetail
+            ->when($request->station_id, function ($query) use ($request) {
+                $query->where('station_id', $request->station_id);
+            })
+
+            // item_id filter directly on BomDetail
+            ->when($request->item_id, function ($query) use ($request) {
+                $query->where('item_id', $request->item_id)
+                    ->when($request->item_category_id, function ($q) use ($request) {
+                        $q->whereHas('item', function ($itemQuery) use ($request) {
+                            $itemQuery->where('category_id', $request->item_category_id)
+                                ->when($request->item_sub_category_id, function ($subQ) use ($request) {
+                                    $subQ->where('subcategory_id', $request->item_sub_category_id);
+                                });
                         });
                     });
-                });
-            });
-            //Product Id Filter
-            $headerQuery = $headerQuery -> when($request -> product_id, function ($itemQuery) use($request) {
-                $itemQuery -> withWhereHas('item', function ($itemSubQuery) use($request) {
-                    $itemSubQuery -> where('item_id', $request -> product_id)
-                    //Compare Item Category
-                    -> when($request -> item_category_id, function ($itemCatQuery) use($request) {
-                        $itemCatQuery -> whereHas('item', function ($itemRelationQuery) use($request) {
-                            $itemRelationQuery -> where('category_id', $request -> category_id)
-                            //Compare Item Sub Category
-                            -> when($request -> item_sub_category_id, function ($itemSubCatQuery) use($request) {
-                                $itemSubCatQuery -> where('subcategory_id', $request -> item_sub_category_id);
+            })
+
+            // now filter by bom headers
+            ->whereHas('bom', function ($query) use ($request) {
+                $query->when($request->book_id, function ($q) use ($request) {
+                    $q->where('book_id', $request->book_id);
+                })
+                ->when($request->document_number, function ($q) use ($request) {
+                    $q->where('document_number', 'LIKE', '%' . $request->document_number . '%');
+                })
+                ->when($request->location_id, function ($q) use ($request) {
+                    $q->where('store_id', $request->location_id);
+                })
+                ->when($request->company_id, function ($q) use ($request) {
+                    $q->where('store_id', $request->company_id);
+                })
+                ->when($request->organization_id, function ($q) use ($request) {
+                    $q->where('organization_id', $request->organization_id);
+                })
+                ->when($request->doc_status, function ($q) use ($request) {
+                    $searchDocStatus = [];
+                    if ($request->doc_status === ConstantHelper::DRAFT) {
+                        $searchDocStatus = [ConstantHelper::DRAFT];
+                    } else if ($request->doc_status === ConstantHelper::SUBMITTED) {
+                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                    } else {
+                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                    }
+                    $q->whereIn('document_status', $searchDocStatus);
+                })
+
+                // date filter
+                ->when($request->date_range ?? null, function ($q) use ($request) {
+                    $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+                    $dateRanges = explode('to', $dateRange);
+                    if (count($dateRanges) == 2) {
+                        $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                        $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                        $q->whereDate('document_date', '>=', $fromDate)
+                        ->whereDate('document_date', '<=', $toDate);
+                    } else {
+                        $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                        $q->whereDate('document_date', $fromDate);
+                    }
+                })
+
+                // product_id filter (note: this likely belongs outside too, unless bom table has it)
+                ->when($request->product_id, function ($q) use ($request) {
+                    $q->where('item_id', $request->product_id)
+                        ->when($request->item_category_id, function ($catQ) use ($request) {
+                            $catQ->whereHas('item', function ($itemQuery) use ($request) {
+                                $itemQuery->where('category_id', $request->item_category_id)
+                                    ->when($request->item_sub_category_id, function ($subQ) use ($request) {
+                                        $subQ->where('subcategory_id', $request->item_sub_category_id);
+                                    });
                             });
                         });
-                    });
                 });
-            });
-        }) -> orderByDesc('id');
+            })
+            ->orderByDesc('id');
+
             $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::BOM_SERVICE_ALIAS);
             $datatables = DataTables::of($bomItems) ->addIndexColumn()
             ->editColumn('status', function ($row) use($orderType) {
@@ -1808,7 +1805,7 @@ class BomController extends Controller
                 return $row -> total_amount;
             })
             ->addColumn('item_station', function ($row) {
-                return $row ?-> station -> name;
+                return $row ?-> station ?-> name;
             })
             ->addColumn('item_section', function ($row) {
                 return $row ?-> section ?-> name;
@@ -1823,8 +1820,8 @@ class BomController extends Controller
                 $attributesUi = '';
                 if (count($row -> attributes) > 0) {
                     foreach ($row -> attributes as $soAttribute) {
-                        $attrName = $soAttribute -> headerAttribute -> name;
-                        $attrValue = $soAttribute -> headerAttributeValue -> value;
+                        $attrName = $soAttribute -> headerAttribute ?-> name;
+                        $attrValue = $soAttribute -> headerAttributeValue ?-> value;
                         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
                     }
                 } else {
@@ -1833,11 +1830,11 @@ class BomController extends Controller
                 return $attributesUi;
             });
             foreach ($dynamicFields as $field) {
-                $datatables = $datatables->addColumn($field -> name, function ($row) use ($field) {
+                $datatables = $datatables->addColumn($field ?-> name, function ($row) use ($field) {
                     $value = "";
                     $actualDynamicFields = $row ?-> bom ?-> dynamic_fields;
                     foreach ($actualDynamicFields as $actualDynamicField) {
-                        if ($field -> name == $actualDynamicField -> name) {
+                        if ($field ?-> name == $actualDynamicField ?-> name) {
                             $value = $actualDynamicField -> value;
                         }
                     }

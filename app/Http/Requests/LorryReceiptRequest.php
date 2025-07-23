@@ -44,7 +44,7 @@ class LorryReceiptRequest extends FormRequest
             'consignee_id'     => 'required|numeric|exists:erp_customers,id',
             'vehicle_type_name'=> 'required',
             'vehicle_type_id'  => 'required|numeric|exists:erp_vehicle_types,id',
-            'distances'        => 'required', 'numeric', 'regex:/^\d{1,4}(\.\d{1,2})?$/',
+            'distances'        => 'required','numeric', 'regex:/^\d{1,4}(\.\d{1,2})?$/',
             'freight_charge'   => 'required|numeric|min:0',
             'driver_id'        => 'required|numeric|exists:erp_drivers,id',
             'driver_cash'      => 'nullable|numeric|min:0',

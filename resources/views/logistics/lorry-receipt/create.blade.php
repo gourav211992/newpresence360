@@ -19,8 +19,6 @@
 									<ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ url('/') }}">Home</a>
 										</li>  
 										<li class="breadcrumb-item active">Add New</li>
-
-
 									</ol>
 								</div>
 							</div>

@@ -242,12 +242,11 @@ class DispatchController extends Controller
             $header = $job->morphable;
             $bookId = $header->book_id;
             $docId = $header->id;
-            $docValue = $header->total_amount;
-            $currentLevel = $header->approval_level;
             $revisionNumber = $header->revision_number ?? 0;
             $modelName = $job->morphable_type;
-            Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
-
+            $remarks = NULL;
+            CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
+            
             \DB::commit();
             return [
                 'message' => $message

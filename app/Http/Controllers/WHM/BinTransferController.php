@@ -2,10 +2,197 @@
 
 namespace App\Http\Controllers\WHM;
 
+use App\Exceptions\ApiGenericException;
+use App\Helpers\CommonHelper;
+use App\Helpers\Helper;
+use App\Helpers\StoragePointHelper;
 use App\Http\Controllers\Controller;
+use App\Lib\Services\WHM\WhmJob;
+use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use DB;
 
 class BinTransferController extends Controller
 {
-    //
+    public function index(Request $request){
+        $validator = Validator::make($request->all(),[
+            'storage_number' => ['required'],
+        ],[
+            'storage_number.required' => 'Storage number is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $storeId = $request->input('store_id');
+        $subStoreId = $request->input('sub_store_id');
+        $storageNumber = $request->storage_number;
+
+        $storagePointDetail = StoragePointHelper::getStoragePointDetail($storageNumber);
+        if($storagePointDetail['status'] == "error"){
+            throw ValidationException::withMessages([
+                'storage_point_id' => $storagePointDetail['message'],
+            ]);
+        }
+
+        $storageData = $storagePointDetail['data'];
+
+        $items = ErpItemUniqueCode::where('storage_point_id',$storageData->id)
+            ->where('doc_type',CommonHelper::RECEIPT)
+            ->when($storeId, function ($query) use ($storeId) {
+                $query->where('store_id', $storeId);
+            })
+            ->when($subStoreId, function ($query) use ($subStoreId) {
+                $query->where('sub_store_id', $subStoreId);
+            })
+            ->whereNull('utilized_id')
+            ->whereNotNull('storage_point_id')
+            ->select('item_id','item_code','item_name','item_attributes',DB::raw('COUNT(*) as quantity'))
+            ->groupBy('item_id')
+            ->get();
+        
+            return [
+                "data" => [
+                    'storage_point' => $storageData,
+                    'items' => $items
+                ]
+            ];
+    }
+
+    public function binTransfer(Request $request){
+        $validator = Validator::make($request->all(),[
+            'item_ids' => ['required', 'array'],
+            'from_storage_number' => ['required'],
+            'to_storage_number' => ['required'],
+        ],[
+            'item_ids.required' => 'Item IDs are required',
+            'from_storage_number.required' => 'Storage number id is required',
+            'to_storage_number.required' => 'Storage number id is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $fromStoragePointDetail = StoragePointHelper::getStoragePointDetail($request->from_storage_number);
+        if($fromStoragePointDetail['status'] == "error"){
+            throw ValidationException::withMessages([
+                'from_storage_number' => $fromStoragePointDetail['message'],
+            ]);
+        }
+
+        $toStoragePointDetail = StoragePointHelper::getStoragePointDetail($request->to_storage_number);
+        if($toStoragePointDetail['status'] == "error"){
+            throw ValidationException::withMessages([
+                'to_storage_number' => $toStoragePointDetail['message'],
+            ]);
+        }
+
+        if ($request->from_storage_number == $request->to_storage_number) {
+            throw ValidationException::withMessages([
+                'to_storage_number' => 'From and To storage point cannot be the same.',
+            ]);
+        }
+
+        $fromStoragePoint = $fromStoragePointDetail['data'];
+        $toStoragePoint = $toStoragePointDetail['data'];
+
+        $items = ErpItemUniqueCode::where('storage_point_id',$fromStoragePoint->id)
+            ->where('doc_type',CommonHelper::RECEIPT)
+            ->whereIn('item_id',$request->item_ids)
+            ->whereNull('utilized_id')
+            ->whereNotNull('storage_point_id')
+            ->get();
+
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages([
+                'item_ids' => 'No valid items found for transfer.',
+            ]);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $user = Helper::getAuthenticatedUser();
+            (new WhmJob())->binTransfer($items, $toStoragePoint->id, $user->id);
+            \DB::commit();
+            return [
+                'message' => 'Data transferred successfully.'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+
+    }
+
+    public function scanPackets(Request $request){
+        $validator = Validator::make($request->all(),[
+            'packet_ids' => ['required', 'array'],
+            'from_storage_number' => ['required'],
+            'to_storage_number' => ['required'],
+        ],[
+            'packet_ids.required' => 'Packet IDs are required',
+            'from_storage_number.required' => 'Storage point is required',
+            'to_storage_number.required' => 'Storage point is required',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $fromStoragePointDetail = StoragePointHelper::getStoragePointDetail($request->from_storage_number);
+        if($fromStoragePointDetail['status'] == "error"){
+            throw ValidationException::withMessages([
+                'from_storage_number' => $fromStoragePointDetail['message'],
+            ]);
+        }
+
+        $toStoragePointDetail = StoragePointHelper::getStoragePointDetail($request->to_storage_number);
+        if($toStoragePointDetail['status'] == "error"){
+            throw ValidationException::withMessages([
+                'to_storage_number' => $toStoragePointDetail['message'],
+            ]);
+        }
+
+        if ($request->from_storage_number == $request->to_storage_number) {
+            throw ValidationException::withMessages([
+                'to_storage_number' => 'From and To storage point cannot be the same.',
+            ]);
+        }
+
+        $fromStoragePoint = $fromStoragePointDetail['data'];
+        $toStoragePoint = $toStoragePointDetail['data'];
+
+        $items = ErpItemUniqueCode::where('storage_point_id',$fromStoragePoint->id)
+            ->where('doc_type',CommonHelper::RECEIPT)
+            ->whereIn('item_uid',$request->packet_ids)
+            ->whereNull('utilized_id')
+            ->whereNotNull('storage_point_id')
+            ->get();
+
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages([
+                'item_ids' => 'No valid items found for transfer.',
+            ]);
+        }
+
+        \DB::beginTransaction();
+        try {
+            $user = Helper::getAuthenticatedUser();
+
+            (new WhmJob())->binTransfer($items, $toStoragePoint->id, $user->id);
+            
+            \DB::commit();
+            return [
+                'message' => 'Data transferred successfully.'
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+
+    }
 }

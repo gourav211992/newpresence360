@@ -2859,7 +2859,6 @@ $(document).ready(function() {
 
     function submitAmend()
     {
-        enableAmendmentFields();
         let remark = $("#amendConfirmPopup").find('[name="amend_remarks"]').val();
         $("#action_type_main").val("amendment");
         $("#amendConfirmPopup").modal('hide');

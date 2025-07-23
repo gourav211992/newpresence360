@@ -1068,6 +1068,14 @@ class ConstantHelper
         'contract'   => 'Contract',
         'hp'      => 'HP',
     ];
+
+    const MAINTENANCE = 'maintenance';
+    const ITEM = 'item';
+
+    const INSPECTION_CHECKLIST_TYPES = [
+        self::MAINTENANCE,
+        self::ITEM,
+    ];
      // Excel Export Styling Constants
     const EXCEL_FONT_COLOR_BLACK = 'FF000000';
     const EXCEL_FONT_BOLD = true;

@@ -118,7 +118,7 @@ class ItemController extends Controller
                     return  $row->subCategory?->name;
                 })
                 ->editColumn('created_at', function ($row) {
-                    return $row->created_at ? Carbon::parse($row->created_at)->format('d-m-Y H:i:s') : 'N/A';
+                    return $row->created_at ? Carbon::parse($row->created_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
                 
                 ->editColumn('created_by', function ($row) {
@@ -127,7 +127,7 @@ class ItemController extends Controller
                 })
                 
                 ->editColumn('updated_at', function ($row) {
-                    return $row->updated_at ? Carbon::parse($row->updated_at)->format('d-m-Y H:i:s') : 'N/A';
+                    return $row->updated_at ? Carbon::parse($row->updated_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
 
               ->editColumn('status', function ($row) {

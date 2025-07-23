@@ -491,6 +491,7 @@ class JoController extends Controller
                     $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $unit = Unit::find($component['uom_id']);
                     $poItemArr[] = [
+                        'key' => $c_key,
                         'so_id' => $component['so_id'] ?? null,
                         'jo_id' => $po->id,
                         'item_id' => $component['item_id'] ?? null,
@@ -550,7 +551,7 @@ class JoController extends Controller
                 }
                 unset($poItem);
                 foreach($poItemArr as $_key => $poItem) {
-                    $_key = $_key + 1;
+                    $_key = $poItem['key'] ?? $_key;
                     $component = $request->all()['components'][$_key] ?? [];
                     # Save Jo Item with Attribute
                     $joProduct = JobOrderService::saveJoProductWithAttributes($poItem, $component, $po->id);
@@ -822,6 +823,7 @@ class JoController extends Controller
                     $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $unit = Unit::find($component['uom_id']);
                     $poItemArr[] = [
+                        'key' => $c_key,
                         'so_id' => $component['so_id'] ?? null,
                         'jo_id' => $po->id,
                         'item_id' => $component['item_id'] ?? null,
@@ -882,7 +884,7 @@ class JoController extends Controller
                 unset($poItem);
                 foreach($poItemArr as $_key => $poItem) {
                     # MoProductDetail
-                    $_key = $_key + 1;
+                    $_key = $poItem['key'] ?? $_key;
                     $component = $request->all()['components'][$_key] ?? [];
                     if(isset($component['jo_product_id']) && $component['jo_product_id']) {
                         $joProduct = JoProduct::where('id', $component['jo_product_id'])->first();

@@ -15,6 +15,7 @@ class InspectionChecklistDetail extends Model
     protected $fillable = [
         'header_id',
         'name',
+        'type',
         'data_type',
         'description',
         'mandatory'

@@ -421,11 +421,10 @@ class PicklistTaskController extends Controller
             $header = $job->morphable;
             $bookId = $header->book_id;
             $docId = $header->id;
-            $docValue = $header->total_amount;
-            $currentLevel = $header->approval_level;
             $revisionNumber = $header->revision_number ?? 0;
             $modelName = $job->morphable_type;
-            Helper::approveDocument($bookId, $docId, $revisionNumber, NULL, NULL, $currentLevel, $actionType, $docValue, $modelName);
+            $remarks = NULL;
+            CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
 
             \DB::commit();
             return [
@@ -458,6 +457,7 @@ class PicklistTaskController extends Controller
         }
 
         $plHeaderId = $job->morphable_id;
+        $storagePointId = $request->storage_point_id;
 
         $mrnIds = StockLedgerReservation::where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
             ->where('issue_header_id',$plHeaderId)
@@ -465,10 +465,16 @@ class PicklistTaskController extends Controller
             ->pluck('receipt_detail_id')
             ->toArray();
 
-        $pendingTasks = ErpItemUniqueCode::whereIn('morphable_id',$mrnIds)
+        $pendingTasks = ErpItemUniqueCode::with(['storagePoint' => function($q){
+                $q->select('id', 'storage_number');
+            }])
+            ->whereIn('morphable_id',$mrnIds)
             ->where('job_type',CommonHelper::PUTAWAY)
             ->whereNull('utilized_id')
-            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id')
+            ->when($storagePointId,function($q) use($storagePointId){
+                $q->where('storage_point_id',$storagePointId);
+            })
+            ->select('uid','job_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','utilized_id','storage_point_id')
             ->get();
 
         return [
