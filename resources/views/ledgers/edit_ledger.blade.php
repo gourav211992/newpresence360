@@ -133,7 +133,7 @@
                                             </div>
                                         </div> 
 
-                                            <div class="col-md-9">
+                                            <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">Group <span
@@ -203,75 +203,9 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 border-start">
-                                            @if(isset($data) && ($data->document_status !== "draft"))
-                                                @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($data->revision_number))
-                                                        <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                            <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                                <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                                @if(!isset(request()->revisionNumber) && $data->document_status !== 'draft')
-                                                                    <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No.
-                                                                        <select class="form-select" id="revisionNumber">
-                                                                            @for($i=$data->revision_number; $i >= 0; $i--)
-                                                                                <option value="{{$i}}" {{request('revisionNumber', $data->revision_number) == $i ? 'selected' : ''}}>{{$i}}</option>
-                                                                            @endfor
-                                                                        </select>
-                                                                    </strong>
-                                                                @else
-                                                                    @if ($data->document_status !== 'draft')
-                                                                        <strong class="badge rounded-pill badge-light-secondary amendmentselect">
-                                                                            Rev. No. {{ request()->revisionNumber }}
-                                                                        </strong>
-                                                                    @endif
-
-                                                                @endif
-                                                            </h5>
-                                                            <ul class="timeline ms-50 newdashtimline ">
-                                                                @foreach($approvalHistory as $approvalHist)
-                                                                    <li class="timeline-item">
-                                                                        <span class="timeline-point timeline-point-indicator"></span>
-                                                                        <div class="timeline-event">
-                                                                            <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                                <h6>{{ ucfirst($approvalHist->name ?? $approvalHist?->user?->name ?? 'NA') }}</h6>
-                                                                                @if($approvalHist->approval_type == 'approve')
-                                                                                    <span class="badge rounded-pill badge-light-success">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'submit')
-                                                                                    <span class="badge rounded-pill badge-light-primary">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @elseif($approvalHist->approval_type == 'reject')
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @else
-                                                                                    <span class="badge rounded-pill badge-light-danger">{{ ucfirst($approvalHist->approval_type) }}</span>
-                                                                                @endif
-                                                                            </div>
-                                                                            @if($approvalHist->approval_date)
-                                                                                <h6>
-                                                                                    {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                                                </h6>
-                                                                            @endif
-                                                                            @if($approvalHist->remarks)
-                                                                                <p>{!! $approvalHist->remarks !!}</p>
-                                                                            @endif
-                                                                            @if ($approvalHist->media && count($approvalHist->media) > 0)
-                                                                                @foreach ($approvalHist->media as $mediaFile)
-                                                                                    <p><a href="{{ $mediaFile->file_url }}" target="_blank">
-                                                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download">
-                                                                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                                                                                <polyline points="7 10 12 15 17 10"></polyline>
-                                                                                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                                                                                            </svg>
-                                                                                        </a></p>
-                                                                                @endforeach
-                                                                            @endif
-                                                                        </div>
-                                                                    </li>
-                                                                @endforeach
-
-                                                            </ul>
-                                                        </div>
-                                                @endif
-                                            @endif
-                                            {{-- Approval History Section --}}
-                                        </div>
+                                            @include('partials.approval-history', ['document_status' =>$data->document_status, 'revision_number' => $data->revision_number])
+                                                
+                                                </div>
 
                                           
                                         </div>
@@ -484,10 +418,10 @@
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
-        <form class="ajax-submit-2" method="POST" action="{{ route('approveLedger') }}" data-redirect="{{ route('item.index') }}" enctype='multipart/form-data'>
+        <form id="approveLedgerForm" method="POST" action="{{ route('approveLedger') }}" data-redirect="{{ route('ledgers.index') }}" enctype='multipart/form-data'>
           @csrf
           <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
-          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($item) ? $item -> id : ''}}">
+          <input type="hidden" class = "cannot_disable" name="id" value="{{isset($data) ? $data -> id : ''}}">
          <div class="modal-header">
             <div>
                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label">
@@ -1025,6 +959,45 @@
     {
         $('#' + id).modal('show');
     }
+    
+
+//File upload preview js code
+    let fileInputData = {};
+      const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
+    const ALLOWED_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    const MAX_FILE_SIZE = 5120; // in KB (5MB)
+    function appendFilePreviews(fileUrl, previewElementId, index, fileId = null) {
+    const previewContainer = document.getElementById(previewElementId);
+    if (!previewContainer) return;
+
+    const fileName = fileUrl.split('/').pop();
+
+    const previewHtml = `
+        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-file-text me-2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+        </div>
+    `;
+
+    previewContainer.insertAdjacentHTML('beforeend', previewHtml);
+}
+
+
+
     function addFiles(element, previewElementId) {
         const input = element;
         const allowedMaxFilesCount = Number(element.getAttribute('max_file_count') ? element.getAttribute('max_file_count') : 1);
@@ -1112,6 +1085,47 @@
             });
         }
     }
+    $('#approveLedgerForm').on('submit', function (e) {
+        e.preventDefault();
+
+        let form = this;
+        let formData = new FormData(form);
+        let actionUrl = $(form).attr('action');
+        let redirectUrl = $(form).data('redirect');
+
+        $.ajax({
+            url: actionUrl,
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            success: function (response) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    timer: 2000, // 2 seconds
+                    text: response.message || 'Action completed successfully.',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    }
+                });
+            },
+            error: function (xhr) {
+                let errorMsg = 'An error occurred. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                }
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops!',
+                    text: errorMsg,
+                    confirmButtonText: 'Close'
+                });
+            }
+        });
+    });
        
 
 
