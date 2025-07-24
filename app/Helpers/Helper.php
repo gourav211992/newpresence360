@@ -2099,7 +2099,7 @@ class Helper
             ->with([
                 'details' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
-                    ->when($cost, function ($query) use ($cost) {
+                    ->when(!empty($cost), function ($query) use ($cost) {
                          return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
                             : $query->where('cost_center_id', $cost);
@@ -2122,7 +2122,7 @@ class Helper
             ])->withSum([
                 'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
-                    ->when($cost, function ($query) use ($cost) {
+                    ->when(!empty($cost), function ($query) use ($cost) {
                         // dd($cost);
                         // $query->where('cost_center_id', $cost);
                         return is_array($cost)
@@ -2148,7 +2148,7 @@ class Helper
             ->withSum([
                 'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
                     $query->where('ledger_parent_id', $group_id)
-                    ->when($cost, function ($query) use ($cost) {
+                    ->when(!empty($cost), function ($query) use ($cost) {
                         // $query->where('cost_center_id', $cost);
                          return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
@@ -2173,7 +2173,7 @@ class Helper
             ->map(function ($ledger) use ($group_id,$organizations,$startDate,$endDate,$currency,$fy,$carry,$cost,$location) {
 
                 $openingData = ItemDetail::where('ledger_parent_id', $group_id)
-                ->when($cost, function ($query) use ($cost) {
+                ->when(!empty($cost), function ($query) use ($cost) {
                     // $query->where('cost_center_id', $cost);
                      return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
@@ -2198,6 +2198,15 @@ class Helper
 
                 $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
                 $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
+                if($ledger->details_sum_debit_amt==0 && $ledger->details_sum_credit_amt==0){
+                        $voucher = ItemDetail::where('ledger_id',$ledger->id)->with('vouchers');
+                        Log::info('Zero-sum ledger detected', [
+                            'ledger_id' => $ledger->id,
+                            'vouchers'=>$voucher->toArray(),
+                            'ledger_name' => $ledger->name,
+                            'group_id' => $group_id ?? 'N/A',
+                            ]);
+                        }
 
 
                 // Set to 0 if the sum is null
