@@ -11,6 +11,7 @@ class ErpEquipMaintenanceDetail extends Model
 
      protected $fillable = [
         'erp_equipment_id',
+        'maintenance_type_id',
         'type',
         'frequency',
         'time',

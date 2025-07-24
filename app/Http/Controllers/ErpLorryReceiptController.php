@@ -6,6 +6,7 @@ use App\Exceptions\ApiGenericException;
 use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Models\Address;
 use App\Models\ErpRouteMaster;
 use App\Http\Requests\LorryReceiptRequest;
 use App\Models\ErpLogisticsMultiFixedPricing;
@@ -25,9 +26,15 @@ use App\Models\CostCenterOrgLocations;
 use App\Models\Customer;
 use App\Models\ErpDriver;
 use App\Models\Organization;
+use App\Models\Country;
+use App\Models\State;
+use App\Models\City;
 use Illuminate\Http\Request;
 use Exception;
 use Auth;
+use Carbon\Carbon;
+use PDF;
+use stdClass;
 
 class ErpLorryReceiptController extends Controller
 {
@@ -162,50 +169,60 @@ class ErpLorryReceiptController extends Controller
     }
 
 
- public function edit(Request $request, $id)
+public function edit(Request $request, $id)
 {
     $user = Helper::getAuthenticatedUser();
     $segments = request()->segments(); 
-    $pathUrl = $segments['0'].'/'.$segments['1'];
+    $pathUrl = $segments[0] . '/' . $segments[1];
     $pathUrl = str_replace('/', '_', $pathUrl);
     $redirectUrl = route('logistics.lorry-receipt.edit', $id); 
     $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
-    if ($request->has('revisionNumber')) {
-            $historyLr = ErpLorryReceiptHistory::with(['consignor',
-            'consignee',
-            'driver',
-            'vehicleType',
-            'locations.route',
-            'mediaAttachments'])
-                ->where('source_id', $id)
-                ->where('revision_number', $request->revisionNumber)
-                ->firstOrFail();
-                
-            $lr = $historyLr;
-            if(empty($historyLr)){
-            $lr = ErpLorryReceipt::with([
-            'consignor',
-            'consignee',
-            'driver',
-            'vehicleType',
-            'locations.route',
-            'mediaAttachments'])
-            ->findOrFail($id);
-            }
-            
-        } else {
-              $historyLr = ErpLorryReceipt::with([
+
+    $isRevision = $request->has('revisionNumber');
+    $revNo = $isRevision ? intval($request->revisionNumber) : null;
+
+    if ($isRevision) {
+        $historyLr = ErpLorryReceiptHistory::with([
             'consignor',
             'consignee',
             'driver',
             'vehicleType',
             'locations.route',
             'mediaAttachments'
-        ])->where('id', $id)->withDefaultGroupCompanyOrg()->first();
-          $lr = $historyLr;  
-    }
+        ])
+        ->where('source_id', $id)
+        ->where('revision_number', $revNo)
+        ->first();
+        $Id = $historyLr->source_id;
 
-  
+        if (!$historyLr) {
+            $lr = ErpLorryReceipt::with([
+                'consignor',
+                'consignee',
+                'driver',
+                'vehicleType',
+                'locations.route',
+                'mediaAttachments'
+            ])->findOrFail($id);
+            $historyLr = $lr;
+            $Id = $lr->id;
+        } else {
+            $lr = $historyLr;
+            
+        }
+    } else {
+        $lr = ErpLorryReceipt::with([
+            'consignor',
+            'consignee',
+            'driver',
+            'vehicleType',
+            'locations.route',
+            'mediaAttachments'
+        ])->where('id', $id)->withDefaultGroupCompanyOrg()->firstOrFail();
+        $historyLr = $lr;
+        $revNo = $lr->revision_number;
+        $Id = $lr->id;
+    }
 
     if (!$lr) {
         return redirect()->route('logistics.lorry-receipt.index')->with('error', 'Lorry Receipt not found.');
@@ -213,30 +230,40 @@ class ErpLorryReceiptController extends Controller
 
     $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($pathUrl);
 
-    if (count($servicesBooks['services']) == 0) {
+    if (count($servicesBooks['services']) === 0) {
         return redirect()->route('/');
     }
 
-    $series = Helper::getBookSeriesNew($lorryReceiptType, $pathUrl)->get();
-    $firstService = $servicesBooks['services'][0];
+    $series         = Helper::getBookSeriesNew($lorryReceiptType, $pathUrl)->get();
+    $firstService   = $servicesBooks['services'][0];
+    $lorryCharges   = ConstantHelper::LORRY_CHARGES;
+    $customers      = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $drivers        = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $locations      = InventoryHelper::getAccessibleLocations();
+    $vehicleTypes   = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $userType       = Helper::userCheck();
+    $routeMasters   = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
-    $lorryCharges  = ConstantHelper::LORRY_CHARGES;
-    $customers     = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $drivers       = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $locations     = InventoryHelper::getAccessibleLocations();
-    $vehicleTypes  = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
-    $userType      = Helper::userCheck();
-    $routeMasters  = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $revision_number = $historyLr->revision_number;
-    $buttons = Helper::actionButtonDisplay($historyLr->book_id,$historyLr->document_status , $historyLr->id, $historyLr->total_charges, $historyLr->approval_level, $historyLr->created_by ?? 0, $userType['type']);
-    $revNo = $lr->revision_number;
-        if($request->has('revisionNumber')) {
-            $revNo = intval($request->revisionNumber);
-        } else {
-            $revNo = $lr->revision_number;
-        }
-   $approvalHistory = Helper::getApprovalHistory($lr->book_id, $lr->id, $revNo, $lr->total_charges, $lr -> created_by);
-   $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
+    $buttons = Helper::actionButtonDisplay(
+        $historyLr->book_id,
+        $historyLr->document_status,
+        $historyLr->id,
+        $historyLr->total_charges,
+        $historyLr->approval_level,
+        $historyLr->created_by ?? 0,
+        $userType['type']
+    );
+
+    $approvalHistory = Helper::getApprovalHistory(
+        $historyLr->book_id,
+        $Id,
+        $revNo,
+        $historyLr->total_charges,
+        $historyLr->created_by ?? 0
+    );
+
+    $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$lr->document_status] ?? '';
 
     return view('logistics.lorry-receipt.edit', compact(
         'lr',
@@ -247,19 +274,15 @@ class ErpLorryReceiptController extends Controller
         'buttons',
         'customers',
         'drivers',
-        'revision_number',
         'vehicleTypes',
         'locations',
-        'lorryCharges'
+        'lorryCharges',
+        'revision_number'
     ));
 }
 
 
 
-    public function lorryReceiptPrint(){
-
-       return view('logistics.lorry-receipt.lorry-receipt-print');
-    }
 
  public function getCostCentersByLocation($locationId)
 {
@@ -541,8 +564,6 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
             $media->delete();
         }
     }
-
-    // ✅ 2. Handle new uploads
     $fileInputs = [
         'attachments' => 'attachments',
     ];
@@ -667,8 +688,6 @@ public function destroy($id)
 
     try {
         $lr = ErpLorryReceipt::findOrFail($id);
-
-        // Delete related media and locations using Eloquent relationships
         $lr->mediaAttachments()->delete();
         $lr->locations()->delete();
 
@@ -691,5 +710,51 @@ public function destroy($id)
         ], 500);
     }
  }
+
+  public function generatePdf(Request $request, $id)
+{
+    $user = Helper::getAuthenticatedUser();
+    $segments = request()->segments(); 
+    $pathUrl = $segments['0'].'/'.$segments['1'];
+    $pathUrl = str_replace('/', '_', $pathUrl);
+    $redirectUrl = route('logistics.lorry-receipt.generate-pdf', $id); 
+    $lorryReceiptType = ConstantHelper::LR_SERVICE_ALIAS;
+
+    $lorryReceipt = ErpLorryReceipt::with([
+        'source', 
+        'destination', 
+        'driver', 
+        'vehicleType', 
+        'consignor', 
+        'consignee', 
+        'locations'
+    ])-> bookViewAccess($pathUrl)
+    ->withDefaultGroupCompanyOrg()
+    -> withDraftListingLogic()->where('id', $id)
+    ->firstOrFail();
+
+    $organization = Organization::find($user->organization_id);
+    $organizationAddress = Address::with(['city', 'state', 'country'])
+        ->where('addressable_id', $user->organization_id)
+        ->where('addressable_type', Organization::class)
+        ->first();
+
+    $logoPath = public_path('img/lorry/Gulati.png');
+    $locationPathFirst = public_path('img/lorry/green-loc.png');
+    $locationPathSecond = public_path('img/lorry/loca-red.jpg');
+
+    $pdf = Pdf::loadView('pdf.lorry-receipt-print', [
+        'lorryReceipt' => $lorryReceipt,
+        'organization' => $organization,
+        'organizationAddress' => $organizationAddress,
+        'logoPath' => $logoPath,
+        'locationPathFirst' => $locationPathFirst,
+        'locationPathSecond' => $locationPathSecond,
+    ]);
+
+    return $pdf->stream('lorry-receipt-preview.pdf');
+}
+
+
 
 }

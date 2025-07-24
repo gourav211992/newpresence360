@@ -139,6 +139,7 @@ class PicklistTaskController extends Controller
                         ->select('id','pl_header_id','item_id','item_name','item_code','inventory_uom_qty as quanity','attributes')
                         ->first();
         
+        
         $plItemId = $plItem->id;
 
         if($plItem){
@@ -188,16 +189,22 @@ class PicklistTaskController extends Controller
     }
 
     private function scannedPackets($storeId, $itemId, $storagePointId, $plItemId){
-
-        $packets = ErpItemUniqueCode::where('item_id', $itemId)
+        $scannedPacketsUids = ErpItemUniqueCode::where('item_id', $itemId)
             ->where('store_id', $storeId)
-            ->where('storage_point_id', $storagePointId)
             ->where('morphable_type', 'App\Models\ErpPlItem')
             ->where('morphable_id', $plItemId)
-            ->where('doc_type', CommonHelper::ISSUE)
+            ->where('doc_type', CommonHelper::RECEIPT)
             ->where('status',CommonHelper::SCANNED)
-            ->select('uid','item_uid')
+            ->get()
+            ->pluck('uid')
+            ->toArray();
+
+        // Fetch the original MRN packets and their storage_point_id
+        $packets = ErpItemUniqueCode::whereIn('utilized_id', $scannedPacketsUids)
+            ->where('storage_point_id', $storagePointId)
+            ->select('uid','item_uid', 'storage_point_id')
             ->get();
+
 
         return $packets;
     }

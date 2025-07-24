@@ -59,7 +59,7 @@
                                                         <td>{{ $equipment->organization->name ?? '' }}</td>
                                                         <td>
                                                             <div data-bs-toggle="tooltip" data-popup="tooltip-custom" data-bs-placement="top" title="{{ $equipment->location->full_address ?? '' }}">
-                                                                {{ $equipment->location->name ?? '' }}
+                                                                {{ $equipment->location->store_name ?? '' }}
                                                             </div>
                                                         </td>
                                                         <td>{{ $equipment->alias ?? '' }}</td>

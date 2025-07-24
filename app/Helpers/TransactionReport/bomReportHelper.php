@@ -92,7 +92,7 @@ class bomReportHelper
         [
             'colSpan' => 'auto',
             'label' => 'Product',
-            'id' => 'doc_number_filter',
+            'id' => 'product_filter',
             'requestName' => 'product_id',
             'term' => 'pr_item',
             'value_key' => 'id',
@@ -163,4 +163,3 @@ class bomReportHelper
         ],
     ];
 }
-

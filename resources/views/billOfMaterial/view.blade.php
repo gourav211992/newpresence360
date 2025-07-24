@@ -608,6 +608,7 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
    let currentTr = e.target.closest('tr'); 
    let pName = $(currentTr).find("[name*='component_item_name']").val();
    let itemId = $(currentTr).find("[name*='item_id']").val();
+   let bomDetailId = $(currentTr).find("[name*='bom_detail_id']").val();
    if (itemId) {
       let selectedAttr = [];
       $(currentTr).find("[name*='attr_name']").each(function(index, item) {
@@ -628,7 +629,7 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
     let qty_per_unit = $(currentTr).find("[name*='[qty_per_unit]']").val() || '';
     let total_qty = $(currentTr).find("[name*='[total_qty]']").val() || '';
     let std_qty = $(currentTr).find("[name*='[std_qty]']").val() || '';
-    let actionUrl = '{{route("bill.of.material.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&section_name='+sectionName+'&sub_section_name='+subSectionName+'&station_name='+stationName+'&qty_per_unit='+qty_per_unit+'&total_qty='+total_qty+'&std_qty='+std_qty;
+    let actionUrl = '{{route("bill.of.material.get.itemdetail")}}'+'?item_id='+itemId+'&selectedAttr='+JSON.stringify(selectedAttr)+'&remark='+remark+'&section_name='+sectionName+'&sub_section_name='+subSectionName+'&station_name='+stationName+'&qty_per_unit='+qty_per_unit+'&total_qty='+total_qty+'&std_qty='+std_qty+'&bom_detail_id='+bomDetailId;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {

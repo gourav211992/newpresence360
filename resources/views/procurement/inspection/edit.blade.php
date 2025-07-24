@@ -59,12 +59,6 @@
                                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                                 @endif
-                                @if($buttons['post'])
-                                    <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
-                                @endif
-                                @if($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
-                                @endif
                                 @if($buttons['amend'] && intval(request('amendment') ?? 0))
                                     <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
                                 @else
@@ -144,13 +138,27 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                        <label class="form-label">
+                                                            Main Store <span class="text-danger">*</span>
+                                                        </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id" readonly>
                                                             <option value="{{$mrn->sub_store_id}}">
-                                                                    {{ ucfirst($mrn?->erpSubStore->store_name) }}
-                                                                </option>
+                                                                {{ ucfirst($mrn?->erpSubStore->store_name) }}
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Rejected Store</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select rejected_sub_store_id" id="rejected_sub_store_id" name="rejected_sub_store_id" readonly>
+                                                            <option value="{{$mrn->rejected_sub_store_id}}">
+                                                                {{ ucfirst($mrn?->rejectedSubStore->store_name) }}
+                                                            </option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -176,11 +184,11 @@
                                                             <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" {{(count(($mrn->items)) > 0 ? 'readonly' : '')}} value="{{@$mrn->vendor->company_name}}" />
                                                             <input type="hidden" value="{{@$mrn->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" value="{{@$mrn->vendor_code}}" id="vendor_code" name="vendor_code" />
-                                                            @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
+                                                            @if($mrn->latestBillingAddress() || $mrn->latestBillingAddress())
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
@@ -282,7 +290,7 @@
                                                                 Gate Entry Date
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
-                                                            <input type="date" name="gate_entry_date" value="{{date('Y-m-d', strtotime($mrn->gate_entry_date))}}"
+                                                            <input type="date" name="gate_entry_date" value="{{$mrn->gate_entry_date ? date('Y-m-d', strtotime($mrn->gate_entry_date)) : ''}}"
                                                                 class="form-control gate-entry" id="datepicker2"
                                                                 placeholder="Enter Gate Entry Date" readonly>
                                                         </div>
@@ -397,10 +405,6 @@
                                                                 <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
-                                                                <th class="text-end">Value</th>
-                                                                <th>Discount</th>
-                                                                <th class="text-end">Total</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
@@ -408,20 +412,8 @@
                                                             @include('procurement.inspection.partials.item-row-edit')
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr class="totalsubheadpodetail">
-                                                                <td colspan="10"></td>
-                                                                <td class="text-end" id="totalItemValue">
-                                                                    {{@$mrn->items->sum('basic_value')}}
-                                                                </td>
-                                                                <td class="text-end" id="totalItemDiscount">
-                                                                    {{@$mrn->items->sum('discount_amount')}}
-                                                                </td>
-                                                                <td class="text-end" id="TotalEachRowAmount">
-                                                                    {{@$mrn->items->sum('net_value')}}
-                                                                </td>
-                                                            </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="8">
+                                                                <td rowspan="10" colspan="10">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -429,93 +421,7 @@
                                                                                     <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
                                                                                 </td>
                                                                             </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
                                                                         </tbody>
-                                                                    </table>
-                                                                </td>
-                                                                <td colspan="6">
-                                                                    <table class="table border mrnsummarynewsty">
-                                                                        <tr>
-                                                                            <td colspan="2" class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                                    <strong>Document Summary</strong>
-                                                                                    <div class="addmendisexpbtn">
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
-                                                                                    </div>
-                                                                                </h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td width="55%"><strong>Sub Total</strong></td>
-                                                                            <td class="text-end" id="f_sub_total">
-                                                                                <!-- {{ number_format(@$mrn->total_item_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Item Discount</strong></td>
-                                                                            <td class="text-end" id="f_total_discount">
-                                                                                <!-- {{ number_format(@$mrn->item_discount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        @if($mrn->headerDiscount)
-                                                                            <tr id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">
-                                                                                    {{$mrn->headerDiscount()->sum('ted_amount')}}
-                                                                                </td>
-                                                                            </tr>
-                                                                        @else
-                                                                            <tr class="d-none" id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">0.00</td>
-                                                                            </tr>
-                                                                        @endif
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value" amount="">
-                                                                                <!-- {{ number_format(@$mrn->taxable_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Tax</strong></td>
-                                                                            <td class="text-end" id="f_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_taxes, 2) }}         -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Total After Tax</strong></td>
-                                                                            <td class="text-end" id="f_total_after_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_after_tax_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Exp.</strong></td>
-                                                                            <td class="text-end" id="f_exp">
-                                                                                <!-- {{ number_format(@$mrn->expense_amount, 2) }} -->
-                                                                            </td>
-                                                                            <input type="hidden" name="expense_amount" class="text-end" id="expense_amount" value="{{$mrn->expense_amount}}">
-                                                                        </tr>
-                                                                        <tr class="voucher-tab-foot">
-                                                                            <td class="text-primary"><strong>Total After Exp.</strong></td>
-                                                                            <td>
-                                                                                <div class="quottotal-bg justify-content-end">
-                                                                                    <h5 id="f_total_after_exp">
-                                                                                        <!-- {{ number_format(@$mrn->total_amount, 2) }} -->
-                                                                                    </h5>
-                                                                                </div>
-                                                                            </td>
-                                                                        </tr>
                                                                     </table>
                                                                 </td>
                                                             </tr>
@@ -550,10 +456,6 @@
                 </div>
             </div>
         </div>
-        {{-- Discount summary modal --}}
-        @include('procurement.inspection.partials.summary-disc-modal')
-        {{-- Add expenses modal--}}
-        @include('procurement.inspection.partials.summary-exp-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -587,45 +489,6 @@
                 <div class="modal-footer justify-content-center">
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" data-bs-dismiss="modal" class="btn btn-primary">Select</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body px-sm-2 mx-50 pb-2">
-                    <h1 class="text-center mb-1" id="shareProjectTitle">Discount</h1>
-                    <div class="text-end"></div>
-                    <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th width="150px">Discount Name</th>
-                                    <th>Discount %</th>
-                                    <th>Discount Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="disItemFooter">
-                                    <input type="hidden" name="row_count" id="row_count" value="1">
-                                    <td colspan="2"></td>
-                                    <td class="text-dark"><strong>Total</strong></td>
-                                    <td class="text-dark text-end"><strong id="total">0.00</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
                 </div>
             </div>
         </div>
@@ -679,64 +542,7 @@
             </div>
         </div>
     </div>
-
-    {{-- Delete Item discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteItemDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteItemDiscConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Delete Header discount modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderDiscModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderDiscConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Delete header exp modal --}}
-    <div class="modal fade text-start alertbackdropdisabled" id="deleteHeaderExpModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body alertmsg text-center warning">
-                    <i data-feather='alert-circle'></i>
-                    <h2>Are you sure?</h2>
-                    <p>Are you sure you want to delete selected <strong>Components</strong>?</p>
-                    <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="deleteHeaderExpConfirm" class="btn btn-primary" >Confirm</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Approve/Reject Modal -->
-    @include('procurement.inspection.partials.approve-modal', ['id' => $mrn->id])
-
+    
     {{-- Taxes --}}
     @include('procurement.inspection.partials.tax-detail-modal')
 
@@ -757,68 +563,6 @@
             </div>
         </div>
     </div>
-
-    <!-- GL Posting Modal -->
-    <div class="modal fade text-start show" id="postvoucher" tabindex="-1" aria-labelledby="postVoucherModal" aria-modal="true" role="dialog">
-		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1000px">
-			<div class="modal-content">
-				<div class="modal-header">
-					<div>
-                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="postVoucherModal"> Voucher Details</h4>
-                    </div>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<div class="row">
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Series <span class="text-danger">*</span></label>
-                                <input id = "voucher_book_code" class="form-control" disabled="" >
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                <input id = "voucher_doc_no" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                <input id = "voucher_date" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="mb-1">
-                                <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                <input id = "voucher_currency" class="form-control" disabled="" value="">
-                            </div>
-                        </div>
-						<div class="col-md-12">
-							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-									<thead>
-										<tr>
-											<th>Type</th>
-											<th>Group</th>
-											<th>Leadger Code</th>
-											<th>Leadger Name</th>
-                                            <th class="text-end">Debit</th>
-                                            <th class="text-end">Credit</th>
-										</tr>
-									</thead>
-									<tbody id="posting-table"></tbody>
-								</table>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="text-end">
-					<button style="margin: 1%;" onclick = "postVoucher(this);" id="posting_button" type = "button" class="btn btn-primary btn-sm waves-effect waves-float waves-light">Submit</button>
-				</div>
-			</div>
-		</div>
-	</div>
 
 @endsection
 @section('scripts')
@@ -901,7 +645,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
+                        
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -1318,7 +1062,7 @@
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 // $(".prSelect").prop('disabled',false);
             }
-            setTableCalculation();
+            
         });
 
         /*Check attrubute*/
@@ -1581,7 +1325,7 @@
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
                 });
             }
-            setTableCalculation();
+            
             if(!$("#itemTable [id*=row_]").length) {
                 $("th .form-check-input").prop('checked',false);
                 $('#vendor_name').prop('readonly',false);
@@ -1589,579 +1333,7 @@
                 $("#editShippingAddressBtn").show();
             }
         });
-
-        // addDeliveryScheduleBtn
-        $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
-            let rowCount = e.target.closest('div').getAttribute('data-row-count');
-            $('#store-row-id').val(rowCount);
-            let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[accepted_qty]']").val());
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            if(!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add store location.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            $("#deliveryScheduleModal").find("#row_count").val(rowCount);
-            let rowHtml = '';
-            let curDate = new Date().toISOString().split('T')[0];
-            if(!$("#itemTable #row_"+rowCount).find("[name*='[store_qty]']").length) {
-
-                let rowHtml = `<tr class="display_delivery_row">
-                                    <td>1</td>
-                                    <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][1][erp_store_id]" data-id="1"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_1" name="components[${rowCount}][erp_store][1][erp_rack_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_1" name="components[${rowCount}][erp_store][1][erp_shelf_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_1" name="components[${rowCount}][erp_store][1][erp_bin_id]" data-id="1">
-                                        <option value="">Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][1][store_qty]" id="store_qty_1" class="form-control mw-100" value="${qty}"  data-id="1" />
-                                    <td>
-                                    <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                                </td>
-                                </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-                $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
-                loadStoreDropdowns(store_id, rowCount);
-                // $('[name="components[1][erp_store][1][erp_store_id]"').trigger('change');
-            } else {
-                if($("#itemTable #row_"+rowCount).find("[name*=store_qty]").length) {
-                    $(".display_delivery_row").remove(); // Remove all rows if present
-                } else {
-                    // Remove all rows except the first one, and reset the quantity
-                    $('.display_delivery_row').not(':first').remove();
-                    $(".display_delivery_row").find("[name*=store_qty]").val('');
-                }
-                let rackVal = '';
-                let shelfVal = '';
-                let binVal = '';
-                // Iterate over each store_qty field to build dynamic rows
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    let storeVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"]`).val();
-                    let rackVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"]`).val();
-                    let shelfVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"]`).val();
-                    let binVal = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"]`).val();
-                    let storeQty = $(item).closest('td').find(`[name="components[${rowCount}][erp_store][${index+1}][store_qty]"]`).val();
-                    // console.log('store rack shelf', storeVal, rackVal, shelfVal, binVal);
-                    // Trigger the change event after setting values to ensure racks, shelves, etc. are updated
-                    // $(`#erp_store_id_${index+1}`).val(storeVal).trigger('change');
-                    // $(`#erp_rack_id_${index+1}`).val(rackVal);
-                    // $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-                    // $(`#erp_bin_id_${index+1}`).val(binVal);
-                    $(`#erp_rack_id_${index+1}`).val(rackVal);
-                    $(`#erp_shelf_id_${index+1}`).val(shelfVal);
-                    $(`#erp_bin_id_${index+1}`).val(binVal);
-
-                    // Generate HTML for the new row with dynamic data
-                    rowHtml += `<tr class="display_delivery_row">
-                                    <td>${index + 1}</td>
-                                    <td>
-                                        <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]" data-id="${index+1}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated racks -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated shelves -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${index+1}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]" data-id="${index+1}">
-                                            <!-- Dynamically populated bins -->
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${index+1}][store_qty]" id="store_qty_${index+1}" class="form-control mw-100" value="${storeQty}" data-id="${index+1}" />
-                                    </td>
-                                    <td>
-                                        <a data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                        </a>
-                                    </td>
-                                </tr>`;
-                });
-
-                // Append the dynamically created rows
-                $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-
-                // Trigger change event to re-populate dependent dropdowns after the rows are added
-                $("#itemTable #row_" + rowCount).find("[name*=store_qty]").each(function(index, item) {
-                    count = index + 1;
-                    loadStoreDropdowns(store_id, count, rackVal, shelfVal, binVal);
-                    // $(`#erp_store_id_${index+1}`).trigger('change');
-                });
-            }
-            $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
-            $("#deliveryScheduleModal").modal('show');
-            totalScheduleQty();
-        });
-
-        function loadStoreDropdowns(store_id, rowCount, rackVal, shelfVal, binVal) {
-            if (store_id) {
-                let erp_rack_id = rackVal || $(`#erp_rack_id_${rowCount}`)
-            .val();
-                let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowCount}`)
-            .val();
-                let erp_bin_id = binVal || $(`#erp_bin_id_${rowCount}`)
-            .val();
-                // console.log('erp_rack_id---->>', erp_rack_id, erp_shelf_id, erp_bin_id);
-
-                var data = {
-                    store_code_id: store_id
-                };
-
-                $.ajax({
-                    type: 'POST',
-                    data: data,
-                    url: '/material-receipts/get-store-racks',
-                    success: function(data) {
-                        $('#erp_rack_id_' + rowCount).empty();
-                        $.each(data.storeRacks, function(key, value) {
-                            $('#erp_rack_id_' + rowCount).append('<option value="' + key + '">' +
-                                value + '</option>');
-                            if (erp_rack_id && key == erp_rack_id) {
-                                $(`#erp_rack_id_${rowCount}`).val(
-                                erp_rack_id); // Set the selected rack value
-                            } else {
-                                erp_rack_id = key;
-                            }
-                        });
-
-                        // Empty and populate the bins dropdown
-                        $('#erp_bin_id_' + rowCount).empty();
-                        $.each(data.storeBins, function(key, value) {
-                            // Append bin options and maintain the selected value if it matches the provided or default value
-                            $('#erp_bin_id_' + rowCount).append('<option value="' + key + '">' + value +
-                                '</option>');
-                            if (erp_bin_id && key == erp_bin_id) {
-                                $(`#erp_bin_id_${rowCount}`).val(
-                                erp_bin_id); // Set the selected bin value
-                            }
-                        });
-
-                        // If a rack is selected, load shelves for the selected rack
-                        if (erp_rack_id) {
-                            loadShelvesForRack(rowCount, erp_rack_id, rackVal, shelfVal, binVal);
-                        }
-                    }
-                });
-            }
-        }
-
-        function loadShelvesForRack(rowKey, rack_code_id, rackVal, shelfVal, binVal) {
-            let erp_shelf_id = shelfVal || $(`#erp_shelf_id_${rowKey}`).val(); // Use shelfVal if provided, else fallback to form value
-            let erp_bin_id = binVal || $(`#erp_bin_id_${rowKey}`).val(); // Maintain the bin value as well
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-rack-shelfs',
-                success: function(data) {
-                    // Clear the shelf dropdown and populate it with new options
-                    $('#erp_shelf_id_' + rowKey).empty();
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_' + rowKey).append('<option value="' + key + '">' + value +
-                            '</option>');
-                        if (erp_shelf_id && key == erp_shelf_id) {
-                            $(`#erp_shelf_id_${rowKey}`).val(
-                            erp_shelf_id); // Set the selected shelf value
-                        }
-                    });
-
-                    // Trigger change event for shelf dropdown after population
-                    $('#erp_shelf_id_' + rowKey).trigger('change');
-
-                    // After shelves are loaded, set the selected bin value as well
-                    if (erp_bin_id) {
-                        $(`#erp_bin_id_${rowKey}`).val(erp_bin_id); // Set the selected bin value correctly
-                    }
-                }
-            });
-        }
-
-        /*Total delivery schedule qty*/
-        function totalScheduleQty()
-        {
-            let total = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                total = total + Number($(item).val());
-            });
-            $("#deliveryFooter #total").text(total.toFixed(2));
-        }
-
-        // addTaxItemRow add row
-        $(document).on('click', '.addTaxItemRow', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-            let store_code = $("#itemTable #row_" + rowCount).find("[name*='[erp_store_code]']").val();
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            if(!qty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            if(!$("#deliveryScheduleTable [name*='[store_qty]']:last").val()) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Please enter quanity then you can add new row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            if (qty > itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot add more than the available item quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            if(qty != itemQty) {
-                let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
-                // let store_id = Number($("#itemTable #row_" + rowCount).find("[name*='[store_id]']").val());
-                let rowHtml = `<tr class="display_delivery_row">
-                                    <td>${tblRowCount}</td>
-                                    <td>
-                                        <input type="hidden" value="${store_id}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_store_id]" data-id="${tblRowCount}"/>
-                                        <select class="form-select mw-100 select2 item_rack_code" id="erp_rack_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_rack_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_shelf_code" id="erp_shelf_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_shelf_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select mw-100 select2 item_bin_code" id="erp_bin_id_${tblRowCount}" name="components[${rowCount}][erp_store][${tblRowCount}][erp_bin_id]"  data-id="${tblRowCount}">
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="components[${rowCount}][erp_store][${tblRowCount}][store_qty]" id="store_qty_${tblRowCount}" class="form-control mw-100" data-id="${tblRowCount}" />
-                                    <td>
-                                    <a data-row-count="${rowCount}" data-index="${tblRowCount}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
-                                </td>
-                                </tr>`;
-                $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
-                loadStoreDropdowns(store_id, tblRowCount);
-                // $('#erp_store_id_'+tblRowCount).trigger('change');
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Qunatity not available.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            totalScheduleQty();
-        });
-
-        /*itemDeliveryScheduleSubmit */
-        $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
-            let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            // console.log(rowCount);
-            let qty = 0.00;
-            $("#deliveryScheduleTable [name*='[store_qty]']").each(function(index, item) {
-                qty = qty + Number($(item).val());
-            });
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            // console.log('itemQty------>>',rowCount, qty, itemQty);
-            if (qty < itemQty) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Store quantity can not be less than accepted quantity.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            let hiddenHtml = '';
-            $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
-                let storeId = $(item).find("[name*='erp_store_id']").val();
-                let rackId = $(item).find("[name*='erp_rack_id']").val();
-                let shelfId = $(item).find("[name*='erp_shelf_id']").val();
-                let binId = $(item).find("[name*='erp_bin_id']").val();
-                let dQty =  $(item).find("[name*='store_qty']").val();
-                hiddenHtml +=   `<input type="hidden" value="${storeId}" name="components[${rowCount}][erp_store][${index+1}][erp_store_id]"/>
-                                <input type="hidden" value="${rackId}" name="components[${rowCount}][erp_store][${index+1}][erp_rack_id]"/>
-                                <input type="hidden" value="${shelfId}" name="components[${rowCount}][erp_store][${index+1}][erp_shelf_id]"/>
-                                <input type="hidden" value="${binId}" name="components[${rowCount}][erp_store][${index+1}][erp_bin_id]"/>
-                                <input type="hidden" value="${dQty}" name="components[${rowCount}][erp_store][${index+1}][store_qty]"/>`;
-
-            });
-            $("#itemTable #row_"+rowCount).find("[name*='erp_store_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_rack_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_shelf_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='erp_bin_id']").remove();
-            $("#itemTable #row_"+rowCount).find("[name*='store_qty']").remove();
-            $("#itemTable #row_"+rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
-            $("#deliveryScheduleModal").modal('hide');
-        });
-
-        /*Remove delivery row*/
-        $(document).on('click', '.deleteItemDeliveryRow', (e) => {
-            let id = e.target.getAttribute('data-index');
-            // let id = $(`.display_discount_row`).find(`.deleteItemDeliveryRow`).getAttribute('data-index');
-            console.log('id----->>', id);
-
-            let dataRowId = Number(e.target.getAttribute('data-row-count'));
-            if($(e.target).closest('tbody').find('.display_delivery_row').length ==1) {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'You cannot first row.',
-                    icon: 'error',
-                });
-                return false;
-            }
-            $(e.target).closest('tr').remove();
-            let ids = JSON.parse(localStorage.getItem('deletedItemLocationIds')) || [];
-            console.log('ids----->>', ids);
-
-            if (!ids.includes(id)) {
-                ids.push(id);
-            }
-            localStorage.setItem('deletedItemLocationIds', JSON.stringify(ids));
-            totalScheduleQty();
-        });
-
-        /*Delivery qty on input*/
-        $(document).on('change input', '.display_delivery_row [name*="store_qty"]', (e) => {
-            let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
-            let inputQty = 0;
-            let remainingQty = itemQty;
-            $('.display_delivery_row [name*="store_qty"]').each(function(index, item) {
-                inputQty = inputQty + Number($(item).val());
-                if (inputQty > itemQty) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: 'You cannot add more than the available item quantity.',
-                        icon: 'error',
-                    });
-                    $(item).val(remainingQty);
-                    return false;
-                }
-                remainingQty = remainingQty - Number($(item).val());
-            });
-            totalScheduleQty();
-        });
-
-        $(document).on('change', '.item_store_code', function() {
-            var rowKey = $(this).data('id');
-            var store_code_id = $(this).val();
-            // console.log('rowKey', rowKey);
-            $('#erp_store_id_'+rowKey).val(store_code_id).select2();
-
-            var data = {
-                store_code_id: store_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-store-racks',
-                success: function(data) {
-                    $('#erp_rack_id_'+rowKey).empty();
-                    // $('#erp_rack_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeRacks, function(key, value) {
-                        $('#erp_rack_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-                    $('#erp_rack_id_'+rowKey).trigger('change');
-
-                    $('#erp_bin_id_'+rowKey).empty();
-                    // $('#erp_bin_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeBins, function(key, value) {
-                        $('#erp_bin_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-                }
-            });
-        });
-
-        $(document).on('change', '.item_rack_code', function() {
-            var rowKey = $(this).data('id');
-            var rack_code_id = $(this).val();
-            $('#erp_rack_id_' + rowKey).val(rack_code_id).select2();
-
-            var data = {
-                rack_code_id: rack_code_id
-            };
-
-            $.ajax({
-                type: 'POST',
-                data: data,
-                url: '/material-receipts/get-rack-shelfs',
-                success: function(data) {
-                    $('#erp_shelf_id_'+rowKey).empty();
-                    // $('#erp_shelf_id_'+rowKey).append('<option value="">Select</option>');
-                    $.each(data.storeShelfs, function(key, value) {
-                        $('#erp_shelf_id_'+rowKey).append('<option value="'+ key +'">'+ value +'</option>');
-                    });
-
-                    $('#erp_shelf_id_'+rowKey).trigger('change');
-                }
-            });
-        });
-
-        /*Remove item level discount*/
-        $(document).on("click", ".deleteItemDiscountRow", (e) => {
-            let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
-            let rowIndex = $(e.target).closest('tr').index();
-            let id = e.target.closest('a').getAttribute('data-id') || 0;
-            if(Number(id)) {
-                $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-id', id);
-                $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-row-index', rowIndex);
-                $("#deleteItemDiscModal").find("#deleteItemDiscConfirm").attr('data-row-count', rowCount);
-                $("#deleteItemDiscModal").modal('show');
-            }
-        });
-
-        /*Delete server side rows*/
-        $(document).on('click','#deleteItemDiscConfirm', (e) => {
-            let rowCount = e.target.getAttribute('data-row-count') || $("#disItemFooter #row_count").val();
-            let id = e.target.getAttribute('data-id');
-            let dataRowId = Number(e.target.getAttribute('data-row-index'));
-            $("#deleteItemDiscModal").modal('hide');
-            $(`.display_discount_row`).find(`[value="${id}"]`).closest('tr').remove();
-            let ids = JSON.parse(localStorage.getItem('deletedItemDiscTedIds')) || [];
-            if (!ids.includes(id)) {
-                ids.push(id);
-            }
-            localStorage.setItem('deletedItemDiscTedIds', JSON.stringify(ids));
-
-            let total_head_dis = 0;
-            $("[name*='[item_d_amnt]']").each(function(index,item) {
-                total_head_dis+=Number($(item).val());
-            });
-            $("#disItemFooter #total").text(total_head_dis.toFixed(2));
-            $(`[id*='row_${rowCount}']`).find("[name*='[discounts]'").remove();
-
-            let hiddenDis = '';
-            let totalAmnt = 0;
-            $(".display_discount_row").find("[name*='[item_d_amnt]']").each(function(index,item) {
-                let key = index + 1;
-                let id = $(item).closest('tr').find(`[name*="[item_d_id]"]`).val();
-                let name = $(item).closest('tr').find(`[name*="[item_d_name]"]`).val();
-                let perc = $(item).closest('tr').find(`[name*="[item_d_perc]"]`).val();
-                let amnt = $(item).val();
-                totalAmnt+=Number(amnt);
-                hiddenDis+= `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index+1}][id]">
-                <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index+1}][dis_name]">
-                <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index+1}][dis_perc]">
-                <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index+1}][dis_amount]">`;
-            });
-            $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
-            $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-            setTableCalculation();
-        });
-
-        /*Remove item level discount*/
-        $(document).on("click", ".deleteSummaryDiscountRow", (e) => {
-            let id = $(e.target.closest('tr')).find('[name*="[d_id]"]').val();
-            const rowIndex = $(e.target).closest('tr').index();
-            if(id) {
-                $("#deleteHeaderDiscModal").find("#deleteHeaderDiscConfirm").attr('data-id', id);
-                $("#deleteHeaderDiscModal").find("#deleteHeaderDiscConfirm").attr('data-row-index', rowIndex);
-                $("#deleteHeaderDiscModal").modal('show');
-            }
-        });
-
-        /*Delete server side rows*/
-        $(document).on('click','#deleteHeaderDiscConfirm', (e) => {
-            let id = e.target.getAttribute('data-id');
-            let dataRowId = e.target.getAttribute('data-row-index');
-            $("#deleteHeaderDiscModal").modal('hide');
-            $(`.display_summary_discount_row:eq(${dataRowId})`).remove();
-            let ids = JSON.parse(localStorage.getItem('deletedHeaderDiscTedIds')) || [];
-            if (!ids.includes(id)) {
-                ids.push(id);
-            }
-            localStorage.setItem('deletedHeaderDiscTedIds', JSON.stringify(ids));
-            let itemValue = Number($("#TotalEachRowAmount").attr('amount'));
-            $('.display_summary_discount_row [name*="[d_perc]"]').each(function(index, item) {
-                let perc = Number($(item).val());
-                if(perc) {
-                    let disAmount = itemValue * Number(perc) / 100;
-                    $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', true).val(disAmount.toFixed(2));
-                } else {
-                    $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', false).val('');
-                }
-            });
-            summaryDisTotal();
-            setTableCalculation();
-        });
-
-
-        /*Remove header level exp*/
-        $(document).on("click", ".deleteExpRow", (e) => {
-            let id = $(e.target.closest('tr')).find('[name*="[e_id]"]').val();
-            const rowIndex = $(e.target).closest('tr').index();
-            if(id) {
-                $("#deleteHeaderExpModal").find("#deleteHeaderExpConfirm").attr('data-id', id);
-                $("#deleteHeaderExpModal").find("#deleteHeaderExpConfirm").attr('data-row-index', rowIndex);
-                $("#deleteHeaderExpModal").modal('show');
-            }
-        });
-
-        /*Delete server side rows*/
-        $(document).on('click','#deleteHeaderExpConfirm', (e) => {
-            let id = e.target.getAttribute('data-id');
-            let dataRowId = e.target.getAttribute('data-row-index');
-            $("#deleteHeaderExpModal").modal('hide');
-            $(`.display_summary_exp_row:eq(${dataRowId})`).remove();
-
-            let ids = JSON.parse(localStorage.getItem('deletedHeaderExpTedIds')) || [];
-            if (!ids.includes(id)) {
-                ids.push(id);
-            }
-            localStorage.setItem('deletedHeaderExpTedIds', JSON.stringify(ids));
-
-            let totalPerc = 100;
-            let itemValue = Number($("#f_total_after_tax").attr('amount'));
-            $('.display_summary_exp_row [name*="[e_perc]"]').each(function(index, item) {
-                let perc = Number($(item).val());
-                if(perc) {
-                    let total = itemValue * perc / 100;
-                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',true).val(total.toFixed(2));
-                } else {
-                    $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',false).val('');
-                }
-            });
-
-            summaryExpTotal();
-            setTableCalculation();
-        });
-
+        
         /*Amendment modal open*/
         $(document).on('click', '.amendmentBtn', (e) => {
             $("#amendmentconfirm").modal('show');
@@ -2206,123 +1378,6 @@
                 $("#mrnEditForm").submit();
             }
         });
-
-        function resetPostVoucher()
-        {
-            document.getElementById('voucher_doc_no').value = '';
-            document.getElementById('voucher_date').value = '';
-            document.getElementById('voucher_book_code').value = '';
-            document.getElementById('voucher_currency').value = '';
-            document.getElementById('posting-table').innerHTML = '';
-            document.getElementById('posting_button').style.display = 'none';
-        }
-
-        function onPostVoucherOpen(type = "not_posted")
-        {
-            // resetPostVoucher();
-            const apiURL = "{{route('inspection.posting.get')}}";
-            let urlType = '';
-            if(type == "not_posted"){
-                urlType = "get";
-            } else{
-                urlType = "view";
-            }
-            $.ajax({
-                url: apiURL + "?book_id=" + $("#book_id").val() + "&document_id=" + "{{isset($mrn) ? $mrn -> id : ''}}"  + "&type=" + urlType,
-                type: "GET",
-                dataType: "json",
-                success: function(data) {
-                    if (!data.data.status) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.data.message,
-                            icon: 'error',
-                        });
-                        return;
-                    }
-                    const voucherEntries = data.data.data;
-                    var voucherEntriesHTML = ``;
-                    Object.keys(voucherEntries.ledgers).forEach((voucher) => {
-                        voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
-                            voucherEntriesHTML += `
-                            <tr>
-                            <td>${voucher}</td>
-                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
-                            <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
-                            <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
-                            <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                            <td class="text-end">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
-                            </tr>
-                            `
-                        });
-                    });
-                    voucherEntriesHTML+= `
-                    <tr>
-                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
-                    </tr>
-                    `;
-                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
-                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
-                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format('D/M/Y');
-                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
-                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
-                    if (type === "posted") {
-                        document.getElementById('posting_button').style.display = 'none';
-                    } else {
-                        document.getElementById('posting_button').style.removeProperty('display');
-                    }
-                    $('#postvoucher').modal('show');
-                }
-            });
-
-        }
-
-        function postVoucher(element)
-        {
-            const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
-            const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
-            const postingApiUrl = "{{route('inspection.post')}}"
-            if (bookId && documentId) {
-                $.ajax({
-                    url: postingApiUrl,
-                    type: "POST",
-                    dataType: "json",
-                    contentType: "application/json", // Specifies the request payload type
-                    data: JSON.stringify({
-                        // Your JSON request data here
-                        book_id: bookId,
-                        document_id: documentId,
-                    }),
-                    success: function(data) {
-                        const response = data.data;
-                        if (response.status) {
-                            Swal.fire({
-                                title: 'Success!',
-                                text: response.message,
-                                icon: 'success',
-                            });
-                            location.reload();
-                        } else {
-                            Swal.fire({
-                                title: 'Error!',
-                                text: response.message,
-                                icon: 'error',
-                            });
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: 'Some internal error occured',
-                            icon: 'error',
-                        });
-                    }
-                });
-
-            }
-        }
 
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
             $("#" + selector).autocomplete({
@@ -2371,57 +1426,6 @@
                 }
             }).focus(function() {
                 if (this.value === "") {
-                    $(this).autocomplete("search", "");
-                }
-            });
-        }
-
-        // Function to initialize the product section autocomplete
-        function initializeStationAutocomplete() {
-            $("[name*='store_section']").autocomplete({
-                source: function (request, response) {
-                    $.ajax({
-                        url: '/search',
-                        method: 'GET',
-                        dataType: 'json',
-                        data: {
-                            q: request.term,
-                            type: 'store'
-                        },
-                        success: function (data) {
-                            const mappedData = $.map(data, function (item) {
-                                return {
-                                    id: item.id,
-                                    label: item.store_code,
-                                };
-                            });
-                            response(mappedData);
-
-                        },
-                        error: function (xhr) {
-                            console.error('Error fetching data:', xhr.responseText);
-                        }
-                    });
-                },
-                minLength: 0,
-                select: function (event, ui) {
-                    $(this).val(ui.item.label);
-                    $(this).closest('td').find("[name*='[store_id]']").val(ui.item.id);
-                    $(this).closest('td').find("[name*='[erp_store_code]']").val(ui.item.label);
-                    return false;
-                },
-                change: function (event, ui) {
-                    if (!ui.item) {
-                    $(this).val("");
-                    $(this).closest('td').find("[name*='[store_id]']").val("");
-                    $(this).closest('td').find("[name*='[erp_store_code]']").val("");
-                    }
-                },
-                // appendTo: "#addSectionItemPopup"
-            }).focus(function () {
-                if (this.value === "") {
-                    $(this).closest('td').find("[name*='[store_id]']").val("");
-                    $(this).closest('td').find("[name*='[erp_store_code]']").val("");
                     $(this).autocomplete("search", "");
                 }
             });

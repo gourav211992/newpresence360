@@ -30,4 +30,9 @@ class ErpVehicleType extends Model
     {
         return $this->belongsTo(Unit::class, 'uom_id');
     }
+
+       public function vehicle()
+    {
+        return $this->belongsTo(ErpVehicle::class, 'vehicle_type_id');
+    }
 }

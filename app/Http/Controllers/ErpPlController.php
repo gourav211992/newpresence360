@@ -821,14 +821,16 @@ class ErpPlController extends Controller
     public function getSoItemsForPulling(Request $request)
     {
         try {
+            $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request->header_book_id);
             $storeids = $request->store_id ?? null;
             $subStoreId = $request->sub_store_id ?? null;
-            $showAll = $request->show_all ?? true;
-            $orderItems = ErpSoItemDelivery::with(['item' => function ($query) {
-                $query->with(['header' => function ($subQuery) {
-                    $subQuery->with(['store', 'customer']);
-                }, 'uom']);
-            }])
+            $showAll = $request->show_all ?? "true";
+            $orderItems = ErpSoItemDelivery::withWhereHas('item', function ($query) use($applicableBookIds) {
+                $query->with('uom') ->withWhereHas('header', function ($subQuery) use($applicableBookIds) {
+                    $subQuery->with(['store', 'customer']) -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                    ->whereIn('book_id', $applicableBookIds);
+                });
+            })
             ->when($request->to_date, function ($query) use ($request) {
                 $query->whereHas('item.header', function ($subQuery) use ($request) {
                     $subQuery->whereDate('document_date', '<=', Carbon::parse($request->to_date));
@@ -878,6 +880,8 @@ class ErpPlController extends Controller
             })
             ->orderBy('delivery_date')->get();
 
+            $processedItems = collect([]);
+
             foreach ($orderItems as $orderItem) {
                 $orderItem->attributes = collect($orderItem->item->item_attributes_array())->map(function ($attrArr) {
                     $short = $attrArr['short_name'] ?? null;
@@ -890,9 +894,16 @@ class ErpPlController extends Controller
                 $orderItem->store_location_code = $orderItem->item->header?->store_location?->store_name;
                 $orderItem->department_code = $orderItem->item->header?->department?->name;
                 $orderItem->station_name = $orderItem->item->header?->station?->name;
+                if ($showAll == 'false') {
+                    if ($orderItem -> avl_stock > 0) {
+                        $processedItems -> push($orderItem);
+                    }
+                } else {
+                    $processedItems -> push($orderItem);
+                }
             }
             return response()->json([
-                'data' => $orderItems
+                'data' => $processedItems
             ]);
         } catch (Exception $ex) {
             return response()->json([

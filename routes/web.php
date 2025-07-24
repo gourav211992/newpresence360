@@ -1,6 +1,10 @@
 <?php
 
+use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
+use App\Helpers\Inventory\StockReservation;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpMachineController;
 use App\Http\Controllers\ErpDriverController;
 use App\Http\Controllers\ErpVehicleController;
@@ -26,7 +30,6 @@ use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\ErpTransporterRequestController;
 use App\Http\Controllers\ErpTransportersController;
 use App\Http\Controllers\ErpProductionSlipController;
-
 use App\Http\Controllers\OrganizationServiceController;
 use App\Http\Controllers\LoanProgress\AppraisalController;
 use App\Http\Controllers\LoanProgress\ApprovalController;
@@ -47,7 +50,6 @@ use App\Http\Controllers\FixedAsset\ITDepreciationController;
 use App\Http\Controllers\FixedAsset\SplitController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AssetCategoryController;
-
 use App\Http\Controllers\LoanProgress\SanctionLetterController;
 use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Log;
@@ -65,8 +67,6 @@ use App\Http\Controllers\FixedAsset\MaintenanceController;
 use App\Http\Controllers\ComplaintManagementController;
 use App\Http\Controllers\Stakeholder\StakeholderController;
 use App\Http\Controllers\FeedbackProcessController;
-
-
 use App\Http\Controllers\TaxController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankController;
@@ -169,15 +169,10 @@ use App\Http\Controllers\WarehouseMappingController;
 use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\PutAwayController;
-use App\Http\Controllers\ErpMaintenanceTypeController;
-use App\Http\Controllers\ErpDefectTypeController;
 use App\Http\Controllers\ErpEquipmentController;
 use App\Http\Controllers\ErpMaintananceController;
-
 use App\Http\Controllers\CloseFy\CloseFyController;
-//Reports
 use App\Http\Controllers\Report\TransactionReportController;
-//Packing List
 use App\Http\Controllers\PackingListController;
 
 /*
@@ -1362,6 +1357,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('production-slip', 'productionSlip')->name('productionSlip');
             Route::post('rate-contract', 'rateContract')->name('rateContract');
             Route::post('packing-list', 'packingList')->name('packingList');
+            Route::post('pick-list', 'pickList')->name('pickList');
             Route::post('item', 'item')->name('item');
             Route::post('vendor', 'vendor')->name('vendor');
             Route::post('customer', 'customer')->name('customer');
@@ -1718,8 +1714,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
             Route::get('get-mrn', 'getMrn')->name('get.mrn');
             Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
-            Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
-            Route::post('/post', 'postPR')->name('post');
             Route::get('revoke-document','revokeDocument')->name('revoke.document');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
@@ -2329,8 +2323,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::delete('/logistics/lorry-receipt/{id}', [ErpLorryReceiptController::class, 'destroy'])->name('logistics.lorry-receipt.destroy');
     Route::get('/get-cost-centers-by-location/{locationId}', [ErpLorryReceiptController::class, 'getCostCentersByLocation']);
     Route::post('/get-location-pricing', [ErpLorryReceiptController::class, 'getFreePointData']);
-     Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class,'revoke'])->name('logistics.lorry-receipt.revoke');
-    Route::get('/logistics/lorry-receipt/print', [ErpLorryReceiptController::class, 'lorryReceiptPrint'])->name('logistics.lorry-receipt.print');
+    Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class,'revoke'])->name('logistics.lorry-receipt.revoke');
+    Route::get('/logistics/lorry-receipt/generate-pdf/{id}', [ErpLorryReceiptController::class, 'generatePdf'])->name('logistics.lorry-receipt.generate-pdf');
 
 
      //Production Slip
@@ -2853,6 +2847,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
     });
 
+
+
     Route::prefix('equipment')->group(function () {
 
         Route::get('/', [ErpEquipmentController::class, 'index'])->name('equipment.index');
@@ -2860,7 +2856,10 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/store', [ErpEquipmentController::class, 'store'])->name('equipment.store');
         Route::get('/edit/{id}', [ErpEquipmentController::class, 'edit'])->name('equipment.edit');
         Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
-
+        Route::post('/approve', [ErpEquipmentController::class, 'documentApproval'])->name('equipment.approval');
+        Route::get('amend/{id}', [ErpEquipmentController::class, 'amendment'])->name('equipment.amendment');
+    
+    
     });
 
     Route::prefix('maintainance')->group(function () {
@@ -2872,6 +2871,19 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintainance.update');
 
     });
+
+    //For testing purpose -> Stock reservation case , please ignore, will remove
+    // Route::get('issue-receive-pl', function () {
+    //     DB::beginTransaction();
+    //     $status = StockReservation::settlementOfReservedStocks(ConstantHelper::PL_SERVICE_ALIAS, 201, 11, 2);
+    //     if ($status['status'] == 'success') {
+    //         DB::commit();
+    //         dd("DONE");
+    //     } else {
+    //         DB::rollBack();
+    //         dd($status['message']);
+    //     }
+    // });
 });
 
 

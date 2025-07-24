@@ -652,6 +652,9 @@ function getDocNumberByBookId(element, reset = true)
                 if (reset) {
                     implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                 }
+                if (typeof locationChange === 'function') {
+                    locationChange(document.getElementById('store_id_input'));
+                }
             }
             if(data.status == 404) {
                 if (reset) {

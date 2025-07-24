@@ -2,13 +2,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MrnAttribute extends Model
 {
 
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = "erp_mrn_attributes";
     protected $fillable = [
@@ -20,7 +19,11 @@ class MrnAttribute extends Model
         'attr_value'
     ];
 
-    protected $appends = [
+    public $referencingRelationships = [
+        'item' => 'item_id',
+        'itemAttribute' => 'item_attribute_id',
+        'headerAttribute' => 'attribute_name',
+        'headerAttributeValue' => 'attribute_value'
     ];
 
     protected $hidden = ['deleted_at'];
@@ -40,11 +43,6 @@ class MrnAttribute extends Model
         return $this->belongsTo(Item::class);
     }
 
-    public function itemAttribute()
-    {
-        return $this->belongsTo(ItemAttribute::class);
-    }
-
     public function attributeName()
     {
         return $this->belongsTo(ErpAttributeGroup::class, 'attr_name');
@@ -53,6 +51,21 @@ class MrnAttribute extends Model
     public function attributeValue()
     {
         return $this->belongsTo(ErpAttribute::class, 'attr_value');
+    }
+
+    public function itemAttribute()
+    {
+        return $this->belongsTo(ItemAttribute::class, 'item_attribute_id');
+    }
+
+    public function headerAttribute()
+    {
+        return $this->hasOne(AttributeGroup::class,'id' ,'attr_name');
+    }
+
+    public function headerAttributeValue()
+    {
+        return $this->hasOne(Attribute::class,'id','attr_value');
     }
 
 }

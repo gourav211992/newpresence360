@@ -489,6 +489,7 @@
                                                                                         value="{{ $workflowGroup->min_value }}"
                                                                                         name="min_value[]" 
                                                                                         data-id="{{ $level }}"
+                                                                                        {{ $serviceType === 'master' ? 'readonly' : '' }}
                                                                                         class="form-control mw-100 min-value">
                                                                                 </td>
                                                                                 <!-- <td>
@@ -609,6 +610,7 @@
                                                                             <td>
                                                                                 <input type="text" value="0"
                                                                                     name="min_value[]" data-id="1"
+                                                                                    {{ $serviceType === 'master' ? 'readonly' : '' }}
                                                                                     class="form-control mw-100 min-value">
                                                                             </td>
                                                                             <!-- <td>
@@ -734,18 +736,18 @@
                                                                                         </select>
                                                                                     </td>
                                                                                     <td>
-                                                                                        <input type="text" name="amendment_min[]" value="{{ $amendment['min_value'] }}" class="form-control mw-100">
+                                                                                        <input type="text" name="amendment_min[]" value="{{ $amendment['min_value'] }}" {{ $serviceType === 'master' ? 'readonly' : '' }} class="form-control mw-100">
                                                                                     </td>
                                                                                     <td class = "center-align-content">
                                                                                 <div class="customernewsection-form">
                                                                                     <div class="demo-inline-spacing">
                                                                                         <input type="hidden" name="approval_req[]" class="rights-value" value="no">
                                                                                         <div class="form-check form-check-primary mt-0 me-1">
-                                                                                            <input type="radio" name="approval_req[{{$index}}]" class="form-check-input" value="yes" id = "app_req_yes_1" {{$amendment -> approval_required ? 'checked' : ''}}>
+                                                                                            <input type="radio" name="approval_req[{{$index}}]" {{ $serviceType === 'master' ? 'disabled' : '' }} class="form-check-input" value="yes" id = "app_req_yes_1" {{$amendment -> approval_required ? 'checked' : ''}}>
                                                                                             <label class="form-check-label fw-bolder" for="app_req_yes_1">Yes</label>
                                                                                         </div>
                                                                                         <div class="form-check form-check-primary mt-0 me-0">
-                                                                                            <input type="radio" id="app_req_no_1" name="approval_req[{{$index}}]" class="form-check-input" value="no" {{$amendment -> approval_required ? '' : 'checked'}}>
+                                                                                            <input type="radio" id="app_req_no_1" name="approval_req[{{$index}}]" {{ $serviceType === 'master' ? 'disabled' : '' }} class="form-check-input" value="no" {{$amendment -> approval_required ? '' : 'checked'}}>
                                                                                             <label class="form-check-label fw-bolder" for="app_req_no_1">No</label>
                                                                                         </div>
                                                                                     </div>
@@ -799,18 +801,18 @@
                                                                                     </select>
                                                                                 </td>
                                                                                 <td>
-                                                                                    <input type="text" name="amendment_min[]" value="0" class="form-control mw-100">
+                                                                                    <input type="text" name="amendment_min[]" {{ $serviceType === 'master' ? 'readonly' : '' }} value="0" class="form-control mw-100">
                                                                                 </td>
                                                                                 <td class = "center-align-content">
                                                                                 <div class="customernewsection-form">
                                                                                     <div class="demo-inline-spacing">
                                                                                         <input type="hidden" name="approval_req[]" class="rights-value" value="no">
                                                                                         <div class="form-check form-check-primary mt-0 me-1">
-                                                                                            <input type="radio" name="approval_req[0]" class="form-check-input" value="yes" id = "app_req_yes_1">
+                                                                                            <input type="radio" name="approval_req[0]" {{ $serviceType === 'master' ? 'disabled' : '' }} class="form-check-input" value="yes" id = "app_req_yes_1">
                                                                                             <label class="form-check-label fw-bolder" for="app_req_yes_1">Yes</label>
                                                                                         </div>
                                                                                         <div class="form-check form-check-primary mt-0 me-0">
-                                                                                            <input type="radio" id="app_req_no_1" name="approval_req[0]" class="form-check-input" value="no" checked>
+                                                                                            <input type="radio" id="app_req_no_1" name="approval_req[0]" {{ $serviceType === 'master' ? 'disabled' : '' }} class="form-check-input" value="no" checked>
                                                                                             <label class="form-check-label fw-bolder" for="app_req_no_1">No</label>
                                                                                         </div>
                                                                                     </div>
@@ -1248,7 +1250,7 @@
                                     </select>
                             </td>
                             <td>
-                                <input type="text" value="0" name="min_value[]"  data-id="${levelCounter}" class="form-control mw-100 min-value">
+                                <input type="text" value="0" name="min_value[]" {{ $serviceType === 'master' ? 'readonly' : '' }} data-id="${levelCounter}" class="form-control mw-100 min-value">
                             </td>
                             <td class = "center-align-content">
                                 <div class="customernewsection-form">
@@ -1305,7 +1307,7 @@
 </td>
 
                 <td>
-                    <input type="text" value="0" name="min_value[]" 
+                    <input type="text" value="0" name="min_value[]" {{ $serviceType === 'master' ? 'readonly' : '' }}
                         data-id="${level}" class="form-control mw-100 min-value">
                 </td>
                 <td class = "center-align-content">
@@ -1408,7 +1410,7 @@ $(document).on('click', '.amendment_plus', function (e) {
                 </select>
             </td>
           <td class = "min-value">
-            <input type="text" value="0" name="amendment_min[]"
+            <input type="text" value="0" name="amendment_min[]" {{ $serviceType === 'master' ? 'readonly' : '' }}
              class="form-control mw-100">
               </td>
 
@@ -1416,11 +1418,11 @@ $(document).on('click', '.amendment_plus', function (e) {
                 <div class="demo-inline-spacing">
                     <input type="hidden" name="approval_req[]" class="rights-value" value="no">
                     <div class="form-check form-check-primary mt-0 me-1">
-                        <input type="radio" name="approval_req[${amendment_count-1}]" class="form-check-input" value="yes" id = "app_req_yes_${amendment_count}">
+                        <input type="radio" name="approval_req[${amendment_count-1}]" {{ $serviceType === 'master' ? 'disabled' : '' }} class="form-check-input" value="yes" id = "app_req_yes_${amendment_count}">
                         <label class="form-check-label fw-bolder" for="app_req_yes_${amendment_count}">Yes</label>
                     </div>
                     <div class="form-check form-check-primary mt-0 me-0">
-                        <input type="radio" id="app_req_no_${amendment_count}" name="approval_req[${amendment_count-1}]" class="form-check-input" value="no" checked>
+                        <input type="radio" id="app_req_no_${amendment_count}" {{ $serviceType === 'master' ? 'disabled' : '' }} name="approval_req[${amendment_count-1}]" class="form-check-input" value="no" checked>
                         <label class="form-check-label fw-bolder" for="app_req_no_${amendment_count}">No</label>
                     </div>
                 </div>

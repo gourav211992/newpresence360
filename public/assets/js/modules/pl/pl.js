@@ -5,7 +5,6 @@ let subStoreUrl = window.routes.subStores;
 //     storeIdOnchange(this);
 // });
 
-locationChange(document.getElementById('store_id_input'));
 
 function storeIdOnchange(element)
 {
@@ -16,11 +15,11 @@ function storeIdOnchange(element)
     $('#document_date_filter').val('');
     $('#customer_code_input_qt').val('');
     tableBody.html('<tr><td colspan="15" class="text-center">Loading...</td></tr>');
-
+    let showAllItemsCheck = document.getElementById('out_of_stock_check').checked;
     $.ajax({
         url: "/pick-list/so/get/items",
         type: 'GET',
-        data: { store_id: selectedValue, sub_store_id: $("#main_sub_store_id_input").val() },
+        data: { store_id: selectedValue, sub_store_id: $("#main_sub_store_id_input").val(), header_book_id : $("#series_id_input").val(), show_all : showAllItemsCheck },
         success: function (response) {
             populateOrderTable(response.data);
         },
@@ -273,11 +272,42 @@ function locationChange(element)
     $('#document_date_filter').val('');
     $('#customer_code_input_qt').val('');
     tableBody.html('<tr><td colspan="15" class="text-center">Loading...</td></tr>');
+    let showAllItemsCheck = document.getElementById('out_of_stock_check').checked;
 
     $.ajax({
         url: "/pick-list/so/get/items",
         type: 'GET',
-        data: { store_id: $("#store_id_input").val() , sub_store_id: selectedValue },
+        data: { store_id: $("#store_id_input").val() , sub_store_id: selectedValue, header_book_id : $("#series_id_input").val(), show_all : showAllItemsCheck },
+        success: function (response) {
+            populateOrderTable(response.data);
+        },
+        error: function (xhr, status, error) {
+            console.error('Error fetching orders:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to fetch orders. Please try again.',
+                icon: 'error',
+            });
+            tableBody.html('<tr><td colspan="12" class="text-center">Failed to load data.</td></tr>');
+        }
+    });
+}
+
+    function loadOrders()
+{
+    let element = document.getElementById('main_sub_store_id_input');
+    let selectedValue = element.value;
+    const tableBody = $('#itemTable tbody');
+    $('#so_book_code_input_qt').val('');
+    $('#so_document_no_input_qt').val('');
+    $('#document_date_filter').val('');
+    $('#customer_code_input_qt').val('');
+    tableBody.html('<tr><td colspan="15" class="text-center">Loading...</td></tr>');
+    let showAllItemsCheck = document.getElementById('out_of_stock_check').checked;
+    $.ajax({
+        url: "/pick-list/so/get/items",
+        type: 'GET',
+        data: { store_id: $("#store_id_input").val() , sub_store_id: selectedValue, header_book_id : $("#series_id_input").val(), show_all : showAllItemsCheck },
         success: function (response) {
             populateOrderTable(response.data);
         },

@@ -1945,9 +1945,9 @@
             if (ids.length) {
                 ids.forEach((id, index) => {
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
-                    if (['po', 'jo', 'so'].includes(currentProcessType)) {
-                        localStorage.removeItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(id));
-                    }
+                    // if (['po', 'jo', 'so'].includes(currentProcessType)) {
+                    //     localStorage.removeItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(id));
+                    // }
                 });
             }
 

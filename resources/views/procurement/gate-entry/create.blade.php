@@ -1129,8 +1129,8 @@
                         }
                         initializeAutocomplete2(".comp_item_code");
 
-                        $(".poSelect").hide();
-                        $(".joSelect").hide();
+                        $(".poSelect").addClass('d-none');
+                        $(".joSelect").addClass('d-none');
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                         $(".module_type").val('direct');
@@ -1182,9 +1182,12 @@
                     icon: 'error',
                 });
             }
+            console.log($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length);
+
             if(!$("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                $(".poSelect").show();
-                $(".joSelect").show();
+                $(".joSelect").removeClass('d-none');
+                $(".poSelect").removeClass('d-none');
+                $(".asn-container").removeClass('d-none');
                 $("#referenceNoDiv").hide();
                 // $("#reference_number_input").val('');
                 $("#addNewItemBtn").show();
@@ -1780,7 +1783,7 @@
             let moduleTypes = getSelectedPoTypes();
 
             $("[name='po_item_ids']").val(ids);
-            $(".joSelect").hide();
+            $(".joSelect").removeClass('d-none')
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();

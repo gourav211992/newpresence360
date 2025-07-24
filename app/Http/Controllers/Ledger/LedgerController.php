@@ -658,20 +658,19 @@ class LedgerController extends Controller
                 }
             }
         }
-        $item = $data;
-        $revision_number = $item->revision_number;
-        $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplayLedger($item->book_id, $item->document_status, $item->id, 1, $item->approval_level, $item->created_by ?? 0, $userType['type'], $revision_number);
-        $revNo = $item->revision_number;
-
         if ($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
-            $revNo = $item->revision_number;
+            $revNo = $data->revision_number;
         }
-        $docValue = 1;
-        $approvalHistory = Helper::getApprovalHistory($item->book_id, $item->id, $revNo, $docValue, $item->created_by);
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$item->document_status] ?? '';
+
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplayLedger($data->book_id, $data->document_status, $data->id, 1, $data->approval_level, $data->created_by ?? 0, $userType['type'], $revNo);
+        
+
+        $docValue = 0;
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         return view('ledgers.edit_ledger', compact(
             'groups',
             'itemCodeType',
@@ -694,14 +693,11 @@ class LedgerController extends Controller
      */
     public function update(Request $request, string $id)
     {
-           $update = Ledger::find($id);
-        
-           $revisionData = [
-                ['model_type' => 'header', 'model_name' => 'Ledger', 'relation_column' => ''],
-            ];
+        $update = Ledger::find($id);
 
-    if (($update->document_status == ConstantHelper::APPROVED || $update->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
-            && $request->actionType == 'amendment') {
+        $revisionData = [
+            ['model_type' => 'header', 'model_name' => 'Ledger', 'relation_column' => ''],
+        ];
         $authOrganization = Helper::getAuthenticatedUser()->organization;
         $organizationId = $authOrganization->id;
         $companyId = $authOrganization?->company_id;
@@ -746,7 +742,7 @@ class LedgerController extends Controller
                 'nullable',
                 'numeric',
             ],
-            
+
             'tds_section' => [
                 'nullable',
                 'string',
@@ -831,18 +827,33 @@ class LedgerController extends Controller
         $update->tds_capping = $request->tds_capping ?? null;
         $update->tcs_capping = $request->tcs_capping ?? null;
         $update->tcs_percentage = $request->tcs_percentage ?? null;
-        $a = Helper::documentAmendment($revisionData, $id);
-            if ($a) {
-                $approveDocument = Helper::approveDocument($update->book_id, $update->id, $update->revision_number, 'Amendment', $request->file('attachment') ?? null, $update->approval_level, 'amendment',0,get_class($update));
-                $document_status = $approveDocument['approvalStatus']??$update->document_status;
-                $update->document_status = $document_status;
-                    if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-                        $update->status = 0;
-                    } else
-                        $update->status = 1;
-                $update->revision_number = $update->revision_number + 1;
-                $update->save();
-            }
+
+        if ($request->actionType == "amendment") {
+            Helper::documentAmendment($revisionData, $id);
+            Helper::approveDocument($update->book_id, $update->id, $update->revision_number, 'Amendment', $request->file('attachment') ?? null, $update->approval_level, 'amendment', 0, get_class($update));
+            $update->revision_number = $update->revision_number + 1;
+            $update->save();
+        }
+        $bookId = $update->book_id;
+        $docId = $update->id;
+        $remarks = $request->remarks;
+        $attachments = $request->file('attachment');
+        $currentLevel = 1;
+        $revisionNumber = $update->revision_number ?? 0;
+        $actionType = 'submit';
+        $modelName = get_class($update);
+        $totalValue = 0;
+
+        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+        $document_status = $approveDocument['approvalStatus'];
+        $update->document_status = $document_status;
+        if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+            $update->status = 0;
+        } else {
+            $update->status = 1;
+        }
+        $update->save();
+
         $updatedGroups = json_decode($request->updated_groups, true); // Decode as an associative array
 
 
@@ -861,11 +872,8 @@ class LedgerController extends Controller
             Group::updatePrefix($update->id, $request->prefix);
 
         return redirect()->route('ledgers.index')->with('success', 'Ledger updated successfully');
-            }
-            else
-                return redirect()->route('ledgers.index')->with('errors', 'Something went wrong');
-        
-        }
+
+    }
 
     public function getLedgerGroups(Request $request, $ledgerId)
     {
@@ -1087,10 +1095,8 @@ class LedgerController extends Controller
 
     public function approveVoucher(Request $request)
     {
-        $request->validate([
-            'remarks' => 'nullable|string|max:255',
-            'attachment' => 'nullable'
-        ]);
+        $actionType = $request->action_type;
+
         DB::beginTransaction();
         try {
             $saleOrder = Ledger::find($request->id);
@@ -1098,10 +1104,10 @@ class LedgerController extends Controller
             $docId = $saleOrder->id;
             $docValue = $saleOrder->amount ?? 0;
             $remarks = $request->remarks ?? "";
-            $attachments = $request->file('attachments') ?? null;
+            $attachments = $request->file('attachment') ?? null;
             $currentLevel = $saleOrder->approval_level;
             $revisionNumber = $saleOrder->revision_number ?? 0;
-            $actionType = $request->action_type; // Approve or reject
+            // Approve or reject
             $modelName = get_class($saleOrder);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $saleOrder->document_status = $approveDocument['approvalStatus'];
@@ -1118,6 +1124,7 @@ class LedgerController extends Controller
             return response()->json([
                 'message' => "Document $actionType successfully!",
                 'data' => $saleOrder,
+                'status' => 200
             ]);
         } catch (Exception $e) {
             DB::rollBack();

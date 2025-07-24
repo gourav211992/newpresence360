@@ -485,9 +485,7 @@ class MaterialReceiptController extends Controller
                     $item = Item::find($component['item_id'] ?? null);
                     $inputQty = 0.00;
                     $so_id = null;
-                    if($component['is_inspection'] == 1){
-                        $isInspection = 0;
-                    }
+                    $isInspection = ($component['is_inspection'] == 1) ? 0 : 1;
                     $refType = $request->input('reference_type');
                     $orderQty = floatval($component['order_qty']) ?? 0.00;
                     $acceptedQty = ($isInspection == 1) ? floatval($component['order_qty']) : 0.00;
@@ -530,15 +528,15 @@ class MaterialReceiptController extends Controller
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
                     if(@$component['uom_id'] == $itemUomId) {
-                        $inventory_uom_qty = floatval($reqQty) ?? 0.00 ;
+                        $inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
                     } else {
                         $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
                         if($alUom) {
-                            $inventory_uom_qty = floatval($reqQty) * $alUom->conversion_to_inventory;
+                            $inventory_uom_qty = floatval($orderQty) * $alUom->conversion_to_inventory;
                         }
                     }
 
-                    $itemValue = floatval($reqQty) * floatval($component['rate']);
+                    $itemValue = floatval($orderQty) * floatval($component['rate']);
                     $itemDiscount = floatval(@$component['discount_amount']) ?? 0.00;
 
                     $itemTotalValue += $itemValue;
@@ -553,7 +551,7 @@ class MaterialReceiptController extends Controller
                         'po_id' => $component['purchase_order_id'] ?? null,
                         'job_order_item_id' => $component['jo_detail_id'] ?? null,
                         'jo_id' => $component['job_order_id'] ?? null,
-                        'vendor_asn_id' => $component['job_order_id'] ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
                         'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
                         'gate_entry_detail_id' => $component['gate_entry_detail_id'] ?? null,
                         'ge_id' => $component['gate_entry_header_id'] ?? null,
@@ -589,7 +587,6 @@ class MaterialReceiptController extends Controller
                         'basic_value' => $itemValue,
                     ];
                 }
-
                 $isTax = false;
                 if(isset($parameters['tax_required']) && !empty($parameters['tax_required']))
                 {
@@ -601,7 +598,7 @@ class MaterialReceiptController extends Controller
                 foreach($mrnItemArr as &$mrnItem) {
                     /*Header Level Item discount*/
                     $headerDiscount = 0;
-                    $headerDiscount = ($mrnItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
+                    $headerDiscount = ($mrnItem['taxable_amount'] > 0) ? (($mrnItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount) : 0;
                     $valueAfterHeaderDiscount = $mrnItem['taxable_amount'] - $headerDiscount; // after both discount
                     $mrnItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
@@ -1009,6 +1006,89 @@ class MaterialReceiptController extends Controller
             'saleOrder'
         ])
         ->findOrFail($id);
+
+        $items = $mrn['items'] ?? [];
+        $referenceType = $mrn['reference_type'] ?? null;
+
+        $headerField = null;
+        $detailsField = null;
+        $asnHeaderField = null;
+        $asnDetailsField = null;
+        $geHeaderField = null;
+        $geDetailsField = null;
+
+        switch ($referenceType) {
+            case 'po':
+                $headerField = 'po_id';
+                $detailsField = 'purchase_order_item_id';
+                $geHeaderField = 'ge_id';
+                $geDetailsField = 'gate_entry_detail_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
+                break;
+            case 'jo':
+                $headerField = 'jo_id';
+                $detailsField = 'job_order_item_id';
+                $geHeaderField = 'ge_id';
+                $geDetailsField = 'gate_entry_detail_id';
+                $asnHeaderField = 'vendor_asn_id';
+                $asnDetailsField = 'vendor_asn_item_id';
+                break;
+            case 'so':
+                $headerField = 'so_id';
+                $detailsField = 'sale_order_item_id';
+                $asnHeaderField = null;
+                $asnDetailsField = null;
+                break;
+        }
+
+        $headerIds = [];
+        $detailsIds = [];
+        $asnHeaderIds = [];
+        $asnDetailsIds = [];
+        $geHeaderIds = [];
+        $geDetailsIds = [];
+
+        if ($headerField && $detailsField) {
+            $headerIds = collect($items)
+                ->pluck($headerField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $detailsIds = collect($items)
+                ->pluck($detailsField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $asnHeaderIds = collect($items)
+                ->pluck($asnHeaderField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $asnDetailsIds = collect($items)
+                ->pluck($asnDetailsField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $geHeaderIds = collect($items)
+                ->pluck($geHeaderField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $geDetailsIds = collect($items)
+                ->pluck($geDetailsField)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         $totalItemValue = $mrn->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $mrn->revision_number;
@@ -1060,7 +1140,13 @@ class MaterialReceiptController extends Controller
             'servicesBooks' => $servicesBooks,
             'subStoreCount' => $subStoreCount,
             'erpStores' => $erpStores,
-            'dynamicFieldsUI' => $dynamicFieldsUI
+            'dynamicFieldsUI' => $dynamicFieldsUI,
+            'headerIds' => $headerIds,
+            'detailsIds' => $detailsIds,
+            'asnHeaderIds' => $asnHeaderIds,
+            'asnDetailsIds' => $asnDetailsIds,
+            'geHeaderIds' => $geHeaderIds,
+            'geDetailsIds' => $geDetailsIds
         ]);
     }
 
@@ -1239,10 +1325,21 @@ class MaterialReceiptController extends Controller
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $po_detail_id = null;
+                    $order_qty = $component['order_qty'];
+                    $accepted_qty = $component['accepted_qty'];
+                    $rejected_qty = $component['rejected_qty'];
                     if($component['is_inspection'] == 1){
                         $isInspection = 0;
                     }
-                    $mrnDetail = MrnDetail::find($component['mrn_detail_id']);
+                    if(isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
+                        $mrnDetail = MrnDetail::find(@$component['mrn_detail_id']);
+                        if($mrnDetail){
+                            $order_qty = $mrnDetail->order_qty;
+                            $accepted_qty = $mrnDetail->accepted_qty;
+                            $rejected_qty = $mrnDetail->rejected_qty;
+                        }
+
+                    }
                     $validateQty = self::validateQuantityBackend($component, $mrn->reference_type);
                     if ($validateQty['status'] === 'error') {
                         \DB::rollBack();
@@ -1252,10 +1349,10 @@ class MaterialReceiptController extends Controller
                     }
 
                     if(isset($component['po_detail_id']) && $component['po_detail_id']) {
-                        $poItem = PoItem::find($component['po_detail_id'] ?? $mrnDetail->purchase_order_item_id);
+                        $poItem = PoItem::find($component['po_detail_id'] ?? @$mrnDetail->purchase_order_item_id);
                         if(isset($poItem) && $poItem) {
                             if(isset($poItem->id) && $poItem->id) {
-                                $orderQty = floatval($mrnDetail->order_qty);
+                                $orderQty = floatval($order_qty);
                                 $componentQty = floatval($component['order_qty'] ?? $component['accepted_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
                                 if($qtyDifference) {
@@ -1267,10 +1364,10 @@ class MaterialReceiptController extends Controller
                             $poItem->save();
                         }
                     } else if(isset($component['jo_detail_id']) && $component['jo_detail_id']) {
-                        $joItem = JoProduct::find($component['jo_detail_id'] ?? $mrnDetail->job_order_item_id);
+                        $joItem = JoProduct::find($component['jo_detail_id'] ?? @$mrnDetail->job_order_item_id);
                         if(isset($joItem) && $joItem) {
                             if(isset($joItem->id) && $joItem->id) {
-                                $orderQty = floatval($mrnDetail->order_qty);
+                                $orderQty = floatval($order_qty);
                                 $componentQty = floatval($component['order_qty'] ?? $component['accepted_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
                                 if($qtyDifference) {
@@ -1287,20 +1384,21 @@ class MaterialReceiptController extends Controller
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
-                    $reqQty = $mrnDetail->accepted_qty;
-                    $rejQty = $mrnDetail->rejected_qty;
+                    $orderQty = $order_qty ?? $component['order_qty'];
+                    $reqQty = $accepted_qty ?? $component['accepted_qty'];
+                    $rejQty = $rejected_qty ?? $component['rejected_qty'];
                     $inventoryUom = Unit::find($item->uom_id ?? null);
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
                     if(@$component['uom_id'] == $item->uom_id) {
-                        $inventory_uom_qty = floatval($reqQty) ?? 0.00 ;
+                        $inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
                     } else {
                         $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
                         if($alUom) {
-                            $inventory_uom_qty = floatval($reqQty) * $alUom->conversion_to_inventory;
+                            $inventory_uom_qty = floatval($orderQty) * $alUom->conversion_to_inventory;
                         }
                     }
-                    $itemValue = floatval($reqQty) * floatval($component['rate']);
+                    $itemValue = floatval($orderQty) * floatval($component['rate']);
                     $itemDiscount = floatval(@$component['discount_amount']) ?? 0.00;
 
                     $itemTotalValue += $itemValue;
@@ -1315,7 +1413,7 @@ class MaterialReceiptController extends Controller
                         'po_id' => $component['purchase_order_id'] ?? null,
                         'job_order_item_id' => $component['jo_detail_id'] ?? null,
                         'jo_id' => $component['job_order_id'] ?? null,
-                        'vendor_asn_id' => $component['job_order_id'] ?? null,
+                        'vendor_asn_id' => $component['vendor_asn_id'] ?? null,
                         'vendor_asn_item_id' => $component['vendor_asn_dtl_id'] ?? null,
                         'gate_entry_detail_id' => $component['gate_entry_detail_id'] ?? null,
                         'ge_id' => $component['gate_entry_header_id'] ?? null,
@@ -1398,7 +1496,7 @@ class MaterialReceiptController extends Controller
                     $itemHeaderExp = floatval($mrnItem['expense_amount']);
 
                     # Mrn Detail Save
-                    $mrnDetail = MrnDetail::find($component['mrn_detail_id'] ?? null) ?? new MrnDetail;
+                    $mrnDetail = MrnDetail::find(@$component['mrn_detail_id'] ?? null) ?? new MrnDetail;
 
                     $isNewItem = false;
                     if(isset($mrnDetail->item_id) && $mrnDetail->item_id) {
@@ -1423,6 +1521,7 @@ class MaterialReceiptController extends Controller
                     $mrnDetail->uom_id = $mrnItem['uom_id'];
                     $mrnDetail->uom_code = $mrnItem['uom_code'];
                     $mrnDetail->is_inspection = $mrnItem['is_inspection'];
+                    $mrnDetail->order_qty = $mrnItem['order_qty'];
                     $mrnDetail->accepted_qty = $mrnItem['accepted_qty'];
                     $mrnDetail->inventory_uom_id = $mrnItem['inventory_uom_id'];
                     $mrnDetail->inventory_uom_code = $mrnItem['inventory_uom_code'];
@@ -1727,7 +1826,7 @@ class MaterialReceiptController extends Controller
                 ], 422);
             }
 
-            
+
             // Get configuration detail
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
@@ -2707,28 +2806,57 @@ class MaterialReceiptController extends Controller
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
 
-        if (is_string($asnNumber)) {
-            $asnNumber = array_filter(explode(',', $asnNumber));
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_po_ids = json_decode($decoded, true) ?? [];
+
+        $keys = [
+            'header_ids', 'details_ids',
+            'asn_header_ids', 'asn_details_ids',
+            'ge_header_ids', 'ge_details_ids',
+        ];
+
+        foreach ($keys as $key) {
+            $$key = $request->$key ?? null;
+
+            if (is_string($$key)) {
+                $decoded = urldecode(urldecode($$key));
+
+                if (strpos($decoded, ',') !== false) {
+                    $$key = array_filter(explode(',', $decoded));
+                } else {
+                    $$key = strlen($decoded) ? [$decoded] : [];
+                }
+            } elseif (!is_array($$key)) {
+                $$key = [];
+            }
         }
 
-        if (is_string($geNumber)) {
-            $geNumber = array_filter(explode(',', $geNumber));
+        if (!empty($ge_header_ids)) {
+            $geNumber = is_string($ge_header_ids)
+                ? array_filter(explode(',', urldecode(urldecode($ge_header_ids))))
+                : (array) $ge_header_ids;
+        } else {
+            $geNumber = is_string($geNumber)
+                ? array_filter(explode(',', urldecode(urldecode($geNumber))))
+                : (array) $geNumber;
         }
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_po_ids));
-            $selected_po_ids = json_decode($decoded, true) ?? [];
-        }
-        else{
-            $selected_po_ids = $request->selected_po_ids ?? [];
-            $selected_po_ids = is_string($selected_po_ids)
-                ? array_map('trim', explode(',', $selected_po_ids))
-                : (is_array($selected_po_ids) ? $selected_po_ids : []);
+        if (!empty($asn_header_ids)) {
+            $asnNumber = is_string($asn_header_ids)
+                ? array_filter(explode(',', urldecode(urldecode($asn_header_ids))))
+                : (array) $asn_header_ids;
+        } else {
+            $asnNumber = is_string($asnNumber)
+                ? array_filter(explode(',', urldecode(urldecode($asnNumber))))
+                : (array) $asnNumber;
         }
 
-        $poData = '';
-        $poItemIds = [];
+        if (!empty($ge_details_ids)) {
+            $geDetails = is_string($ge_details_ids)
+                ? array_filter(explode(',', urldecode(urldecode($ge_details_ids))))
+                : (array) $ge_details_ids;
+        }
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
         $poItems = PoItem::select(
@@ -2775,11 +2903,11 @@ class MaterialReceiptController extends Controller
                 $query->where('reference_type', ConstantHelper::PO_SERVICE_ALIAS)
                     ->whereIn('id', $geNumber);
 
-                // Case 1: gate entry has a job with status = 'closed'
-                $query->whereHas('closedJob');
+                // // Case 1: gate entry has a job with status = 'closed'
+                // $query->whereHas('closedJob');
 
-                // Case 2: gate entry has NO job at all
-                $query->orWhereDoesntHave('job');
+                // // Case 2: gate entry has NO job at all
+                // $query->orWhereDoesntHave('job');
             });
         }
 
@@ -2795,12 +2923,12 @@ class MaterialReceiptController extends Controller
             $poItems->where('item_id', $itemId);
         }
 
-        if ($request->type == 'create' && count($selected_po_ids)) {
-            $poData = PoItem::with('po')->whereIn('id', $selected_po_ids)->first();
+        if ($request->type === 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
-        } elseif ($request->type == 'edit' && count($selected_po_ids)) {
-            $poData = PoItem::with('po')->whereIn('purchase_order_id', $selected_po_ids)->first();
-            $poItems->whereIn('erp_po_items.purchase_order_id', $selected_po_ids);
+        } elseif ($request->type === 'edit') {
+            // $poItems->whereIn('erp_po_items.purchase_order_id', $headerIds);
+            $poItems->whereNotIn('erp_po_items.id', $details_ids);
+            $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
         }
 
         $poItems = $poItems->orderBy('po_id', 'desc')->get();
@@ -2813,9 +2941,10 @@ class MaterialReceiptController extends Controller
                     ->whereRaw('(accepted_qty > mrn_qty)')
                     ->with(['gateEntryHeader', 'po_item']) // ensure po_item is loaded
                     ->whereHas('gateEntryHeader', function($query){
+                        $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
                         // Case 1: gate entry has a job with status = 'closed'
                         // $query->whereHas('closedJob');
-                
+
                         // // Case 2: gate entry has NO job at all
                         // $query->orWhereDoesntHave('job');
                     })
@@ -2843,6 +2972,9 @@ class MaterialReceiptController extends Controller
                 $siItems = VendorAsnItem::where('po_item_id', $poItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
                     ->with(['vendorAsn', 'vendorAsn.po', 'po_item'])
+                    ->whereHas('vendorAsn', function($query){
+                        $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
+                    })
                     ->get();
 
                 foreach ($siItems as $siItem) {
@@ -3036,7 +3168,6 @@ class MaterialReceiptController extends Controller
         } else {
             $vendor = Vendor::find($vendorId->first());
         }
-
         $html = view('procurement.material-receipt.partials.po-item-row', [
             'pos' => $pos,
             'type' => $type,
@@ -3175,7 +3306,6 @@ class MaterialReceiptController extends Controller
     # This for both bulk and single jo
     protected function buildJoQuery(Request $request)
     {
-        $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
         $asnNumber = $request->asn_number ?? null;
@@ -3186,28 +3316,51 @@ class MaterialReceiptController extends Controller
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
 
-        if (is_string($asnNumber)) {
-            $asnNumber = array_filter(explode(',', $asnNumber));
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_jo_ids = json_decode($decoded, true) ?? [];
+
+        $keys = [
+            'header_ids', 'details_ids',
+            'asn_header_ids', 'asn_details_ids',
+            'ge_header_ids', 'ge_details_ids',
+        ];
+
+        foreach ($keys as $key) {
+            $$key = $request->$key ?? null;
+
+            if (is_string($$key)) {
+                $decoded = urldecode(urldecode($$key));
+
+                if (strpos($decoded, ',') !== false) {
+                    $$key = array_filter(explode(',', $decoded));
+                } else {
+                    $$key = strlen($decoded) ? [$decoded] : [];
+                }
+            } elseif (!is_array($$key)) {
+                $$key = [];
+            }
         }
 
-        if (is_string($geNumber)) {
-            $geNumber = array_filter(explode(',', $geNumber));
+        if (!empty($ge_header_ids)) {
+            $geNumber = is_string($ge_header_ids)
+                ? array_filter(explode(',', urldecode(urldecode($ge_header_ids))))
+                : (array) $ge_header_ids;
+        } else {
+            $geNumber = is_string($geNumber)
+                ? array_filter(explode(',', urldecode(urldecode($geNumber))))
+                : (array) $geNumber;
         }
 
-        if($request->type == 'create')
-        {
-            $decoded = urldecode(urldecode($request->selected_jo_ids));
-            $selected_jo_ids = json_decode($decoded, true) ?? [];
-        }
-        else{
-            $selected_jo_ids = $request->selected_jo_ids ?? [];
-            $selected_jo_ids = is_string($selected_jo_ids)
-                ? array_map('trim', explode(',', $selected_jo_ids))
-                : (is_array($selected_jo_ids) ? $selected_jo_ids : []);
+        if (!empty($asn_header_ids)) {
+            $asnNumber = is_string($asn_header_ids)
+                ? array_filter(explode(',', urldecode(urldecode($asn_header_ids))))
+                : (array) $asn_header_ids;
+        } else {
+            $asnNumber = is_string($asnNumber)
+                ? array_filter(explode(',', urldecode(urldecode($asnNumber))))
+                : (array) $asnNumber;
         }
 
-        $poData = '';
-        $joItemIds = [];
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
         $joItems = JoProduct::select(
@@ -3285,6 +3438,14 @@ class MaterialReceiptController extends Controller
                 $geItems = GateEntryDetail::where('job_order_item_id', $joItem->id)
                     ->whereRaw('(accepted_qty > mrn_qty)')
                     ->with(['gateEntryHeader', 'jo_item']) // ensure po_item is loaded
+                    ->whereHas('gateEntryHeader', function($query){
+                        $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
+                        // Case 1: gate entry has a job with status = 'closed'
+                        // $query->whereHas('closedJob');
+
+                        // // Case 2: gate entry has NO job at all
+                        // $query->orWhereDoesntHave('job');
+                    })
                     ->get();
 
                 foreach ($geItems as $geItem) {
@@ -3309,6 +3470,9 @@ class MaterialReceiptController extends Controller
                 $siItems = VendorAsnItem::where('jo_prod_id', $joItem->id)
                     ->whereRaw('((supplied_qty - short_close_qty) > grn_qty)')
                     ->with(['vendorAsn', 'vendorAsn.po', 'jo_item'])
+                    ->whereHas('vendorAsn', function($query){
+                        $query->whereIn('document_status', [ConstantHelper::SUBMITTED]);
+                    })
                     ->get();
 
                 foreach ($siItems as $siItem) {
@@ -4868,12 +5032,12 @@ class MaterialReceiptController extends Controller
         try {
             $errorMessage = '';
             $storeMrnJo = [];
-            $joType = $mrn->jobOrder->job_order_type;
             $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
             foreach ($mrnData as $detail) {
                 $vendor = $mrn->vendor;
                 $vendorLocation = VendorLocation::where('vendor_id', $vendor->id)->first();
                 $subStore = $vendorLocation->store_id ?? null;
+                $joType = $detail->jo->job_order_type;
 
                 if (!$subStore) {
                     $errorMessage = 'Sub store not found for Vendor.';
@@ -4904,8 +5068,8 @@ class MaterialReceiptController extends Controller
                             $subStore
                         );
 
-                        $availStock = (float)$availableStock['confirmedStocks'];
-                        $pendingStock = (float)$checkQty;
+                        $availStock = (float) $availableStock['confirmedStocks'];
+                        $pendingStock = (float) $checkQty;
                         if ($availStock < $pendingStock) {
                             $errorMessage = 'Available stock for item ' .$detail->item_code. ' is less than required.';
                             break;
@@ -4917,7 +5081,8 @@ class MaterialReceiptController extends Controller
                         }
                     }
 
-                } if($joType === ConstantHelper::TYPE_JOB_ORDER) {
+                }
+                if($joType === ConstantHelper::TYPE_JOB_ORDER) {
                     $selectedAttr = array_column($detail->attributes->toArray(), 'attr_value');
                     $availableStock = InventoryHelper::totalInventoryAndStock(
                         $detail->item_id,
@@ -4926,9 +5091,9 @@ class MaterialReceiptController extends Controller
                         $storeId,
                         $subStore
                     );
-                    $availStock = (float)$availableStock['confirmedStocks'];
-                    $pendingStock = (float)$detail->inventory_uom_qty;
-                    if (($availStock < $pendingStock)) {
+                    $availStock = (float) $availableStock['confirmedStocks'];
+                    $pendingStock = (float) $detail->inventory_uom_qty;
+                    if ($availStock < $pendingStock) {
                         $errorMessage = 'Available stock for item ' .$detail->item_code. ' is less than required.';
                         break;
                     }
@@ -4936,8 +5101,10 @@ class MaterialReceiptController extends Controller
                     $miMapping = (object)[
                         'jo_product_id' => $detail->job_order_item_id,
                         'item_id'       => $detail->item_id,
+                        'item_code'     => $detail->item_code,
                         'uom_id'        => $detail->uom_id,
-                        'qty'           => $detail->accepted_qty
+                        'qty'           => $detail->accepted_qty,
+                        'attributes'    => $detail->attributes
                     ];
 
                     $storeMrnJo = self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
@@ -5022,7 +5189,6 @@ class MaterialReceiptController extends Controller
             } elseif ($refType === 'jo') {
                 if($edit){
                     $poTed = MrnExtraAmount::find($tedId);
-                    // dd($poTed);
                     if(!$poTed){
                         return response()->json(['status' => 422, 'message' => 'Ted not found.']);
                     }
@@ -5187,7 +5353,7 @@ class MaterialReceiptController extends Controller
     # Process Direct Entry Component
     private static function processDirectComponent($component, $item, $inputQty)
     {
-    return true;
+        return true;
         // return self::validateComponentQuantities($component, $inputQty) === true ? true : self::validateComponentQuantities($component, $inputQty);
     }
 

@@ -36,228 +36,191 @@ use App\Helpers\ConstantHelper;
 
 class InspectionHelper
 {
-    # Handle Mrn calculation update from inspection
-    public static function updateMrnDetail($inspection) 
+    # Update Mrn details from inspection
+    public static function updateMrnDetail($inspection)
     {
-        $user = Helper::getAuthenticatedUser();
-        $calculateMrn = null;
-        $errorMsg = null;
-        $successMsg = null;
-        $inspectionCompletion = 0;
-
-        DB::beginTransaction();
         try {
-            $mrn = MrnHeader::find($inspection->mrn_header_id);
-            if (!$mrn) {
-                return;
+            foreach ($inspection->items as $item) {
+                $mrnItem = MrnDetail::find($item->mrn_detail_id);
+                if (!$mrnItem) {
+                    continue;
+                }
+                $mrnHeaderId = $mrnItem->mrn_header_id;
+                
+                // Update quantities
+                $mrnItem->accepted_qty += $item->accepted_qty;
+                $mrnItem->rejected_qty += $item->rejected_qty;
+                $mrnItem->inventory_uom_qty += $item->inventory_uom_qty;
+                $mrnItem->accepted_inv_uom_id = $item->accepted_inv_uom_id;
+                $mrnItem->accepted_inv_uom_code = $item->accepted_inv_uom_code;
+                $mrnItem->accepted_inv_uom_qty += $item->accepted_inv_uom_qty;
+                $mrnItem->rejected_inv_uom_id = $item->rejected_inv_uom_id;
+                $mrnItem->rejected_inv_uom_code = $item->rejected_inv_uom_code;
+                $mrnItem->rejected_inv_uom_qty += $item->rejected_inv_uom_qty;
+                $mrnItem->save();
             }
 
-            if($inspection->items && count($inspection->items) > 0) {
-                foreach($inspection->items as $item) {
-                    $mrn_item = MrnDetail::find($item->mrn_detail_id);
-                    if ($mrn_item) {
-                        $mrn_item->accepted_qty += $item->accepted_qty;
-                        $mrn_item->rejected_qty += $item->rejected_qty;
-                        $mrn_item->inventory_uom_qty += $item->inventory_uom_qty;
-                        $mrn_item->save();
-
-                        $mrn_item->basic_value = $mrn_item->accepted_qty*$mrn_item->rate;
-                        $mrn_item->save();
-
-                        if($item->inspectionTed && count($item->inspectionTed) > 0) {
-                            $mrn_item->extraAmounts()->where('mrn_detail_id', $mrn_item->id)->delete();
-                            foreach($item->inspectionTed as $ted) {
-                                $mrnTed = MrnExtraAmount::create([
-                                    'mrn_header_id' => $mrn_item->mrn_header_id,
-                                    'mrn_detail_id' => $mrn_item->id,
-                                    'ted_id' => $ted->ted_id,
-                                    'ted_type' => $ted->ted_type,
-                                    'ted_level' => $ted->ted_level,
-                                    'ted_name' => $ted->ted_name,
-                                    'ted_code' => $ted->ted_code,
-                                    'assesment_amount' => $ted->assesment_amount,
-                                    'ted_percentage' => $ted->ted_percentage,
-                                    'ted_amount' => $ted->ted_amount,
-                                    'applicability_type' => $ted->applicability_type,
-                                ]);  
-                            }
-                        }
-                    }
-                }
-    
-                $calculateMrn = self::updateMrnCalculation($mrn->id);
-                if($calculateMrn) {
-                    $receiptStock = InventoryHelperV2::updateReceiptStock($mrn);
-                }
-
-                foreach($mrn->items as $mrn_item) { 
-                    $inspectionQty = $mrn_item->accepted_qty + $mrn_item->rejected_qty;
-                    if(($mrn_item->order_qty == $inspectionQty)) {
-                        $mrn_item->is_inspection = 0;
-                    } else {
-                        $mrn_item->is_inspection = 1;
-                    }
-                    $mrn_item->save();
-                }
-
-                $inspectionMrn = $mrn->items()->where('is_inspection', 1)->count();
-                if($inspectionMrn == 0) {
-                    $mrn->is_inspection_completion = 1;
-                    $mrn->save();
-                } else {
-                    $mrn->is_inspection_completion = 0;
-                    $mrn->save();
-                }
+            $mrn = MrnHeader::find($mrnHeaderId);
+            // Update MRN stock
+            InventoryHelperV2::updateReceiptStock($mrn, $inspection);
+            // Update inspection flags on each MRN item
+            foreach ($mrn->items as $item) {
+                $totalInspected = $item->accepted_qty + $item->rejected_qty;
+                $item->is_inspection = ($item->order_qty == $totalInspected) ? 0 : 1;
+                $item->save();
             }
-            
-            \DB::commit();
 
-            $message = "MRN details updated successfully.";
-            $data = self::successResponse($message, $mrn);
-            return $data;
+            // Final MRN inspection completion flag
+            $pendingInspections = $mrn->items()->where('is_inspection', 1)->exists();
+            $mrn->is_inspection_completion = $pendingInspections ? 0 : 1;
+            $mrn->save();
+
+            return self::successResponse("MRN details updated successfully.", $mrn);
+
         } catch (\Exception $e) {
-            \DB::rollback();
-            $errorMsg = "Error in InspectionHelper@updateMrnDetail: " . $e->getMessage();
-            return self::errorResponse($errorMsg);
+            return self::errorResponse("Error in InspectionHelper@updateMrnDetail: " . $e->getMessage());
         }
     }
+
 
     # Handle Mrn calculation update from inspection
     private static function updateMrnCalculation($mrnId) 
     {
-        $mrn = MrnHeader::find($mrnId);
-        if (!$mrn) {
-            return;
-        }
-
-        $totalItemAmnt = 0;
-        $totalTaxAmnt = 0;
-        $totalItemValue = 0.00;
-        $totalTaxValue = 0.00;
-        $totalDiscValue = 0.00;
-        $totalExpValue = 0.00;
-        $totalItemLevelDiscValue = 0.00;
-        $totalAmount = 0.00;
-        $vendorShippingCountryId = $mrn->shippingAddress->country_id;
-        $vendorShippingStateId = $mrn->shippingAddress->state_id;
+        $mrn = MrnHeader::with(['items.itemDiscount', 'expenses', 'shippingAddress'])->find($mrnId);
+        if (!$mrn) return;
 
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
-        $firstAddress = $organization->addresses->first();
-        $companyCountryId = $firstAddress->country_id;
-        $companyStateId = $firstAddress->state_id;
+        $companyAddress = $organization->addresses->first();
 
-        # Save Item level discount
-        foreach($mrn->items as $mrn_item) {
-            $itemPrice = $mrn_item->rate*$mrn_item->accepted_qty;
-            $totalItemAmnt = $totalItemAmnt + $itemPrice; 
-            $itemDis = $mrn_item->itemDiscount()->sum('ted_amount');
-            $mrn_item->discount_amount = $itemDis;
-            $mrn_item->save();
+        $companyCountryId = $companyAddress->country_id;
+        $companyStateId = $companyAddress->state_id;
+        $vendorCountryId = $mrn->billingAddress->country_id ?? null;
+        $vendorStateId = $mrn->billingAddress->state_id ?? null;
+        
+        $totalItemAmount = 0;
+        $totalTaxAmount = 0;
+
+        // 1. Calculate item-level discount and amount
+        foreach ($mrn->items as $item) {
+            $itemTotal = $item->rate * $item->accepted_qty;
+            $totalItemAmount += $itemTotal;
+
+            $itemDiscount = $item->itemDiscount->sum('ted_amount');
+            $item->discount_amount = $itemDiscount;
+            $item->save();
         }
-        # Save header level discount
-        $totalItemValue = $mrn->total_item_amount;
-        $totalItemValueAfterTotalItemDisc = $mrn->total_item_amount - $mrn->items()->sum('discount_amount');
-        $totalHeaderDiscount = $mrn->total_header_disc_amount;
 
-        foreach($mrn->items as $mrn_item) {
-            $itemPrice = $mrn_item->rate*$mrn_item->accepted_qty;
-            $itemPriceAfterItemDis = $itemPrice - $mrn_item->discount_amount;
-            # Calculate header discount
-            // Calculate and save header discount
-            if ($totalItemValueAfterTotalItemDisc > 0 && $totalHeaderDiscount > 0) {
-                $headerDis = ($itemPriceAfterItemDis / $totalItemValueAfterTotalItemDisc) * $totalHeaderDiscount;
-            } else {
-                $headerDis = 0;
+        $totalItemDiscount = $mrn->items->sum('discount_amount');
+        $itemValueAfterItemDiscount = $totalItemAmount - $totalItemDiscount;
+        $headerDiscount = $mrn->total_header_disc_amount;
+
+        // 2. Calculate header discount, tax, and save per item
+        foreach ($mrn->items as $item) {
+            $itemPrice = $item->rate * $item->accepted_qty;
+            $itemAfterItemDisc = $itemPrice - $item->discount_amount;
+
+            $headerDisc = ($itemValueAfterItemDiscount > 0 && $headerDiscount > 0)
+                ? ($itemAfterItemDisc / $itemValueAfterItemDiscount) * $headerDiscount
+                : 0;
+
+            $item->header_discount_amount = $headerDisc;
+            $priceAfterDiscounts = $itemAfterItemDisc - $headerDisc;
+
+            $taxDetails = TaxHelper::calculateTax(
+                $item->hsn_id,
+                $priceAfterDiscounts,
+                $companyCountryId,
+                $companyStateId,
+                $vendorCountryId,
+                $vendorStateId,
+                'sale'
+            );
+
+            // Remove old tax TEDs if changed
+            $currentTaxIds = array_map('strval', array_column($taxDetails, 'id'));
+            $existingTaxIds = MrnExtraAmount::where('mrn_detail_id', $item->id)
+                ->where('ted_type', 'Tax')
+                ->pluck('ted_id')
+                ->map('strval')
+                ->toArray();
+
+            sort($currentTaxIds);
+            sort($existingTaxIds);
+
+            if ($currentTaxIds !== $existingTaxIds) {
+                MrnExtraAmount::where('mrn_detail_id', $item->id)
+                    ->where('ted_type', 'Tax')
+                    ->delete();
             }
-            $mrn_item->header_discount_amount = $headerDis;
-            
-            # Calculate header expenses
-            $priceAfterBothDis = $itemPriceAfterItemDis - $headerDis;
-            $taxDetails = TaxHelper::calculateTax($mrn_item->hsn_id, $priceAfterBothDis, $companyCountryId, $companyStateId, $vendorShippingCountryId, $vendorShippingStateId, 'sale');
-            if (isset($taxDetails) && count($taxDetails) > 0) {
-                $itemTax = 0;
-                $cTaxDeIds = array_column($taxDetails, 'id');
-                $existTaxIds = MrnExtraAmount::where('mrn_detail_id', $mrn_item->id)
-                                ->where('ted_type','Tax')
-                                ->pluck('ted_id')
-                                ->toArray();
 
-                $array1 = array_map('strval', $existTaxIds);
-                $array2 = array_map('strval', $cTaxDeIds);
-                sort($array1);
-                sort($array2);
+            $itemTax = 0;
+            foreach ($taxDetails as $tax) {
+                $taxAmount = ((float) $tax['tax_percentage'] / 100) * $priceAfterDiscounts;
+                $itemTax += $taxAmount;
 
-                if($array1 != $array2) {
-                    # Changes
-                    MrnExtraAmount::where("mrn_detail_id",$mrn_item->id)
-                        ->where('ted_type','Tax')
-                        ->delete();
-                }
-
-                foreach ($taxDetails as $taxDetail) {
-                    $itemTax += ((double)$taxDetail['tax_percentage']/100*$priceAfterBothDis);
-
-                    $ted = MrnExtraAmount::firstOrNew([
-                        'mrn_detail_id' => $mrn_item->id,
-                        'ted_id' => $taxDetail['id'],
+                MrnExtraAmount::updateOrCreate(
+                    [
+                        'mrn_detail_id' => $item->id,
+                        'ted_id' => $tax['id'],
                         'ted_type' => 'Tax',
-                    ]);
-
-                    $ted->mrn_header_id = $mrn->id;
-                    $ted->mrn_detail_id = $mrn_item->id;
-                    $ted->ted_type = 'Tax';
-                    $ted->ted_level = 'D';
-                    $ted->ted_id = $taxDetail['id'] ?? null;
-                    $ted->ted_name = $taxDetail['tax_type'] ?? null;
-                    $ted->assesment_amount = $mrn_item->assessment_amount_total;
-                    $ted->ted_percentage = $taxDetail['tax_percentage'] ?? 0.00;
-                    $ted->ted_amount = ((double)$taxDetail['tax_percentage']/100*$priceAfterBothDis) ?? 0.00;
-                    $ted->applicability_type = $taxDetail['applicability_type'] ?? 'Collection';
-                    $ted->save();
-                }
-                if($itemTax) {
-                    $mrn_item->tax_value = $itemTax;
-                    $mrn_item->save();
-                    $totalTaxAmnt = $totalTaxAmnt + $itemTax;
-                }
+                    ],
+                    [
+                        'mrn_header_id' => $mrn->id,
+                        'ted_level' => 'D',
+                        'ted_name' => $tax['tax_type'] ?? null,
+                        'assesment_amount' => $item->assessment_amount_total,
+                        'ted_percentage' => $tax['tax_percentage'] ?? 0,
+                        'ted_amount' => $taxAmount,
+                        'applicability_type' => $tax['applicability_type'] ?? 'Collection',
+                    ]
+                );
             }
-            $mrn_item->save();
+
+            if ($itemTax > 0) {
+                $item->tax_value = $itemTax;
+                $totalTaxAmount += $itemTax;
+            }
+
+            $item->save();
         }
 
-        # Save expenses
-        $totalValueAfterBothDis = $totalItemValueAfterTotalItemDisc + $totalTaxAmnt - $totalHeaderDiscount;
-        $headerExpensesTotal = $mrn->expenses()->sum('ted_amount'); 
-        if ($headerExpensesTotal) {
-            foreach($mrn->items as $mrn_item) { 
-                $itemPriceAterBothDis = ($mrn_item->rate*$mrn_item->accepted_qty) - ($mrn_item->header_discount_amount + $mrn_item->discount_amount) + $mrn_item->tax_value;
-                $exp = $itemPriceAterBothDis / $totalValueAfterBothDis * $headerExpensesTotal;
-                $mrn_item->header_exp_amount = $exp;
-                $mrn_item->save();
-            }
-        } else {
-            foreach($mrn->items as $mrn_item) { 
-                $mrn_item->header_exp_amount = 0.00;
-                $mrn_item->save();
-            }
+        // 3. Header level expenses
+        $totalAfterTaxBeforeExp = $itemValueAfterItemDiscount + $totalTaxAmount - $headerDiscount;
+        $headerExpenses = $mrn->expenses->sum('ted_amount');
+
+        foreach ($mrn->items as $item) {
+            $baseAmount = ($item->rate * $item->accepted_qty) 
+                        - ($item->discount_amount + $item->header_discount_amount) 
+                        + ($item->tax_value ?? 0);
+
+            $expenseValue = ($headerExpenses && $totalAfterTaxBeforeExp)
+                ? ($baseAmount / $totalAfterTaxBeforeExp) * $headerExpenses
+                : 0;
+
+            $item->header_exp_amount = $expenseValue;
+            $item->save();
         }
 
-        /*Update Calculation*/
-        $totalDiscValue = $mrn->items()->sum('header_discount_amount') + $mrn->items()->sum('discount_amount');
-        $totalExpValue = $mrn->items()->sum('header_exp_amount');
-        $mrn->total_item_amount = $totalItemAmnt;
-        $mrn->total_discount = $totalDiscValue;
-        $mrn->taxable_amount = ($totalItemAmnt - $totalDiscValue);
-        $mrn->total_taxes = $totalTaxAmnt;
-        $mrn->total_after_tax_amount = (($totalItemAmnt - $totalDiscValue) + $totalTaxAmnt);
-        $mrn->expense_amount = $totalExpValue;
-        $totalAmount = (($totalItemAmnt - $totalDiscValue) + ($totalTaxAmnt + $totalExpValue));
-        $mrn->total_amount = $totalAmount;
-        $mrn->save();
+        // 4. Final MRN header update
+        $totalDiscount = $mrn->items->sum('discount_amount') + $mrn->items->sum('header_discount_amount');
+        $totalExpenses = $mrn->items->sum('header_exp_amount');
+        $taxableAmount = $totalItemAmount - $totalDiscount;
+
+        $mrn->update([
+            'total_item_amount' => $totalItemAmount,
+            'total_discount' => $totalDiscount,
+            'taxable_amount' => $taxableAmount,
+            'total_taxes' => $totalTaxAmount,
+            'total_after_tax_amount' => $taxableAmount + $totalTaxAmount,
+            'expense_amount' => $totalExpenses,
+            'total_amount' => $taxableAmount + $totalTaxAmount + $totalExpenses,
+        ]);
 
         return $mrn;
     }
 
+    // Success Response
     private static function errorResponse($message)
     {
         return [
@@ -269,6 +232,7 @@ class InspectionHelper
 
     }
 
+    // Error Response
     private static function successResponse($response,$data)
     {
         return [

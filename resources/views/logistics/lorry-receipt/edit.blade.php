@@ -36,6 +36,15 @@
                                 <i data-feather="trash-2" class="me-50"></i> Delete
                             </button>
                         @endif
+                           @if($lr->document_status == \App\Helpers\ConstantHelper::APPROVED || $lr->document_status == \App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                           
+                          <a href="{{route('logistics.lorry-receipt.generate-pdf', $lr->id)}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer"><polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                <rect x="6" y="14" width="12" height="8"></rect></svg> Print
+                            </a>
+                            @endif
                            <!-- Save as Draft Button -->
                      @if(!isset(request()->revisionNumber))
                         @if(isset($buttons) && is_array($buttons) && isset($lr))
@@ -115,21 +124,21 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', $lr->document_status ?? 'draft') }}">
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', @$lr->document_status ?? 'draft') }}">
                                        <select class="form-select disable_on_edit editable-field" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" >
                                        @foreach ($series as $currentSeries)
-                                       <option value="{{ $currentSeries->id }}" {{ old('book_id', $lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
+                                       <option value="{{ $currentSeries->id }}" {{ old('book_id', @$lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
                                        </select>
                                     </div>
-                                    <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($lr) ? $lr -> book_code : ''}}"></input>
+                                    <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($lr) ? @$lr -> book_code : ''}}"></input>
                                  </div>
                                  <div class="row align-items-center mb-1">
                                     <div class="col-md-3"> 
                                        <label class="form-label">Doc No <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="text" class="form-control editable-field" id="document_number" name="document_number" value="{{ old('document_number', $lr->document_number) }}" >
+                                       <input type="text" class="form-control editable-field" id="document_number" name="document_number" value="{{ old('document_number', @$lr->document_number) }}" >
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -137,7 +146,7 @@
                                        <label class="form-label">Doc Date <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="date" class="form-control editable-field" id="document_date" name="document_date" value="{{ old('document_date', $lr->document_date ? \Carbon\Carbon::parse($lr->document_date)->format('Y-m-d') : now()->format('Y-m-d')) }}">
+                                       <input type="date" class="form-control editable-field" id="document_date" name="document_date" value="{{ old('document_date', @$lr->document_date ? \Carbon\Carbon::parse(@$lr->document_date)->format('Y-m-d') : now()->format('Y-m-d')) }}">
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -148,7 +157,7 @@
                                        <select class="form-select select2 editable-field" name="location" id="locationId" >
                                           <option value="">Select Location</option>
                                           @foreach($locations as $location)
-                                          <option value="{{ $location->id }}" {{ old('location', $lr->location_id) == $location->id ? 'selected' : '' }}>{{ $location->store_name }}</option>
+                                          <option value="{{ $location->id }}" {{ old('location', @$lr->location_id) == $location->id ? 'selected' : '' }}>{{ $location->store_name }}</option>
                                           @endforeach
                                        </select>
                                     </div>
@@ -252,9 +261,9 @@
                                           <label class="form-label" for="source">Source <span class="text-danger">*</span></label>
                                           <input type="text" name="source_name" class="form-control mw-100 route-master-autocomplete editable-field"
                                              placeholder="Start typing  locations..." data-type="source"
-                                             value="{{ old('source_name', $lr->source->name ?? '') }}" />
+                                             value="{{ old('source_name', @$lr->source->name ?? '') }}" />
                                           <input type="hidden" name="source_id" class="route-master-id editable-field" data-type="source"
-                                             value="{{ old('source_id', $lr->origin_id) }}" id="sourceIdInput" />
+                                             value="{{ old('source_id', @$lr->origin_id) }}" id="sourceIdInput" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -262,9 +271,9 @@
                                           <label class="form-label" for="destination">Destination <span class="text-danger">*</span></label>
                                           <input type="text" name="destination_name" class="form-control mw-100 route-master-autocomplete editable-field"
                                              placeholder="Start typing  locations." data-type="destination"
-                                             value="{{ old('destination_name', $lr->destination->name ?? '') }}" />
+                                             value="{{ old('destination_name', @$lr->destination->name ?? '') }}" />
                                           <input type="hidden" name="destination_id" class="route-master-id editable-field" data-type="destination"
-                                             value="{{ old('destination_id', $lr->destination_id) }}" id="destinationIdInput" />
+                                             value="{{ old('destination_id', @$lr->destination_id) }}" id="destinationIdInput" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -272,9 +281,9 @@
                                           <label class="form-label" for="consignor">Consignor <span class="text-danger">*</span></label>
                                           <input type="text" name="customer_name" class="form-control mw-100 customer-autocomplete editable-field"
                                              data-type="consignor" placeholder="Start typing customer..."
-                                             value="{{ old('customer_name', $lr->consignor->company_name ?? '') }}"  />
+                                             value="{{ old('customer_name', @$lr->consignor->company_name ?? '') }}"  />
                                           <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
-                                             value="{{ old('customer_id', $lr->consignor_id) }}" />
+                                             value="{{ old('customer_id', @$lr->consignor_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -282,9 +291,9 @@
                                           <label class="form-label" for="consignee">Consignee <span class="text-danger">*</span></label>
                                           <input type="text" name="consignee_name" class="form-control mw-100 customer-autocomplete editable-field"
                                              data-type="consignee" placeholder="Start typing consignee..."
-                                             value="{{ old('consignee_name', $lr->consignee->company_name ?? '') }}" />
+                                             value="{{ old('consignee_name', @$lr->consignee->company_name ?? '') }}" />
                                           <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
-                                             value="{{ old('consignee_id', $lr->consignee_id) }}" />
+                                             value="{{ old('consignee_id', @$lr->consignee_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -292,27 +301,27 @@
                                           <label class="form-label" for="vehicle">Vehicle <span class="text-danger">*</span></label>
                                           <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-type-autocomplete editable-field"
                                              placeholder="Select Vehicle" id="vehicle_type_name"
-                                             value="{{ old('vehicle_type_name', $lr->vehicleType->name ?? '') }}" />
+                                             value="{{ old('vehicle_type_name', @$lr->vehicleType->name ?? '') }}" />
                                           <input type="hidden" name="vehicle_type_id" class="vehicle-type-id editable-field"
-                                             value="{{ old('vehicle_type_id', $lr->vehicle_type_id) }}" />
+                                             value="{{ old('vehicle_type_id', @$lr->vehicle_type_id) }}" id="vehicle_type_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="distance">Distance (Km) <span class="text-danger">*</span></label>
                                           <input type="text" class="form-control editable-field" id="distance" name="distances"
-                                             placeholder="Enter Distance (Km)" value="{{ old('distances', $lr->distance) }}" />
+                                             placeholder="Enter Distance (Km)" value="{{ old('distances', @$lr->distance) }}" />
                                           <input type="hidden" class="form-control editable-field" id="distanceInput" name="distance"
-                                             value="{{ old('distance', $lr->distance) }}" />
+                                             value="{{ old('distance', @$lr->distance) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="freight_charges">Freight Charges (Rs) <span class="text-danger">*</span></label>
                                           <input type="number" class="form-control editable-field" id="freight_charges" name="freight_charge"
-                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', $lr->freight_charges) }}" >
+                                             placeholder="Enter Freight Charges (Rs)" value="{{ old('freight_charge', @$lr->freight_charges) }}" >
                                           <input type="hidden" class="form-control editable-field" id="freightCharges" name="freight_charges"
-                                             value="{{ old('freight_charges', $lr->freight_charges) }}" />
+                                             value="{{ old('freight_charges', @$lr->freight_charges) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -320,58 +329,58 @@
                                           <label class="form-label" for="driver">Driver <span class="text-danger">*</span></label>
                                           <input type="text" name="driver_name" class="form-control mw-100 driver-autocomplete editable-field"
                                              placeholder="Select Driver" data-type="driver"
-                                             value="{{ old('driver_name', $lr->driver->name ?? '') }}" />
+                                             value="{{ old('driver_name', @$lr->driver->name ?? '') }}" />
                                           <input type="hidden" name="driver_id" class="driver-id editable-field" data-type="driver"
-                                             value="{{ old('driver_id', $lr->driver_id) }}" />
+                                             value="{{ old('driver_id', @$lr->driver_id) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="driver_cash">Driver Cash (Rs)</label>
                                           <input type="number" class="form-control editable-field" id="driver_cash" name="driver_cash"
-                                             placeholder="Enter Driver Cash (Rs)" value="{{ old('driver_cash', $lr->driver_cash) }}"  />
+                                             placeholder="Enter Driver Cash (Rs)" value="{{ old('driver_cash', @$lr->driver_cash) }}"  />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="fuel_price">Fuel Price (Rs)</label>
                                           <input type="number" class="form-control editable-field" id="fuel_price" name="fuel_price"
-                                             placeholder="Enter Fuel Price (Rs)" value="{{ old('fuel_price', $lr->fuel_price) }}" />
+                                             placeholder="Enter Fuel Price (Rs)" value="{{ old('fuel_price', @$lr->fuel_price) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="invoice_no">Invoice No.</label>
                                           <input type="text" class="form-control editable-field" id="invoice_no" name="invoice_no"
-                                             placeholder="Enter Invoice No." value="{{ old('invoice_no', $lr->invoice_no) }}" />
+                                             placeholder="Enter Invoice No." value="{{ old('invoice_no', @$lr->invoice_no) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="invoice_value">Invoice Value</label>
                                           <input type="text" class="form-control editable-field" id="invoice_value" name="invoice_value"
-                                             placeholder="Enter Invoice Value" value="{{ old('invoice_value', $lr->invoice_value) }}" />
+                                             placeholder="Enter Invoice Value" value="{{ old('invoice_value', @$lr->invoice_value) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="no_of_bundles">No of Article/Bundles <span class="text-danger">*</span></label>
                                           <input type="number" class="form-control editable-field" id="no_of_bundles" name="no_of_bundles"
-                                             placeholder="Enter No of Article/Bundles" value="{{ old('no_of_bundles', $lr->no_of_bundles) }}" />
+                                             placeholder="Enter No of Article/Bundles" value="{{ old('no_of_bundles', @$lr->no_of_bundles) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="weight">Weight (kg) <span class="text-danger">*</span></label>
                                           <input type="number" class="form-control editable-field" id="weight" name="weight"
-                                             placeholder="Enter Weight (kg)" value="{{ old('weight', $lr->weight) }}" />
+                                             placeholder="Enter Weight (kg)" value="{{ old('weight', @$lr->weight) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
                                           <label class="form-label" for="ewaybill_no">E-Waybill No. <span class="text-danger">*</span></label>
                                           <input type="text" class="form-control editable-field" id="ewaybill_no" name="ewaybill_no"
-                                             placeholder="Enter E-Waybill No." value="{{ old('ewaybill_no', $lr->ewaybill_no) }}" />
+                                             placeholder="Enter E-Waybill No." value="{{ old('ewaybill_no', @$lr->ewaybill_no) }}" />
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -379,9 +388,9 @@
                                           <label class="form-label" for="gst_paid_by">GST Paid By <span class="text-danger">*</span></label>
                                           <select class="form-select select2 editable-field" id="gst_paid_by" name="gst_paid_by" >
                                              <option value="">Select</option>
-                                             <option value="Consignor" {{ old('gst_paid_by', $lr->gst_paid_by) == 'Consignor' ? 'selected' : '' }}>Consignor</option>
-                                             <option value="Consignee" {{ old('gst_paid_by', $lr->gst_paid_by) == 'Consignee' ? 'selected' : '' }}>Consignee</option>
-                                             <option value="Transporter" {{ old('gst_paid_by', $lr->gst_paid_by) == 'Transporter' ? 'selected' : '' }}>Transporter</option>
+                                             <option value="Consignor" {{ old('gst_paid_by', @$lr->gst_paid_by) == 'Consignor' ? 'selected' : '' }}>Consignor</option>
+                                             <option value="Consignee" {{ old('gst_paid_by', @$lr->gst_paid_by) == 'Consignee' ? 'selected' : '' }}>Consignee</option>
+                                             <option value="Transporter" {{ old('gst_paid_by', @$lr->gst_paid_by) == 'Transporter' ? 'selected' : '' }}>Transporter</option>
                                           </select>
                                        </div>
                                     </div>
@@ -390,8 +399,8 @@
                                           <label class="form-label" for="lr_type">LR Type <span class="text-danger">*</span></label>
                                           <select class="form-select select2 editable-field" id="lr_type" name="lr_type" >
                                              <option value="">Select</option>
-                                             <option value="Inward" {{ old('lr_type', $lr->lr_type) == 'Inward' ? 'selected' : '' }}>Inward</option>
-                                             <option value="Outward" {{ old('lr_type', $lr->lr_type) == 'Outward' ? 'selected' : '' }}>Outward</option>
+                                             <option value="Inward" {{ old('lr_type', @$lr->lr_type) == 'Inward' ? 'selected' : '' }}>Inward</option>
+                                             <option value="Outward" {{ old('lr_type', @$lr->lr_type) == 'Outward' ? 'selected' : '' }}>Outward</option>
                                           </select>
                                        </div>
                                     </div>
@@ -400,8 +409,8 @@
                                           <label class="form-label" for="billing_type">Billed or Pay <span class="text-danger">*</span></label>
                                           <select class="form-select select2 editable-field" id="billing_type" name="billing_type" >
                                              <option value="">Select</option>
-                                             <option value="To be Billed" {{ old('billing_type', $lr->billing_type) == 'To be Billed' ? 'selected' : '' }}>To be Billed</option>
-                                             <option value="To Pay" {{ old('billing_type', $lr->billing_type) == 'To Pay' ? 'selected' : '' }}>To Pay</option>
+                                             <option value="To be Billed" {{ old('billing_type', @$lr->billing_type) == 'To be Billed' ? 'selected' : '' }}>To be Billed</option>
+                                             <option value="To Pay" {{ old('billing_type', @$lr->billing_type) == 'To Pay' ? 'selected' : '' }}>To Pay</option>
                                           </select>
                                        </div>
                                     </div>
@@ -411,7 +420,7 @@
                                           <select class="form-select editable-field" id="load_type" name="load_type" >
                                              <option value="">Select</option>
                                              @foreach(['FTL','Bulk','CEP','FCL','LCP','LTL'] as $type)
-                                             <option value="{{ $type }}" {{ old('load_type', $lr->load_type) == $type ? 'selected' : '' }}>{{ $type }}</option>
+                                             <option value="{{ $type }}" {{ old('load_type', @$lr->load_type) == $type ? 'selected' : '' }}>{{ $type }}</option>
                                              @endforeach
                                           </select>
                                        </div>
@@ -422,7 +431,7 @@
                                           <select class="form-select editable-field" id="lr_charges" name="lr_charges">
                                              <option value="">Select</option>
                                              @foreach($lorryCharges as $value)
-                                             <option value="{{ $value }}" {{ old('lr_charges', $lr->lr_charges) == $value ? 'selected' : '' }}>{{ $value }}</option>
+                                             <option value="{{ @$value }}" {{ old('lr_charges', @$lr->lr_charges) == @$value ? 'selected' : '' }}>{{ @$value }}</option>
                                              @endforeach
                                           </select>
                                        </div>
@@ -490,33 +499,33 @@
                                     <tr>
                                     <td class="customernewsection-form">
                                         <div class="form-check form-check-primary custom-checkbox">
-                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ $rowIndex }}][selected]" id="row_{{ $rowIndex }}">
-                                            <label class="form-check-label" for="row_{{ $rowIndex }}"></label>
+                                            <input type="checkbox" class="form-check-input rowCheckbox" name="locations[{{ @$rowIndex }}][selected]" id="row_{{ @$rowIndex }}">
+                                            <label class="form-check-label" for="row_{{ @$rowIndex }}"></label>
                                         </div>
                                     </td>
                                     <td class="poprod-decpt">
-                                        <input type="hidden" name="locations[{{ $rowIndex }}][id]" value="{{ old("locations.$rowIndex.id", $location->id ?? '') }}">
-                                        <input type="text" name="locations[{{ $rowIndex }}][location_name]" value="{{ old("locations.$rowIndex.location_name", optional($location->route)->name) }}" 
+                                        <input type="hidden" name="locations[{{ @$rowIndex }}][id]" value="{{ old("locations.@$rowIndex.id", @$location->id ?? '') }}">
+                                        <input type="text" name="locations[{{ @$rowIndex }}][location_name]" value="{{ old("locations.$rowIndex.location_name", optional(@$location->route)->name) }}" 
                                             placeholder="Select" class="form-control mw-100 location-update route-master-autocomplete editable-field"
                                             data-type="source"  />
-                                        <input type="hidden" name="locations[{{ $rowIndex }}][location_id]" value="{{ $location->location_id ?? '' }}"
+                                        <input type="hidden" name="locations[{{ @$rowIndex }}][location_id]" value="{{ @$location->location_id ?? '' }}"
                                             class="route-master-id" data-type="source" />
                                     </td>
                                     <td>
-                                        <select class="form-select mw-100 editable-field" name="locations[{{ $rowIndex }}][type]" >
+                                        <select class="form-select mw-100 editable-field" name="locations[{{ @$rowIndex }}][type]" >
                                             <option value="">Select</option>
-                                            <option value="Pick Up" {{ $location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
-                                            <option value="Drop Off" {{ $location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
+                                            <option value="Pick Up" {{ @$location->type == 'Pick Up' ? 'selected' : '' }}>Pick Up</option>
+                                            <option value="Drop Off" {{ @$location->type == 'Drop Off' ? 'selected' : '' }}>Drop Off</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][no_of_articles]" value="{{ $location->no_of_articles ?? '' }}" class="form-control mw-100 editable-field" />
+                                        <input type="text" name="locations[{{ @$rowIndex }}][no_of_articles]" value="{{ @$location->no_of_articles ?? '' }}" class="form-control mw-100 editable-field" />
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][weight]" value="{{ $location->weight ?? '' }}" class="form-control mw-100 editable-field"  />
+                                        <input type="text" name="locations[{{ @$rowIndex }}][weight]" value="{{ @$location->weight ?? '' }}" class="form-control mw-100 editable-field"  />
                                     </td>
                                     <td>
-                                        <input type="text" name="locations[{{ $rowIndex }}][freight]" value="{{ $location->amount ?? '' }}" class="form-control mw-100 text-end editable-field" />
+                                        <input type="text" name="locations[{{ @$rowIndex }}][freight]" value="{{ @$location->amount ?? '' }}" class="form-control mw-100 text-end editable-field" />
                                     </td>
                                     </tr>
                                     @php $rowIndex++; @endphp
@@ -550,7 +559,7 @@
                                     <tfoot>
                                        <tr class="totalsubheadpodetail">
                                           <td colspan="5"></td>
-                                          <td class="text-end" id="freightAmount">{{ number_format($lr->locations->sum('freight'), 2) }}</td>
+                                          <td class="text-end" id="freightAmount">{{ number_format(@$lr->locations->sum('freight'), 2) }}</td>
                                        </tr>
                                        <tr valign="top">
                                           <td colspan="4" rowspan="10">
@@ -562,25 +571,25 @@
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="poitemtxt mw-100"><strong>Source</strong>: <span id="routeSource">{{ $lr->source->name ?? '-' }}</span></span>
+                                                      <span class="poitemtxt mw-100"><strong>Source</strong>: <span id="routeSource">{{ @$lr->source->name ?? '-' }}</span></span>
                                                    </td>
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="poitemtxt mw-100"><strong>Destination</strong>: <span id="routeDestination">{{ $lr->destination->name ?? '-' }}</span></span>
+                                                      <span class="poitemtxt mw-100"><strong>Destination</strong>: <span id="routeDestination">{{ @$lr->destination->name ?? '-' }}</span></span>
                                                    </td>
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Weight</strong>: <span id="routeWeight">{{ $total_weight ?? 0 }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Weight</strong>: <span id="routeWeight">{{ @$total_weight ?? 0 }}</span></span>
                                                       <span class="badge rounded-pill badge-light-primary"><strong>No of Article</strong>: <span id="routeArticles">{{ $total_articles ?? 0 }}</span></span>
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Points</strong>:<span id="routePoints"> {{ $lr->locations->count() }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Points</strong>:<span id="routePoints"> {{ @$lr->locations->count() }}</span></span>
                                                    </td>
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle</strong>: <span id="routeVehicle">{{ $lr->vehicleType->name ?? '-' }}</span></span>
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format($lr->vehicleType->capacity, 2) }} {{ $lr->vehicleType->unit->name ?? ''}}</span></span> 
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle</strong>: <span id="routeVehicle">{{ @$lr->vehicleType->name ?? '-' }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format(@$lr->vehicleType->capacity, 2) }} {{ @$lr->vehicleType->unit->name ?? ''}}</span></span> 
                                                    </td>
                                                 </tr>
                                              </table>
@@ -596,15 +605,15 @@
                                                 </tr>
                                                 <tr class="totalsubheadpodetail">
                                                    <td width="55%"><strong>Sub Total</strong></td>
-                                                   <td class="text-end" id="subTotalAmount">{{ number_format($lr->locations->sum('freight'), 2) }}</td>
+                                                   <td class="text-end" id="subTotalAmount">{{ number_format(@$lr->locations->sum('freight'), 2) }}</td>
                                                 </tr>
                                                 <tr>
                                                    <td><strong>LR Charges</strong></td>
-                                                   <td class="text-end" id="lrCharges">{{ number_format($lr->lr_charges, 2) }}</td>
+                                                   <td class="text-end" id="lrCharges">{{ number_format(@$lr->lr_charges, 2) }}</td>
                                                 </tr>
                                                 <tr>
                                                    <td><strong>Freight Charges</strong></td>
-                                                   <td id="FreightCharges" class="text-end">{{ number_format($lr->freight_charges, 2) }}</td>
+                                                   <td id="FreightCharges" class="text-end">{{ number_format(@$lr->freight_charges, 2) }}</td>
                                                 </tr>
                                                 <tr class="voucher-tab-foot">
                                                    <td class="text-primary"><strong>Total Freight Charges</strong></td>
@@ -612,9 +621,9 @@
                                                       <div class="quottotal-bg justify-content-end">
                                                          <h5 id="totalFreightAmount">
                                                             {{ number_format(
-                                                            $lr->locations->sum('freight') +
-                                                            $lr->lr_charges +
-                                                            $lr->freight_charges, 2) }}
+                                                            @$lr->locations->sum('freight') +
+                                                            @$lr->lr_charges +
+                                                            @$lr->freight_charges, 2) }}
                                                          </h5>
                                                       </div>
                                                    </td>
@@ -649,8 +658,8 @@
                                         {{-- Preview for newly added files --}}
                                         <div class="col-md-6" style="margin-top:19px;">
                                             <div class="row" id="main_lorry_file_preview">
-                                            @if($lr->mediaAttachments && $lr->mediaAttachments->count())
-                                                @foreach($lr->mediaAttachments as $key => $media)
+                                            @if(@$lr->mediaAttachments && @$lr->mediaAttachments->count())
+                                                @foreach(@$lr->mediaAttachments as $key => $media)
                                                     @php
                                                         $url = $media->file_url;
                                                         $extension = strtolower(pathinfo($media->file_name, PATHINFO_EXTENSION));
@@ -699,9 +708,10 @@
                                     <div class="col-md-12">
                                         <div class="mb-1">  
                                             <label class="form-label">Final Remarks</label> 
-                                            <textarea rows="4" class="form-control editable-field" placeholder="Enter Remarks here..." name="remarks" >
-                                                {{ $lr->remarks ?? '' }}
-                                            </textarea> 
+                                           <textarea rows="4" class="form-control editable-field text-start" placeholder="Enter Remarks here..." name="remarks">
+                                                {{ @$lr->remarks ?? '' }}
+                                            </textarea>
+
                                         </div>
                                     </div>
                                 </div>
@@ -1318,6 +1328,7 @@ $(document).on('focus', '.driver-autocomplete', function () {
             select: function (event, ui) {
                 $(this).val(ui.item.label);
                 $(this).closest('tr').find('.vehicle-type-id').val(ui.item.id);
+                 $('#vehicle_type_id').val(ui.item.id);
                 return false;
             }
         }).focus(function () {
@@ -1358,13 +1369,11 @@ $(document).on('focus', '.driver-autocomplete', function () {
             $('#routeSource').text(response.source_name);
             $('#routeDestination').text(response.destination_name);
 
-            // Disable if status is not editable
             if (formStatus === 'submitted' || formStatus === 'approved') {
                 $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', true);
             }
         },
         error: function () {
-            // Clear fields
             $('#vehicle_type_name').val('');
             $('.vehicle-type-id').val('');
             $('#distance').val('');
@@ -1372,7 +1381,6 @@ $(document).on('focus', '.driver-autocomplete', function () {
             $('#freight_charges').val('');
             $('#freightCharges').val('');
 
-            // Enable if fetch failed and editable
             if (formStatus !== 'submitted' && formStatus !== 'approved') {
                 $('#vehicle_type_name, #distance, #freight_charges').prop('disabled', false);
             }
@@ -1381,19 +1389,34 @@ $(document).on('focus', '.driver-autocomplete', function () {
 }
 
 
-
-    // ✅ This will now work globally:
     $(document).on('change', 'input[name*="[weight]"], input[name*="[no_of_articles]"]', function () {
         updateRouteDetailsUI(); 
         fetchFreightCharge();   
     });
+
+    $(document).ready(function () {
+  
+    // Distance: sync on keyup
+    $(document).on('keyup', '#distance', function () {
+        const distance = $(this).val();
+        $('#distanceInput').val(distance);
+    });
+
+    // Freight Charges: sync on keyup
+    $(document).on('keyup', '#freight_charges', function () {
+        const charges = $(this).val();
+        $('#freightCharges').val(charges);
+         calculateTotals(); 
+    });
+});
+
 </script>
 <script>
 $(document).ready(function () {
     const selectedLocationId = $('#locationId').val();
     const selectedCostCenterId = "{{ old('cost_center_id', $lr->cost_center_id ?? '') }}";
 
-    // When location changes
+
     $('#locationId').on('change', function () {
         const locationId = $(this).val();
         $('#cost_center_id').html('<option value="">Select Cost Center</option>');
@@ -1716,12 +1739,9 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
         document.getElementById('action_type').value = 'reject';
     }
 
-      // Show modal by ID
     function openModal(id) {
         $('#' + id).modal('show');
     }
-
-    // Bind click on Amendment button
 
 function amendConfirm() {
      const amendButton = document.getElementById('amendShowButton');
@@ -1749,12 +1769,10 @@ function amendConfirm() {
                 height: 14
             });
         }
-    // Re-apply form field enable logic if needed
+
     handleFormStatusControl("draft");
 }
 
-
-    // Show confirmation modal for amendment
     function openAmendConfirmModal() {
         $('#amendConfirmPopup').modal('show');
     }
@@ -1768,7 +1786,7 @@ function amendConfirm() {
         $("#lorry_receipt_form").submit();
     };
 
-       //inspection-end
+
      var currentRevNo = $("#revisionNumber").val();
      $(document).on('change', '#revisionNumber', function (e) {
         e.preventDefault();
@@ -1778,7 +1796,7 @@ function amendConfirm() {
         $("#revisionNumber").val(currentRevNo);
         window.open(currentUrl.toString(), '_blank');
     });
-//File related js code here
+
 
     let fileInputData = {};
     const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx'];
@@ -1869,7 +1887,6 @@ function addFiles(element, previewElementId) {
         return;
     }
 
-    // Remove duplicates by name + size
     fileInputData[inputId] = allFiles.reduce((unique, file) => {
         if (!unique.some(f => f.name === file.name && f.size === file.size)) {
             unique.push(file);
@@ -1877,15 +1894,11 @@ function addFiles(element, previewElementId) {
         return unique;
     }, []);
 
-    // Create new DataTransfer object
+
     const newDt = new DataTransfer();
     fileInputData[inputId].forEach(file => newDt.items.add(file));
     input.files = newDt.files;
-
-    // Refresh preview
     refreshPreviews(previewElementId, inputId);
-
-    // Reinitialize Feather Icons
     feather.replace({ width: 20, height: 20 });
 }
 
@@ -1893,7 +1906,6 @@ function refreshPreviews(previewElementId, inputId) {
     const previewWrapper = document.getElementById(previewElementId);
     if (!previewWrapper) return;
 
-    // ✅ Remove only previews added via JS (new files), not Blade (existing files)
     const jsPreviews = previewWrapper.querySelectorAll('.file-preview-item');
     jsPreviews.forEach(el => el.remove());
 
@@ -1928,7 +1940,6 @@ document.addEventListener('click', function (e) {
                 removeInput.value = existing.join(',');
             }
         } else {
-            // Create hidden input if not exists
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'removed_media_ids';
@@ -1936,28 +1947,23 @@ document.addEventListener('click', function (e) {
             document.querySelector('form').appendChild(input);
         }
 
-        // Remove DOM only
+      
         deleteIcon.closest('.image-uplodasection').remove();
         return;
     }
 
-    // ✅ New file: remove from fileInputData and input.files
+
     const index = parseInt(deleteIcon.getAttribute('data-index'));
     const previewElementId = deleteIcon.getAttribute('data-input-id');
     const inputId = deleteIcon.getAttribute('data-input-name');
     const input = document.querySelector(`input[name="${inputId}[]"]`);
 
     if (!fileInputData[inputId]) return;
-
-    // Remove file from array
     fileInputData[inputId].splice(index, 1);
 
-    // Update input.files
     const dt = new DataTransfer();
     fileInputData[inputId].forEach(file => dt.items.add(file));
     input.files = dt.files;
-
-    // ✅ Just remove the preview block
     deleteIcon.closest('.image-uplodasection').remove();
 
     feather.replace({ width: 20, height: 20 });

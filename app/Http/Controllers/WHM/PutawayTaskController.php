@@ -254,6 +254,7 @@ class PutawayTaskController extends Controller
             $q->where('morphable_id', $putawayItemId);
         })
         ->where('job_type', CommonHelper::PUTAWAY)
+        ->whereIn('status',[CommonHelper::PENDING,CommonHelper::SCANNED])
         ->select('uid','job_id','morphable_id as putaway_item_id','group_id','company_id','organization_id','book_code','doc_no','doc_date','status','item_id','item_uid','item_name','item_code','item_attributes','status','vendor_id')
         ->get();
 

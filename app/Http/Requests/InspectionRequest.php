@@ -124,7 +124,7 @@ class InspectionRequest extends FormRequest
             'document_date.after_or_equal' => 'The document date cannot be in the past.',
             'document_date.before_or_equal' => 'The document date cannot be in the future.',
             'header_store_id.required' => 'Location is required',
-            'sub_store_id.required' => 'Store is required',
+            'sub_store_id.required' => 'Main Store is required',
             'supplier_invoice_no.required' => 'Supplier Invoice No is required.',
             'supplier_invoice_date.required' => 'Supplier Invoice Date is required.',
             'vehicle_no.required' => 'Vehicle number is required.',
@@ -155,11 +155,12 @@ class InspectionRequest extends FormRequest
         $validator->after(function ($validator) {
             $components = $this->input('components', []);
             $items = [];
+            $isRejectedQty = 0;
             foreach ($components as $key => $component) {
-                $itemValue = floatval($component['item_total_cost']);
-                if($itemValue < 0) {
-                    $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
+                if (!empty($component['rejected_qty']) && $component['rejected_qty'] > 0) {
+                    $isRejectedQty = 1;
                 }
+
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $inspectionItemId = $component['detail_id'] ?? null;
@@ -204,6 +205,12 @@ class InspectionRequest extends FormRequest
                     }
                 }
             }
+            if($isRejectedQty){
+                if (!$this->filled('rejected_sub_store_id')) {
+                    $validator->errors()->add("rejected_sub_store_id", "Rejected store should be mandatory for rejected qty.");
+                }
+            }
+            
         });
     }
 }

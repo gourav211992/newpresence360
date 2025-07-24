@@ -136,7 +136,7 @@
                                                 <input type = "hidden" value = "{{$order -> id}}" name = "sale_invoice_id"></input>
                                             @endif
 
-                                                    <div class="row align-items-center mb-1">
+                                                    <div class="row align-items-center mb-1 d-none">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Document Type <span class="text-danger">*</span></label>  
                                                         </div>
@@ -270,6 +270,7 @@
                                                             </div>
                                                         
                                             </div>
+                                    </div>
                                             
                                             
                                                     @if(isset($order) && ($order -> document_status !== "draft"))
@@ -3472,10 +3473,12 @@
         let documentDetails = [];
         let plistDetailIds = [];
         let plItemDetailIds = [];
+        let itemIds = [];
         for (let index = 0; index < allCheckBoxes.length; index++) {
             if (allCheckBoxes[index].checked) {
                 docId.push(allCheckBoxes[index].getAttribute('document-id'));
                 soItemsId.push(allCheckBoxes[index].getAttribute('so-item-id'));
+                itemIds.push(allCheckBoxes[index].getAttribute('item-id'));
                 qties.push(allCheckBoxes[index].getAttribute('balance_qty'));
                 documentDetails.push({
                     'order_id' : allCheckBoxes[index].getAttribute('document-id'),
@@ -3497,6 +3500,7 @@
                     order_id: docId,
                     quantities : qties,
                     items_id: soItemsId,
+                    item_ids : itemIds,
                     doc_type: openPullType,
                     document_details : JSON.stringify(documentDetails),
                     store_id : $("#store_id_input").val(),
@@ -3956,6 +3960,7 @@
                     docId = row?.header?.customer_id;
                 }
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
+                const itemId = row?.id;
                 const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
                 return `<div class="form-check form-check-inline me-0">
                     <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
@@ -3967,6 +3972,7 @@
                         current-doc-id="0"
                         document-id="${mainDocId}"
                         so-item-id="${soItemId}"
+                        item-id="${itemId}"
                         balance_qty="${row.balance_qty || 0}"
                         pl_item_detail_id = "${row.id}"
                         detail-id="${row?.id}">

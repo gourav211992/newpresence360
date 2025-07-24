@@ -6,6 +6,7 @@ use App\Helpers\ConstantHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\ErpMaterialIssueHeader;
 use App\Models\ErpMaterialReturnHeader;
+use App\Models\ErpPlHeader;
 use App\Models\ErpProductionSlip;
 use App\Models\ErpRateContract;
 use App\Models\ErpSaleInvoice;
@@ -760,6 +761,42 @@ class DocumentApprovalController extends Controller
             $bookId = $doc->book_id;
             $docId = $doc->id;
             $docValue = $doc->total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $doc->approval_level;
+            $revisionNumber = $doc->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($doc);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            $doc->approval_level = $approveDocument['nextLevel'];
+            $doc->document_status = $approveDocument['approvalStatus'];
+            $doc->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $doc,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function pickList(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $doc = ErpPlHeader::find($request->id);
+            $bookId = $doc->book_id;
+            $docId = $doc->id;
+            $docValue = 0;
             $remarks = $request->remarks;
             $attachments = $request->file('attachments');
             $currentLevel = $doc->approval_level;

@@ -43,6 +43,12 @@
                             <input type="hidden" id="customer_id_qt_val"></input>
                         </div>
                     </div>
+                    <div class="col">
+                        <div class="form-check form-check-primary custom-checkbox mt-2">
+                        <input type="checkbox" class="form-check-input " id="out_of_stock_check" oninput = "loadOrders();">
+                            <label class="form-check-label" for="out_of_stock_check" >Show out Of Stock</label>
+                        </div>
+                    </div>
                     <div class="col mb-1">
                         <label class="form-label">&nbsp;</label><br />
                         {{-- <button type="button" class="btn btn-primary btn-sm searchPiBtn"><i data-feather="search"></i> Search</button> --}}

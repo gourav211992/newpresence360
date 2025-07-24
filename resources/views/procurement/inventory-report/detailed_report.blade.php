@@ -395,15 +395,17 @@
 
                 const allowedStatuses = ['approved', 'approval_not_required', 'posted'];
                 const beforeStartDate = records.filter(record =>
-                    new Date(record.document_date) < start &&
-                    allowedStatuses.includes(record.document_status)
+                    new Date(record.document_date) < start
+                    // &&
+                    // allowedStatuses.includes(record.document_status)
                 );
                 const beforeEndDate = records.filter(record => {
                     const recordDate = new Date(record.document_date);
                     return (
                         recordDate >= start &&
-                        recordDate <= end &&
-                        allowedStatuses.includes(record.document_status)
+                        recordDate <= end
+                        // &&
+                        // allowedStatuses.includes(record.document_status)
                     );
                 });
                 beforeStartDate.forEach((brecord, index) => {

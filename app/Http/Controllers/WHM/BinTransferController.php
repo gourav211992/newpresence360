@@ -113,6 +113,22 @@ class BinTransferController extends Controller
             ]);
         }
 
+        $itemIds = $items->pluck('item_id')->toArray();
+        foreach ($itemIds as $itemId) {
+            $isMapped = StoragePointHelper::isStoragePointMappedToItem(
+                $itemId,
+                $toStoragePoint->id,
+                $toStoragePoint->store_id,
+                $toStoragePoint->sub_store_id
+            );
+
+            if (!$isMapped) {
+                throw ValidationException::withMessages([
+                    'to_storage_number' => "Storage point is not mapped to item ID: {$itemId}",
+                ]);
+            }
+        }
+
         \DB::beginTransaction();
         try {
             $user = Helper::getAuthenticatedUser();
@@ -177,6 +193,22 @@ class BinTransferController extends Controller
             throw ValidationException::withMessages([
                 'item_ids' => 'No valid items found for transfer.',
             ]);
+        }
+
+        $itemIds = $items->pluck('item_uid', 'item_id')->toArray();
+        foreach ($itemIds as $itemId => $packetId) {
+            $isMapped = StoragePointHelper::isStoragePointMappedToItem(
+                $itemId,
+                $toStoragePoint->id,
+                $toStoragePoint->store_id,
+                $toStoragePoint->sub_store_id
+            );
+
+            if (!$isMapped) {
+                throw ValidationException::withMessages([
+                    'to_storage_number' => "Storage point is not mapped to packet ID: {$packetId}",
+                ]);
+            }
         }
 
         \DB::beginTransaction();

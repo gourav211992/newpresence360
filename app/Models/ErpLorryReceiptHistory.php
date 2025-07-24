@@ -73,7 +73,7 @@ class ErpLorryReceiptHistory extends Model
 
     public function locations()
     {
-        return $this->hasMany(ErpLogisticsLrLocation::class, 'lorry_receipt_id', 'id');
+        return $this->hasMany(ErpLogisticsLrLocationHistory::class, 'lorry_receipt_id', 'id');
     }
 
     public function source()
@@ -114,7 +114,7 @@ class ErpLorryReceiptHistory extends Model
    public function mediaAttachments()
     {
         return $this->hasMany(ErpLogisticLRMedia::class, 'model_id', 'id')
-                    ->where('model_name', 'ErpLorryReceipt'); // adjust if needed
+                    ->where('model_name', 'ErpLorryReceiptHistory'); 
     }
 
        public function media()

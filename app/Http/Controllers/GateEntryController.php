@@ -801,10 +801,10 @@ class GateEntryController extends Controller
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
                 ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
-                ->pluck('config_value', 'config_key'); 
-                
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
-                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                ->pluck('config_value', 'config_key');
+
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
@@ -1584,14 +1584,14 @@ class GateEntryController extends Controller
                 ], 422);
             }
 
-            
+
             $config = Configuration::where('type','organization')
                 ->where('type_id', $user->organization_id)
                 ->whereIn('config_key', [CommonHelper::UNLOADING_REQUIRED,CommonHelper::ENFORCE_UIC_SCANNING])
-                ->pluck('config_value', 'config_key'); 
-            
-            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) 
-                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes') 
+                ->pluck('config_value', 'config_key');
+
+            if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)
+                && (isset($config[CommonHelper::UNLOADING_REQUIRED]) && $config[CommonHelper::UNLOADING_REQUIRED] == 'yes')
                 && (isset($config[CommonHelper::ENFORCE_UIC_SCANNING]) && $config[CommonHelper::ENFORCE_UIC_SCANNING] == 'yes')
             ){
                 (new WhmJob)->createJob($mrn->id,'App\Models\GateEntryHeader');
@@ -2136,6 +2136,7 @@ class GateEntryController extends Controller
 
 
         $shippingAddress = $mrn->shippingAddress;
+        $billingAddress = $mrn->billingAddress;
 
         $totalItemValue = $mrn->total_item_amount ?? 0.00;
         $totalDiscount = $mrn->total_discount ?? 0.00;
@@ -2163,6 +2164,7 @@ class GateEntryController extends Controller
                 'mrn' => $mrn,
                 'user' => $user,
                 'shippingAddress' => $shippingAddress,
+                'billingAddress' => $billingAddress,
                 'organization' => $organization,
                 'amountInWords' => $amountInWords,
                 'organizationAddress' => $organizationAddress,

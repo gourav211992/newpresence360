@@ -227,11 +227,11 @@
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
-                                                    <div class="col-md-3">
+                                                    {{-- <div class="col-md-3">
                                                         <label class="form-label">Reference No <span class="text-danger">*</span></label>
-                                                    </div>
+                                                    </div> --}}
                                                     <div class="col-md-5">
-                                                        <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly>
+                                                        {{-- <input type="text" name="reference_number" class="form-control" id="reference_number_input" readonly> --}}
                                                         <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
                                                     </div>
                                                 </div>
@@ -474,7 +474,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">PO Qty</th>
+                                                                <th class="text-end">Qty</th>
                                                                 <th class="text-end">Recpt Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
@@ -1210,9 +1210,9 @@
                         }
                         initializeAutocomplete2(".comp_item_code");
                         focusAndScrollToLastRowInput();
-                        $(".poSelect").hide();
-                        $(".joSelect").hide();
-                        $(".soSelect").hide();
+                        $(".poSelect").addClass('d-none');
+                        $(".joSelect").addClass('d-none');
+                        $(".soSelect").addClass('d-none');
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                     } else if(data.status == 422) {
@@ -1263,9 +1263,10 @@
                 });
             }
             if(!$("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                $(".poSelect").show();
-                $(".joSelect").show();
-                $(".importItem").prop('disabled',false);
+                $(".joSelect").removeClass('d-none');
+                $(".poSelect").removeClass('d-none');
+                $(".soSelect").removeClass('d-none');
+                $("#importItem").show();
                 $("#referenceNoDiv").hide();
                 $("#reference_number_input").val('');
                 $("#addNewItemBtn").show();
@@ -1477,7 +1478,7 @@
                 so_detail_id: getVal("[name*='[so_detail_id]']"),
                 remark: getVal("[name*='[remark]']"),
                 uom_id: getVal("[name*='[uom_id]']"),
-                qty: getVal("[name*='[accepted_qty]']"),
+                qty: getVal("[name*='[order_qty]']"),
                 selectedAttr: JSON.stringify(selectedAttr),
                 itemStoreData: JSON.parse(getVal("[id*='components_stores_data']") || "[]"),
                 type: currentProcessType,
@@ -1911,8 +1912,9 @@
 
             let moduleTypes = getSelectedPoTypes();
             $("[name='po_item_ids']").val(ids);
-            $(".joSelect").hide();
-            $(".soSelect").hide();
+            $(".joSelect").addClass('d-none');
+            $(".soSelect").addClass('d-none');
+            $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -1998,7 +2000,7 @@
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -2284,8 +2286,9 @@
             let moduleTypes = getSelectedJoTypes();
 
             $("[name='jo_item_ids']").val(ids);
-            $(".poSelect").hide();
-            $(".soSelect").hide();
+            $(".poSelect").addClass('d-none');
+            $(".soSelect").addClass('d-none');
+            $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -2371,7 +2374,7 @@
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -2631,8 +2634,9 @@
             let moduleTypes = getSelectedSoTypes();
 
             $("[name='so_item_ids']").val(ids);
-            $(".poSelect").hide();
-            $(".joSelect").hide();
+            $(".poSelect").addClass('d-none');
+            $(".joSelect").addClass('d-none');
+            $("#importItem ").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
@@ -2718,7 +2722,7 @@
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[accepted_qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
@@ -3283,7 +3287,6 @@
             fetch(actionUrl)
                 .then(res => res.json())
                 .then(data => {
-                    console.log('data', data);
                     if (data.status !== 200) return handleAsnError(data.message);
 
                     const {
