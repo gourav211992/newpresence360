@@ -1361,7 +1361,14 @@ class ServiceParametersHelper
             "default_value" => ['no'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ]
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
         // ,
         // [
         //     "name" => self::INDENT_TOLERANCE_LIMIT_PARAM,

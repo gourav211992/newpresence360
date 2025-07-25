@@ -82,7 +82,7 @@
     <tr>
         <td class="poprod-decpt">
             <span class="mw-100" style="padding: 0%;">
-                <strong style="font-size:11px; color : #6a6a6a;">MRN</strong>
+                <strong style="font-size:11px; color : #6a6a6a;">GRN</strong>
             </span>
             <span class="badge rounded-pill badge-light-primary">
                 {{$mrn->book_code}}-{{$mrn->document_number}}

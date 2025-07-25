@@ -29,7 +29,7 @@
                         <div class="col-md-12 bg-light border-bottom mb-1 po-reportfileterBox">
                             <div class="row pofilterhead action-button align-items-center">
                                 <div class="col-md-4">
-                                    <h3>MRN Report</h3>
+                                    <h3>GRN Report</h3>
                                     <p>Apply the Basic Filter</p>
                                 </div>
                                 <div
@@ -201,13 +201,13 @@
                                 <div class="col-md-4">
                                     <div class="form-check form-check-secondary">
                                         <input type="checkbox" class="form-check-input" id="mrn-no" checked="">
-                                        <label class="form-check-label" for="mrn-no">MRN NO</label>
+                                        <label class="form-check-label" for="mrn-no">GRN NO</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="form-check form-check-secondary">
                                         <input type="checkbox" class="form-check-input" id="mrn-date" checked="">
-                                        <label class="form-check-label" for="mrn-date">MRN Date</label>
+                                        <label class="form-check-label" for="mrn-date">GRN Date</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">

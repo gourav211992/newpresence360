@@ -586,8 +586,9 @@ class LedgerController extends Controller
      */
     public function edit(Request $request, string $id)
     {
+        $rev = Ledger::find($id)->revision_number;
         $user = Helper::getAuthenticatedUser();
-        if ($request->has('revisionNumber'))
+        if ($request->has('revisionNumber') && ((int)$request->revisionNumber!= Ledger::find($id)->revision_number))
             $data = LedgerHistory::where('source_id', $id)->where('revision_number', $request->revisionNumber)->firstorFail();
         else
             $data = Ledger::find($id);
@@ -837,7 +838,7 @@ class LedgerController extends Controller
         $bookId = $update->book_id;
         $docId = $update->id;
         $remarks = $request->remarks;
-        $attachments = $request->file('attachment');
+        $attachments = $request->file('attachment')??null;
         $currentLevel = 1;
         $revisionNumber = $update->revision_number ?? 0;
         $actionType = 'submit';
@@ -845,14 +846,14 @@ class LedgerController extends Controller
         $totalValue = 0;
 
         $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-        $document_status = $approveDocument['approvalStatus'];
-        $update->document_status = $document_status;
-        if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-            $update->status = 0;
-        } else {
-            $update->status = 1;
-        }
-        $update->save();
+        // $document_status = $approveDocument['approvalStatus'];
+        // $update->document_status = $document_status;
+        // if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+        //     $update->status = 0;
+        // } else {
+        //     $update->status = 1;
+        // }
+        // $update->save();
 
         $updatedGroups = json_decode($request->updated_groups, true); // Decode as an associative array
 

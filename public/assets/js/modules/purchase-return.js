@@ -131,52 +131,67 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
 });
 
 /*qty on change*/
-$(document).on('change',"[name*='accepted_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    checkDuplicateObjects(qty);
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let itemId = $(e.target).closest('tr').find('[name*=item_id]').val();
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let receiptQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
-    let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='mrn_detail_id']").val();
-    let prDetailId = $(e.target).closest('tr').find("[name*='pr_detail_id']").val();
-    let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
-    let returnType = $('#return_type').val();
-    let ordQty = acceptedQuantity.val();
-    if(mrnDetailId || prDetailId){
-        let actionUrl = '/purchase-return/validate-quantity?item_id='+itemId+'&mrnDetailId='+mrnDetailId+'&prDetailId='+prDetailId+'&qty='+acceptedQuantity.val()+'&return_type='+returnType;
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if(data.data.error_message) {
-                    acceptedQuantity.val(0);
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.data.error_message,
-                        icon: 'error',
-                    });
-                    return false;
-                } else{
-                    acceptedQuantity.val(data.data.quantity);
-                }
-            });
-        });
+$(document).on('change', "[name*='accepted_qty']", async function (e) {
+    const $tr = $(e.target).closest('tr');
+    const $qtyInput = $(e.target);
+    const orderQty = parseFloat($qtyInput.val()) || 0;
+
+    const $itemCost = $tr.find("[name*='rate']");
+    const $itemValue = $tr.find("[name*='basic_value']");
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+    const return_type = $('.return_type').val();
+
+    $qtyInput.val(orderQty.toFixed(2));
+    checkDuplicateObjects($qtyInput);
+
+    if (orderQty <= 0) {
+        Swal.fire({ title: 'Error!', text: 'Qty. cannot be zero.', icon: 'error' });
+        $qtyInput.val(poQty.toFixed(2));
+        return;
     }
 
-    let aq = parseFloat(acceptedQuantity.val());
-    let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
-    acceptedQuantity.val(aq.toFixed(2));
-    rejectedQuantity.val(rq.toFixed(2));
+    const getVal = (selector) => {
+        const el = $tr.find(selector);
+        return el.length ? el.val() : '';
+    };
 
-    if (Number(itemCost.val())) {
-        let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
-        itemValue.val(totalItemValue.toFixed(2));
-    } else {
-        itemValue.val('');
+    const data = {};
+    const safeSet = (key, val) => { if (val) data[key] = val; };
+
+    safeSet('item_id', itemId);
+    safeSet('mrn_detail_id', getVal("[name*='[mrn_detail_id]']"));
+    safeSet('pr_item_id', getVal("[name*='[pr_item_id]']"));
+    safeSet('return_type', return_type);
+    safeSet('qty', orderQty.toFixed(2));
+    safeSet('type', currentProcessType);
+
+    try {
+        const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+        const result = await response.json();
+
+        const resultQty = parseFloat(result.order_qty) || 0;
+        const finalQty = resultQty.toFixed(2);
+        $qtyInput.val(finalQty);
+        let acceptedQty = resultQty;
+
+        if (Number($itemCost.val())) {
+            let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
+            $itemValue.val(totalValue.toFixed(2));
+        } else {
+            $itemValue.val('');
+        }
+        
+        if (result.status !== 200 && result.message) {
+            Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
+            return false;
+        }
+        getItemDetail($tr);
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ title: 'Error!', text: 'Quantity validation failed.', icon: 'error' });
     }
-    getItemDetail(tr);
 });
 
 /*rate on change*/
@@ -1259,89 +1274,128 @@ $(document).on('change', 'select[name*="[uom_id]"]',(e) => {
     setTableCalculation();
 });
 
-function updateDropdown() {
-    // Get the value of pr_qty_type from the hidden input
-    let prQtyType = $("#pr_qty_type").val();
+const $prQtyType = $(".pr_qty_type");
+const $returnType = $(".return_type");
+const $storeId = $(".header_store_id");
+const $subStore = $(".sub_store");
 
-    // Define available quantity types
-    var quantityTypes = {
-        'all': ['accepted', 'rejected'],
-        'accepted': ['accepted'],
-        'rejected': ['rejected']
-    };
+// Return type options
+const quantityTypes = {
+    all: ['accepted', 'rejected'],
+    accepted: ['accepted'],
+    rejected: ['rejected']
+};
 
-    var options = quantityTypes[prQtyType] || [];
-    var $dropdown = $('#return_type');
+// Fill return_type dropdown based on pr_qty_type value
+function updateDropdown(prQtyTypeVal, selectedReturnType = null) {
+    const options = quantityTypes[prQtyTypeVal] || [];
+    $returnType.empty();
 
-    // Clear existing options
-    $dropdown.empty();
-
-    // Append filtered options
-    options.forEach(function(type) {
-        $dropdown.append('<option value="' + type + '">' + type.charAt(0).toUpperCase() + type.slice(1) + '</option>');
+    options.forEach(type => {
+        const isSelected = selectedReturnType === type ? 'selected' : '';
+        $returnType.append(
+            `<option value="${type}" ${isSelected}>${type.charAt(0).toUpperCase() + type.slice(1)}</option>`
+        );
     });
 }
 
-// Call function to update dropdown on page load
-updateDropdown();
+// Fetch sub stores
+function getSubStores(storeId, returnType, selectedSubStoreId = null) {
+    if (!storeId || !returnType) return;
 
-// Example: Change pr_qty_type dynamically
-$('#pr_qty_type').on('change', function() {
-    prQtyType = $(this).val();
-    updateDropdown();
-});
+    const subType = returnType === 'accepted' ? 'main' : 'rejected';
 
-// 1. Attach change event
-$(document).on('change', '.header_store_id', function () {
-    const selectedStoreId = $(this).val();
-    if (selectedStoreId) {
-        getSubStores(selectedStoreId);
-        getCostCenters(selectedStoreId);
-    }
-});
-
-// 2. On page load: trigger if already selected
-const selectedStoreId = $('.header_store_id').val();
-if (selectedStoreId) {
-    getSubStores(selectedStoreId);
-    getCostCenters(selectedStoreId);
-}
-
-function getSubStores(storeLocationId, item='')
-{
-    const storeId = storeLocationId;
     $.ajax({
         url: "/sub-stores/store-wise",
         method: 'GET',
         dataType: 'json',
         data: {
-            store_id : storeId,
+            store_id: storeId,
+            sub_type: subType
         },
-        success: function(data) {
-            if((data.status == 200)  && data.data.length) {
+        success: function (response) {
+            if (response.status === 200 && Array.isArray(response.data)) {
                 let options = '';
-                data.data.forEach(function(location) {
-                    options+= `<option value="${location.id}">${location.name}</option>`;
+                response.data.forEach(location => {
+                    const isSelected = selectedSubStoreId && location.id == selectedSubStoreId ? 'selected' : '';
+                    options += `<option value="${location.id}" ${isSelected}>${location.name}</option>`;
                 });
-                $(".sub_store").html(options);
+                $subStore.html(options);
+            
+                if (selectedSubStoreId) {
+                    $subStore.val(selectedSubStoreId).trigger('change');
+                } else if (response.data.length) {
+                    $subStore.val(response.data[0].id).trigger('change');
+                }
             } else {
-                // No data found, hide subStore header and cell
-                $(".sub_store").empty();
+                $subStore.empty();
             }
         },
-        error: function(xhr) {
+        error: function (xhr) {
             Swal.fire({
                 title: 'Error!',
-                text: xhr?.responseJSON?.message,
+                text: xhr?.responseJSON?.message || 'Something went wrong!',
                 icon: 'error',
             });
         }
     });
 }
 
+// Optional: wrap getCostCenters
+function getCostCentersWrapper(storeId) {
+    if (typeof getCostCenters === 'function') {
+        getCostCenters(storeId);
+    }
+}
+
+// Initialize everything on load
+(function init() {
+    const prQtyTypeVal = $prQtyType.val(); // 'accepted', 'rejected', 'all'
+    const initialStoreId = $storeId.val(); // '1'
+    const initialReturnType = $returnType.val(); // 'accepted' or 'rejected' from form
+    const initialSubStoreId = $subStore.val(); // preselected sub store id from form
+
+    // Step 1: Populate return_type with options and reselect current one
+    updateDropdown(prQtyTypeVal, initialReturnType);
+
+    // Step 2: Trigger sub store load
+    if (initialStoreId && initialReturnType) {
+        getSubStores(initialStoreId, initialReturnType, initialSubStoreId);
+        getCostCentersWrapper(initialStoreId);
+    }
+})();
+
+// On change handlers
+$prQtyType.on('change', function () {
+    const selectedType = $(this).val();
+    updateDropdown(selectedType);
+
+    // Give DOM time to update dropdown before triggering dependent logic
+    setTimeout(() => {
+        const storeId = $storeId.val();
+        const returnType = $returnType.val();
+        getSubStores(storeId, returnType, null); // ← force new sub_store list
+        getCostCentersWrapper(storeId);
+    }, 50);
+});
+
+$returnType.on('change', function () {
+    const returnType = $(this).val();
+    const storeId = $storeId.val();
+    getSubStores(storeId, returnType, null); // reset sub store on change
+    getCostCentersWrapper(storeId);
+});
+
+$storeId.on('change', function () {
+    const storeId = $(this).val();
+    const returnType = $returnType.val();
+    getSubStores(storeId, returnType, null); // reset sub store
+    getCostCentersWrapper(storeId);
+});
+
 // Get Cost Centers
 function getCostCenters(storeLocationId) {
-    $("#cost_center_div").hide(); // Hide by default
+    $(".cost_center_div").hide(); // Hide by default
 
     $.ajax({
         url: "/get-cost-centers",
@@ -1360,10 +1414,10 @@ function getCostCenters(storeLocationId) {
                 });
 
                 $(".cost_center").html(options);
-                $("#cost_center_div").show();
+                $(".cost_center_div").show();
             } else {
                 $(".cost_center").empty();
-                $("#cost_center_div").hide();
+                $(".cost_center_div").hide();
             }
         },
         error: function(xhr) {

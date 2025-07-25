@@ -22,9 +22,16 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('inspection-checklists.create') }}">
-                            <i data-feather="plus-circle"></i> Add New
-                        </a> 
+                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="
+                                @if ($currentUrlSegment === 'maintenance-inspection-checklists')
+                                    {{ route('maintenance-inspection-checklists.create') }}
+                                @elseif ($currentUrlSegment === 'item-inspection-checklists')
+                                    {{ route('item-inspection-checklists.create') }}
+                                @else
+                                    {{ route('inspection-checklists.create') }}
+                                @endif">
+                                <i data-feather="plus-circle"></i> Add New
+                            </a>
                     </div>
                 </div>
             </div>
@@ -33,6 +40,7 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
+                                <input type="hidden" id="currentUrlSegment" value="{{ $currentUrlSegment ?? '' }}">
                                 <div class="table-responsive">
                                     <table class="datatables-basic table myrequesttablecbox"> 
                                         <thead>
@@ -58,6 +66,7 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+        var currentUrlSegment = "{{ $currentUrlSegment }}";
         var dt_basic_table = $('.datatables-basic');
         function renderData(data) {
             return data ? data : 'N/A'; 
@@ -66,7 +75,16 @@
             var dt_basic = dt_basic_table.DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('inspection-checklists.index') }}",
+                ajax: {
+                    url: currentUrlSegment === 'maintenance-inspection-checklists' 
+                        ? "{{ route('maintenance-inspection-checklists.index') }}"
+                        : currentUrlSegment === 'item-inspection-checklists'
+                            ? "{{ route('item-inspection-checklists.index') }}"
+                            : "{{ route('inspection-checklists.index') }}",
+                    data: function(d) {
+                        d.urlSegment = currentUrlSegment;
+                    }
+                },
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'name', render: renderData },

@@ -64,7 +64,7 @@
                             </div>
                             <div class="row align-items-center mb-1">
                                 <div class="col-md-3"> 
-                                    <label class="form-label">MRN No <span class="text-danger">*</span></label>  
+                                    <label class="form-label">GRN No <span class="text-danger">*</span></label>  
                                 </div>  
                                 <div class="col-md-5"> 
                                     <input type="text" class="form-control" name="document_number" value="{{@$mrn->document_number}}" id="document_number">
@@ -72,7 +72,7 @@
                             </div>  
                             <div class="row align-items-center mb-1">
                                 <div class="col-md-3"> 
-                                    <label class="form-label">MRN Date <span class="text-danger">*</span></label>  
+                                    <label class="form-label">GRN Date <span class="text-danger">*</span></label>  
                                 </div>  
                                 <div class="col-md-5"> 
                                     <input type="date" class="form-control" readonly value="{{date('Y-m-d')}}" >

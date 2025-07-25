@@ -693,6 +693,12 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/subcategories/{categoryId}', 'getSubcategories')->name('categories.subcategory');
     });
 
+     Route::prefix('equipment-categories')->controller(CategoryController::class)->group(function () {
+        Route::get('/', 'index')->name('equipment-categories.index');
+        Route::get('/create', 'create')->name('equipment-categories.create');
+        Route::get('/{id}/edit', 'edit')->name('equipment-categories.edit');
+    });
+
     Route::prefix('payment-terms')->controller(PaymentTermController::class)->group(function () {
         Route::get('/', 'index')->name('payment-terms.index');
         Route::post('/', 'store')->name('payment-terms.store');
@@ -1993,6 +1999,17 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/detail', 'getChecklistDetails')->name('inspection-checklists.detail');
     });
 
+    Route::prefix('maintenance-inspection-checklists')->controller(InspectionChecklistController::class)->group(function () {
+        Route::get('/', 'index')->name('maintenance-inspection-checklists.index');
+        Route::get('/create', 'create')->name('maintenance-inspection-checklists.create');
+        Route::get('/{id}/edit', 'edit')->name('maintenance-inspection-checklists.edit');
+    });
+
+    Route::prefix('item-inspection-checklists')->controller(InspectionChecklistController::class)->group(function () {
+        Route::get('/', 'index')->name('item-inspection-checklists.index');
+        Route::get('/create', 'create')->name('item-inspection-checklists.create');
+        Route::get('/{id}/edit', 'edit')->name('item-inspection-checklists.edit');
+    });
     Route::prefix('stations')->controller(StationController::class)->group(function () {
         Route::get('/', 'index')->name('stations.index');
         Route::get('/create', 'create')->name('stations.create');
@@ -2400,6 +2417,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('bank.create');
         Route::post('/', 'store')->name('bank.store');
         Route::get('/search', 'search')->name('bank.search');
+        Route::get('/search/ledger', 'getLedger')->name('bank.ledger.search');
         Route::get('/{id}', 'show')->name('bank.show');
         Route::get('/{id}/edit', 'edit')->name('bank.edit');
         Route::put('/{id}', 'update')->name('bank.update');
@@ -2556,6 +2574,7 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.registration.update',
         'destroy' => 'finance.fixed-asset.registration.destroy',
     ]);
+    
     Route::get('fixed-asset/registration/amendment/{id}', [RegistrationController::class, 'amendment'])->name('finance.fixed-asset.registration.amendment');
     Route::post('fixed-asset/registration/approval', [RegistrationController::class, 'documentApproval'])->name('finance.fixed-asset.registration.approval');
     Route::get('fixed-asset/sub_asset', [RegistrationController::class, 'subAsset'])->name('finance.fixed-asset.sub_asset');
@@ -2616,6 +2635,9 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.setup.update',
         'destroy' => 'finance.fixed-asset.setup.destroy',
     ]);
+    Route::post('/setup/generate-prefix', [SetupController::class,'generate_prefix'])->name('generate-setup-prefix');
+    Route::post('/setup/check-prefix', [SetupController::class,'checkPrefix'])->name('setup-check-prefix');
+    
     Route::get('fixed-asset/depreciation/posting/get', [DepreciationController::class, 'getPostingDetails'])->name('finance.fixed-asset.depreciation.posting.get');
     Route::post('fixed-asset/depreciation/post', [DepreciationController::class, 'postInvoice'])->name('finance.fixed-asset.depreciation.post');
     Route::get('fixed-asset/depreciation/assets', [DepreciationController::class, 'getAssets'])->name('finance.fixed-asset.depreciation.assets');
@@ -2846,7 +2868,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
     });
-
 
 
     Route::prefix('equipment')->group(function () {

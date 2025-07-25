@@ -15,6 +15,8 @@ class CategoryRequest extends FormRequest
     }
 
     protected $organization_id;
+    protected $group_id;
+    protected $company_id;
 
     protected function prepareForValidation()
     {
@@ -98,8 +100,22 @@ class CategoryRequest extends FormRequest
             }
 
             $existing = Category::where('name', $categoryName)
-                ->where('group_id', $this->group_id)
                 ->whereNull('deleted_at')
+                 ->when($this->group_id !== null, function ($query) {
+                    return $query->where('group_id', $this->group_id);
+                })
+                ->when($this->company_id !== null, function ($query) {
+                    return $query->where(function($q) {
+                        $q->where('company_id', $this->company_id)
+                        ->orWhereNull('company_id');
+                    });
+                })
+                ->when($this->organization_id !== null, function ($query) {
+                    return $query->where(function($q) {
+                        $q->where('organization_id', $this->organization_id)
+                        ->orWhereNull('organization_id');
+                    });
+                })
                 ->when($categoryId, function ($query) use ($categoryId) {
                     return $query->where('id', '!=', $categoryId);
                 })

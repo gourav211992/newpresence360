@@ -169,7 +169,7 @@
                                                     <div class="col-md-5 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
                                                             <i data-feather="plus-square"></i>
-                                                            Outstanding MRN
+                                                            Outstanding GRN
                                                         </button>
                                                         <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
                                                     </div>
@@ -1278,7 +1278,7 @@
             getItemDetail(rowCount);
         });
 
-        /*Open MRN model*/
+        /*Open GRN model*/
         let mrnOrderTable;
         $(document).on('click', '.mrnSelect', (e) => {
             tableRowCount = $('.mrntableselectexcel tr').length;
@@ -1723,7 +1723,7 @@
             $("td.dynamic-summary-colspan").attr("colspan", 10);
         })
 
-        // Clear MRN Process 
+        // Clear GRN Process 
         $(document).on('click', '.clearMrnFilter', (e) => {
             $("#item_name_input_qt").val('');
             $("#item_id_qt_val").val('');
@@ -1748,7 +1748,7 @@
             initializeAutocompleteQt("sub_store", "sub_store_id", "sub_store", "name", "");
         });
 
-        // MRN Process
+        // GRN Process
         function asnProcess(asnData, moduleProcess) {
             const current_row_count = $("tbody tr[id*='row_']").length;
 
@@ -1846,7 +1846,7 @@
                 .catch(() => {
                     Swal.fire({
                         title: 'Error!',
-                        text: 'An unexpected error occurred while processing MRN.',
+                        text: 'An unexpected error occurred while processing GRN.',
                         icon: 'error'
                     });
                 });

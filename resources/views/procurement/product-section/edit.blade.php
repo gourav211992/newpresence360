@@ -106,7 +106,7 @@
                                                         <thead>
                                                             <tr>
                                                                 <th>S.No</th>
-                                                                <th>Name</th>
+                                                                <th>Name<span class="text-danger">*</span></th>
                                                                 <th>Description</th>
                                                                 <th>Station</th>
                                                                 <th>Action</th>

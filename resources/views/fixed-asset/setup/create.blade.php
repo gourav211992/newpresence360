@@ -140,13 +140,33 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" id="asset_category" name="asset_category"
-                                                            class="form-control" placeholder="Enter Category Name"
+                                                            class="form-control" oninput="generatePrefix()" placeholder="Enter Category Name"
                                                             value="{{ old('asset_category') }}" required />
                                                         @error('asset_category')
                                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                                         @enderror
                                                     </div>
                                                 </div>
+                                                <div class="row align-items-center mb-1 company">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Prefix <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="prefix" required 
+                                                            oninput="checkUnique()" class="form-control text-uppercase company-field"
+                                                            maxlength="3" pattern="[A-Z]{1,3}"
+                                                            title="Enter up to 3 uppercase letters"
+                                                            value="{{ old('prefix') }}" required
+                                                            oninput="this.value = this.value.toUpperCase()" />
+                                                        @error('prefix')
+                                                            <span class="alert alert-danger">{{ $message }}</span>
+                                                        @enderror
+                                                        <span id="prefix-feedback" class="text-danger small"></span>
+                                                    </div>
+                                                </div>
+
+                                                
 
                                                 <div class="row align-items-center mb-1 company">
                                                     <div class="col-md-3">
@@ -449,8 +469,17 @@
 
     <script type="text/javascript">
         $('#setup').on('submit', function(e) {
-            $('.preloader').show();
             e.preventDefault();
+        if($('#prefix-feedback').text().trim()!="" && $('#company').is(':checked')){
+            showToast('error','Prefix already taken');
+            return;
+        }
+        if($('#income_tax').is(':checked'))
+        $('input[name="prefix"]').val('');
+        
+            $('.preloader').show();
+           
+            
             this.submit();
         });
 
@@ -563,6 +592,56 @@
         }
         $('input[name="act_type"]').on('change', toggleFields);
         toggleFields();
+
+        const prefix = $('input[name="prefix"]');
+        const name = $('input[name="asset_category"]');
+
+        function generatePrefix() {
+
+            $.ajax({
+                url: '{{ route('generate-setup-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    name: name.val().trim(),
+                },
+                success: function(response) {
+                    prefix.val((response.prefix || ''));
+                },
+                error: function() {
+                    prefix.val('');
+                }
+            });
+        }
+
+        function checkUnique() {
+            var feedback = $('#prefix-feedback');
+
+            $.ajax({
+                url: '{{ route('setup-check-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    prefix: prefix.val().trim()
+                },
+                success: function(response) {
+                    if (response.is_unique) {
+                        feedback.text('');
+                    } else {
+                        feedback.text('Prefix is already in use.');
+                    }
+
+                    // Optionally update the field with suggested unique prefix
+                    if (response.prefix) {
+                        prefix.val(response.prefix);
+                    }
+                },
+                error: function() {
+                    feedback.text('Error checking prefix.');
+                }
+            });
+        }
+  
     </script>
 @endsection
 

@@ -47,14 +47,11 @@ class ITDepreciationController extends Controller
         }
 
         $asset_details = [];
-        $asset_details = FixedAssetRegistration::where('last_dep_date', '<', $endDate)
+        $asset_details = FixedAssetRegistration::where('capitalize_date', '<', $endDate)
             ->withWhereHas('subAsset', function ($query) {
-                $query->where('current_value_after_dep', '>', 0)
-                    ->whereNotNull('expiry_date')
-                    ->whereColumn('expiry_date', '!=', 'last_dep_date');
-            })
-            ->whereNotNull('depreciation_percentage')
-            ->withWhereHas('ledger')
+                $query->where('current_value', '>', 0)
+                    ->whereNotNull('expiry_date');
+            })->withWhereHas('ledger')
             ->whereNotNull('capitalize_date')
             ->where(function ($query) {
                 $query->where('document_status', ConstantHelper::POSTED)
@@ -62,7 +59,7 @@ class ITDepreciationController extends Controller
             })
             ->withWhereHas('category.setup')
             ->withWhereHas('it_category.setup')
-            ->orderBy('last_dep_date', 'asc')
+            ->orderBy('capitalize_date', 'asc')
             ->whereNotNull('it_category_id')
             ->with('subAsset') // ensure subAsset is eager loaded
             ->get()
@@ -170,9 +167,10 @@ class ITDepreciationController extends Controller
             $financialYearDate = ErpFinancialYear::where('start_date', '<=', $date)
                 ->where('end_date', '>=', $date)
                 ->first();
-            if (!$financialYearDate) {
+            
+                if (!$financialYearDate) {
                 break;
-            }
+                }
 
             $start = date('d-m-Y', strtotime($financialYearDate->start_date));
             $end = date('d-m-Y', strtotime($financialYearDate->end_date));

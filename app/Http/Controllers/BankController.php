@@ -237,6 +237,26 @@ class BankController extends Controller
         }
     }
 
+    public function getLedger()
+    {
+        $bankGroup = Group::where('name', 'Bank Accounts')->first();
+
+        if (!$bankGroup) {
+            return response()->json([]);
+        }
+
+        $childGroupIds = $bankGroup->getAllChildIds();
+        $groupIds = array_merge([$bankGroup->id], $childGroupIds);
+        $stringGroupIds = array_map('strval', $groupIds);
+
+        $ledgers = Ledger::where(function($q) use ($stringGroupIds) {
+            foreach ($stringGroupIds as $id) {
+                $q->orWhereJsonContains('ledger_group_id', $id);
+            }
+        })->get(['id', 'code', 'name']);
+
+        return response()->json($ledgers);
+    }
 
     public function deleteBankDetail($id)
     {

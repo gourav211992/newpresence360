@@ -63,7 +63,7 @@
                                                 </div>
                                                  <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Bank Code <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Bank Code</label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="bank_code" class="form-control" placeholder="Enter Bank Code" value="{{ old('bank_code', $bank->bank_code) }}" />
@@ -78,7 +78,7 @@
                                                         <label for="ledger_name" class="form-label">Ledger</label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" id="ledger_name" name="ledger_name" class="form-control ladger-autocomplete" value="{{ $bank->ledger->name ?? '' }}" placeholder="Type to search...">
+                                                        <input type="text" id="ledger_name" name="ledger_name" class="form-control bank-ladger-autocomplete" value="{{ $bank->ledger->name ?? '' }}" placeholder="Type to search...">
                                                         <input type="hidden" id="ledger_id" name="ledger_id" class="ladger-id"  value="{{($bank->ledger_id ?? '') }}">
                                                     </div>
                                                 </div>
@@ -132,10 +132,10 @@
                                                         <thead>
                                                             <tr>
                                                                 <th>S.NO</th>
-                                                                <th>Account Number</th>
-                                                                <th>IFSC Code</th>
+                                                                <th>Account Number <span class="text-danger">*</span></th>
+                                                                <th>IFSC Code <span class="text-danger">*</span></th>
                                                                 <th>Branch Name</th>
-                                                                <th>Branch Address</th>
+                                                                <th>Branch Address <span class="text-danger">*</span></th>
                                                                 <th>Ledger Name</th>
                                                                 <th>Ledger Group</th>
                                                                 <th>Action</th>
@@ -291,6 +291,7 @@
 
                 $(this).val('');  
             });
+            $newRow.find('.ledger-group-select2').empty();
             $newRow.attr('data-id', '');
             if (ledgerName && ledgerId) {
                 $newRow.find('.autocomplete-ledgr').val(ledgerName); 
@@ -386,7 +387,7 @@
             $(selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
-                        url: "{{ url('/search/ledger') }}",
+                        url: "{{ route('bank.ledger.search') }}",
                         method: 'GET',
                         dataType: 'json',
                         data: { q: request.term },

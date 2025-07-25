@@ -632,17 +632,19 @@ class InventoryHelper
                         if($documentHeader->is_warehouse_required == 1){
                             $qty = 0.00;
                             $putawayQty = $documentItemLocation->inventory_uom_qty;
+                            $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                            $costPerUnit = $totalItemCost/$putawayQty;
                         } else{
                             $putawayQty = 0.00;
                             $qty = ($documentItemLocation->inventory_uom_qty - $utilizedQty);
+                            $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
+                            $costPerUnit = $totalItemCost/$qty;
                         }
                         $holdQty = 0.00;
                         $stockLedger->receipt_qty = $qty;
                         $stockLedger->hold_qty = $holdQty;
                         $stockLedger->putaway_pending_qty = $putawayQty;
                         $stockLedger->book_id = @$documentHeader->book_id;
-                        $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
-                        $costPerUnit = $totalItemCost/$qty;
                     }
                     $stockLedger->vendor_id = @$documentHeader->vendor_id;
                     $stockLedger->vendor_code = @$documentHeader->vendor_code;
@@ -1216,7 +1218,7 @@ class InventoryHelper
                 $status = $response['status'];
                 $stockLedger = $response['stockLedger'];
             } else {
-                $balanceQty = $inventoryUomQty - $issueQty;
+                $balanceQty = $invoiceLedger->issue_qty;
                 $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                     ->whereIn('document_status', ['approved','posted','approval_not_required'])
                     ->where('item_id', $invoiceLedger->item_id)
@@ -2519,7 +2521,7 @@ class InventoryHelper
                 'attributes'
             )
             ->get();
-
+        
         if(isset($documentItems) && $documentItems){
             foreach ($documentItems as $documentItem) {
                 $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
@@ -2527,6 +2529,7 @@ class InventoryHelper
                     ->where('document_detail_id',$documentItem->id)
                     ->where('book_type','=',$bookType)
                     ->first();
+                $issueQty = $stockLedger->issue_qty ?? 0.00;
                 if(!$stockLedger){
                     $stockLedger = new StockLedger();
                 }
@@ -2535,7 +2538,6 @@ class InventoryHelper
                 if($invoiceLedger['status'] == 'error'){
                     return $invoiceLedger;
                 }
-                $issueQty = $invoiceLedger['invoiceLedger']->issue_qty;
                 $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItem, $bookType, $documentStatus, $transactionType, $issueQty);
                 return $updatedInvoiceLedger;
             }

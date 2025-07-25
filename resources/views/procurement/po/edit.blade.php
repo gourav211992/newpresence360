@@ -17,6 +17,7 @@ $pi_item_ids = $po->pi_item_mappings()->pluck('pi_item_id')->implode(',');
 <input type="hidden" name="tax_required" id="tax_required" value="">
 <input type="hidden" name="pi_item_ids" id="pi_item_ids" value="{{$pi_item_ids}}">
 <input type="hidden" name="short_close_ids" id="short_close_ids">
+<input type="hidden" name="po_type" id="po_type" value="{{$po->po_type}}">
 <div class="app-content content ">
     <div class="content-overlay"></div>
     <div class="header-navbar-shadow"></div>
@@ -1007,12 +1008,15 @@ function getDocNumberByBookId(bookId) {
         } else {
             $("#tax_required").val("");
         }
+        let poType = parameters.goods_or_services || 'Goods';
+        $("#po_type").val(poType);
         setTableCalculation();
      }
      if(data.status == 404) {
         $("#book_code").val('');
         $("#document_number").val('');
         $("#tax_required").val("");
+        $("#po_type").val('Goods');
         const docDateInput = $("[name='document_date']");
         docDateInput.removeAttr('min');
         docDateInput.removeAttr('max');
@@ -1129,7 +1133,8 @@ function setServiceParameters(parameters) {
                 data: {
                     q: request.term,
                     type:'po_item_list',
-                    selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                    selectedAllItemIds : JSON.stringify(selectedAllItemIds),
+                    po_type: $("#po_type").val(),
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
@@ -1275,6 +1280,7 @@ fetch(actionUrl).then(response => {
             $("select[name='currency_id']").prop('disabled', true);
             $("select[name='payment_term_id']").prop('disabled', true);
             $("#vendor_name").prop('readonly',true);
+            $("#book_id").prop('disabled',true);
             $(".editAddressBtn").addClass('d-none');
             let locationId = $("[name='store_id'] option:selected").val();
             getLocation(locationId);
@@ -1406,6 +1412,7 @@ $(document).on('click','#deleteBtn', (e) => {
         $("select[name='payment_term_id']").prop('disabled', false);
         $(".editAddressBtn").removeClass('d-none');
         $("#vendor_name").prop('readonly',false);
+        $("#book_id").prop('disabled',false);
         getLocation();
     }
     setTableCalculation();
@@ -1772,6 +1779,7 @@ $(document).on('click','#deleteConfirm', (e) => {
         $("select[name='payment_term_id']").prop('disabled', false);
         $(".editAddressBtn").removeClass('d-none');
         $("#vendor_name").prop('readonly',false); 
+        $("#book_id").prop('disabled',false);
         getLocation();
 
         let vendorName = $("#vendor_name").attr("data-name");
@@ -2127,7 +2135,8 @@ $(document).on('click', '.prProcess', (e) => {
                 data: {
                     q: request.term,
                     type:'po_item_list',
-                    selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                    selectedAllItemIds : JSON.stringify(selectedAllItemIds),
+                    po_type: $("#po_type").val(),
                 },
                 success: function(data) {
                     response($.map(data, function(item) {
@@ -2312,6 +2321,7 @@ $(document).on('click', '.prProcess', (e) => {
                 $("select[name='currency_id']").prop('disabled', true);
                 $("select[name='payment_term_id']").prop('disabled', true);
                 $("#vendor_name").prop('readonly',true);
+                $("#book_id").prop('disabled',true);
                 $(".editAddressBtn").addClass('d-none');
                 let locationId = $("[name='store_id'] option:selected").val();
                 getLocation(locationId);

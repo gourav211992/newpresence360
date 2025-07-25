@@ -15,7 +15,7 @@
         <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: {{$item?->hsn?->code}}</span>
     </td>
 </tr>
-@if($specifications->count())
+@if($specifications?->count())
 <tr class="item_detail_row">
     <td class="poprod-decpt item_detail_attributes">
         <span class="poitemtxt mw-100">

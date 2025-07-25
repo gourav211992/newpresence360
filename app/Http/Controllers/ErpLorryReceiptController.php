@@ -109,6 +109,7 @@ class ErpLorryReceiptController extends Controller
                     'approved'   => 'badge-light-success',
                     'rejected'=> 'badge-light-danger',
                     'submitted'=>'badge-light-primary',
+                    'Partially_approved' => 'badge-light-warning',
                 ];
                 $badge = $colors[$row->document_status] ?? 'badge-light-secondary';
                 return '<span class="badge rounded-pill ' . $badge . '">' . ucfirst($row->document_status) . '</span>';
@@ -171,6 +172,7 @@ class ErpLorryReceiptController extends Controller
 
 public function edit(Request $request, $id)
 {
+   
     $user = Helper::getAuthenticatedUser();
     $segments = request()->segments(); 
     $pathUrl = $segments[0] . '/' . $segments[1];
@@ -194,7 +196,7 @@ public function edit(Request $request, $id)
         ->where('revision_number', $revNo)
         ->first();
         $Id = $historyLr->source_id;
-
+ 
         if (!$historyLr) {
             $lr = ErpLorryReceipt::with([
                 'consignor',

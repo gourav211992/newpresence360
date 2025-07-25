@@ -4,7 +4,7 @@
 			<div class="modal-header d-flex justify-content-between align-items-start">
 				<div>
 					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="mrnModal">
-						Select MRN
+						Select GRN
 					</h4>
 					<p class="mb-0">
 						Select from the below list
@@ -57,12 +57,12 @@
 											</div> 
 										</th>
                                         <th>SUPPLIER NAME</th>
-                                        <th>MRN NO.</th>
-                                        <th>MRN DATE</th>
+                                        <th>GRN NO.</th>
+                                        <th>GRN DATE</th>
                                         <th>ITEM CODE</th>
                                         <th>ITEM NAME</th>
                                         <th>ATTRIBUTES</th>
-                                        <th class="text-end">MRN QTY</th>
+                                        <th class="text-end">GRN QTY</th>
                                         <th class="text-end">INSP QTY</th>
                                         <th class="text-end">BALANCE QTY</th>
 									</tr>

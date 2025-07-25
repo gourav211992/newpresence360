@@ -143,7 +143,6 @@
                                             
                                                     <div class="col-md-5">
                                                         <select id="period" name="period" class="form-select" required>
-                                                            <option value="">Select</option>
                                                                 @php
                                                                 $periodCollection = collect($periods);
                                                             @endphp
@@ -436,6 +435,7 @@
             $('#days').val(totalDays);
         }
     });
+     $('#period').trigger('change');
 
 
     function showToast(icon, title) {

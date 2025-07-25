@@ -320,6 +320,34 @@ $(document).on('submit', '.ajax-input-form', function (e) {
                     }
                 }
 
+                // this function automatically scrolls to the first error field in tab
+                if(res.is_tab_exist) {
+                    setTimeout(() => {
+                        const tabPanes = document.querySelectorAll('.tab-pane');
+                        for (const pane of tabPanes) {
+                            const hasError = pane.querySelector('.is-invalid, .ajax-validation-error-span');
+                            if (hasError) {
+                                const tabId = pane.id;
+                                const tabButton = document.querySelector(`button[data-bs-target="#${tabId}"]`);
+                                if (tabButton) {
+                                    // tabButton.classList.add('tab-error-highlight');
+                                    const isActive = tabButton.classList.contains('active');
+                                    if (isActive) {
+                                        hasError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    } else {
+                                        tabButton.addEventListener('shown.bs.tab', () => {
+                                            hasError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                        }, { once: true });
+                                        const tab = new bootstrap.Tab(tabButton);
+                                        tab.show();
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }, 100);
+                }
+
             } else {
                 Swal.fire({
                     title: 'Error!',

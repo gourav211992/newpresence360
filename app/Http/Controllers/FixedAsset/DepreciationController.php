@@ -141,7 +141,7 @@ class DepreciationController extends Controller
                 $subAsset = FixedAssetSub::find((int)$sub_asset['sub_asset_id']);
                 if ($subAsset) {
                     $subAsset->total_depreciation += (float)$sub_asset['dep_amount'] ?? 0;
-                    $subAsset->current_value_after_dep = $subAsset->current_value_after_dep - (float)$sub_asset['dep_amount'];
+                    $subAsset->current_value_after_dep = (float)$sub_asset['after_dep_value']??0;
                     $subAsset->last_dep_date = Carbon::createFromFormat('d-m-Y', $sub_asset['to_date'])->addDay()->format('Y-m-d');
                     $subAsset->save();
                 }
@@ -602,28 +602,6 @@ class DepreciationController extends Controller
 
         return response()->json($rows);
     }
-      public static function getIncomeTaxRDV(string $date,$range)
-    {
-        $user = Helper::getAuthenticatedUser();
-       
-        $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
-            ->where('end_date', '>=', $date)
-            ->first();
-
-        if (isset($financialYear)) {
-                $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                 $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
-                
-            return [
-                'alias' => $financialYear->alias,
-                'id' => $financialYear->id,
-                'start_date' => $financialYear->start_date,
-                'end_date' => $financialYear->end_date,
-                'range' => $startYear . '-' . $endYearShort,
-            ];
-        } else {
-            return null;
-        }
-    }
+     
 
 }

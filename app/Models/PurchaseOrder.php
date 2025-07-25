@@ -19,6 +19,7 @@ class PurchaseOrder extends Model
     
     protected $fillable = [
         'type',
+        'po_type',
         'organization_id', 
         'group_id', 
         'company_id',

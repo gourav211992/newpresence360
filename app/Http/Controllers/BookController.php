@@ -144,7 +144,7 @@ class BookController extends Controller
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[A-Z0-9\-]+$/'
+                'regex:/^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$/'
             ],
             'book_name' => 'required|string|max:255',
             'status' => 'required|string|in:Active,Inactive',
@@ -365,11 +365,11 @@ class BookController extends Controller
                     }
                 }
 
-                if (isset($request->params) && isset($request->param_names) && isset($request->param_ids)) 
+                if (isset($request->params) && isset($request->param_names) && isset($request->param_ids))
                 {
                     $referenceFromIndex = array_search(ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM, $request->param_names);
 
-                    if (isset($request -> params) && isset($request -> param_names) && isset($request -> param_ids)) 
+                    if (isset($request -> params) && isset($request -> param_names) && isset($request -> param_ids))
                     {
                         //Retrieve the reference from parameter value
                         $referenceFromIndex = array_search(ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM, $request -> param_names);
@@ -382,9 +382,9 @@ class BookController extends Controller
                                 ], 500);
                             }
                         }
-                        foreach ($request->param_ids as $orgServiceParamKey => $orgServiceParamId) 
+                        foreach ($request->param_ids as $orgServiceParamKey => $orgServiceParamId)
                         {
-                            if (isset($referenceFrom) && $request->param_names[$orgServiceParamKey] === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM) 
+                            if (isset($referenceFrom) && $request->param_names[$orgServiceParamKey] === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM)
                             {
                                 $hasNonZeroValue = count(array_filter($referenceFrom, function ($value) {
                                     return $value != 0; })) > 0;
@@ -396,7 +396,7 @@ class BookController extends Controller
                                     ], 500);
                                 }
                             }
-                            if ($request->param_names[$orgServiceParamKey] === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM) 
+                            if ($request->param_names[$orgServiceParamKey] === ServiceParametersHelper::REFERENCE_FROM_SERIES_PARAM)
                             {
                                 $paramValues = isset($request->params[$orgServiceParamKey]) ? $request->params[$orgServiceParamKey] : [];
                                 foreach ($paramValues as $paramValue) {
@@ -427,9 +427,9 @@ class BookController extends Controller
                         }
                     }
                 }
-                if (isset($request->gl_params) && isset($request->gl_param_names) && isset($request->gl_param_ids)) 
+                if (isset($request->gl_params) && isset($request->gl_param_names) && isset($request->gl_param_ids))
                 {
-                        foreach ($request->gl_param_ids as $orgServiceParamKey => $orgServiceParamId) 
+                        foreach ($request->gl_param_ids as $orgServiceParamKey => $orgServiceParamId)
                         {
                             if ($request->gl_param_names[$orgServiceParamKey] === ServiceParametersHelper::GL_POSTING_SERIES_PARAM) {
                                 $financialBookCode = isset($request->gl_params[$orgServiceParamKey]) ? $request->gl_params[$orgServiceParamKey][0] : null;
@@ -468,8 +468,8 @@ class BookController extends Controller
             ]);
 
 
-        } 
- 
+        }
+
     catch(Exception $ex) {
 
             DB::rollBack();
@@ -508,7 +508,7 @@ class BookController extends Controller
             if ($book->service->service?->type === ConstantHelper::ERP_TRANSACTION_SERVICE_TYPE) {
                 foreach ($book->patterns as &$bookPattern) {
                     $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
-                    if ($modelName) 
+                    if ($modelName)
                     {
                         $model = resolve('App\\Models\\' . $modelName);
                     $createdDocs = $model::where('organization_id', $bookPattern->organization_id)->where('book_id', $book->id)->whereNotNull('doc_no')->first();
@@ -549,7 +549,7 @@ class BookController extends Controller
                 $amendEmployees = Helper::getOrgWiseUserAndEmployees($amendment -> organization_id);
                 $amendment -> employees = $amendEmployees;
             }
-            
+
             foreach ($book->common_parameters as $bookParamKey => &$bookParam) {
                 if ($bookParam->parameter_name === ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM) {
                     $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest() -> first();
@@ -691,14 +691,14 @@ class BookController extends Controller
                     $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
                     if (isset($orgServiceParam)) {
                         $selectOptions = "";
-                        
+
                         $financialServiceAlias = ServiceParametersHelper::getFinancialServiceAlias($serviceAlias);
-                       
+
                         $financialService = Service::where('alias', $financialServiceAlias) -> first();
-                        
+
                         $applicableSeries = Book::withDefaultGroupCompanyOrg() -> where('manual_entry', 0) -> where('service_id', $financialService -> id) -> get();
                         foreach ($applicableSeries as $singleSeries) {
-                            $referencedBookIds = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) 
+                            $referencedBookIds = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
                                 -> whereJsonContains('parameter_value', $singleSeries -> id) -> where('book_id', "!=", $book -> id) -> first();
                             if (!isset($referencedBookIds)) {
                                 $label = strtoupper($singleSeries->book_code);
@@ -782,7 +782,7 @@ class BookController extends Controller
             if (isset($modelName)) {
                 $model = resolve('App\\Models\\' . $modelName);
                 $createdDocs = $model::where('group_id', $book->group_id)->where('book_id', $book->id)->first();
-                $referenced = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM) 
+                $referenced = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
                             -> whereJsonContains('parameter_value', $book -> id) -> first();
                 if (isset($createdDocs) || isset($referenced)) {
                     $book -> manual_entry_editable = false;
@@ -876,7 +876,7 @@ class BookController extends Controller
                     ]);
                 }
             }
-            
+
 
             // Save approval workflows with individual users
             if ($request->level_company_id) {
@@ -930,7 +930,7 @@ class BookController extends Controller
 
                     // Loop through each user info for that level
                     if (isset($request->amendment_user[$key])) {
-                        foreach ($request->amendment_user[$key] as $user_info) {    
+                        foreach ($request->amendment_user[$key] as $user_info) {
                             AmendmentWorkflowUsers::create([
                                 'book_id' => $update->id,
                                 'company_id' => $request->amendment_company_id[$key],
@@ -1142,7 +1142,7 @@ class BookController extends Controller
                             }
                             $paramName = $orgServiceParam->parameter_name;
                             $paramId = $orgServiceParam->service_param_id;
-    
+
                             $htmlData = "
                             <div class='row align-items-center mb-1'>
                                 <div class='col-md-3'>
@@ -1192,7 +1192,7 @@ class BookController extends Controller
                         $paramName = $orgServiceParam->parameter_name;
                         $paramId = $orgServiceParam->service_param_id;
                         $headerId = $paramName . "_header";
-    
+
                         $htmlData = "
                         <div class='row align-items-center mb-1' id = '$headerId'>
                             <div class='col-md-3'>
@@ -1227,7 +1227,7 @@ class BookController extends Controller
                         $paramId = $orgServiceParam->service_param_id;
                         $headerId = $paramName . "_header";
                         $onChange = $paramName === ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM ? "onchange = 'glPostingRequiredOnChange(this);'" : '';
-    
+
                         $htmlData = "
                         <div class='row align-items-center mb-1' id = '$headerId'>
                             <div class='col-md-3'>
@@ -1249,7 +1249,7 @@ class BookController extends Controller
                         ";
                         $currentGlParam = $htmlData;
                     }
-                    
+
                     $glParamsHTML .= $currentGlParam;
                 }
                 return response()->json([
@@ -1300,14 +1300,14 @@ class BookController extends Controller
                         <div class='card quation-card'>
                             <div class='card-header newheader'>
                                 <div>
-                                    <h4 class='card-title'>Dynamic Fields</h4> 
+                                    <h4 class='card-title'>Dynamic Fields</h4>
                                 </div>
                             </div>
-                            <div class='card-body'> 
+                            <div class='card-body'>
                                 <div class='row'>
                                     $dynamicFieldsHTML
                                 </div>
-                            </div>                                                                                                
+                            </div>
                         </div>
                     ";
                 return response()->json([
@@ -1421,8 +1421,8 @@ class BookController extends Controller
     public function getSeriesOfService(Request $request)
     {
         try {
-            $serviceAlias = $request -> service_alias ?? null; 
-            $menuAlias = $request -> menu_alias ?? null; 
+            $serviceAlias = $request -> service_alias ?? null;
+            $menuAlias = $request -> menu_alias ?? null;
             $onlyBookId = $request -> book_id ?? null;
             $books = Helper::getBookSeriesNew($serviceAlias, $menuAlias, $onlyBookId ? true : false);
             if ($onlyBookId) {
@@ -1442,6 +1442,6 @@ class BookController extends Controller
                 'message' => 'Some internal error occured'
             ], 500);
         }
-        
+
     }
 }

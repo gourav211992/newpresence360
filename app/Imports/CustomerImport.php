@@ -84,12 +84,12 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -134,20 +134,6 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
             $customerCodeType = $serviceData['customerCodeType'];
             $customerInitials = strtoupper(substr($row['customer_name'], 0, 3)); 
 
-            $gstinRegDate = $row['gstin_reg_date'] ?? null;
-            $gstinRegistrationDate = null;
-            
-            if ($gstinRegDate) {
-                if (is_numeric($gstinRegDate)) {
-                    $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                        ->addDays($gstinRegDate - 2) 
-                        ->format('Y-m-d');
-                } else {
-                    $gstinRegistrationDate = $gstinRegDate; 
-                    \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
-                }
-            }
-            
             $tdsWefDate = $row['tds_wef_date'] ?? null;
             $tdsWefDatee = null;
             
@@ -358,7 +344,7 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                 'credit_days' => $uploadedCustomer->credit_days ?? null,
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedCustomer->group_id ?? null,
-                'company_id' => null,
+                'company_id' => $uploadedCustomer->company_id ?? null,
                 'organization_id' => null,
                 'gst_applicable' => $uploadedCustomer->gst_applicable ?? 0,
                 'gstin_no' => $uploadedCustomer->gstin_no ?? null,
@@ -383,9 +369,25 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                     'required_if:customer_code_type,Manual', 
                     'string',
                     'max:255', 
-                    Rule::unique('erp_customers', 'customer_code')
-                        ->where('group_id', $uploadedCustomer->group_id) 
-                        ->whereNull('deleted_at')
+                      Rule::unique('erp_customers', 'customer_code')
+                        ->where(function ($query) use ($uploadedCustomer) {
+                            if ($uploadedCustomer->group_id !== null) {
+                                $query->where('group_id', $uploadedCustomer->group_id);
+                            }
+                            if ($uploadedCustomer->company_id !== null) {
+                                $query->where(function ($q) use ($uploadedCustomer) {
+                                    $q->where('company_id', $uploadedCustomer->company_id)
+                                    ->orWhereNull('company_id');
+                                });
+                            }
+                            if ($uploadedCustomer->organization_id !== null) {
+                                $query->where(function ($q) use ($uploadedCustomer) {
+                                    $q->where('organization_id', $uploadedCustomer->organization_id)
+                                    ->orWhereNull('organization_id');
+                                });
+                            }
+                            $query->whereNull('deleted_at');
+                        }),
                  ],
                  'customer_initial' => 'nullable|string|max:255',
                  'company_name' => [
@@ -393,8 +395,24 @@ class CustomerImport implements ToModel, WithHeadingRow, WithChunkReading
                          'string',
                          'max:255',
                          Rule::unique('erp_customers', 'company_name')
-                         ->where('group_id', $uploadedCustomer->group_id) 
-                         ->whereNull('deleted_at')
+                        ->where(function ($query) use ($uploadedCustomer) {
+                            if ($uploadedCustomer->group_id !== null) {
+                                $query->where('group_id', $uploadedCustomer->group_id);
+                            }
+                            if ($uploadedCustomer->company_id !== null) {
+                                $query->where(function ($q) use ($uploadedCustomer) {
+                                    $q->where('company_id', $uploadedCustomer->company_id)
+                                    ->orWhereNull('company_id');
+                                });
+                            }
+                            if ($uploadedCustomer->organization_id !== null) {
+                                $query->where(function ($q) use ($uploadedCustomer) {
+                                    $q->where('organization_id', $uploadedCustomer->organization_id)
+                                    ->orWhereNull('organization_id');
+                                });
+                            }
+                            $query->whereNull('deleted_at');
+                        }),
                      ],
                  'country_id' => 'nullable|exists:countries,id',
                  'state_id' => 'nullable|exists:states,id',

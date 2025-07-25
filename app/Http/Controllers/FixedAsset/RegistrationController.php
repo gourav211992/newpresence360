@@ -44,7 +44,7 @@ use App\Services\FAImportExportService;
 use App\Models\UploadFAMaster;
 use App\Models\Group;
 use App\Models\Book;
-
+use App\Models\FixedAssetSetup;
 
 class RegistrationController extends Controller
 {
@@ -189,7 +189,8 @@ class RegistrationController extends Controller
                 ->withInput()
                 ->withErrors($request->errors());
         }
-        $code = self::generateAssetCode($request);
+        //$code = self::generateAssetCode($request);
+        $code = $request->asset_code;
         $existingAsset = FixedAssetRegistration::where('asset_code', $code)->first();
 
         if ($existingAsset) {
@@ -226,6 +227,8 @@ class RegistrationController extends Controller
                 $asset->document_status = $doc['approvalStatus'] ?? $asset->document_status;
                 $asset->save();
             }
+            if ($request->has('prefix') && $request->prefix != "")
+            FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
 
             DB::commit();
             return redirect()->route("finance.fixed-asset.registration.index")->with('success', 'Asset created successfully!');
@@ -439,9 +442,9 @@ class RegistrationController extends Controller
                 ->withErrors($request->errors());
         }
         $request->merge([
-        'asset_id'      => $id,
+            'asset_id' => $id,
         ]);
-        $code = self::generateAssetCode($request);
+        $code = $request->asset_code;
         $existingAsset = FixedAssetRegistration::where('asset_code', $code)->where('id', '!=', $id)->first();
 
         if ($existingAsset) {
@@ -468,6 +471,8 @@ class RegistrationController extends Controller
                 $asset->save();
             }
             FixedAssetSub::regenerateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
+            if ($request->has('prefix') && $request->prefix != "")
+            FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
             DB::commit();
             return redirect()->route("finance.fixed-asset.registration.index")->with('success', 'Asset updated successfully!');
         } catch (\Exception $e) {
@@ -1084,31 +1089,35 @@ class RegistrationController extends Controller
     }
     public static function generateAssetCode(Request $request)
     {
-        $edit = $request->asset_id ?? null;
-        $name = $request->asset_name;
+        if (!$request->has('category') || $request->category == "")
+            return "";
 
-        if (empty($name)) {
-            return null;
+        $itemInitials = FixedAssetSetup::getPrefix($request->category);
+        $itemId = $request->input('asset_id');
+        $baseCode = $itemInitials;
+        if ($itemId) {
+            $existingItem = FixedAssetRegistration::find($itemId);
+            if ($existingItem) {
+                $existingItemCode = $existingItem->asset_code;
+                $currentBaseCode = substr($existingItemCode, 0, strlen($baseCode));
+                if ($currentBaseCode === $baseCode) {
+                    return response()->json(['code' => $existingItemCode]);
+                }
+            }
         }
 
-        $baseCode = self::generateUniquePrefix($name);
         $nextSuffix = '001';
-
         $finalItemCode = $baseCode . $nextSuffix;
 
         while (
             FixedAssetRegistration::where('asset_code', $finalItemCode)
-            ->when($edit, function ($query) use ($edit) {
-                return $query->where('id', '!=', $edit);
-            })
-            ->exists()
+                ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
         }
 
-
-        return $finalItemCode;
+        return response()->json(['code' => $finalItemCode, 'prefix' => $baseCode]);
 
     }
     public static function generateUniquePrefix(string $name): ?string

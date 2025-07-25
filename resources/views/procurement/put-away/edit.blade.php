@@ -153,7 +153,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">MRN Qty</th>
+                                                                <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>

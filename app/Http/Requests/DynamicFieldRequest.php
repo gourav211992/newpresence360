@@ -35,14 +35,24 @@ class DynamicFieldRequest extends FormRequest
             ->ignore($dynamicFieldId)
             ->whereNull('deleted_at');
 
-        if ($this->company_id !== null) {
-            $uniqueRule->where('company_id', $this->company_id);
-        }
-        if ($this->group_id !== null) {
+       if ($this->group_id !== null) {
             $uniqueRule->where('group_id', $this->group_id);
         }
+
+        if ($this->company_id !== null) {
+            $companyId = $this->company_id;
+            $uniqueRule->where(function ($query) use ($companyId) {
+                $query->where('company_id', $companyId)
+                      ->orWhereNull('company_id');
+            });
+        }
+
         if ($this->organization_id !== null) {
-            $uniqueRule->where('organization_id', $this->organization_id);
+            $orgId = $this->organization_id;
+            $uniqueRule->where(function ($query) use ($orgId) {
+                $query->where('organization_id', $orgId)
+                      ->orWhereNull('organization_id');
+            });
         }
 
         return [

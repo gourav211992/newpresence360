@@ -89,12 +89,12 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -251,7 +251,6 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'specifications' => json_encode($specifications),
                 'alternate_uoms' => json_encode($alternateUoms),
             ]);
-         
             if ($uploadedItem) {
                 $this->processItemFromUpload($uploadedItem);
             } else {
@@ -375,7 +374,7 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                 'storage_uom_count' =>1,
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedItem->group_id ?? null,
-                'company_id' => null,
+                'company_id' => $uploadedItem->company_id ?? null,
                 'organization_id' => null,
                 'cost_price' => $uploadedItem->cost_price ?? null,
                 'sell_price' => $uploadedItem->sell_price ?? null,
@@ -422,16 +421,48 @@ class ItemImport implements ToModel, WithHeadingRow, WithChunkReading
                     'required',
                     'max:255',
                     Rule::unique('erp_items', 'item_code')
-                    ->where('group_id', $uploadedItem->group_id) 
-                    ->whereNull('deleted_at')
+                        ->where(function ($query) use ($uploadedItem) {
+                            if ($uploadedItem->group_id !== null) {
+                                $query->where('group_id', $uploadedItem->group_id);
+                            }
+                            if ($uploadedItem->company_id !== null) {
+                                $query->where(function ($q) use ($uploadedItem) {
+                                    $q->where('company_id', $uploadedItem->company_id)
+                                    ->orWhereNull('company_id');
+                                });
+                            }
+                            if ($uploadedItem->organization_id !== null) {
+                                $query->where(function ($q) use ($uploadedItem) {
+                                    $q->where('organization_id', $uploadedItem->organization_id)
+                                    ->orWhereNull('organization_id');
+                                });
+                            }
+                            $query->whereNull('deleted_at');
+                        }),
                 ],
                 'item_name' => [
                     'required',
                     'string',
                     'max:200',
                     Rule::unique('erp_items', 'item_name')
-                    ->where('group_id', $uploadedItem->group_id) 
-                    ->whereNull('deleted_at')
+                    ->where(function ($query) use ($uploadedItem) {
+                        if ($uploadedItem->group_id !== null) {
+                            $query->where('group_id', $uploadedItem->group_id);
+                        }
+                        if ($uploadedItem->company_id !== null) {
+                            $query->where(function ($q) use ($uploadedItem) {
+                                $q->where('company_id', $uploadedItem->company_id)
+                                ->orWhereNull('company_id');
+                            });
+                        }
+                        if ($uploadedItem->organization_id !== null) {
+                            $query->where(function ($q) use ($uploadedItem) {
+                                $q->where('organization_id', $uploadedItem->organization_id)
+                                ->orWhereNull('organization_id');
+                            });
+                        }
+                        $query->whereNull('deleted_at');
+                    }),
                 ],
                 'uom_id' => 'required|max:255',
                 'item_remark' => 'nullable|string',

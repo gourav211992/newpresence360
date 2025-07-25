@@ -30,7 +30,7 @@
                     <img src="{{$imagePath}}" height="50px" alt="">
                 </td>
                 <td style="text-align: right; vertical-align: bottom; font-weight: bold; font-size: 18px;">
-                    MRN
+                    GRN
                     <br>
                     {{ Str::ucfirst(@$organization->name) }}
                 </td>
@@ -340,7 +340,7 @@
                 <td style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td> <b>Total MRN Value (In Words)</b> <br>
+                            <td> <b>Total GRN Value (In Words)</b> <br>
                                 {{ @$amountInWords }}
                             </td>
                         </tr>
@@ -422,7 +422,7 @@
                         </tr>
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
-                                <b>Total MRN Value:</b>
+                                <b>Total GRN Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
                                 {{ $totalAmount }}

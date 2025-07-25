@@ -28,6 +28,10 @@
 #rescdule .po-order-detail td {
     padding: 8px;
 }
+/* .nav-tabs .nav-link.tab-error-highlight {
+    border-bottom: 3px solid red !important;
+    color: red !important;
+} */
 
 </style>
 @endsection
@@ -46,16 +50,16 @@
             <div class="content-header pocreate-sticky">
 				<div class="row">
                     @include('layouts.partials.breadcrumb-add-edit', [
-                        'title' => 'Production Slip', 
-                        'menu' => 'Home', 
+                        'title' => 'Production Slip',
+                        'menu' => 'Home',
                         'menu_url' => url('home'),
                         'sub_menu' => 'Add New'
                     ])
                     <input type = "hidden" value = "draft" name = "document_status" id = "document_status" />
 					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right" id = "buttonsDiv">   
+						<div class="form-group breadcrumb-right" id = "buttonsDiv">
                         @if(!isset(request() -> revisionNumber))
-                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
+                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             @if (isset($slip))
                                 <a href="{{ route('production.slip.generate-pdf', $slip->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -77,14 +81,14 @@
                                     <button id = "amendShowButton" type="button" onclick = "openModal('amendmentconfirm')" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
                                 @endif
                                 @if($buttons['voucher'])
-                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>                                
+                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
                                 @endif
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
                                 @endif
                             @else
-                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>  
-                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
+                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>
+                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button>
                             @endif
                             @endif
 						</div>
@@ -96,135 +100,135 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-								 <div class="card-body customernewsection-form" id ="main_so_form">  
+								 <div class="card-body customernewsection-form" id ="main_so_form">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
-                                                    </div> 
-                                                </div> 
-                                            </div> 
+                                                    </div>
+                                                </div>
+                                            </div>
                                             @if (isset($slip) && isset($docStatusClass))
                                             <div class="col-md-6 text-sm-end">
                                                 <span class="badge rounded-pill badge-light-{{$slip->display_status === 'Posted' ? 'info' : 'secondary'}} forminnerstatus">
                                                     <span class = "text-dark" >Status</span> : <span class="{{$docStatusClass}}">{{$slip->display_status}}</span>
                                                 </span>
                                             </div>
-                                                
+
                                             @endif
-                                            <div class="col-md-8"> 
+                                            <div class="col-md-8">
                                                 <input type = "hidden" name = "type" id = "type_hidden_input"></input>
                                             @if (isset($slip))
                                                 <input type = "hidden" value = "{{$slip -> id}}" name = "pslip_id"></input>
                                             @endif
 
                                                     <div class="row align-items-center mb-1" style = "display:none;">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" id = "service_id_input" {{isset($slip) ? 'disabled' : ''}} onchange = "onSeriesChange(this);">
                                                                 @foreach ($services as $currentService)
-                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option> 
+                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option>
                                                                 @endforeach
                                                             </select>
                                                             <input type = "hidden" value = "yes" id = "invoice_to_follow_input" />
                                                         </div>
-                                                        
+
                                                     </div>
 
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Series <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" onChange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input">
                                                                 @foreach ($series as $currentSeries)
-                                                                    <option value = "{{$currentSeries -> id}}" {{isset($slip) ? ($slip -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option> 
+                                                                    <option value = "{{$currentSeries -> id}}" {{isset($slip) ? ($slip -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
-                                                        
+
                                                         <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($slip) ? $slip -> book_code : ''}}"></input>
                                                      </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="text" value = "{{isset($slip) ? $slip -> document_number : ''}}" class="form-control disable_on_edit" readonly id = "order_no_input" name = "document_no">
-                                                        </div> 
-                                                     </div>  
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5"> 
-                                                            <input type="date" value = "{{isset($slip) ? $slip -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();">
-                                                        </div> 
+                                                        </div>
                                                      </div>
 
-                                                     
+                                                    <div class="row align-items-center mb-1">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                                        </div>
+
+                                                        <div class="col-md-5">
+                                                            <input type="date" value = "{{isset($slip) ? $slip -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();">
+                                                        </div>
+                                                     </div>
+
+
 
                                                     <div class="row align-items-center mb-1 lease-hidden">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Location<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Location<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" name = "store_id" id = "store_id_input">
                                                                 @foreach ($stores as $store)
-                                                                    <option value = "{{$store -> id}}" {{isset($slip) ? ($slip -> store_id == $store -> id ? 'selected' : '') : ''}}>{{$store -> store_name}}</option> 
+                                                                    <option value = "{{$store -> id}}" {{isset($slip) ? ($slip -> store_id == $store -> id ? 'selected' : '') : ''}}>{{$store -> store_name}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
 
                                                     <div class="row align-items-center mb-1 lease-hidden" id="sub_store_div">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Sub Location<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Sub Location<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" id="sub_store_id" name="sub_store_id">
                                                             </select>
                                                         </div>
                                                     </div>
 
                                                     <div class="row align-items-center mb-1 lease-hidden">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Shift<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Shift<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select disable_on_edit" id="shift_id" name="shift_id">  
+                                                        <div class="col-md-5">
+                                                            <select class="form-select disable_on_edit" id="shift_id" name="shift_id">
                                                                 @foreach ($shifts as $shift)
-                                                                    <option value="{{$shift->id}}" {{isset($slip) ? ($slip->shift_id == $shift->id ? 'selected' : '') : ''}}>{{$shift->label}}</option> 
+                                                                    <option value="{{$shift->id}}" {{isset($slip) ? ($slip->shift_id == $shift->id ? 'selected' : '') : ''}}>{{$shift->label}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
 
-                                                    <div class="row align-items-center mb-1" id = "selection_section" style = "display:none;"> 
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Reference From</label>  
+                                                    <div class="row align-items-center mb-1" id = "selection_section" style = "display:none;">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Reference From</label>
                                                         </div>
-                                                            <div class="col-md-2 action-button" id = "pwo_selection"> 
+                                                            <div class="col-md-2 action-button" id = "pwo_selection">
                                                                 <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_pwo_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 MO
                                                             </button>
                                                             </div>
                                                         </div>
                                                     </div>
-                                            
-                                            
+
+
                                                     @if(isset($slip) && ($slip -> document_status !== "draft"))
                             @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
                            <div class="col-md-4">
@@ -245,7 +249,7 @@
                                         Rev. No.{{request() -> revisionNumber}}
                                         </strong>
                                        @endif
-                                       
+
                                        @endif
                                    </h5>
                                    <ul class="timeline ms-50 newdashtimline ">
@@ -267,10 +271,10 @@
                                                    <span class="badge rounded-pill badge-light-danger">{{ucfirst($approvalHist->approval_type)}}</span>
                                                    @endif
                                                </div>
-                                                @if($approvalHist->approval_date)
-                                               <h6>
-                                                {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                </h6>
+                                               @if($approvalHist->created_at)
+                                                    <h6>
+                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} || {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                                                    </h6>
                                                 @endif
                                                 @if($approvalHist->remarks)
                                                 <p>{!! $approvalHist->remarks !!}</p>
@@ -283,87 +287,87 @@
                                            </div>
                                         </li>
                                        @endforeach
-                                       
+
                                    </ul>
                                </div>
                            </div>
                            @endif
                            @endif
-                                        </div> 
+                                        </div>
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-12" id="vendor_section">
                                 <div class="card quation-card">
                                     <div class="card-header newheader">
                                         <div>
-                                            <h4 class="card-title">General Information</h4> 
+                                            <h4 class="card-title">General Information</h4>
                                         </div>
                                     </div>
-                                    <div class="card-body"> 
+                                    <div class="card-body">
                                         <div class="row">
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">MO No. </label> 
-                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->book_code}} - {{$slip?->mo?->document_number}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_no" name="mo_no" /> 
+                                                    <label class="form-label">MO No. </label>
+                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->book_code}} - {{$slip?->mo?->document_number}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_no" name="mo_no" />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">Date </label> 
-                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->getFormattedDate('document_date')}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_date" name="mo_date"  /> 
+                                                    <label class="form-label">Date </label>
+                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->getFormattedDate('document_date')}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="mo_date" name="mo_date"  />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">Product Name </label> 
+                                                    <label class="form-label">Product Name </label>
                                                     <input type="text" @if(isset($slip)) value="{{$slip?->mo?->item?->item_name}}" @endif id="mo_product_name" placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" name="mo_product_name" />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">Type </label> 
+                                                    <label class="form-label">Type </label>
                                                     <input type="text" @if(isset($slip)) value="{{$slip->is_last_station == true ? 'Final' : 'WIP'}}" @endif id="mo_type_name" placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" name="mo_type_name" />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col {{ isset($slip) && optional($slip->mo->station)->name ? '' : 'd-none' }}">
                                                 <div class="mb-1">
-                                                    <label class="form-label">Station </label> 
-                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->station?->name}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="station_name" name="station_name"  /> 
+                                                    <label class="form-label">Station </label>
+                                                    <input type="text" @if(isset($slip)) value="{{$slip?->mo?->station?->name}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="station_name" name="station_name"  />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label" id="fg_label">Finished Goods Store </label> 
+                                                    <label class="form-label" id="fg_label">Finished Goods Store </label>
                                                     <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="fg_sub_store_id" name="fg_sub_store_id">
                                                         @if(isset($slip) && $slip?->fg_sub_store_id)
                                                             <option value="{{$slip?->fg_sub_store_id}}">{{$slip?->fg_sub_store?->store_name}}</option>
                                                         @endif
                                                     </select>
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col">
                                                 <div class="mb-1">
-                                                    <label class="form-label">Rejected Goods Store </label> 
+                                                    <label class="form-label">Rejected Goods Store </label>
                                                     <select class="form-select {{@$slip?->items?->count() ? 'disable_on_edit' : ''}}" id="rg_sub_store_id" name="rg_sub_store_id">
                                                         @if(isset($slip) && $slip?->rg_sub_store_id)
                                                             <option value="{{$slip?->rg_sub_store_id}}">{{$slip?->rg_sub_store?->store_name}}</option>
                                                         @endif
                                                     </select>
                                                 </div>
-                                            </div> 
-                                            
+                                            </div>
+
                                             <input type="hidden" id="mo_id" name="mo_id" @if(isset($slip)) value="{{$slip?->mo_id}}" @endif>
                                             <input type="hidden" id="mo_product_id" name="mo_product_id" @if(isset($slip)) value="{{$slip?->mo?->item_id}}" @endif>
                                             <input type="hidden" id="is_last_station" name="is_last_station" @if(isset($slip)) value="{{$slip?->is_last_station}}" @endif>
                                             <input type="hidden" id="mo_station_id" name="mo_station_id" @if(isset($slip)) value="{{$slip?->station_id}}" @endif>
                                         </div>
                                     </div>
-                                </div>                                    
+                                </div>
                             </div>
 
                             <div class="card">
-								 <div class="card-body customernewsection-form"> 
+								 <div class="card-body customernewsection-form">
                                                 <div class="border-bottom mb-2 pb-25">
                                                      <div class="row">
 
@@ -371,12 +375,12 @@
                                                             <div class="newheader ">
                                                                 <ul class="nav nav-tabs" id="productTabs" role="tablist">
                                                                     <li class="nav-item " role="presentation">
-                                                                        <button class="nav-link active fs-5" id="production-items-tab" data-bs-toggle="tab" data-bs-target="#production-items" type="button" role="tab" aria-controls="production-items" aria-selected="false">
+                                                                        <button class="nav-link active fs-5" id="production-items-tab" data-bs-toggle="tab" data-bs-target="#production-items" type="button" role="tab" aria-controls="production-items" aria-selected="true">
                                                                             Production
                                                                         </button>
                                                                     </li>
                                                                     <li class="nav-item" role="presentation">
-                                                                        <button class="nav-link fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="true">
+                                                                        <button class="nav-link fs-5" id="raw-materials-tab" data-bs-toggle="tab" data-bs-target="#raw-materials" type="button" role="tab" aria-controls="raw-materials" aria-selected="false">
                                                                             Consumption
                                                                         </button>
                                                                     </li>
@@ -389,7 +393,7 @@
                                                             <a href="#" id = "add_item_section" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="production-items">
                                                                 <i data-feather="plus"></i> Add Product</a>
                                                          </div>
-                                                    </div> 
+                                                    </div>
                                                 </div>
 
                                              <div class="tab-content mt-1" id="productTabsContent">
@@ -398,14 +402,14 @@
                                                         <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
                                                         data-json-key="components_json"
                                                         data-row-selector="tr[id^='item_row_0']"
-                                                        > 
+                                                        >
                                                            <thead>
                                                                 <tr>
                                                                    <th class="customernewsection-form">
                                                                        <div class="form-check form-check-primary custom-checkbox">
                                                                            <input type="checkbox" class="form-check-input" id="select_all_items_checkbox" oninput = "checkOrRecheckAllItems(this);">
                                                                            <label class="form-check-label" for="select_all_items_checkbox" ></label>
-                                                                       </div> 
+                                                                       </div>
                                                                    </th>
                                                                    <th>SO No.</th>
                                                                    <th width="150px">Customer</th>
@@ -430,7 +434,7 @@
                                                                <tbody class="mrntableselectexcel" id="item_header">
                                                                    @include('productionSlip.partials.item-row-edit')
                                                                </tbody>
-                                                            
+
                                                             <tfoot>
                                                                 <tr valign="top">
                                                                    @if (isset($slip))
@@ -443,55 +447,55 @@
                                                                                <td class="p-0">
                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Product Details</strong></h6>
                                                                                </td>
-                                                                           </tr>   
-                                                                           <tr> 
+                                                                           </tr>
+                                                                           <tr>
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_cat_hsn">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
-                                                                           <tr id = "current_item_specs_row"> 
+                                                                           <tr id = "current_item_specs_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_specs">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_attribute_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_attribute_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_attributes">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_stocks_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_stocks_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_stocks">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_inventory"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_inventory">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_inventory_details">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_qt_no_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_qt_no_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_qt_no">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
-                                                                           <tr id = "current_item_store_location_row"> 
+                                                                           <tr id = "current_item_store_location_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_store_location">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
                                                                            <tr id = "current_item_description_row">
                                                                                <td class="poprod-decpt">
@@ -505,16 +509,16 @@
                                                                                    </div>
                                                                                 </td>
                                                                            </tr>
-                                                                       </table> 
+                                                                       </table>
                                                                    </td>
-                                                                </tr> 
+                                                                </tr>
                                                            </tfoot>
                                                        </table>
                                                    </div>
                                                 </div>
                                                 <div class="tab-pane fade" id="raw-materials" role="tabpanel" aria-labelledby="raw-materials-tab">
                                                     <div class="table-responsive pomrnheadtffotsticky">
-                                                        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                                        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                             <thead>
                                                                 <tr>
                                                                     <th>SO No.</th>
@@ -547,55 +551,55 @@
                                                                                <td class="p-0">
                                                                                    <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
                                                                                </td>
-                                                                           </tr>   
-                                                                           <tr> 
+                                                                           </tr>
+                                                                           <tr>
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_cat_hsn">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
-                                                                           <tr id = "current_item_specs_row"> 
+                                                                           <tr id = "current_item_specs_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_specs">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_attribute_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_attribute_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_attributes">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_stocks_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_stocks_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_stocks">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_inventory"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_inventory">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_inventory_details">
 
                                                                                    </div>
-                                                                               </td> 
-                                                                           </tr> 
-                                                                           <tr id = "current_item_qt_no_row"> 
+                                                                               </td>
+                                                                           </tr>
+                                                                           <tr id = "current_item_qt_no_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_qt_no">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
-                                                                           <tr id = "current_item_store_location_row"> 
+                                                                           <tr id = "current_item_store_location_row">
                                                                                <td class="poprod-decpt">
                                                                                    <div id ="current_item_store_location">
 
                                                                                    </div>
-                                                                               </td> 
+                                                                               </td>
                                                                            </tr>
                                                                            <tr id = "current_item_description_row">
                                                                                <td class="poprod-decpt">
@@ -609,9 +613,9 @@
                                                                                    </div>
                                                                                 </td>
                                                                            </tr>
-                                                                       </table> 
+                                                                       </table>
                                                                    </td>
-                                                                </tr> 
+                                                                </tr>
                                                            </tfoot>
                                                        </table>
                                                    </div>
@@ -619,11 +623,11 @@
                                              </div>
 								</div>
                             </div>
-                            
+
                             <div class="card">
                                 <div class="card-body customernewsection-form">
                                     <div class="border-bottom mb-2 pb-25" id="componentSection">
-                                        <div class="row"> 
+                                        <div class="row">
                                             <div class="col-md-12">
                                                 <div class="row mt-2">
                                                     <div class="col-md-12">
@@ -634,7 +638,7 @@
                                                                 <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_order_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple >
                                                                 <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                                             </div>
-                                                        </div> 
+                                                        </div>
                                                         <div class = "col-md-6" style = "margin-top:19px;">
                                                             <div class = "row" id = "main_order_file_preview">
                                                             </div>
@@ -642,9 +646,9 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-md-12">
-                                                        <div class="mb-1">  
-                                                            <label class="form-label">Final Remarks</label> 
-                                                            <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($slip) ? $slip -> remarks : '' }}</textarea> 
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Final Remarks</label>
+                                                            <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($slip) ? $slip -> remarks : '' }}</textarea>
                                                         </div>
                                                     </div>
 
@@ -654,13 +658,13 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                         </div>
                     </div>
                     <!-- Modal to add new record -->
-                     
+
                 </section>
-                 
+
 
             </div>
         </div>
@@ -707,7 +711,7 @@
                                 <input type="text" id="document_mo_no_input" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                             </div>
                         </div>
-                         
+
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
                               <button type="button"  onclick = "getOrders();"  class="btn btn-warning btn-sm clearPiFilter"><i data-feather="x-circle"></i> Clear</button>
@@ -716,14 +720,14 @@
 
 						 <div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 									<thead>
 										 <tr>
 											<th>
                                                 <div class="form-check form-check-inline me-0">
                                                     <input class="form-check-input" type="checkbox" name="podetail" id="inlineCheckbox1">
-                                                </div> 
-                                            </th> 
+                                                </div>
+                                            </th>
                                             <th>Customer </th>
 											<th>MO No.</th>
 											<th>MO Date</th>
@@ -734,12 +738,12 @@
 											<th>Product Name</th>
 											<th>Attributes</th>
 											<th>UOM</th>
-											<th>Quantity</th> 
-											<th>Balance Qty</th> 
+											<th>Quantity</th>
+											<th>Balance Qty</th>
 										  </tr>
 										</thead>
 										<tbody id = "qts_data_table">
-                                            
+
 									   </tbody>
 
 
@@ -786,8 +790,8 @@
                                 <input type = "hidden" id = "book_id_qt_val_land"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -811,7 +815,7 @@
                                 <input type = "hidden" id = "land_plot_id_qt_val_land"></input>
                             </div>
                         </div>
-                         
+
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
                              <button onclick = "getOrders('land-lease');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
@@ -819,24 +823,24 @@
 
 						 <div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 									<thead>
 										 <tr>
 											<th>
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Document No.</th>
 											<th>Document Date</th>
                                             <th>Customer</th>
 											<th>Land Parcel</th>
-											<th>Plots</th> 
+											<th>Plots</th>
                                             <th>Service Type</th>
-											<th>Amount</th> 
-											<th>Due Date</th> 
+											<th>Amount</th>
+											<th>Due Date</th>
 										  </tr>
 										</thead>
 										<tbody id = "qts_data_table_land">
-                                            
+
 									   </tbody>
 
 
@@ -854,8 +858,8 @@
 			</div>
 		</div>
 	</div>
-    
-    
+
+
     <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" >
 			<div class="modal-content">
@@ -865,31 +869,31 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
+
+
                      <div class="row mt-2">
-                         
-						
+
+
 						<div class="col-md-12 mb-1">
 							<label class="form-label">Remarks</label>
 							<textarea class="form-control" current-item = "item_remarks_0" onchange = "changeItemRemarks(this);" id ="current_item_remarks_input" placeholder="Enter Remarks"></textarea>
-						</div> 
-                    
+						</div>
+
                     </div>
 
-					 
-                    
+
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('Remarks');">Submit</button>
 				</div>
 			</div>
 		</div>
 	</div>
-    
-    
+
+
     <div class="modal fade" id="FromLocation" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style="max-width: 900px">
 			<div class="modal-content">
@@ -899,10 +903,10 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">From Location</h1>
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
-                                            <th width="80px">S.No</th> 
+                                            <th width="80px">S.No</th>
 											<th>Rack</th>
 											<th>Shelf</th>
 											<th>Bin</th>
@@ -914,9 +918,9 @@
 								</table>
 							</div>
 				    </div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('FromLocation');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('FromLocation');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('FromLocation');">Submit</button>
 				</div>
 			</div>
@@ -930,17 +934,17 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">To Location</h1>       
-                    
+					<h1 class="text-center mb-1" id="shareProjectTitle">To Location</h1>
+
                     <a href="#" class="text-primary add-contactpeontxt mt-50 text-end" onclick = "addToLocationRow();">
                             <i data-feather='plus'></i> Add Location
                         </a>
-                    
+
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
-                                            <th width="50px">S.No</th> 
+                                            <th width="50px">S.No</th>
 											<th>Rack</th>
 											<th>Shelf</th>
 											<th>Bin</th>
@@ -948,18 +952,18 @@
 										  </tr>
 										</thead>
 										<tbody id = "item_to_location_table" current-item-index = '0'>
-                                            
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('ToLocation');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('ToLocation');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('ToLocation');">Submit</button>
 				</div>
 			</div>
@@ -1001,8 +1005,8 @@
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button>
             <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
          </div>
       </div>
@@ -1045,12 +1049,12 @@
                     </div>
                   </div>
                   <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
+
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('approveModal');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('approveModal');">Cancel</button>
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>
@@ -1070,7 +1074,7 @@
               <p>Are you sure you want to <strong>Amend</strong> this <strong>Material Issue</strong>?</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
-          </div> 
+          </div>
       </div>
   </div>
 </div>
@@ -1086,14 +1090,14 @@
             </div>
             <div class="modal-body">
                     <div class="row">
-                        
+
                         <div class="col-md-3">
                         <div class="mb-1">
                             <label class="form-label">Series <span class="text-danger">*</span></label>
                             <input id = "voucher_book_code" class="form-control" disabled="" >
                         </div>
                     </div>
-                        
+
                         <div class="col-md-3">
                         <div class="mb-1">
                             <label class="form-label">Voucher No <span class="text-danger">*</span></label>
@@ -1112,15 +1116,15 @@
                             <input id = "voucher_currency" class="form-control" disabled="" value="">
                         </div>
                     </div>
-                        
+
                         <div class="col-md-12">
 
 
                         <div class="table-responsive">
-                            <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                            <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                 <thead>
                                         <tr>
-                                        <th>Type</th>  
+                                        <th>Type</th>
                                         <th>Group</th>
                                         <th>Leadger Code</th>
                                         <th>Leadger Name</th>
@@ -1129,7 +1133,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id = "posting-table">
-                                            
+
 
                                     </tbody>
 
@@ -1154,35 +1158,35 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body px-sm-2 mx-50 pb-2">
-                <h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>       
-                
+                <h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>
+
                 <a href="#" class="text-primary add-contactpeontxt mt-50 text-end" onclick = "addBundleQty();">
                         <i data-feather='plus'></i> Add Package
                     </a>
-                
+
                 <div class="table-responsive-md customernewsection-form">
-                            <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                            <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                                 <thead>
                                         <tr>
-                                        <th width="50px">S.No</th> 
+                                        <th width="50px">S.No</th>
                                         <th>Package No</th>
                                         <th>Quantity</th>
                                         <th width="50px">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id = "bundle_schedule_table" current-item-index = '0'>
-                                        
+
 
                                     </tbody>
 
 
                             </table>
                         </div>
-                
+
             </div>
-            
-            <div class="modal-footer justify-content-center">  
-                    <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('bundleInfo');">Cancel</button> 
+
+            <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('bundleInfo');">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="closeModal('bundleInfo');">Submit</button>
             </div>
         </div>
@@ -1226,13 +1230,13 @@
             var request = $('#requestno');
 
             request.val(''); // Clear any existing options
-            
+
             if (book_id) {
                 $.ajax({
                     url: "{{ url('get-request') }}/" + book_id,
                     type: "GET",
                     dataType: "json",
-                    success: function(data) 
+                    success: function(data)
                         {
                             if (data.requestno) {
                             request.val(data.requestno);
@@ -1319,7 +1323,7 @@
                     const singleResetElement = document.getElementById(resetDropdownIdsArray);
                     if (singleResetElement) {
                         singleResetElement.innerHTML = `<option value = '0'>Select</option>`;
-                    }            
+                    }
                 }
             }
 
@@ -1352,7 +1356,7 @@
                         document.getElementById('customer_code_input').value = "";
                         return;
                     }
-                    
+
                 }
                 // console.clear();
                 // console.log(data);
@@ -1370,7 +1374,7 @@
                             })
                         });
                     } else {
-                        
+
                         currentElement.innerHTML = `<option value = '0'>Select</option>`;
                         const response = data.data;
                         response?.[dataKeysForApi[idx]]?.forEach((item, idxx) => {
@@ -1553,7 +1557,7 @@
             let rejectedQty = totalProduced - acceptedQty - subPrimedQty;
             $("#item_rejected_qty_" + index).val(Math.max(rejectedQty, 0));
         }
-        
+
         function addHiddenInput(id, val, name, classname, docId, dataId = null)
         {
             const newHiddenInput = document.createElement("input");
@@ -1585,7 +1589,7 @@
             const qtDetailsRow = document.getElementById('current_item_qt_no_row');
             const qtDetails = document.getElementById('current_item_qt_no');
 
-            //Reference From 
+            //Reference From
             const referenceFromLabels = document.getElementsByClassName("reference_from_label_" + itemRowId);
             if (referenceFromLabels && referenceFromLabels.length > 0)
             {
@@ -1596,12 +1600,12 @@
                 }
                 qtDetails.innerHTML = referenceFromLabelsHTML;
             }
-            else 
+            else
             {
                 qtDetailsRow.style.display = "none";
                 qtDetails.innerHTML = ``;
             }
-            
+
             const leaseAgreementDetailsRow = document.getElementById('current_item_land_lease_agreement_row');
             const leaseAgreementDetails = document.getElementById('current_item_land_lease_agreement');
             //assign agreement details
@@ -1713,7 +1717,7 @@
                                     document.getElementById('current_item_inventory').style.display = 'none';
                                     document.getElementById('current_item_inventory_details').innerHTML = ``;
                                 }
-                                
+
                                 if (data?.item && data?.item?.category && data?.item?.sub_category) {
                                     document.getElementById('current_item_cat_hsn').innerHTML = `
                                     <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>: <span id = "item_category">${ data?.item?.category?.name}</span></span>
@@ -1730,7 +1734,7 @@
                                     `;
                                     var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
                                     inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
-                                    } 
+                                    }
                                  else {
                                         document.getElementById('current_item_stocks_row').style.display = "none";
                                     }
@@ -1739,7 +1743,7 @@
                                 console.error('Error fetching customer data:', xhr.responseText);
                             }
                         });
-                    
+
         }
 
         function checkStockData(itemRowId)
@@ -1767,7 +1771,7 @@
                     store_id: $("#item_store_" + itemRowId).val()
                 },
                 success: function(data) {
-                    
+
                         var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
                         var actualQty = inputQtyBox.value;
                         inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
@@ -1785,7 +1789,7 @@
                                 }
                             }
                         }
-                    
+
                 },
                 error: function(xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
@@ -1811,7 +1815,7 @@
                     });
                     }
                         const storeElement = document.getElementById('data_stores_' + itemRowId);
-                       
+
                         const rateInput = document.getElementById('item_rate_' + itemRowId);
                         const valueInput = document.getElementById('item_value_' + itemRowId);
 
@@ -1853,7 +1857,7 @@
                                     var actualQty = qtyElement.value;
                                     if (actualQty > 0) {
                                         valueInput.value = totalValue.toFixed(2);
-                                        totalRate = parseFloat(totalValue) / parseFloat(qty ? qty : qtyElement.value); 
+                                        totalRate = parseFloat(totalValue) / parseFloat(qty ? qty : qtyElement.value);
                                         rateInput.value = parseFloat(totalRate).toFixed(2);
                                     } else {
                                         rateInput.value = 0.00;
@@ -1909,7 +1913,7 @@
         function submitForm(status) {
             enableHeader();
         }
-    
+
         function disableHeader()
         {
             const disabledFields = document.getElementsByClassName('disable_on_edit');
@@ -2062,7 +2066,7 @@
             });
         }
         renderIcons();
-        
+
         let finalAmendSubmitButton = document.getElementById("amend-submit-button");
 
         viewModeScript(finalAmendSubmitButton ? false : true);
@@ -2092,7 +2096,7 @@
         });
     }
 
-    function getDocNumberByBookId(element, reset = true) 
+    function getDocNumberByBookId(element, reset = true)
     {
         resetParametersDependentElements(reset);
         let bookId = element.value;
@@ -2143,7 +2147,7 @@
                     viewModeScript();
                 }
             });
-        }); 
+        });
     }
 
     function onDocDateChange()
@@ -2232,7 +2236,7 @@
             $("#order_date_input").removeAttr('max');
             $("#order_date_input").removeAttr('min');
             $("#order_date_input").off('input');
-        } 
+        }
         if (backDateAllow && !futureDateAllow) { // Allow only back date
             $("#order_date_input").removeAttr('min');
             $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
@@ -2240,7 +2244,7 @@
             $('#order_date_input').on('input', function() {
                 restrictFutureDates(this);
             });
-        } 
+        }
         if (!backDateAllow && futureDateAllow) { // Allow only future date
             $("#order_date_input").removeAttr('max');
             $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
@@ -2316,7 +2320,7 @@
 
     editScript();
 
-    
+
     function checkItemAddValidation()
     {
         let addRow = $('#series_id_input').val &&  $('#order_no_input').val && $('#order_date_input').val;
@@ -2357,7 +2361,7 @@
                                 return {
                                     id: item.id,
                                     label: `${item[labelKey1]} (${item[labelKey2] ? item[labelKey2] : ''})`,
-                                    code: item[labelKey1] || '', 
+                                    code: item[labelKey1] || '',
                                 };
                             }));
                         },
@@ -2404,7 +2408,7 @@
         $(document).on('input', '.decimal-input', function() {
             // Allow only numbers and a single decimal point
             this.value = this.value.replace(/[^0-9.]/g, ''); // Remove non-numeric characters
-            
+
             // Prevent more than one decimal point
             if ((this.value.match(/\./g) || []).length > 1) {
                 this.value = this.value.substring(0, this.value.length - 1);
@@ -2417,7 +2421,7 @@
         });
     });
 
-    
+
 $(document).on('click', '#amendmentSubmit', (e) => {
    let actionUrl = "{{ route('sale.order.amend', isset($slip) ? $slip -> id : 0) }}";
    fetch(actionUrl).then(response => {
@@ -2453,7 +2457,7 @@ $(document).on('change', '#revisionNumber', (e) => {
 
 $(document).on('submit', '.ajax-submit-2', function (e) {
     e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
+     var submitButton = (e.originalEvent && e.originalEvent.submitter)
                         || $(this).find(':submit');
     var submitButtonHtml = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
@@ -2464,7 +2468,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
     var data = new FormData($(this)[0]);
 
     var formObj = $(this);
-    
+
     $.ajax({
         url,
         type: method,
@@ -2492,7 +2496,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
                     location.reload();
                 }
             }, 1500);
-            
+
         },
         error: function (error) {
             submitButton.disabled = false;
@@ -2667,7 +2671,7 @@ document.addEventListener('input', function (e) {
     document.addEventListener('keydown', function (e) {
         if (e.target.classList.contains('text-end')) {
             if ( e.key === 'Tab' ||
-                ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) || 
+                ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) ||
                 /^[0-9]$/.test(e.key)
             ) {
                 // Allow numbers, navigation keys, and a single decimal point
@@ -2690,7 +2694,7 @@ document.addEventListener('input', function (e) {
     {
         document.getElementById('series_id_input').innerHTML = '';
     }
-    
+
     function onSeriesChange(element, reset = true)
     {
         resetSeries();
@@ -2921,7 +2925,7 @@ document.addEventListener('input', function (e) {
                     storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(existingStoreArray)));
                 }
             });
-        } 
+        }
     }
 
     function toLocationQtyChange(element, itemIndex, index)
@@ -3219,8 +3223,8 @@ document.addEventListener('input', function (e) {
                 voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
                     voucherEntriesHTML += `
                     <tr>
-                    <td>${voucher}</td>   
-                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td> 
+                    <td>${voucher}</td>
+                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
@@ -3231,8 +3235,8 @@ document.addEventListener('input', function (e) {
             });
             voucherEntriesHTML+= `
             <tr>
-                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>   
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td> 
+                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
             `;
@@ -3249,7 +3253,7 @@ document.addEventListener('input', function (e) {
             $('#postvoucher').modal('show');
         }
     });
-    
+
 }
 
 function postVoucher(element)
@@ -3284,7 +3288,7 @@ function postVoucher(element)
                         icon: 'error',
                     });
                 }
-            }, 
+            },
             error: function(jqXHR, textStatus, errorThrown) {
                 Swal.fire({
                     title: 'Error!',
@@ -3361,7 +3365,7 @@ function openHeaderPullModal(type = null)
                 targetTable.innerHTML = '';
             }
         });
-     
+
     }
 
     $(document).on('input change', '#item_name_input', function() {
@@ -3374,7 +3378,7 @@ function openHeaderPullModal(type = null)
         getOrders();
     });
 
-    
+
     $(document).on('click', '.clearPiFilter', (e) => {
         $("#customer_code_input_qt").val('');
         $("#customer_id_qt_val").val('');
@@ -3416,11 +3420,11 @@ function openHeaderPullModal(type = null)
                 if (resetFlag) {
                     current_doc_id = 0;
                 }
-            }   
+            }
         } else {
             current_doc_id = element.getAttribute('doc-id');
         }
-        
+
     }
 
     function processOrder()
@@ -3466,11 +3470,10 @@ function openHeaderPullModal(type = null)
                     // mainTableItem.innerHTML = currentOrders.html;
                     $("#production-items tbody:first").html(currentOrders.html);
                     $("#production-items tbody:first .item_header_rows").each(function(itemIndex,item){
-                        setAttributesUI(itemIndex,"#production-items tbody");  
+                        setAttributesUI(itemIndex,"#production-items tbody");
                         assignDefaultBundleInfoArray(itemIndex);
                     });
-                    
-                    if(currentOrders?.mo?.mo_machine_id) {
+                    if(currentOrders?.is_machine) {
                         $("#machineName").removeClass('d-none');
                         $("#cycleCount").removeClass('d-none');
                         $("#item_details_td").attr('colspan','15');
@@ -3481,7 +3484,7 @@ function openHeaderPullModal(type = null)
                     }
                     $("#raw-materials tbody:first").html(currentOrders.consHtml);
                     $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
-                        setAttributesUI(itemIndex,"#raw-materials tbody");  
+                        setAttributesUI(itemIndex,"#raw-materials tbody");
                     });
 
                     if (feather) {
@@ -3614,9 +3617,9 @@ function locationOnChange(storeId = '') {
     });
 }
 
-function getStationWiseConsBySubStoreId() 
+function getStationWiseConsBySubStoreId()
 {
-    const swc = $('#sub_store_id').find('option:selected').attr('data-station-wise-consumption') || 'no'; 
+    const swc = $('#sub_store_id').find('option:selected').attr('data-station-wise-consumption') || 'no';
     $("#station_wise_consumption").val(swc);
     return swc;
 }
@@ -3625,10 +3628,10 @@ function getStationWiseConsBySubStoreId()
 //  Display attribute default
 setTimeout(()=>{
     $("#production-items tbody:first .item_header_rows").each(function(itemIndex,item){
-        setAttributesUI(itemIndex,"#production-items tbody");  
+        setAttributesUI(itemIndex,"#production-items tbody");
     });
     $("#raw-materials tbody:first .item_header_rows").each(function(itemIndex,item){
-        setAttributesUI(itemIndex,"#raw-materials tbody");  
+        setAttributesUI(itemIndex,"#raw-materials tbody");
     });
 }, 500);
 var currentSelectedItemIndex = null ;
@@ -3708,10 +3711,10 @@ function setAttributesUI(paramIndex = null, selectorPrifix = ''){
     }
     if(total_selected == 0){
         attributeSection.innerHTML = `
-            <button id = "attribute_button_${currentItemIndex}" 
-                ${attributesArray.length > 0 ? '' : 'disabled'} 
-                type = "button"                  
-                class="btn p-25 btn-sm btn-outline-secondary" 
+            <button id = "attribute_button_${currentItemIndex}"
+                ${attributesArray.length > 0 ? '' : 'disabled'}
+                type = "button"
+                class="btn p-25 btn-sm btn-outline-secondary"
                 style="font-size: 10px">Attributes</button>
             <input type = "hidden" name = "attribute_value_${currentItemIndex}" />
         `;
@@ -3740,7 +3743,7 @@ $(document).on('change','#rescdule tbody .form-check-input',(e) => {
         e.target.checked = false;
     } else {
         e.target.checked = false;
-        return false; 
+        return false;
     }
     let moIds = $('#rescdule tbody .form-check-input:checked')
     .map(function () {
@@ -3753,7 +3756,7 @@ $(document).on('change','#rescdule tbody .form-check-input',(e) => {
             e.target.checked = false;
         }
     } else {
-        e.target.checked = true; 
+        e.target.checked = true;
     }
 });
 
@@ -3772,7 +3775,7 @@ $(document).on("keyup","#production-items tbody input[name*='item_qty[']", (e) =
 
 document.addEventListener("DOMContentLoaded", function () {
    function updateButtonVisibility() {
-       let activeTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");   
+       let activeTab = document.querySelector(".nav-link.active").getAttribute("data-bs-target").replace("#", "");
        document.querySelectorAll(".tab-action").forEach(button => {
            if (button.getAttribute("data-tab") === activeTab) {
                button.classList.remove("d-none");

@@ -6,6 +6,7 @@ use App\Helpers\InventoryHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\WHM\ErpItemUniqueCode;
 
 class ErpInvoiceItem extends Model
 {
@@ -347,5 +348,10 @@ class ErpInvoiceItem extends Model
     public function plItem()
     {
         return $this->belongsTo(ErpPlItem::class, 'pl_item_id');
+    }
+
+    public function uniqueCodes()
+    {
+        return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
     }
 }

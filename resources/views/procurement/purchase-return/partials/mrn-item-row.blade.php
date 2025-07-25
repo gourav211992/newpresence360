@@ -1,18 +1,7 @@
 @foreach($mrnItems as $key => $item)
     @php
         $rowCount = $key + 1;
-        if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
-            $availableQty =  $item->available_qty;
-        } else{
-            $availableQty =  \App\Helpers\ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $item->available_qty ?? 0);
-        }
-        if($item->pr_rejected_qty && ($item->pr_rejected_qty!= null))
-        {
-            $pr_rejected_qty = $item->pr_rejected_qty;
-        }
-        else {
-            $pr_rejected_qty = 0.00;
-        }
+        $availableQty =  \App\Helpers\ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $item->available_qty ?? 0);
     @endphp
     <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->mrn_header_id}}">
@@ -64,17 +53,9 @@
                 @endif
             </select>
         </td>
-        @if($qtyTypeRequired && ($qtyTypeRequired == 'rejected'))
-            <td>
-                <input type="hidden" class="form-control mw-100 mrn_qty" name="components[{{$rowCount}}][mrn_qty]" value="{{($availableQty - $item->pr_qty)}}" />
-                <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{($availableQty - $pr_rejected_qty)}}" step="any"/>
-            </td>
-        @else
-            <td>
-                <input type="hidden" class="form-control mw-100 mrn_qty" name="components[{{$rowCount}}][mrn_qty]" value="{{($availableQty)}}" />
-                <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{($availableQty)}}" step="any"/>
-            </td>
-        @endif
+        <td>
+            <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]" value="{{($availableQty)}}" step="any"/>
+        </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate checkNegativeVal" step="any"/>
         </td>

@@ -1,7 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<form class="ajax-input-form" method="POST" action="{{ route('categories.update', $category->id) }}" data-redirect="{{ url('/categories') }}">
+ @php
+    $isEquipmentSegment = ($currentUrlSegment === 'equipment-categories');
+@endphp
+<form class="ajax-input-form" method="POST" action="{{ route('categories.update', $category->id) }}"  data-redirect="{{ $currentUrlSegment === 'equipment-categories' ? route('equipment-categories.index') : route('categories.index') }}">>
     @csrf
     @method('PUT')
     <div class="app-content content">
@@ -58,7 +61,7 @@
                                                 </div>
                                                 <div class="col-md-5">
                                                     <select name="type" class="form-select" id="category-type"style="pointer-events: none; background-color: transparent; ">
-                                                        <option value="">Select Type</option>
+                                                        @if(!$isEquipmentSegment)<option value="">Select Type</option>  @endif
                                                         @foreach ($categoryTypes as $type)
                                                             <option value="{{ $type }}" 
                                                                     {{ old('type', $category->type) == $type ? 'selected' : '' }}>

@@ -173,7 +173,7 @@ class Helper
         $startDate = request()->cookie('fyear_start_date') ?? $date;
         $endDate = request()->cookie('fyear_end_date') ?? $date;
 
-        
+
         $financialYear = ErpFinancialYear::where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
@@ -215,30 +215,30 @@ class Helper
         $user = self::getAuthenticatedUser();
         $startDate = request()->cookie('fyear_start_date');
         $endDate = request()->cookie('fyear_end_date');
-        
-        
+
+
         if (!$startDate || !$endDate) {
             return [];
         }
-        
+
         // 1. Find current financial year
         $financialYear = Helper::getFinancialYear(date('Y-m-d'));
-    
+
         if (!$financialYear['authorized']) {
             return [];
         }
 
-        
-    
+
+
         // 2. Get all ErpFyMonth for this financial year
         $months = ErpFyMonth::where('fy_id', $financialYear['id'])
             ->orderBy('start_date')
             ->get();
-    
+
         $currentUserId = $user->auth_user_id;
         // dd($currentUserId);
         $currentUserType = $user->authenticable_type;
-    
+
         $result = [];
         foreach ($months as $month) {
             $authorized = true;
@@ -263,7 +263,7 @@ class Helper
             $result[] = $monthData;
         }
         return $result;
-    }    
+    }
 
     public static function getFinancialYearQuarter(string $date): mixed
     {
@@ -755,7 +755,7 @@ class Helper
                 ->whereIn('ledger_parent_id',$allChildIds)
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    
+
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -790,7 +790,7 @@ class Helper
                 ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
                     $query->where('document_date', '<', $startDate);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    
+
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -898,7 +898,7 @@ class Helper
             })
         ->where('ledger_parent_id',$ledger_parent)
         ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate,$location){
-            
+
             $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
             $query->where('organization_id', $organization_id);
             $query->whereBetween('document_date', [$startDate, $endDate]);
@@ -991,7 +991,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1016,7 +1016,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1040,7 +1040,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1071,7 +1071,7 @@ class Helper
                    ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
                         $query->where('document_date', '<', $startDate);
                         $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -1161,7 +1161,7 @@ class Helper
             }
             //Creator of document cannot approve
             // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
-           
+
             if ($user->auth_user_id === $createdBy) {
                 $approve = false;
                 $revoke = true;
@@ -1311,7 +1311,7 @@ class Helper
             }
             //Creator of document cannot approve
             // if ($user->auth_user_id === $createdBy && self::userCheck()['type'] == $creatorType) {
-           
+
             if ($user->auth_user_id === $createdBy) {
                 $approve = false;
                 $revoke = true;
@@ -1755,7 +1755,7 @@ class Helper
             $model = resolve($modelName);
             $document = $model::find($docId);
             $createdBy = $document ?-> created_by;
-            if (isset($document) && isset($document -> document_status)) { 
+            if (isset($document) && isset($document -> document_status)) {
                 if ($actionType == ConstantHelper::REVOKE && $document -> document_status != ConstantHelper::SUBMITTED) {
                     $message = "Can't Revoke. Document is already Approved/Rejected";
                 }
@@ -1898,7 +1898,7 @@ class Helper
                 } else {
                   $approvalStatus = ConstantHelper::SUBMITTED;
                 }
-               
+
             }
         }
 
@@ -2036,13 +2036,14 @@ class Helper
             }
         }
 
-        $history = DocumentApproval::select('id', 'user_id', 'approval_date', 'remarks', 'approval_type', 'user_type')
+        $history = DocumentApproval::select('id', 'user_id', 'remarks', 'approval_type', 'user_type', 'created_at')
             ->where('document_type', '=', $bookTypeServiceAlias)
             ->where('document_id', $docId)
             ->where('revision_number', $revisionNumber);
         $history = $history->orderByDesc('id')->get();
         $mergedCollection = $data->merge($history);
         return $mergedCollection;
+
     }
 
     public static function checkApprovedHistory($bookTypeServiceAlias, $docId, $revisionNumber, $userId = [])
@@ -2106,7 +2107,7 @@ class Helper
                         // $query->where('cost_center_id', $cost);
                     })
                           ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                            
+
                         $query->when(!empty($organizations), function ($query) use ($organizations,$location) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2130,7 +2131,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2155,7 +2156,7 @@ class Helper
                             : $query->where('cost_center_id', $cost);
                     })
                     ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
-                        
+
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2185,7 +2186,7 @@ class Helper
                     if(!$carry)
                     $query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    
+
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -2303,7 +2304,7 @@ class Helper
                 })
                 ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    
+
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -2333,7 +2334,7 @@ class Helper
                     //if(!$carry)
                     //$query->where('document_date', '>=', $fy['start_date']);
                     $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                    
+
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
@@ -2552,8 +2553,8 @@ return [
                 $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
             });
         })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER])
-        -> where('status', ConstantHelper::ACTIVE) 
-        -> where('organization_id', $organizationId)->get();
+        -> where('status', ConstantHelper::ACTIVE)
+        ->get();
         return $employees;
     }
 
@@ -2766,7 +2767,7 @@ return [
                 $ModelName = $modelOb ? get_class($modelOb) : '';
                 $HistoryModel = $ModelName . 'History';
                 $HistoryModelInstance = resolve($HistoryModel);
-               
+
 
                 if (isset($modelData['attachment']) && empty($modelData['attachment'])) {
                     $modelData['attachment'] = json_encode([]);
@@ -2774,7 +2775,7 @@ return [
                     $modelData['attachment'] = json_encode($modelData['attachment']);
                 }
                 $insertedHistoryId = $HistoryModelInstance::insertGetId($modelData);
-             
+
                 array_push($arr, ['source_id' => $modelData['source_id'], 'history_id' => $insertedHistoryId]);
 
                 /*Media backup*/
@@ -2816,7 +2817,7 @@ return [
 
                   //compliances
                   if (method_exists($modelOb, 'compliances') && $modelOb->compliances()->exists()) {
-                    $compliance = $modelOb->compliances; 
+                    $compliance = $modelOb->compliances;
 
                     Compliance::create([
                         'morphable_id' => $insertedHistoryId,
@@ -2843,8 +2844,8 @@ return [
                 }
                 //bank Info
                 if (method_exists($modelOb, 'bankInfos') && $modelOb->bankInfos()->exists()) {
-                    $bankInfos = $modelOb->bankInfos; 
-                
+                    $bankInfos = $modelOb->bankInfos;
+
                     foreach ($bankInfos as $bankInfo) {
                         BankInfo::create([
                             'morphable_id' => $insertedHistoryId,
@@ -2860,7 +2861,7 @@ return [
                         ]);
                     }
                 }
-                
+
                 //contact
                 if (method_exists($modelOb, 'contacts') && $modelOb->contacts()->count()) {
                     foreach ($modelOb->contacts as $contact) {
@@ -2877,7 +2878,7 @@ return [
                         ]);
                     }
                 }
-             
+
                  //Note
                  if (method_exists($modelOb, 'notes') && $modelOb->notes()->count()) {
                     foreach ($modelOb->notes as $note) {
@@ -3455,7 +3456,7 @@ return [
                 }
             });
 
-            return $filtered->values(); 
+            return $filtered->values();
         }
 
          public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)

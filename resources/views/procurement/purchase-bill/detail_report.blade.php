@@ -68,10 +68,10 @@
                                 <div class="row">
                                     <div class="col">
                                         <div class="mb-1 mb-sm-0">
-                                            <label class="form-label">MRN No</label>
+                                            <label class="form-label">GRN No</label>
                                             <select class="form-select select2" id="mrn_no" name="mrn_no">
                                                 <option value="">Select</option>
-                                                @foreach ($MRNHeaders as $mrn)
+                                                @foreach ($GRNHeaders as $mrn)
                                                     <option value="{{ $mrn->id }}">{{ $mrn->document_number }}</option>
                                                 @endforeach
                                             </select>
@@ -212,7 +212,7 @@
                                 <div class="col-md-4">
                                     <div class="form-check form-check-secondary">
                                         <input type="checkbox" class="form-check-input" id="mrn-no" checked="">
-                                        <label class="form-check-label" for="mrn-no">MRN NO</label>
+                                        <label class="form-check-label" for="mrn-no">GRN NO</label>
                                     </div>
                                 </div>
                                 <div class="col-md-4">

@@ -2,9 +2,10 @@
 
 @section('content')
     <!-- BEGIN: Content-->
-    <form class="ajax-input-form" method="POST" action="{{ route('inspection-checklists.update', $inspectionChecklist->id) }}" data-redirect="{{ url('/inspection-checklists') }}">
+    <form class="ajax-input-form" method="POST" action="{{ route('inspection-checklists.update', $inspectionChecklist->id) }}" data-redirect=" @if ($currentUrlSegment === 'maintenance-inspection-checklists'){{ route('maintenance-inspection-checklists.index') }} @elseif ($currentUrlSegment === 'item-inspection-checklists') {{ route('item-inspection-checklists.index') }} @else{{ route('inspection-checklists.index') }}@endif">>
         @csrf
         @method('PUT')
+        <input type="hidden" name="current_url_segment" value="{{ $currentUrlSegment }}">
         <div class="app-content content">
             <div class="content-overlay"></div>
             <div class="header-navbar-shadow"></div>
@@ -76,7 +77,6 @@
                                                         @enderror
                                                     </div>
                                                 </div>
-
                                                 <!-- Status Section -->
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
@@ -116,7 +116,6 @@
                                                                         <th>S.NO</th>
                                                                         <th>Name<span class="text-danger">*</span></th>
                                                                         <th>Description</th> 
-                                                                        <th>Type</th> 
                                                                         <th>Data Type</th>
                                                                         <th>List Value</th>
                                                                         <th>Mandatory</th>
@@ -136,18 +135,6 @@
                                                                             </td>
                                                                             <td>
                                                                                <textarea name="checklist_details[{{ $index }}][description]" class="form-control description mw-100" rows="1" style="resize: none;" placeholder="Enter Description">{{ $detail->description ?? '' }}</textarea>
-                                                                            </td>
-                                                                            <td>
-                                                                                <select name="checklist_details[{{ $index }}][type]" class="form-control mw-100">
-                                                                                    <option value="">Select Type</option>
-                                                                                    @if(isset($checklistTypes))
-                                                                                        @foreach($checklistTypes as $type)
-                                                                                            <option value="{{ $type }}" {{ isset($detail) && $detail->type == $type ? 'selected' : '' }}>
-                                                                                                {{ ucfirst($type) }}
-                                                                                            </option>
-                                                                                        @endforeach
-                                                                                    @endif
-                                                                                </select>
                                                                             </td>
                                                                             <td>
                                                                                 <select name="checklist_details[{{ $index }}][data_type]" class="form-control mw-100 data-type-select ">
@@ -208,16 +195,6 @@
                                                                             </td>
                                                                             <td>
                                                                                <textarea name="checklist_details[0][description]" class="form-control mw-100" placeholder="Enter Description"></textarea>
-                                                                            </td>
-                                                                             <td>
-                                                                                <select name="checklist_details[0][type]" class="form-control mw-100">
-                                                                                     <option value="">Select Type</option>
-                                                                                        @if(isset($checklistTypes))
-                                                                                            @foreach($checklistTypes as $type)
-                                                                                                <option value="{{ $type }}">{{ ucfirst($type) }}</option>
-                                                                                            @endforeach
-                                                                                        @endif
-                                                                                </select>
                                                                             </td>
                                                                             <td>
                                                                                 <select name="checklist_details[0][data_type]" class="form-control mw-100 data-type-select">

@@ -732,6 +732,12 @@ class ErpProductionSlipController extends Controller
                             }
                         // }  
                     }
+                } else {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Please add atleast one row in product table.',
+                        'error' => "",
+                    ], 422);
                 }
 
                 //Remove deleted items from production slip
@@ -1103,7 +1109,7 @@ class ErpProductionSlipController extends Controller
             $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo, 'machines' => $machines])->render();
             return response() -> json([
                 'message' => 'Data found',
-                'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml],
+                'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml, 'is_machine' => $machines->count() > 0 ? true : false],
                 'status' => 200
             ]);
         } catch(Exception $ex) {
