@@ -130,7 +130,7 @@
                                                         <label class="form-label">Asset Category <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <select class="form-select select2" name="asset_category_id" id="asset_category_id" disabled required>
+                                                        <select class="form-select select2" name="asset_category" id="asset_category_id" disabled required>
                                                             <option value="" {{ old('asset_category_id', $data->asset_category_id) ? '' : 'selected' }}>Select</option>
                                                             @foreach ($categories as $category)
                                                                 <option value="{{ $category->id }}" 
@@ -139,6 +139,25 @@
                                                                 </option>
                                                             @endforeach
                                                         </select>
+                                                    </div>
+                                                </div>
+                                                 <div class="row align-items-center mb-1 company">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Prefix <span
+                                                                class="text-danger">*</span></label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <input type="text" name="prefix" required 
+                                                            oninput="checkUnique()" class="form-control text-uppercase company-field"
+                                                            maxlength="3" pattern="[A-Z]{1,3}"
+                                                            title="Enter up to 3 uppercase letters"
+                                                            value="{{ $data->prefix }}" required
+                                                            oninput="this.value = this.value.toUpperCase()" />
+                                                            @error('prefix')
+                                                            <span class="alert alert-danger">{{ $message }}</span>
+                                                        @enderror
+                                                        <span id="prefix-feedback" class="text-danger small"></span>
+                                                      
                                                     </div>
                                                 </div>
                 
@@ -439,9 +458,19 @@
 @section('scripts')
 
     <script type="text/javascript">
+        const prefix = $('input[name="prefix"]');
+        const name = $("#asset_category_id option:selected");
+        prefix.trigger('input');
     $('#setup').on('submit', function(e) {
+        e.preventDefault();
+         if($('#income_tax').is(':checked'))
+        $('input[name="prefix"]').val('');
+        if($('#prefix-feedback').text().trim()!="" && $('#company').is(':checked')){
+            showToast('error','Prefix already taken');
+            return;
+        }
         $('.preloader').show();
-        e.preventDefault(); 
+         
         this.submit();
     });
     function handleLedgerChange(ledgerSelector, groupSelector, selectedGroupId = null) {
@@ -537,12 +566,64 @@
                 $('.company-field').attr('required', true);
                 $('.income-field').removeAttr('required').val('');
                 $('#salvage_percentage').val('{{$data->dep_percentage??null}}');
+                if($('input[name="prefix"]').val().trim() === '')
+                generatePrefix();
             }
         }
          
      $('input[name="act_type"]').on('change', toggleFields);
      toggleFields();
+       
 
+        function generatePrefix() {
+   
+
+            $.ajax({
+                url: '{{ route('generate-setup-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    name: name.text().trim(),
+                    id:'{{$data->id}}'
+                },
+                success: function(response) {
+                    prefix.val((response.prefix || ''));
+                },
+                error: function() {
+                    prefix.val('');
+                }
+            });
+        }
+
+        function checkUnique() {
+            var feedback = $('#prefix-feedback');
+
+            $.ajax({
+                url: '{{ route('setup-check-prefix') }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    prefix: prefix.val().trim(),
+                    id:'{{$data->id}}',
+                },
+                success: function(response) {
+                    if (response.is_unique) {
+                        feedback.text('');
+                    } else {
+                        feedback.text('Prefix is already in use.');
+                    }
+
+                    // Optionally update the field with suggested unique prefix
+                    if (response.prefix) {
+                        prefix.val(response.prefix);
+                    }
+                },
+                error: function() {
+                    feedback.text('Error checking prefix.');
+                }
+            });
+        }
+      
           
     </script>
 @endsection

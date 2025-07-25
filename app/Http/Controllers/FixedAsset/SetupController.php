@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use App\Helpers\ConstantHelper;
 use App\Models\Group;
 use App\Helpers\InventoryHelper;
+use App\Models\FixedAssetSub;
 
 class SetupController extends Controller
 {
@@ -183,7 +184,7 @@ class SetupController extends Controller
             'group_id' => $validatedData['group_id'],
             'company_id' => $validatedData['company_id'],
             'organization_id' => $validatedData['organization_id'],
-            'asset_category_id' => $asset_category_id
+            'asset_category_id' => $asset_category_id,
         ];
 
 
@@ -368,5 +369,28 @@ class SetupController extends Controller
         }
 
         return response()->json([], 404);
+    }
+    public function generate_prefix(Request $req)
+    {
+        if($req->has('id')){
+            $prefix = FixedAssetSetup::find($req->id)?->prefix;
+            if(empty($prefix))
+                $prefix = FixedAssetSetup::generateuniquePrefix($req->name);
+        }
+        else
+        $prefix = FixedAssetSetup::generateuniquePrefix($req->name);
+        return response()->json(['prefix' => $prefix]);
+    }
+    public function checkPrefix(Request $req)
+    {
+        $query = FixedAssetSetup::where('prefix', $req->prefix);
+
+        if (!empty($req->id)) {
+            $query->where('id', '!=', $req->id);
+        }
+
+        $is_not_unique = $query->exists();
+
+        return response()->json(['is_unique' => !$is_not_unique]);
     }
 }

@@ -2556,6 +2556,7 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.registration.update',
         'destroy' => 'finance.fixed-asset.registration.destroy',
     ]);
+    
     Route::get('fixed-asset/registration/amendment/{id}', [RegistrationController::class, 'amendment'])->name('finance.fixed-asset.registration.amendment');
     Route::post('fixed-asset/registration/approval', [RegistrationController::class, 'documentApproval'])->name('finance.fixed-asset.registration.approval');
     Route::get('fixed-asset/sub_asset', [RegistrationController::class, 'subAsset'])->name('finance.fixed-asset.sub_asset');
@@ -2616,6 +2617,9 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.setup.update',
         'destroy' => 'finance.fixed-asset.setup.destroy',
     ]);
+    Route::post('/setup/generate-prefix', [SetupController::class,'generate_prefix'])->name('generate-setup-prefix');
+    Route::post('/setup/check-prefix', [SetupController::class,'checkPrefix'])->name('setup-check-prefix');
+    
     Route::get('fixed-asset/depreciation/posting/get', [DepreciationController::class, 'getPostingDetails'])->name('finance.fixed-asset.depreciation.posting.get');
     Route::post('fixed-asset/depreciation/post', [DepreciationController::class, 'postInvoice'])->name('finance.fixed-asset.depreciation.post');
     Route::get('fixed-asset/depreciation/assets', [DepreciationController::class, 'getAssets'])->name('finance.fixed-asset.depreciation.assets');
