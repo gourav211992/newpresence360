@@ -141,7 +141,7 @@ class DepreciationController extends Controller
                 $subAsset = FixedAssetSub::find((int)$sub_asset['sub_asset_id']);
                 if ($subAsset) {
                     $subAsset->total_depreciation += (float)$sub_asset['dep_amount'] ?? 0;
-                    $subAsset->current_value_after_dep = $subAsset->current_value_after_dep - (float)$sub_asset['dep_amount'];
+                    $subAsset->current_value_after_dep = (float)$sub_asset['after_dep_value']??0;
                     $subAsset->last_dep_date = Carbon::createFromFormat('d-m-Y', $sub_asset['to_date'])->addDay()->format('Y-m-d');
                     $subAsset->save();
                 }
