@@ -398,7 +398,7 @@
                                                             <select class="form-select select2" id="billing_type" name="billing_type">
                                                                 <option value="">Select</option>
                                                                 <option value="To be Billed">To be Billed</option>
-                                                                <option value="To Pay">To Pay</option>
+                                                                <option value="To Pay">To Pay </option>
                                                             </select>
                                                         </div>
                                                     </div>
@@ -1360,14 +1360,14 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ];
     const MAX_FILE_SIZE = 5120; // in KB (5MB)
-    function appendFilePreviews(fileUrl, previewElementId, index, fileId = null) {
+       function appendFilePreviews(fileUrl, previewElementId, index, fileId = null, inputName = '') {
     const previewContainer = document.getElementById(previewElementId);
     if (!previewContainer) return;
 
     const fileName = fileUrl.split('/').pop();
 
     const previewHtml = `
-        <div class="col-1 file-preview-item" data-index="${index}" data-file-id="${fileId ?? ''}">
+        <div class="col-1 file-preview-item image-uplodasection expenseadd-sign" data-index="${index}" data-file-id="${fileId ?? ''}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -1378,101 +1378,160 @@ $(document).on('change', 'input[name*="[location_id]"]', function () {
                 <line x1="16" y1="17" x2="8" y2="17"/>
                 <polyline points="10 9 9 9 8 9"/>
             </svg>
+             <div class="delete-img text-danger" data-edit-flag="true" data-index="${index}" data-input-id="${previewElementId}" data-input-name="${inputName}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </div>
         </div>
     `;
 
-    previewContainer.insertAdjacentHTML('beforeend', previewHtml);
+     previewContainer.insertAdjacentHTML('beforeend', previewHtml);
+    feather.replace({ width: 20, height: 20 });
 }
 
 
+function addFiles(element, previewElementId) {
+    const input = element;
+    const allowedMaxFilesCount = Number(input.getAttribute('max_file_count') || 1);
+    const inputId = input.name.replace('[]', '');
+    const files = Array.from(input.files);
 
-        function addFiles(element, previewElementId) {
-        const input = element;
-        const allowedMaxFilesCount = Number(element.getAttribute('max_file_count') ? element.getAttribute('max_file_count') : 1);
-        const files = Array.from(input.files); // Convert new FileList to array
-        const dt = new DataTransfer();
-        const inputId = input.name.replace('[]','');
-        // Initialize storage for this input if not already initialized
-        if (!fileInputData[inputId]) {
-            fileInputData[inputId] = [];
-            addedFilesCount = 0;
-        } else {
-            addedFilesCount = fileInputData[inputId].length;
+    if (!fileInputData[inputId]) {
+        fileInputData[inputId] = [];
+    }
+
+    const currentCount = fileInputData[inputId].length;
+
+    if ((files.length + currentCount) > allowedMaxFilesCount) {
+        Swal.fire({
+            title: 'Error!',
+            text: `Maximum ${allowedMaxFilesCount} files are allowed.`,
+            icon: 'error'
+        });
+        resetInput(inputId, input);
+        return;
+    }
+
+    let allFiles = [...fileInputData[inputId], ...files];
+    let invalidMessage = '';
+
+    for (const file of files) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const sizeKB = file.size / 1024;
+
+        if (!ALLOWED_EXTENSIONS.includes(ext) || !ALLOWED_MIME_TYPES.includes(file.type)) {
+            invalidMessage = 'Please select valid file types.';
+            break;
         }
 
-        if ((files.length + fileInputData[inputId].length) > allowedMaxFilesCount) 
-        {
-            Swal.fire({
-                title: 'Error!',
-                text: "Maximum " + allowedMaxFilesCount + " files are allowed",
-                icon: 'error',
-            });
-            let prevAllFiles = fileInputData[inputId] ? fileInputData[inputId] : [];
-            let tempDt = new DataTransfer();
-            prevAllFiles.forEach((fileElement) => {
-                tempDt.items.add(fileElement);
-            });
-            input.files = tempDt.files;
-            return;
-        }
-
-        // Combine old and new files
-        let allFiles = [...fileInputData[inputId], ...files];
-        var invalidFile = {};
-
-        // Validate files
-        for (let i = 0; i < allFiles.length; i++) {
-            const file = allFiles[i];
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-
-            if (!ALLOWED_EXTENSIONS.includes(fileExtension) || !ALLOWED_MIME_TYPES.includes(file.type)) {
-                invalidFile.message = 'Please select valid files';
-                break;
-            }
-            const fileSize = (file.size / 1024).toFixed(2);
-            if (fileSize > MAX_FILE_SIZE) {
-                invalidFile.message = 'Please select files with size not more than 5MB';
-                break;
-            }
-        }
-
-        // Stop if there's an invalid file
-        if (invalidFile && invalidFile.message) {
-            Swal.fire({
-                title: 'Error!',
-                text: invalidFile.message,
-                icon: 'error',
-            });
-            element.value = ''; // Reset file input
-            return;
-        } else {
-            // Add all files to DataTransfer and rebuild the preview
-            allFiles.forEach((file, i) => {
-                dt.items.add(file);
-                if (!fileInputData[inputId].some(f => f.name === file.name && f.size === file.size)) {
-                    const fileUrl = URL.createObjectURL(file);
-                    appendFilePreviews(fileUrl, previewElementId, i);
-                }
-            });
-
-            // Update the global object for this input
-            fileInputData[inputId] = allFiles.reduce((unique, file) => {
-                if (!unique.some(f => f.name === file.name && f.size === file.size)) {
-                    unique.push(file);
-                }
-                return unique;
-            }, []);
-
-            // Update the file input's FileList
-            input.files = dt.files;
-
-            // Reset and re-render SVG icons (if applicable)
-            feather.replace({
-                width: 20,
-                height: 20,
-            });
+        if (sizeKB > MAX_FILE_SIZE) {
+            invalidMessage = 'Each file must be less than 5MB.';
+            break;
         }
     }
+
+    if (invalidMessage) {
+        Swal.fire({
+            title: 'Error!',
+            text: invalidMessage,
+            icon: 'error'
+        });
+        resetInput(inputId, input);
+        return;
+    }
+
+    // Remove duplicates by name + size
+    fileInputData[inputId] = allFiles.reduce((unique, file) => {
+        if (!unique.some(f => f.name === file.name && f.size === file.size)) {
+            unique.push(file);
+        }
+        return unique;
+    }, []);
+
+    // Create new DataTransfer object
+    const newDt = new DataTransfer();
+    fileInputData[inputId].forEach(file => newDt.items.add(file));
+    input.files = newDt.files;
+
+    // Refresh preview
+    refreshPreviews(previewElementId, inputId);
+
+    // Reinitialize Feather Icons
+    feather.replace({ width: 20, height: 20 });
+}
+
+function refreshPreviews(previewElementId, inputId) {
+    const previewWrapper = document.getElementById(previewElementId);
+    if (!previewWrapper) return;
+
+    // ✅ Remove only previews added via JS (new files), not Blade (existing files)
+    const jsPreviews = previewWrapper.querySelectorAll('.file-preview-item');
+    jsPreviews.forEach(el => el.remove());
+
+    fileInputData[inputId].forEach((file, index) => {
+        const fileUrl = URL.createObjectURL(file);
+        appendFilePreviews(fileUrl, previewElementId, index, null, inputId);
+    });
+}
+
+
+function resetInput(inputId, input) {
+    const tempDt = new DataTransfer();
+    fileInputData[inputId].forEach(file => tempDt.items.add(file));
+    input.files = tempDt.files;
+}
+
+document.addEventListener('click', function (e) {
+    const deleteIcon = e.target.closest('.delete-img');
+    if (!deleteIcon) return;
+
+    const isEditMode = deleteIcon.getAttribute('data-edit-flag') === 'true';
+
+    if (isEditMode && deleteIcon.hasAttribute('data-id')) {
+        // 🔴 Existing file: remove DOM + store ID in hidden input
+        const mediaId = deleteIcon.getAttribute('data-id');
+        const removeInput = document.querySelector('input[name="removed_media_ids"]');
+
+        if (removeInput) {
+            let existing = removeInput.value ? removeInput.value.split(',') : [];
+            if (!existing.includes(mediaId)) {
+                existing.push(mediaId);
+                removeInput.value = existing.join(',');
+            }
+        } else {
+            // Create hidden input if not exists
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'removed_media_ids';
+            input.value = mediaId;
+            document.querySelector('form').appendChild(input);
+        }
+
+        // Remove DOM only
+        deleteIcon.closest('.image-uplodasection').remove();
+        return;
+    }
+
+    // ✅ New file: remove from fileInputData and input.files
+    const index = parseInt(deleteIcon.getAttribute('data-index'));
+    const previewElementId = deleteIcon.getAttribute('data-input-id');
+    const inputId = deleteIcon.getAttribute('data-input-name');
+    const input = document.querySelector(`input[name="${inputId}[]"]`);
+
+    if (!fileInputData[inputId]) return;
+
+    // Remove file from array
+    fileInputData[inputId].splice(index, 1);
+
+    // Update input.files
+    const dt = new DataTransfer();
+    fileInputData[inputId].forEach(file => dt.items.add(file));
+    input.files = dt.files;
+
+    // ✅ Just remove the preview block
+    deleteIcon.closest('.image-uplodasection').remove();
+
+    feather.replace({ width: 20, height: 20 });
+});
 </script>
 
 

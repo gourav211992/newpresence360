@@ -27,26 +27,23 @@ use App\Models\WhItemMapping;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
-
+use App\Models\MrnDetail;
+use App\Models\MrnJoItem;
 use Illuminate\Support\Facades\Log;
 
 
 class InventoryHelperV2
 {
-    public function __construct()
-    {
-    
-    }
+    public function __construct() {}
 
-    // Get Storage POints
-    public static function updateReceiptStock($documentHeader)
+    // Update Stock Ledger From Inspection
+    public static function updateReceiptStock($documentHeader, $inspection = null)
     {
-        $user = Helper::getAuthenticatedUser();
-        DB::beginTransaction();
         try {
             $documentDetails = $documentHeader->items->where('is_inspection', 1);
-            foreach($documentDetails as $detail) {
-                $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+
+            foreach ($documentDetails as $detail) {
+                $stockLedgerQuery = StockLedger::withDefaultGroupCompanyOrg()
                     ->where('document_header_id', $detail->mrn_header_id)
                     ->where('document_detail_id', $detail->id)
                     ->where('item_id', $detail->item_id)
@@ -55,65 +52,118 @@ class InventoryHelperV2
                     ->where('transaction_type', 'receipt')
                     ->whereNull('utilized_id')
                     ->whereRaw('hold_qty > 0')
+                    ->orderBy('original_receipt_date', 'ASC')
                     ->orderBy('document_date', 'ASC')
-                    ->first();
-                
-                if($approvedStockLedger && ($approvedStockLedger->hold_qty > 0)) {
-                    $approvedStockLedger->hold_qty = ($approvedStockLedger->hold_qty - $detail->inventory_uom_qty);
-                    $approvedStockLedger->receipt_qty += $detail->inventory_uom_qty;
-                    $approvedStockLedger->save();
+                    ->orderBy('id', 'ASC');
 
-                    $totalItemCost = $detail->basic_value - ($detail->discount_amount + $detail->header_discount_amount);
-                    $costPerUnit = $totalItemCost/$approvedStockLedger->receipt_qty;
-                    $approvedStockLedger->cost_per_unit = round(@$costPerUnit,6);
-                    $approvedStockLedger->total_cost = round(@$totalItemCost, 2);
-                    $approvedStockLedger->save();
+                $stockLedger = $stockLedgerQuery->first();
+                if (!$stockLedger || $stockLedger->hold_qty <= 0) continue;
 
-                    self::updateStockCost($approvedStockLedger);
+                $acceptedQty = (float) $detail->accepted_inv_uom_qty;
+                $rejectedQty = (float) $detail->rejected_inv_uom_qty;
+                $processedQty = $acceptedQty + $rejectedQty;
+
+                $totalItemCost = $detail->basic_value - ($detail->discount_amount + $detail->header_discount_amount);
+
+                // ✅ 1. Merge or Create Accepted Ledger
+                if ($acceptedQty > 0) {
+                    $acceptedLedger = StockLedger::withDefaultGroupCompanyOrg()
+                        ->where('document_header_id', $detail->mrn_header_id)
+                        ->where('document_detail_id', $detail->id)
+                        ->where('item_id', $detail->item_id)
+                        ->where('store_id', $detail->store_id)
+                        ->where('sub_store_id', $detail->sub_store_id)
+                        ->where('transaction_type', 'receipt')
+                        ->where('hold_qty', 0)
+                        ->where('receipt_qty', '>', 0)
+                        ->whereNull('utilized_id')
+                        ->orderBy('id', 'ASC')
+                        ->first();
+
+                    if (!$acceptedLedger) {
+                        $acceptedLedger = $stockLedger->replicate();
+                        $acceptedLedger->receipt_qty = $acceptedQty;
+                        $acceptedLedger->hold_qty = 0;
+                    }
+
+                    $acceptedLedger->receipt_qty = $acceptedQty;
+                    $acceptedLedger->cost_per_unit = round($acceptedLedger->receipt_qty > 0 ? $totalItemCost / $acceptedLedger->receipt_qty : 0, 6);
+                    $acceptedLedger->total_cost = round($totalItemCost, 2);
+                    $acceptedLedger->document_status = $documentHeader->document_status;
+                    self::updateStockCost($acceptedLedger);
+                    $acceptedLedger->save();
                 }
 
-                if($approvedStockLedger && ($approvedStockLedger->hold_qty == 0)) {
-                    $approvedStockLedger->document_status = $documentHeader->document_status;
-                    $approvedStockLedger->save();
-                }
-            } 
-            
-            \DB::commit();
+                // ✅ 2. Merge or Create Rejected Ledger
+                if ($inspection && $rejectedQty > 0 && $inspection->rejected_sub_store_id) {
+                    $rejectedLedger = StockLedger::withDefaultGroupCompanyOrg()
+                        ->where('document_header_id', $detail->mrn_header_id)
+                        ->where('document_detail_id', $detail->id)
+                        ->where('item_id', $detail->item_id)
+                        ->where('store_id', $detail->store_id)
+                        ->where('sub_store_id', $inspection->rejected_sub_store_id)
+                        ->where('transaction_type', 'receipt')
+                        ->where('hold_qty', 0)
+                        ->where('receipt_qty', '>', 0)
+                        ->whereNull('utilized_id')
+                        ->orderBy('id', 'ASC')
+                        ->first();
 
-            $message = "MRN details updated successfully.";
-            $data = self::successResponse($message, array());
-            return $data;
+                    if (!$rejectedLedger) {
+                        $rejectedLedger = $stockLedger->replicate();
+                        $rejectedLedger->receipt_qty = $rejectedQty;
+                        $rejectedLedger->hold_qty = 0;
+                        $rejectedLedger->sub_store_id = $inspection->rejected_sub_store_id;
+                    }
+
+                    $rejectedLedger->receipt_qty = $rejectedQty;
+                    $rejectedLedger->cost_per_unit = round($rejectedLedger->receipt_qty > 0 ? $totalItemCost / $rejectedLedger->receipt_qty : 0, 6);
+                    $rejectedLedger->total_cost = round($totalItemCost, 2);
+                    $rejectedLedger->document_status = $documentHeader->document_status;
+                    self::updateStockCost($rejectedLedger);
+                    $rejectedLedger->save();
+                }
+
+                // ✅ 3. Adjust or Delete Original Hold Ledger
+                $stockLedger->hold_qty -= $processedQty;
+
+                if ($stockLedger->hold_qty <= 0) {
+                    $stockLedger->attributes()->delete();
+                    $stockLedger->delete();
+                } else {
+                    $stockLedger->save(); // Partial hold remains
+                }
+            }
+
+            return self::successResponse("MRN details updated successfully.", []);
         } catch (\Exception $e) {
-            dd($e);
-            \DB::rollback();
-            $errorMsg = "Error in InspectionHelper@updateMrnDetail: " . $e->getMessage();
-            return self::errorResponse($errorMsg);
+            return self::errorResponse("Error in updateReceiptStock: " . $e->getMessage());
         }
-        
     }
+
 
     // Update document status while update mrn
     private static function updateStockCost($stockLedger)
     {
-        $user = Helper::getAuthenticatedUser();
-        //costing exchange rate currency
-        $orgnizationCurrencyCostPerUnit = $stockLedger->cost_per_unit*$stockLedger->org_currency_exg_rate;
-        $orgnizationCurrencyCost = $stockLedger->total_cost*$stockLedger->org_currency_exg_rate;
-        $companyCurrencyCostPerUnit = $orgnizationCurrencyCostPerUnit*$stockLedger->comp_currency_exg_rate;
-        $companyCurrencyCost = $orgnizationCurrencyCost*$stockLedger->comp_currency_exg_rate;
-        $groupCurrencyCostPerUnit = $companyCurrencyCostPerUnit*$stockLedger->group_currency_exg_rate;
-        $groupCurrencyCost = $companyCurrencyCost*$stockLedger->group_currency_exg_rate;
-        $stockLedger->org_currency_cost_per_unit = round($orgnizationCurrencyCostPerUnit,6);
-        $stockLedger->org_currency_cost = round(@$orgnizationCurrencyCost,2);
-        $stockLedger->comp_currency_cost_per_unit = round($companyCurrencyCostPerUnit,6);
-        $stockLedger->comp_currency_cost = round($companyCurrencyCost,2);
-        $stockLedger->group_currency_cost_per_unit = round($groupCurrencyCostPerUnit,6);
-        $stockLedger->group_currency_cost = round($groupCurrencyCost,2);
+        // Convert base cost to different currency levels
+        $orgCostPerUnit = $stockLedger->cost_per_unit * $stockLedger->org_currency_exg_rate;
+        $orgTotalCost = $stockLedger->total_cost * $stockLedger->org_currency_exg_rate;
 
-        $stockLedger->save();
+        $compCostPerUnit = $orgCostPerUnit * $stockLedger->comp_currency_exg_rate;
+        $compTotalCost = $orgTotalCost * $stockLedger->comp_currency_exg_rate;
 
-        return $stockLedger;
+        $groupCostPerUnit = $compCostPerUnit * $stockLedger->group_currency_exg_rate;
+        $groupTotalCost = $compTotalCost * $stockLedger->group_currency_exg_rate;
+
+        // Round and assign
+        $stockLedger->org_currency_cost_per_unit = round($orgCostPerUnit, 6);
+        $stockLedger->org_currency_cost = round($orgTotalCost, 2);
+        $stockLedger->comp_currency_cost_per_unit = round($compCostPerUnit, 6);
+        $stockLedger->comp_currency_cost = round($compTotalCost, 2);
+        $stockLedger->group_currency_cost_per_unit = round($groupCostPerUnit, 6);
+        $stockLedger->group_currency_cost = round($groupTotalCost, 2);
     }
+
 
     // Step 1: Check if stock is available (confirmed and unconfirmed)
     private static function checkStockAvailable($documentDetail)
@@ -130,7 +180,7 @@ class InventoryHelperV2
             ->where('transaction_type', $documentDetail['transaction_type'])
             ->where('book_type', $documentDetail['document_type'])
             ->whereNull('utilized_id')
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('hold_qty')->orWhere('hold_qty', '<=', 0);
             });
 
@@ -161,6 +211,103 @@ class InventoryHelperV2
         ];
     }
 
+    private static function deleteIssueStock($documentDetail)
+    {
+        $mrnDetail = MrnDetail::find($documentDetail['document_detail_id']);
+        $RawMaterialData = MrnJoItem::where('header_id', $documentDetail['document_detail_id'])
+                ->where('mrn_detail_id', $documentDetail['document_header_id'])->get();
+        foreach ($RawMaterialData as $key => $value) {
+            $documentDetail = [
+                        'document_header_id' => $value->mrn_header_id,
+                        'document_detail_id' => $value->mrn_detail_id,
+                        'item_id' => $value->mi_item_id,
+                        'store_id' => $value->store_id,
+                        'document_type' => 'mrn',
+                        'attributes' => $value->attributes,
+                        'sub_store_id' => $value->sub_store_id,
+                        'transaction_type' => 'issue',
+                        'document_status' => $value->status,
+                    ];
+            self::deleteIssueStockJobType($documentDetail);
+        }
+    }
+
+    private static function deleteIssueStockJobType($documentDetail)
+    {
+        $selectedAttr = $documentDetail['selectedAttr'] ?? [];
+        $attributeGroups = Attribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id')->values();
+        $baseQuery = StockLedger::withDefaultGroupCompanyOrg()
+            ->where('document_header_id', $documentDetail['document_header_id'])
+            ->where('document_detail_id', $documentDetail['document_detail_id'])
+            ->where('item_id', $documentDetail['item_id'])
+            ->where('store_id', $documentDetail['store_id'])
+            ->where('sub_store_id', $documentDetail['sub_store_id'])
+            ->where('transaction_type', 'issue')
+            ->where('book_type', $documentDetail['document_type'])
+            ->whereNull('utilized_id')
+            ->where(function ($q) {
+                $q->whereNull('hold_qty')->orWhere('hold_qty', '<=', 0);
+            });
+
+        // Apply attribute filters
+        if ($attributeGroups->isNotEmpty() && !empty($selectedAttr)) {
+            foreach ($attributeGroups as $index => $groupId) {
+                if (isset($selectedAttr[$index])) {
+                    $baseQuery->whereJsonContains('item_attributes', [
+                        'attr_name' => (string)$groupId,
+                        'attr_value' => (string)$selectedAttr[$index],
+                    ]);
+                }
+            }
+        }
+
+        // Clone query to avoid re-execution conflict
+        $issueStock = (clone $baseQuery)
+            ->first();
+        $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
+            ->where('utilized_id', $issueStock->id)
+            ->get();
+
+        $stockQty = 0;
+        if ($utilizedStockLedger->isNotEmpty()) {
+            foreach ($utilizedStockLedger as $val) {
+                $stockQty += $val->receipt_qty;
+                $similarUtilizedRecord = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where('document_header_id', $val->document_header_id)
+                    ->where('document_detail_id', $val->document_detail_id)
+                    ->where('book_type', $val->book_type)
+                    ->where('transaction_type', $val->transaction_type)
+                    ->where('store_id', $val->store_id)
+                    ->where('sub_store_id', $val->sub_store_id)
+                    ->whereJsonContains('item_attributes', $val->item_attributes)
+                    ->whereNull('utilized_id')
+                    ->first();
+
+                if ($similarUtilizedRecord) {
+                    // Merge quantities and reset utilization
+                    $stockQty += $similarUtilizedRecord->receipt_qty;
+                    // $similarUtilizedRecord->attributes()->delete();
+                    $similarUtilizedRecord->delete();
+
+                }
+                $val->receipt_qty = $stockQty;
+                $val->save();
+                $val->total_cost = ($val->receipt_qty * $val->cost_per_unit);
+                $val->save();
+                self::updateStockCost($val);
+                $val->utilized_id = null;
+                $val->utilized_date = null;
+                $val->save();
+            }
+        }
+
+        if (!$utilizedStockLedger) {
+            $issueStock->attributes->delete();
+            $issueStock->delete();
+        }
+        return true;
+    }
+
     public static function checkStockForDelete($documentDetail, $isDelete)
     {
         $availStock = self::checkStockAvailable($documentDetail);
@@ -172,6 +319,29 @@ class InventoryHelperV2
             $unConfirmedStock->delete();
 
             return self::successResponse("Pending stock deleted successfully", [
+                'stockLedger' => $documentDetail,
+                'isDelete' => $isDelete ? 1 : 0,
+            ]);
+        }
+
+        return self::errorResponse(
+            "You cannot delete this {$documentDetail['document_type']} because stock is already available."
+        );
+    }
+
+    public static function checkStockForIssueDelete($documentDetail, $isDelete)
+    {
+        if($documentDetail['book_type'] == ConstantHelper::MRN_SERVICE_ALIAS)
+        {
+            $issueStock = self::deleteIssueStock($documentDetail);
+        }
+        else
+        {
+            $issueStock = self::deleteIssueStockJobType($documentDetail);
+        }
+
+        if ($issueStock) {
+            return self::successResponse("Issue stock deleted successfully", [
                 'stockLedger' => $documentDetail,
                 'isDelete' => $isDelete ? 1 : 0,
             ]);

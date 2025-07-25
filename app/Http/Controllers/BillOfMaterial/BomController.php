@@ -43,6 +43,7 @@ class BomController extends Controller
     # Bill of material list
     public function index(Request $request)
     {
+
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -592,7 +593,7 @@ class BomController extends Controller
 
         $rowCount = intval($request->rowCount) ?? 1;
         $currentTab = $request->current_tab ?? '';
-        $item = Item::find($request->item_id);
+        $item = Item::with('itemAttributes.attributeGroup','approvedVendors')->find($request->item_id ?? null);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
 
         $detailItemId = $request->bom_detail_id ?? null;
@@ -612,8 +613,26 @@ class BomController extends Controller
         } else {
             $itemAttributes = $item?->itemAttributes;
         }
-        // dd($selectedAttr);
-        $html = view('billOfMaterial.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes'))->render();
+
+        $oldAttributes = [];
+
+        if ($detailItemId) {
+            $bomAttributes = BomAttribute::where('bom_detail_id', $detailItemId)->get();
+            foreach ($bomAttributes as $bomAttr) {
+                $attribute = $itemAttributes->firstWhere('id', $bomAttr->item_attribute_id);
+                if ($attribute) {
+                    $currentIds = is_array($attribute->attribute_id)
+                        ? array_map('intval', $attribute->attribute_id)
+                        : array_map('intval', explode(',', $attribute->attribute_id));
+
+                    if (!in_array($bomAttr->attribute_value, $currentIds)) {
+                        $oldAttributes[$bomAttr->item_attribute_id] = Attribute::find($bomAttr->attribute_value)?->value;
+                    }
+                }
+            }
+        }
+
+        $html = view('billOfMaterial.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes','oldAttributes'))->render();
         $hiddenHtml = '';
         foreach ($itemAttributes as $attribute) {
                 $selected = '';
@@ -747,9 +766,9 @@ class BomController extends Controller
     # On select row get item detail
     public function getItemDetail(Request $request)
     {
-        $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
-        $item = Item::find($request->item_id ?? null);
-        $specifications = $item->specifications()->whereNotNull('value')->get();
+        $selectedAttr = collect(json_decode($request->selectedAttr, true) ?? []);
+        $item = Item::with(['specifications' => fn($q) => $q->whereNotNull('value'), 'itemAttributes.attributeGroup'])->find($request->item_id ?? null);
+        $specifications = $item->specifications;
         $sectionName = $request->section_name ?? '';
         $subSectionName = $request->sub_section_name ?? '';
         $stationName = $request->station_name ?? '';
@@ -758,7 +777,23 @@ class BomController extends Controller
         $total_qty = floatval($request->total_qty) ?? 0;
         $std_qty = floatval($request->std_qty) ?? 0;
         $output = $total_qty > 0 ? ($std_qty / $total_qty * $qty_per_unit) : 0;
-        $html = view('billOfMaterial.partials.comp-item-detail',compact('item','selectedAttr','specifications','sectionName','subSectionName','stationName','remark','qty_per_unit','total_qty','std_qty','output'))->render();
+        $bomDetailId = $request->bom_detail_id ?? null;
+        $oldAttributes = [];
+        if ($bomDetailId && $item) {
+            foreach ($item->itemAttributes as $attribute) {
+                $selectedId = BomAttribute::where('bom_detail_id', $bomDetailId)
+                    ->where('item_attribute_id', $attribute->id)
+                    ->value('attribute_value');
+                $currentAttributeIds = is_array($attribute->attribute_id)
+                    ? array_map('intval', $attribute->attribute_id)
+                    : array_map('intval', explode(',', $attribute->attribute_id));
+
+                if ($selectedId && !in_array($selectedId, $currentAttributeIds)) {
+                    $oldAttributes[$attribute->id] = Attribute::find($selectedId)?->value;
+                }
+            }
+        }
+        $html = view('billOfMaterial.partials.comp-item-detail',compact('oldAttributes','item','selectedAttr','specifications','sectionName','subSectionName','stationName','remark','qty_per_unit','total_qty','std_qty','output'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -827,8 +862,31 @@ class BomController extends Controller
         }
         $headerOverheads = $bom->bomOverheadItems()->where('type','H')->orderBy('level')->get();
         $dynamicFieldsUI = $bom -> dynamicfieldsUi();
+
+        $oldAttributes = [];
+
+        if ($headerAttributes->count() > 0) {
+            foreach ($headerAttributes as $bomAttr) {
+                $attribute = $bom->item->itemAttributes->firstWhere('id', $bomAttr->item_attribute_id);
+                if ($attribute) {
+                    $currentIds = is_array($attribute->attribute_id)
+                        ? array_map('intval', $attribute->attribute_id)
+                        : array_map('intval', explode(',', $attribute->attribute_id));
+
+                    if (!in_array($bomAttr->attribute_value, $currentIds)) {
+                        $attr = Attribute::find($bomAttr->attribute_value);
+                        $oldAttributes[$bomAttr->item_attribute_id] = [
+                            'value_id' => $attr?->id,
+                            'value_label' => $attr?->value ?? 'Deleted'
+                        ];
+                    }
+                }
+            }
+        }
+
         return view($view, [
             'isEdit' => $isEdit,
+            'oldAttributes' => $oldAttributes,
             'books' => $books,
             'bom' => $bom,
             'item' => isset($bom->item) ? $bom->item : null,
@@ -1013,6 +1071,7 @@ class BomController extends Controller
                 $bomItems = BomDetail::whereIn('id',$deletedData['deletedBomItemIds'])->get();
                 foreach($bomItems as $bomItem) {
                     $bomItem->overheads()->delete();
+                    $bomItem->attributes()->delete();
                     $bomItem->delete();
                 }
             }
@@ -1756,7 +1815,7 @@ class BomController extends Controller
             })
             ->addColumn('product_attributes', function ($row) {
                 return $row?-> bom -> bomAttributes ?->map(function ($attribute) {
-                    return "<span class='badge rounded-pill badge-light-primary'>{$attribute-> headerAttribute -> name} : {$attribute-> headerAttributeValue -> value}</span>";
+                    return "<span class='badge rounded-pill badge-light-primary'>{$attribute-> headerAttribute ?-> name} : {$attribute-> headerAttributeValue ?-> value}</span>";
                 })->implode(' ') ?? '';
             })
             ->addColumn('product_uom', function ($row) {
@@ -1766,7 +1825,7 @@ class BomController extends Controller
                 return $row ?-> bom -> production_type;
             })
             ->addColumn('production_route', function ($row) {
-                return $row ?-> bom ?-> productionRoute -> name;
+                return $row ?-> bom ?-> productionRoute ?-> name;
             })
             ->addColumn('product_cost', function ($row) {
                 return $row ?-> bom ?-> total_item_value;

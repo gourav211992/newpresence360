@@ -1389,11 +1389,11 @@ class AutocompleteController extends Controller
                         ->get(['id', 'document_number', 'book_code']);
                 }
             } else if ($type === "mrn_document_qt") {
-                $results = MrnHeader::where('document_number', 'LIKE', "%$term%")
-                    ->get(['id', 'document_number']);
+                $results = MrnHeader::where(DB::raw("CONCAT(book_code, '-', document_number)"), $term)
+                    ->get(['id', 'document_number', 'book_code']);
                 if ($results->isEmpty()) {
                     $results = MrnHeader::limit(10)
-                        ->get(['id', 'document_number']);
+                        ->get(['id', 'document_number', 'book_code']);
                     }
             }else if ($type === "bom_document_qt") {
                 $results = Bom::where('type',ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS)

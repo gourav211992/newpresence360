@@ -1,17 +1,23 @@
 <?php
 namespace App\Helpers;
 
-use App\Models\ErpPlHeader;
-use App\Models\ErpPlItem;
-use App\Models\ErpPsvHeader;
-use App\Models\ErpPsvItem;
-use App\Models\MrnJoItem;
 use DB;
 use Auth;
+use stdClass;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use App\Models\PslipBomConsumption;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 
+use App\Models\ErpPlItem;
+use App\Models\MrnJoItem;
+use App\Models\ErpPsvItem;
+use App\Models\ErpPlHeader;
+use App\Models\ErpPsvHeader;
+
+use App\Models\ErpMrItem;
 use App\Models\ErpSubStore;
 use App\Models\ErpSubStoreParent;
-use App\Models\ErpMrItem;
 use App\Models\ErpMrItemLocation;
 use App\Models\ErpMaterialReturnHeader;
 
@@ -52,8 +58,9 @@ use App\Models\ErpMiItemLocation;
 use App\Models\ErpMiItemAttribute;
 use App\Models\ErpMaterialIssueHeader;
 
-use App\Models\MfgOrder;
 use App\Models\MoItem;
+use App\Models\MfgOrder;
+use App\Models\Attribute;
 use App\Models\MoItemLocation;
 use App\Models\MoItemAttribute;
 
@@ -63,18 +70,13 @@ use App\Models\StockLedgerItemAttribute;
 
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
-use App\Models\Attribute;
 use App\Models\MoProductionItem;
 use App\Models\MoProductionItemLocation;
 
-use App\Models\ErpSoItem;
 use App\Models\PoItem;
-use Illuminate\Support\Collection;
-use App\Models\PslipBomConsumption;
-use Illuminate\Support\Facades\Log;
-use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\AuthUser;
-use stdClass;
+use App\Models\ErpSoItem;
+
 class InventoryHelper
 {
     public function __construct()
@@ -218,7 +220,7 @@ class InventoryHelper
                 }
             }
         }
-        
+
         // Filters for Store, Rack, Shelf, and Bin (if needed)
         if ($storeId) {
             $stockLedger->where('store_id', $storeId);
@@ -267,7 +269,7 @@ class InventoryHelper
             }
         }
 
-        $stockLedgers = $stockLedgerIdQuery->where('document_status', ['approved', 'posted', 'approval_not_required']) 
+        $stockLedgers = $stockLedgerIdQuery->where('document_status', ['approved', 'posted', 'approval_not_required'])
             -> selectRaw('SUM(receipt_qty - reserved_qty) as qty, id') -> get();
 
         $rate = $stockLedger->pluck('cost_per_unit')->first();
@@ -617,7 +619,7 @@ class InventoryHelper
                     $documentHeader = MrnHeader::find($documentItemLocation->mrn_header_id);
                     $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->id);
                     $stockLedger->book_id = @$documentHeader->book_id;
-                    if(!$documentItemLocation->inventory_uom_qty || $documentItemLocation->inventory_uom_qty < 1){
+                    if($documentItemLocation->is_inspection == 1){
                         $qty = 0.00;
                         $putawayQty = 0.00;
                         $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
@@ -627,7 +629,7 @@ class InventoryHelper
                         $totalItemCost = $documentDetail->basic_value - ($documentDetail->discount_amount + $documentDetail->header_discount_amount);
                         $costPerUnit = $totalItemCost/$holdQty;
                     }else {
-                        if($documentItemLocation->is_warehouse_required == 1){
+                        if($documentHeader->is_warehouse_required == 1){
                             $qty = 0.00;
                             $putawayQty = $documentItemLocation->inventory_uom_qty;
                         } else{
@@ -1074,7 +1076,6 @@ class InventoryHelper
             $stockLedger->updated_by = @$user->id;
             $stockLedger->save();
             $stockLedger->refresh();
-
             self::updateStockCost($stockLedger);
 
             $attributeArray = array();
@@ -1092,9 +1093,9 @@ class InventoryHelper
                             $ledgerAttribute->stock_ledger_id = $stockLedger->id;
                             $ledgerAttribute->item_id = $documentItemLocation->item_id ?? null;
                             $ledgerAttribute->item_code = $documentItemLocation->item_code ?? null;
-                            $ledgerAttribute->item_attribute_id = $docAttribute['attribute_name'];
-                            $ledgerAttribute->attribute_name = $docAttribute['attribute_name'] ?? null;
-                            $ledgerAttribute->attribute_value = $docAttribute['attribute_value'] ?? null;
+                            $ledgerAttribute->item_attribute_id = $docAttribute['item_attribute_id'];
+                            $ledgerAttribute->attribute_name = $docAttribute['attr_name'] ?? null;
+                            $ledgerAttribute->attribute_value = $docAttribute['attr_value'] ?? null;
                             $ledgerAttribute->status = "active";
                             $ledgerAttribute->save();
 
@@ -1114,7 +1115,7 @@ class InventoryHelper
                         }
                     }
                 }
-            } else {              
+            } else {
                 if(isset($documentDetail->attributes) && !empty($documentDetail->attributes)){
                     foreach($documentDetail->attributes as $key1 => $attribute) {
                         $attributeName = @$attribute->attr_name ?? @$attribute->attribute_group_id ?? @$attribute->attribute_name;
@@ -1162,7 +1163,6 @@ class InventoryHelper
             $stockLedger->item_attributes = $attributeArray;
             $stockLedger->json_item_attributes = $attributeJsonArray;
             $stockLedger->save();
-
             if(($stockLedger->transaction_type == 'receipt') && !$stockLedger->original_receipt_date){
                 return [
                     'status' => 'error',
@@ -1182,6 +1182,7 @@ class InventoryHelper
             ];
 
         } catch (\Exception $e) {
+            dd('Error: ' . $e->getMessage() . ' on line ' . $e->getLine());
             \Log::error('Error in insertStockLedger: ' . $e->getMessage(), [
                 'exception' => $e
             ]);
@@ -2373,7 +2374,7 @@ class InventoryHelper
             // ->where('document_status','draft')
             ->whereNull('utilized_id')
             ->get();
-        
+
         foreach($stockLedger as $val){
             StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
             $val->delete();
@@ -2387,14 +2388,14 @@ class InventoryHelper
                 ->where('document_status','draft')
                 ->whereNotNull('utilized_id')
                 ->sum('receipt_qty');
-            if(!$documentItemLocation->inventory_uom_qty || $documentItemLocation->inventory_uom_qty < 1){
+            if($documentItemLocation->is_inspection == 1){
                 $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
                 if($holdQty > $utilizedQty){
                     $stockLedger = new StockLedger();
                     $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $holdQty);
                 }
             }
-            if($documentItemLocation->inventory_uom_qty > $utilizedQty){
+            else if($documentItemLocation->inventory_uom_qty > $utilizedQty){
                 $stockLedger = new StockLedger();
                 $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty);
             } else{
@@ -3073,7 +3074,6 @@ class InventoryHelper
         $stockLedger->comp_currency_cost = round($companyCurrencyCost,2);
         $stockLedger->group_currency_cost_per_unit = round($groupCurrencyCostPerUnit,6);
         $stockLedger->group_currency_cost = round($groupCurrencyCost,2);
-
         $stockLedger->save();
 
         return "success";
@@ -3145,6 +3145,7 @@ class InventoryHelper
     public static function settlementForMIForIssueFromMrn($document, $bookType, $documentStatus, $transactionType)
     {
         $user = Helper::getAuthenticatedUser();
+        $records = array();
         // \DB::beginTransaction();
         try{
             $stockLedger = StockLedger::withDefaultGroupCompanyOrg()

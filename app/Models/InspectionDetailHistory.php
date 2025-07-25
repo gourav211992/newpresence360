@@ -18,6 +18,7 @@ class InspectionDetailHistory extends Model
         'header_id', 
         'item_id', 
         'mrn_detail_id', 
+        'mrn_header_id',
         'item_code', 
         'item_name', 
         'hsn_id', 
@@ -34,6 +35,12 @@ class InspectionDetailHistory extends Model
         'inventory_uom_id', 
         'inventory_uom_code', 
         'inventory_uom_qty', 
+        'accepted_inv_uom_id', 
+        'accepted_inv_uom_code',
+        'accepted_inv_uom_qty', 
+        'rejected_inv_uom_id',
+        'rejected_inv_uom_code', 
+        'rejected_inv_uom_qty',
         'rate', 
         'basic_value', 
         'discount_percentage', 
@@ -64,6 +71,16 @@ class InspectionDetailHistory extends Model
     public function header()
     {
         return $this->belongsTo(InspectionHeaderHistory::class, 'header_id');
+    }
+
+    public function mrnDetail()
+    {
+        return $this->belongsTo(MrnDetail::class, 'mrn_detail_id');
+    }
+
+    public function mrnHeader()
+    {
+        return $this->belongsTo(MrnHeader::class, 'mrn_header_id');
     }
 
     public function so()

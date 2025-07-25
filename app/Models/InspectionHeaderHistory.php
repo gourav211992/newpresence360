@@ -39,6 +39,7 @@ class InspectionHeaderHistory extends Model
         'customer_code', 
         'store_id', 
         'sub_store_id', 
+        'rejected_sub_store_id',
         'cost_center_id', 
         'document_number', 
         'document_date', 
@@ -181,6 +182,11 @@ class InspectionHeaderHistory extends Model
     public function erpSubStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function rejectedSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'rejected_sub_store_id');
     }
     
     public function vendor()

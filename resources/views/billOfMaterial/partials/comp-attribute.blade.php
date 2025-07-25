@@ -7,6 +7,10 @@
    foreach ($attribute->attributes() as $key => $value) {
       if(in_array($value->id, $selectedAttr)) {
          $selectedValue = $value?->value;
+         break;
+      }
+      if (!$selectedValue && isset($oldAttributes[$attribute->id])) {
+         $selectedValue = $oldAttributes[$attribute->id];
       }
    }
 @endphp

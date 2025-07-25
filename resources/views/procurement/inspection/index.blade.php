@@ -52,16 +52,11 @@
                                                 <th>Document Date</th>
                                                 <th>Rev. No</th>
                                                 <th>Location</th>
-                                                <th>Store</th>
+                                                <th>Main Store</th>
+                                                <th>Rejected Store</th>
                                                 <th>Vendor</th>
                                                 <th>Currency</th>
-                                                <th>Item</th>
-                                                <th>Item Value</th>
-                                                <th>Discount</th>
-                                                <th>Taxable</th>
-                                                <th>Tax</th>
-                                                <th>Expenses</th>
-                                                <th>Total Amt</th>
+                                                <th>Items</th>
                                                 <th>Status</th>
                                             </tr>
                                         </thead>
@@ -149,61 +144,41 @@
                 var columns = [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
                     { data: 'book_name', name: 'book_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'document_number', name: 'document_number', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'document_date', name: 'document_date', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'revision_number', name: 'revision_number', render: renderData },
                     { data: 'location_name', name: 'location_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'store_name', name: 'store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
+                        }
+                    },
+                    { data: 'rejected_store_name', name: 'rejected_store_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'vendor_name', name: 'vendor_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'currency', name: 'currency', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                     { data: 'total_items', name: 'total_items', render: renderData },
-                    { data: 'total_item_amount', name: 'total_item_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_discount', name: 'total_discount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'taxable_amount', name: 'taxable_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_taxes', name: 'total_taxes', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'expense_amount', name: 'expense_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
-                    { data: 'total_amount', name: 'total_amount', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('text-end');
-                        }
-                    },
                     { data: 'document_status', name: 'document_status', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                        $(td).addClass('no-wrap');
+                            $(td).addClass('no-wrap');
                         }
                     },
                 ];

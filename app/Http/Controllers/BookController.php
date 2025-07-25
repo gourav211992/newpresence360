@@ -277,7 +277,12 @@ class BookController extends Controller
                         $levelInsert = new BookLevel;
                         $levelInsert->book_id = $insert->id;
                         $levelInsert->level = $request->level[$key];
-                        $levelInsert->min_value = $request->min_value[$key];
+                        //In case of Master type services -> this should be always 0
+                        if ($insert -> master_service ?-> type === ConstantHelper::ERP_MASTER_SERVICE_TYPE) {
+                            $levelInsert->min_value = 0;
+                        } else {
+                            $levelInsert->min_value = $request->min_value[$key];
+                        }
                         // $levelInsert->max_value = $request->max_value[$key];
                         $levelInsert->rights = $request->rights[$key];
                         $levelInsert->company_id = $request->level_company_id[$key];
@@ -307,8 +312,14 @@ class BookController extends Controller
                         // Insert levels
                         $amendmentInsert = new AmendmentWorkflow;
                         $amendmentInsert->book_id = $insert->id;
-                        $amendmentInsert->min_value = $request->amendment_min[$key];
-                        $amendmentInsert->approval_required = $request->approval_req[$key] == 'yes' ? 1 : 0;
+                        //In case of Master type services -> min value should always be 0 and aaproval required false
+                        if ($insert -> master_service ?-> type === ConstantHelper::ERP_MASTER_SERVICE_TYPE) {
+                            $amendmentInsert->min_value = 0;
+                            $amendmentInsert->approval_required = 0;
+                        } else {
+                            $amendmentInsert->min_value = $request->amendment_min[$key];
+                            $amendmentInsert->approval_required = $request->approval_req[$key] == 'yes' ? 1 : 0;
+                        }
                         $amendmentInsert->max_value = 0;
                         $amendmentInsert->company_id = $request->amendment_company_id[$key];
                         $amendmentInsert->organization_id = $request->amendment_organization_id[$key];
@@ -873,7 +884,12 @@ class BookController extends Controller
                     $levelInsert = new BookLevel;
                     $levelInsert->book_id = $update->id;
                     $levelInsert->level = $request->level[$key];
-                    $levelInsert->min_value = $request->min_value[$key];
+                    //In case of Master type services -> this should always be 0
+                    if ($update -> master_service ?-> type === ConstantHelper::ERP_MASTER_SERVICE_TYPE) {
+                        $levelInsert->min_value = 0;
+                    } else {
+                        $levelInsert->min_value = $request->min_value[$key];
+                    }
                     $levelInsert->rights = $request->rights[$key];
                     $levelInsert->company_id = $request->level_company_id[$key];
                     $levelInsert->organization_id = $request->level_organization_id[$key];
@@ -899,10 +915,16 @@ class BookController extends Controller
                     // Insert levels
                     $amendmentInsert = new AmendmentWorkflow;
                     $amendmentInsert->book_id = $update->id;
-                    $amendmentInsert->min_value = $request->amendment_min[$key];
+                    //In case of Master type services -> min value should always be 0 and aaproval required false
+                    if ($update -> master_service === ConstantHelper::ERP_MASTER_SERVICE_TYPE) {
+                        $amendmentInsert->min_value = 0;
+                        $amendmentInsert->approval_required = 0;
+                    } else {
+                        $amendmentInsert->min_value = $request->amendment_min[$key];
+                        $amendmentInsert->approval_required = $request->approval_req[$key] == 'yes' ? 1 : 0;
+                    }
                     $amendmentInsert->max_value = 0;
                     $amendmentInsert->company_id = $request->amendment_company_id[$key];
-                    $amendmentInsert->approval_required = $request->approval_req[$key] == 'yes' ? 1 : 0;
                     $amendmentInsert->organization_id = $request->amendment_organization_id[$key];
                     $amendmentInsert->save();
 

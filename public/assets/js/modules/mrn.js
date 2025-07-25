@@ -27,7 +27,7 @@ function getTaxSummary()
     let taxSummary = {};
     $("#itemTable [id*='row_']").each(function(index, row) {
         row = $(row);
-        let qty = Number(row.find('[name*="[accepted_qty]"]').val());
+        let qty = Number(row.find('[name*="[order_qty]"]').val());
         let rate = Number(row.find('[name*="[rate]"]').val());
         let itemDisc = Number(row.find('[name*="[discount_amount]"]').val());
         let itemHeaderDisc = Number(row.find('[name*="[discount_amount_header]"]').val());
@@ -244,7 +244,7 @@ $(document).on('change', "[name*='accepted_qty']", function (e) {
     $rejectedQtyInput.val(rejectedQty.toFixed(2));
 
     if (Number($itemCost.val())) {
-        const value = acceptedQty * parseFloat($itemCost.val());
+        const value = orderQty * parseFloat($itemCost.val());
         $itemValue.val(value.toFixed(2));
     } else {
         $itemValue.val('');
@@ -265,7 +265,7 @@ $(document).on('change',"[name*='rate']",(e) => {
     let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
     let orderRate = $(e.target).closest('tr').find("[name*='rate']");
     let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
-    if (Number(acceptedQuantity.val())) {
+    if (Number(orderQuantity.val())) {
         let itemRate = parseFloat(rate.value);
         // if(itemRate < 1) {
         //     console.log('oldValue', oldValue);
@@ -279,7 +279,7 @@ $(document).on('change',"[name*='rate']",(e) => {
         //     return false;
         // } else{
         // }
-        let totalItemValue = (itemRate) * (parseFloat(acceptedQuantity.val()));
+        let totalItemValue = (itemRate) * (parseFloat(orderQuantity.val()));
         totalItemValue = parseFloat(totalItemValue);
         orderRate.val(itemRate.toFixed(2));
         itemValue.val(totalItemValue.toFixed(2));
@@ -371,7 +371,7 @@ function setTableCalculation(edit = null) {
             poItemId = '';
             poId = '';
         }
-        let qty = $(item).find("[name*='[accepted_qty]']").val() || 0;
+        let qty = $(item).find("[name*='[order_qty]']").val() || 0;
         if (poItemId) {
             poItemIds.push(poItemId);
             itemQtys[poItemId] = qty; // assign qty keyed by poItemId
@@ -469,7 +469,7 @@ function setTableCalculation(edit = null) {
     /*Bind header discount item level*/
     $("#itemTable [id*='row_']").each(function (index, item2) {
         let rowCount2 = Number($(item2).attr('data-index'));
-        let qty2 = $(item2).find("[name*='[accepted_qty]']").val() || 0;
+        let qty2 = $(item2).find("[name*='[order_qty]']").val() || 0;
         let rate2 = $(item2).find("[name*='[rate]']").val() || 0;
         let itemValue2 =  (Number(qty2) * Number (rate2)) || 0;
         let itemDisc2 = Number($(item2).find("[name*='[discount_amount]']").val()) || 0;
@@ -488,7 +488,7 @@ function setTableCalculation(edit = null) {
     let isTax = $("#tax_required").val().trim().toLowerCase() === 'yes';
     $("#itemTable [id*='row_']").each(function (index, item3) {
         let rowCount3 = Number($(item3).attr('data-index'));
-        let qty3 = $(item3).find("[name*='[accepted_qty]']").val() || 0;
+        let qty3 = $(item3).find("[name*='[order_qty]']").val() || 0;
         let rate3 = $(item3).find("[name*='[rate]']").val() || 0;
         let itemValue3 = (Number(qty3) * Number(rate3)) || 0;
         let itemDisc3 = Number($(item3).find("[name*='[discount_amount]']").val()) || 0;
@@ -549,7 +549,7 @@ function setTableCalculation(edit = null) {
     Promise.all(taxPromises).then(() => {
         $("#itemTable [id*='row_']").each(function (index, item4) {
             let rowCount4 = Number($(item4).attr('data-index'));
-            let qty4 = $(item4).find("[name*='[accepted_qty]']").val() || 0;
+            let qty4 = $(item4).find("[name*='[order_qty]']").val() || 0;
             let rate4 = $(item4).find("[name*='[rate]']").val() || 0;
             let itemValue4 = (Number(qty4) * Number(rate4)) || 0;
             let itemDisc4 = Number($(item4).find("[name*='[discount_amount]']").val()) || 0;
@@ -667,7 +667,7 @@ function setTableCalculation(edit = null) {
                 let total_net_total = 0;
                 $("#itemTable [id*='row_']").each(function (index, item5) {
                     let rowCount5 = Number($(item5).attr('data-index'));
-                    let qty5 = $(item5).find("[name*='[accepted_qty]']").val() || 0;
+                    let qty5 = $(item5).find("[name*='[order_qty]']").val() || 0;
                     let rate5 = $(item5).find("[name*='[rate]']").val() || 0;
                     let itemValue5 =  (Number(qty5) * Number (rate5)) || 0;
                     let itemDisc5 = Number($(item5).find("[name*='[discount_amount]']").val()) || 0;
@@ -685,7 +685,7 @@ function setTableCalculation(edit = null) {
                     let each_net_value = 0;
                     let exp_header_amnt_item = 0;
                     let rowCount6 = Number($(item6).attr('data-index'));
-                    let qty6 = $(item6).find("[name*='[accepted_qty]']").val() || 0;
+                    let qty6 = $(item6).find("[name*='[order_qty]']").val() || 0;
                     let rate6 = $(item6).find("[name*='[rate]']").val() || 0;
                     let itemValue6 =  (Number(qty6) * Number (rate6)) || 0;
                     let itemDisc6 = Number($(item6).find("[name*='[discount_amount]']").val()) || 0;
@@ -739,7 +739,7 @@ function setTableCalculation(edit = null) {
             let total_net_total = 0;
             $("#itemTable [id*='row_']").each(function (index, item5) {
                 let rowCount5 = Number($(item5).attr('data-index'));
-                let qty5 = $(item5).find("[name*='[accepted_qty]']").val() || 0;
+                let qty5 = $(item5).find("[name*='[order_qty]']").val() || 0;
                 let rate5 = $(item5).find("[name*='[rate]']").val() || 0;
                 let itemValue5 =  (Number(qty5) * Number (rate5)) || 0;
                 let itemDisc5 = Number($(item5).find("[name*='[discount_amount]']").val()) || 0;
@@ -757,7 +757,7 @@ function setTableCalculation(edit = null) {
                 let each_net_value = 0;
                 let exp_header_amnt_item = 0;
                 let rowCount6 = Number($(item6).attr('data-index'));
-                let qty6 = $(item6).find("[name*='[accepted_qty]']").val() || 0;
+                let qty6 = $(item6).find("[name*='[order_qty]']").val() || 0;
                 let rate6 = $(item6).find("[name*='[rate]']").val() || 0;
                 let itemValue6 =  (Number(qty6) * Number (rate6)) || 0;
                 let itemDisc6 = Number($(item6).find("[name*='[discount_amount]']").val()) || 0;
@@ -1583,6 +1583,7 @@ function getSubStores(storeLocationId, selectedSubStoreId = null)
         dataType: 'json',
         data: {
             store_id: storeId,
+            sub_type: 'main'
         },
         success: function(response) {
             if (response.status === 200 && Array.isArray(response.data) && response.data.length) {
@@ -1740,7 +1741,7 @@ function generatePackets(activeRowIndex, itemId, qty){
 // Open modal on icon/button click
 $(document).on('click', '.addStoragePointBtn', function () {
     activeRowIndex = $(this).data('row-count');
-    let qty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[accepted_qty]']").val());
+    let qty = Number($("#itemTable #row_" + activeRowIndex).find("[name*='[order_qty]']").val());
 
     if(!qty) {
         Swal.fire({

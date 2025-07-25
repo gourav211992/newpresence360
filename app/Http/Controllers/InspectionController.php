@@ -74,6 +74,8 @@ use App\Helpers\ServiceParametersHelper;
 
 use App\Jobs\SendEmailJob;
 use App\Services\InspectionService;
+use App\Services\MrnDeleteService;
+use App\Services\InspectionCheckAndUpdateService;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PurchaseReturnExport;
 use App\Helpers\CommonHelper;
@@ -144,7 +146,10 @@ class InspectionController extends Controller
                     return $row->erpStore ? $row->erpStore?->store_name : 'N/A';
                 })
                 ->addColumn('store_name', function ($row) {
-                    return $row->erpSubStore ? $row->erpStore?->name : 'N/A';
+                    return $row->erpSubStore ? $row->erpSubStore?->name : 'N/A';
+                })
+                ->addColumn('rejected_store_name', function ($row) {
+                    return $row->rejectedSubStore ? $row->rejectedSubStore?->name : 'N/A';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -157,24 +162,6 @@ class InspectionController extends Controller
                 })
                 ->addColumn('total_items', function ($row) {
                     return $row->items ? count($row->items) : 0;
-                })
-                ->editColumn('total_item_amount', function ($row) {
-                    return number_format($row->total_item_amount, 2);
-                })
-                ->addColumn('total_discount', function ($row) {
-                    return number_format($row->total_discount, 2);
-                })
-                ->addColumn('taxable_amount', function ($row) {
-                    return number_format(($row->total_item_amount - $row->total_discount), 2);
-                })
-                ->addColumn('total_taxes', function ($row) {
-                    return number_format($row->total_taxes, 2);
-                })
-                ->addColumn('expense_amount', function ($row) {
-                    return number_format($row->expense_amount, 2);
-                })
-                ->addColumn('total_amount', function ($row) {
-                    return number_format($row->total_amount, 2);
                 })
                 ->rawColumns(['document_status'])
                 ->make(true);
@@ -227,7 +214,6 @@ class InspectionController extends Controller
         $user = Helper::getAuthenticatedUser();
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -253,14 +239,6 @@ class InspectionController extends Controller
                 ], 422);
             }
 
-            # Inspection Header save
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
-            $totalItemLevelDiscValue = 0.00;
-            $totalAmount = 0.00;
-
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($request->currency_id, $request->document_date);
             if ($currencyExchangeData['status'] == false) {
                 return response()->json([
@@ -274,6 +252,7 @@ class InspectionController extends Controller
             $inspection->fill($request->all());
             $inspection->store_id = $request->header_store_id;
             $inspection->sub_store_id = $request->sub_store_id;
+            $inspection->rejected_sub_store_id = $request->rejected_sub_store_id;
             $inspection->organization_id = $organization->id;
             $inspection->group_id = $organization->group_id;
             $inspection->company_id = $organization->company_id;
@@ -380,34 +359,9 @@ class InspectionController extends Controller
                 ]);
                 $storeLocation->save();
             }
-
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
-            $totalItemLevelDiscValue = 0.00;
-            $totalTax = 0;
-            
-            $totalHeaderDiscount = 0;
-            if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
-            foreach ($request->all()['disc_summary'] as $DiscountValue) {
-                $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
-            }
-
-            $totalHeaderExpense = 0;
-            if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
-            foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
-            }
             
             if (isset($request->all()['components'])) {
                 $inspectionItemArr = [];
-                $totalValueAfterDiscount = 0;
-                $itemTotalValue = 0;
-                $itemTotalDiscount = 0;
-                $itemTotalHeaderDiscount = 0;
-                $itemValueAfterDiscount = 0;
-                $totalItemValueAfterDiscount = 0;
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $so_id = null;
@@ -440,34 +394,35 @@ class InspectionController extends Controller
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
-                    $inventory_uom_qty = 0.00;
-                    $reqQty = ($component['accepted_qty'] ?? $component['order_qty']);
+                    $order_inventory_uom_qty = 0.00;
+                    $accepted_inventory_uom_qty = 0.00;
+                    $rejected_inventory_uom_qty = 0.00;
+                    $orderQty = $component['order_qty'];
+                    $acceptedQty = $component['accepted_qty'];
+                    $rejectedQty = $component['rejected_qty'];
                     $inventoryUom = Unit::find($item->uom_id ?? null);
                     $itemUomId = $item->uom_id ?? null;
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
                     // dd($component['uom_id'], $itemUomId);
                     if(@$component['uom_id'] == $itemUomId) {
-                        $inventory_uom_qty = floatval($reqQty) ?? 0.00 ;
+                        $order_inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
+                        $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
+                        $rejected_inventory_uom_qty = floatval($rejectedQty) ?? 0.00 ;
                     } else {
                         $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
                         if($alUom) {
-                            $inventory_uom_qty = floatval($reqQty) * $alUom->conversion_to_inventory;
+                            $order_inventory_uom_qty = floatval($orderQty) * $alUom->conversion_to_inventory;
+                            $accepted_inventory_uom_qty = floatval($acceptedQty) * $alUom->conversion_to_inventory;
+                            $rejected_inventory_uom_qty = floatval($rejectedQty) * $alUom->conversion_to_inventory;
                         }
                     }
 
-                    $itemValue = floatval($reqQty) * floatval($component['rate']);
-                    $itemDiscount = floatval($component['discount_amount']) ?? 0.00;
-
-                    $itemTotalValue += $itemValue;
-                    $itemTotalDiscount += $itemDiscount;
-                    $itemValueAfterDiscount = $itemValue - $itemDiscount;
-                    $totalValueAfterDiscount += $itemValueAfterDiscount;
-                    $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $inspectionItemArr[] = [
                         'header_id' => $inspection->id,
                         'mrn_detail_id' => $mrn_detail_id,
+                        'mrn_header_id' => $mrnHeaderId,
                         'so_id' => $so_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
@@ -482,73 +437,26 @@ class InspectionController extends Controller
                         'rejected_qty' => floatval($component['rejected_qty']) ?? 0.00,
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
-                        'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
-                        'store_id' => $inspection->store_id ?? null,
-                        'store_code' => $inspection?->erpStore?->store_code ?? null,
-                        'sub_store_id' => $inspection->sub_store_id ?? null,
-                        'rate' => floatval($component['rate']) ?? 0.00,
-                        'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
-                        'tax_value' => 0.00,
-                        'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
-                        'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
-                        'group_currency_id' => @$component['group_currency_id'] ?? 0.00,
-                        'group_currency_exchange_rate' => @$component['group_currency_exchange_rate'] ?? 0.00,
+                        'inventory_uom_qty' => $order_inventory_uom_qty ?? 0.00,
+                        'accepted_inventory_uom_id' => $inventory_uom_id ?? null,
+                        'accepted_inventory_uom_code' => $inventory_uom_code ?? null,
+                        'accepted_inventory_uom_qty' => $accepted_inventory_uom_qty ?? 0.00,
+                        'rejected_inventory_uom_id' => $inventory_uom_id ?? null,
+                        'rejected_inventory_uom_code' => $inventory_uom_code ?? null,
+                        'rejected_inventory_uom_qty' => $rejected_inventory_uom_qty ?? 0.00,
                         'remark' => $component['remark'] ?? null,
-                        'taxable_amount' => $itemValueAfterDiscount,
-                        'basic_value' => $itemValue,
                     ];
                 }
 
-                $isTax = false;
-                if(isset($parameters['tax_required']) && !empty($parameters['tax_required']))
-                {
-                    if (in_array('yes', array_map('strtolower', $parameters['tax_required']))) {
-                        $isTax = true;
-                    }
-                }
-
-                foreach($inspectionItemArr as &$inspectionItem) {
-                    /*Header Level Item discount*/
-                    $headerDiscount = 0;
-                    $headerDiscount = ($inspectionItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
-                    $valueAfterHeaderDiscount = $inspectionItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $inspectionItem['header_discount_amount'] = $headerDiscount;
-                    $itemTotalHeaderDiscount += $headerDiscount;
-
-                    //Tax
-                    if($isTax) {
-                        $itemTax = 0;
-                        $itemPrice = ($inspectionItem['basic_value'] - $headerDiscount - $inspectionItem['discount_amount']);
-                        $shippingAddress = $inspection->shippingAddress;
-
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
-
-                        $taxDetails = TaxHelper::calculateTax($inspectionItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> shipping_country_id, $partyStateId ?? $request -> shipping_state_id, 'collection');
-
-                        if (isset($taxDetails) && count($taxDetails) > 0) {
-                            foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                            }
-                        }
-                        $inspectionItem['tax_value'] = $itemTax;
-                        $totalTax += $itemTax;
-                    }
-                }
                 unset($inspectionItem);
 
                 foreach ($inspectionItemArr as $_key => $inspectionItem) {
-                    $itemPriceAterBothDis =  $inspectionItem['basic_value'] - $inspectionItem['discount_amount'] - $inspectionItem['header_discount_amount'];
-                    $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-
                     # Inspection Detail Save
                     $inspectionDetail = new InspectionDetail;
 
                     $inspectionDetail->header_id = $inspectionItem['header_id'];
                     $inspectionDetail->mrn_detail_id = $inspectionItem['mrn_detail_id'];
+                    $inspectionDetail->mrn_header_id = $inspectionItem['mrn_header_id'];
                     $inspectionDetail->so_id = $inspectionItem['so_id'];
                     $inspectionDetail->item_id = $inspectionItem['item_id'];
                     $inspectionDetail->item_code = $inspectionItem['item_code'];
@@ -563,15 +471,12 @@ class InspectionController extends Controller
                     $inspectionDetail->inventory_uom_id = $inspectionItem['inventory_uom_id'];
                     $inspectionDetail->inventory_uom_code = $inspectionItem['inventory_uom_code'];
                     $inspectionDetail->inventory_uom_qty = $inspectionItem['inventory_uom_qty'];
-                    $inspectionDetail->store_id = $inspectionItem['store_id'];
-                    $inspectionDetail->store_code = $inspectionItem['store_code'];
-                    $inspectionDetail->sub_store_id = $inspectionItem['sub_store_id'];
-                    $inspectionDetail->rate = $inspectionItem['rate'];
-                    $inspectionDetail->basic_value = $inspectionItem['basic_value'];
-                    $inspectionDetail->discount_amount = $inspectionItem['discount_amount'];
-                    $inspectionDetail->header_discount_amount = $inspectionItem['header_discount_amount'];
-                    $inspectionDetail->header_exp_amount = $itemHeaderExp;
-                    $inspectionDetail->tax_value = $inspectionItem['tax_value'];
+                    $inspectionDetail->accepted_inv_uom_id = $inspectionItem['accepted_inventory_uom_id'];
+                    $inspectionDetail->accepted_inv_uom_code = $inspectionItem['accepted_inventory_uom_code'];
+                    $inspectionDetail->accepted_inv_uom_qty = $inspectionItem['accepted_inventory_uom_qty'];
+                    $inspectionDetail->rejected_inv_uom_id = $inspectionItem['rejected_inventory_uom_id'];
+                    $inspectionDetail->rejected_inv_uom_code = $inspectionItem['rejected_inventory_uom_code'];
+                    $inspectionDetail->rejected_inv_uom_qty = $inspectionItem['rejected_inventory_uom_qty'];
                     $inspectionDetail->remark = $inspectionItem['remark'];
                     $inspectionDetail->save();
                     $_key = $_key + 1;
@@ -591,112 +496,7 @@ class InspectionController extends Controller
                             $inspectionAttr->save();
                         }
                     }
-
-                    /*Item Level Discount Save*/
-                    if(isset($component['discounts'])) {
-                        foreach($component['discounts'] as $dis) {
-                            if (isset($dis['dis_amount']) && $dis['dis_amount']) {
-                                $ted = new InspectionTed;
-                                $ted->header_id = $inspection->id;
-                                $ted->detail_id = $inspectionDetail->id;
-                                $ted->ted_type = 'Discount';
-                                $ted->ted_level = 'D';
-                                $ted->ted_id = $dis['ted_id'] ?? null;
-                                $ted->ted_name = $dis['dis_name'];
-                                $ted->assesment_amount = $inspectionItem['basic_value'];
-                                $ted->ted_percentage = $dis['dis_perc'] ?? 0.00;
-                                $ted->ted_amount = $dis['dis_amount'] ?? 0.00;
-                                $ted->applicability_type = 'Deduction';
-                                $ted->save();
-                                $totalItemLevelDiscValue = $totalItemLevelDiscValue+$dis['dis_amount'];
-                            }
-                        }
-                    }
-
-                    #Save Componet item Tax
-                    if(isset($component['taxes'])) {
-                        foreach($component['taxes'] as $tax) {
-                            if(isset($tax['t_value']) && $tax['t_value']) {
-                                $ted = new InspectionTed;
-                                $ted->header_id = $inspection->id;
-                                $ted->detail_id = $inspectionDetail->id;
-                                $ted->ted_type = 'Tax';
-                                $ted->ted_level = 'D';
-                                $ted->ted_id = $tax['t_d_id'] ?? null;
-                                $ted->ted_name = $tax['t_type'] ?? null;
-                                $ted->ted_code = $tax['t_type'] ?? null;
-                                $ted->assesment_amount = $inspectionItem['basic_value'] - $inspectionItem['discount_amount'] - $inspectionItem['header_discount_amount'];
-                                $ted->ted_percentage = $tax['t_perc'] ?? 0.00;
-                                $ted->ted_amount = $tax['t_value'] ?? 0.00;
-                                $ted->applicability_type = $tax['applicability_type'] ?? 'Collection';
-                                $ted->save();
-                            }
-                        }
-                    }
                 }
-
-                /*Header level save discount*/
-                if(isset($request->all()['disc_summary'])) {
-                    foreach($request->all()['disc_summary'] as $dis) {
-                        if (isset($dis['d_amnt']) && $dis['d_amnt']) {
-                            $ted = new InspectionTed;
-                            $ted->header_id = $inspection->id;
-                            $ted->detail_id = null;
-                            $ted->ted_type = 'Discount';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_d_id'] ?? null;
-                            $ted->ted_name = $dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue-$itemTotalDiscount;
-                            $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Deduction';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Header level save discount*/
-                if(isset($request->all()['exp_summary'])) {
-                    foreach($request->all()['exp_summary'] as $dis) {
-                        if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                            $ted = new InspectionTed;
-                            $ted->header_id = $inspection->id;
-                            $ted->detail_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->assesment_amount = $totalAfterTax;
-                            $ted->ted_percentage = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Collection';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Update total in main header MRN*/
-                $inspection->total_item_amount = $itemTotalValue ?? 0.00;
-                $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Negative value not allowed'
-                    ], 422);
-                }
-                $inspection->total_discount = $totalDiscValue ?? 0.00;
-                $inspection->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
-                $inspection->total_taxes = $totalTax ?? 0.00;
-                $inspection->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
-                $inspection->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
-                $inspection->total_amount = $totalAmount ?? 0.00;
-                $inspection->save();
-
-                /*Update po header id in main header MRN*/
-                $inspection->mrn_header_id = $mrnHeaderId ?? null;
-                $inspection->save();
 
             } else {
                 DB::rollBack();
@@ -752,8 +552,15 @@ class InspectionController extends Controller
                 $mediaFiles = $inspection->uploadDocuments($request->file('attachment'), 'pb', false);
             }
             $inspection->save();
-            if(($inspection->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) || ($inspection->document_status == ConstantHelper::APPROVED) || ($inspection->document_status == ConstantHelper::POSTED)) {
+            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
                 $updateMrn = InspectionHelper::updateMrnDetail($inspection);
+                if($updateMrn['status'] == 'error') {
+                    \DB::rollBack();
+                    return response()->json([
+                        'message' => $updateMrn['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -803,8 +610,8 @@ class InspectionController extends Controller
             'pb' => $inspection,
             'buttons' => $buttons,
             'totalItemValue' => $totalItemValue,
-            'approvalHistory' => $approvalHistory,
             'docStatusClass' => $docStatusClass,
+            'approvalHistory' => $approvalHistory,
             'revisionNumbers' => $revisionNumbers,
         ]);
     }
@@ -938,6 +745,9 @@ class InspectionController extends Controller
                 $inspectionItems = InspectionDetail::whereIn('id', $deletedData['deletedInspectionItemIds'])->get();
                 # all ted remove item level
                 foreach ($inspectionItems as $inspectionItem) {
+                    $mrnDetail = MrnDetail::find($inspectionItem->mrn_detail_id);
+                    $mrnDetail->inspection_qty += $inspectionItem->order_qty;
+                    $mrnDetail->save();
                     # all attr remove
                     $inspectionItem->attributes()->delete();
                     $inspectionItem->delete();
@@ -947,6 +757,7 @@ class InspectionController extends Controller
             # Inspection Header save
             $inspection->store_id = $request->header_store_id;
             $inspection->sub_store_id = $request->sub_store_id;
+            // $inspection->rejected_sub_store_id = $request->rejected_sub_store_id;
             $inspection->gate_entry_no = $request->gate_entry_no ?? '';
             $inspection->gate_entry_date = $request->gate_entry_date ? date('Y-m-d', strtotime($request->gate_entry_date)) : '';
             $inspection->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
@@ -1011,144 +822,90 @@ class InspectionController extends Controller
                 $storeLocation->save();
             }
 
-            $totalItemValue = 0.00;
-            $totalTaxValue = 0.00;
-            $totalDiscValue = 0.00;
-            $totalExpValue = 0.00;
-            $totalItemLevelDiscValue = 0.00;
-            $totalTax = 0;
-
-            $totalHeaderDiscount = 0;
-            if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
-                foreach ($request->all()['disc_summary'] as $DiscountValue) {
-                    $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
-                }
-
-            $totalHeaderExpense = 0;
-            if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
-                foreach ($request->all()['exp_summary'] as $expValue) {
-                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
-                }
-
             if (isset($request->all()['components'])) {
                 $inspectionItemArr = [];
-                $totalValueAfterDiscount = 0;
-                $itemTotalValue = 0;
-                $itemTotalDiscount = 0;
-                $itemTotalHeaderDiscount = 0;
-                $itemValueAfterDiscount = 0;
-                $totalItemValueAfterDiscount = 0;
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
+
+                    $validateQty = self::validateQuantityBackend($component, 'mrn');
+                    if ($validateQty['status'] === 'error') {
+                        \DB::rollBack();
+                        return response()->json([
+                            'message' => $validateQty['message']
+                        ], 422);
+                    }
                     if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
                         $mrnDetail = MrnDetail::find($component['mrn_detail_id']);
                         $mrn_detail_id = $mrnDetail->id ?? null;
+                        $mrnHeaderId = $component['mrn_header_id'];
                         if ($mrnDetail) {
-                            $mrnDetail->inspection_qty = floatval($component['accepted_qty']);
+                            $mrnDetail->inspection_qty += floatval($component['order_qty']);
                             $mrnDetail->save();
                         }
                     }
-                    $inventory_uom_id = null;
                     $inventory_uom_code = null;
-                    $inventory_uom_qty = 0.00;
+                    $order_inventory_uom_qty = 0.00;
+                    $accepted_inventory_uom_qty = 0.00;
+                    $rejected_inventory_uom_qty = 0.00;
+                    $orderQty = $component['order_qty'];
+                    $acceptedQty = $component['accepted_qty'];
+                    $rejectedQty = $component['rejected_qty'];
                     $inventoryUom = Unit::find($item->uom_id ?? null);
+                    $itemUomId = $item->uom_id ?? null;
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
-                    if(@$component['uom_id'] == $item->uom_id) {
-                        $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00 ;
+                    // dd($component['uom_id'], $itemUomId);
+                    if(@$component['uom_id'] == $itemUomId) {
+                        $order_inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
+                        $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
+                        $rejected_inventory_uom_qty = floatval($rejectedQty) ?? 0.00 ;
                     } else {
-                        $alUom = $item->alternateUOMs()->where('uom_id', $component['uom_id'])->first();
-                        if ($alUom) {
-                            $inventory_uom_qty = floatval($component['accepted_qty']) * $alUom->conversion_to_inventory;
+                        $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
+                        if($alUom) {
+                            $order_inventory_uom_qty = floatval($orderQty) * $alUom->conversion_to_inventory;
+                            $accepted_inventory_uom_qty = floatval($acceptedQty) * $alUom->conversion_to_inventory;
+                            $rejected_inventory_uom_qty = floatval($rejectedQty) * $alUom->conversion_to_inventory;
                         }
                     }
-                    $itemValue = floatval($component['accepted_qty']) * floatval($component['rate']);
-                    $itemDiscount = floatval($component['discount_amount']) ?? 0.00;
-
-                    $itemTotalValue += $itemValue;
-                    $itemTotalDiscount += $itemDiscount;
-                    $itemValueAfterDiscount = $itemValue - $itemDiscount;
-                    $totalValueAfterDiscount += $itemValueAfterDiscount;
-                    $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $inspectionItemArr[] = [
                         'header_id' => $inspection->id,
                         'mrn_detail_id' => $mrn_detail_id,
+                        'mrn_header_id' => $mrnHeaderId,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
                         'hsn_code' => $component['hsn_code'] ?? null,
                         'uom_id' =>  $component['uom_id'] ?? null,
                         'uom_code' => $uom->name ?? null,
-                        'store_id' => $inspection->store_id ?? null,
-                        'store_code' => $inspection?->erpStore?->store_code ?? null,
-                        'sub_store_id' => $inspection->sub_store_id ?? null,
                         'order_qty' => floatval($component['order_qty']) ?? 0.00,
                         'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
                         'rejected_qty' => floatval($component['rejected_qty']) ?? 0.00,
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
-                        'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
-                        'rate' => floatval($component['rate']) ?? 0.00,
-                        'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
-                        'tax_value' => 0.00,
-                        'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
-                        'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
-                        'group_currency_id' => @$component['group_currency_id'] ?? 0.00,
-                        'group_currency_exchange_rate' => @$component['group_currency_exchange_rate'] ?? 0.00,
+                        'inventory_uom_qty' => $order_inventory_uom_qty ?? 0.00,
+                        'accepted_inventory_uom_id' => $inventory_uom_id ?? null,
+                        'accepted_inventory_uom_code' => $inventory_uom_code ?? null,
+                        'accepted_inventory_uom_qty' => $accepted_inventory_uom_qty ?? 0.00,
+                        'rejected_inventory_uom_id' => $inventory_uom_id ?? null,
+                        'rejected_inventory_uom_code' => $inventory_uom_code ?? null,
+                        'rejected_inventory_uom_qty' => $rejected_inventory_uom_qty ?? 0.00,
                         'remark' => $component['remark'] ?? null,
-                        'taxable_amount' => $itemValueAfterDiscount,
-                        'basic_value' => $itemValue
                     ];
-                }
-
-                $isTax = false;
-                if (isset($parameters['tax_required']) && !empty($parameters['tax_required'])) {
-                    if (in_array('yes', array_map('strtolower', $parameters['tax_required']))) {
-                        $isTax = true;
-                    }
-                }
-
-                foreach ($inspectionItemArr as &$inspectionItem) {
-                    /*Header Level Item discount*/
-                    $headerDiscount = 0;
-                    $headerDiscount = ($inspectionItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
-                    $valueAfterHeaderDiscount = $inspectionItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $inspectionItem['header_discount_amount'] = $headerDiscount;
-                    $itemTotalHeaderDiscount += $headerDiscount;
-                    if ($isTax) {
-                        //Tax
-                        $itemTax = 0;
-                        $itemPrice = ($inspectionItem['basic_value'] - $headerDiscount - $inspectionItem['discount_amount']);
-                        $shippingAddress = $inspection->shippingAddress;
-
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($inspectionItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
-
-                        if (isset($taxDetails) && count($taxDetails) > 0) {
-                            foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                            }
-                        }
-                        $inspectionItem['tax_value'] = $itemTax;
-                        $totalTax += $itemTax;
-                    }
                 }
                 unset($inspectionItem);
 
                 foreach ($inspectionItemArr as $_key => $inspectionItem) {
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
-                    $itemPriceAterBothDis = $inspectionItem['basic_value'] - $inspectionItem['discount_amount'] - $inspectionItem['header_discount_amount'];
-                    $totalAfterTax = $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                    $itemHeaderExp = $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-
                     # Inspection Detail Save
                     $inspectionDetail = InspectionDetail::find($component['inspection_item_id'] ?? null) ?? new InspectionDetail;
+
+                    $isNewItem = false;
+                    if(isset($inspectionDetail->item_id) && $inspectionDetail->item_id) {
+                        $isNewItem = $inspectionDetail->item_id != ($inspectionItem['item_id'] ?? null);
+                    }
 
                     $inspectionDetail->header_id = $inspectionItem['header_id'];
                     $inspectionDetail->mrn_detail_id = $inspectionItem['mrn_detail_id'];
@@ -1159,146 +916,44 @@ class InspectionController extends Controller
                     $inspectionDetail->hsn_code = $inspectionItem['hsn_code'];
                     $inspectionDetail->uom_id = $inspectionItem['uom_id'];
                     $inspectionDetail->uom_code = $inspectionItem['uom_code'];
-                    $inspectionDetail->store_id = @$inspectionItem['store_id'];
-                    $inspectionDetail->store_code = @$inspectionItem['store_code'];
-                    $inspectionDetail->sub_store_id = @$inspectionItem['sub_store_id'];
                     $inspectionDetail->order_qty = $inspectionItem['order_qty'];
                     $inspectionDetail->accepted_qty = $inspectionItem['accepted_qty'];
                     $inspectionDetail->rejected_qty = $inspectionItem['rejected_qty'];
                     $inspectionDetail->inventory_uom_id = $inspectionItem['inventory_uom_id'];
                     $inspectionDetail->inventory_uom_code = $inspectionItem['inventory_uom_code'];
                     $inspectionDetail->inventory_uom_qty = $inspectionItem['inventory_uom_qty'];
-                    $inspectionDetail->rate = $inspectionItem['rate'];
-                    $inspectionDetail->basic_value = $inspectionItem['basic_value'];
-                    $inspectionDetail->discount_amount = $inspectionItem['discount_amount'];
-                    $inspectionDetail->header_discount_amount = $inspectionItem['header_discount_amount'];
-                    $inspectionDetail->tax_value = $inspectionItem['tax_value'];
-                    $inspectionDetail->header_exp_amount = $itemHeaderExp;
+                    $inspectionDetail->accepted_inv_uom_id = $inspectionItem['accepted_inventory_uom_id'];
+                    $inspectionDetail->accepted_inv_uom_code = $inspectionItem['accepted_inventory_uom_code'];
+                    $inspectionDetail->accepted_inv_uom_qty = $inspectionItem['accepted_inventory_uom_qty'];
+                    $inspectionDetail->rejected_inv_uom_id = $inspectionItem['rejected_inventory_uom_id'];
+                    $inspectionDetail->rejected_inv_uom_code = $inspectionItem['rejected_inventory_uom_code'];
+                    $inspectionDetail->rejected_inv_uom_qty = $inspectionItem['rejected_inventory_uom_qty'];
                     $inspectionDetail->remark = $inspectionItem['remark'];
                     $inspectionDetail->save();
 
-
                     #Save component Attr
-                    foreach ($inspectionDetail->item->itemAttributes as $itemAttribute) {
+                    if ($isNewItem && $inspectionDetail->id) {
+                        InspectionItemAttribute::where('detail_id', $inspectionDetail->id)
+                            ->delete();
+                    }
+                    foreach($inspectionDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
-                            $inspectionAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
-                            $inspectionAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
-                            $inspectionAttr = InspectionItemAttribute::find($inspectionAttrId) ?? new InspectionItemAttribute;
-                            $inspectionAttr->header_id = $inspection->id;
-                            $inspectionAttr->detail_id = $inspectionDetail->id;
-                            $inspectionAttr->item_attribute_id = $itemAttribute->id;
-                            $inspectionAttr->item_code = $component['item_code'] ?? null;
-                            $inspectionAttr->attr_name = $itemAttribute->attribute_group_id;
-                            $inspectionAttr->attr_value = $inspectionAttrName ?? null;
-                            $inspectionAttr->save();
-                        }
-                    }
+                            $inspAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
+                            $inspAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
 
-                    /*Item Level Discount Save*/
-                    if (isset($component['discounts'])) {
-                        foreach ($component['discounts'] as $dis) {
-                            if (isset($dis['dis_amount']) && $dis['dis_amount']) {
-                                $ted = InspectionTed::find(@$dis['id']) ?? new InspectionTed;
-                                $ted->header_id = $inspection->id;
-                                $ted->detail_id = $inspectionDetail->id;
-                                $ted->ted_type = 'Discount';
-                                $ted->ted_level = 'D';
-                                $ted->ted_id = $dis['ted_id'] ?? null;
-                                $ted->ted_name = $dis['dis_name'];
-                                $ted->ted_code = $dis['dis_name'];
-                                $ted->assesment_amount = $inspectionItem['basic_value'];
-                                $ted->ted_percentage = $dis['dis_perc'] ?? 0.00;
-                                $ted->ted_amount = $dis['dis_amount'] ?? 0.00;
-                                $ted->applicability_type = 'Deduction';
-                                $ted->save();
-                                $totalItemLevelDiscValue = $totalItemLevelDiscValue + $dis['dis_amount'];
-                            }
-                        }
-                    }
-
-                    #Save Component item Tax
-                    if (isset($component['taxes'])) {
-                        foreach ($component['taxes'] as $key => $tax) {
-                            $inspectionAmountId = null;
-                            $ted = InspectionTed::find(@$tax['id']) ?? new InspectionTed;
-                            $ted->header_id = $inspection->id;
-                            $ted->detail_id = $inspectionDetail->id;
-                            $ted->ted_type = 'Tax';
-                            $ted->ted_level = 'D';
-                            $ted->ted_id = $tax['t_d_id'] ?? null;
-                            $ted->ted_name = $tax['t_type'] ?? null;
-                            $ted->ted_code = $tax['t_type'] ?? null;
-                            $ted->assesment_amount = $inspectionItem['basic_value'] - $inspectionItem['discount_amount'] - $inspectionItem['header_discount_amount'];
-                            $ted->ted_percentage = $tax['t_perc'] ?? 0.00;
-                            $ted->ted_amount = $tax['t_value'] ?? 0.00;
-                            $ted->applicability_type = $tax['applicability_type'] ?? 'Collection';
-                            $ted->save();
+                            $inspAttr = InspectionItemAttribute::firstOrNew([
+                                'header_id' => $inspection->id,
+                                'detail_id' => $inspectionDetail->id,
+                                'item_attribute_id' => $itemAttribute->id
+                            ]);
+                            // $mrnAttr = MrnAttribute::find($mrnAttrId) ?? new MrnAttribute;
+                            $inspAttr->item_code = $component['item_code'] ?? null;
+                            $inspAttr->attr_name = $itemAttribute->attribute_group_id;
+                            $inspAttr->attr_value = $inspAttrName ?? null;
+                            $inspAttr->save();
                         }
                     }
                 }
-
-                /*Header level save discount*/
-                if (isset($request->all()['disc_summary'])) {
-                    foreach ($request->all()['disc_summary'] as $dis) {
-                        if (isset($dis['d_amnt']) && $dis['d_amnt']) {
-                            $inspectionAmountId = @$dis['d_id'];
-                            $ted = InspectionTed::find($inspectionAmountId) ?? new InspectionTed;
-                            $ted->header_id = $inspection->id;
-                            $ted->detail_id = null;
-                            $ted->ted_type = 'Discount';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_d_id'] ?? null;
-                            $ted->ted_name = $dis['d_name'];
-                            $ted->ted_code = @$dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue - $itemTotalDiscount;
-                            $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Deduction';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Header level save discount*/
-                if (isset($request->all()['exp_summary'])) {
-                    foreach ($request->all()['exp_summary'] as $dis) {
-                        if (isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            $totalAfterTax = $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
-                            $inspectionAmountId = @$dis['e_id'];
-                            $ted = InspectionTed::find($inspectionAmountId) ?? new InspectionTed;
-                            $ted->header_id = $inspection->id;
-                            $ted->detail_id = null;
-                            $ted->ted_type = 'Expense';
-                            $ted->ted_level = 'H';
-                            $ted->ted_id = $dis['ted_e_id'] ?? null;
-                            $ted->ted_name = $dis['e_name'];
-                            $ted->ted_code = @$dis['d_name'];
-                            $ted->assesment_amount = $totalAfterTax;
-                            $ted->ted_percentage = $dis['e_perc'] ?? 0.00;
-                            $ted->ted_amount = $dis['e_amnt'] ?? 0.00;
-                            $ted->applicability_type = 'Collection';
-                            $ted->save();
-                        }
-                    }
-                }
-
-                /*Update total in main header Inspection*/
-                $inspection->total_item_amount = $itemTotalValue ?? 0.00;
-                $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Negative value not allowed'
-                    ], 422);
-                }
-                $inspection->total_discount = $totalDiscValue ?? 0.00;
-                $inspection->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
-                $inspection->total_taxes = $totalTax ?? 0.00;
-                $inspection->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $totalTax) ?? 0.00;
-                $inspection->expense_amount = $totalHeaderExpense ?? 0.00;
-                $totalAmount = (($itemTotalValue - $totalDiscValue) + ($totalTax + $totalHeaderExpense)) ?? 0.00;
-                $inspection->total_amount = $totalAmount ?? 0.00;
-                $inspection->save();
             } else {
                 DB::rollBack();
                 return response()->json([
@@ -1362,8 +1017,15 @@ class InspectionController extends Controller
             }
 
             $inspection->save();
-            if(($inspection->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) || ($inspection->document_status == ConstantHelper::APPROVED) || ($inspection->document_status == ConstantHelper::POSTED)) {
+            if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
                 $updateMrn = InspectionHelper::updateMrnDetail($inspection);
+                if($updateMrn['status'] == 'error') {
+                    \DB::rollBack();
+                    return response()->json([
+                        'message' => $updateMrn['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -1552,7 +1214,96 @@ class InspectionController extends Controller
     }
 
     // Get Address
+    // Get Address
     public function getAddress(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $vendorId = $request?->id ?? null;
+        $type = $request?->type ?? null;
+        $typeId = $request?->typeId ?? null;
+
+        $vendor = Vendor::withDefaultGroupCompanyOrg()
+        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+
+        $moduleTypeId = match ($type) {
+            'mrn' => $typeId,
+            default => $vendorId,
+        };
+
+        $typeData = match ($type) {
+            'mrn' => MrnHeader::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($typeId),
+            default => Vendor::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($vendorId),
+        };
+
+        $currency = $typeData?->currency;
+        $paymentTerm = $typeData?->paymentTerms;
+
+        $documentDate = $request?->document_date;
+
+        $vendorAddress = match ($type) {
+            'mrn' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
+            default => ErpAddress::where('addressable_id', $moduleTypeId)
+                ->where('addressable_type', Vendor::class)
+                ->latest()
+                ->first(),
+        };
+
+        if (!$vendorAddress) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Address not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($typeData->currency_id)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Currency not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($paymentTerm)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
+
+        $storeId = $request?->store_id ?? null;
+        $store = ErpStore::find($storeId);
+        $locationAddress = $store?->address;
+
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $orgAddress = $organizationAddress?->display_address;
+
+        return response()->json(
+            [
+                'data' => [
+                    'status' => 200,
+                    'vendor' =>$vendor,
+                    'message' => 'fetched',
+                    'currency' => $currency,
+                    'org_address' => $orgAddress,
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
+                    'currency_exchange' => $currencyData
+                ],
+                'delivery_address' => $locationAddress,
+            ]
+        );
+    }
+
+    public function getAddressBac(Request $request)
     {
         $vendor = Vendor::withDefaultGroupCompanyOrg()
         ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
@@ -1763,77 +1514,40 @@ class InspectionController extends Controller
         return response()->json(['data' => ['html' => $html, 'detailedStocks' => $detailedStocks], 'status' => 200, 'message' => 'fetched.']);
     }
 
-    public function getMrnItemsByVendorId(Request $request)
+    # Validate Order Qty For Frontend
+    private static function validateQuantityBackend($component, $refType)
     {
-        try {
-            $user = Helper::getAuthenticatedUser();
-            $organization = $user->organization;
-            $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])
-                // ->where('organization_id', $organization->id)
-                ->find($request->vendor_id);
-            //dd($vendor);
-            $items = MrnDetail::with([
-                'header',
-                'item',
-                'attributes'
-            ])
-            ->whereHas('mrnHeader', function ($q) use ($request, $organization) {
-                $q->where('vendor_id', $request->vendor_id)
-                    ->where('document_status', '=', 'approved');
-            })
-            ->whereHas('item', function ($q) {
-                $q->where('type', 'Goods');
-            })
-            ->get();
+        $inputData = [
+            'item_id'            => $component['item_id'] ?? null,
+            'mrn_header_id'      => $component['mrn_header_id'],
+            'mrn_detail_id'      => $component['mrn_detail_id'],
+            'inspection_item_id' => $component['inspection_item_id'],
+            'qty'                => $component['qty'],
+            'type'               => $refType,
+        ];
 
-            $currency = $vendor->currency;
-            $paymentTerm = $vendor->paymentTerms;
-            $shipping = $vendor->addresses()->where('type', 'shipping')->Orwhere('type', 'both')->latest()->first();
-            $billing = $vendor->addresses()->where('type', 'billing')->Orwhere('type', 'both')->latest()->first();
-            $response = [
-                'success' => true,
-                'error' => '',
-                'response' => [
-                    'data' => $items
-                ]
-            ];
-            return response()->json($response);
-        } catch (\Exception $e) {
-            dd($e);
-        }
+        $checkService = new InspectionCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        return $data;
     }
 
-    public function getMrnItemsByMrnId(Request $request)
+    // Validate Order Qty For Frontend
+    public function validateQuantity(Request $request)
     {
-        try {
-            $user = Helper::getAuthenticatedUser();
-            $organization = $user->organization;
-            $items = MrnDetail::with([
-                'header',
-                'item',
-                'attributes'
-            ])
-                ->whereHas('header', function ($q) use ($request, $organization) {
-                    $q->where('organization_id', $organization->id)
-                        ->where('document_status', '=', 'approved');
-                })
-                ->whereHas('item', function ($q) {
-                    $q->where('type', 'Goods');
-                })
-                ->where('mrn_header_id', $request->mrn_header_id)
-                ->get();
-
-            $response = [
-                'success' => true,
-                'error' => '',
-                'response' => [
-                    'data' => $items
-                ]
-            ];
-
-            return response()->json($response);
-        } catch (\Exception $e) {
-            dd($e);
+        $inputData = [
+            'item_id'            => $request->item_id,
+            'mrn_header_id'      => $request->mrn_header_id,
+            'mrn_detail_id'      => $request->mrn_detail_id,
+            'inspection_item_id'      => $request->inspection_item_id,
+            'qty'                => $request->qty,
+            'type'               => $request->type,
+        ];
+        $checkService = new InspectionCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        if ($data['status'] === 'success') {
+            return response()->json(['message' => $data['message'], 'status' => 200, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
+        } else {
+            return response()->json(['message' => $data['message'], 'status' => 422, 'order_qty' => $data['order_qty']['order_qty'] ?? 0.00]);
         }
     }
 
@@ -2040,166 +1754,105 @@ class InspectionController extends Controller
         }
     }
 
-    // Validate Quantity
-    public function validateQuantity(Request $request)
-    {
-        $mrnQty = 0;
-        $prQty = 0;
-        $inspectionQty = $request->inspection_qty;
-        $acceptedQty = $request->accepted_qty;
-        $qtyType = $request->qty_type;
-        $detailId = $request->detailId;
-        $availableQty = 0.00;
-        $inspectionDetail = InspectionDetail::find($request->detailId);
-        $mrnDetail = MrnDetail::find($request->mrnDetailId);
-        if($mrnDetail){
-            $mrnQty = $mrnDetail->order_qty ?? 0.00;
-            $mrnInspectionQty = $mrnDetail->inspection_qty ?? 0.00;
-            $mrnDiffQty = ($mrnQty - $mrnInspectionQty);
-            if($qtyType == 'inspection'){
-                if(!$detailId){
-                    if($inspectionQty > $mrnDiffQty){
-                        return response() -> json([
-                            'data' => array(
-                                'quantity' => number_format($mrnDiffQty, 2),
-                                'error_message' => "Inspection quantity can not be greater than mrn quantity."
-                            )
-                        ],422);
-                    } else{
-                        $availableQty = $mrnDiffQty ?? 0.00;
-                    }
-                } else{
-                    if($mrnQty < $inspectionQty){
-                        return response() -> json([
-                            'data' => array(
-                                'quantity' => number_format($inspectionDetail->order_qty, 2),
-                                'error_message' => "Inspection quantity can not be greater than mrn quantity."
-                            )
-                        ],422);
-                    } else{
-                        $availableQty = $inspectionDetail->order_qty ?? 0.00;
-                    } 
-                    // else{
-                    //     $actualQtyDifference = ($mrnDiffQty - $inspectionQty);
-                    //     if($actualQtyDifference < $inspectionQty){
-                    //         $availableQty = $actualQtyDifference;
-                    //         return response() -> json([
-                    //             'data' => array(
-                    //                 'quantity' => number_format($mrnDiffQty, 2),
-                    //                 'error_message' => "You can add ".number_format($availableQty,2)." quantity as ".number_format($mrnInspectionQty,2)." quantity already used in mrn. and mrn quantity is ".number_format($mrnQty,2)."."
-                    //             )
-                    //         ]);
-                    //     }
-                    // }
-                }
-
-            } else{
-                if(!$detailId){
-                    if($inspectionQty < $acceptedQty){
-                        return response() -> json([
-                            'data' => array(
-                                'quantity' => number_format($acceptedQty, 2),
-                                'error_message' => "Qty can not be greater than mrn/inspection quantity."
-                            )
-                        ]);
-                    } else{
-                        $availableQty = $acceptedQty ?? 0.00;
-                    }
-                } else{
-                    if($mrnInspectionQty < $acceptedQty){
-                        return response() -> json([
-                            'data' => array(
-                                'quantity' => number_format($inspectionDetail->accepted_qty, 2),
-                                'error_message' => "Qty can not be greater than mrn/inspection quantity."
-                            )
-                        ]);
-                    } else{
-                        $availableQty = $inspectionDetail->accepted_qty ?? 0.00;
-                    } 
-                    // else{
-                    //     $actualQtyDifference = ($mrnDiffQty - $acceptedQty);
-                    //     if($actualQtyDifference < $acceptedQty){
-                    //         $availableQty = $actualQtyDifference;
-                    //         return response() -> json([
-                    //             'data' => array(
-                    //                 'quantity' => number_format($mrnDiffQty, 2),
-                    //                 'error_message' => "You can add ".number_format($availableQty,2)." quantity as ".number_format($mrnInspectionQty,2)." quantity already used in mrn. and mrn quantity is ".number_format($mrnDiffQty,2)."."
-                    //             )
-                    //         ]);
-                    //     }
-                    // }
-                }
-                
-            }
-            return response()->json(['data' => ['quantity' => number_format($availableQty, 2)], 'status' => 200, 'message' => 'fetched']);
-            
-        }
-    }
-
-    // Get MRN
+    # Get MRN Item List
     public function getMrn(Request $request)
     {
-        $mrnData = '';
-        $applicableBookIds = array();
-        $seriesId = $request->series_id ?? null;
-        $docNumber = $request->document_number ?? null;
         $storeId = $request->store_id ?? null;
-        $itemId = $request->item_id ?? null;
-        $vendorId = $request->vendor_id ?? null;
-        $headerBookId = $request->header_book_id ?? null;
-        $selected_mrn_ids = json_decode($request->selected_mrn_ids) ?? [];
-        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        $mrnItems = MrnDetail::where(function ($query) use ($seriesId, $applicableBookIds, $docNumber, $itemId, $vendorId, $storeId, $selected_mrn_ids) {
-            $query->whereHas('item');
-            $query->whereHas('mrnHeader', function ($mrn) use ($seriesId, $applicableBookIds, $docNumber, $vendorId, $storeId) {
-                $mrn->where('is_inspection', 1)
-                    ->where('store_id', $storeId)
-                    ->withDefaultGroupCompanyOrg();
-                $mrn->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                if ($seriesId) {
-                    $mrn->where('book_id', $seriesId);
-                } else {
-                    if (count($applicableBookIds)) {
-                        $mrn->whereIn('book_id', $applicableBookIds);
-                    }
-                }
-                if ($docNumber) {
-                    $mrn->where('document_number', $docNumber);
-                }
-                if ($vendorId) {
-                    $mrn->where('vendor_id', $vendorId);
-                }
-            });
-
-            if ($itemId) {
-                $query->where('item_id', $itemId);
-            }
-
-            $query->where('is_inspection', 1);
-        });
-
-        if(count($selected_mrn_ids)) {
-            $mrnData = MrnDetail::with('mrnHeader')->whereIn('id', $selected_mrn_ids)->first();
-            $mrnItems->whereNotIn('id',$selected_mrn_ids);
-        }
-        $mrnItems = $mrnItems->get();
-
-        $html = view('procurement.inspection.partials.mrn-item-list', [
-            'mrnItems' => $mrnItems,
-            'mrnData' => $mrnData
-        ])
-        ->render();
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
+        $query = $this->buildMrnQuery($request);
+        return DataTables::of($query)
+        ->addColumn('select_checkbox', fn($row) => app(\App\View\Components\Inspection\CheckBox::class, ['row' => $row])->resolveView()->render())
+        ->addColumn('vendor', fn($row) => $row?->mrnHeader?->vendor?->company_name ?? 'NA')
+        ->addColumn('book_name', fn($row) => $row?->mrnHeader?->book?->book_name ?? '')
+        ->addColumn('doc_no', fn($row) => $row?->mrnHeader?->document_number ?? '')
+        ->addColumn('doc_date', fn($row) => $row?->mrnHeader?->getFormattedDate('document_date') ?? '')
+        ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
+        ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
+        ->addColumn('attributes', fn($row) => app(\App\View\Components\Inspection\Attribute::class, ['row' => $row])->resolveView()->render())
+        // ->addColumn('attributes', function ($row) {
+        //     return $row?->attributes->map(function ($attr) {
+        //         return "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->headerAttribute->name}</strong>: {$attr->headerAttributeValue->value}</span>";
+        //     })->implode(' ');
+        // })
+        ->addColumn('uom', fn($row) => $row?->uom?->name ?? '')
+        ->addColumn('order_qty', fn($row) => number_format(($row?->order_qty),2) ?? '')
+        ->addColumn('inspection_qty', fn($row) => number_format(($row?->inspection_qty),2) ?? '')
+        ->addColumn('balance_qty', fn($row) => number_format(($row?->order_qty - $row?->inspection_qty),2) ?? '')
+        ->addColumn('remark', fn($row) => $row?->remark ?? '')
+        ->rawColumns([
+            'book_name',
+            'doc_no',
+            'doc_date',
+            'item_code',
+            'item_name',
+            'attributes',
+            'uom',
+            'remark',
+            'select_checkbox'
+            ])
+        ->make(true);
     }
 
-    # Submit PI Item list
+    # This for both bulk and single mrn
+    protected function buildMrnQuery(Request $request) 
+    {
+        $seriesId = $request->series_id ?? null;
+        $mrnDocNumber = $request->document_number ?? null;
+        $storeId = $request->store_id ?? null;
+        $subStoreId = $request->sub_store_id ?? null;
+        $vendorId = $request->vendor_id ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $soId= $request->so_id ?? null;
+        $mrnItems = null;
+        
+        $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
+        $selected_mrn_ids = json_decode($request->selected_mrn_ids) ?? [];
+        $selectColumn = ['id','mrn_header_id','so_id','item_id','item_code','item_name','uom_id','uom_code','order_qty','inspection_qty','remark'];
+        $mrnItems = MrnDetail::select($selectColumn)
+                    ->where('is_inspection', 1)
+                    ->where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $selected_mrn_ids, $itemSearch,$storeId,$subStoreId, $soId, $mrnDocNumber) {
+                    if(count($selected_mrn_ids)) {
+                        $query->whereNotIn('id',$selected_mrn_ids);
+                    }
+                    $query->whereHas('mrnHeader', function($mrnHeader) use ($seriesId,$applicableBookIds, $storeId,$subStoreId,$mrnDocNumber, $vendorId) {
+                        $mrnHeader->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+                        if(count($applicableBookIds)) {
+                            $mrnHeader->whereIn('book_id',$applicableBookIds);
+                        }
+                        if($storeId) {
+                            $mrnHeader->where('store_id', $storeId);
+                        }
+                        if($subStoreId) {
+                            $mrnHeader->where('sub_store_id', $subStoreId);
+                        }
+                        if($mrnDocNumber) {
+                            $mrnHeader->where('id', $mrnDocNumber);
+                        }
+                        if ($vendorId) {
+                            $mrnHeader->where('vendor_id', $vendorId);
+                        }
+                    });
+                    if($soId) {
+                        $query->where('so_id', $soId);
+                    }
+                    if ($itemSearch) {
+                        $query->whereHas('item', function ($query) use ($itemSearch) {
+                            $query->searchByKeywords($itemSearch);
+                        });
+                    }
+                    $query->whereRaw('order_qty > inspection_qty');
+                });
+        return $mrnItems;
+    }
+
+    # Process Mrn Item
     public function processMrnItem(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
         $ids = json_decode($request->ids, true) ?? [];
         $vendor = null;
-        $finalDiscounts = collect();
-        $finalExpenses = collect();
+        $tableRowCount = $request->tableRowCount ?: 0;
+
         $mrnItems = MrnDetail::whereIn('id', $ids)
             ->where('is_inspection', 1)
             ->get();
@@ -2211,57 +1864,23 @@ class InspectionController extends Controller
         if(count($uniqueMrnIds) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time inspection create from one MRN."]);
         }
-        $mrnData = MrnHeader::whereIn('id', $uniqueMrnIds)->first();
         $mrnHeaders = MrnHeader::whereIn('id', $uniqueMrnIds)->get();
-        $discounts = collect();
-        $expenses = collect();
-
-        foreach ($mrnHeaders as $mrn) {
-            foreach ($mrn->headerDiscount as $headerDiscount) {
-                if (!intval($headerDiscount->ted_percentage)) {
-                    $tedPerc = (floatval($headerDiscount->ted_amount) / floatval($headerDiscount->assesment_amount)) * 100;
-                    $headerDiscount['ted_percentage'] = $tedPerc;
-                }
-                $discounts->push($headerDiscount);
-            }
-
-            foreach ($mrn->expenses as $headerExpense) {
-                if (!intval($headerExpense->ted_percentage)) {
-                    $tedPerc = (floatval($headerExpense->ted_amount) / floatval($headerExpense->assesment_amount)) * 100;
-                    $headerExpense['ted_percentage'] = $tedPerc;
-                }
-                $expenses->push($headerExpense);
-            }
-        }
-        $groupedDiscounts = $discounts
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_percentage')->first(); // Select the record with max `ted_perc`
-            });
-        $groupedExpenses = $expenses
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_percentage')->first(); // Select the record with max `ted_perc`
-            });
-        $finalDiscounts = $groupedDiscounts->values()->toArray();
-        $finalExpenses = $groupedExpenses->values()->toArray();
-        $mrnIds = $mrnItems->pluck('mrn_header_id')->all();
-        $vendorId = MrnHeader::whereIn('id', $mrnIds)->pluck('vendor_id')->toArray();
-        $vendorId = array_unique($vendorId);
         $mrnHeader = MrnHeader::whereIn('id', $uniqueMrnIds)->first();
-        if (count($vendorId) && count($vendorId) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of MRN item at time."]);
+        
+        $vendorId = $mrnHeaders->pluck('vendor_id')->unique();
+        if ($vendorId->count() > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "You can not select multiple vendors of MRN items at a time."
+            ]);
         } else {
-            $vendorId = $vendorId[0];
-            $vendor = Vendor::find($vendorId);
-            $vendor->billing = $vendor->latestBillingAddress();
-            $vendor->shipping = $vendor->latestShippingAddress();
-            $vendor->currency = $vendor->currency;
-            $vendor->paymentTerm = $vendor->paymentTerm;
+            $vendor = Vendor::find($vendorId->first());
         }
         $html = view('procurement.inspection.partials.mrn-item-row',
         [
                 'mrnItems' => $mrnItems,
+                'tableRowCount' => $tableRowCount
             ]
         )
         ->render();
@@ -2271,68 +1890,12 @@ class InspectionController extends Controller
                 'data' => [
                     'pos' => $html,
                     'vendor' => $vendor,
-                    'mrnData' => $mrnData,
-                    'mrnHeader' => $mrnHeader,
-                    'finalExpenses' => $finalExpenses,
-                    'finalDiscounts' => $finalDiscounts,
+                    'mrnHeader' => $mrnHeader
                 ],
                 'status' => 200,
                 'message' => "fetched!"
             ]
         );
-    }
-
-    public function getPostingDetails(Request $request)
-    {
-        try {
-            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
-            return response()->json([
-                'status' => 'success',
-                'data' => $data
-            ]);
-        } catch (\Exception $ex) {
-            return response()->json([
-                'status' => 'exception',
-                'message' => 'Some internal error occured',
-                'error' => $ex->getMessage()
-            ]);
-        }
-    }
-
-    public function postInspection(Request $request)
-    {
-        $purchaseReturn = InspectionHeader::find($request->document_id);
-        $eInvoice = $purchaseReturn?->irnDetail()->first();
-        if (!$eInvoice) {
-            $data = [
-                'message' => 'Please generate IRN First.',
-            ];
-            return response()->json([
-                'status' => 'error',
-                'data' => $data
-            ]);
-        }
-        try {
-            // dd($request->all());
-            DB::beginTransaction();
-            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, 'post');
-            if ($data['status']) {
-                DB::commit();
-            } else {
-                DB::rollBack();
-            }
-            return response()->json([
-                'status' => 'success',
-                'data' => $data
-            ]);
-        } catch (\Exception $ex) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'exception',
-                'message' => 'Some internal error occured',
-                'error' => $ex->getMessage()
-            ]);
-        }
     }
 
     // Revoke Document
@@ -2365,32 +1928,6 @@ class InspectionController extends Controller
         } catch(\Exception $ex) {
             DB::rollBack();
             throw new ApiGenericException($ex -> getMessage());
-        }
-    }
-
-    // Maintain Stock Ledger
-    private static function maintainStockLedger($pr)
-    {
-        $user = Helper::getAuthenticatedUser();
-        $detailIds = $pr->items->pluck('id')->toArray();
-        $data = InventoryHelper::settlementOfInventoryAndStock($pr->id, $detailIds, ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS, $pr->document_status);
-        if(!empty($data['records'])){
-            $itemLocations = InspectionItemLocation::where('header_id', $pr->id)
-                ->whereIn('detail_id', $detailIds)
-                ->delete();
-
-            foreach($data['records'] as $key => $val){
-                $itemLocation = new InspectionItemLocation;
-                $itemLocation->header_id = @$val->issuedBy->document_header_id;
-                $itemLocation->detail_id = @$val->issuedBy->document_detail_id;
-                $itemLocation->store_id = @$val->store_id;
-                $itemLocation->rack_id = @$val->rack_id;
-                $itemLocation->shelf_id = @$val->shelf_id;
-                $itemLocation->bin_id = @$val->bin_id;
-                $itemLocation->quantity = @$val->total_receipt_qty;
-                $itemLocation->inventory_uom_qty = @$val->total_receipt_qty;
-                $itemLocation->save();
-            }
         }
     }
 
@@ -2792,7 +2329,7 @@ class InspectionController extends Controller
             } else if ($request->status === ConstantHelper::SUBMITTED) {
                 $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
             } else {
-                $searchDocStatus = [ConstantHelper::APInspectionOVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
             }
             $docStatusQuery->whereIn('document_status', $searchDocStatus);
         });

@@ -26,4 +26,6 @@ class ErpLogisticsLrLocation extends Model
     {
         return $this->belongsTo(ErpRouteMaster::class, 'location_id');
     }
+
+
 }

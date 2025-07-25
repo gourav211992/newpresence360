@@ -14,12 +14,26 @@
 <tr class="item_detail_row">
     <td class="poprod-decpt item_detail_attributes">
         <span class="poitemtxt mw-100"><strong>Attributes:</strong></span>
-        @foreach($item->itemAttributes as $index => $attribute) 
-            <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute->attributeGroup->id}}"> {{$attribute->attributeGroup->name}}</strong>: @foreach ($attribute->attributes() as $value) 
-                @if(in_array($value->id, $selectedAttr))
-                    {{ $value->value }}
+        @foreach($item->itemAttributes as $attribute)
+            @php
+                $groupName = $attribute?->attributeGroup?->name ?? 'Unknown';
+                $groupId = $attribute?->attributeGroup?->id ?? '';
+            @endphp
+
+            <span class="badge rounded-pill badge-light-primary">
+                <strong data-group-id="{{ $groupId }}">{{ $groupName }}</strong>:
+
+                @foreach ($attribute->attributes() as $value)
+                    @if($selectedAttr->contains($value->id))
+                        {{ $value->value }}
+                        @break
+                    @endif
+                @endforeach
+
+                @if(isset($oldAttributes[$attribute->id]))
+                    <span class="text-danger">{{ $oldAttributes[$attribute->id] }}</span>
                 @endif
-             @endforeach </span>
+            </span>
         @endforeach
     </td>
 </tr>

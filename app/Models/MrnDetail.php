@@ -52,6 +52,12 @@ class MrnDetail extends Model
         'inventory_uom_id',
         'inventory_uom_qty',
         'inventory_uom_code',
+        'accepted_inv_uom_id', 
+        'accepted_inv_uom_code',
+        'accepted_inv_uom_qty', 
+        'rejected_inv_uom_id',
+        'rejected_inv_uom_code', 
+        'rejected_inv_uom_qty',
         'rate',
         'basic_value',
         'discount_percentage',
@@ -131,7 +137,7 @@ class MrnDetail extends Model
 
     public function attributes()
     {
-        return $this->hasMany(MrnAttribute::class);
+        return $this->hasMany(MrnAttribute::class, 'mrn_detail_id');
     }
 
     public function storage_points()

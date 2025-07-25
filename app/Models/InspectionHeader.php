@@ -10,6 +10,7 @@ use App\Models\Organization;
 use App\Helpers\ConstantHelper;
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
+use App\Traits\DynamicFieldsTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,7 +18,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class InspectionHeader extends Model
 {
-    use HasFactory, SoftDeletes, DateFormatTrait, FileUploadTrait,DefaultGroupCompanyOrg;
+    use HasFactory, DateFormatTrait, SoftDeletes, FileUploadTrait,DefaultGroupCompanyOrg, DynamicFieldsTrait;
+
 
     protected $table = 'erp_insp_headers';
     protected $fillable = [
@@ -39,6 +41,7 @@ class InspectionHeader extends Model
         'customer_code', 
         'store_id', 
         'sub_store_id', 
+        'rejected_sub_store_id', 
         'cost_center_id', 
         'document_number', 
         'document_date', 
@@ -186,6 +189,11 @@ class InspectionHeader extends Model
     public function erpSubStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function rejectedSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'rejected_sub_store_id');
     }
     
     public function vendor()

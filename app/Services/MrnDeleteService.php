@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Services;
 
 use App\Models\MrnDetail;
@@ -32,8 +32,14 @@ class MrnDeleteService
                     $data = self::errorResponse($errorMessage);
                     return $data;
                 }
-                
-                // Check Stock and delete 
+
+                if ($mrnItem->inspection_qty > 0) {
+                    $errorMessage = $itemName. " can not be deleted because of inspection required.";
+                    $data = self::errorResponse($errorMessage);
+                    return $data;
+                }
+
+                // Check Stock and delete
                 $documentHeaderId = $mrnItem->mrn_header_id;
                 $documentDetailId = $mrnItem->id;
                 $itemId = $mrnItem->item_id;
@@ -41,6 +47,25 @@ class MrnDeleteService
                 $subStoreId = $mrnItem->sub_store_id;
                 $documentStatus = $mrnItem->document_status;
                 $selectedAttr = collect($mrnItem->attributes)->pluck('attr_value')->filter()->values()->toArray();
+                if ($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS) {
+                    $mrnData = [
+                        'document_header_id' => $documentHeaderId,
+                        'document_detail_id' => $documentDetailId,
+                        'item_id' => $itemId,
+                        'store_id' => $storeId,
+                        'document_type' => 'mrn',
+                        'attributes' => $selectedAttr,
+                        'sub_store_id' => $subStoreId,
+                        'transaction_type' => 'issue',
+                        'document_status' => $documentStatus,
+                        'book_type' => $mrn->book_code,
+                    ];
+                    $checkStockAvailable = InventoryHelperV2::checkStockForIssueDelete($mrnData, 'true');
+                    if ($checkStockAvailable['status'] === 'error') {
+                        $data = self::errorResponse($checkStockAvailable['message']);
+                        return $data;
+                    }
+                }
                 $mrnData = [
                     'document_header_id' => $documentHeaderId,
                     'document_detail_id' => $documentDetailId,
@@ -67,12 +92,12 @@ class MrnDeleteService
                     $geItem->mrn_qty -= $orderQty;
                     $geItem->save();
                 }
-                
+
                 if ($asnItem = $mrnItem->asnItem) {
                     $asnItem->grn_qty -= $orderQty;
                     $asnItem->save();
                 }
-                
+
                 switch ($mrn->reference_type) {
                     case ConstantHelper::JO_SERVICE_ALIAS:
                         if ($joItem = $mrnItem->joItem) {
@@ -80,14 +105,14 @@ class MrnDeleteService
                             $joItem->save();
                         }
                         break;
-                
+
                     case ConstantHelper::SO_SERVICE_ALIAS:
                         if ($soItem = $mrnItem->soItem) {
                             $soItem->grn_qty -= $orderQty;
                             $soItem->save();
                         }
                         break;
-                
+
                     case ConstantHelper::PO_SERVICE_ALIAS:
                         if ($poItem = $mrnItem->poItem) {
                             $poItem->grn_qty -= $orderQty;

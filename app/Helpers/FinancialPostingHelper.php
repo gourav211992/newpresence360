@@ -6298,7 +6298,7 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-       $cost = CostCenter::find($document?->cost_center_id);
+        $cost = CostCenter::find($document?->cost_center_id);
         $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
                         $exists = in_array($cost?->id, $ids);
                         

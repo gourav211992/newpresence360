@@ -61,7 +61,7 @@
         <td class="poprod-decpt attributeBtn" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}">
         </td>
         <td>
-            <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">
+            <input type="hidden" name="components[{{$rowCount}}][inventory_uom_id]" value="{{$item->inventoty_uom_id}}">
             <select class="form-select mw-100 " name="components[{{$rowCount}}][uom_id]">
                 <option value="{{$item->uom->id}}">{{ucfirst($item->uom->name)}}</option>
                 @if($item?->item?->alternateUOMs)

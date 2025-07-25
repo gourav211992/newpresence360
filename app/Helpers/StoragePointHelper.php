@@ -558,5 +558,63 @@ class StoragePointHelper
         }
     }
 
+    public static function isStoragePointMappedToItem($itemId, $storagePointId, $locationId = null, $subLocationId = null)
+    {
+        // Step 1: Try item-level mapping
+        $records = \DB::table('erp_wh_item_mappings')
+            ->when($locationId, fn($q) => $q->where('store_id', $locationId))
+            ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+            ->whereRaw("JSON_CONTAINS(item_id, JSON_QUOTE(?))", [(string) $itemId])
+            ->get();
+
+        // Step 2: If item-level mapping not found → check sub_category_id and category_id
+        if ($records->isEmpty()) {
+            $item = \DB::table('erp_items')->find($itemId);
+
+            if ($item) {
+                if ($item->subcategory_id) {
+                    $records = \DB::table('erp_wh_item_mappings')
+                        ->whereRaw("JSON_CONTAINS(sub_category_id, JSON_QUOTE(?))", [(string) $item->subcategory_id])
+                        ->get();
+                }
+
+                if ($records->isEmpty() && $item->category_id) {
+                    $records = \DB::table('erp_wh_item_mappings')
+                        ->whereRaw("JSON_CONTAINS(category_id, JSON_QUOTE(?))", [(string) $item->category_id])
+                        ->get();
+                }
+            }
+        }
+
+        // Step 3: Parse structure_details and match storage_point_id
+        foreach ($records as $record) {
+            $structureDetails = json_decode($record->structure_details, true);
+            if (!$structureDetails) continue;
+
+            foreach ($structureDetails as $level) {
+                if (!empty($level['level-values']) && in_array((string) $storagePointId, $level['level-values'])) {
+                    return true; // ✅ Found
+                }
+            }
+        }
+
+        // Step 4: Check fallback storage points (if you want)
+        if ($records->isEmpty() && $locationId) {
+            $fallbackStoragePoints = \DB::table('erp_wh_details')
+                ->where('store_id', $locationId)
+                ->when($subLocationId, fn($q) => $q->where('sub_store_id', $subLocationId))
+                ->where('is_storage_point', 1)
+                ->pluck('id')
+                ->toArray();
+
+            if (in_array((int) $storagePointId, $fallbackStoragePoints)) {
+                return true; // ✅ Found in fallback (no mapping)
+            }
+        }
+
+        return false; // ❌ Not mapped
+    }
+
+
 
 }

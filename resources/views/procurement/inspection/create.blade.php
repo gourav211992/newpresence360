@@ -1,29 +1,29 @@
 @extends('layouts.app')
 @section('styles')
     <style>
-        #poModal .table-responsive {
+        #mrnModal .table-responsive {
             overflow-y: auto;
             max-height: 300px; /* Set the height of the scrollable body */
             position: relative;
         }
 
-        #poModal .po-order-detail {
+        #mrnModal .mrn-order-detail {
             width: 100%;
             border-collapse: collapse;
         }
 
-        #poModal .po-order-detail thead {
+        #mrnModal .mrn-order-detail thead {
             position: sticky;
             top: 0; /* Stick the header to the top of the table container */
             background-color: white; /* Optional: Make sure header has a background */
             z-index: 1; /* Ensure the header stays above the body content */
         }
-        #poModal .po-order-detail th {
+        #mrnModal .mrn-order-detail th {
             background-color: #f8f9fa; /* Optional: Background for the header */
             text-align: left;
             padding: 8px;
         }
-        #poModal .po-order-detail td {
+        #mrnModal .mrn-order-detail td {
             padding: 8px;
         }
         .tooltip-inner { text-align: left}
@@ -33,7 +33,6 @@
 @section('content')
     <form class="ajax-input-form" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
-        <input type="hidden" name="bill_to_follow" id="bill_to_follow" value="">
         @csrf
         <div class="app-content content ">
             <div class="content-overlay"></div>
@@ -137,10 +136,19 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                        <label class="form-label">Main Store <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Rejected Store</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select rejected_sub_store rejected_sub_store_id" id="rejected_sub_store_id" name="rejected_sub_store_id">
                                                         </select>
                                                     </div>
                                                 </div>
@@ -159,11 +167,11 @@
                                                         </label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
                                                             <i data-feather="plus-square"></i>
                                                             Outstanding MRN
                                                         </button>
-                                                        <input type="hidden" name="module_type" id="module_type" class="module_type" value="po">
+                                                        <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
                                                     </div>
                                                 </div>
                                             </div>
@@ -183,7 +191,7 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Vendor <span class="text-danger">*</span></label>
-                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" />
+                                                            <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" readonly />
                                                             <input type="hidden" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" id="vendor_code" name="vendor_code" />
                                                             <input type="hidden" id="shipping_id" name="shipping_id" />
@@ -374,7 +382,9 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
+                                                        data-json-key="components_json"
+                                                        data-row-selector="tr[id^='row_']">
                                                         <thead>
                                                             <tr>
                                                                 <th class="customernewsection-form">
@@ -387,117 +397,22 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">MRN Qty</th>
+                                                                <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
-                                                                <th class="text-end">Value</th>
-                                                                <th>Discount</th>
-                                                                <th class="text-end">Total</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr class="totalsubheadpodetail">
-                                                                <td colspan="10"></td>
-                                                                <td class="text-end" id="totalItemValue">0.00</td>
-                                                                <td class="text-end" id="totalItemDiscount">0.00</td>
-                                                                {{--
-                                                                <td class="text-end" id="TotalEachRowTax">0.00</td>
-                                                                --}}
-                                                                <td class="text-end" id="TotalEachRowAmount">0.00</td>
-                                                            </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="8">
+                                                                <td rowspan="10" colspan="10">
                                                                     <table class="table border" id="itemDetailDisplay">
                                                                         <tr>
                                                                             <td class="p-0">
                                                                                 <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="poitemtxt mw-100"><strong>Name</strong>:</span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Color</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Size</strong>:</span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Ava. Stock</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td class="poprod-decpt">
-                                                                                <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: </span>
-                                                                            </td>
-                                                                        </tr>
-                                                                    </table>
-                                                                </td>
-                                                                <td colspan="6">
-                                                                    <table class="table border mrnsummarynewsty">
-                                                                        <tr>
-                                                                            <td colspan="2" class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                                    <strong>Document Summary</strong>
-                                                                                    <div class="addmendisexpbtn">
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
-                                                                                    </div>
-                                                                                </h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td width="55%"><strong>Sub Total</strong></td>
-                                                                            <td class="text-end" id="f_sub_total">0.00</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Item Discount</strong></td>
-                                                                            <td class="text-end" id="f_total_discount">0.00</td>
-                                                                        </tr>
-                                                                        <tr class="d-none" id="f_header_discount_hidden">
-                                                                            <td><strong>Header Discount</strong></td>
-                                                                            <td class="text-end" id="f_header_discount">0.00</td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value" amount="">0.00</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Tax</strong></td>
-                                                                            <td class="text-end" id="f_tax">0.00</td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Total After Tax</strong></td>
-                                                                            <td class="text-end" id="f_total_after_tax">0.00</td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Exp.</strong></td>
-                                                                            <td class="text-end" id="f_exp">0.00</td>
-                                                                            <input type="hidden" name="expense_amount" class="text-end" id="expense_amount">
-                                                                        </tr>
-                                                                        <tr class="voucher-tab-foot">
-                                                                            <td class="text-primary"><strong>Total After Exp.</strong></td>
-                                                                            <td>
-                                                                                <div class="quottotal-bg justify-content-end">
-                                                                                    <h5 id="f_total_after_exp">0.00</h5>
-                                                                                </div>
                                                                             </td>
                                                                         </tr>
                                                                     </table>
@@ -539,9 +454,9 @@
             </div>
         </div>
         {{-- Discount summary modal --}}
-        @include('procurement.inspection.partials.summary-disc-modal')
+        <!-- @include('procurement.inspection.partials.summary-disc-modal') -->
         {{-- Add expenses modal--}}
-        @include('procurement.inspection.partials.summary-exp-modal')
+        <!-- @include('procurement.inspection.partials.summary-exp-modal') -->
         {{-- Add Outstanding PO modal--}}
         @include('procurement.inspection.partials.outstanding-mrn-modal')
         {{-- Edit Address --}}
@@ -563,7 +478,7 @@
                     <h1 class="text-center mb-1" id="shareProjectTitle">Select Attribute</h1>
                     <p class="text-center">Enter the details below.</p>
                     <div class="table-responsive-md customernewsection-form">
-                        <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
+                        <table class="mt-1 table myrequesttablecbox table-striped mrn-order-detail custnewpo-detail">
                             <thead>
                                 <tr>
                                     <th>Attribute Name</th>
@@ -579,45 +494,6 @@
                     <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" {{-- data-bs-dismiss="modal" --}} class="btn btn-primary submitAttributeBtn">Select</button>
                     <!-- <button type="button" data-bs-dismiss="modal" class="btn btn-primary">Select</button> -->
-                </div>
-            </div>
-        </div>
-    </div>
-    {{-- Add each row discount popup --}}
-    <div class="modal fade" id="itemRowDiscountModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
-        <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
-            <div class="modal-content">
-                <div class="modal-header p-0 bg-transparent">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body px-sm-2 mx-50 pb-2">
-                    <h1 class="text-center mb-1" id="shareProjectTitle">Discount</h1>
-                    <div class="text-end">
-                    </div>
-                    <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th width="150px">Discount Name</th>
-                                    <th>Discount %</th>
-                                    <th>Discount Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr id="disItemFooter">
-                                    <input type="hidden" name="row_count" id="row_count" value="1">
-                                    <td colspan="2"></td>
-                                    <td class="text-dark"><strong>Total</strong></td>
-                                    <td class="text-dark text-end"><strong id="total">0.00</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
-                    <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
                 </div>
             </div>
         </div>
@@ -650,15 +526,25 @@
         </div>
     </div>
     {{-- Taxes --}}
-    @include('procurement.inspection.partials.tax-detail-modal')
+    <!-- @include('procurement.inspection.partials.tax-detail-modal') -->
 @endsection
 @section('scripts')
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("inspection.tax.calculation")}}';
-    </script>
+        var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
+    </script>    
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        window.onload = function () {
+            localStorage.removeItem('selectedMrnIds');
+            currentProcessType = null;
+        };
+        let currentProcessType = null;
+        let tableRowCount = 0;
+
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -694,7 +580,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        setTableCalculation();
+                        
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -831,9 +717,13 @@
         }
         initializeAutocomplete1("#vendor_name");
 
-        function vendorOnChange(vendorId) {
+        function vendorOnChange(vendorId, type=null, typeId=null) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('inspection.get.address')}}"+'?id='+vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('inspection.get.address')}}"
+            +'?id='+vendorId+
+            '&store_id='+store_id+
+            '&type='+type+
+            '&typeId='+typeId;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -854,7 +744,7 @@
                         });
                         return false;
                     }
-                    if(data.status == 200) {
+                    if(data.data.status == 200) {
                         $("#vendor_name").val(data?.data?.vendor?.company_name);
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
@@ -862,14 +752,13 @@
                         let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
                         $('[name="payment_term_id"]').empty().append(termOption);
-                        $("#shipping_id").val(data.data.shipping.id);
-                        $("#billing_id").val(data.data.billing.id);
-                        $(".billing_detail").text(data.data.billing.display_address);
-                        $(".delivery_address").text(data.data.delivery_address);
-                        $(".org_address").text(data.data.org_address);
+                        $("#billing_id").val(data.data.vendor_address.id);
+                        $(".billing_detail").text(data.data.vendor_address.display_address);
+                        $(".delivery_address").text(data.delivery_address.display_address);
+                        $(".org_address").text(data.delivery_address.display_address);
 
-                        $("#hidden_state_id").val(data.data.shipping.state.id);
-                        $("#hidden_country_id").val(data.data.shipping.country.id);
+                        $("#hidden_state_id").val(data.data.vendor_address.state.id);
+                        $("#hidden_country_id").val(data.data.vendor_address.country.id);
                     } else {
                         if(data.data.error_message) {
                             $("#vendor_name").val('');
@@ -894,6 +783,107 @@
             });
         }
 
+        function initializeAutocomplete2(selector, type) {
+            $(selector).autocomplete({
+                source: function(request, response) {
+                    let selectedAllItemIds = [];
+                    $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                        if(Number($(item).find('[name*="item_id"]').val())) {
+                            selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
+                        }
+                    });
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:'goods_item_list',
+                            selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.item_name} (${item.item_code})`,
+                                    code: item.item_code || '',
+                                    item_id: item.id,
+                                    item_name:item.item_name,
+                                    is_inspection:item.is_inspection,
+                                    uom_name:item.uom?.name,
+                                    uom_id:item.uom_id,
+                                    hsn_id:item.hsn?.id,
+                                    hsn_code:item.hsn?.code,
+                                    alternate_u_o_ms:item.alternate_u_o_ms,
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    let $input = $(this);
+                    let itemCode = ui.item.code;
+                    let itemName = ui.item.value;
+                    let itemN = ui.item.item_name;
+                    let itemId = ui.item.item_id;
+                    let uomId = ui.item.uom_id;
+                    let uomName = ui.item.uom_name;
+                    let hsnId = ui.item.hsn_id;
+                    let hsnCode = ui.item.hsn_code;
+                    let isInspection = ui.item.is_inspection;
+                    $input.attr('data-name', itemName);
+                    $input.attr('data-code', itemCode);
+                    $input.attr('data-id', itemId);
+
+                    let closestTr = $input.closest('tr');
+                    closestTr.find('[name*=item_id]').val(itemId);
+                    closestTr.find('[name*=item_code]').val(itemCode);
+                    closestTr.find('[name*=item_name]').val(itemN);
+                    closestTr.find('[name*=hsn_id]').val(hsnId);
+                    closestTr.find('[name*=hsn_code]').val(hsnCode);
+                    closestTr.find('[name*=is_inspection]').val(isInspection);
+                    closestTr.find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                    $input.val(itemCode);
+                    let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                    if(ui.item?.alternate_u_o_ms) {
+                        for(let alterItem of ui.item.alternate_u_o_ms) {
+                        uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                        }
+                    }
+                    closestTr.find('[name*=uom_id]').append(uomOption);
+                    closestTr.find('.attributeBtn').trigger('click');
+                    setTimeout(() => {
+                        if(ui.item.is_attr) {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                        } else {
+                            $input.closest('tr').find('.attributeBtn').trigger('click');
+                            $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
+                        }
+                    }, 100);
+
+                    getItemDetail(closestTr);
+                    getItemCostPrice($input.closest('tr'));
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                            // $('#itemId').val('');
+                        $(this).attr('data-name', '');
+                        $(this).attr('data-code', '');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+        }
+
         /*Add New Row*/
         $(document).on('click','#addNewItemBtn', (e) => {
             if(!checkBasicFilledDetail()) {
@@ -911,101 +901,6 @@
                     icon: 'error',
                 });
                 return false;
-            }
-            function initializeAutocomplete2(selector, type) {
-                $(selector).autocomplete({
-                    source: function(request, response) {
-                        let selectedAllItemIds = [];
-                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
-                            if(Number($(item).find('[name*="item_id"]').val())) {
-                                selectedAllItemIds.push(Number($(item).find('[name*="item_id"]').val()));
-                            }
-                        });
-                        $.ajax({
-                            url: '/search',
-                            method: 'GET',
-                            dataType: 'json',
-                            data: {
-                                q: request.term,
-                                type:'goods_item_list',
-                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
-                            },
-                            success: function(data) {
-                                response($.map(data, function(item) {
-                                    return {
-                                        id: item.id,
-                                        label: `${item.item_name} (${item.item_code})`,
-                                        code: item.item_code || '',
-                                        item_id: item.id,
-                                        item_name:item.item_name,
-                                        uom_name:item.uom?.name,
-                                        uom_id:item.uom_id,
-                                        hsn_id:item.hsn?.id,
-                                        hsn_code:item.hsn?.code,
-                                        alternate_u_o_ms:item.alternate_u_o_ms,
-                                    };
-                                }));
-                            },
-                            error: function(xhr) {
-                                console.error('Error fetching customer data:', xhr.responseText);
-                            }
-                        });
-                    },
-                    minLength: 0,
-                    select: function(event, ui) {
-                        let $input = $(this);
-                        let itemCode = ui.item.code;
-                        let itemName = ui.item.value;
-                        let itemN = ui.item.item_name;
-                        let itemId = ui.item.item_id;
-                        let uomId = ui.item.uom_id;
-                        let uomName = ui.item.uom_name;
-                        let hsnId = ui.item.hsn_id;
-                        let hsnCode = ui.item.hsn_code;
-                        $input.attr('data-name', itemName);
-                        $input.attr('data-code', itemCode);
-                        $input.attr('data-id', itemId);
-
-                        let closestTr = $input.closest('tr');
-                        closestTr.find('[name*=item_id]').val(itemId);
-                        closestTr.find('[name*=item_code]').val(itemCode);
-                        closestTr.find('[name*=item_name]').val(itemN);
-                        closestTr.find('[name*=hsn_id]').val(hsnId);
-                        closestTr.find('[name*=hsn_code]').val(hsnCode);
-                        $input.val(itemCode);
-                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
-                        if(ui.item?.alternate_u_o_ms) {
-                            for(let alterItem of ui.item.alternate_u_o_ms) {
-                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
-                            }
-                        }
-                        closestTr.find('[name*=uom_id]').append(uomOption);
-                        closestTr.find('.attributeBtn').trigger('click');
-                        setTimeout(() => {
-                            if(ui.item.is_attr) {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                            } else {
-                                $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
-                            }
-                        }, 100);
-
-                        getItemDetail(closestTr);
-                        return false;
-                    },
-                    change: function(event, ui) {
-                        if (!ui.item) {
-                            $(this).val("");
-                                // $('#itemId').val('');
-                            $(this).attr('data-name', '');
-                            $(this).attr('data-code', '');
-                        }
-                    }
-                }).focus(function() {
-                    if (this.value === "") {
-                        $(this).autocomplete("search", "");
-                    }
-                });
             }
             let rowsLength = $("#itemTable > tbody > tr").length;
             /*Check last tr data shoud be required*/
@@ -1054,7 +949,10 @@
                             $("#itemTable > tbody").html(data.data.html);
                         }
                         initializeAutocomplete2(".comp_item_code");
-                        $(".poSelect").prop('disabled',true);
+                        focusAndScrollToLastRowInput();
+                        $(".poSelect").hide();
+                        $(".joSelect").hide();
+                        $(".soSelect").hide();
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                     } else if(data.status == 422) {
@@ -1084,15 +982,15 @@
             });
             if (itemIds.length) {
                 itemIds.forEach(function(item,index) {
-                    let poItemHiddenId = $(`#row_${item}`).find("input[name*='[po_item_hidden_ids]']").val();
+                    let poItemHiddenId = $(`#row_${item}`).find("input[name*='[mrn_item_hidden_ids]']").val();
 
                     if(poItemHiddenId) {
                         let idsToRemove = poItemHiddenId.split(',');
-                        let selectedPoIds = localStorage.getItem('selectedPoIds');
-                        if(selectedPoIds) {
-                            selectedPoIds = JSON.parse(selectedPoIds);
-                            let updatedIds = selectedPoIds.filter(id => !idsToRemove.includes(id));
-                            localStorage.setItem('selectedPoIds', JSON.stringify(updatedIds));
+                        let selectedMrnIds = localStorage.getItem('selectedMrnIds');
+                        if(selectedMrnIds) {
+                            selectedMrnIds = JSON.parse(selectedMrnIds);
+                            let updatedIds = selectedMrnIds.filter(id => !idsToRemove.includes(id));
+                            localStorage.setItem('selectedMrnIds', JSON.stringify(updatedIds));
                         }
                     }
                     $(`#row_${item}`).remove();
@@ -1113,7 +1011,7 @@
                 $(".header_store_id").prop('disabled', false);
                 getLocation();
             }
-            setTableCalculation();
+            
         });
 
         /*Check attrubute*/
@@ -1271,51 +1169,42 @@
             getItemDetail(currentTr);
         });
 
-        function getItemDetail(currentTr) {
-            const $row = $(currentTr);
-            let pName = $row.find("[name*='component_item_name']").val() || '';
-            let itemId = $row.find("[name*='item_id']").val() || '';
-            let mrnHeaderId = $(currentTr).find("[name*='mrn_header_id']").val() || '';
-            let mrnDetailId = $(currentTr).find("[name*='mrn_detail_id']").val() || '';
-            let storeId = $row.find("[name*='header_store_id']").val() || '';
-            let subStoreId = $row.find("[name*='sub_store_id']").val() || '';
-            let remark = '';
-            if($row.find("[name*='remark']")) {
-                remark = $row.find("[name*='remark']").val() || '';
-            }
+        function getItemDetail(currentTr, type=null) {
+            const getVal = (selector) => {
+                let el = $(currentTr).find(selector);
+                return el.length ? el.val() : '';
+            };
 
-            if (itemId) {
-                let selectedAttr = [];
-                $row.find("[name*='attr_name']").each(function(index, item) {
-                    if($(item).val()) {
-                        selectedAttr.push($(item).val());
+            let itemId = getVal("[name*='[item_id]']");
+            if (!itemId) return;
+
+            let selectedAttr = [];
+            $(currentTr).find("[name*='[attr_name]']").each(function () {
+                const val = $(this).val();
+                if (val) selectedAttr.push(val);
+            });
+
+            let data = {
+                item_id: itemId,
+                mrn_header_id: getVal("[name*='[mrn_header_id]']"),
+                mrn_detail_id: getVal("[name*='[mrn_detail_id]']"),
+                remark: getVal("[name*='[remark]']"),
+                uom_id: getVal("[name*='[uom_id]']"),
+                qty: getVal("[name*='[order_qty]']"),
+                selectedAttr: JSON.stringify(selectedAttr),
+                type: currentProcessType,
+            };
+
+            let actionUrl = '{{ route('inspection.get.itemdetail') }}?' + new URLSearchParams(data).toString();
+
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        // Update the modal or display section
+                        $("#itemDetailDisplay").html(data.data.html);
                     }
                 });
-                let uomId = $row.find("[name*='[uom_id]']").val() || '';
-                let qty = $row.find("[name*='[accepted_qty]']").val() || '';
-                let headerId = $row.find("[name*='inspection_header_id']").val() ?? '';
-                let detailId = $row.find("[name*='inspection_item_id']").val() ?? '';
-                let actionUrl = '{{route("inspection.get.itemdetail")}}'+'?item_id='+itemId+
-                    '&mrn_header_id='+mrnHeaderId+
-                    '&mrn_detail_id='+mrnDetailId+
-                    '&selectedAttr='+JSON.stringify(selectedAttr)+
-                    '&remark='+remark+
-                    '&uom_id='+uomId+
-                    '&qty='+qty+
-                    '&headerId='+headerId+
-                    '&detailId='+detailId+
-                    '&store_id='+storeId+
-                    '&sub_store_id='+subStoreId;
-
-                fetch(actionUrl).then(response => {
-                    return response.json().then(data => {
-                        if(data.status == 200) {
-                            // Update the modal or display section
-                            $("#itemDetailDisplay").html(data.data.html);
-                        }
-                    });
-                });
-            }
+            });
         }
         
         /*Tbl row highlight*/
@@ -1389,27 +1278,44 @@
             getItemDetail(rowCount);
         });
 
-        /*Open Po model*/
-        $(document).on('click', '.poSelect', (e) => {
-            $("#poModal").modal('show');
-            openPurchaseRequest();
-            getPurchaseOrders();
+        /*Open MRN model*/
+        let mrnOrderTable;
+        $(document).on('click', '.mrnSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
+            $("#mrnModal").modal('show');
+            currentProcessType = 'mrn';
+            openMrnRequest();
+            const tableSelector = '#mrnModal .mrn-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
+            getMrn();
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    mrnOrderTable = $(tableSelector).DataTable();
+                    mrnOrderTable.ajax.reload();
+                }
+                // Re-initialize DataTable
+            }
         });
 
-        /*searchPiBtn*/
-        $(document).on('click', '.searchPoBtn', (e) => {
-            getPurchaseOrders();
-        });
+        function getSelectedMrnTypes()
+        {
+            let moduleTypes = [];
+            $('.mrn_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
+        }
 
-        function openPurchaseRequest()
+        function openMrnRequest()
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-            initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_po", "book_code", "");
-            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "po_document_qt", "document_number", "");
-            initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "mrn_document_qt", "document_number", "");
+            initializeAutocompleteQt("so_no_input_qt", "so_qt_val", "so_qt", "book_code", "document_number");
         }
+
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
         {
+            let modalType = '#mrnModal';
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -1421,13 +1327,27 @@
                             type: typeVal,
                             vendor_id : $("#vendor_id_qt_val").val(),
                             header_book_id : $("#book_id").val(),
+                            store_id : $("#store_id").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
                                 };
                             }));
                         },
@@ -1436,101 +1356,176 @@
                         }
                     });
                 },
-                appendTo : '#poModal',
+                appendTo : modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     return false;
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + selectorSibling).val("");
+                        $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     }
                 }
             }).focus(function() {
                 if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     $(this).autocomplete("search", "");
                 }
-            });
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                }
+            })
         }
 
-        window.onload = function () {
-            localStorage.removeItem('selectedPoIds');
-        };
+        function renderData(data) {
+            return data ? data : '';
+        }
 
-        function getPurchaseOrders()
+        function getDynamicParams() {
+            let document_date = '',
+                header_book_id = '',
+                series_id = '',
+                document_number = '',
+                item_id = '',
+                vendor_id = '',
+                store_id = '',
+                so_id = '',
+                item_search = '',
+                selected_mrn_ids = '';
+
+            if(currentProcessType === 'mrn')
+            {
+                let selectedMrnIds = localStorage.getItem('selectedMrnIds') ?? '[]';
+                selectedMrnIds = JSON.parse(selectedMrnIds);
+                selectedMrnIds = encodeURIComponent(JSON.stringify(selectedMrnIds));
+                document_date = $("[name ='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#document_id_qt_val").val() || '',
+                item_id = $("#item_id_qt_val").val() || '',
+                vendor_id = $("#vendor_id_qt_val").val(),
+                store_id = $(".header_store_id").val() || '',
+                so_id = $("#po_so_qt_val").val() || '',
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                selected_mrn_ids = encodeURIComponent(selectedMrnIds)
+            }
+            return {
+                    document_date: document_date,
+                    header_book_id: header_book_id,
+                    series_id: series_id,
+                    document_number: document_number,
+                    item_id: item_id,
+                    vendor_id: vendor_id,
+                    store_id: store_id,
+                    so_id: so_id,
+                    item_search: item_search,
+                    selected_mrn_ids: selected_mrn_ids
+                };
+        }
+
+        function getMrn()
         {
-            let selectedPoIds = localStorage.getItem('selectedPoIds') ?? '[]';
-            selectedPoIds = JSON.parse(selectedPoIds);
-            selectedPoIds = encodeURIComponent(JSON.stringify(selectedPoIds));
-
-            let document_date = $("[name='document_date']").val() || '';
-            let header_book_id = $("#book_id").val() || '';
-            let store_id = $("#header_store_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let type = '{{ request()->route("type") }}';
-            let item_search = $("#item_name_search").val();
-            let actionUrl = '{{ route("inspection.get.mrn", ["type" => ":type"]) }}'.replace(':type', type);
-            let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &store_id=${encodeURIComponent(store_id)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &header_book_id=${encodeURIComponent(header_book_id)}
-            &selected_mrn_ids=${selectedPoIds}
-            &document_date=${document_date}
-            &item_search=${item_search}`;
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #poDataTable").empty().append(data.data.pis);
-                    $('.select2').select2({
-                        dropdownParent: $('#poModal') // Ensure dropdown is rendered inside the modal
-                    });
-                });
-            });
+            const ajaxUrl = '{{ route("inspection.get.mrn", ["type" => "create"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+                { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'inspection_qty', name: 'inspection_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#mrnModal .mrn-order-detail',
+                ajaxUrl,
+                columns,
+            );
         }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
 
         /*Checkbox for po/si item list*/
-        $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
+        $(document).on('change','.mrn-order-detail > thead .form-check-input',(e) => {
             if (e.target.checked) {
-                $(".po-order-detail > tbody .form-check-input").each(function(){
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
                     $(this).prop('checked',true);
                 });
             } else {
-                $(".po-order-detail > tbody .form-check-input").each(function(){
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
                     $(this).prop('checked',false);
                 });
             }
         });
 
-        function getSelectedPoIDS()
+        function getSelectedMrnIDS()
         {
             let ids = [];
-            $('.po_item_checkbox:checked').each(function() {
+            let referenceNos = [];
+
+            $('.mrn_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
             });
-            return ids;
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
         }
 
-        $(document).on('click', '.poProcess', (e) => {
-            let ids = getSelectedPoIDS();
+        $(document).on('click', '.mrnProcess', (e) => {
+            let result = getSelectedMrnIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            let idsLength = ids.length;
+            currentProcessType = 'mrn';
             if (!ids.length) {
-                $("#poModal").modal('hide');
+                $("#mrnModal").modal('hide');
                 Swal.fire({
                     title: 'Error!',
-                    text: 'Please select at least one one po',
+                    text: 'Please select at least one one mrn',
                     icon: 'error',
                 });
                 return false;
             }
 
-            $("[name='po_item_ids']").val(ids);
+            let moduleTypes = getSelectedMrnTypes();
+            $("[name='mrn_item_ids']").val(ids);
+            $("#addNewItemBtn").hide();
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('mrn');
 
             // for component item code
             function initializeAutocomplete2(selector, type) {
@@ -1592,6 +1587,7 @@
                         $input.closest('tr').find('[name*=item_name]').val(itemN);
                         $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
                         $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
                         $input.val(itemCode);
                         let uomOption = `<option value=${uomId}>${uomName}</option>`;
                         if(ui.item?.alternate_u_o_ms) {
@@ -1606,9 +1602,11 @@
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
+                        getItemDetail($input.closest('tr'), currentProcessType);
+                        getItemCostPrice($input.closest('tr'));
                         return false;
                     },
                     change: function(event, ui) {
@@ -1635,138 +1633,14 @@
             });
 
             groupItems = JSON.stringify(groupItems);
-            ids = JSON.stringify(ids);
-            let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route("inspection.process.mrn-item") }}'
-            .replace(':type', type)
-            + '?ids=' + encodeURIComponent(ids)
-            + '&currency_id=' + encodeURIComponent(currencyId)
-            + '&d_date=' + encodeURIComponent(transactionDate)
-            + '&groupItems=' + encodeURIComponent(groupItems);
+            let current_row_count = $("tbody tr[id*='row_']").length;
+            let processData = {
+                ids: ids,
+                type: 'mrn',
+                module_type: moduleTypes,
+            };
 
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.status == 200) {
-                        vendorOnChange(data?.data?.vendor?.id);
-                        let newIds = getSelectedPoIDS();
-                        let existingIds = localStorage.getItem('selectedPoIds');
-                        if (existingIds) {
-                            existingIds = JSON.parse(existingIds);
-                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-                            localStorage.setItem('selectedPoIds', JSON.stringify(mergedIds));
-                        } else {
-                            localStorage.setItem('selectedPoIds', JSON.stringify(newIds));
-                        }
-
-                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
-                        $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
-                        $(".header_store_id").prop('disabled', true);
-                        
-                        let vendor = data?.data?.vendor || '';
-                        let finalDiscounts = data?.data?.finalDiscounts;
-                        let finalExpenses = data?.data?.finalExpenses;
-                        let subStoreCount = data?.data?.subStoreCount;
-                        let mrnHeader = data?.data?.mrnHeader;
-
-                        if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-                            $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data.pos);
-                        } else {
-                            $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        }
-                        initializeAutocomplete2(".comp_item_code");
-                        $("#poModal").modal('hide');
-                        // $(".poSelect").prop('disabled',true);
-                        
-                        $('.gate_entry_no').val(mrnHeader.gate_entry_no).prop('disabled', true);
-                        $('.gate_entry_date').val(mrnHeader.gate_entry_date).prop('disabled', true);
-                        $('.eway_bill_no').val(mrnHeader.eway_bill_no).prop('disabled', true);
-                        $('.consignment_no').val(mrnHeader.consignment_no).prop('disabled', true);
-                        $('.supplier_invoice_no').val(mrnHeader.supplier_invoice_no).prop('disabled', true);
-                        $('.supplier_invoice_date').val(mrnHeader.supplier_invoice_date).prop('disabled', true);
-                        $('.transporter_name').val(mrnHeader.transporter_name).prop('disabled', true);
-                        $('.vehicle_no').val(mrnHeader.vehicle_no).prop('disabled', true);
-                        $("select[name='currency_id']").prop('disabled', true);
-                        $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
-                        $(".editAddressBtn").addClass('d-none');
-                        let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
-                        
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                    </tr>`
-                            });
-
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
-
-                        if(finalExpenses.length) {
-                            let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                    </tr>`;
-                            });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        }
-                        setTimeout(() => {
-                            setTableCalculation();
-                        },500);
-                    }
-                    if(data.status == 422) {
-                        $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $(".shipping_detail").text('-');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
-            });
+            asnProcess(processData, 'mrn-process');
         });
 
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
@@ -1848,5 +1722,151 @@
             $("td.dynamic-colspan").attr("colspan", 11);
             $("td.dynamic-summary-colspan").attr("colspan", 10);
         })
+
+        // Clear MRN Process 
+        $(document).on('click', '.clearMrnFilter', (e) => {
+            $("#item_name_input_qt").val('');
+            $("#item_id_qt_val").val('');
+            $("#store").val('');
+            $("#store_id").val('');
+            $("#sub_store").val('');
+            $("#sub_store_id").val('');
+            $("#vendor_code_input_qt").val('');
+            $("#vendor_id_qt_val").val('');
+            $("#book_code_input_qt").val('');
+            $("#book_id_qt_val").val('');
+            $("#document_no_input_qt").val('');
+            $("#document_id_qt_val").val('');
+            $("#so_no_input_qt").val('');
+            $("#so_qt_val").val('');
+            $("#item_name_search").val('');
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
+
+        $(document).on("autocompletechange autocompleteselect", "#store", function (event, ui) {
+            let storeId = ui?.item?.id || '';
+            initializeAutocompleteQt("sub_store", "sub_store_id", "sub_store", "name", "");
+        });
+
+        // MRN Process
+        function asnProcess(asnData, moduleProcess) {
+            const current_row_count = $("tbody tr[id*='row_']").length;
+
+            const ids = JSON.stringify(asnData.ids);
+            const moduleTypes = JSON.stringify(asnData.module_type);
+            const moduleType = asnData.module_type?.[0] ?? 'mrn';
+            const processType = asnData.type;
+            let idsLength = ids.length;
+
+            const currencyId = $("[name='currency_id']").val();
+            const transactionDate = $("[name='document_date']").val();
+            const type = $("meta[name='route-type']").attr("content"); // blade->meta
+
+            const baseRoute = '{{ route("inspection.process.mrn-item") }}';
+            const actionUrl = baseRoute
+                .replace(':type', type)
+                + '?ids=' + encodeURIComponent(ids)
+                + '&moduleTypes=' + moduleTypes
+                + '&tableRowCount=' + tableRowCount
+                + '&currency_id=' + encodeURIComponent(currencyId)
+                + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&current_row_count=' + current_row_count;
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 200) return handleProcessError(data.message);
+
+                    const {
+                        vendor,
+                        pos,
+                        mrnHeader,
+                        moduleType
+                    } = data.data;
+
+                    const modelType = 'mrn';
+                    const order = data.data.mrnHeader;
+                    // console.log(vendor?.id, modelType, order.id);
+                    
+                    vendorOnChange(vendor?.id, modelType, order.id);
+
+                    const getSelectedIdsFn = getSelectedMrnIDS;
+                    const hiddenFieldName = 'mrn_item_ids';
+                    const localStorageKey = 'selectedMrnIds';
+                    
+                    const newIds = getSelectedIdsFn().ids;
+                    const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                    localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
+                    $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
+
+                    $(".module_type").val(modelType);
+                    
+                    $("#itemTable .mrntableselectexcel").append(pos);
+                    initializeAutocomplete2(".comp_item_code");
+                    $("#mrnModal").modal('hide');
+
+                    // UI Locks
+                    $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
+                    $("#vendor_name").prop('readonly', true);
+                    $(".editAddressBtn").addClass('d-none');
+
+                    // Supplier details
+                    
+                    if (moduleType === 'mrn' && mrnHeader) {
+                        $("[name='gate_entry_no']").val(mrnHeader.gate_entry_no);
+                        $("[name='gate_entry_date']").val(mrnHeader.gate_entry_date);
+                        $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
+                        $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
+                        $("[name='consignment_no']").val(mrnHeader.consignment_no);
+                        $("[name='eway_bill_no']").val(mrnHeader.eway_bill_no);
+                        $("[name='transporter_name']").val(mrnHeader.transporter_name);
+                        $("[name='vehicle_no']").val(mrnHeader.vehicle_no);
+                    } else {
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                    }
+
+                    setTimeout(() => {
+                        
+                        if(idsLength > 1)
+                        {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                if(tableRowCount>0)
+                                {
+                                    currentIndex = tableRowCount + 1;
+                                }
+                                let currentIndex = index + 1;
+                                // setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        }
+                        currentIndex = tableRowCount + 1;
+                        // setAttributesUIHelper(currentIndex,"#itemTable");
+                    }, 500);
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An unexpected error occurred while processing MRN.',
+                        icon: 'error'
+                    });
+                });
+        }
+
+        function handleProcessError(message = 'Invalid data') {
+            // console.log('message', message);
+            $(".editAddressBtn").removeClass('d-none');
+            $("#vendor_name").val('').prop('readonly', false);
+            $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $(".shipping_detail, .billing_detail").text('-');
+            $("#reference_from").removeClass('d-none');
+            $('.asn_process').prop('disabled', false);
+
+            Swal.fire({
+                title: 'Error!',
+                text: message,
+                icon: 'error'
+            });
+        }
     </script>
 @endsection

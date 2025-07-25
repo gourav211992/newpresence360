@@ -373,6 +373,7 @@ class ErpSaleInvoiceController extends Controller
             if (isset($order)) {
                 $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$order -> book ?-> service ?-> alias);
                 foreach ($order -> items as &$siItem) {
+
                     if (count($siItem -> bundles) > 0) {
                         $siItem -> disable_qty = true;
                     } else {
@@ -988,7 +989,7 @@ class ErpSaleInvoiceController extends Controller
                                 'uom_id' => isset($request -> uom_id[$itemKey]) ? $request -> uom_id[$itemKey] : null, //Need to change
                                 'uom_code' => isset($uom) ? $uom -> name : null,
                                 'order_qty' => isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0,
-                                'invoice_qty' => $invoiceQty,
+                                'invoice_qty' => 0,
                                 'dnote_qty' => $dnoteQty,
                                 'inventory_uom_id' => $item -> uom ?-> id,
                                 'inventory_uom_code' => $item -> uom ?-> name,
@@ -1680,7 +1681,7 @@ class ErpSaleInvoiceController extends Controller
                 $query = ErpInvoiceItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
                     ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
                         $subQuery->withDefaultGroupCompanyOrg()
-                            ->whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
+                            // ->whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
                             ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                             ->whereIn('book_id', $applicableBookIds)
                             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id)->where('store_id', $request->store_id))
@@ -1963,18 +1964,19 @@ class ErpSaleInvoiceController extends Controller
                     array_push($currentIds, $dec);
 
                 }
+                $itemIds = $request -> item_ids ?? [];
                }
                 $headers = $modelName::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
                     $sQuery -> with(['currency', 'payment_terms']);
-                }) -> with('items', function ($itemQuery) use($currentIds) {
+                }) -> withWhereHas('items', function ($itemQuery) use($itemIds) {
                     $itemQuery -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                    }]);
+                    }]) -> whereIn('id', $itemIds);
                 }) -> whereIn('id', $request -> order_id) -> get();
-                $headers = $headers->map(function ($header) use ($currentIds) {
-                    $header->items = $header->items->whereIn('id', $currentIds);
-                    return $header;
-                }) -> values();
+                // $headers = $headers->map(function ($header) use ($currentIds) {
+                //     $header->items = $header->items->whereIn('id', $currentIds);
+                //     return $header;
+                // }) -> values();
                 foreach ($headers as $header) {
                     if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
                         $saleOrderItems = $header -> sale_order_items();

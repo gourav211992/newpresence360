@@ -28,11 +28,17 @@ $headerAttribute = $bom->bomAttributes()->where('attribute_name',$attribute->att
       <input type="hidden" name="attributes[{{ $index + 1 }}][attr_group_id][{{$attribute->attribute_group_id}}][attr_group_id]" value="{{$attribute->attributeGroup->id}}">
       <select class="form-select" name="attributes[{{ $index + 1 }}][attr_group_id][{{$attribute->attribute_group_id}}][attr_name]">
          <option value="">Select</option>
-         @foreach ($attribute->attributeGroup->attributes as $value)
+         @if(isset($oldAttributes[$attribute->id]))
+            <option value="{{ $oldAttributes[$attribute->id]['value_id'] }}" selected>
+                  {{ $oldAttributes[$attribute->id]['value_label'] }}
+            </option>
+         @endif
+         @foreach ($attribute->attributes() as $value)
          @if(in_array($value->id, $selectedAttributes))
             <option value="{{ $value->id }}" selected>
                 {{ $value->value }}
             </option>
+            @break
          @endif
          @endforeach
       </select>

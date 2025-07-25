@@ -94,6 +94,12 @@ class ErpLorryReceipt extends Model
         return $this->belongsTo(ErpVehicleType::class);
     }
 
+
+    public function vehicle()
+{
+    return $this->hasOne(ErpVehicle::class, 'vehicle_type_id', 'vehicle_type_id');
+}
+
     public function consignor()
     {
         return $this->belongsTo(Customer::class, 'consignor_id');
@@ -112,7 +118,7 @@ class ErpLorryReceipt extends Model
    public function mediaAttachments()
     {
         return $this->hasMany(ErpLogisticLRMedia::class, 'model_id', 'id')
-                    ->where('model_name', 'ErpLorryReceipt'); // adjust if needed
+                    ->where('model_name', 'ErpLorryReceipt'); 
     }
 
        public function media()
