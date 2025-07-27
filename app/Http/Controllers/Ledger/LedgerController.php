@@ -588,7 +588,7 @@ class LedgerController extends Controller
     {
         $rev = Ledger::find($id)->revision_number;
         $user = Helper::getAuthenticatedUser();
-        if ($request->has('revisionNumber') && ((int)$request->revisionNumber!= Ledger::find($id)->revision_number))
+        if ($request->has('revisionNumber') && ((int) $request->revisionNumber != Ledger::find($id)->revision_number))
             $data = LedgerHistory::where('source_id', $id)->where('revision_number', $request->revisionNumber)->firstorFail();
         else
             $data = Ledger::find($id);
@@ -667,7 +667,7 @@ class LedgerController extends Controller
 
         $userType = Helper::userCheck();
         $buttons = Helper::actionButtonDisplayLedger($data->book_id, $data->document_status, $data->id, 1, $data->approval_level, $data->created_by ?? 0, $userType['type'], $revNo);
-        
+
 
         $docValue = 0;
         $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo);
@@ -831,29 +831,40 @@ class LedgerController extends Controller
 
         if ($request->actionType == "amendment") {
             Helper::documentAmendment($revisionData, $id);
-            Helper::approveDocument($update->book_id, $update->id, $update->revision_number, 'Amendment', $request->file('attachment') ?? null, $update->approval_level, 'amendment', 0, get_class($update));
+            Helper::approveDocument($update->book_id, $update->id, $update->revision_number, $request->amend_remarks, $request->file('amend_attachments'), $update->approval_level, 'amendment', 0, get_class($update));
             $update->revision_number = $update->revision_number + 1;
             $update->save();
-        }
-        $bookId = $update->book_id;
-        $docId = $update->id;
-        $remarks = $request->remarks;
-        $attachments = $request->file('attachment')??null;
-        $currentLevel = 1;
-        $revisionNumber = $update->revision_number ?? 0;
-        $actionType = 'submit';
-        $modelName = get_class($update);
-        $totalValue = 0;
+            $bookId = $update->book_id;
+            $docId = $update->id;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments') ?? null;
+            $currentLevel = 1;
+            $revisionNumber = $update->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($update);
+            $totalValue = 0;
+            Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+        } else {
+            $bookId = $update->book_id;
+            $docId = $update->id;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments') ?? null;
+            $currentLevel = 1;
+            $revisionNumber = $update->revision_number ?? 0;
+            $actionType = 'submit';
+            $modelName = get_class($update);
+            $totalValue = 0;
 
-        $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
-        // $document_status = $approveDocument['approvalStatus'];
-        // $update->document_status = $document_status;
-        // if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
-        //     $update->status = 0;
-        // } else {
-        //     $update->status = 1;
-        // }
-        // $update->save();
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+            $document_status = $approveDocument['approvalStatus'];
+            $update->document_status = $document_status;
+            if (!in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
+                $update->status = 0;
+            } else {
+                $update->status = 1;
+            }
+            $update->save();
+        }
 
         $updatedGroups = json_decode($request->updated_groups, true); // Decode as an associative array
 

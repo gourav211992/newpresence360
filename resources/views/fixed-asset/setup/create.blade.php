@@ -470,7 +470,7 @@
     <script type="text/javascript">
         $('#setup').on('submit', function(e) {
             e.preventDefault();
-        if($('#prefix-feedback').text().trim()!="" && $('#company').is(':checked')){
+        if($('#prefix-feedback').text().trim)!="" && $('#company').is(':checked')){
             showToast('error','Prefix already taken');
             return;
         }
@@ -521,7 +521,11 @@
         function handleLedgerChange(ledgerSelector, groupSelector, selectedGroupId = null) {
             $(ledgerSelector).change(function() {
                 const ledgerId = $(this).val();
-                const groupDropdown = $(groupSelector);
+                 const groupDropdown = $(groupSelector);
+                 if (ledgerId === '') {
+            groupDropdown.empty(); // Optional: Clear group dropdown if ledger is empty
+            return;
+        }
                 $.ajax({
                     url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
                     method: 'GET',
