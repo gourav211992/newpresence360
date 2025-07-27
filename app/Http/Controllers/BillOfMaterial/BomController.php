@@ -1780,7 +1780,6 @@ class BomController extends Controller
                 });
             })
             ->orderByDesc('id');
-
             $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::BOM_SERVICE_ALIAS);
             $datatables = DataTables::of($bomItems) ->addIndexColumn()
             ->editColumn('status', function ($row) use($orderType) {

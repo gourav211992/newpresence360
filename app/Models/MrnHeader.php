@@ -40,6 +40,7 @@ class MrnHeader extends Model
         'reference_number',
         'store_id',
         'sub_store_id',
+        'rejected_sub_store_id',
         'department_id',
         'mrn_type',
         'gate_entry_no',
@@ -192,6 +193,11 @@ class MrnHeader extends Model
     public function erpSubStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function rejectedSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'rejected_sub_store_id');
     }
 
     public function costCenters()

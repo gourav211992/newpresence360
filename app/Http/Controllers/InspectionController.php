@@ -1214,7 +1214,6 @@ class InspectionController extends Controller
     }
 
     // Get Address
-    // Get Address
     public function getAddress(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
@@ -1301,74 +1300,6 @@ class InspectionController extends Controller
                 'delivery_address' => $locationAddress,
             ]
         );
-    }
-
-    public function getAddressBac(Request $request)
-    {
-        $vendor = Vendor::withDefaultGroupCompanyOrg()
-        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
-        $currency = $vendor->currency;
-        $paymentTerm = $vendor->paymentTerms;
-        $shipping = $vendor->addresses()->where(function($query) {
-                        $query->where('type', 'shipping')->orWhere('type', 'both');
-                    })->latest()->first();
-        $billing = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
-
-        $vendorId = $vendor->id;
-        $documentDate = $request->document_date;
-        $billingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['billing', 'both'])-> get();
-        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['shipping','both'])-> get();
-        foreach ($billingAddresses as $billingAddress) {
-            $billingAddress -> value = $billingAddress -> id;
-            $billingAddress -> label = $billingAddress -> display_address;
-        }
-        foreach ($shippingAddresses as $shippingAddress) {
-            $shippingAddress -> value = $shippingAddress -> id;
-            $shippingAddress -> label = $shippingAddress -> display_address;
-        }
-        if (count($shippingAddresses) == 0) {
-            return response() -> json([
-                'data' => array(
-                    'error_message' => 'Shipping Address not found for '. $vendor ?-> company_name
-                )
-            ]);
-        }
-        if (count($billingAddresses) == 0) {
-            return response() -> json([
-                'data' => array(
-                    'error_message' => 'Billing Address not found for '. $vendor ?-> company_name
-                )
-            ]);
-        }
-        if (!isset($vendor->currency_id)) {
-            return response() -> json([
-                'data' => array(
-                    'error_message' => 'Currency not found for '. $vendor ?-> company_name
-                )
-            ]);
-        }
-        if (!isset($vendor->payment_terms_id)) {
-            return response() -> json([
-                'data' => array(
-                    'error_message' => 'Payment Terms not found for '. $vendor ?-> company_name
-                )
-            ]);
-        }
-        $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor->currency_id ?? 0, $documentDate ?? '');
-        $storeId = $request->store_id ?? null;
-        $store = ErpStore::find($storeId);
-        $deliveryAddress = $store?->address?->display_address;
-
-        $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $orgAddress = $organizationAddress?->display_address;
-        return response()->json(['data' => ['org_address' => $orgAddress,'delivery_address' => $deliveryAddress, 'vendor' =>$vendor, 'shipping' => $shipping,'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData], 'status' => 200, 'message' => 'fetched']);
     }
 
     # Get edit address modal
@@ -1762,8 +1693,7 @@ class InspectionController extends Controller
         return DataTables::of($query)
         ->addColumn('select_checkbox', fn($row) => app(\App\View\Components\Inspection\CheckBox::class, ['row' => $row])->resolveView()->render())
         ->addColumn('vendor', fn($row) => $row?->mrnHeader?->vendor?->company_name ?? 'NA')
-        ->addColumn('book_name', fn($row) => $row?->mrnHeader?->book?->book_name ?? '')
-        ->addColumn('doc_no', fn($row) => $row?->mrnHeader?->document_number ?? '')
+        ->addColumn('doc_no', fn($row) => ($row?->mrnHeader?->book?->book_code ?? 'NA') . ' - ' . ($row?->mrnHeader?->document_number ?? 'NA'))
         ->addColumn('doc_date', fn($row) => $row?->mrnHeader?->getFormattedDate('document_date') ?? '')
         ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? '')
         ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? '')
@@ -1779,7 +1709,6 @@ class InspectionController extends Controller
         ->addColumn('balance_qty', fn($row) => number_format(($row?->order_qty - $row?->inspection_qty),2) ?? '')
         ->addColumn('remark', fn($row) => $row?->remark ?? '')
         ->rawColumns([
-            'book_name',
             'doc_no',
             'doc_date',
             'item_code',

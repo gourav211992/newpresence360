@@ -9,6 +9,8 @@ use App\Models\MoBomMapping;
 use App\Models\PslipBomConsumption;
 use App\Traits\ProcessesComponentJson;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Validation\Validator;
 
 class PslipRequest extends FormRequest
 {
@@ -151,5 +153,14 @@ class PslipRequest extends FormRequest
             'item_accepted_qty.*.min'      => 'Accepted quantity must be at least 1.',
         ];
  
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        throw new HttpResponseException(response()->json([
+            'message' => 'Validation failed.',
+            'errors' => $validator->errors(),
+            'is_tab_exist' => true,
+        ], 422));
     }
 }

@@ -22,7 +22,7 @@
                 </div>
                 <div class="content-header-right text-end col-md-7 mb-2 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                        <a class="btn btn-primary btn-sm" href="{{ route('categories.create') }}">
+                        <a class="btn btn-primary btn-sm" href="{{ $currentUrlSegment == 'equipment-categories' ? route('equipment-categories.create') : route('categories.create') }}">
                             <i data-feather="plus-circle"></i> Add New
                         </a>
                     </div>
@@ -33,6 +33,7 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
+                                <input type="hidden" id="currentUrlSegment" value="{{ $currentUrlSegment ?? '' }}">
                                 <div class="table-responsive">
                                     <table class="datatables-basic table">
                                         <thead>
@@ -63,6 +64,7 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+        var currentUrlSegment = "{{ $currentUrlSegment }}";
         var dt_basic_table = $('.datatables-basic');
         function renderData(data) {
             return data ? data : 'N/A'; 
@@ -71,7 +73,14 @@
             var dt_basic = dt_basic_table.DataTable({
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('categories.index') }}",
+                ajax: {
+                    url: currentUrlSegment === 'equipment-categories' 
+                        ? "{{ route('equipment-categories.index') }}" 
+                        : "{{ route('categories.index') }}",
+                    data: function(d) {
+                        d.urlSegment = currentUrlSegment;
+                    }
+                },
                 columns: [
                     { data: 'DT_RowIndex', orderable: false, searchable: false },
                     {

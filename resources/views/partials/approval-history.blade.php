@@ -37,11 +37,11 @@
                       <span class="badge rounded-pill badge-light-danger">{{ucfirst($approvalHist->approval_type)}}</span>
                       @endif
                    </div>
-                   @if($approvalHist->approval_date)
-                   <h6>
-                      {{ $approvalHist->getFormattedDate('approval_date') }}
-                   </h6>
-                   @endif
+                    @if($approvalHist->created_at)
+                    <h6>
+                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                    </h6>
+                    @endif
                    @if($approvalHist->remarks)
                    <p>{!! $approvalHist->remarks !!}</p>
                    @endif

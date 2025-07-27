@@ -373,7 +373,10 @@ class ErpSaleInvoiceController extends Controller
             if (isset($order)) {
                 $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$order -> book ?-> service ?-> alias);
                 foreach ($order -> items as &$siItem) {
-
+                    if ($order -> book ?-> master_service ?-> type != ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                        $siItem -> invoice_qty = 0;
+                        $siItem -> save();
+                    }
                     if (count($siItem -> bundles) > 0) {
                         $siItem -> disable_qty = true;
                     } else {
@@ -1108,8 +1111,8 @@ class ErpSaleInvoiceController extends Controller
                                     } else {
                                         $qtItem -> dnote_qty = ($qtItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                         $soItem -> dnote_qty = ($soItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                        $qtItem -> invoice_qty = ($qtItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                        $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                        // $qtItem -> invoice_qty = ($qtItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                        // $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                     }
                                     $qtItem -> save();
                                     $soItem -> sale_order_id = $qtItem -> header ?-> id;

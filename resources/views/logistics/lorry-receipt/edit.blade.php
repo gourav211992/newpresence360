@@ -28,15 +28,18 @@
                     <a href="{{ route('logistics.lorry-receipt.index') }}" class="btn btn-secondary btn-sm" >
                         <i data-feather="arrow-left-circle"></i> Back
                         </a>
-                        @if(auth()->check() && $lr->created_by == optional(auth()->user())->auth_user_id)
+                        <!-- @if(auth()->check() && $lr->created_by == optional(auth()->user())->auth_user_id)
                             <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
                                     data-url="{{ route('logistics.lorry-receipt.destroy', $lr->id) }}" 
                                     data-redirect="{{ route('logistics.lorry-receipt.index') }}"
                                     data-message="Are you sure you want to delete this record?">
                                 <i data-feather="trash-2" class="me-50"></i> Delete
                             </button>
-                        @endif
-                           @if($lr->document_status == \App\Helpers\ConstantHelper::APPROVED || $lr->document_status == \App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                        @endif -->
+                         
+                           <!-- Save as Draft Button -->
+                     @if(!isset(request()->revisionNumber))
+                       @if($lr->document_status == \App\Helpers\ConstantHelper::APPROVED || $lr->document_status == \App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
                            
                           <a href="{{route('logistics.lorry-receipt.generate-pdf', $lr->id)}}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -45,8 +48,6 @@
                                 <rect x="6" y="14" width="12" height="8"></rect></svg> Print
                             </a>
                             @endif
-                           <!-- Save as Draft Button -->
-                     @if(!isset(request()->revisionNumber))
                         @if(isset($buttons) && is_array($buttons) && isset($lr))
                            @if($buttons['draft'] ?? false)
                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" onclick="setStatusAndSubmit('draft')">

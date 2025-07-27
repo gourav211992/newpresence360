@@ -1,8 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+ @php
+    $isEquipmentSegment = ($currentUrlSegment === 'equipment-categories');
+ @endphp
     <!-- BEGIN: Content-->
-    <form class="ajax-input-form" method="POST" action="{{ route('categories.store') }}" data-redirect="{{ url('/categories') }}">
+    <form class="ajax-input-form" method="POST" action="{{ route('categories.store') }}" data-redirect="{{ $currentUrlSegment === 'equipment-categories' ? route('equipment-categories.index') : route('categories.index') }}">
         @csrf
         <div class="app-content content">
             <div class="content-overlay"></div>
@@ -49,7 +52,7 @@
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select name="type" class="form-select" id="category-type">
-                                                            <option value="">Select Type</option>
+                                                             @if(!$isEquipmentSegment)<option value="">Select Type</option>  @endif
                                                             @foreach ($categoryTypes as $type)
                                                                 <option value="{{ $type }}" 
                                                                         {{ old('type') == $type ? 'selected' : '' }}>
@@ -185,7 +188,7 @@
             }
         });
     });
-
+   $('#category-type').trigger('change');
     // Parent category में change
     $('#parent_id').on('change', function() {
         var parentId = $(this).val();

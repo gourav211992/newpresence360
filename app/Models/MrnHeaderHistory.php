@@ -43,6 +43,7 @@ class MrnHeaderHistory extends Model
         'reference_number',
         'store_id',
         'sub_store_id',
+        'rejected_sub_store_id',
         'mrn_type',
         'gate_entry_no',
         'gate_entry_date',
@@ -147,6 +148,11 @@ class MrnHeaderHistory extends Model
     public function erpSubStore()
     {
         return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
+    }
+
+    public function rejectedSubStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'rejected_sub_store_id');
     }
 
     public function items()

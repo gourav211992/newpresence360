@@ -175,7 +175,6 @@ class ConstantHelper
         self::PRODUCT,
         self::CUSTOMER,
         self::VENDOR,
-        self::EQUIPMENT,
     ];
 
     const SHIPPING = 'shipping';
@@ -1072,12 +1071,12 @@ class ConstantHelper
         'hp'      => 'HP',
     ];
 
-    const MAINTENANCE = 'maintenance';
-    const ITEM = 'item';
+    const MAINTENANCE_INSPECTION_CHECKLIST_TYPE = 'maintenance';
+    const ITEM_INSPECTION_CHECKLIST_TYPE = 'item';
 
     const INSPECTION_CHECKLIST_TYPES = [
-        self::MAINTENANCE,
-        self::ITEM,
+        self::MAINTENANCE_INSPECTION_CHECKLIST_TYPE,
+        self::ITEM_INSPECTION_CHECKLIST_TYPE,
     ];
      // Excel Export Styling Constants
     const EXCEL_FONT_COLOR_BLACK = 'FF000000';

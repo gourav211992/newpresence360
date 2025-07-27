@@ -12,16 +12,16 @@
             <div class="content-header pocreate-sticky">
 				<div class="row">
                     @include('layouts.partials.breadcrumb-add-edit', [
-                        'title' => $typeName, 
-                        'menu' => 'Home', 
+                        'title' => $typeName,
+                        'menu' => 'Home',
                         'menu_url' => url('home'),
                         'sub_menu' => 'Add New'
                     ])
                     <input type = "hidden" value = "draft" name = "document_status" id = "document_status" />
 					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right" id = "buttonsDiv">   
+						<div class="form-group breadcrumb-right" id = "buttonsDiv">
                         @if(!isset(request() -> revisionNumber))
-                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
+                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             @if (isset($order))
                                 @if(($einvoice || !$enableEinvoice) && $buttons['print'])
                                 <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
@@ -52,16 +52,16 @@
                                             $options=['Tax Invoice'];
                                         }
                                         elseif($order->document_type == "si-dnote")
-                                        {   
+                                        {
                                             $options = [
                                                 'Tax Invoice',
                                                 'Delivery Note',
                                             ];
-                                        } 
+                                        }
                                         else if ($order->document_type == "dnote"){
                                             $options = ['Delivery Note'];
                                         }
-                                        
+
                                     @endphp
                                     @foreach ($options as $key)
                                         <li>
@@ -86,7 +86,7 @@
                                 <button id = "postButton" onclick = "onPostVoucherOpen();" type = "button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                                 @endif
                                 @if($buttons['voucher'])
-                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>                                
+                                <button type = "button" onclick = "onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
                                 @endif
                                 @if($buttons['revoke'])
                                     <button id = "revokeButton" type="button" onclick = "revokeDocument();" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i> Revoke</button>
@@ -99,8 +99,8 @@
                                 @endif
 
                             @else
-                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>  
-                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
+                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>
+                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button>
                             @endif
                             @endif
 						</div>
@@ -112,167 +112,167 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-								 <div class="card-body customernewsection-form" id ="main_so_form">  
+								 <div class="card-body customernewsection-form" id ="main_so_form">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
-                                                    </div> 
-                                                </div> 
-                                            </div> 
+                                                    </div>
+                                                </div>
+                                            </div>
                                             @if (isset($order) && isset($docStatusClass))
                                             <div class="col-md-6 text-sm-end">
                                                 <span class="badge rounded-pill badge-light-{{$order->display_status === 'Posted' ? 'info' : 'secondary'}} forminnerstatus">
                                                     <span class = "text-dark" >Status</span> : <span class="{{$docStatusClass}}">{{$order->display_status}}</span>
                                                 </span>
                                             </div>
-                                                
+
                                             @endif
-                                            <div class="col-md-8"> 
+                                            <div class="col-md-8">
                                                 <input type = "hidden" name = "type" id = "type_hidden_input"></input>
                                             @if (isset($order))
                                                 <input type = "hidden" value = "{{$order -> id}}" name = "sale_invoice_id"></input>
                                             @endif
 
                                                     <div class="row align-items-center mb-1 d-none">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" id = "service_id_input" {{isset($order) ? 'disabled' : ''}} onchange = "onSeriesChange(this);">
                                                                 @foreach ($services as $currentService)
-                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option> 
+                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option>
                                                                 @endforeach
                                                             </select>
                                                             <input type = "hidden" value = "yes" id = "invoice_to_follow_input" />
                                                         </div>
-                                                        
+
                                                     </div>
 
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Series <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" onChange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input">
                                                                 @foreach ($series as $currentSeries)
-                                                                    <option value = "{{$currentSeries -> id}}" {{isset($order) ? ($order -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option> 
+                                                                    <option value = "{{$currentSeries -> id}}" {{isset($order) ? ($order -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
-                                                        
+
                                                         <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($order) ? $order -> book_code : ''}}"></input>
                                                      </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="text" value = "{{isset($order) ? $order -> document_number : ''}}" class="form-control disable_on_edit" readonly id = "order_no_input" name = "document_no">
-                                                        </div> 
-                                                     </div>  
+                                                        </div>
+                                                     </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="date" value = "{{isset($order) ? $order -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();" min = "{{ $current_financial_year['start_date'] }}" max = "{{ $current_financial_year['end_date'] }}" required>
-                                                        </div> 
+                                                        </div>
                                                      </div>
 
                                                     <div class="row align-items-center mb-1 lease-hidden">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Location<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Location<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" name = "store_id" id = "store_id_input" oninput = "onHeaderLocationChange(this);">
                                                                 @foreach ($stores as $store)
-                                                                    <option display-address = "{{$store -> address ?-> display_address}}" value = "{{$store -> id}}" {{isset($order) ? ($order -> store_id == $store -> id ? 'selected' : '') : ''}} data-name = "{{$store -> store_name}}">{{$store -> store_name}}</option> 
+                                                                    <option display-address = "{{$store -> address ?-> display_address}}" value = "{{$store -> id}}" {{isset($order) ? ($order -> store_id == $store -> id ? 'selected' : '') : ''}} data-name = "{{$store -> store_name}}">{{$store -> store_name}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    
-                                                    
+
+
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Reference No </label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Reference No </label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="text" value = "{{isset($order) ? $order -> reference_number : ''}}" name = "reference_no" class="form-control" id = "reference_no_input">
-                                                        </div> 
+                                                        </div>
                                                      </div>
 
                                                      @if($einvoice && $enableEinvoice)
                                                             <div class="row align-items-center lease-hidden">
-                                                                <div class="col-md-3"> 
-                                                                    <label class="form-label">E-Invoice IRN</label>  
-                                                                </div>  
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label">E-Invoice IRN</label>
+                                                                </div>
 
-                                                                <div class="col-md-5">  
+                                                                <div class="col-md-5">
                                                                 <label class="form-label">{{ $einvoice->irn_number }}</label>
                                                                 </div>
                                                             </div>
                                                             <div class="row align-items-center mb-1 lease-hidden">
-                                                                <div class="col-md-3"> 
-                                                                    <label class="form-label">Acknowledgement No.</label>  
-                                                                </div>  
+                                                                <div class="col-md-3">
+                                                                    <label class="form-label">Acknowledgement No.</label>
+                                                                </div>
 
-                                                                <div class="col-md-5">  
+                                                                <div class="col-md-5">
                                                                 <label class="form-label">{{ $einvoice->ack_no }}</label>
                                                                 </div>
                                                             </div>
                                                         @endif
 
-                                                    <div class="row align-items-center mb-1" id = "selection_section" style = "display:none;"> 
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Reference From</label>  
+                                                    <div class="row align-items-center mb-1" id = "selection_section" style = "display:none;">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Reference From</label>
                                                         </div>
-                                                            <div class="col-md-2 action-button" id = "sales_order_selection"> 
+                                                            <div class="col-md-2 action-button" id = "sales_order_selection">
                                                                 <button onclick = "openHeaderPullModal();" disabled type = "button" id = "select_order_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Sales Order
                                                             </button>
                                                         </div>
-                                                            <div class="col-md-2 action-button" id = "pl_selection"> 
+                                                            <div class="col-md-2 action-button" id = "pl_selection">
                                                                 <button onclick = "openHeaderPullModal('pl');" disabled type = "button" id = "pl_button" data-bs-toggle="modal" data-bs-target="#pullPopUpPickList" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Pick List
                                                             </button>
                                                             </div>
-                                                            <div class="col-md-2 action-button" id = "packing_list_selection"> 
+                                                            <div class="col-md-2 action-button" id = "packing_list_selection">
                                                                 <button onclick = "openHeaderPullModal('plist');" disabled type = "button" id = "pack_list_button" data-bs-toggle="modal" data-bs-target="#pullPopUpPlist" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Packing List
                                                             </button>
                                                             </div>
-                                                            <div class="col-md-2 action-button" id = "sales_invoice_selection"> 
+                                                            <div class="col-md-2 action-button" id = "sales_invoice_selection">
                                                                 <button onclick = "openHeaderPullModal('inv');" disabled type = "button" id = "select_si_button" data-bs-toggle="modal" data-bs-target="#pullPopUp" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                  Sales Invoice
                                                             </button>
                                                             </div>
-                                                            <div class="col-md-2 action-button" id = "delivery_note_selection"> 
+                                                            <div class="col-md-2 action-button" id = "delivery_note_selection">
                                                                 <button onclick = "openHeaderPullModal('dnote');" disabled type = "button" id = "select_dn_button" data-bs-toggle="modal" data-bs-target="#pullPopUpDn" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                  Delivery Note
                                                             </button>
                                                             </div>
-                                                            <div class="col-md-2 action-button" id = "land_lease_selection"> 
+                                                            <div class="col-md-2 action-button" id = "land_lease_selection">
                                                                 <button onclick = "openHeaderPullModal('land-lease');" disabled type = "button" id = "select_lease_button" data-bs-toggle="modal" data-bs-target="#pullPopUp2" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i>
                                                                 Land Lease
                                                             </button>
                                                             </div>
-                                                        
+
                                             </div>
                                     </div>
-                                            
-                                            
+
+
                                                     @if(isset($order) && ($order -> document_status !== "draft"))
                             @if((isset($approvalHistory) && count($approvalHistory) > 0) || isset($revision_number))
                            <div class="col-md-4">
@@ -293,7 +293,7 @@
                                         Rev. No.{{request() -> revisionNumber}}
                                         </strong>
                                        @endif
-                                       
+
                                        @endif
                                    </h5>
                                    <ul class="timeline ms-50 newdashtimline ">
@@ -317,10 +317,10 @@
                                                    <span class="badge rounded-pill badge-light-danger">{{ucfirst($approvalHist->approval_type)}}</span>
                                                    @endif
                                                </div>
-                                                @if($approvalHist->approval_date)
-                                               <h6>
-                                                {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                </h6>
+                                                @if($approvalHist->created_at)
+                                                    <h6>
+                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                                                    </h6>
                                                 @endif
                                                 @if($approvalHist->remarks)
                                                 <p>{!! $approvalHist->remarks !!}</p>
@@ -333,30 +333,30 @@
                                            </div>
                                         </li>
                                        @endforeach
-                                       
+
                                    </ul>
                                </div>
                            </div>
                            @endif
                            @endif
-                                        </div> 
+                                        </div>
                                 </div>
-                                
+
                             </div>
                             <div class="row">
                                 <div class="col-md-12">
                                         <div class="card quation-card">
                                             <div class="card-header newheader">
                                                 <div>
-                                                    <h4 class="card-title">Customer Details</h4> 
+                                                    <h4 class="card-title">Customer Details</h4>
                                                 </div>
                                             </div>
-                                            <div class="card-body"> 
+                                            <div class="card-body">
                                                 <div class="row">
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Customer <span class="text-danger">*</span></label> 
+                                                            <label class="form-label">Customer <span class="text-danger">*</span></label>
                                                         <input type="text" id = "customer_code_input" disabled placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input disable_on_edit" autocomplete="off" value = "{{isset($order) ? $order -> customer_code : ''}}" onblur = "onChangeCustomer('customer_code_input', true)" >
                                                         <input type = "hidden" name = "customer_id" id = "customer_id_input" value = "{{isset($order) ? $order -> customer_id : ''}}"></input>
                                                         <input type = "hidden" name = "customer_code" id = "customer_code_input_hidden" value = "{{isset($order) ? $order -> customer_code : ''}}"></input>
@@ -366,29 +366,29 @@
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Phone No.<span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off" id = "customer_phone_no_input" name = "customer_phone_no" value = "{{isset($order) ? $order -> customer_phone_no : ''}}" /> 
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off" id = "customer_phone_no_input" name = "customer_phone_no" value = "{{isset($order) ? $order -> customer_phone_no : ''}}" />
                                                         </div>
-                                                    </div> 
+                                                    </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Email<span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_email_input" name = "customer_email" value = "{{isset($order) ? $order -> customer_email : ''}}" /> 
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_email_input" name = "customer_email" value = "{{isset($order) ? $order -> customer_email : ''}}" />
                                                         </div>
-                                                    </div> 
+                                                    </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Consignee Name<span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" /> 
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" />
                                                         </div>
-                                                    </div> 
+                                                    </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">GSTIN No.</label>
-                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_gstin_input" name = "customer_gstin" value = "{{isset($order) ? $order -> customer_gstin : ''}}" /> 
+                                                            <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "customer_gstin_input" name = "customer_gstin" value = "{{isset($order) ? $order -> customer_gstin : ''}}" />
                                                         </div>
                                                     </div>
-                                                    
-                                                    
+
+
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
@@ -397,14 +397,14 @@
                                                                 @if (isset($order) && isset($order -> customer))
                                                                     <option value = "{{$order -> customer -> currency_id}}">{{$order -> customer ?-> currency ?-> name}}</option>
                                                                 @else
-                                                                    <option value = "">Select</option> 
+                                                                    <option value = "">Select</option>
                                                                 @endif
-                                                            </select> 
+                                                            </select>
                                                         </div>
                                                         <input type = "hidden" name = "currency_code" value = "{{isset($order) ? $order -> currency_code : ''}}" id = "currency_code_input"></input>
                                                     </div>
 
-                                                    
+
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
@@ -412,26 +412,26 @@
                                                                 @if (isset($order) && isset($order -> customer))
                                                                     <option value = "{{$order -> customer -> payment_terms_id}}">{{$order -> customer ?-> payment_terms ?-> name}}</option>
                                                                 @else
-                                                                    <option value = "">Select</option> 
+                                                                    <option value = "">Select</option>
                                                                 @endif
-                                                            </select>  
+                                                            </select>
                                                         </div>
                                                         <input type = "hidden" name = "payment_terms_code" value = "{{isset($order) ? $order -> payment_terms_code : ''}}" id = "payment_terms_code_input"></input>
                                                     </div>
-											    </div>                                                  
-                                                    
+											    </div>
+
                                                  </div>
 
- 
-                                                <div class="row"> 
+
+                                                <div class="row">
                                                     <div class="col-md-4">
                                                         <div class="customer-billing-section h-100">
                                                             <p>Billing Address&nbsp;<span class="text-danger">*</span>
-                                                            @if (!isset($order)) 
+                                                            @if (!isset($order))
                                                             <a href="javascript:;" id="billAddressEditBtn" class="float-end"><i data-feather='edit-3'></i></a>
                                                             @endif
                                                         </p>
-                                                            <div class="bilnbody">  
+                                                            <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_billing_address">{{isset($order) ? $order -> billing_address_details ?-> display_address : ''}}</div>
                                                                     <input type = "hidden" id = "current_billing_address_id"></input>
@@ -446,13 +446,13 @@
                                                             </div>
 
                                                         </div>
-                                                    </div> 
+                                                    </div>
                                                     <div class="col-md-4">
                                                         <div class="customer-billing-section">
                                                             <p>Shipping Address&nbsp;<span class="text-danger">*</span><span id = "same_checkbox_as_billing" style = "margin-left:120px; font-weight:100;"></span>
                                                                 <a href="javascript:;" id="shipAddressEditBtn" data-bs-toggle="modal" class="float-end"><i data-feather='edit-3'></i></a>
                                                             </p>
-                                                            <div class="bilnbody"> 
+                                                            <div class="bilnbody">
 
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_shipping_address">{{isset($order) ? $order -> shipping_address_details ?-> display_address : ''}}</div>
@@ -466,7 +466,7 @@
                                                                     <input type="hidden" name="new_shipping_type" id="new_shipping_type" value="">
                                                                     <input type="hidden" name="new_shipping_pincode" id="new_shipping_pincode" value="">
                                                                     <input type="hidden" name="new_shipping_phone" id="new_shipping_phone" value="">
-                                                                </div> 
+                                                                </div>
                                                             </div>
                                                         </div>
                                                </div>
@@ -475,37 +475,37 @@
                                                         <div class="customer-billing-section">
                                                             <p>Pickup Address&nbsp;<span class="text-danger">*</span>
                                                         </p>
-                                                            <div class="bilnbody"> 
+                                                            <div class="bilnbody">
 
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_pickup_address">{{isset($order) ? $order -> location_address_details ?-> display_address : ''}}</div>
-                                                                </div> 
+                                                                </div>
                                                             </div>
                                                     </div>
 
 
-                                                </div>                                                                                                
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>    
+                                    </div>
 
                                     <div class="col-md-12" id = "general_information_tab">
 									<div class="card quation-card">
 										<div class="card-header newheader">
 											<div>
-												<h4 class="card-title">General Information</h4> 
+												<h4 class="card-title">General Information</h4>
 											</div>
 										</div>
-										<div class="card-body"> 
-											<div class="row"> 
-												 
+										<div class="card-body">
+											<div class="row">
+
 												<div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Transporter Name<span class="text-danger">*</span></label>
-                                                            <input type="text" class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "transporter_name_input" name = "transporter_name" value = "{{isset($order) ? $order -> transporter_name : ''}}" /> 
+                                                            <input type="text" class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "transporter_name_input" name = "transporter_name" value = "{{isset($order) ? $order -> transporter_name : ''}}" />
                                                         </div>
-                                                </div> 
-                                                
+                                                </div>
+
                                                 <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">Transport Mode<span class="text-danger">*</span></label>
@@ -515,9 +515,9 @@
                                                                         {{ucfirst($transportationMode->description)}}
                                                                     </option>
                                                                 @endforeach
-                                                            </select> 
+                                                            </select>
                                                         </div>
-                                                </div> 
+                                                </div>
 
                                                 <div class="col-md-3">
                                                     <div class="mb-1">
@@ -529,21 +529,21 @@
                                                                 data-bs-html="true"
                                                                 title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
-                                                        <input type="text" class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "vehicle_no_input" name = "vehicle_no" value = "{{isset($order) ? $order -> vehicle_no : ''}}" /> 
+                                                        <input type="text" class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "vehicle_no_input" name = "vehicle_no" value = "{{isset($order) ? $order -> vehicle_no : ''}}" />
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="col-md-3">
                                                         <div class="mb-1">
                                                             <label class="form-label">E-Way Bill No.</label>
-                                                            <input type="text" class="form-control" id = "eway_bill_no_input" disabled value = "{{isset($order) && isset($einvoice) ? $einvoice -> ewb_no : ''}}" /> 
+                                                            <input type="text" class="form-control" id = "eway_bill_no_input" disabled value = "{{isset($order) && isset($einvoice) ? $einvoice -> ewb_no : ''}}" />
                                                         </div>
                                                 </div>
 
-                                                
+
 										</div>
 									</div>
-								
+
 								</div>
                                 <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
                                     @if (isset($dynamicFieldsUi))
@@ -551,13 +551,13 @@
                                     @endif
                                 </div>
                             </div>
-                            
+
                             <div class="card">
-								 <div class="card-body customernewsection-form"> 
+								 <div class="card-body customernewsection-form">
                                             <div class="border-bottom mb-2 pb-25">
                                                      <div class="row">
                                                         <div class="col-md-6">
-                                                            <div class="newheader "> 
+                                                            <div class="newheader ">
                                                                 <h4 class="card-title text-theme">Item Detail</h4>
                                                                 <p class="card-text">Fill the details</p>
                                                             </div>
@@ -567,23 +567,23 @@
                                                                 <i data-feather="x-circle"></i> Delete</a>
                                                             <a href="#" onclick = "addItemRow();" id = "add_item_section" style = "display:none;" class="btn btn-sm btn-outline-primary">
                                                                 <i data-feather="plus"></i> Add Item</a>
-                                                    </div> 
+                                                    </div>
                                              </div>
 
-											<div class="row"> 
-                                                
+											<div class="row">
+
                                                  <div class="col-md-12">
-                                                     
-                                                     
+
+
                                                  <div class="table-responsive pomrnheadtffotsticky">
-                                                         <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                                         <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                             <thead>
                                                                  <tr>
                                                                     <th class="customernewsection-form">
                                                                         <div class="form-check form-check-primary custom-checkbox">
                                                                             <input type="checkbox" class="form-check-input" id="select_all_items_checkbox" oninput = "checkOrRecheckAllItems(this);">
                                                                             <label class="form-check-label" for="select_all_items_checkbox" ></label>
-                                                                        </div> 
+                                                                        </div>
                                                                     </th>
                                                                     <th width="150px">Item Code</th>
                                                                     <th width="240px">Item Name</th>
@@ -592,9 +592,9 @@
                                                                     <th width = "150px">Store</th>
                                                                     <th class = "numeric-alignment">Qty</th>
                                                                     <th class = "numeric-alignment">Rate</th>
-                                                                    <th class = "numeric-alignment">Value</th> 
+                                                                    <th class = "numeric-alignment">Value</th>
                                                                     <th class = "numeric-alignment">Discount</th>
-                                                                    <th class = "numeric-alignment" width = "150px">Total</th> 
+                                                                    <th class = "numeric-alignment" width = "150px">Total</th>
                                                                     <th width="50px">Action</th>
                                                                   </tr>
                                                                 </thead>
@@ -610,9 +610,9 @@
                                                                             <div class="form-check form-check-primary custom-checkbox">
                                                                                 <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_{{$orderItemIndex}}" del-index = "{{$orderItemIndex}}">
                                                                                 <label class="form-check-label" for="item_checkbox_{{$orderItemIndex}}"></label>
-                                                                            </div> 
+                                                                            </div>
                                                                         </td>
-                                                                         <td class="poprod-decpt"> 
+                                                                         <td class="poprod-decpt">
 
                                                                          @if (isset($orderItem -> sale_order_id))
 
@@ -623,11 +623,11 @@
                                                                             <input type = "hidden" id = "qt_document_date_{{$orderItemIndex}}" value = "{{$orderItem -> sale_order ?-> document_date}}" />
 
                                                                             <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> sale_order ?-> document_number}}" />
-                                                                            
-                                                                            
+
+
                                                                             <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> so_item_id}}" name = "quotation_item_ids[]"/>
-                                                                            
-                                                                            <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem ?-> header ?-> id}}" name = "quotation_item_ids_header[]"/>                                                                            
+
+                                                                            <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem ?-> header ?-> id}}" name = "quotation_item_ids_header[]"/>
                                                                         @endif
 
                                                                         @if (isset($orderItem -> land_lease_id) || isset($orderItem -> lease_schedule_id))
@@ -651,37 +651,37 @@
                                                                         <input type = "hidden" value = "{{$orderItem -> lease ?-> repayment_period_type}}" id = "land_lease_repayment_period_{{$orderItemIndex}}" />
                                                                         <input type = "hidden" id = "land_lease_land_parcel_{{$orderItemIndex}}" value = "{{$orderItem ?-> lease ?-> plots() -> first() ?-> land ?-> name}}" />
                                                                         <input type = "hidden" id = "land_lease_land_plots_{{$orderItemIndex}}" value = "{{$orderItem ?-> lease ?-> plots_display()}}"/>
-                                                                            
+
                                                                         @endif
 
-                                                                        
-                                                                            
+
+
                                                                             <input type="text" id = "items_dropdown_{{$orderItemIndex}}" name="item_code[{{$orderItemIndex}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input {{$orderItem -> is_editable ? '' : 'restrict'}}" autocomplete="off" data-name="{{$orderItem -> item ?-> item_name}}" data-code="{{$orderItem -> item ?-> item_code}}" data-id="{{$orderItem -> item ?-> id}}" hsn_code = "{{$orderItem -> item ?-> hsn ?-> code}}" item-name = "{{$orderItem -> item ?-> item_name}}" specs = "{{$orderItem -> item ?-> specifications}}" attribute-array = "{{$orderItem -> item_attributes_array()}}"  value = "{{$orderItem -> item ?-> item_code}}" {{$orderItem -> is_editable ? '' : 'readonly'}} item-location = "[]">
                                                                             <input type = "hidden" name = "item_id[]" id = "items_dropdown_{{$orderItemIndex}}_value" value = "{{$orderItem -> item_id}}"></input>
                                                                         </td>
                                                                         <td class="poprod-decpt">
                                                                             <input type="text" id = "items_name_{{$orderItemIndex}}" class="form-control mw-100"   value = "{{$orderItem -> item ?-> item_name}}" name = "item_name[{{$orderItemIndex}}]" readonly>
                                                                         </td>
-                                                                        <td class="poprod-decpt" id='attribute_section_{{$orderItemIndex}}'> 
+                                                                        <td class="poprod-decpt" id='attribute_section_{{$orderItemIndex}}'>
                                                                             <button id = "attribute_button_{{$orderItemIndex}}" {{count($orderItem -> item_attributes_array()) > 0 ? '' : 'disabled'}} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_{{$orderItemIndex}}', '{{$orderItemIndex}}', {{ json_encode(!$orderItem->is_editable) }});" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                                                                             <input type = "hidden" name = "attribute_value_{{$orderItemIndex}}" />
 
                                                                          </td>
                                                                         <td>
                                                                             <select class="form-select" name = "uom_id[]" id = "uom_dropdown_{{$orderItemIndex}}" onchange = "getStoresData({{$orderItemIndex}}, '', true)">
-                                                                                
-                                                                            </select> 
+
+                                                                            </select>
                                                                         </td>
                                                                         <td class = "sub_store_dependent">
                                                                         <select class="form-select" style = "min-width:100%;" name = "item_sub_store[{{$orderItemIndex}}]" id = "item_sub_store_{{$orderItemIndex}}" onchange = "getStoresData({{$orderItemIndex}}, '', true);">
                                                                             @foreach ($subStores as $subStore)
-                                                                                <option value = "{{$subStore -> id}}" {{$orderItem -> sub_store_id === $subStore -> id ? 'selected' : ''}}>{{$subStore -> name}}</option> 
+                                                                                <option value = "{{$subStore -> id}}" {{$orderItem -> sub_store_id === $subStore -> id ? 'selected' : ''}}>{{$subStore -> name}}</option>
                                                                             @endforeach
-                                                                        </select> 
+                                                                        </select>
                                                                         </td>
                                                                         <input type = "hidden" value = "{{$orderItem -> store_id}}" name = "item_store[{{$orderItemIndex}}]" />
                                                                         <td><input {{$orderItem -> disable_qty ? 'readonly' : ''}} type="text" id = "item_qty_{{$orderItemIndex}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> order_qty}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{($orderItem -> max_attribute)}}" /></td>
-                                                                       <td><input type="text" id = "item_rate_{{$orderItemIndex}}" name = "item_rate[]" {{$docType == 'dnote' ? 'readonly' : ''}} oninput = "changeItemRate(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> rate}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td> 
+                                                                       <td><input type="text" id = "item_rate_{{$orderItemIndex}}" name = "item_rate[]" {{$docType == 'dnote' ? 'readonly' : ''}} oninput = "changeItemRate(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> rate}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
                                                                         <td><input type="text" id = "item_value_{{$orderItemIndex}}" disabled class="form-control mw-100 text-end item_values_input" value = "{{$orderItem -> order_qty * $orderItem -> rate}}" /></td>
                                                                         <input type = "hidden" id = "header_discount_{{$orderItemIndex}}" value = "{{$orderItem -> header_discount_amount}}" ></input>
                                                                         <input type = "hidden" id = "header_expense_{{$orderItemIndex}}" value = "{{$orderItem -> header_expense_amount}}"></input>
@@ -694,7 +694,7 @@
                                                                             </div>
                                                                         </td>
                                                                                 <input type="hidden" id = "item_tax_{{$orderItemIndex}}" value = "{{$orderItem -> tax_amount}}" class="form-control mw-100 text-end item_taxes_input" style="width: 70px" />
-                                                                        
+
                                                                         <td><input type="text" id = "value_after_discount_{{$orderItemIndex}}" value = "{{($orderItem -> order_qty * $orderItem -> rate) - $orderItem -> item_discount_amount}}" disabled class="form-control mw-100 text-end item_val_after_discounts_input" /></td>
                                                                         <input type = "hidden" id = "value_after_header_discount_{{$orderItemIndex}}" class = "item_val_after_header_discounts_input" value = "{{($orderItem -> order_qty * $orderItem -> rate) - $orderItem -> item_discount_amount - $orderItem -> header_discount_amount}}" ></input>
                                                                         <input type="hidden" id = "item_total_{{$orderItemIndex}}" value = "{{($orderItem -> order_qty * $orderItem -> rate) - $orderItem -> item_discount_amount - $orderItem -> header_discount_amount + ($orderItem -> tax_amount)}}" disabled class="form-control mw-100 text-end item_totals_input" />
@@ -717,10 +717,10 @@
                                                                 @else
                                                                 @endif
                                                              </tbody>
-                                                             
+
                                                              <tfoot>
-                                                                 
-                                                                 <tr class="totalsubheadpodetail"> 
+
+                                                                 <tr class="totalsubheadpodetail">
                                                                     <td colspan="8" id = "item_row_colspan"></td>
                                                                     <td class="text-end" id = "all_items_total_value">00.00</td>
                                                                     <td class="text-end" id = "all_items_total_discount">00.00</td>
@@ -728,7 +728,7 @@
                                                                     <td class="text-end all_tems_total_common" id = "all_items_total_total">00.00</td>
                                                                     <td></td>
                                                                 </tr>
-                                                                 
+
                                                                  <tr valign="top">
                                                                     <td id = "item_details_td" colspan="8" rowspan="10">
                                                                         <table class="table border">
@@ -736,42 +736,42 @@
                                                                                 <td class="p-0">
                                                                                     <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
                                                                                 </td>
-                                                                            </tr> 
-                                                                            <tr id = "current_item_cust_details_header"> 
+                                                                            </tr>
+                                                                            <tr id = "current_item_cust_details_header">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_cust_details">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr>  
-                                                                            <tr> 
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_cat_hsn">
 
                                                                                     </div>
-                                                                                </td> 
+                                                                                </td>
                                                                             </tr>
-                                                                            <tr id = "current_item_specs_row"> 
+                                                                            <tr id = "current_item_specs_row">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_specs">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
-                                                                            <tr id = "current_item_attribute_row"> 
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_attribute_row">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_attributes">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
-                                                                            <tr id = "current_item_stocks_row"> 
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_stocks_row">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_stocks">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
+                                                                                </td>
+                                                                            </tr>
 
                                                                             <tr id = "current_item_lot_no_row">
                                                                                 <td class="poprod-decpt">
@@ -780,38 +780,38 @@
                                                                                     </div>
                                                                                  </td>
                                                                             </tr>
-                                                                            
-                                                                            <tr id = "current_item_inventory"> 
+
+                                                                            <tr id = "current_item_inventory">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_inventory_details">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
-                                                                            <tr id = "current_item_so_no"> 
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr id = "current_item_so_no">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_so_no_details">
 
                                                                                     </div>
-                                                                                </td> 
-                                                                            </tr> 
+                                                                                </td>
+                                                                            </tr>
 
-                                                                            
 
-                                                                            <tr id = "current_item_qt_no_row"> 
+
+                                                                            <tr id = "current_item_qt_no_row">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_qt_no">
 
                                                                                     </div>
-                                                                                </td> 
+                                                                                </td>
                                                                             </tr>
 
-                                                                            <tr id = "current_item_store_location_row"> 
+                                                                            <tr id = "current_item_store_location_row">
                                                                                 <td class="poprod-decpt">
                                                                                     <div id ="current_item_store_location">
 
                                                                                     </div>
-                                                                                </td> 
+                                                                                </td>
                                                                             </tr>
 
                                                                             <tr id = "current_item_description_row">
@@ -827,7 +827,7 @@
                                                                                     </div>
                                                                                  </td>
                                                                             </tr>
-                                                                        </table> 
+                                                                        </table>
                                                                     </td>
 
                                                                     <td colspan="4" id = "invoice_summary_td">
@@ -839,32 +839,32 @@
                                                                                             <button type = "button" id = "taxes_button" data-bs-toggle="modal" data-bs-target="#orderTaxes" class="btn p-25 btn-sm btn-outline-secondary" onclick = "onOrderTaxClick();" >Taxes</button>
                                                                                             <button type = "button" id = "order_discount_button" data-bs-toggle="modal" data-bs-target="#discountOrder" class="btn p-25 btn-sm btn-outline-secondary" onclick = "onOrderDiscountModalOpen();"><i data-feather="plus"></i> Discount</button>
                                                                                             <button type = "button" id = "order_expense_button" data-bs-toggle="modal" data-bs-target="#expenses" class="btn p-25 btn-sm btn-outline-secondary" onclick = "onOrderExpenseModalOpen();"><i data-feather="plus"></i> Expenses</button>
-                                                                                        </div>                                   
+                                                                                        </div>
                                                                                     </h6>
                                                                                 </td>
                                                                             </tr>
-                                                                            <tr class="totalsubheadpodetail"> 
-                                                                                <td width="55%"><strong>Item Total</strong></td>  
+                                                                            <tr class="totalsubheadpodetail">
+                                                                                <td width="55%"><strong>Item Total</strong></td>
                                                                                 <td class="text-end" id = "all_items_total_value_summary">00.00</td>
                                                                             </tr>
-                                                                            <tr class=""> 
-                                                                                <td width="55%">Item Discount</td>  
+                                                                            <tr class="">
+                                                                                <td width="55%">Item Discount</td>
                                                                                 <td class="text-end" id = "all_items_total_discount_summary">00.00</td>
                                                                             </tr>
-                                                                            <tr class="totalsubheadpodetail"> 
-                                                                                <td width="55%"><strong>Taxable Value</strong></td>  
+                                                                            <tr class="totalsubheadpodetail">
+                                                                                <td width="55%"><strong>Taxable Value</strong></td>
                                                                                 <td class="text-end" id = "all_items_total_total_summary">00.00</td>
                                                                             </tr>
-                                                                            <tr class=""> 
-                                                                                <td width="55%">Taxes</td>  
+                                                                            <tr class="">
+                                                                                <td width="55%">Taxes</td>
                                                                                 <td class="text-end" id = "all_items_total_tax_summary">00.00</td>
                                                                             </tr>
-                                                                            <tr class="totalsubheadpodetail"> 
-                                                                                <td width="55%"><strong>Total After Tax</strong></td>  
+                                                                            <tr class="totalsubheadpodetail">
+                                                                                <td width="55%"><strong>Total After Tax</strong></td>
                                                                                 <td class="text-end" id = "all_items_total_after_tax_summary">00.00</td>
                                                                             </tr>
-                                                                            <tr class=""> 
-                                                                                <td width="55%">Expenses</td>  
+                                                                            <tr class="">
+                                                                                <td width="55%">Expenses</td>
                                                                                 <td class="text-end" id = "all_items_total_expenses_summary">00.00</td>
                                                                             </tr>
                                                                             <input type = "hidden" name = "sub_total" value = "0.00"></input>
@@ -877,49 +877,49 @@
                                                                                 <td class="text-end">1,000.00</td>
                                                                             </tr> -->
                                                                             <!-- <tr class="totalsubheadpodetail">
-                                                                                <td><strong>Taxable Value</strong></td>  
+                                                                                <td><strong>Taxable Value</strong></td>
                                                                                 <td class="text-end">38,000.00</td>
                                                                             </tr>
-                                                                            <tr> 
-                                                                                <td><strong>6% SGST</strong></td>  
+                                                                            <tr>
+                                                                                <td><strong>6% SGST</strong></td>
                                                                                 <td class="text-end">2,280.00</td>
                                                                             </tr>
                                                                             <tr>
-                                                                                <td><strong>6% CGST</strong></td>  
+                                                                                <td><strong>6% CGST</strong></td>
                                                                                 <td class="text-end">2,280.00</td>
                                                                             </tr> -->
 
-                                                                            <!-- <tr class="totalsubheadpodetail"> 
-                                                                                <td><strong>Total After Tax</strong></td>  
+                                                                            <!-- <tr class="totalsubheadpodetail">
+                                                                                <td><strong>Total After Tax</strong></td>
                                                                                 <td class="text-end">42,560.00</td>
                                                                             </tr> -->
 
-                                                                            <!-- <tr> 
-                                                                                <td><strong>Parking Exp.</strong></td>  
+                                                                            <!-- <tr>
+                                                                                <td><strong>Parking Exp.</strong></td>
                                                                                 <td class="text-end">240.00</td>
                                                                             </tr> -->
                                                                             <tr class="voucher-tab-foot">
-                                                                                <td class="text-primary"><strong>Grand Total</strong></td>  
+                                                                                <td class="text-primary"><strong>Grand Total</strong></td>
                                                                                 <td>
-                                                                                    <div class="quottotal-bg justify-content-end"> 
+                                                                                    <div class="quottotal-bg justify-content-end">
                                                                                         <h5 id = "grand_total">00.00</h5>
                                                                                     </div>
                                                                                 </td>
                                                                             </tr>
                                                                         </table>
                                                                     </td>
-                                                                 </tr> 
+                                                                 </tr>
 
                                                             </tfoot>
 
 
                                                         </table>
                                                     </div>
-                                                      
-                                                     
-                                                     
-                                                     
-                                                     
+
+
+
+
+
                                                      <div class="row mt-2">
                                                      <div class="col-md-12">
                                                             <div class = "row">
@@ -929,7 +929,7 @@
                                                                     <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_order_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple >
                                                                     <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                                                 </div>
-                                                            </div> 
+                                                            </div>
                                                             <div class = "col-md-6" style = "margin-top:19px;">
                                                                 <div class = "row" id = "main_order_file_preview">
                                                                 </div>
@@ -937,37 +937,37 @@
                                                             </div>
                                                      </div>
                                                         <div class="col-md-12">
-                                                            <div class="mb-1">  
-                                                                <label class="form-label">Final Remarks</label> 
-                                                                <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($order) ? $order -> remarks : '' }}</textarea> 
+                                                            <div class="mb-1">
+                                                                <label class="form-label">Final Remarks</label>
+                                                                <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($order) ? $order -> remarks : '' }}</textarea>
                                                             </div>
                                                         </div>
 
                                                      </div>
 
-                                                        
-                                                     
-                                                    
-                                                     
-                                                    
-                                                     
-                                                    
+
+
+
+
+
+
+
 												</div>
 
-                                                 
+
                                              </div>
-                                      
-								
+
+
 								</div>
                             </div>
-                            
-                            
+
+
                         </div>
                     </div>
                     <!-- Modal to add new record -->
-                     
+
                 </section>
-                 
+
 
             </div>
         </div>
@@ -986,7 +986,7 @@
                         <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder();" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>        
+                </div>
 				<div class="modal-body">
 					 <div class="row">
 
@@ -1005,8 +1005,8 @@
                                 <input type = "hidden" id = "book_id_so_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1031,14 +1031,14 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="so_invoice_table">
-                                    <input type = "hidden" id = "so_invoice_table_value" value = "so"> 
+                                    <input type = "hidden" id = "so_invoice_table_value" value = "so">
 									<thead>
 										 <tr>
 											<th>
 												<!-- <div class="form-check form-check-inline me-0">
                                                     <input class="form-check-input" type="checkbox" id="checkAllSOElement" onchange="checkAllSO(this);">
                                                 </div> -->
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Doc No.</th>
 											<th>Doc Date</th>
@@ -1047,10 +1047,10 @@
 											<th>Item</th>
 											<th>Attributes</th>
 											<th>UOM</th>
-											<th>Quantity</th> 
-											<th>Balance Qty</th> 
-											<th id = "avl_stock_header">Avl Stock</th> 
-											<th>Rate</th> 
+											<th>Quantity</th>
+											<th>Balance Qty</th>
+											<th id = "avl_stock_header">Avl Stock</th>
+											<th>Rate</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1077,7 +1077,7 @@
                         <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder('dnote');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>        
+                </div>
 				<div class="modal-body">
 					 <div class="row">
 
@@ -1096,8 +1096,8 @@
                                 <input type = "hidden" id = "book_id_dnote_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1122,14 +1122,14 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="dnote_invoice_table">
-                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote"> 
+                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote">
 									<thead>
 										 <tr>
 											<th>
 												<!-- <div class="form-check form-check-inline me-0">
                                                     <input class="form-check-input" type="checkbox" id="checkAllSOElement" onchange="checkAllSO(this);">
                                                 </div> -->
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Doc No.</th>
 											<th>Doc Date</th>
@@ -1138,10 +1138,10 @@
 											<th>Item</th>
 											<th>Attributes</th>
 											<th>UOM</th>
-											<th>Quantity</th> 
-											<th>Balance Qty</th> 
-											<th id = "avl_stock_header">Avl Stock</th> 
-											<th>Rate</th> 
+											<th>Quantity</th>
+											<th>Balance Qty</th>
+											<th id = "avl_stock_header">Avl Stock</th>
+											<th>Rate</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1188,8 +1188,8 @@
                                 <input type = "hidden" id = "book_id_plist_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1211,7 +1211,7 @@
                         </div>
                         <div class="col-md-12">
 							<div class="table-responsive">
-                                <input type = "hidden" id = "plist_invoice_table_value" value = "plist"> 
+                                <input type = "hidden" id = "plist_invoice_table_value" value = "plist">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="plist_invoice_table">
 									<thead>
                                         <tr>
@@ -1219,7 +1219,7 @@
 												<!-- <div class="form-check form-check-inline me-0">
 													<input class="form-check-input" type="checkbox" id="checkAllPlistElement" onchange="checkAllPlist(this);">
 												</div>  -->
-											</th>  
+											</th>
                                             <th>SO No.</th>
 											<th>So Date</th>
                                             <th>Customer</th>
@@ -1227,10 +1227,10 @@
 											<th>Packing Document No.</th>
 											<th>Package No.</th>
 											<th>Items</th>
-											<th>Total Quantity</th> 
+											<th>Total Quantity</th>
                                         </tr>
                                     </thead>
-                                    <tbody>   
+                                    <tbody>
                                     </tbody>
 								</table>
 							</div>
@@ -1274,8 +1274,8 @@
                                 <input type = "hidden" id = "book_id_pl_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1297,7 +1297,7 @@
                         </div>
                         <div class="col-md-12">
 							<div class="table-responsive">
-                                <input type = "hidden" id = "pl_invoice_table_value" value = "pl"> 
+                                <input type = "hidden" id = "pl_invoice_table_value" value = "pl">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="pl_invoice_table">
 									<thead>
                                         <tr>
@@ -1305,7 +1305,7 @@
 												<!-- <div class="form-check form-check-inline me-0">
 													<input class="form-check-input" type="checkbox" id="checkAllPlistElement" onchange="checkAllPlist(this);">
 												</div>  -->
-											</th>  
+											</th>
                                             <th>SO No.</th>
 											<th>So Date</th>
                                             <th>Customer</th>
@@ -1321,7 +1321,7 @@
 											<th>Available Stk</th>
                                         </tr>
                                     </thead>
-                                    <tbody>   
+                                    <tbody>
                                     </tbody>
 								</table>
 							</div>
@@ -1359,8 +1359,8 @@
                                 <input type = "hidden" id = "book_id_qt_val_land"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Document No. <span class="text-danger">*</span></label>
@@ -1384,7 +1384,7 @@
                                 <input type = "hidden" id = "land_plot_id_qt_val_land"></input>
                             </div>
                         </div>
-                         
+
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
                              <button onclick = "getOrders('land-lease');" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
@@ -1393,24 +1393,24 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="land_lease_invoice_table">
-                                    <input type = "hidden" id = "land_lease_invoice_table_value" value = "land-lease"> 
+                                    <input type = "hidden" id = "land_lease_invoice_table_value" value = "land-lease">
 									<thead>
 										 <tr>
 											<th>
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Document No.</th>
 											<th>Document Date</th>
                                             <th>Customer</th>
 											<th>Land Parcel</th>
-											<th>Plots</th> 
+											<th>Plots</th>
                                             <th>Service Type</th>
-											<th>Amount</th> 
-											<th>Due Date</th> 
+											<th>Amount</th>
+											<th>Due Date</th>
 										  </tr>
 										</thead>
 										<tbody id = "qts_data_table_land">
-                                            
+
 									   </tbody>
 
 
@@ -1428,7 +1428,7 @@
 			</div>
 		</div>
 	</div>
-    
+
     <div class="modal fade" id="discount" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
 			<div class="modal-content">
@@ -1441,20 +1441,20 @@
                     <div class = "row">
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Type<span class="text-danger">*</span></label> 
+                                <label class="form-label">Type<span class="text-danger">*</span></label>
                                 <input type="text" id="new_discount_name" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value=""  onblur = "resetDiscountOrExpense(this,'new_discount_percentage')">
                                 <input type = "hidden" id = "new_discount_id" />
                             </div>
                         </div>
                         <div class="col-md-2" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Percentage <span class="text-danger">*</span></label> 
+                                <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                 <input id = "new_discount_percentage" oninput = "onChangeDiscountPercentage(this);" type="text" class="form-control mw-100 text-end" placeholder = "Discount Percentage"/>
                             </div>
                         </div>
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Value <span class="text-danger">*</span></label> 
+                                <label class="form-label">Value <span class="text-danger">*</span></label>
                                 <input id = "new_discount_value" type="text" class="form-control mw-100 text-end" oninput = "onChangeDiscountValue(this);" placeholder = "Discount Value"/>
                             </div>
                         </div>
@@ -1464,12 +1464,12 @@
                             </div>
                         </div>
                     </div>
-                    
-                    
+
+
                     <!-- <div class="text-end"><a href="#" class="text-primary add-contactpeontxt mt-50"><i data-feather='plus'></i> Add Discount</a></div> -->
 
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "discount_main_table" total-value = "0"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "discount_main_table" total-value = "0">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -1481,27 +1481,27 @@
 										</thead>
 										<tbody >
 											 <tr>
-                                                
+
 											</tr>
-                                            
+
                                             <tr>
                                                  <td colspan="2"></td>
                                                  <td class="text-dark"><strong>Total</strong></td>
                                                  <td class="text-dark" id = "total_item_discount"><strong>0.00</strong></td>
                                                  <td></td>
 											</tr>
-											 
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('discount');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('discount');">Cancel</button>
 					    <button type="button" class="btn btn-primary" onclick = "closeModal('discount');">Submit</button>
 				</div>
 			</div>
@@ -1516,12 +1516,12 @@
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Taxes</h1>
-                    
-                    
+
+
                     <!-- <div class="text-end"><a href="#" class="text-primary add-contactpeontxt mt-50"><i data-feather='plus'></i> Add Discount</a></div> -->
 
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "tax_main_table"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "tax_main_table">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -1537,11 +1537,11 @@
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('tax');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('tax');">Cancel</button>
 					    <button type="button" class="btn btn-primary" onclick = "closeModal('tax');">Submit</button>
 				</div>
 			</div>
@@ -1561,20 +1561,20 @@
                     <div class = "row">
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Type<span class="text-danger">*</span></label> 
+                                <label class="form-label">Type<span class="text-danger">*</span></label>
                                 <input type="text" id="new_order_discount_name" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value=""  onblur = "resetDiscountOrExpense(this, 'new_order_discount_percentage')">
                                 <input type = "hidden" id = "new_order_discount_id" />
                             </div>
                         </div>
                         <div class="col-md-2" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Percentage <span class="text-danger">*</span></label> 
+                                <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                 <input id = "new_order_discount_percentage" oninput = "onChangeOrderDiscountPercentage(this);" type="text" class="form-control mw-100 text-end" />
                             </div>
                         </div>
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Value <span class="text-danger">*</span></label> 
+                                <label class="form-label">Value <span class="text-danger">*</span></label>
                                 <input id = "new_order_discount_value" type="text" class="form-control mw-100 text-end" oninput = "onChangeOrderDiscountValue(this);"/>
                             </div>
                         </div>
@@ -1584,10 +1584,10 @@
                             </div>
                         </div>
                     </div>
-                    
+
 
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_discount_main_table"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_discount_main_table">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -1599,9 +1599,9 @@
 										</thead>
 										<tbody >
 											 <tr>
-                                                
+
 											</tr>
-                                            
+
                                             <tr>
                                                  <td colspan="2"></td>
                                                  <td class="text-dark"><strong>Total</strong></td>
@@ -1613,11 +1613,11 @@
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick = "closeModal('discountOrder');">Submit</button>
 				</div>
 			</div>
@@ -1630,9 +1630,9 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Taxes</h1>                    
+					<h1 class="text-center mb-1" id="shareProjectTitle">Taxes</h1>
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_tax_main_table"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_tax_main_table">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -1648,12 +1648,12 @@
 
 								</table>
 							</div>
-                    
+
 				</div>
 			</div>
 		</div>
 	</div>
-    
+
     <div class="modal fade" id="edit-address-shipping" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
 			<div class="modal-content">
@@ -1663,8 +1663,8 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Edit Address</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
+
+
                      <div class="row mt-2">
                         <div class = "col-md-12 mb-1">
                         <select class="select2 form-select vendor_dependent" id = "shipping_address_dropdown" name = "shipping_address" oninput = "onShippingAddressChange(this);">
@@ -1682,42 +1682,42 @@
 							<select class="select2 form-select" id = "shipping_country_id_input"  onchange = "changeDropdownOptions(this, ['shipping_state_id_input'], ['states'], '/states/', null, ['shipping_city_id_input'])">
 								@foreach ($countries as $country)
                                     <option value = "{{$country -> value}}">{{$country -> label}}</option>
-                                @endforeach                                
+                                @endforeach
 							</select>
 						</div>
-						 
-						
+
+
 						<div class="col-md-6 mb-1">
 							<label class="form-label">State <span class="text-danger">*</span></label>
-							<select class="select2 form-select" id = "shipping_state_id_input"  onchange = "changeDropdownOptions(this, ['shipping_city_id_input'], ['cities'], '/cities/', null, [])">                        
+							<select class="select2 form-select" id = "shipping_state_id_input"  onchange = "changeDropdownOptions(this, ['shipping_city_id_input'], ['cities'], '/cities/', null, [])">
 							</select>
 						</div>
-                         
+
                          <div class="col-md-6 mb-1">
 							<label class="form-label">City <span class="text-danger">*</span></label>
 							<select class="select2 form-select" name = "shipping_city_id" id = "shipping_city_id_input">
 							</select>
 						</div>
-						
-						 
+
+
 						<div class="col-md-6 mb-1">
 							<label class="form-label w-100">Pincode <span class="text-danger">*</span></label>
 							<input type="text" class="form-control" value="" placeholder="Enter Pincode" name ="shipping_pincode" id = "shipping_pincode_input"/>
-						</div> 
-						
+						</div>
+
 						<div class="col-md-12 mb-1">
 							<label class="form-label">Address <span class="text-danger">*</span></label>
 							<textarea class="form-control" placeholder="Enter Address" name = "shipping_address_text" id = "shipping_address_input"></textarea>
-						</div> 
-                    
+						</div>
+
                     </div>
 
-					 
-                    
+
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button>
                         <button type="button" onclick = "saveAddressShipping();" class="btn btn-primary">Submit</button>
 				</div>
 			</div>
@@ -1732,11 +1732,11 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Edit Address</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
+
+
                      <div class="row mt-2">
                      <div class = "col-md-12 mb-1">
-                     <select class="select2 form-select vendor_dependent" id = "billing_address_dropdown" name = "billing_address" oninput = "onBillingAddressChange(this);"> 
+                     <select class="select2 form-select vendor_dependent" id = "billing_address_dropdown" name = "billing_address" oninput = "onBillingAddressChange(this);">
                                                                         @if (isset($order) && isset($billing_addresses))
                                                                             @foreach ($billing_addresses as $billing_address)
                                                                                 <option value = "{{$billing_address -> value}}" {{$order -> billing_to === $billing_address -> id}}>{{$billing_address -> label}}</option>
@@ -1752,48 +1752,48 @@
 							<select class="select2 form-select" name = "billing_country_id" id = "billing_country_id_input" onchange = "changeDropdownOptions(this, ['billing_state_id_input'], ['states'], '/states/', null, ['billing_city_id_input'])">
 								@foreach ($countries as $country)
                                     <option value = "{{$country -> value}}">{{$country -> label}}</option>
-                                @endforeach                                
+                                @endforeach
 							</select>
 						</div>
-						 
-						
+
+
 						<div class="col-md-6 mb-1">
 							<label class="form-label">State <span class="text-danger">*</span></label>
-							<select class="select2 form-select" name = "billing_state_id" id = "billing_state_id_input" onchange = "changeDropdownOptions(this, ['billing_city_id_input'], ['cities'], '/cities/', null, [])">                        
+							<select class="select2 form-select" name = "billing_state_id" id = "billing_state_id_input" onchange = "changeDropdownOptions(this, ['billing_city_id_input'], ['cities'], '/cities/', null, [])">
 							</select>
 						</div>
-                         
+
                          <div class="col-md-6 mb-1">
 							<label class="form-label">City <span class="text-danger">*</span></label>
 							<select class="select2 form-select" name = "billing_city_id" id = "billing_city_id_input">
 							</select>
 						</div>
-						
-						 
+
+
 						<div class="col-md-6 mb-1">
 							<label class="form-label w-100">Pincode <span class="text-danger">*</span></label>
 							<input type="text" class="form-control" value="" placeholder="Enter Pincode" name ="billing_pincode" id = "billing_pincode_input"/>
-						</div> 
-						
+						</div>
+
 						<div class="col-md-12 mb-1">
 							<label class="form-label">Address <span class="text-danger">*</span></label>
 							<textarea class="form-control" placeholder="Enter Address" name = "billing_address_text" id = "billing_address_input"></textarea>
-						</div> 
-                    
+						</div>
+
                     </div>
 
-					 
-                    
+
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1">Cancel</button>
                         <button type="button" onclick = "saveAddressBilling();" class="btn btn-primary">Submit</button>
 				</div>
 			</div>
 		</div>
 	</div>
-    
+
     <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" >
 			<div class="modal-content">
@@ -1803,30 +1803,30 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
+
+
                      <div class="row mt-2">
-                         
-						
+
+
 						<div class="col-md-12 mb-1">
 							<label class="form-label">Remarks</label>
 							<textarea class="form-control" current-item = "item_remarks_0" onchange = "changeItemRemarks(this);" id ="current_item_remarks_input" placeholder="Enter Remarks"></textarea>
-						</div> 
-                    
+						</div>
+
                     </div>
 
-					 
-                    
+
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('Remarks');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('Remarks');">Submit</button>
 				</div>
 			</div>
 		</div>
 	</div>
-    
+
     <div class="modal fade" id="expenses" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
 			<div class="modal-content">
@@ -1839,20 +1839,20 @@
                     <div class = "row">
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Type<span class="text-danger">*</span></label> 
+                                <label class="form-label">Type<span class="text-danger">*</span></label>
                                 <input type="text" id="order_expense_name" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value=""  onblur = "resetDiscountOrExpense(this, 'order_expense_percentage')">
                                 <input type = "hidden" id = "order_expense_id" />
                             </div>
                         </div>
                         <div class="col-md-2" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Percentage <span class="text-danger">*</span></label> 
+                                <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                 <input type="text" id = "order_expense_percentage" oninput = "onChangeOrderExpensePercentage(this);" class="form-control mw-100 text-end" />
                             </div>
                         </div>
                         <div class="col-md-4" style = "padding-right:0px">
                             <div class="">
-                                <label class="form-label">Value <span class="text-danger">*</span></label> 
+                                <label class="form-label">Value <span class="text-danger">*</span></label>
                                 <input type="text" id = "order_expense_value" oninput = "onChangeOrderExpenseValue(this);" class="form-control mw-100 text-end" />
                             </div>
                         </div>
@@ -1862,9 +1862,9 @@
                             </div>
                         </div>
                     </div>
-                    
+
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_expense_main_table"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "order_expense_main_table">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -1876,28 +1876,28 @@
 										</thead>
 										<tbody>
 											 <tr>
-                                                
+
 											</tr>
-                                            
-                                            
+
+
                                             <tr>
                                                  <td colspan="2"></td>
                                                  <td class="text-dark"><strong>Total</strong></td>
                                                  <td class="text-dark" id = "total_order_expense" ><strong>00.00</strong></td>
                                                  <td></td>
 											</tr>
-											 
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                           
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('expenses');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('expenses');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('expenses');">Submit</button>
 				</div>
 			</div>
@@ -1913,12 +1913,12 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Store Location</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
-                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" style = "display:none;"> 
+
+
+                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" style = "display:none;">
 						<tbody>
                             <tr>
-                                <td></td> 
+                                <td></td>
                                 <td>
                                     <input type="text" id = "new_store_code_input" placeholder="Select Store" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
                                     <input type = "hidden" id = "new_store_id_input"></input>
@@ -1933,7 +1933,7 @@
                                 </td>
                                 <td>
                                     <input type="text" id = "new_bin_code_input" placeholder="Select Bin" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off">
-                                    <input type = "hidden" id = "new_bin_id_input"></input> 
+                                    <input type = "hidden" id = "new_bin_id_input"></input>
                                 </td>
                                 <td><input type="text" id = "new_location_qty" class="form-control mw-100" /></td>
                                 <td>
@@ -1944,10 +1944,10 @@
                     </table>
 
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
-                                            <th width="80px">S.No</th> 
+                                            <th width="80px">S.No</th>
 											<th>Rack</th>
 											<th>Shelf</th>
 											<th>Bin</th>
@@ -1955,24 +1955,24 @@
 										  </tr>
 										</thead>
 										<tbody id = "item_location_table" current-item-index = '0'>
-                                            
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('location');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('location');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('location');">Submit</button>
 				</div>
 			</div>
 		</div>
 	</div>
-    
+
     <div class="modal fade" id="delivery" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" >
 			<div class="modal-content">
@@ -1982,8 +1982,8 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Delivery Schedule</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+
+                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
                                          <td>#</td>
@@ -2001,7 +2001,7 @@
 
 								</table>
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "delivery_schedule_main_table"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "delivery_schedule_main_table">
 									<thead>
 										 <tr>
                                             <th>S.No.</th>
@@ -2012,25 +2012,25 @@
 										</thead>
 										<tbody>
 											 <tr>
-                                                
+
 											</tr>
                                             <tr>
                                                  <td class="text-dark"><strong>Total</strong></td>
                                                  <td class="text-dark"><strong id = "item_delivery_qty"></strong></td>
                                                  <td></td>
 											</tr>
-											 
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                           
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('delivery');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('delivery');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="closeModal('delivery');">Submit</button>
 				</div>
 			</div>
@@ -2048,14 +2048,14 @@
 					<p class="text-center">Enter the details below.</p>
 
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "attributes_table_modal" item-index = ""> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail" id = "attributes_table_modal" item-index = "">
 									<thead>
-										 <tr>  
+										 <tr>
 											<th>Attribute Name</th>
 											<th>Attribute Value</th>
 										  </tr>
 										</thead>
-										<tbody id = "attribute_table">	 
+										<tbody id = "attribute_table">
 
 									   </tbody>
 
@@ -2063,9 +2063,9 @@
 								</table>
 							</div>
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('attribute');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('attribute');">Cancel</button>
 					    <button type="button" class="btn btn-primary" onclick = "submitAttr('attribute');">Select</button>
 				</div>
 			</div>
@@ -2108,8 +2108,8 @@
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-outline-secondary me-1" onclick = "closeModal('amendConfirmPopup');">Cancel</button>
             <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
          </div>
       </div>
@@ -2152,12 +2152,12 @@
                     </div>
                   </div>
                   <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
+
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('approveModal');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('approveModal');">Cancel</button>
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>
@@ -2199,12 +2199,12 @@
                     </div>
                   </div>
                   <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
+
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('podModal');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('podModal');">Cancel</button>
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>
@@ -2260,8 +2260,8 @@
                     </div>
                 </div>
             </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('sendMail');">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" class="btn btn-outline-secondary me-1" onclick = "closeModal('sendMail');">Cancel</button>
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send</button>
          </div>
        </form>
@@ -2282,7 +2282,7 @@
               <p>Are you sure you want to <strong>Amend</strong> this <strong>Invoice</strong>?</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
-          </div> 
+          </div>
       </div>
   </div>
 </div>
@@ -2298,14 +2298,14 @@
 				</div>
 				<div class="modal-body">
 					 <div class="row">
-                         
+
                          <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Series <span class="text-danger">*</span></label>
                                 <input id = "voucher_book_code" class="form-control" disabled="" >
                             </div>
                         </div>
-                         
+
                          <div class="col-md-3">
                             <div class="mb-1">
                                 <label class="form-label">Voucher No <span class="text-danger">*</span></label>
@@ -2324,15 +2324,15 @@
                                 <input id = "voucher_currency" class="form-control" disabled="" value="">
                             </div>
                         </div>
-                          
+
 						 <div class="col-md-12">
- 
+
 
 							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
 									<thead>
 										 <tr>
-											<th>Type</th>  
+											<th>Type</th>
 											<th>Group</th>
 											<th>Leadger Code</th>
 											<th>Leadger Name</th>
@@ -2341,7 +2341,7 @@
 										  </tr>
 										</thead>
 										<tbody id = "posting-table">
-											  
+
 
 									   </tbody>
 
@@ -2367,30 +2367,30 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>                    
-                    
+					<h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>
+
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
-                                            <th width="50px"></th> 
+                                            <th width="50px"></th>
 											<th>Package</th>
 											<th class = "numeric-alignment">Qty</th>
 										  </tr>
 										</thead>
 										<tbody id = "bundles_info_table" current-item-index = "0">
-                                            
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                    
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('BundleInfo');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('BundleInfo');">Cancel</button>
 					<button type="button" class="btn btn-primary" onclick="onBundleSubmit();">Submit</button>
 				</div>
 			</div>
@@ -2404,10 +2404,10 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body px-sm-2 mx-50 pb-2">
-					<h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>                    
-                    
+					<h1 class="text-center mb-1" id="shareProjectTitle">Packing Info</h1>
+
 					<div class="table-responsive-md customernewsection-form">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
 									<thead>
 										 <tr>
 											<th>Package</th>
@@ -2415,28 +2415,28 @@
 										  </tr>
 										</thead>
 										<tbody id = "packing_info_table" current-item-index = "0">
-                                            
+
 
 									   </tbody>
 
 
 								</table>
 							</div>
-                    
+
 				</div>
 			</div>
 		</div>
 	</div>
-    
 
-    
+
+
 @section('scripts')
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/scripts/sales/common.js')}}"></script>
 <script>
     var currentfy = JSON.stringify({!! isset($order) ? $order : " " !!});
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
-    let redirect = "{{$redirect_url}}";   
+    let redirect = "{{$redirect_url}}";
 </script>
 @include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "sale.invoice"])
 <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
@@ -2506,35 +2506,35 @@
                    <div class="form-check form-check-primary custom-checkbox">
                        <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${newIndex}" del-index = "${newIndex}">
                        <label class="form-check-label" for="Email"></label>
-                   </div> 
+                   </div>
                </td>
-                <td class="poprod-decpt"> 
-                   
+                <td class="poprod-decpt">
+
                    <input type="text" id = "items_dropdown_${newIndex}" name="item_code[${newIndex}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="" data-code="" data-id="" hsn_code = "" item_name = "" attribute-array = "[]" specs = "[]" item-locations = "[]">
                    <input type = "hidden" name = "item_id[]" id = "items_dropdown_${newIndex}_value"></input>
 
                </td>
-               
+
                <td class="poprod-decpt">
                     <input type="text" id = "items_name_${newIndex}" name = "item_name[${newIndex}]" class="form-control mw-100"   value = "" readonly>
                 </td>
-               <td class="poprod-decpt" id='attribute_section_${newIndex}'> 
+               <td class="poprod-decpt" id='attribute_section_${newIndex}'>
                    <button id = "attribute_button_${newIndex}" type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${newIndex}', ${newIndex});" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                    <input type = "hidden" name = "attribute_value_${newIndex}" />
                 </td>
                <td>
                    <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${newIndex}" onchange = "getStoresData(${newIndex}, '', true)">
-                       
-                   </select> 
+
+                   </select>
                </td>
                <td class = "sub_store_dependent">
                <select class="form-select" style = "min-width:100%;" name = "item_sub_store[${newIndex}]" id = "item_sub_store_${newIndex}" onchange = "getStoresData(${newIndex}, '', true)">
-                                                                
+
                                                             </select>
                 </td>
                 <input type = "hidden" value = "${$("#store_id_input").val()}" name = "item_store[${newIndex}]" />
                <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
-              <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" oninput = "changeItemRate(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td> 
+              <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" oninput = "changeItemRate(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
                <td><input type="text" id = "item_value_${newIndex}" disabled class="form-control mw-100 text-end item_values_input" /></td>
                <input type = "hidden" id = "header_discount_${newIndex}" value = "0" ></input>
                <input type = "hidden" id = "header_expense_${newIndex}" ></input>
@@ -2550,7 +2550,7 @@
                <td><input type="text" id = "value_after_discount_${newIndex}"  disabled class="form-control mw-100 text-end item_val_after_discounts_input" /></td>
                <input type = "hidden" id = "value_after_header_discount_${newIndex}" class = "item_val_after_header_discounts_input" ></input>
 
-                    <input type="hidden" id = "item_total_${newIndex}"  disabled class="form-control mw-100 text-end item_totals_input" />                
+                    <input type="hidden" id = "item_total_${newIndex}"  disabled class="form-control mw-100 text-end item_totals_input" />
                     <td>
                     <div class="d-flex">
                         <div style = "display:none;" class="me-50 cursor-pointer item_store_locations" data-bs-toggle="modal" data-bs-target="#location" onclick = "openStoreLocationModal(${newIndex})" data-stores = '[]' id = 'data_stores_${newIndex}'>    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Store Location" class="text-primary"><i data-feather="map-pin"></i></span></div>
@@ -2567,7 +2567,7 @@
 
             const rateInput = document.getElementById('item_rate_' + newIndex);
             const qtyInput = document.getElementById('item_qty_' + newIndex);
-            
+
             rateInput.addEventListener('input', function() {
                 getStoresData(newIndex);
             });
@@ -2647,7 +2647,7 @@
                 enableHeader();
                 setAllTotalFields();
             }
-            
+
         }
 
         function changeItemValue(index) // Single Item Value
@@ -2678,7 +2678,7 @@
 
         }
 
-        
+
         function addDiscount(render = true)
         {
             const discountName = document.getElementById('new_discount_name').value;
@@ -2722,7 +2722,7 @@
                     icon: 'warning',
                 });
             }
-            
+
         }
 
         function addOrderDiscount(dataId = null, enableExceedCheck = true)
@@ -2758,7 +2758,7 @@
                 });
                 return;
             }
-            
+
         }
         function addOrderExpense(dataId = null, enableExceedCheck = true)
         {
@@ -2788,7 +2788,7 @@
                 });
                 return;
             }
-            
+
         }
 
         function addDiscountInTable(ItemRowIndexVal, render = true)
@@ -2815,7 +2815,7 @@
                     `;
                     newHTML.innerHTML = newData;
                 }
-                
+
                 document.getElementById('new_discount_name').value = "";
                 document.getElementById('new_discount_id').value = "";
                 // document.getElementById('new_discount_type').value = "";
@@ -2845,14 +2845,14 @@
                 const discountRow = document.getElementById('order_discount_row');
                 if (discountRow) {
                     discountRow.innerHTML = `
-                        <td width="55%">Header Discount</td>  
+                        <td width="55%">Header Discount</td>
                         <td class="text-end" id = "order_discount_summary" >${discount}</td>
                     `
                 } else {
                     const newRow = summaryTable.insertRow(3);
                     newRow.id = "order_discount_row";
                     newRow.innerHTML = `
-                    <td width="55%">Header Discount</td>  
+                    <td width="55%">Header Discount</td>
                         <td class="text-end" id = "order_discount_summary" >${discount}</td>
                     `;
                 }
@@ -2878,7 +2878,7 @@
             let expense = 0;
             for (let index = 0; index < values.length; index++) {
                 expense += parseFloat(values[index].value ? values[index].value : 0);
-            }            
+            }
             document.getElementById('all_items_total_expenses_summary').textContent = parseFloat(expense ? expense : 0);
             document.getElementById('total_order_expense').textContent = parseFloat(expense ? expense : 0);
             setAllTotalFields();
@@ -2892,7 +2892,7 @@
             const previousHiddenIdFields = document.getElementsByClassName('order_discount_id_hidden');
 
             const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
-            
+
             var newData = ``;
             var totalSummaryDiscount = 0;
             var total = parseFloat(document.getElementById('total_order_discount').textContent ? document.getElementById('total_order_discount').textContent : 0);
@@ -2938,7 +2938,7 @@
             const previousHiddenIdFields = document.getElementsByClassName('order_expense_id_hidden');
 
             const newIndex = previousHiddenNameFields.length ? previousHiddenNameFields.length : 0;
-            
+
             var newData = ``;
             var totalSummaryExpense = 0;
             var total = parseFloat(document.getElementById('total_order_expense').textContent ? document.getElementById('total_order_expense').textContent : 0);
@@ -2962,7 +2962,7 @@
                 newHTML.innerHTML = newData;
                 totalSummaryExpense += parseFloat(previousHiddenValuesFields[index].value ? previousHiddenValuesFields[index].value : 0);
             }
-            
+
             document.getElementById('order_expense_name').value = "";
             document.getElementById('order_expense_id').value = "";
             document.getElementById('order_expense_percentage').value = "";
@@ -3024,7 +3024,7 @@
                     deletedHeaderExpTedIds.push(removableElement.getAttribute('data-id'));
                 }
             }
-           
+
             document.getElementById("order_expense_name_" + index)?.remove();
             document.getElementById("order_expense_percentage_" + index)?.remove();
             document.getElementById("order_expense_value_" + index)?.remove();
@@ -3065,7 +3065,7 @@
             const previousHiddenNameFields = document.getElementsByClassName('discount_names_hidden_' + ItemRowIndexVal);
             const previousHiddenPercentageFields = document.getElementsByClassName('discount_percentages_hidden_' + ItemRowIndexVal);
             const previousHiddenValuesFields = document.getElementsByClassName('discount_values_hidden_' + ItemRowIndexVal);
-                                
+
                 const oldDiscounts = document.getElementsByClassName('item_discounts');
                 if (oldDiscounts && oldDiscounts.length > 0)
                 {
@@ -3090,7 +3090,7 @@
                 `;
                 newHTML.innerHTML = newData;
             }
-            
+
             document.getElementById('new_discount_name').value = "";
             document.getElementById('new_discount_id').value = "";
             // document.getElementById('new_discount_type').value = "";
@@ -3209,7 +3209,7 @@
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
-                                    code: item.item_code || '', 
+                                    code: item.item_code || '',
                                     item_id: item.id,
                                     uom : item.uom,
                                     alternateUoms : item.alternate_u_o_ms,
@@ -3269,7 +3269,7 @@
             });
     }
     initializeAutocomplete1("items_dropdown_0", 0);
-    
+
 
     function initializeAutocompleteCustomer(selector) {
         $("#" + selector).autocomplete({
@@ -3287,7 +3287,7 @@
                             return {
                                 id: item.id,
                                 label: `${item.company_name} (${item.customer_code})`,
-                                code: item.customer_code || '', 
+                                code: item.customer_code || '',
                                 item_id: item.id,
                                 payment_terms_id : item?.payment_terms?.id,
                                 payment_terms : item?.payment_terms?.name,
@@ -3383,7 +3383,7 @@
     //         itemTotal += parseFloat(itemTotalInputs[index].value ? itemTotalInputs[index].value : 0);
     //     }
 
-        
+
     // }
 
     function onTaxClick(itemIndex)
@@ -3529,7 +3529,7 @@
                         $("#currency_dropdown").append(new Option(
                             currentOrder.customer ? currentOrder.customer.currency?.name || 'Default Currency Name' : 'Default Currency Name',
                             currentOrder.currency_id || 0
-                        ));                        
+                        ));
                         $("#currency_code_input").val(currentOrder.currency_code);
                         //First add options also
                         $("#payment_terms_dropdown").empty(); // Clear existing options
@@ -3552,7 +3552,7 @@
                             //Remove previous items if any
                             // const allRowsCheck = document.getElementsByClassName('item_row_checks');
                             // for (let index = 0; index < allRowsCheck.length; index++) {
-                            //     allRowsCheck[index].checked = true;  
+                            //     allRowsCheck[index].checked = true;
                             // }
                             // deleteItemRows();
                             if (true) {
@@ -3602,11 +3602,11 @@
                                         `;
                                     } else {
                                         landLeasePullHtml = '';
-                                    } 
+                                    }
                                 var discountAmtPrev = 0;
 
                                 item.discount_ted.forEach((ted, tedIndex) => {
-                                    
+
                                     var percentage = ted.ted_percentage;
                                     var itemValue = (item.rate * item.balance_qty).toFixed(2);
                                     if (!percentage) {
@@ -3619,7 +3619,7 @@
                                 //Reference from labels
                                 var referenceLabelFields = ``;
                                 // item.so_details.forEach((soDetail, index) => {
-                                //     referenceLabelFields += `<input type = "hidden" class = "reference_from_label_${currentOrderIndexVal}" value = "${soDetail.book_code + "-" + soDetail.document_number + " : " + soDetail.balance_qty}"/>`; 
+                                //     referenceLabelFields += `<input type = "hidden" class = "reference_from_label_${currentOrderIndexVal}" value = "${soDetail.book_code + "-" + soDetail.document_number + " : " + soDetail.balance_qty}"/>`;
                                 // });
 
                                 // var soItemIds = [];
@@ -3671,9 +3671,9 @@
                                     <div class="form-check form-check-primary custom-checkbox">
                                         <input type="checkbox" class="form-check-input item_row_checks" id="item_row_check_${currentOrderIndexVal}" del-index = "${currentOrderIndexVal}">
                                         <label class="form-check-label" for="item_row_check_${currentOrderIndexVal}"></label>
-                                    </div> 
+                                    </div>
                                                                             </td>
-                                    <td class="poprod-decpt"> 
+                                    <td class="poprod-decpt">
 
                                         <input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "quotation_item_ids[]"/>
                                         <input type = "hidden" id = "qt_id_header_${currentOrderIndexVal}" value = "${item?.id == 0 ? currentOrder?.id : ''}" name = "quotation_item_ids_header[]"/>
@@ -3698,7 +3698,7 @@
                                                                             <td class="poprod-decpt">
                                                                             <input type="text" id = "items_name_${currentOrderIndexVal}" name = "item_name[${currentOrderIndexVal}]" class="form-control mw-100"   value = "${item?.item?.item_name}" readonly>
                                                                         </td>
-                                                                            <td class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'> 
+                                                                            <td class="poprod-decpt" id='attribute_section_${currentOrderIndexVal}'>
                                     <button id = "attribute_button_${currentOrderIndexVal}" ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', '${currentOrderIndexVal}', true);" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                                     <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
 
@@ -3706,16 +3706,16 @@
                                                                             <td>
                                     <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
 
-                                    </select> 
+                                    </select>
                                         </td>
                                         <td class = "">
                                         <select class="form-select" style = "min-width:100%;" name = "item_sub_store[${currentOrderIndexVal}]" id = "item_sub_store_${currentOrderIndexVal}" oninput = "getStoresData(${currentOrderIndexVal}, '', true)">
-                                                                                        ${subStoresHTML}       
+                                                                                        ${subStoresHTML}
                                         </select>
                                         </td>
                                         <input type = "hidden" value = "${$("#store_id_input").val()}" name = "item_store[${currentOrderIndexVal}]" />
                                         <td><input ${disableQty} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
-                                        <td><input ${disableQty} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${invoiceToFollowParam ? 'readonly' : ''} /></td> 
+                                        <td><input ${disableQty} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${invoiceToFollowParam ? 'readonly' : ''} /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
                                         <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "${item?.header_discount_amount}" ></input>
                                         <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "${item?.header_expense_amount}"></input>
@@ -3732,7 +3732,7 @@
                                         <input type = "hidden" id = "value_after_header_discount_${currentOrderIndexVal}" class = "item_val_after_header_discounts_input" value = "${(item?.balance_qty * item?.rate) - item?.item_discount_amount - item?.header_discount_amount}" ></input>
                                         <input type="hidden" id = "item_total_${currentOrderIndexVal}" value = "${(item?.balance_qty * item?.rate) - item?.item_discount_amount - item?.header_discount_amount + (item?.tax_amount)}" disabled class="form-control mw-100 text-end item_totals_input" />
                                     <td>
-                                        
+
                                         <div class="d-flex">
                                             <div style = "display:none;" class="me-50 cursor-pointer item_store_locations" data-bs-toggle="modal" data-bs-target="#location" onclick = "openStoreLocationModal(${currentOrderIndexVal})" data-stores = '[]' id = 'data_stores_${currentOrderIndexVal}'>    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Store Location" class="text-primary"><i data-feather="map-pin"></i></span></div>
                                             <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
@@ -3751,7 +3751,7 @@
                                 document.getElementById('discount_main_table').setAttribute('item-row-index', currentOrderIndexVal);
 
                                 item.discount_ted.forEach((ted, tedIndex) => {
-                                    
+
                                     addHiddenInput("item_discount_name_" + currentOrderIndexVal + "_" + tedIndex, ted.ted_name, `item_discount_name[${currentOrderIndexVal}][${tedIndex}]`, 'discount_names_hidden_' + currentOrderIndexVal, 'item_row_' + currentOrderIndexVal);
                                     var percentage = ted.ted_percentage;
                                     var itemValue = document.getElementById('item_value_' + currentOrderIndexVal).value;
@@ -3762,7 +3762,7 @@
                                     var itemDiscountValue = ((itemValue * percentage)/100).toFixed(2);
 
                                     addHiddenInput("item_discount_value_" + currentOrderIndexVal + "_" + tedIndex, itemDiscountValue, `item_discount_value[${currentOrderIndexVal}][${tedIndex}]`, 'discount_values_hidden_' + currentOrderIndexVal, 'item_row_' + currentOrderIndexVal);
-                                    
+
                                 });
                                 //Item Delivery Schedule
                                 if (item.item_deliveries) {
@@ -3771,7 +3771,7 @@
                                         addHiddenInput("item_delivery_schedule_date" + currentOrderIndexVal + "_" + deliveryIndex, delivery.delivery_date, `item_delivery_schedule_date[${currentOrderIndexVal}][${deliveryIndex}]`, 'delivery_schedule_dates_hidden_' + currentOrderIndexVal, "item_row_" + currentOrderIndexVal);
                                     });
                                 }
-                                
+
                                 var itemUomsHTML = ``;
                                 if (item.item.uom && item.item.uom.id) {
                                     itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
@@ -3788,7 +3788,7 @@
                                 currentOrderIndexVal += 1;
 
                                 });
-                            } 
+                            }
                             // else {
 
                             //     currentOrder.items.forEach((item, itemIndex) => {
@@ -3801,9 +3801,9 @@
                             //         <div class="form-check form-check-primary custom-checkbox">
                             //             <input type="checkbox" class="form-check-input item_row_checks" id="Email">
                             //             <label class="form-check-label" for="Email"></label>
-                            //         </div> 
+                            //         </div>
                             //                                                 </td>
-                            //         <td class="poprod-decpt"> 
+                            //         <td class="poprod-decpt">
 
                             //             <input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "quotation_item_ids[]"/>
 
@@ -3820,17 +3820,17 @@
                             //         <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" >
                             //         <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
                             //                                                 </td>
-                            //                                                 <td class="poprod-decpt"> 
+                            //                                                 <td class="poprod-decpt">
                             //         <button id = "attribute_button_${currentOrderIndexVal}" ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', '${currentOrderIndexVal}');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
                             //         <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
                             //         </td>
                             //                                                 <td>
                             //         <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
 
-                            //         </select> 
+                            //         </select>
                             //             </td>
                             //             <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item.balance_qty}" max = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
-                            //             <td><input type="text" id = "item_rate_${currentOrderIndexVal}" ${docType === 'dnote' ? 'readonly' : ''} name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" value = "0.00" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td> 
+                            //             <td><input type="text" id = "item_rate_${currentOrderIndexVal}" ${docType === 'dnote' ? 'readonly' : ''} name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" value = "0.00" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
                             //             <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "0.00" /></td>
                             //             <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "0.00" ></input>
                             //             <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "0.00"></input>
@@ -3903,11 +3903,11 @@
                             document.getElementById('order_expense_value').value = orderExpense.ted_amount;
                             addOrderExpense(null, false);
                         });
-                            
+
                             setAllTotalFields();
 
                             disableHeader();
-                            
+
                             changeDropdownOptions(document.getElementById('customer_id_input'), ['billing_address_dropdown','shipping_address_dropdown'], ['billing_addresses', 'shipping_addresses'], '/customer/addresses/', 'vendor_dependent', [], [{key : 'phone_no', value : currentOrder?.customer_phone_no}]);
 
                             // $("#shipping_address_dropdown").select2();
@@ -4055,7 +4055,7 @@
         } else {
             tableSelector = "#so_invoice_table";
         }
-       
+
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
             .map((_, i) => document.getElementById('qt_id_' + i)?.value)
             .filter(Boolean);
@@ -4126,7 +4126,7 @@
                                 return {
                                     id: item.id,
                                     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ?  '(' +  item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '', 
+                                    code: item[labelKey1] || '',
                                 };
                             }));
                         },
@@ -4173,7 +4173,7 @@
             openPullType = "so";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document", "document_number", "document_number");
-            
+
         } else if (type == 'dnote') {
             if (pslipHeader) {
                 pslipHeader.style.display = "none";
@@ -4184,12 +4184,12 @@
             openPullType = "dnote";
             initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_din", "book_code", "book_name");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "din_document", "document_number", "document_number");
-        } 
+        }
         // else if (type === "dnote") {
         //     openPullType = "so";
         //     initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_so", "book_code", "book_name");
         //     initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "sale_order_document", "document_number", "document_number");
-        // } 
+        // }
         else if (type === 'land-lease') {
             openPullType = "land-lease";
             initializeAutocompleteQt("book_code_input_qt_land", "book_id_qt_val_land", "book_land_lease", "book_code", "book_name");
@@ -4254,11 +4254,11 @@
                 if (resetFlag) {
                     current_doc_id = 0;
                 }
-            }   
+            }
         } else {
             current_doc_id = element.getAttribute('doc-id');
         }
-        
+
     }
 
     //Disable form submit on enter button
@@ -4283,10 +4283,10 @@
         const storeElement = document.getElementById('data_stores_' + index);
         const storeTable = document.getElementById('item_location_table');
         let storeFooter = `
-        <tr> 
+        <tr>
             <td colspan="3"></td>
             <td class="text-dark"><strong>Total</strong></td>
-            <td class="text-dark" id = "total_item_store_qty"><strong>0.00</strong></td>                                   
+            <td class="text-dark" id = "total_item_store_qty"><strong>0.00</strong></td>
 		</tr>
         `;
         if (storeElement) {
@@ -4299,7 +4299,7 @@
                 storesData.forEach((store, storeIndex) => {
                     storesInnerHtml += `
                     <tr id = "item_store_${storeIndex}">
-                        <td>${storeIndex + 1}</td> 
+                        <td>${storeIndex + 1}</td>
                         <td>${store.rack_code}</td>
                         <td>${store.shelf_code}</td>
                         <td>${store.bin_code}</td>
@@ -4332,7 +4332,7 @@
                 storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesData)));
                 openStoreLocationModal(itemIndex);
             }
-        } 
+        }
     }
 
     function addItemStore()
@@ -4481,7 +4481,7 @@
                     $("#new_shipping_type").val(data.data.type);
                     $("#new_shipping_pincode").val(data.data.pincode);
                     $("#new_shipping_phone").val(data.data.phone);
-                    
+
                 }
             },
             error: function(xhr) {
@@ -4597,8 +4597,8 @@ function onPostVoucherOpen(type = "not_posted")
                 voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
                     voucherEntriesHTML += `
                     <tr>
-                    <td>${voucher}</td>   
-                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td> 
+                    <td>${voucher}</td>
+                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
@@ -4609,8 +4609,8 @@ function onPostVoucherOpen(type = "not_posted")
             });
             voucherEntriesHTML+= `
             <tr>
-                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>   
-                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td> 
+                <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
                 <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
             `;
@@ -4627,7 +4627,7 @@ function onPostVoucherOpen(type = "not_posted")
             $('#postvoucher').modal('show');
         }
     });
-    
+
 }
 
 function postVoucher(element)
@@ -4662,7 +4662,7 @@ function postVoucher(element)
                         icon: 'error',
                     });
                 }
-            }, 
+            },
             error: function(jqXHR, textStatus, errorThrown) {
                 let errorReponse = jqXHR.responseJSON;
                 if (errorReponse?.data?.message) {
@@ -4678,7 +4678,7 @@ function postVoucher(element)
                         icon: 'error',
                     });
                 }
-                
+
             }
         });
 
@@ -4749,8 +4749,8 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                     $(this).autocomplete("search", "");
                 }
             });
-    } 
-    
+    }
+
     function resetDiscountOrExpense(element, percentageFieldId)
     {
         if(!element.value) {
@@ -4831,8 +4831,8 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
 
     }
 
-   
-    function getBundles(itemIndex, soItemId, dnItemId = null, disabled = false) 
+
+    function getBundles(itemIndex, soItemId, dnItemId = null, disabled = false)
     {
         const docElement = document.getElementById('item_bundles_' + itemIndex);
         const itemBundleTableId = document.getElementById('bundles_info_table');
@@ -4916,7 +4916,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         });
     }
 
-    function getPackingLists(itemIndex, packingItemId) 
+    function getPackingLists(itemIndex, packingItemId)
     {
         const itemBundleTableId = document.getElementById('bundles_info_table');
         itemBundleTableId.setAttribute('current-item-index', itemIndex);
@@ -5010,7 +5010,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             checkedBundleArray[bundleIndex]['checked'] = element.checked;
         } else {
             checkedBundleArray.push({
-                bundle_id : bundleId, 
+                bundle_id : bundleId,
                 qty : bundleQty,
                 checked :  element.checked
             });
@@ -5130,7 +5130,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 } else {
                     dependentFields[index].classList.add('d-none');
                 }
-            }  
+            }
         }
         if (currentDocType !== 'dnote') {
             // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
@@ -5143,7 +5143,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
                 // document.getElementById('item_details_td').setAttribute('colspan', 7);
             }
-            
+
         }
     }
 
@@ -5153,7 +5153,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         $.ajax({
             url: "{{route('subStore.get.from.stores')}}",
             method: 'GET',
-            dataType: 'json', 
+            dataType: 'json',
             data: {
                 store_id : locId,
                 item_id : itemId,
@@ -5286,7 +5286,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         });
         targetDocument.innerHTML = newInnerHTML;
     }
-    
+
     function setPackets(element)
     {
 
@@ -5328,7 +5328,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 sub_store_id: $("#item_sub_store_" + itemRowId).val()
             },
             success: function(data) {
-                
+
                     var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
                     var actualQty = inputQtyBox.value;
                     inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
@@ -5346,7 +5346,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                             }
                         }
                     }
-                
+
             },
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr.responseText);
@@ -5380,7 +5380,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 sub_store_id: $("#item_sub_store_" + itemRowId).val()
             },
             success: function(data) {
-                
+
                     var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
                     var actualQty = inputQtyBox.value;
                     inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
@@ -5398,7 +5398,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                             }
                         }
                     }
-                
+
             },
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr.responseText);

@@ -162,7 +162,7 @@
                                                     <div class="col-md-5 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
                                                             <i data-feather="plus-square"></i>
-                                                            Outstanding MRN
+                                                            Outstanding GRN
                                                         </button>
                                                         <input type="hidden" name="module_type" id="module_type" class="module_type" value="po">
                                                     </div>
@@ -388,7 +388,7 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">MRN Qty</th>
+                                                                <th class="text-end">GRN Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>

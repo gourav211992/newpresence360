@@ -12,20 +12,20 @@
 				<div class="row">
                 @include('layouts.partials.breadcrumb-add-edit', [
                     'title' => $moduleName,
-                    'menu' => 'Home', 
+                    'menu' => 'Home',
                     'menu_url' => url('home'),
                     'sub_menu' => 'Add New'
                 ])
                     <input type = "hidden" value = "draft" name = "document_status" id = "document_status" />
 					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right" id = "buttonsDiv">   
+						<div class="form-group breadcrumb-right" id = "buttonsDiv">
                         @if(!isset(request() -> revisionNumber))
-                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>  
+                        <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             @if (isset($packingList))
                                 @if($buttons['print'])
                                 <!-- Print Button to be added !-->
                                 @endif
-                                
+
                                 @if($buttons['draft'])
                                     <button type="button" onclick = "submitForm('draft');" name="action" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="save-draft-button" name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
                                 @endif
@@ -44,9 +44,9 @@
                                 @endif
                             @else
 
-                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>  
-                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
-                                
+                                <button type = "button" name="action" value="draft" id = "save-draft-button" onclick = "submitForm('draft');" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>
+                                <button type = "button" name="action" value="submitted"  id = "submit-button" onclick = "submitForm('submitted');" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button>
+
                             @endif
                             @endif
 						</div>
@@ -58,111 +58,111 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-								 <div class="card-body customernewsection-form" id ="main_so_form">  
+								 <div class="card-body customernewsection-form" id ="main_so_form">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
+                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
                                                     <div>
                                                         <h4 class="card-title text-theme">Basic Information</h4>
                                                         <p class="card-text">Fill the details</p>
-                                                    </div> 
-                                                </div> 
-                                            </div> 
+                                                    </div>
+                                                </div>
+                                            </div>
                                             @if (isset($packingList) && isset($docStatusClass))
                                             <div class="col-md-6 text-sm-end">
                                                 <span class="badge rounded-pill badge-light-secondary forminnerstatus">
                                                     Status : <span class="{{$docStatusClass}}">{{$packingList->display_status}}</span>
                                                 </span>
                                             </div>
-                                                
+
                                             @endif
-                                            
-                                            <div class="col-md-8 basic-information"> 
+
+                                            <div class="col-md-8 basic-information">
                                             @if (isset($packingList))
                                                 <input type = "hidden" value = "{{$packingList -> id}}" name = "packing_list_id"></input>
                                             @endif
 
                                             <div class="row align-items-center mb-1 d-none">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Type <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" id = "service_id_input" {{isset($packingList) ? 'disabled' : ''}} onchange = "onSeriesChange(this);">
                                                                 @foreach ($services as $currentService)
-                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option> 
+                                                                    <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
-                                                        
+
                                                     </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Series <span class="text-danger">*</span></label>
                                                         </div>
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input">
                                                                 @foreach ($series as $currentSeries)
-                                                                    <option value = "{{$currentSeries -> id}}" {{isset($packingList) ? ($packingList -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option> 
+                                                                    <option value = "{{$currentSeries -> id}}" {{isset($packingList) ? ($packingList -> book_id == $currentSeries -> id ? 'selected' : '') : ''}}>{{$currentSeries -> book_code}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
-                                                        
+
                                                         <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($packingList) ? $packingList -> book_code : ''}}"></input>
                                                     </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document No <span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="text" value = "{{isset($packingList) ? $packingList -> document_number : ''}}" class="form-control disable_on_edit" readonly id = "order_no_input" name = "document_no">
-                                                        </div> 
-                                                     </div>  
+                                                        </div>
+                                                     </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Document Date <span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5"> 
+                                                        <div class="col-md-5">
                                                             <input type="date" value = "{{isset($packingList) ? $packingList -> document_date : Carbon\Carbon::now() -> format('Y-m-d')}}" class="form-control" name = "document_date" id = "order_date_input" oninput = "onDocDateChange();" min="<?php echo date('Y-m-d'); ?>" max="<?php echo date('Y-m-d'); ?>" >
-                                                        </div> 
-                                                     </div>  
+                                                        </div>
+                                                     </div>
 
                                                      <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Location<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Location<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" name = "store_id" id = "store_id_input" oninput = "getSubStores(this);">
                                                                 @foreach ($stores as $store)
-                                                                    <option display-address = "{{$store -> address ?-> display_address}}" value = "{{$store -> id}}" {{isset($packingList) ? ($packingList -> store_id == $store -> id ? 'selected' : '') : ''}}>{{$store -> store_name}}</option> 
+                                                                    <option display-address = "{{$store -> address ?-> display_address}}" value = "{{$store -> id}}" {{isset($packingList) ? ($packingList -> store_id == $store -> id ? 'selected' : '') : ''}}>{{$store -> store_name}}</option>
                                                                 @endforeach
                                                             </select>
                                                         </div>
                                                     </div>
 
                                                     <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Store<span class="text-danger">*</span></label>  
-                                                        </div>  
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Store<span class="text-danger">*</span></label>
+                                                        </div>
 
-                                                        <div class="col-md-5">  
+                                                        <div class="col-md-5">
                                                             <select class="form-select disable_on_edit" name = "sub_store_id" id = "sub_store_id_input">
-                                                                
+
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    
-                                                        <div class="row align-items-center mb-1 can_hide d-none" id = "selection_section" style = "display:none;"> 
-                                                            <div class="col-md-3"> 
-                                                                <label class="form-label">Reference From </label>  
-                                                            </div> 
 
-                                                            <div class="col-md-5 action-button"> 
+                                                        <div class="row align-items-center mb-1 can_hide d-none" id = "selection_section" style = "display:none;">
+                                                            <div class="col-md-3">
+                                                                <label class="form-label">Reference From </label>
+                                                            </div>
+
+                                                            <div class="col-md-5 action-button">
                                                                 <button onclick = "openPullableDocuments();" disabled type = "button" id = "select_qt_button" data-bs-toggle="modal" data-bs-target="#rescdule" class="btn btn-outline-primary btn-sm mb-0"><i data-feather="plus-square"></i> Sales Order</button>
                                                             </div>
                                                         </div>
@@ -187,7 +187,7 @@
                                         Rev. No.{{request() -> revisionNumber}}
                                         </strong>
                                        @endif
-                                       
+
                                        @endif
                                    </h5>
                                    <ul class="timeline ms-50 newdashtimline ">
@@ -207,10 +207,10 @@
                                                    <span class="badge rounded-pill badge-light-danger">{{ucfirst($approvalHist->approval_type)}}</span>
                                                    @endif
                                                </div>
-                                                @if($approvalHist->approval_date)
-                                               <h6>
-                                                {{ \Carbon\Carbon::parse($approvalHist->approval_date)->format('d-m-Y') }}
-                                                </h6>
+                                                @if($approvalHist->created_at)
+                                                    <h6>
+                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                                                    </h6>
                                                 @endif
                                                 @if($approvalHist->remarks)
                                                 <p>{!! $approvalHist->remarks !!}</p>
@@ -223,21 +223,21 @@
                                            </div>
                                         </li>
                                        @endforeach
-                                       
+
                                    </ul>
                                </div>
                            </div>
                            @endif
                            @endif
-                                        </div> 
+                                        </div>
                                 </div>
                             </div>
                             <div class="card">
-								 <div class="card-body customernewsection-form"> 
+								 <div class="card-body customernewsection-form">
                                             <div class="border-bottom mb-2 pb-25">
                                                      <div class="row">
                                                         <div class="col-md-6">
-                                                            <div class="newheader "> 
+                                                            <div class="newheader ">
                                                                 <h4 class="card-title text-theme">Packet Detail</h4>
                                                                 <p class="card-text">Fill the details</p>
                                                             </div>
@@ -250,24 +250,24 @@
                                                          </div>
                                                          </div>
                                                     </div>
-                                                    <div class="row"> 
+                                                    <div class="row">
                                                         <div class="col-md-12">
                                                         <div class="table-responsive pomrnheadtffotsticky">
-                                                                <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                                                <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                                    <thead>
                                                                         <tr>
                                                                            <th class="customernewsection-form" width = "50px">
                                                                                <div class="form-check form-check-primary custom-checkbox">
                                                                                <input type="checkbox" class="form-check-input cannot_disable" id="select_all_items_checkbox" oninput = "checkOrRecheckAllItems(this);">
                                                                             <label class="form-check-label" for="select_all_items_checkbox" ></label>
-                                                                               </div> 
+                                                                               </div>
                                                                            </th>
                                                                            <th>Package No</th>
                                                                            <th>SO No.</th>
                                                                            <th width = "100px">SO Date</th>
                                                                            <th>Customer</th>
                                                                            <th style = "max-width:500px;">Items</th>
-                                                                           <th class = "numeric-alignment" width = "150px">Total Quantity</th> 
+                                                                           <th class = "numeric-alignment" width = "150px">Total Quantity</th>
                                                                            <th width="50px">Action</th>
                                                                          </tr>
                                                                        </thead>
@@ -280,9 +280,9 @@
                                                                                 <div class="form-check form-check-primary custom-checkbox">
                                                                                     <input type="checkbox" class="form-check-input item_row_checks cannot_disable" id="item_checkbox_{{$packingListDetailIndex}}" del-index = "{{$packingListDetailIndex}}">
                                                                                     <label class="form-check-label" for="item_checkbox_{{$packingListDetailIndex}}"></label>
-                                                                                </div> 
+                                                                                </div>
                                                                                </td>
-                                                                               <td class="poprod-decpt"> 
+                                                                               <td class="poprod-decpt">
                                                                                     <input type="text" id = "packet_name_input_{{$packingListDetailIndex}}" class="form-control mw-100" value = "{{$packingListDetail -> packing_number}}" disabled>
                                                                                     <input type="hidden" value = "{{$packingListDetail -> packing_number}}" name="items[{{$packingListDetailIndex}}][packet_name]" />
                                                                                 </td>
@@ -296,11 +296,11 @@
                                                                                 <td class="poprod-decpt">
                                                                                     <input type="text" id = "so_customer_{{$packingListDetailIndex}}" class="form-control mw-100" value = "{{$packingListDetail -> sale_order ?-> customer_code}}" disabled>
                                                                                 </td>
-                                                                                <td class="poprod-decpt" style = "cursor:pointer;"> 
+                                                                                <td class="poprod-decpt" style = "cursor:pointer;">
                                                                                     {!! $packingListDetail -> items_ui !!}
                                                                                     <input id = "so_items_array_{{$packingListDetailIndex}}" type = "hidden" value = '{{json_encode($packingListDetail -> so_items_array)}}' name = "items[{{$packingListDetailIndex}}][so_items]" />
                                                                                 </td>
-                                                                                <td class="poprod-decpt"> 
+                                                                                <td class="poprod-decpt">
                                                                                     <input type="text" id = "total_packing_qty_{{$packingListDetailIndex}}" class="form-control mw-100 text-end" value = "{{$packingListDetail -> total_item_qty}}" disabled>
                                                                                 </td>
                                                                                 <td>
@@ -314,15 +314,15 @@
                                                                        @else
                                                                        @endif
                                                                     </tbody>
-                                                                    
+
                                                                     <tfoot>
-                                                                        
-                                                                        <tr class="totalsubheadpodetail"> 
+
+                                                                        <tr class="totalsubheadpodetail">
                                                                            <td colspan="6"></td>
                                                                            <td class="text-end" id = "all_items_total_qty">00.00</td>
                                                                            <td></td>
                                                                        </tr>
-                                                                        
+
                                                                         <tr valign="top">
                                                                            <td colspan="12" rowspan="10">
                                                                                <table class="table border">
@@ -337,20 +337,20 @@
                                                                                            <span style = "text-wrap:auto;" id = "current_packet_details"></span>
                                                                                         </td>
                                                                                    </tr>
-                                                                                                                                                                     
+
                                                                                    <tr id = "current_item_description_row">
                                                                                        <td class="poprod-decpt">
                                                                                            <span class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>: <span style = "text-wrap:auto;" id = "current_item_description"></span></span>
                                                                                         </td>
                                                                                    </tr>
-                                                                               </table> 
+                                                                               </table>
                                                                            </td>
-                                                                           
-                                                                        </tr> 
-       
+
+                                                                        </tr>
+
                                                                    </tfoot>
-       
-       
+
+
                                                                </table>
                                                            </div>
                                                             <div class="row mt-2">
@@ -362,7 +362,7 @@
                                                                            <input type="file" class="form-control" name = "attachments[]" onchange = "addFiles(this,'main_order_file_preview')" max_file_count = "{{isset($maxFileCount) ? $maxFileCount : 10}}" multiple >
                                                                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                                                        </div>
-                                                                   </div> 
+                                                                   </div>
                                                                    <div class = "col-md-6" style = "margin-top:19px;">
                                                                        <div class = "row" id = "main_order_file_preview">
                                                                        </div>
@@ -370,29 +370,29 @@
                                                                    </div>
                                                             </div>
                                                                <div class="col-md-12">
-                                                                   <div class="mb-1">  
-                                                                       <label class="form-label">Final Remarks</label> 
-                                                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($packingList) ? $packingList -> remarks : '' }}</textarea> 
+                                                                   <div class="mb-1">
+                                                                       <label class="form-label">Final Remarks</label>
+                                                                       <textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..." name = "final_remarks">{{isset($packingList) ? $packingList -> remarks : '' }}</textarea>
                                                                    </div>
                                                                </div>
-       
+
                                                             </div>
                                                        </div>
                                                     </div>
 
                                              </div>
 
-											
+
 								</div>
                             </div>
-                            
-                            
+
+
                         </div>
                     </div>
                     <!-- Modal to add new record -->
-                     
+
                 </section>
-                 
+
 
             </div>
         </div>
@@ -426,8 +426,8 @@
                                 <input type = "hidden" id = "book_id_qt_val"></input>
                             </div>
                         </div>
-                         
-                         
+
+
                          <div class="col">
                             <div class="mb-1">
                                 <label class="form-label">Quotation No.</label>
@@ -443,7 +443,7 @@
                                 <input type = "hidden" id = "item_id_qt_val"></input>
                             </div>
                         </div>
-                         
+
                          <div class="col  mb-1">
                               <label class="form-label">&nbsp;</label><br/>
                              <button onclick = "getDocuments();" type = "button" class="btn btn-warning btn-sm"><i data-feather="search"></i> Search</button>
@@ -451,7 +451,7 @@
 
 						 <div class="col-md-12">
 							<div class="table-responsive" style="overflow-y: auto;max-height: 200px;">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 									<thead>
 										 <tr>
 											<th>
@@ -459,7 +459,7 @@
                                                 <input class="form-check-input" type="checkbox" id="check_all_docs"
                                                     oninput="checkAllDocs(this);">
                                             </div>
-											</th>  
+											</th>
 											<th>Series</th>
 											<th>Document No.</th>
 											<th>Document Date</th>
@@ -468,14 +468,14 @@
 											<th>Item</th>
 											<th>Attributes</th>
 											<th>UOM</th>
-											<th>Quantity</th> 
-											<th>Balance Qty</th> 
-											<th>Rate</th> 
-											<th>Avl Stock</th> 
+											<th>Quantity</th>
+											<th>Balance Qty</th>
+											<th>Rate</th>
+											<th>Avl Stock</th>
 										  </tr>
 										</thead>
 										<tbody id = "qts_data_table">
-                                            
+
 									   </tbody>
 
 
@@ -493,8 +493,8 @@
 			</div>
 		</div>
 	</div>
-    
-    
+
+
     <div class="modal fade" id="Remarks" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
 		<div class="modal-dialog  modal-dialog-centered" >
 			<div class="modal-content">
@@ -504,24 +504,24 @@
 				<div class="modal-body px-sm-2 mx-50 pb-2">
 					<h1 class="text-center mb-1" id="shareProjectTitle">Add/Edit Remarks</h1>
 					<p class="text-center">Enter the details below.</p>
-                    
-                    
+
+
                      <div class="row mt-2">
-                         
-						
+
+
 						<div class="col-md-12 mb-1">
 							<label class="form-label">Remarks</label>
 							<textarea class="form-control" current-item = "item_remarks_0" oninput = "changeItemRemarks(this);" id ="current_item_remarks_input" placeholder="Enter Remarks"></textarea>
-						</div> 
-                    
+						</div>
+
                     </div>
 
-					 
-                    
+
+
 				</div>
-				
-				<div class="modal-footer justify-content-center">  
-						<button type="button" class="btn btn-outline-secondary me-1 can_hide" onclick="closeModal('Remarks');">Cancel</button> 
+
+				<div class="modal-footer justify-content-center">
+						<button type="button" class="btn btn-outline-secondary me-1 can_hide" onclick="closeModal('Remarks');">Cancel</button>
 					<button type="button" class="btn btn-primary can_hide" onclick="closeModal('Remarks');">Submit</button>
 				</div>
 			</div>
@@ -564,8 +564,8 @@
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="button" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="button" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
          </div>
       </div>
@@ -609,12 +609,12 @@
                     </div>
                   </div>
                   <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                  
+
                </div>
             </div>
          </div>
-         <div class="modal-footer justify-content-center">  
-            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button> 
+         <div class="modal-footer justify-content-center">
+            <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
             <button type="submit" class="btn btn-primary">Submit</button>
          </div>
        </form>
@@ -634,7 +634,7 @@
               <p>Are you sure you want to <strong>Amend</strong> this <strong>{{$moduleName}}</strong>?</p>
               <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
               <button type="button" data-bs-dismiss="modal" onclick = "amendConfirm();" class="btn btn-primary">Confirm</button>
-          </div> 
+          </div>
       </div>
   </div>
 </div>
@@ -689,13 +689,13 @@
                             </div>
                         </div>
 
-                        
+
                     </div>
 
                     <div class = "row">
 						 <div class="col-md-12">
 							<div class="table-responsive" style="overflow-y: auto;max-height: 200px;">
-								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail"> 
+								<table class="mt-1 table myrequesttablecbox table-striped po-order-detail">
 									<thead>
 										 <tr>
 											<th>
@@ -703,7 +703,7 @@
                                                 <input class="form-check-input" type="checkbox" id="check_all_items"
                                                     oninput="checkAllItems(this);">
                                             </div>
-											</th>  
+											</th>
 											<th>Item Code</th>
 											<th>Item Name</th>
 											<th>Attributes</th>
@@ -715,7 +715,7 @@
 										  </tr>
 										</thead>
 										<tbody id = "items_selection_table">
-                                            
+
 									   </tbody>
 								</table>
 							</div>
@@ -732,7 +732,7 @@
 
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/scripts/sales/common.js')}}"></script>
-<script>         
+<script>
 
     let pulledSoArray = [];
     let currentSelectionItemsArray = [];
@@ -773,13 +773,13 @@
             var request = $('#requestno');
 
             request.val(''); // Clear any existing options
-            
+
             if (book_id) {
                 $.ajax({
                     url: "{{ url('get-request') }}/" + book_id,
                     type: "GET",
                     dataType: "json",
-                    success: function(data) 
+                    success: function(data)
                         {
                             if (data.requestno) {
                             request.val(data.requestno);
@@ -821,7 +821,7 @@
 
         function deleteItemRows()
         {
-            
+
         }
 
         function setItemRemarks(elementId) {
@@ -882,7 +882,7 @@
         }
     }
 
-    
+
 
     function enableHeader()
     {
@@ -893,7 +893,7 @@
         const selectButton = document.getElementById('select_qt_button');
         if (selectButton) {
             selectButton.disabled = false;
-        } 
+        }
     }
 
     //Function to set values for edit form
@@ -919,7 +919,7 @@
 
 
         renderIcons();
-        
+
         let finalAmendSubmitButton = document.getElementById("amend-submit-button");
 
         viewModeScript(finalAmendSubmitButton ? false : true);
@@ -959,7 +959,7 @@
         });
     }
 
-    function getDocNumberByBookId(element, reset = true) 
+    function getDocNumberByBookId(element, reset = true)
     {
         resetParametersDependentElements(reset);
         let bookId = element.value;
@@ -995,7 +995,7 @@
                         $("#book_code_input").val("");
                         alert(data.message);
                     }
-                    
+
                     enableDisableQtButton();
                 }
                 if(data.status == 500) {
@@ -1014,7 +1014,7 @@
                     viewModeScript();
                 }
             });
-        }); 
+        });
     }
 
     function implementBookDynamicFields(html, data)
@@ -1109,7 +1109,7 @@
             $("#order_date_input").removeAttr('max');
             $("#order_date_input").removeAttr('min');
             $("#order_date_input").off('input');
-        } 
+        }
         if (backDateAllow && !futureDateAllow) { // Allow only back date
             $("#order_date_input").removeAttr('min');
             $("#order_date_input").attr('max', "<?php echo date('Y-m-d'); ?>");
@@ -1117,7 +1117,7 @@
             $('#order_date_input').on('input', function() {
                 restrictFutureDates(this);
             });
-        } 
+        }
         if (!backDateAllow && futureDateAllow) { // Allow only future date
             $("#order_date_input").removeAttr('max');
             $("#order_date_input").attr('min', "<?php echo date('Y-m-d'); ?>");
@@ -1221,8 +1221,8 @@
                                 <td>
                                     <div class="form-check form-check-inline me-0">
                                         <input ${qt?.avl_stock > 0 ? '' : 'disabled'} class="form-check-input pull_checkbox" type="checkbox" id="po_checkbox_${qtIndex}" oninput = "checkQuotation(this);" document-id = "${qt.id}" doc-id = "${qt.id}" current-doc-id = "0" so-item-id = "${qt.id}" header-id = "${qt.header.id}" label = "${label}">
-                                    </div> 
-                                </td>   
+                                    </div>
+                                </td>
                                 <td>${qt?.header?.book_code}</td>
                                 <td>${qt?.header?.document_number}</td>
                                 <td>${moment(qt?.header?.document_date).format('D/M/Y')}</td>
@@ -1246,7 +1246,7 @@
                 targetTable.innerHTML = '';
             }
         });
-     
+
     }
 
     function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "") {
@@ -1267,7 +1267,7 @@
                                 return {
                                     id: item.id,
                                     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '', 
+                                    code: item[labelKey1] || '',
                                 };
                             }));
                         },
@@ -1328,7 +1328,7 @@
         //         if (resetFlag) {
         //             current_doc_id = 0;
         //         }
-        //     }   
+        //     }
         // } else {
         //     current_doc_id = element.getAttribute('doc-id');
         // }
@@ -1359,9 +1359,9 @@ $(document).on('change', '#revisionNumber', (e) => {
 
 $(document).on('submit', '.ajax-submit-2', function (e) {
     e.preventDefault();
-     var submitButton = (e.originalEvent && e.originalEvent.submitter) 
+     var submitButton = (e.originalEvent && e.originalEvent.submitter)
                         || $(this).find(':submit');
-    var submitButtonHtml = submitButton.innerHTML; 
+    var submitButtonHtml = submitButton.innerHTML;
     submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
     submitButton.disabled = true;
     var method = $(this).attr('method');
@@ -1370,7 +1370,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
     var data = new FormData($(this)[0]);
 
     var formObj = $(this);
-    
+
     $.ajax({
         url,
         type: method,
@@ -1398,7 +1398,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
                     location.reload();
                 }
             }, 1500);
-            
+
         },
         error: function (error) {
             submitButton.disabled = false;
@@ -1562,7 +1562,7 @@ document.addEventListener('input', function (e) {
     document.addEventListener('keydown', function (e) {
         if (e.target.classList.contains('text-end')) {
             if ( e.key === 'Tab' ||
-                ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) || 
+                ['Backspace', 'ArrowLeft', 'ArrowRight', 'Delete', '.'].includes(e.key) ||
                 /^[0-9]$/.test(e.key)
             ) {
                 // Allow numbers, navigation keys, and a single decimal point
@@ -1585,7 +1585,7 @@ document.addEventListener('input', function (e) {
     {
         document.getElementById('series_id_input').innerHTML = '';
     }
-    
+
     function onSeriesChange(element, reset = true)
     {
         resetSeries();
@@ -1836,7 +1836,7 @@ document.addEventListener('input', function (e) {
             });
         }
     }
-    
+
     function addPacket(packetName, saleOrderNo, saleOrderNoId, saleOrderDate, saleOrderCustomer, selectedSoItems, totalQty)
     {
         const tableElementBody = document.getElementById('item_header');
@@ -1865,7 +1865,7 @@ document.addEventListener('input', function (e) {
                         attributesHTML += `..`;
                     }
                 });
-                
+
                 itemsHTML += `<span class="badge rounded-pill badge-light-primary" > ${soItem.item_name}</span> ${attributesHTML}`;
             } else {
                 extraItemsCount += 1;
@@ -1879,9 +1879,9 @@ document.addEventListener('input', function (e) {
             <div class="form-check form-check-primary custom-checkbox">
                 <input type="checkbox" class="form-check-input item_row_checks cannot_disable" id="item_checkbox_${newIndex}" del-index = "${newIndex}">
                 <label class="form-check-label" for="item_checkbox_${newIndex}"></label>
-            </div> 
+            </div>
         </td>
-        <td class="poprod-decpt"> 
+        <td class="poprod-decpt">
             <input type="text" id = "packet_name_input_${newIndex}" class="form-control mw-100" value = "${packetName}" disabled>
             <input type="hidden" value = "${packetName}" name="items[${newIndex}][packet_name]" />
         </td>
@@ -1895,11 +1895,11 @@ document.addEventListener('input', function (e) {
         <td class="poprod-decpt">
             <input type="text" id = "so_customer_${newIndex}" class="form-control mw-100" value = "${saleOrderCustomer}" disabled>
         </td>
-        <td class="poprod-decpt" style = "cursor:pointer;"> 
+        <td class="poprod-decpt" style = "cursor:pointer;">
             ${itemsHTML}
             <input id = "so_items_array_${newIndex}" type = "hidden" value = '${JSON.stringify(selectedSoItems)}' name = "items[${newIndex}][so_items]" />
         </td>
-        <td class="poprod-decpt"> 
+        <td class="poprod-decpt">
             <input type="text" id = "total_packing_qty_${newIndex}" class="form-control mw-100 text-end" value = "${totalQty}" disabled>
         </td>
         <td>

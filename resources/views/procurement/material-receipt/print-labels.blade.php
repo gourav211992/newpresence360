@@ -12,7 +12,7 @@
                         <div class="col-12">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h4 class="card-title">
-                                    {{ $mrn->book_code ?? 'MRN' }}-{{ $mrn->document_number }} : 
+                                    {{ $mrn->book_code ?? 'GRN' }}-{{ $mrn->document_number }} : 
                                     <span class="badge rounded-pill badge-light-{{$mrn->display_status === 'Posted' ? 'info' : 'secondary'}} forminnerstatus">
                                         <span class = "text-dark" >Status</span> : <span class="{{$docStatusClass}}">{{$mrn->display_status}}</span>
                                     </span>

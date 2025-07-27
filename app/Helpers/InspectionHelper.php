@@ -73,6 +73,7 @@ class InspectionHelper
             // Final MRN inspection completion flag
             $pendingInspections = $mrn->items()->where('is_inspection', 1)->exists();
             $mrn->is_inspection_completion = $pendingInspections ? 0 : 1;
+            $mrn->rejected_sub_store_id = $inspection->rejected_sub_store_id ?? NULL;
             $mrn->save();
 
             return self::successResponse("MRN details updated successfully.", $mrn);

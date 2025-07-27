@@ -181,7 +181,7 @@ class ItemImportExportService
                     }
                 }
             }
-            throw new Exception("Group is not the last level");
+            throw new Exception("Group ".$categoryName." is not the last level.");
 
         } else {
             return $category;

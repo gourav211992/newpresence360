@@ -409,7 +409,14 @@ class PoController extends Controller
             $po->book_id = $request->book_id;
             $po->book_code = $request->book_code;
             $document_number = $request->document_number ?? null;
-            $po->gate_entry_required = $parameters['gate_entry_required'][0] ?? 'no';
+            $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';
+            $po->po_type = $poTypeParam;
+
+            if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
+                $po->gate_entry_required = $parameters['gate_entry_required'][0] ?? 'no';
+            } else {
+                $po->gate_entry_required = 'no';
+            }
             $po->partial_delivery = $parameters['partial_delivery_allowed'][0] ?? 'no';
             /**/
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
@@ -456,12 +463,16 @@ class PoController extends Controller
             $po->total_tax_value = 0.00;
             $po->total_expense_value = 0.00;
             $po->save();
-            
-            if($po?->vendor?->supplier_books?->count()) {
-                $po->supp_invoice_required = 'yes';
-                $po->save();
+
+            if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
+                if($po?->vendor?->supplier_books?->count()) {
+                    $po->supp_invoice_required = 'yes';
+                    $po->save();
+                }
+            } else {
+                $po->supp_invoice_required = 'no';
             }
-            
+
             $vendorBillingAddress = $po->bill_address ?? null;
 
             if ($vendorBillingAddress) {
@@ -1072,6 +1083,26 @@ class PoController extends Controller
             $po->department_id = $request->department_id;
             $po->store_id = $request->store_id;
             $po->document_date = $request->document_date ?? $po->document_date; 
+
+            $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';
+            $po->po_type = $poTypeParam;
+
+            if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
+                $po->gate_entry_required = $parameters['gate_entry_required'][0] ?? 'no';
+            } else {
+                $po->gate_entry_required = 'no';
+            }
+            $po->partial_delivery = $parameters['partial_delivery_allowed'][0] ?? 'no';
+            
+            if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
+                if($po?->vendor?->supplier_books?->count()) {
+                    $po->supp_invoice_required = 'yes';
+                    $po->save();
+                }
+            } else {
+                $po->supp_invoice_required = 'no';
+            }
+            
             $po->save();
             $vendorBillingAddress = $po->bill_address ?? null;
             $vendorShippingAddress = $po->ship_address ?? null;
@@ -1968,6 +1999,7 @@ class PoController extends Controller
     # This for both bulk and single po
     protected function buildPiQuery(Request $request) 
     {
+        $poType = ucfirst(strtolower($request->po_type ?? 'Goods'));
         $seriesId = $request->series_id ?? null;
         $indentId = $request->document_number ?? null;
         $storeId = $request->store_id ?? null;
@@ -1983,7 +2015,7 @@ class PoController extends Controller
         $selected_pi_ids = json_decode($request->selected_pi_ids) ?? [];
         $selectColumn = ['id','pi_id','so_id','item_id','item_code','item_name','uom_id','uom_code','vendor_id','indent_qty','order_qty','adjusted_qty','required_qty','remarks'];
         $piItems = PiItem::select($selectColumn)
-                    ->where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $departmentId, $selected_pi_ids, $itemSearch,$storeId,$subStoreId, $soId, $indentId,$requesterId) {
+                    ->where(function($query) use ($seriesId,$applicableBookIds,$vendorId, $departmentId, $selected_pi_ids, $itemSearch,$storeId,$subStoreId, $soId, $indentId,$requesterId,$poType) {
                     if(count($selected_pi_ids)) {
                         $query->whereNotIn('id',$selected_pi_ids);
                     }
@@ -2018,7 +2050,8 @@ class PoController extends Controller
                     if($soId) {
                         $query->where('so_id', $soId);
                     }
-                    $query->whereHas('item', function($itemQuery) use ($vendorId) {
+                    $query->whereHas('item', function($itemQuery) use ($vendorId, $poType) {
+                        $itemQuery->where('type', $poType);
                         if($vendorId) {
                             $itemQuery->whereHas('approvedVendors', function($av) use ($vendorId) {
                                 $av->where('vendor_id', $vendorId);

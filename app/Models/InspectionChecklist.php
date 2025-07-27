@@ -19,6 +19,7 @@ class InspectionChecklist extends Model
         'organization_id',
         'name',
         'description',
+        'type',
         'status',
     ];
     public function details()

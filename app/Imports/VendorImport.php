@@ -83,12 +83,12 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 $validatedData['organization_id'] = $policyLevelData['organization_id'] ?? null;
             } else {
                 $validatedData['group_id'] = $organization->group_id;
-                $validatedData['company_id'] = null;
+                $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
         } else {
             $validatedData['group_id'] = $organization->group_id;
-            $validatedData['company_id'] = null;
+            $validatedData['company_id'] = $organization->company_id;
             $validatedData['organization_id'] = null;
         }
 
@@ -133,21 +133,6 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
             $validatedData = $serviceData['validatedData'];
             $vendorCodeType = $serviceData['vendorCodeType'];
             $vendorInitials = strtoupper(substr($row['vendor_name'], 0, 3)); 
-
-            $gstinRegDate = $row['gstin_reg_date'] ?? null;
-            // $gstinRegistrationDate = null;
-            
-            // if ($gstinRegDate) {
-            //     if (is_numeric($gstinRegDate)) {
-            //         $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-            //             ->addDays($gstinRegDate - 2) 
-            //             ->format('Y-m-d');
-            //     } else {
-            //         $gstinRegistrationDate = $gstinRegDate; 
-            //         \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
-            //     }
-            // }
-            
             $tdsWefDate = $row['tds_wef_date'] ?? null;
             $tdsWefDatee = null;
             
@@ -365,7 +350,7 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                 'credit_days' => $uploadedVendor->credit_days ?? null,
                 'created_by'=> $user->auth_user_id ?? null,
                 'group_id' => $uploadedVendor->group_id ?? null,
-                'company_id' => null,
+                'company_id' => $uploadedVendor->company_id ?? null,
                 'organization_id' => null,
                 'gst_applicable' =>$uploadedVendor->gst_applicable ?? 0,
                 'gstin_no' => $uploadedVendor->gstin_no ?? null,
@@ -394,9 +379,25 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                'vendor_code' => [
                     'required_if:vendor_code_type,manual', 
                     'max:255',
-                    Rule::unique('erp_vendors', 'vendor_code')
-                    ->where('group_id', $uploadedVendor->group_id) 
-                    ->whereNull('deleted_at')
+                  Rule::unique('erp_vendors', 'vendor_code')
+                    ->where(function ($query) use ($uploadedVendor) {
+                        if ($uploadedVendor->group_id !== null) {
+                            $query->where('group_id', $uploadedVendor->group_id);
+                        }
+                        if ($uploadedVendor->company_id !== null) {
+                            $query->where(function ($q) use ($uploadedVendor) {
+                                $q->where('company_id', $uploadedVendor->company_id)
+                                ->orWhereNull('company_id');
+                            });
+                        }
+                        if ($uploadedVendor->organization_id !== null) {
+                            $query->where(function ($q) use ($uploadedVendor) {
+                                $q->where('organization_id', $uploadedVendor->organization_id)
+                                ->orWhereNull('organization_id');
+                            });
+                        }
+                        $query->whereNull('deleted_at');
+                    }),
                 ],
                 'vendor_initial' => 'nullable|string|max:255',
                 'company_name' => [
@@ -404,8 +405,24 @@ class VendorImport implements ToModel, WithHeadingRow, WithChunkReading
                         'string',
                         'max:255',
                         Rule::unique('erp_vendors', 'company_name')
-                         ->where('group_id', $uploadedVendor->group_id) 
-                        ->whereNull('deleted_at')
+                        ->where(function ($query) use ($uploadedVendor) {
+                            if ($uploadedVendor->group_id !== null) {
+                                $query->where('group_id', $uploadedVendor->group_id);
+                            }
+                            if ($uploadedVendor->company_id !== null) {
+                                $query->where(function ($q) use ($uploadedVendor) {
+                                    $q->where('company_id', $uploadedVendor->company_id)
+                                    ->orWhereNull('company_id');
+                                });
+                            }
+                            if ($uploadedVendor->organization_id !== null) {
+                                $query->where(function ($q) use ($uploadedVendor) {
+                                    $q->where('organization_id', $uploadedVendor->organization_id)
+                                    ->orWhereNull('organization_id');
+                                });
+                            }
+                            $query->whereNull('deleted_at');
+                        }),
                     ],
                 'country_id' => 'nullable|exists:countries,id',
                 'state_id' => 'nullable|exists:states,id',

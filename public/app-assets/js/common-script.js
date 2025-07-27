@@ -213,6 +213,8 @@ $(document).ready(function() {
                     if (hiddenFieldSelector && hiddenFieldSelector !== "") {
                         $(hiddenFieldSelector).val('');
                     }
+                    $(".ledger-group-select").empty().trigger('change');
+                    $(".ledger-group-id").val('');
                 }
             }
         }).focus(function() {
@@ -365,6 +367,15 @@ $(document).ready(function() {
         additionalFields: ['description'],
     });
 
+    initializeAutocomplete(".bank-ladger-autocomplete", {
+        url: '/search',
+        type: 'accounLadger',
+        labelField: 'name',
+        hiddenFieldSelector: function() { return '.ladger-id'; },
+        minLength: 0,
+        additionalFields: ['description'],
+    });
+
     initializeAutocomplete(".ledger-group-autocomplete", {
         url: '/search',
         type: 'ledgerGroup',
@@ -459,7 +470,7 @@ $(document).ready(function() {
         });
     }
 
-    $(".ladger-autocomplete").on("autocompleteselect", function(event, ui) {
+    $(".ladger-autocomplete, .bank-ladger-autocomplete").on("autocompleteselect", function(event, ui) {
         var ledgerId = ui.item.id;
         if (ledgerId) {
             $(".ledger-group-select").val("");

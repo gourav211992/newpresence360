@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Exports\PurchaseReturnExport;
 use DB;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -42,9 +43,11 @@ use App\Models\CostCenter;
 use App\Models\ErpAddress;
 use App\Models\PaymentTerm;
 use App\Models\AlternateUOM;
+use App\Models\ErpSaleOrder;
 use App\Models\Organization;
 use App\Models\NumberPattern;
 use App\Models\AttributeGroup;
+use App\Models\EwayBillMaster;
 
 use App\Models\ErpEinvoice;
 use App\Models\ErpEinvoiceLog;
@@ -55,19 +58,30 @@ use App\Helpers\BookHelper;
 use App\Helpers\NumberHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\CurrencyHelper;
+use App\Helpers\DynamicFieldHelper;
 use App\Helpers\EInvoiceHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\GstInvoiceHelper;
 use App\Helpers\FinancialPostingHelper;
+use App\Helpers\MasterIndiaHelper;
 use App\Helpers\ServiceParametersHelper;
 
 use App\Http\Controllers\EInvoiceServiceController;
-
+use App\Jobs\SendEmailJob;
+use App\Models\AuthUser;
+use App\Models\Category;
+use App\Models\Employee;
+use App\Models\ErpItem;
+use App\Models\ErpPrDynamicField;
+use App\Models\ErpVendor;
+use App\Services\MasterIndiaService;
 use App\Services\PRService;
+use Carbon\Carbon;
+use DateTime;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Maatwebsite\Excel\Facades\Excel;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-
-
+use stdClass;
 
 class PurchaseReturnController extends Controller
 {
@@ -84,8 +98,9 @@ class PurchaseReturnController extends Controller
     public function index()
     {
         $parentUrl = request() -> segments()[0];
-        // dd($parentUrl);
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+        $orderType = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
+        request() -> merge(['type' => $orderType]);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -93,7 +108,11 @@ class PurchaseReturnController extends Controller
                 [
                     'items',
                     'vendor',
-                ]   
+                    'erpStore',
+                    'erpSubStore',
+                    'costCenters',
+                    'currency'
+                ]
             )
             ->withDefaultGroupCompanyOrg()
             ->withDraftListingLogic()
@@ -126,7 +145,22 @@ class PurchaseReturnController extends Controller
                 ->editColumn('document_date', function ($row) {
                     return date('d/m/Y', strtotime($row->document_date)) ?? 'N/A';
                 })
-                ->editColumn('revision_number', function ($row) {
+                ->addColumn('location', function ($row) {
+                    return strval($row->erpStore?->store_name) ?? 'N/A';
+                })
+                ->addColumn('store', function ($row) {
+                    return strval($row->erpSubStore?->name) ?? 'N/A';
+                })
+                ->addColumn('cost_center', function ($row) {
+                    return strval($row->costCenters?->name) ?? 'N/A';
+                })
+                ->addColumn('return_type', function ($row) {
+                    return strval($row->qty_return_type) ?? 'N/A';
+                })
+                ->addColumn('currency', function ($row) {
+                    return strval($row->currency?->short_name) ?? 'N/A';
+                })
+                ->addColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })
                 ->addColumn('vendor_name', function ($row) {
@@ -176,22 +210,25 @@ class PurchaseReturnController extends Controller
         $serviceAlias = $servicesBooks['services'][0]->alias ?? ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias,$parentUrl)->get();
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
         $materialReceipts = MrnHeader::with('vendor')
             ->where('status', ConstantHelper::ACTIVE)
-            ->where('organization_id', $user->organization_id)
+            ->withDefaultGroupCompanyOrg()
             ->get();
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
-        //     ->orderBy('id', 'ASC')
-        //     ->get();
+        $transportationModes = EwayBillMaster::where('status', 'active')
+            ->where('type', '=', 'transportation-mode')
+            ->orderBy('id', 'ASC')
+            ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+
         return view('procurement.purchase-return.create', [
             'books' => $books,
             'vendors' => $vendors,
+            'locations' =>$locations,
             'servicesBooks'=>$servicesBooks,
             'materialReceipts' => $materialReceipts,
-            'locations' =>$locations
+            'transportationModes' => $transportationModes
         ]);
     }
 
@@ -241,9 +278,12 @@ class PurchaseReturnController extends Controller
                 ], 422);
             }
 
+            $transportationMode = EwayBillMaster::find($request->transportation_mode);
+
             $pb = new PRHeader();
             $pb->fill($request->all());
             $pb->store_id = $request->header_store_id;
+            $pb->sub_store_id = $request->sub_store_id;
             $pb->organization_id = $organization->id;
             $pb->group_id = $organization->group_id;
             $pb->company_id = $organization->company_id;
@@ -256,6 +296,10 @@ class PurchaseReturnController extends Controller
             $pb->qty_return_type = $request->return_type;
             $pb->supplier_invoice_no = $request->supplier_invoice_no;
             $pb->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
+            $pb->transporter_name = $request->transporter_name;
+            $pb->eway_bill_master_id = $request->transportation_mode;
+            $pb->transportation_mode = $transportationMode?->description;
+            $pb->vehicle_no = $request->vehicle_no;
             $pb->billing_to = $request->billing_id;
             $pb->ship_to = $request->shipping_id;
             $pb->billing_address = $request->billing_address;
@@ -297,11 +341,11 @@ class PurchaseReturnController extends Controller
             $pb->total_after_tax_amount = 0.00;
             $pb->expense_amount = 0.00;
             $pb->total_amount = 0.00;
+            $pb->cost_center_id = $request->cost_center_id ?? '';
             $pb->save();
 
             $vendorBillingAddress = $pb->billingAddress ?? null;
             $vendorShippingAddress = $pb->shippingAddress ?? null;
-            // dd($vendorBillingAddress, $vendorShippingAddress);
             if ($vendorBillingAddress) {
                 $billingAddress = $pb->bill_address_details()->firstOrNew([
                     'type' => 'billing',
@@ -350,7 +394,7 @@ class PurchaseReturnController extends Controller
                 ]);
                 $storeLocation->save();
             }
-            $pb -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($request -> vendor_id, $shippingAddress -> country_id, $storeLocation -> country_id, 'vendor');
+            $pb -> gst_invoice_type = EInvoiceHelper::getGstInvoiceType($request -> vendor_id, $billingAddress -> country_id, $storeLocation -> country_id, 'vendor');
 
             $totalItemValue = 0.00;
             $totalTaxValue = 0.00;
@@ -382,6 +426,7 @@ class PurchaseReturnController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
+                    $so_id = null;
                     if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
                         $pbDetail = MrnDetail::find($component['mrn_detail_id']);
                         $mrn_detail_id = $pbDetail->id ?? null;
@@ -393,6 +438,7 @@ class PurchaseReturnController extends Controller
                                 $pbDetail->pr_qty += floatval($component['accepted_qty']);
                             }
                             $pbDetail->save();
+                            $so_id = $pbDetail->so_id;
                         }
                     }
                     $inventory_uom_id = null;
@@ -422,14 +468,16 @@ class PurchaseReturnController extends Controller
                     $pbItemArr[] = [
                         'header_id' => $pb->id,
                         'mrn_detail_id' => $mrn_detail_id,
+                        'so_id' => $so_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
                         'hsn_code' => $component['hsn_code'] ?? null,
                         'uom_id' =>  $component['uom_id'] ?? null,
                         'uom_code' => $uom->name ?? null,
-                        'store_id' => $component['store_id'] ?? null,
-                        'store_code' => @$component['erp_store_code'] ?? null,
+                        'store_id' => $pb->store_id ?? null,
+                        'store_code' => $pb?->erpStore?->store_code ?? null,
+                        'sub_store_id' => $pb->sub_store_id ?? null,
                         'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
@@ -468,12 +516,12 @@ class PurchaseReturnController extends Controller
                     if ($isTax) {
                         $itemTax = 0;
                         $itemPrice = ($pbItem['basic_value'] - $headerDiscount - $pbItem['discount_amount']);
-                        $shippingAddress = $pb->shippingAddress;
+                        $billingAddress = $pb->billingAddress;
 
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
+                        $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
 
-                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
+                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'collection');
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -495,6 +543,7 @@ class PurchaseReturnController extends Controller
 
                     $pbDetail->header_id = $pbItem['header_id'];
                     $pbDetail->mrn_detail_id = $pbItem['mrn_detail_id'];
+                    $pbDetail->so_id = $pbItem['so_id'];
                     $pbDetail->item_id = $pbItem['item_id'];
                     $pbDetail->item_code = $pbItem['item_code'];
                     $pbDetail->hsn_id = $pbItem['hsn_id'];
@@ -503,6 +552,7 @@ class PurchaseReturnController extends Controller
                     $pbDetail->uom_code = $pbItem['uom_code'];
                     $pbDetail->store_id = $pbItem['store_id'];
                     $pbDetail->store_code = $pbItem['store_code'];
+                    $pbDetail->sub_store_id = $pbItem['sub_store_id'];
                     $pbDetail->accepted_qty = $pbItem['accepted_qty'];
                     $pbDetail->inventory_uom_id = $pbItem['inventory_uom_id'];
                     $pbDetail->inventory_uom_code = $pbItem['inventory_uom_code'];
@@ -671,7 +721,7 @@ class PurchaseReturnController extends Controller
                 $docId = $pb->id;
                 $remarks = $pb->remarks;
                 $attachments = $request->file('attachment');
-                $currentLevel = $pb->approval_level;
+                $currentLevel = $pb->approval_level ?? 1;
                 $revisionNumber = $pb->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $modelName = get_class($pb);
@@ -699,17 +749,24 @@ class PurchaseReturnController extends Controller
                 $mediaFiles = $pb->uploadDocuments($request->file('attachment'), 'pb', false);
             }
             $pb->save();
-            if($pb->qty_return_type == 'accepted'){
+            if(($pb->qty_return_type == 'accepted') && ($pb->items)){
                 $invoiceLedger = self::maintainStockLedger($pb);
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
-            
+
             $redirectUrl = '';
             if(($pb->document_status == ConstantHelper::POSTED)) {
-                $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($request -> vendor_id, $shippingAddress -> country_id, $storeLocation -> country_id, 'vendor');
+                $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($request -> vendor_id, $billingAddress -> country_id, $storeLocation -> country_id, 'vendor');
                 if ($pb -> document_status === ConstantHelper::POSTED){
                     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
                         $data = EInvoiceHelper::saveGstIn($pb);
-                        if (isset($data) && $data['status'] == 'error') {
+                        if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                             DB::rollBack();
                             return response()->json([
                                 'error' => 'error',
@@ -721,9 +778,16 @@ class PurchaseReturnController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
             }
-            
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPrDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
+            }
             DB::commit();
-            
+
             return response()->json([
                 'message' => 'Record created successfully',
                 'data' => $pb,
@@ -773,9 +837,11 @@ class PurchaseReturnController extends Controller
         $serviceAlias = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $user = Helper::getAuthenticatedUser();
+        $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get();
         $pb = PRHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
-        //dd($pb->toArray());
         $totalItemValue = $pb->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $pb->revision_number;
@@ -807,20 +873,34 @@ class PurchaseReturnController extends Controller
         $orgAddress = $organizationAddress?->display_address;
         $eInvoice = $pb->irnDetail()->first();
 
+        $transportationModes = EwayBillMaster::where('status', 'active')
+            ->where('type', '=', 'transportation-mode')
+            ->orderBy('id', 'ASC')
+            ->get();
+        $subStoreCount = $pb->items()->where('sub_store_id', '!=', null)->count() ?? 0;
+        $erpStores = ErpStore::withDefaultGroupCompanyOrg()
+            ->orderBy('id', 'DESC')
+            ->get();
+        $dynamicFieldsUI = $pb -> dynamicfieldsUi();
         return view($view, [
-            'deliveryAddress'=> $deliveryAddress,
-            'orgAddress'=> $orgAddress,
             'mrn' => $pb,
             'user' => $user,
             'books' => $books,
             'buttons' => $buttons,
             'vendors' => $vendors,
+            'eInvoice' => $eInvoice,
             'locations' => $locations,
-            'docStatusClass' => $docStatusClass,
+            'orgAddress'=> $orgAddress,
             'totalItemValue' => $totalItemValue,
+            'docStatusClass' => $docStatusClass,
+            'deliveryAddress'=> $deliveryAddress,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
-            'eInvoice' => $eInvoice
+            'transportationModes' => $transportationModes,
+            'users' => $users,
+            'subStoreCount' => $subStoreCount,
+            'erpStores' => $erpStores,
+            'dynamicFieldsUI' => $dynamicFieldsUI
         ]);
     }
 
@@ -847,7 +927,6 @@ class PurchaseReturnController extends Controller
         }
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -864,7 +943,8 @@ class PurchaseReturnController extends Controller
                     ['model_type' => 'sub_detail', 'model_name' => 'PRItemAttribute', 'relation_column' => 'detail_id'],
                     ['model_type' => 'sub_detail', 'model_name' => 'PRTed', 'relation_column' => 'detail_id']
                 ];
-                $a = Helper::documentAmendment($revisionData, $id);
+                // $a = Helper::documentAmendment($revisionData, $id);
+                $this->amendmentSubmit($request, $id);
             }
 
             $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedPRItemIds'];
@@ -897,12 +977,20 @@ class PurchaseReturnController extends Controller
                 }
             }
 
+            $transportationMode = EwayBillMaster::find($request->transportation_mode);
             # PB Header save
+            $pb->store_id = $request->header_store_id;
+            $pb->sub_store_id = $request->sub_store_id;
             $totalTaxValue = 0.00;
             $pb->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
             $pb->supplier_invoice_no = $request->supplier_invoice_no ?? '';
+            $pb->transporter_name = $request->transporter_name;
+            $pb->eway_bill_master_id = $request->transportation_mode;
+            $pb->transportation_mode = $transportationMode?->description;
+            $pb->vehicle_no = $request->vehicle_no;
             $pb->final_remark = $request->remarks ?? '';
             $pb->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $pb->cost_center_id = $request->cost_center_id ?? '';
             $pb->save();
 
             $vendorBillingAddress = $pb->billingAddress ?? null;
@@ -1027,8 +1115,9 @@ class PurchaseReturnController extends Controller
                         'hsn_code' => $component['hsn_code'] ?? null,
                         'uom_id' =>  $component['uom_id'] ?? null,
                         'uom_code' => $uom->name ?? null,
-                        'store_id' => $component['store_id'] ?? null,
-                        'store_code' => @$component['erp_store_code'] ?? null,
+                        'store_id' => $pb->store_id ?? null,
+                        'store_code' => $pb?->erpStore?->store_code ?? null,
+                        'sub_store_id' => $pb->sub_store_id ?? null,
                         'accepted_qty' => floatval($component['accepted_qty']) ?? 0.00,
                         'inventory_uom_id' => $inventory_uom_id ?? null,
                         'inventory_uom_code' => $inventory_uom_code ?? null,
@@ -1060,17 +1149,16 @@ class PurchaseReturnController extends Controller
                     $headerDiscount = 0;
                     $headerDiscount = ($pbItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $pbItem['taxable_amount'] - $headerDiscount; // after both discount
-                    $poItem['header_discount_amount'] = $headerDiscount;
+                    $pbItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
                     if ($isTax) {
-                        //Tax
                         $itemTax = 0;
                         $itemPrice = ($pbItem['basic_value'] - $headerDiscount - $pbItem['discount_amount']);
-                        $shippingAddress = $pb->shippingAddress;
+                        $billingAddress = $pb->billingAddress;
 
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'collection');
+                        $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
+                        $taxDetails = TaxHelper::calculateTax($pbItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'collection');
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
@@ -1102,8 +1190,9 @@ class PurchaseReturnController extends Controller
                     $pbDetail->hsn_code = $pbItem['hsn_code'];
                     $pbDetail->uom_id = $pbItem['uom_id'];
                     $pbDetail->uom_code = $pbItem['uom_code'];
-                    $pbDetail->store_id = $pbItem['store_id'];
-                    $pbDetail->store_code = $pbItem['store_code'];
+                    $pbDetail->store_id = @$pbItem['store_id'];
+                    $pbDetail->store_code = @$pbItem['store_code'];
+                    $pbDetail->sub_store_id = @$pbItem['sub_store_id'];
                     $pbDetail->accepted_qty = $pbItem['accepted_qty'];
                     $pbDetail->inventory_uom_id = $pbItem['inventory_uom_id'];
                     $pbDetail->inventory_uom_code = $pbItem['inventory_uom_code'];
@@ -1119,6 +1208,7 @@ class PurchaseReturnController extends Controller
                     // $pbDetail->exchange_rate_to_group_currency = $pbItem['group_currency_exchange_rate'];
                     $pbDetail->remark = $pbItem['remark'];
                     $pbDetail->save();
+
 
                     #Save component Attr
                     foreach ($pbDetail->item->itemAttributes as $itemAttribute) {
@@ -1270,7 +1360,7 @@ class PurchaseReturnController extends Controller
             $remarks = $pb->remarks;
             $amendAttachments = $request->file('amend_attachment');
             $attachments = $request->file('attachment');
-            $currentLevel = $pb->approval_level;
+            $currentLevel = $pb->approval_level ?? 1;
             $modelName = get_class($pb);
             if ($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment') {
                 //*amendmemnt document log*/
@@ -1314,8 +1404,15 @@ class PurchaseReturnController extends Controller
             }
 
             $pb->save();
-            if($pb->qty_return_type == 'accepted'){
+            if(($pb->qty_return_type == 'accepted') && ($pb->items)){
                 $invoiceLedger = self::maintainStockLedger($pb);
+                if($invoiceLedger['status'] == 'error') {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => $invoiceLedger['message'],
+                        'error' => ''
+                    ], 422);
+                }
             }
 
             $redirectUrl = '';
@@ -1324,7 +1421,7 @@ class PurchaseReturnController extends Controller
                 if ($pb -> document_status === ConstantHelper::POSTED){
                     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
                         $data = EInvoiceHelper::saveGstIn($pb);
-                        if (isset($data) && $data['status'] == 'error') {
+                        if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                             DB::rollBack();
                             return response()->json([
                                 'error' => 'error',
@@ -1335,6 +1432,15 @@ class PurchaseReturnController extends Controller
                 }
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $pb->id . '/pdf');
+            }
+
+            $status = DynamicFieldHelper::saveDynamicFields(ErpPrDynamicField::class, $pb -> id, $request -> dynamic_field ?? []);
+            if ($status && !$status['status'] ) {
+                DB::rollBack();
+                return response() -> json([
+                    'message' => $status['message'],
+                    'error' => ''
+                ], 422);
             }
 
             DB::commit();
@@ -1357,9 +1463,8 @@ class PurchaseReturnController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item, true) ?? [];
-        // dd($item);
         $componentItem = json_decode($request->component_item, true) ?? [];
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -1377,14 +1482,12 @@ class PurchaseReturnController extends Controller
     // PO Item Rows
     public function mrnItemRows(Request $request)
     {
-        //dd('hii');
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        //dd($items);
-        $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
+        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;
@@ -1426,23 +1529,30 @@ class PurchaseReturnController extends Controller
         $rowCount = intval($request->rowCount) ?? 1;
         $item = Item::find($request->item_id);
         $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
-        $pbDetailId = $request->detail_id ?? null;
+        $prDetailId = $request->detail_id ?? null;
         $itemAttIds = [];
-        if ($pbDetailId) {
-            $pbDetail = PRDetail::find($pbDetailId);
-            if ($pbDetail) {
-                $itemAttIds = $pbDetail->attributes()->pluck('item_attribute_id')->toArray();
+        $itemAttributeArray = [];
+        if ($prDetailId) {
+            $detail = PRDetail::find($prDetailId);
+            if ($detail) {
+                $itemAttIds = collect($detail->attributes)->pluck('item_attribute_id')->toArray();
+                $itemAttributeArray = $detail->item_attributes_array();
             }
         }
         $itemAttributes = collect();
         if (count($itemAttIds)) {
             $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
+                $itemAttributes = $item?->itemAttributes;
+                $itemAttributeArray = $item->item_attributes_array();
+            }
         } else {
             $itemAttributes = $item?->itemAttributes;
+            $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.purchase-return.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr'))->render();
+        $html = view('procurement.purchase-return.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr','itemAttributes'))->render();
         $hiddenHtml = '';
-        foreach ($item->itemAttributes as $attribute) {
+        foreach ($itemAttributes as $attribute) {
             $selected = '';
             foreach ($attribute->attributes() as $value) {
                 if (in_array($value->id, $selectedAttr)) {
@@ -1451,7 +1561,17 @@ class PurchaseReturnController extends Controller
             }
             $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
         }
-        return response()->json(['data' => ['attr' => $item?->itemAttributes->count() ?? 0, 'html' => $html, 'hiddenHtml' => $hiddenHtml], 'status' => 200, 'message' => 'fetched.']);
+
+        if (count($selectedAttr)) {
+            foreach ($itemAttributeArray as &$group) {
+                foreach ($group['values_data'] as $attribute) {
+                    if (in_array($attribute->id, $selectedAttr)) {
+                        $attribute->selected = true;
+                    }
+                }
+            }
+        }
+        return response()->json(['data' => ['attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml, 'itemAttributeArray' => $itemAttributeArray], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add discount row
@@ -1469,7 +1589,6 @@ class PurchaseReturnController extends Controller
     # get tax calcualte
     public function taxCalculation(Request $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $location = ErpStore::find($request->location_id ?? null);
         $organization = $user->organization;
@@ -1508,7 +1627,6 @@ class PurchaseReturnController extends Controller
             $taxDetails = TaxHelper::calculateTax($hsnId, $price, $fromCountry, $fromState, $upToCountry, $upToState, $transactionType,$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            // dd($hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);
             $html = view('procurement.purchase-return.partials.item-tax', compact('taxDetails', 'rowCount', 'itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
@@ -1518,6 +1636,94 @@ class PurchaseReturnController extends Controller
 
     // Get Address
     public function getAddress(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $vendorId = $request?->id ?? null;
+        $type = $request?->type ?? null;
+        $typeId = $request?->typeId ?? null;
+
+        $vendor = Vendor::withDefaultGroupCompanyOrg()
+        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+
+        $moduleTypeId = match ($type) {
+            'mrn' => $typeId,
+            default => $vendorId,
+        };
+
+        $typeData = match ($type) {
+            'mrn' => MrnHeader::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($typeId),
+            default => Vendor::withDefaultGroupCompanyOrg()
+                ->with(['currency:id,name', 'paymentTerms:id,name'])
+                ->find($vendorId),
+        };
+
+        $currency = $typeData?->currency;
+        $paymentTerm = $typeData?->paymentTerms;
+
+        $documentDate = $request?->document_date;
+
+        $vendorAddress = match ($type) {
+            'mrn' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
+            default => ErpAddress::where('addressable_id', $moduleTypeId)
+                ->where('addressable_type', Vendor::class)
+                ->latest()
+                ->first(),
+        };
+
+        if (!$vendorAddress) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Address not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($typeData->currency_id)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Currency not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        if (!isset($paymentTerm)) {
+            return response() -> json([
+                'data' => array(
+                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
+                )
+            ]);
+        }
+        $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
+
+        $storeId = $request?->store_id ?? null;
+        $store = ErpStore::find($storeId);
+        $locationAddress = $store?->address;
+
+        $organization = Organization::where('id', $user->organization_id)->first();
+        $organizationAddress = Address::with(['city', 'state', 'country'])
+            ->where('addressable_id', $user->organization_id)
+            ->where('addressable_type', Organization::class)
+            ->first();
+        $orgAddress = $organizationAddress?->display_address;
+
+        return response()->json(
+            [
+                'data' => [
+                    'status' => 200,
+                    'vendor' =>$vendor,
+                    'message' => 'fetched',
+                    'currency' => $currency,
+                    'org_address' => $orgAddress,
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
+                    'currency_exchange' => $currencyData
+                ],
+                'delivery_address' => $locationAddress,
+            ]
+        );
+    }
+
+    public function getAddress1(Request $request)
     {
         $vendor = Vendor::withDefaultGroupCompanyOrg()
         ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
@@ -1698,6 +1904,7 @@ class PurchaseReturnController extends Controller
         $qty = intval($request->qty) ?? 0;
         $uomName = $item->uom->name ?? 'NA';
         $storeId = $request->store_id ?? null;
+        $subStoreId = $request->sub_store_id ?? null;
         if ($item->uom_id == $uomId) {
         } else {
             $alUom = $item->alternateUOMs()->where('uom_id', $uomId)->first();
@@ -1706,9 +1913,24 @@ class PurchaseReturnController extends Controller
         $remark = $request->remark ?? null;
         $mrn = MrnHeader::find($request->mrn_header_id);
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
-        $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $uomId, $storeId);
-        $detailedStocks = InventoryHelper::fetchStockSummary($itemId, $selectedAttr,  $uomId, $qty, $storeId);
-        $html = view('procurement.purchase-return.partials.comp-item-detail', compact('item', 'mrn', 'selectedAttr', 'remark', 'uomName', 'qty', 'specifications', 'poItem', 'totalStockData'))->render();
+        $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $uomId, $storeId, $subStoreId);
+        $detailedStocks = InventoryHelper::fetchStockSummary($itemId, $selectedAttr,  $uomId, $qty, $storeId, $subStoreId);
+        $html = view(
+            'procurement.purchase-return.partials.comp-item-detail',
+            compact(
+                'item',
+                'mrn',
+                'selectedAttr',
+                'remark',
+                'uomName',
+                'qty',
+                'specifications',
+                'poItem',
+                'totalStockData',
+                'detailedStocks'
+            )
+        )
+        ->render();
         $storeHtml = view('procurement.purchase-return.partials.item-location-modal', compact('detailedStocks'))->render();
         return response()->json(['data' => ['html' => $html, 'detailedStocks' => $detailedStocks], 'status' => 200, 'message' => 'fetched.']);
     }
@@ -1721,20 +1943,19 @@ class PurchaseReturnController extends Controller
             $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])
                 // ->where('organization_id', $organization->id)
                 ->find($request->vendor_id);
-            //dd($vendor);
             $items = MrnDetail::with([
                 'header',
                 'item',
                 'attributes'
             ])
-                ->whereHas('mrnHeader', function ($q) use ($request, $organization) {
-                    $q->where('vendor_id', $request->vendor_id)
-                        ->where('document_status', '=', 'approved');
-                })
-                ->whereHas('item', function ($q) {
-                    $q->where('type', 'Goods');
-                })
-                ->get();
+            ->whereHas('mrnHeader', function ($q) use ($request, $organization) {
+                $q->where('vendor_id', $request->vendor_id)
+                    ->where('document_status', '=', 'approved');
+            })
+            ->whereHas('item', function ($q) {
+                $q->where('type', 'Goods');
+            })
+            ->get();
 
             $currency = $vendor->currency;
             $paymentTerm = $vendor->paymentTerms;
@@ -1812,8 +2033,6 @@ class PurchaseReturnController extends Controller
                 $totalAfterTax = ($totalTaxableValue + $totalTaxes);
                 $totalExpValue = $pbHeader->expense_amount - $pbItem->header_exp_amount;
                 $totalAmount = ($totalAfterTax + $totalExpValue);
-                // dd($totalItemValue, $totalDiscValue, $totalTaxableValue, $totalTaxes, $totalAfterTax, $totalExpValue, $totalAmount);
-
                 $pbHeader->total_item_amount = $totalItemValue;
                 $pbHeader->total_discount = $totalDiscValue;
                 $pbHeader->taxable_amount = $totalTaxableValue;
@@ -1914,6 +2133,7 @@ class PurchaseReturnController extends Controller
         $totalExpense = $purchaseReturn->expense_amount ?? 0.00;
         $totalAmount = ($totalAfterTax + $totalExpense);
         $amountInWords = NumberHelper::convertAmountToWords($purchaseReturn->total_amount);
+        $approvedBy = Helper::getDocStatusUser(get_class($purchaseReturn), $purchaseReturn -> id, $purchaseReturn -> document_status);
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$purchaseReturn->document_status] ?? '';
@@ -1927,14 +2147,14 @@ class PurchaseReturnController extends Controller
         $eInvoice = $purchaseReturn->irnDetail()->first();
 
         // QrCode::format('png')->size(300)->generate($eInvoice->signed_qr_code, $qrCodePath);
-        $qrCodeBase64 = EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code);
-        
+        $qrCodeBase64 = $eInvoice->signed_qr_code ? EInvoiceHelper::generateQRCodeBase64($eInvoice->signed_qr_code) : '';
+
 
         $options = new Options();
         $options->set('defaultFont', 'Helvetica');
         $dompdf = new Dompdf($options);
-        
-        $html = view('pdf.purchase-return', 
+
+        $html = view('pdf.purchase-return',
         [
             'pb' => $purchaseReturn,
             'user' => $user,
@@ -1953,11 +2173,12 @@ class PurchaseReturnController extends Controller
             'totalAmount' => $totalAmount,
             'imagePath' => $imagePath,
             'eInvoice' => $eInvoice,
+            'approvedBy' => $approvedBy,
             'qrCodeBase64' => $qrCodeBase64
         ]
         )->render();
 
-    
+
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
@@ -2095,7 +2316,6 @@ class PurchaseReturnController extends Controller
         }
 
         /*Update Calculation*/
-        // dd($totalItemValue, $totalDiscValue, ($totalItemValue - $totalDiscValue), $totalTaxValue, (($totalItemValue - $totalDiscValue) + $totalTaxValue), $totalExpValue, (($totalItemValue - $totalDiscValue) + ($totalTaxValue + $totalExpValue)));
         $totalDiscValue = $pb->items()->sum('header_discount_amount') + $pb->items()->sum('discount_amount');
         $totalExpValue = $pb->items()->sum('header_exp_amount');
         $pb->total_item_amount = $totalItemAmnt;
@@ -2178,7 +2398,6 @@ class PurchaseReturnController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            // dd($id);
             $pbHeader = PRHeader::find($id);
             if (!$pbHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
@@ -2188,6 +2407,46 @@ class PurchaseReturnController extends Controller
             $pbHeaderData['header_id'] = $pbHeader->id;
             $headerHistory = PRHeaderHistory::create($pbHeaderData);
             $headerHistoryId = $headerHistory->id;
+
+            $vendorBillingAddress = $pbHeader->billingAddress ?? null;
+            $vendorShippingAddress = $pbHeader->shippingAddress ?? null;
+
+            if ($vendorBillingAddress) {
+                $billingAddress = $headerHistory->bill_address_details()->firstOrNew([
+                    'type' => 'billing',
+                ]);
+                $billingAddress->fill([
+                    'address' => $vendorBillingAddress->address,
+                    'country_id' => $vendorBillingAddress->country_id,
+                    'state_id' => $vendorBillingAddress->state_id,
+                    'city_id' => $vendorBillingAddress->city_id,
+                    'pincode' => $vendorBillingAddress->pincode,
+                    'phone' => $vendorBillingAddress->phone,
+                    'fax_number' => $vendorBillingAddress->fax_number,
+                ]);
+                $billingAddress->save();
+            }
+
+            if ($vendorShippingAddress) {
+                $shippingAddress = $headerHistory->ship_address_details()->firstOrNew([
+                    'type' => 'shipping',
+                ]);
+                $shippingAddress->fill([
+                    'address' => $vendorShippingAddress->address,
+                    'country_id' => $vendorShippingAddress->country_id,
+                    'state_id' => $vendorShippingAddress->state_id,
+                    'city_id' => $vendorShippingAddress->city_id,
+                    'pincode' => $vendorShippingAddress->pincode,
+                    'phone' => $vendorShippingAddress->phone,
+                    'fax_number' => $vendorShippingAddress->fax_number,
+                ]);
+                $shippingAddress->save();
+            }
+
+            if ($request->hasFile('amend_attachment')) {
+                $mediaFiles = $headerHistory->uploadDocuments($request->file('amend_attachment'), 'pr', false);
+            }
+            $headerHistory->save();
 
             // Detail History
             $pbDetails = PRDetail::where('header_id', $pbHeader->id)->get();
@@ -2226,7 +2485,7 @@ class PurchaseReturnController extends Controller
                         foreach ($pbTed as $key4 => $extraAmount) {
                             $extraAmountData = $extraAmount->toArray();
                             unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                            $extraAmountData['pb_ted_id'] = $extraAmount->id;
+                            $extraAmountData['pr_ted_id'] = $extraAmount->id;
                             $extraAmountData['header_history_id'] = $headerHistoryId;
                             $extraAmountData['detail_history_id'] = $detailHistoryId;
                             $extraAmountDataHistory = PRTedHistory::create($extraAmountData);
@@ -2245,7 +2504,7 @@ class PurchaseReturnController extends Controller
                 foreach ($pbTed as $key4 => $extraAmount) {
                     $extraAmountData = $extraAmount->toArray();
                     unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
-                    $extraAmountData['pb_ted_id'] = $extraAmount->id;
+                    $extraAmountData['pr_ted_id'] = $extraAmount->id;
                     $extraAmountData['header_history_id'] = $headerHistoryId;
                     $extraAmountDataHistory = PRTedHistory::create($extraAmountData);
                     $extraAmountDataId = $extraAmountDataHistory->id;
@@ -2254,10 +2513,10 @@ class PurchaseReturnController extends Controller
 
             $randNo = rand(10000, 99999);
 
-            $revisionNumber = "PB" . $randNo;
+            $revisionNumber = "PR" . $randNo;
             $pbHeader->revision_number += 1;
-            $pbHeader->document_status = "draft";
-            $pbHeader->save();
+            // $pbHeader->document_status = "draft";
+            // $pbHeader->save();
 
             /*Create document submit log*/
             if ($pbHeader->document_status == ConstantHelper::SUBMITTED) {
@@ -2265,11 +2524,13 @@ class PurchaseReturnController extends Controller
                 $docId = $pbHeader->id;
                 $remarks = $pbHeader->remarks;
                 $attachments = $request->file('attachment');
-                $currentLevel = $pbHeader->approval_level;
+                $currentLevel = $pbHeader->approval_level ?? 1;
                 $revisionNumber = $pbHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType);
+                $pbHeader->document_status = $approveDocument['approvalStatus'];
             }
+            $pbHeader->save();
 
             DB::commit();
             return response()->json([
@@ -2330,12 +2591,39 @@ class PurchaseReturnController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $qtyTypeRequired = $request->pr_qty_type ?? null;
         $headerBookId = $request->header_book_id ?? null;
-        $headerStoreId = $request->header_store_id ?? null;
+        $storeId = $request->header_store_id ?? null;
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        // dd($applicableBookIds);
-        $mrnItems = MrnDetail::where(function ($query) use ($seriesId, $applicableBookIds, $docNumber, $itemId, $vendorId, $qtyTypeRequired) {
+        if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
+            $mrnItems = MrnDetail::select(
+                'erp_mrn_details.*',
+                'erp_mrn_details.rejected_qty as available_qty'
+            )
+            ->whereRaw('erp_mrn_details.rejected_qty > erp_mrn_details.pr_qty');
+        } else{
+            $mrnItems = MrnDetail::select(
+                'erp_mrn_details.*',
+                'stock_ledger.document_header_id as document_header_id',
+                'stock_ledger.document_detail_id as document_detail_id',
+                'stock_ledger.lot_number as lg_lot_number',
+                'stock_ledger.receipt_qty as available_qty',
+                'stock_ledger.utilized_id as utilized_id',
+                'stock_ledger.book_type as book_type',
+                'stock_ledger.document_number as document_number',
+                'stock_ledger.document_status as stock_ledger_status',
+            )
+            ->join('stock_ledger', function ($join) {
+                $join->on('stock_ledger.document_detail_id', '=', 'erp_mrn_details.id')
+                    ->where('stock_ledger.book_type', '=', ConstantHelper::MRN_SERVICE_ALIAS)
+                    ->whereColumn('stock_ledger.document_detail_id', '=', 'erp_mrn_details.id')
+                    ->whereRaw('stock_ledger.receipt_qty > 0')
+                    ->whereNull('stock_ledger.utilized_id');
+            })
+            ->whereIn('stock_ledger.document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED])
+            ->whereRaw('erp_mrn_details.accepted_qty > erp_mrn_details.pr_qty');
+        }
+        $mrnItems = $mrnItems->where(function ($query) use ($seriesId, $applicableBookIds, $docNumber, $itemId, $vendorId, $qtyTypeRequired, $storeId) {
             $query->whereHas('item');
-            $query->whereHas('mrnHeader', function ($mrn) use ($seriesId, $applicableBookIds, $docNumber, $vendorId) {
+            $query->whereHas('mrnHeader', function ($mrn) use ($seriesId, $applicableBookIds, $docNumber, $vendorId, $storeId) {
                 $mrn->withDefaultGroupCompanyOrg();
                 $mrn->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
                 if ($seriesId) {
@@ -2351,18 +2639,22 @@ class PurchaseReturnController extends Controller
                 if ($vendorId) {
                     $mrn->where('vendor_id', $vendorId);
                 }
+
+                if ($storeId) {
+                    $mrn->where('store_id', $storeId);
+                }
             });
 
             if ($itemId) {
-                $query->where('item_id', $itemId);
+                $query->where('erp_mrn_details.item_id', $itemId);
             }
-            if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
-                $query->whereRaw('rejected_qty > pr_qty');
-            } else{
-                $query->whereRaw('accepted_qty > pr_qty');
-            }
-        })
-        ->get();
+            // if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
+            //     $query->whereRaw('rejected_qty > pr_qty');
+            // } else{
+            //     $query->whereRaw('accepted_qty > pr_qty');
+            // }
+        })->get();
+
 
         $html = view('procurement.purchase-return.partials.mrn-item-list', ['mrnItems' => $mrnItems, 'qtyTypeRequired' => $qtyTypeRequired])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
@@ -2373,13 +2665,40 @@ class PurchaseReturnController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $ids = json_decode($request->ids, true) ?? [];
-        $qtyTypeRequired = $request->pr_qty_type ?? null;
+        $qtyTypeRequired = $request->return_type ?? null;
         $vendor = null;
+        $subStoreCount = 0;
         $supplierInvoiceNumber = null;
         $supplierInvoiceDate = null;
         $finalDiscounts = collect();
         $finalExpenses = collect();
-        $mrnItems = MrnDetail::whereIn('id', $ids)->get();
+        if($qtyTypeRequired && ($qtyTypeRequired == 'rejected')){
+            $mrnItems = MrnDetail::select(
+                'erp_mrn_details.*',
+                'erp_mrn_details.rejected_qty as available_qty'
+            );
+        } else{
+            $mrnItems = MrnDetail::select(
+                'erp_mrn_details.*',
+                'stock_ledger.document_header_id as document_header_id',
+                'stock_ledger.document_detail_id as document_detail_id',
+                'stock_ledger.lot_number as lg_lot_number',
+                'stock_ledger.receipt_qty as available_qty',
+                'stock_ledger.utilized_id as utilized_id',
+                'stock_ledger.book_type as book_type',
+                'stock_ledger.document_number as document_number',
+            )
+            ->join('stock_ledger', function ($join) {
+                $join->on('stock_ledger.document_header_id', '=', 'erp_mrn_details.mrn_header_id')
+                    ->where('stock_ledger.book_type', '=', ConstantHelper::MRN_SERVICE_ALIAS)
+                    ->whereColumn('stock_ledger.document_detail_id', '=', 'erp_mrn_details.id')
+                    ->whereRaw('stock_ledger.receipt_qty > 0')
+                    ->whereNull('stock_ledger.utilized_id');
+            })
+            ->whereRaw('erp_mrn_details.accepted_qty > erp_mrn_details.pr_qty');
+        }
+        $mrnItems = $mrnItems->whereIn('erp_mrn_details.id', $ids)->get();
+        $subStoreCount = $mrnItems->where('sub_store_id', '!=', null)->count();
         $uniqueMrnIds = MrnDetail::whereIn('id', $ids)
             ->distinct()
             ->pluck('mrn_header_id')
@@ -2424,7 +2743,7 @@ class PurchaseReturnController extends Controller
         $mrnIds = $mrnItems->pluck('mrn_header_id')->all();
         $vendorId = MrnHeader::whereIn('id', $mrnIds)->pluck('vendor_id')->toArray();
         $vendorId = array_unique($vendorId);
-        // $erpStores = ErpStore::where('organization_id', $user->organization_id)
+        // $erpStores = ErpStore::withDefaultGroupCompanyOrg()
         //     ->orderBy('id', 'ASC')
         //     ->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
@@ -2455,11 +2774,12 @@ class PurchaseReturnController extends Controller
                 'data' => [
                     'pos' => $html,
                     'vendor' => $vendor,
-                    'finalDiscounts' => $finalDiscounts,
+                    'mrnData' => $mrnData,
+                    'subStoreCount' => $subStoreCount,
                     'finalExpenses' => $finalExpenses,
-                    'supplierInvoiceNumber' => $supplierInvoiceNumber,
+                    'finalDiscounts' => $finalDiscounts,
                     'supplierInvoiceDate' => $supplierInvoiceDate,
-                    'mrnData' => $mrnData
+                    'supplierInvoiceNumber' => $supplierInvoiceNumber,
                 ],
                 'status' => 200,
                 'message' => "fetched!"
@@ -2475,7 +2795,7 @@ class PurchaseReturnController extends Controller
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
@@ -2498,7 +2818,6 @@ class PurchaseReturnController extends Controller
             ]);
         }
         try {
-            // dd($request->all());
             DB::beginTransaction();
             $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, 'post');
             if ($data['status']) {
@@ -2510,7 +2829,7 @@ class PurchaseReturnController extends Controller
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             DB::rollBack();
             return response()->json([
                 'status' => 'exception',
@@ -2547,7 +2866,7 @@ class PurchaseReturnController extends Controller
                 DB::rollBack();
                 throw new ApiGenericException("No Document found");
             }
-        } catch(Exception $ex) {
+        } catch(\Exception $ex) {
             DB::rollBack();
             throw new ApiGenericException($ex -> getMessage());
         }
@@ -2559,24 +2878,29 @@ class PurchaseReturnController extends Controller
         $user = Helper::getAuthenticatedUser();
         $detailIds = $pr->items->pluck('id')->toArray();
         $data = InventoryHelper::settlementOfInventoryAndStock($pr->id, $detailIds, ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS, $pr->document_status);
-        if(!empty($data['records'])){
-            $itemLocations = PRItemLocation::where('header_id', $pr->id)
-                ->whereIn('detail_id', $detailIds)
-                ->delete();
+        if($data['status'] == 'success'){
+            if(!empty($data['records'])){
+                $itemLocations = PRItemLocation::where('header_id', $pr->id)
+                    ->whereIn('detail_id', $detailIds)
+                    ->delete();
 
-            foreach($data['records'] as $key => $val){
-                $itemLocation = new PRItemLocation;
-                $itemLocation->header_id = @$val->issuedBy->document_header_id;
-                $itemLocation->detail_id = @$val->issuedBy->document_detail_id;
-                $itemLocation->store_id = @$val->store_id;
-                $itemLocation->rack_id = @$val->rack_id;
-                $itemLocation->shelf_id = @$val->shelf_id;
-                $itemLocation->bin_id = @$val->bin_id;
-                $itemLocation->quantity = @$val->total_receipt_qty;
-                $itemLocation->inventory_uom_qty = @$val->total_receipt_qty;
-                $itemLocation->save();
+                foreach($data['records'] as $key => $val){
+                    $itemLocation = new PRItemLocation;
+                    $itemLocation->header_id = @$val->issuedBy->document_header_id;
+                    $itemLocation->detail_id = @$val->issuedBy->document_detail_id;
+                    $itemLocation->store_id = @$val->store_id;
+                    $itemLocation->rack_id = @$val->rack_id;
+                    $itemLocation->shelf_id = @$val->shelf_id;
+                    $itemLocation->bin_id = @$val->bin_id;
+                    $itemLocation->quantity = @$val->total_receipt_qty;
+                    $itemLocation->inventory_uom_qty = @$val->total_receipt_qty;
+                    $itemLocation->save();
+                }
             }
         }
+
+        return $data;
+
     }
 
     public function generateEInvoice(Request $request)
@@ -2585,110 +2909,623 @@ class PurchaseReturnController extends Controller
 
         try{
             $documentHeader = PRHeader::find($request->id);
-            $documentDetails = PRDetail::where('header_id', $request->id)->get();
-            $organization = Organization::where('id', $user->organization_id)->first();
-            $organizationAddress = Address::with(['city', 'state', 'country'])
-                ->where('addressable_id', $user->organization_id)
-                ->where('addressable_type', Organization::class)
-                ->first();
-            $shippingAddress = $documentHeader->shippingAddress;
+            $shippingAddress = $documentHeader->billingAddress;
             $storeAddress = $documentHeader->store_address;
-            $buyerAddress = $documentHeader?->erpStore?->address;
-            $sellerShippingAddress = $documentHeader->latestShippingAddress();
-            $sellerBillingAddress = $documentHeader->latestBillingAddress();
-            // $checkSellerGstIn = EInvoiceHelper::validateGstNumber($organization?->gst_number);
-            // if(!(is_string($checkSellerGstIn))){
-            //     if(!$checkSellerGstIn['Status']){
-            //         $errorMsg = "Seller : "; 
-            //         if($checkSellerGstIn['errorMsg'] == "Requested data is not available"){
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
-            //         } else{
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkSellerGstIn['ErrorDetails'][0]['ErrorMessage']; 
-            //         }
-            //         return response()->json([
-            //             'status' => 'error',
-            //             'message' => $errorMsg,
-            //             'checkSellerGstIn' => $checkSellerGstIn,
-            //         ], 422);
-            //     }
-            // }
-            // $checkBuyerGstIn = EInvoiceHelper::validateGstNumber($documentHeader?->vendor->compliances->gstin_no);
-            // if(!(is_string($checkBuyerGstIn))){
-            //     if(!$checkBuyerGstIn['Status']){
-            //         $errorMsg = "Buyer : "; 
-            //         if($checkBuyerGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
-            //         } else{
-            //             $errorMsg = "Seller : "."Error: ". @$checkBuyerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkBuyerGstIn['ErrorDetails'][0]['ErrorMessage']; 
-            //         }
-            //         return response()->json([
-            //             'status' => 'error',
-            //             'message' => $errorMsg,
-            //             'checkBuyerGstIn' => $checkBuyerGstIn,
-            //         ], 422);
-            //     }
-            // }
 
-            // if(!(is_string($checkSellerGstIn))){
-            //     if(!$checkSellerGstIn['Status']){
-            //         $errorMsg = "Seller : "; 
-            //         if($checkSellerGstIn['ErrorDetails'][0]['ErrorMessage'] == "Requested data is not available"){
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' - Invalid GST Number';    
-            //         } else{
-            //             $errorMsg = "Seller : "."Error: ". @$checkSellerGstIn['ErrorDetails'][0]['ErrorCode'].' -'.$checkSellerGstIn['ErrorDetails'][0]['ErrorMessage']; 
-            //         }
-            //         return [
-            //             'checkSellerGstIn' => $checkSellerGstIn,
-            //             'errorMsg' => $errorMsg,
-            //             'Status' => 0
-            //         ];
-            //     }
-            // }
-
-            $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
-            if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
-                $data = EInvoiceHelper::saveGstIn($documentHeader);
-                if (isset($data) && $data['status'] == 'error') {
+            // $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
+            // if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
+            //     $data = EInvoiceHelper::saveGstIn($documentHeader);
+            $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
+            if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
+                $data = MasterIndiaHelper::saveGstIn($documentHeader);
+                if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
                     return response()->json([
+                        'status' => 'error',
                         'error' => 'error',
                         'message' => $data['message'],
                     ], 500);
+                } else{
+                    return response() -> json([
+                        'status' => 'success',
+                        'results' => $data,
+                        'message' => 'E-Invoice generated succesfully',
+                    ]);
                 }
+            } else{
+                return response()->json([
+                    'error' => 'error',
+                    'message' => 'Not valid for '.$gstInvoiceType,
+                ], 500);
             }
 
-            
-            $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
-            if(!$generateInvoice['Status']){
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Error: ". @$generateInvoice['ErrorDetails'][0]['ErrorCode'].' -'.$generateInvoice['ErrorDetails'][0]['ErrorMessage'],
-                ], 422);
-            }
-            // dd($generateInvoice['ErrorDetails'][0]['ErrorMessage']);
-            $documentHeader->irnDetail()->create([
-                'ack_no' => $generateInvoice['AckNo'],
-                'ack_date' => $generateInvoice['AckDt'],
-                'irn_number' => $generateInvoice['Irn'],
-                'signed_invoice' => $generateInvoice['SignedInvoice'],
-                'signed_qr_code' => $generateInvoice['SignedQRCode'],
-                'ewb_no' => $generateInvoice['EwbNo'],
-                'ewb_date' => $generateInvoice['EwbDt'],
-                'ewb_valid_till' => $generateInvoice['EwbValidTill'],
-                'status' => $generateInvoice['Status'],
-                'remarks' => $generateInvoice['Remarks']
-            ]);
-            return response() -> json([
-                'status' => 'success',
-                'results' => $generateInvoice,
-                'message' => 'E-Invoice generated succesfully',
-            ]);
-        } catch(Exception $ex) {
-            DB::rollBack();
+        } catch(\Exception $ex) {
             return response() -> json([
                 'status' => 'error',
                 'message' => $ex -> getMessage(),
             ]);
         }
+    }
+
+    public function generateEwayBill(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+
+        try{
+            $documentHeader = PRHeader::find($request->id);
+            // $data = EInvoiceHelper::generateEwayBill($documentHeader);
+            $data = MasterIndiaHelper::generateEwayBill($documentHeader);
+            if (isset($data) && (isset($data['results']) && ($data['results']['status'] != 'Success'))) {
+                return response()->json([
+                    'status' => 'error',
+                    'error' => 'error',
+                    'message' => $data['results'],
+                ], 500);
+            } else{
+                $message = $data['results']['message'];
+
+                $originalEwbDate = $message['ewayBillDate'];
+                $originalValidUpto = $message['validUpto'];
+                $ewbDateObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalEwbDate);
+                $validUptoObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalValidUpto);
+                $ewb_date = $ewbDateObj ? $ewbDateObj->format('Y-m-d H:i:s') : null;
+                $ewb_valid_till = $validUptoObj ? $validUptoObj->format('Y-m-d H:i:s') : null;
+                $documentHeader->irnDetail()->create([
+                    'ewb_no' => $message['ewayBillNo'],
+                    'ewb_date' => $ewb_date,
+                    'ewb_valid_till' => $ewb_valid_till,
+                    'status' => $data['results']['status'],
+                    'type' => 'Direct Eway Bill'
+                ]);
+                return response() -> json([
+                    'status' => 'success',
+                    'results' => $data,
+                    'message' => 'E-Way bill generated succesfully',
+                ]);
+            }
+
+        } catch(\Exception $ex) {
+            return response() -> json([
+                'status' => 'error',
+                'message' => $ex -> getMessage(),
+            ]);
+        }
+    }
+
+    public function prMail(Request $request)
+    {
+        $request->validate([
+            'email_to'  => 'required|email',
+        ], [
+            'email_to.required' => 'Recipient email is required.',
+            'email_to.email'    => 'Please enter a valid email address.',
+        ]);
+        $po = PRHeader::with(['vendor'])->find($request->id);
+        $vendor = $po->vendor;
+        $sendTo = $request->email_to ?? $vendor->email;
+        $vendor->email = $sendTo;
+        $title = "Purchase Return Generated";
+        $pattern = "Purchase Return";
+        $remarks = $request->remarks ?? null;
+        $mail_from = '';
+        $mail_from_name = '';
+        $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
+        $bcc = null;
+        $attachment = $request->file('attachments') ?? null;
+        $name = $vendor->company_name; // Assuming vendor is already defined
+        $viewLink = route('purchase-return.generate-pdf', ['id'=>$request->id]);
+        $description = <<<HTML
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
+            <tr>
+                <td>
+                    <h2 style="color: #2c3e50;">Your Purchase Return </h2>
+                    <p style="font-size: 16px; color: #555;">Dear {$name},</p>
+                        <p style='font-size: 15px; color: #333;'>
+                            {$remarks}
+                        </p>
+                    <p style="font-size: 15px; color: #333;">
+                        Please click the button below to view or download your Purchase Return:
+                    </p>
+                    <p style="text-align: center; margin: 20px 0;">
+                        <a href="{$viewLink}" target="_blank" style="background-color: #7415ae; color: #ffffff; padding: 12px 24px; border-radius: 5px; font-size: 16px; text-decoration: none; font-weight: bold;">
+                            Purchase Return
+                        </a>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        HTML;
+        self::sendMail($vendor,$title,$description,$cc,$bcc,$attachment,$mail_from,$mail_from_name);
+    }
+    public function sendMail($receiver, $title, $description, $cc = null, $bcc= null, $attachment, $mail_from=null, $mail_from_name=null)
+    {
+        if (!$receiver || !isset($receiver->email)) {
+            return "Error: Receiver details are missing or invalid.";
+        }
+        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$bcc, $attachment));
+        return response() -> json([
+            'status' => 'success',
+            'message' => 'Email request sent succesfully',
+        ]);
+
+    }
+
+    // Purchase Return Report
+    public function Report()
+    {
+        $user = Helper::getAuthenticatedUser();
+        $categories = Category::withDefaultGroupCompanyOrg()->where('parent_id', null)->get();
+        $sub_categories = Category::withDefaultGroupCompanyOrg()->where('parent_id', '!=',null)->get();
+        $items = Item::withDefaultGroupCompanyOrg()->get();
+        $vendors = Vendor::withDefaultGroupCompanyOrg()->get();
+        $employees = Employee::where('organization_id', $user->organization_id)->get();
+        $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get();
+        $attribute_groups = AttributeGroup::withDefaultGroupCompanyOrg()->get();
+        $MRNHeaderIds = PRHeader::withDefaultGroupCompanyOrg()
+                            ->distinct()
+                            ->pluck('mrn_header_id');
+        $MRNHeaders = MrnHeader::whereIn('id', $MRNHeaderIds)->get();
+        $soIds = PRDetail::whereHas('header', function ($query) {
+                    $query->withDefaultGroupCompanyOrg();
+                })
+                ->distinct()
+                ->pluck('so_id');
+
+        $so = ErpSaleOrder::whereIn('id', $soIds)->get();
+        $statusCss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST;
+        return view('procurement.purchase-return.detail_report', compact('categories', 'sub_categories', 'items', 'vendors', 'employees', 'users', 'attribute_groups', 'so', 'MRNHeaders', 'statusCss'));
+    }
+
+    public function getReportFilter(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $period = $request->query('period');
+        $startDate = $request->query('startDate');
+        $endDate = $request->query('endDate');
+        $mrnId = $request->query('mrnNo');
+        $soId = $request->query('soNo');
+        $vendorId = $request->query('vendor');
+        $itemId = $request->query('item');
+        $status = $request->query('status');
+        $mCategoryId = $request->query('m_category');
+        $mSubCategoryId = $request->query('m_subCategory');
+        $mAttribute = $request->query('m_attribute');
+        $mAttributeValue = $request->query('m_attributeValue');
+
+        $query = PRHeader::query()
+        ->withDefaultGroupCompanyOrg();
+
+        if ($mrnId) {
+            $query->where('mrn_header_id', $mrnId);
+        }
+
+        $query->with([
+            'items' => function($query) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
+            $query->whereHas('item', function($q) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
+                if ($itemId) {
+                    $q->where('id', $itemId);
+                }
+                if ($soId) {
+                    $q->where('so_id', $soId);
+                }
+                if ($mCategoryId) {
+                    $q->where('category_id', $mCategoryId);
+                }
+                if ($mSubCategoryId) {
+                    $q->where('subcategory_id', $mSubCategoryId);
+                }
+            });
+        },
+        'items.item', 'items.item.category', 'items.item.subCategory', 'vendor',
+        'items.so', 'mrn']);
+
+        // Date Filtering
+        if (($startDate && $endDate) || $period) {
+            if ($startDate && $endDate) {
+                $startDate = Carbon::createFromFormat('d-m-Y', $startDate);
+                $endDate = Carbon::createFromFormat('d-m-Y', $endDate);
+            }
+            if (!$startDate || !$endDate) {
+                switch ($period) {
+                    case 'this-month':
+                        $startDate = Carbon::now()->startOfMonth();
+                        $endDate = Carbon::now()->endOfMonth();
+                        break;
+                    case 'last-month':
+                        $startDate = Carbon::now()->subMonth()->startOfMonth();
+                        $endDate = Carbon::now()->subMonth()->endOfMonth();
+                        break;
+                    case 'this-year':
+                        $startDate = Carbon::now()->startOfYear();
+                        $endDate = Carbon::now()->endOfYear();
+                        break;
+                }
+            }
+            $query->whereBetween('document_date', [$startDate, $endDate]);
+        }
+
+        // Vendor Filter
+        if ($vendorId) {
+            $query->where('vendor_id', $vendorId);
+        }
+
+        // Status Filter
+        if ($status) {
+            $query->where('document_status', $status);
+        }
+
+        // Fetch Results
+        $po_reports = $query->get();
+
+        DB::enableQueryLog();
+
+        return response()->json($po_reports);
+    }
+
+    public function addScheduler(Request $request)
+    {
+        try{
+            $headers = $request->input('displayedHeaders');
+            $data = $request->input('displayedData');
+            $itemName = '';
+            $mrnNo = '';
+            $soNo = '';
+            $lotNo = '';
+            $status = '';
+            $vendorName = '';
+            $categoryName = '';
+            $subCategoriesName = '';
+            $formattedstartDate = '';
+            $formattedendDate = '';
+            $startDate = '';
+            $endDate = '';
+            if ($request->filled('startDate')) {
+                $startDate = new DateTime($request->input('startDate'));
+            }
+
+            if ($request->filled('endDate')) {
+                $endDate = new DateTime($request->input('endDate'));
+            }
+            $period = $request->input('period');
+
+            if (($startDate && $endDate) || $period) {
+                if (!$startDate || !$endDate) {
+                    switch ($period) {
+                        case 'this-month':
+                            $startDate = Carbon::now()->startOfMonth();
+                            $endDate = Carbon::now()->endOfMonth();
+                            break;
+                        case 'last-month':
+                            $startDate = Carbon::now()->subMonth()->startOfMonth();
+                            $endDate = Carbon::now()->subMonth()->endOfMonth();
+                            break;
+                        case 'this-year':
+                            $startDate = Carbon::now()->startOfYear();
+                            $endDate = Carbon::now()->endOfYear();
+                            break;
+                    }
+                }
+                $formattedstartDate = $startDate->format('d-m-y');
+                $formattedendDate = $endDate->format('d-m-y');
+            }
+
+            if ($request->filled('mrn_no'))
+            {
+                $mrnData = MrnHeader::find($request->input('mrn_no'));
+                $mrnNo = optional($mrnData)->document_number;
+            }
+
+            if ($request->filled('so_no'))
+            {
+                $soData = ErpSaleOrder::find($request->input('so_no'));
+                $soNo = optional($soData)->document_number;
+            }
+
+            if ($request->filled('status'))
+            {
+                $status = $request->input('status');
+            }
+
+            if ($request->filled('m_category'))
+            {
+                $categories = Category::find($request->input('m_category'));
+                $categoryName = optional($categories)->name;
+            }
+
+            if ($request->filled('m_subCategory'))
+            {
+                $subCategories = Category::find($request->input('m_subCategory'));
+                $subCategoriesName = optional($subCategories)->name;
+            }
+
+            if ($request->filled('item'))
+            {
+                $itemData = ErpItem::find($request->input('item'));
+                $itemName = optional($itemData)->item_name;
+            }
+
+            if ($request->filled('vendor'))
+            {
+                $vendorData = ErpVendor::find($request->input('vendor'));
+                $vendorName = optional($vendorData)->company_name;
+            }
+
+            $blankSpaces = count($headers) - 1;
+            $centerPosition = (int)floor($blankSpaces / 2);
+            $filters = [
+                'Filters',
+                'Item: ' . $itemName,
+                'Vendor: ' . $vendorName,
+                'MRN No: ' . $mrnNo,
+                'SO No: ' . $soNo,
+                'Status:' . $status,
+                'Category:' . $categoryName,
+                'Sub Category' . $subCategoriesName,
+            ];
+
+            $fileName = 'purchase-return.xlsx';
+            $filePath = storage_path('app/public/purchase-return/' . $fileName);
+            $directoryPath = storage_path('app/public/purchase-return');
+            if($formattedstartDate && $formattedendDate)
+            {
+                $customHeader = array_merge(
+                    array_fill(0, $centerPosition, ''),
+                    ['Purchase Return Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ],
+                    array_fill(0, $blankSpaces - $centerPosition, '')
+                );
+            }
+            else{
+                $customHeader = array_merge(
+                    array_fill(0, $centerPosition, ''),
+                    ['Purchase Return Report' ],
+                    array_fill(0, $blankSpaces - $centerPosition, '')
+                );
+            }
+
+            $remainingSpaces = $blankSpaces - count($filters) + 1;
+            $filterHeader = array_merge($filters, array_fill(0, $remainingSpaces, ''));
+
+            $excelData = Excel::raw(new PurchaseReturnExport($customHeader, $filterHeader, $headers, $data), \Maatwebsite\Excel\Excel::XLSX);
+
+            if (!file_exists($directoryPath)) {
+                mkdir($directoryPath, 0755, true);
+            }
+            file_put_contents($filePath, $excelData);
+            if (!file_exists($filePath)) {
+                throw new \Exception('File does not exist at path: ' . $filePath);
+            }
+
+            $email_to = $request->email_to ?? [];
+            $email_cc = $request->email_cc ?? [];
+
+            foreach($email_to as $email)
+            {
+                $user = AuthUser::where('email', $email)
+                ->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+                ->where('status', ConstantHelper::ACTIVE)
+                ->get();
+
+                if ($user->isEmpty()) {
+                    $user = new AuthUser();
+                    $user->email = $email;
+                }
+                $title = "Purchase Return Report Generated";
+                $heading = "Purchase Return Report";
+
+                $remarks = $request->remarks ?? null;
+                $mail_from = '';
+                $mail_from_name = '';
+                $cc = implode(', ', $email_cc);
+                $bcc = null;
+                $attachment = $filePath ?? null;
+                // $name = $user->name;
+                $description = <<<HTML
+                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); font-family: Arial, sans-serif; line-height: 1.6;">
+                    <tr>
+                        <td>
+                            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 20px;">{$heading}</h2>
+                            <p style="font-size: 16px; color: #555; margin-bottom: 20px;">
+                                Dear <strong style="color: #2c3e50;">user</strong>,
+                            </p>
+
+                            <p style="font-size: 15px; color: #333; margin-bottom: 20px;">
+                                We hope this email finds you well. Please find your purchase return report attached below.
+                            </p>
+                            <p style="font-size: 15px; color: #333; margin-bottom: 30px;">
+                                <strong>Remark:</strong> {$remarks}
+                            </p>
+                            <p style="font-size: 14px; color: #777;">
+                                If you have any questions or need further assistance, feel free to reach out to us.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                HTML;
+                self::sendMail($user,$title,$description,$cc,$bcc, $attachment,$mail_from,$mail_from_name);
+            }
+            return response()->json([
+                'status' => 'success',
+                'message' => 'emails sent successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'An unexpected error occurred.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function purchaseReturnReport(Request $request)
+    {
+        $user = Helper::getAuthenticatedUser();
+        $pathUrl = route('purchase-return.index');
+        $orderType = ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS;
+        $purchaseReturns = PRHeader::withDefaultGroupCompanyOrg()
+            // ->where('document_type', $orderType)
+            // ->bookViewAccess($pathUrl)
+            ->withDraftListingLogic()
+            ->orderByDesc('id');
+
+        // Vendor Filter
+        $purchaseReturns = $purchaseReturns->when($request->vendor, function ($vendorQuery) use ($request) {
+            $vendorQuery->where('vendor_id', $request->vendor);
+        });
+
+        // PO No Filter
+        $purchaseReturns = $purchaseReturns->when($request->mrn_no, function ($mrnQuery) use ($request) {
+            $mrnQuery->where('mrn_header_id', $request->mrn_no);
+        });
+
+        // Document Status Filter
+        $purchaseReturns = $purchaseReturns->when($request->status, function ($docStatusQuery) use ($request) {
+            $searchDocStatus = [];
+            if ($request->status === ConstantHelper::DRAFT) {
+                $searchDocStatus = [ConstantHelper::DRAFT];
+            } else if ($request->status === ConstantHelper::SUBMITTED) {
+                $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+            } else {
+                $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+            }
+            $docStatusQuery->whereIn('document_status', $searchDocStatus);
+        });
+
+        // Date Filters
+        $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+        $purchaseReturns = $purchaseReturns->when($dateRange, function ($dateRangeQuery) use ($request, $dateRange) {
+            $dateRanges = explode('to', $dateRange);
+            if (count($dateRanges) == 2) {
+                $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                $dateRangeQuery->whereDate('document_date', ">=", $fromDate)->where('document_date', '<=', $toDate);
+            }
+        });
+
+        // Item Id Filter
+        // $purchaseReturns = $purchaseReturns->when($request->item_id, function ($itemQuery) use ($request) {
+        //     $itemQuery->withWhereHas('items', function ($itemSubQuery) use ($request) {
+        //         $itemSubQuery->where('item_id', $request->item_id)
+        //             // Compare Item Category
+        //             ->when($request->item_category_id, function ($itemCatQuery) use ($request) {
+        //                 $itemCatQuery->whereHas('item', function ($itemRelationQuery) use ($request) {
+        //                     $itemRelationQuery->where('category_id', $request->item_category_id)
+        //                         // Compare Item Sub Category
+        //                         ->when($request->item_sub_category_id, function ($itemSubCatQuery) use ($request) {
+        //                             $itemSubCatQuery->where('subcategory_id', $request->item_sub_category_id);
+        //                         });
+        //                 });
+        //             });
+        //     });
+        // });
+
+        $purchaseReturns->with([
+            'items' => function ($query) use ($request) {
+                $query
+                    ->when($request->item_id, function ($subQuery) use ($request) {
+                        $subQuery->where('item_id', $request->item_id);
+                    })
+                    ->when($request->so_no, function ($subQuery) use ($request) {
+                        $subQuery->where('so_id', $request->so_no);
+                    })
+                    ->whereHas('item', function ($q) use ($request) {
+                        $q->when($request->m_category_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_category_id);
+                        });
+
+                        $q->when($request->m_subcategory_id, function ($subQ) use ($request) {
+                            $subQ->where('category_id', $request->m_subcategory_id);
+                        });
+                    });
+            },
+            'items.item',
+            'items.item.category',
+            'items.item.subCategory',
+            'vendor',
+            'items.so',
+            'mrn'
+        ]);
+
+        $purchaseReturns = $purchaseReturns->get();
+        $processedPurchaseReturns = collect([]);
+
+        foreach ($purchaseReturns as $pr) {
+            foreach ($pr->items as $prItem) {
+                $reportRow = new stdClass();
+
+                // Header Details
+                $header = $prItem->header;
+                $total_item_value = (($prItem?->rate ?? 0.00) * ($prItem?->accepted_qty ?? 0.00)) - ($prItem?->discount_amount ?? 0.00);
+                $reportRow->id = $prItem->id;
+                $reportRow->book_code = $header->book_code;
+                $reportRow->document_number = $header->document_number;
+                $reportRow->document_date = $header->document_date;
+                $reportRow->mrn_no = !empty($header->mrn?->book_code) && !empty($header->mrn?->document_number)
+                                    ? $header->mrn?->book_code . ' - ' . $header->mrn?->document_number
+                                    : '';
+                $reportRow->ge_no = $header->gate_entry_no;
+                $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
+                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                                    : '';
+                $reportRow->lot_no = $header->lot_no;
+                $reportRow->vendor_name = $header->vendor ?-> company_name;
+                $reportRow->vendor_rating = null;
+                $reportRow->category_name = $prItem->item ?->category ?-> name;
+                $reportRow->sub_category_name = $prItem->item ?->category ?-> name;
+                $reportRow->item_type = $prItem->item ?->type;
+                $reportRow->sub_type = null;
+                $reportRow->item_name = $prItem->item ?->item_name;
+                $reportRow->item_code = $prItem->item ?->item_code;
+                $reportRow->qty_return_type = $header ->qty_return_type;
+
+                // Amount Details
+                $reportRow->receipt_qty = number_format($prItem->order_qty, 2);
+                $reportRow->accepted_qty = number_format($prItem->accepted_qty, 2);
+                $reportRow->rejected_qty = number_format($prItem->rejected_qty, 2);
+                $reportRow->pr_qty = number_format($prItem->pr_qty, 2);
+                $reportRow->pr_rejected_qty = number_format($prItem->pr_rejected_qty, 2);
+                $reportRow->purchase_bill_qty = number_format($prItem->purchase_bill_qty, 2);
+                $reportRow->store_name = $prItem?->erpStore?->store_name;
+                $reportRow->sub_store_name = $prItem?->subStore?->name;
+                $reportRow->rate = number_format($prItem->rate);
+                $reportRow->basic_value = number_format($prItem->basic_value, 2);
+                $reportRow->item_discount = number_format($prItem->discount_amount, 2);
+                $reportRow->header_discount = number_format($prItem->header_discount_amount, 2);
+                $reportRow->item_amount = number_format($total_item_value, 2);
+
+                // Attributes UI
+                // $attributesUi = '';
+                // if (count($prItem->item_attributes) > 0) {
+                //     foreach ($prItem->item_attributes as $prAttribute) {
+                //         $attrName = $prAttribute->attribute_name;
+                //         $attrValue = $prAttribute->attribute_value;
+                //         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
+                //     }
+                // } else {
+                //     $attributesUi = 'N/A';
+                // }
+                // $reportRow->item_attributes = $attributesUi;
+
+                // Document Status
+                $reportRow->status = $header->document_status;
+                $processedPurchaseReturns->push($reportRow);
+            }
+        }
+
+        return DataTables::of($processedPurchaseReturns)
+            ->addIndexColumn()
+            ->editColumn('status', function ($row) use ($orderType) {
+                $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->status ?? ConstantHelper::DRAFT];
+                $displayStatus = ucfirst($row->status);
+                return "
+                    <div style='text-align:right;'>
+                        <span class='badge rounded-pill $statusClass'>$displayStatus</span>
+                    </div>
+                ";
+            })
+            ->rawColumns(['item_attributes', 'status'])
+            ->make(true);
     }
 
 }

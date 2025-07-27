@@ -332,6 +332,51 @@ class AutocompleteController extends Controller
                                          ->get(['id', 'code', 'name']);
                 }
             }
+            elseif ($type === 'accounLadger') {
+                $query = Ledger::where('status', 1);
+
+                $group = Group::where('name', 'Bank Accounts')->first();
+                if ($group) {
+                    $childGroupIds = $group->getAllChildIds();
+                    $groupIds = array_merge([$group->id], $childGroupIds);
+                    $stringGroupIds = array_map('strval', $groupIds);
+
+                   $query->where(function($q2) use ($stringGroupIds) {
+                        foreach ($stringGroupIds as $id) {
+                            $q2->orWhereJsonContains('ledger_group_id', $id);
+                        }
+                    });
+                } else {
+                    $results = collect();
+                    return $results;
+                }
+
+                $results = $query->where(function($query) use ($term) {
+                                     $query->where('code', 'LIKE', "%{$term}%")
+                                           ->orWhere('name', 'LIKE', "%{$term}%");
+                                  })
+                                 ->get(['id', 'code', 'name']);
+
+                if ($results->isEmpty()) {
+                    $results = Ledger::where('status', 1);
+
+                     $group = Group::where('name', 'Bank Accounts')->first();
+                     if ($group) {
+                        $childGroupIds = $group->getAllChildIds();
+                        $groupIds = array_merge([$group->id], $childGroupIds);
+                        $stringGroupIds = array_map('strval', $groupIds);
+
+                         $query->where(function($q2) use ($stringGroupIds) {
+                            foreach ($stringGroupIds as $id) {
+                                $q2->orWhereJsonContains('ledger_group_id', $id);
+                            }
+                        });
+                    }
+
+                    $results =   $results->limit(10)
+                                         ->get(['id', 'code', 'name']);
+                }
+            }
 
             elseif ($type === 'header_item') {
                 $type = ['WIP/Semi Finished', 'Finished Goods'];
@@ -613,7 +658,9 @@ class AutocompleteController extends Controller
                 // if(count($selectedAllItemIds)) {
                 //     array_unique($selectedAllItemIds);
                 // }
-                $results = Item::searchByKeywords($term)
+                $poType = ucfirst(strtolower($request->input('po_type', 'Goods')));
+                $results = Item::where('type', $poType)
+                    ->searchByKeywords($term)
                     // ->whereNotIn('id', $selectedAllItemIds) // Uncomment if needed
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['uom:id,name'])

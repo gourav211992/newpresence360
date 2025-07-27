@@ -148,7 +148,7 @@
                                                     <div class="col-md-5 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
                                                             <i data-feather="plus-square"></i>
-                                                            Outstanding MRN
+                                                            Outstanding GRN
                                                         </button>
                                                     </div>
                                                 </div>

@@ -27,54 +27,65 @@ class Mailer
 	public function emailTo($mailbox, $mailer = 'alerts_p360')
 	{
 
-		// $currentConfig = config('multiple_mail_config.mailers.'.$mailer);
-
-		// $transport = new Swift_SmtpTransport($currentConfig['host'], $currentConfig['port'], $currentConfig['encryption']);
-		// $transport->setUsername($currentConfig['username']);
-		// $transport->setPassword($currentConfig['password']);
-
-		// $mail = new Swift_Mailer($transport);
-		// Mail::setSwiftMailer($mail);
-		Log::info('Mailer::emailTo called', ['MAILBOX' => $mailbox->toArray()]);
 		if (!$mailbox) {
-			Log::error('Mailer::emailTo called with null mailbox');
 			return;
 		}
+
 		$view = $mailbox->layout ?: 'email.generic';
+
 		try {
 			Mail::send($view, ['body' => json_decode($mailbox->mail_body)], function ($message) use ($mailbox) {
 				$message->subject($mailbox->subject);
-				$message->to(explode(',', $mailbox->mail_to));
-				if ($mailbox->mail_cc) {
-					$message->cc(explode(',', $mailbox->mail_cc));
-				}
-				if ($mailbox->mail_bcc) {
-					$message->bcc(explode(',', $mailbox->mail_bcc));
-				}
-				Log::info('Attachments ajwfound in mailbox', ['attachments' => $mailbox->attachment]);
-				if (!empty($mailbox->attachment) && count(json_decode($mailbox->attachment)) > 0) {
-					Log::info('Attachments found in mailbox', [
-						'attachments' => json_decode($mailbox->attachment, true) // just for logging
-					]);
 
-					foreach (json_decode($mailbox->attachment, true) as $file) {
-						$message->attachFromPath(
-							$file['path'],
-							$file['as'] ?? null,
-							$file['mime'] ?? 'application/octet-stream'
-						);
+				// Helper to clean email strings
+				$parseEmails = function ($emails) {
+					if (empty($emails)) return [];
+					$list = is_array($emails) ? $emails : explode(',', $emails);
+					return array_filter(array_map(function ($email) {
+						$email = trim($email);
+						return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+					}, $list));
+				};
+
+				$to = $parseEmails($mailbox->mail_to);
+				if (!empty($to)) {
+					$message->to($to);
+				}
+
+				$cc = $parseEmails($mailbox->mail_cc);
+				if (!empty($cc)) {
+					$message->cc($cc); // ✅ Correct usage
+				}
+
+				$bcc = $parseEmails($mailbox->mail_bcc);
+				if (!empty($bcc)) {
+					$message->bcc($bcc); // ✅ Correct usage
+				}
+				if (!empty($mailbox->attachment)) {
+					// Try to decode it as JSON
+					$decoded = json_decode($mailbox->attachment, true);
+
+					// If it's a valid array (list of attachments with details)
+					if (is_array($decoded) && isset($decoded[0])) {
+						foreach ($decoded as $file) {
+							$message->attachFromPath(
+								$file['path'] ?? $file, // fallback in case path is directly string
+								$file['as'] ?? null,
+								$file['mime'] ?? 'application/octet-stream'
+							);
+						}
+					}
+					// If it's just a simple string path
+					elseif (is_string($mailbox->attachment)) {
+						$message->attachFromPath($mailbox->attachment);
 					}
 				}
 
-				// $message->from(explode(',', $mailbox->mail_from), explode(',',$mailbox->mail_from_name));
 			});
-			if ($mailbox) {
-				
-				$mailbox->status = MailBox::STATUS_COMPLETED;
-				$mailbox->response = 'success';
-				$mailbox->save();
-			}
-			
+
+			$mailbox->status = MailBox::STATUS_COMPLETED;
+			$mailbox->response = 'success';
+			$mailbox->save();
 
 			Log::info('Email sent successfully:', [
 				'mailbox_id' => $mailbox->id,
@@ -82,25 +93,19 @@ class Mailer
 				'subject' => $mailbox->subject,
 			]);
 		} catch (\Exception $e) {
-			$errorMessage = array();
-			$errorMessage['message'] = $e;
-			$errorMessage['url'] = request()->url();
+			$mailbox->status = MailBox::STATUS_REJECTED;
+			$mailbox->response = $e->getMessage();
+			$mailbox->save();
 
-			if ($mailbox) {
-				$mailbox->status = MailBox::STATUS_REJECTED;
-				$mailbox->response = $e->getMessage();
-				$mailbox->save();
-			}
 			Log::info('Email not sent successfully:', [
-				'error' => $errorMessage,
+				'error' => $e->getMessage(),
 				'mailbox_id' => $mailbox->id,
-				'attachment' => $mailbox->attachment,
+				'mail_to' => $mailbox->mail_to,
+				'mail_cc' => $mailbox->mail_cc,
 				'mail_bcc' => $mailbox->mail_bcc,
 			]);
-			$mode = "web";
-			if (app()->runningInConsole()) {
-				$mode = "cron";
-			}
+
+			$mode = app()->runningInConsole() ? "cron" : "web";
 		}
 	}
 

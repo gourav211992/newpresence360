@@ -4,6 +4,7 @@
     data-redirect="/{{ request()->route('type') }}" enctype="multipart/form-data">
     @csrf
     <input type="hidden" name="pi_item_ids" id="pi_item_ids">
+    <input type="hidden" name="po_type" id="po_type">
     <div class="app-content content ">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
@@ -227,6 +228,7 @@
                 $("#book_id").val('');
                 $("#document_number").attr('readonly', false);
             }
+            $('#itemTable').DataTable().ajax.reload();
         });
 
         function getDocNumberByBookId(bookId) {
@@ -247,6 +249,8 @@
                             $("#document_number").attr('readonly', true);
                         }
                         const parameters = data.data.parameters;
+                        let poType = parameters.goods_or_services || 'Goods';
+                        $("#po_type").val(poType);
                         setServiceParameters(parameters);
 
                     }
@@ -502,7 +506,8 @@
                 sub_store_id: $("#sub_store_id_po").val() || '',
                 requester_id: $("#requester_id_po").val() || '',
                 item_search: $("#item_name_search").val() || '',
-                so_id: $("#pi_so_qt_val").val() || ''
+                so_id: $("#pi_so_qt_val").val() || '',
+                po_type: $("#po_type").val() || '',
             };
         }
 

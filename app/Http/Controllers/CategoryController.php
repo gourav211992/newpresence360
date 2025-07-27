@@ -15,8 +15,15 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
+        $currentUrlSegment = request()->segment(1);
         if ($request->ajax()) {
-            $categories = Category::orderBy('id', 'desc');
+            $categories = Category::orderBy('id', 'desc')
+             ->with('parent', 'subCategories'); 
+             if ($currentUrlSegment === 'equipment-categories') {
+                $categories->where('type', strtolower(ConstantHelper::EQUIPMENT));
+            } else {
+                $categories->whereIn('type', ConstantHelper::CATEGORY_TYPES);
+            }
             return DataTables::of($categories)
                 ->addIndexColumn()
                 ->addColumn('parent_category', function($row) {
@@ -37,8 +44,10 @@ class CategoryController extends Controller
                                 ' . ucfirst($row->status) . '
                             </span>';
                 })
-                ->addColumn('action', function ($row) {
-                    $editUrl = route('categories.edit', $row->id);
+                ->addColumn('action', function ($row) use ($currentUrlSegment) {
+                 $editUrl = ($currentUrlSegment === 'equipment-categories')
+                    ? route('equipment-categories.edit', $row->id)
+                    : route('categories.edit', $row->id);
                     return '<div class="dropdown">
                                 <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
                                     <i data-feather="more-vertical"></i>
@@ -55,17 +64,21 @@ class CategoryController extends Controller
                 ->rawColumns(['status','last_level','action'])
                 ->make(true);
         }
-
-        return view('procurement.category.index');
+          return view('procurement.category.index',compact('currentUrlSegment'));
     }
     
     
     public function create()
     {
         $categoryTypes = ConstantHelper::CATEGORY_TYPES;
+        $currentUrlSegment = request()->segment(1); 
+        if ($currentUrlSegment === 'equipment-categories') {
+            $categoryTypes = [ConstantHelper::EQUIPMENT];
+        }
         $status = ConstantHelper::STATUS;
         return view('procurement.category.create', [
             'categoryTypes' => $categoryTypes,
+            'currentUrlSegment'=>$currentUrlSegment,
             'status' => $status,
         ]);
     }
@@ -170,11 +183,16 @@ class CategoryController extends Controller
             ->get();
             $isLastLevel = $category->subCategories()->exists() ? 0 : 1;
             $categoryTypes = ConstantHelper::CATEGORY_TYPES;
+            $currentUrlSegment = request()->segment(1); 
+            if ($currentUrlSegment === 'equipment-categories') {
+                $categoryTypes = [ConstantHelper::EQUIPMENT];
+            }
             $status = ConstantHelper::STATUS;
        
         return view('procurement.category.edit', [
             'category' => $category,
             'categoryTypes' => $categoryTypes,
+            'currentUrlSegment'=>$currentUrlSegment,
             'status' => $status,
             'categories' => $categories,
             'isLastLevel'=>$isLastLevel,

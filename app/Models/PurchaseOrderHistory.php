@@ -15,6 +15,8 @@ class PurchaseOrderHistory extends Model
     protected $table = 'erp_purchase_orders_history';
 
     protected $fillable = [
+        'po_type',
+        'type',
         'source_id',
         'organization_id', 
         'group_id', 

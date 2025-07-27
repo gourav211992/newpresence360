@@ -4,7 +4,7 @@
 			<div class="modal-header">
 				<div>
 					<h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="poModal">
-						Select MRN
+						Select GRN
 					</h4>
 					<p class="mb-0">
 						Select from the below list
@@ -60,12 +60,12 @@
 										</th>
                                         <th>SUPPLIER CODE</th>
                                         <th>SUPPLIER NAME</th>
-                                        <th>MRN SEREIS</th>
-                                        <th>MRN NO.</th>
-                                        <th>MRN Date</th>
+                                        <th>GRN SEREIS</th>
+                                        <th>GRN NO.</th>
+                                        <th>GRN Date</th>
                                         <th>ITEM CODE</th>
                                         <th>Item Name</th>
-                                        <th class="text-end">MRN Quantity</th>
+                                        <th class="text-end">GRN Quantity</th>
 									</tr>
 								</thead>
 								<tbody id="poDataTable">
