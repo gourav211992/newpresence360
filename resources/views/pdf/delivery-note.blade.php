@@ -264,33 +264,101 @@
                     <div style="">Item</div>
                 </td>
                 <td
-                style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
-                UOM
-                @if($type == App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
-                <td
-                    style="font-weight: bold; width: 7.81%; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
-                    <div style="">Bundle</div>
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    HSN Code
                 </td>
-                @endif
+                <td
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    UOM
                 </td>
                 <td
                     style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
+                <td
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    Rate
+                </td>
+                <td
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    Value
+                </td>
+                <td
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    Bundles#
+                </td>
+                @if($type == App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
+                    <td
+                        style="font-weight: bold; width: 7.81%; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                        <div style="">Bundle</div>
+                    </td>
+                    <td
+                        style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                        Bundle Qty
+                    </td>
+                @endif
             </tr>
             @php 
                 $totalCGSTValue = 0.00;
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
                 $totalTaxValue = 0.00;
+                $total_bundle = 0;
+                $total_qty = 0;
             @endphp
             @foreach($order->items as $key => $val)
+                @php
+                    $hsnGroups = [];
+                    $totalTaxPercentage = 0.00;
+                    if ($val->item && $val->item->hsn) {
+                        $hsnCode = $val->item->hsn->code;
+                        $teds = $val->tax_ted;
+
+                        $taxableValue = $val->order_qty * $val->rate;
+
+                        foreach ($teds as $ted) {
+                            $taxPercentage = $ted->ted_percentage;
+                            $taxType = $ted->ted_name;
+                            $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
+
+                            if (!isset($hsnGroups[$hsnCode])) {
+                                $hsnGroups[$hsnCode] = [
+                                    'hsn_code' => $hsnCode,
+                                    'taxable_rate' => 0.00,
+                                    'taxable_value' => 0.00,
+                                    'tax_amount' => 0.00,
+                                    'tax_group' => $ted->ted_group_code,
+                                ];
+                            }
+
+                            // Initialize tax type amount if not set
+                            if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
+                                $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.00;
+                            }
+                            $totalTaxPercentage += $taxPercentage;
+                            $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                            $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
+                            $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                        }
+                    }
+
+                    // Now, calculate total tax_amount for each HSN group
+                    foreach ($hsnGroups as &$group) {
+                        $taxAmount = 0.00;
+                        foreach ($group as $key => $value) {
+                            if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
+                                $taxAmount += (float)$value;
+                            }
+                        }
+                        $group['tax_amount'] = $taxAmount;
+                    }
+                @endphp
 
 
                 <tr>
                     <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
                         style="width:5%; vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ $key + 1 }}
+                        {{ (int)$key + 1 }}
                     </td>
                     <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
                         style="width:40%;vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
@@ -324,34 +392,87 @@
                         @endif
                         {{@$val->remarks}}
                     </td>
+                    @php
+                        $style = "vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;";
+                        $style .= count(@$val->bundles) == 0 
+                            ? " border-right: 1px solid #000;" 
+                            : " border-right: none;";
+                        $style .= " text-align: right;";
+                        $total_bundle += count(@$val->bundles) > 1 ? count(@$val->bundles) : 1;
+                        $total_qty += @$val->order_qty;
+                    @endphp
+                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ @$val->hsn_code }}
+                    </td>
                     
                     <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
-                    style="text-align:center; vertical-align: middle; padding:10px 3px;  border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                    {{@$val->uom->name}}
+                        style="text-align:center; vertical-align: middle; padding:10px 3px;  border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{@$val->uom->name}}
                     </td>
-                    @if($type == App\Helpers\ConstantHelper::SERVICE_LABEL[App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
-                    <td
-                    style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                    Total
+                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
+                        {{ @$val->order_qty }}
                     </td>
-                    @endif
-                    <td
+                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
+                        {{ number_format(@$val->rate,4) }}
+                    </td>
+                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
+                        {{ number_format(@$val->order_qty * @$val->rate,2) }}
+                    </td>
+                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{@$val->order_qty}}
-                    </td>
-                    @if(count($val->bundles))
+                        {{count(@$val->bundles) > 0 ? count(@$val->bundles) : 1}}
+                    </td>                        
+                @if(count($val->bundles))
                 </tr>
+
                     <!-- <tr>
                         <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: center;" colspan = "5">Bundle Break Down</td>
                     </tr>     -->
-                        @foreach($val->bundles as $qty)
-                            <tr @if($loop->last) style="border-bottom: 1px solid #000;" @endif>
-                                <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: right;" >{{ $qty->bundle_no }}</td>
-                                <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; border-left: none; text-align: right;">{{ $qty->qty }}</td>
-                            </tr>
-                        @endforeach
-                    @endif
+                    @foreach($val->bundles as $qty)
+                        <tr @if($loop->last) style="border-bottom: 1px solid #000;" @endif>
+                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: right;" >{{ count($val->bundles)>1 ? $qty->bundle_no : "" }}</td>
+                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; border-left: none; text-align: right;">{{ count($val->bundles) > 1 ? $qty->qty : "" }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ count(@$val->bundles)>1 ? count(@$val->bundles) : "" }}<br>
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ count(@$val->bundles)>1 ? @$val->order_qty : ""}}
+                    </td>
+                </tr>
+                @endif
             @endforeach
+            <tr>
+                <td colspan="4"
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: center; font-weight: bold;">
+                    Grand Total
+                </td>
+                <td
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: right; font-weight: bold;">
+                    {{ $total_qty }}
+                </td>
+                <td
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: right; font-weight: bold;">
+                    
+                </td>
+                <td
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: right; font-weight: bold;">
+                    {{ $order->total_item_value }}
+                </td>
+                <td
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: right; font-weight: bold;">
+                    {{ $total_bundle }}
+                </td>
+                <td colspan="2"
+                    style="padding: 3px; border: 1px solid #000; border-top: none; text-align: right; font-weight: bold;">
+                    
+                </td>
+            </tr>
         </table>
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -361,10 +482,8 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
-                        </tr>
-                        <tr>
                             <td>
-                                <div style="min-height: 80px;">
+                                <div style="min-height: 8px;">
                                     {{$order->remarks}}
                                 </div>
                             </td>
@@ -373,6 +492,35 @@
                 </td>
             </tr>
 
+            <tr>
+                <td colspan="2"
+                    style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;"> <b>HSN / SAC</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Tax Rate</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Taxable Amount</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>CGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>SGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
+                        </tr>
+                        @foreach($hsnGroups as $hsnCode => $hsnData)
+                            <tr>
+                                <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format($hsnData['taxable_rate'], 2) }} %</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['taxable_value'], 2) }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['tax_amount'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </td>
+            </tr>
+            
+
 
             <!--  -->
 
@@ -380,7 +528,6 @@
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 30%; border-top: none; border-right: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-
                         <tr>
                             <td style="padding-top: 5px;">Created By : {{@$order->createdBy->name}}</td>
                         </tr>

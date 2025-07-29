@@ -202,9 +202,10 @@
                                                             </div>
                                                         @endforeach
                                                            {{-- Traded Item Checkbox --}}
+                                                           
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_traded_item" value="0">
-                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}>
                                                                 <label class="form-check-label" for="tradedItemCheckbox">Traded Item</label>
                                                             </div>
 
@@ -3013,6 +3014,10 @@
                 'opacity': '0.5',
                 'cursor': 'not-allowed'
             });
+        }
+        const tradedCheckbox = document.getElementById('tradedItemCheckbox');
+        if (tradedCheckbox) {
+            tradedCheckbox.disabled = false;
         }
     }
 

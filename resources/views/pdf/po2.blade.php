@@ -34,6 +34,7 @@
     </style>
 </head>
 <body>
+    @include('components.pdf-watermark')
     <div style="width:700px; font-size: 11px; font-family:Arial;">
         @include('pdf.partials.header', [
             'orgLogo' => $orgLogo,
@@ -163,21 +164,21 @@
                             <td style="font-weight: bold; white-space: nowrap;">PO No:</td>
                             <td style="font-weight: 900;">{{ $po->document_number ?? '-' }}</td>
                         </tr>
-                
+
                         @if($po->document_date)
                         <tr>
                             <td style="font-weight: bold; white-space: nowrap;">PO Date:</td>
                             <td style="font-weight: 900;">{{ date('d-M-Y', strtotime($po->document_date)) }}</td>
                         </tr>
                         @endif
-                
+
                         @if($po->reference_number)
                         <tr>
                             <td style="font-weight: bold; white-space: nowrap;">Reference No.:</td>
                             <td style="font-weight: 900;">{{ $po->reference_number }}</td>
                         </tr>
                         @endif
-                
+
                         @if(!empty($referenceText))
                         <tr>
                             <td style="font-weight: bold; white-space: nowrap;">Indent:</td>
@@ -185,7 +186,7 @@
                         </tr>
                         @endif
                     </table>
-                </td>                
+                </td>
             </tr>
             <tr>
                 <td style="border: 1px solid #000; padding: 3px; width: 40%; vertical-align: top;">
@@ -337,7 +338,7 @@
                         @if(@$val?->itemDelivery?->count() > 1)
                             Delivery Schedule: <br />
                             @foreach(@$val?->itemDelivery as  $poItemDelivery)
-                                {{$poItemDelivery->getFormattedDate('delivery_date')}}:{{$poItemDelivery->qty}} @if(!$loop->last) , @endif 
+                                {{$poItemDelivery->getFormattedDate('delivery_date')}}:{{$poItemDelivery->qty}} @if(!$loop->last) , @endif
                             @endforeach
                         @else
                             Delivery Date: {{$val->getFormattedDate('delivery_date')}}

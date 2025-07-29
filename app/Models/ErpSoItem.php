@@ -395,4 +395,17 @@ class ErpSoItem extends Model
         }
         return $stockBalanceQty;
     }
+
+    public function getDnotePullBalanceQtyAttribute()
+    {
+        $orderQty = $this -> order_qty;
+        $shortCloseQty = $this -> short_close_qty;
+        $pickedQty = $this -> picked_qty;
+        $plistQty = $this -> plist_qty;
+        $dnoteQty = $this -> dnote_qty;
+        $srnQty = $this -> srn_qty;
+
+        $maxQty = max([$pickedQty, $plistQty, $dnoteQty]);
+        return ($orderQty - $shortCloseQty - $maxQty + $srnQty);
+    }
 }

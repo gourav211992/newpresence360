@@ -121,6 +121,7 @@
                 </div>
             </div>
         </td>
+        <input type="hidden" name="components[{{$rowCount}}][mrn_item_hidden_ids]" value="{{$item->id}}">
     </tr>
 @endforeach
 

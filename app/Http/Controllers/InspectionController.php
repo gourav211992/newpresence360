@@ -1445,7 +1445,7 @@ class InspectionController extends Controller
         return response()->json(['data' => ['html' => $html, 'detailedStocks' => $detailedStocks], 'status' => 200, 'message' => 'fetched.']);
     }
 
-    # Validate Order Qty For Frontend
+    # Validate Order Qty For Backend
     private static function validateQuantityBackend($component, $refType)
     {
         $inputData = [

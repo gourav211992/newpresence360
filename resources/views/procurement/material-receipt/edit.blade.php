@@ -343,8 +343,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="gate_entry_no"
-                                                                class="form-control" value="{{@$mrn->gate_entry_no}}"
-                                                                placeholder="Enter Gate Entry no">
+                                                                class="form-control gate_entry_no" value="{{@$mrn->gate_entry_no}}"
+                                                                placeholder="Enter Gate Entry no" readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -354,8 +354,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date" value="{{date('Y-m-d', strtotime($mrn->gate_entry_date))}}"
-                                                                class="form-control gate-entry" id="datepicker2"
-                                                                placeholder="Enter Gate Entry Date">
+                                                                class="form-control gate-entry gate_entry_date" id="datepicker2"
+                                                                placeholder="Enter Gate Entry Date" readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -386,7 +386,7 @@
                                                             Supplier Invoice No.
                                                             </label>
                                                             <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
-                                                                class="form-control"
+                                                                class="form-control supplier_invoice_no"
                                                                 placeholder="Enter Supplier Invoice No.">
                                                         </div>
                                                     </div>
@@ -397,7 +397,7 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date" value="{{date('Y-m-d', strtotime($mrn->supplier_invoice_date))}}"
-                                                                class="form-control gate-entry" id="datepicker3"
+                                                                class="form-control gate-entry supplier_invoice_date" id="datepicker3"
                                                                 placeholder="Enter Supplier Invoice Date">
                                                         </div>
                                                     </div>
@@ -424,6 +424,17 @@
                                                             class="form-control vehicle_no"
                                                             value="{{@$mrn->vehicle_no}}"
                                                             placeholder="Enter Vehicle No." />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                                Manual Entry No.
+                                                                <!-- <span class="text-danger">*</span> -->
+                                                            </label>
+                                                            <input type="text" name="manual_entry_no"
+                                                                class="form-control" value="{{@$mrn->manual_entry_no}}"
+                                                                placeholder="Enter Manual Entry no">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1804,6 +1815,8 @@
                 $(".joSelect").show();
                 $(".poSelect").show();
                 $(".soSelect").show();
+                $(".supplier_invoice_no").prop('readonly', false);
+                $(".supplier_invoice_date").prop('readonly', false);
                 $("#reference_type_input").val('');
                 $("th .form-check-input").prop('checked', false);
                 $('#vendor_name').prop('readonly', false);
@@ -1811,25 +1824,6 @@
                 $("#editShippingAddressBtn").show();
             }
         });
-        // $(document).on('click','#deleteConfirm', (e) => {
-        //     let ids = e.target.getAttribute('data-ids');
-        //     ids = JSON.parse(ids);
-        //     localStorage.setItem('deletedMrnItemIds', JSON.stringify(ids));
-        //     $("#deleteComponentModal").modal('hide');
-
-        //     if(ids.length) {
-        //         ids.forEach((id,index) => {
-        //             $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
-        //         });
-        //     }
-        //     setTableCalculation(true);
-        //     if(!$("#itemTable [id*=row_]").length) {
-        //         $("th .form-check-input").prop('checked',false);
-        //         $('#vendor_name').prop('readonly',false);
-        //         $("#editBillingAddressBtn").show();
-        //         $("#editShippingAddressBtn").show();
-        //     }
-        // });
 
         /*Remove item level discount*/
         $(document).on("click", ".deleteItemDiscountRow", (e) => {
@@ -2403,6 +2397,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.po_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
             }
         });
@@ -2508,7 +2517,18 @@
 
         window.onload = function () {
             currentProcessType = @json($mrn->reference_type);
+            asnHeaderIds = @json($asnHeaderIds);
+            asnDetailsIds = @json($asnDetailsIds);
+            geHeaderIds = @json($geHeaderIds);
+            geDetailsIds = @json($geDetailsIds);
             $("#reference_type_input").val(currentProcessType);
+            $(".supplier_invoice_no").prop('readonly', false);
+            $(".supplier_invoice_date").prop('readonly', false);
+            if(asnHeaderIds.length || asnDetailsIds.length)
+            {
+                $(".supplier_invoice_no").prop('readonly', true);
+                $(".supplier_invoice_date").prop('readonly', true);
+            }
             if(currentProcessType === null)
             {
                 $(".joSelect").hide();
@@ -2916,6 +2936,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.jo_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
             }
         });
@@ -4082,12 +4117,16 @@
 
                     $("#poModal, #joModal").modal('hide');
                     $('.asn_process').prop('disabled', true);
-
+                    $(".supplier_invoice_no").prop('readonly', false);
+                    $(".supplier_invoice_date").prop('readonly', false);
+                    
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');
                             $(".asn-container").removeClass('d-none');
                             // $('.asn_process').prop('disabled', true);
+                            $(".supplier_invoice_no").prop('readonly', true);
+                            $(".supplier_invoice_date").prop('readonly', true);
                             break;
 
                         case 'po-process':
@@ -4109,7 +4148,16 @@
                     $(".editAddressBtn").addClass('d-none');
 
                     // Supplier details
-                    if (moduleType === 'suppl-inv' && vendorAsn) {
+                    if (moduleType === 'gate-entry' && geHeader) {
+                        $("[name='gate_entry_no']").val(geHeader.gate_entry_no);
+                        $("[name='gate_entry_date']").val(geHeader.gate_entry_date);
+                        $("[name='supplier_invoice_no']").val(geHeader.supplier_invoice_no);
+                        $("[name='supplier_invoice_date']").val(geHeader.supplier_invoice_date);
+                        $("[name='consignment_no']").val(geHeader.consignment_no);
+                        $("[name='eway_bill_no']").val(geHeader.eway_bill_no);
+                        $("[name='transporter_name']").val(geHeader.transporter_name);
+                        $("[name='vehicle_no']").val(geHeader.vehicle_no);
+                    } else if (moduleType === 'suppl-inv' && vendorAsn) {
                         $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
                         $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);
                         $("[name='consignment_no']").val(vendorAsn.consignment_no);

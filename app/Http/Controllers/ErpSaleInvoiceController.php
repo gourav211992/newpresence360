@@ -12,9 +12,11 @@ use App\Models\Customer;
 use App\Models\ErpInvoiceItemPacket;
 use App\Models\ErpPlHeader;
 use App\Models\ErpPlItemDetail;
+use App\Models\ErpSubStore;
 use App\Models\EwayBillMaster;
 use App\Models\PackingListDetail;
 use App\Models\PackingListItem;
+use App\Services\Sales\PullDocService;
 use Dompdf\Dompdf;
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\DynamicFieldHelper;
@@ -333,171 +335,165 @@ class ErpSaleInvoiceController extends Controller
     }
     public function edit(Request $request, String $id)
     {
-        try {
-            $parentUrl = request() -> segments()[0];
-            $redirect_url = route('sale.invoice.index');
+        $parentUrl = request() -> segments()[0];
+        $redirect_url = route('sale.invoice.index');
+        $locationVisiblity = true;
+        if ($parentUrl === 'sale-invoices') {
             $locationVisiblity = true;
-            if ($parentUrl === 'sale-invoices') {
-                $locationVisiblity = true;
-                $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
-            } else if ($parentUrl === 'delivery-note') {
-                $locationVisiblity = true;
-                $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
-            } else if ($parentUrl === 'delivery-note-cum-invoice') {
-                $locationVisiblity = true;
-                $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
-            } else if ($parentUrl === 'lease-invoices') {
-                $locationVisiblity = false;
-                $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
-            }
-            request() -> merge(['type' => $orderType]);
-            $user = Helper::getAuthenticatedUser();
-            $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
-            $servicesBooks = [];
-            if (isset($request -> revisionNumber))
-            {
-                $order = ErpSaleInvoiceHistory::with(['customer','media_files','discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details']) -> with('items', function ($query) {
-                    $query -> with('discount_ted', 'tax_ted', 'item_locations', 'bundles') -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> where('source_id', $id)->first();
-            } else {
-                $order = ErpSaleInvoice::with(['customer','media_files','discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details',  'location_address_details']) -> with('items', function ($query) {
-                    $query -> with('discount_ted', 'tax_ted', 'item_locations', 'bundles') -> with(['item' => function ($itemQuery) {
-                        $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
-                    }]);
-                }) -> find($id);
-            }
-            $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
-            $organization = Organization::where('id', $user->organization_id)->first();
-            if (isset($order)) {
-                $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$order -> book ?-> service ?-> alias);
-                foreach ($order -> items as &$siItem) {
-                    if ($order -> book ?-> master_service ?-> type != ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                        $siItem -> invoice_qty = 0;
-                        $siItem -> save();
-                    }
-                    if (count($siItem -> bundles) > 0) {
-                        $siItem -> disable_qty = true;
+            $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
+        } else if ($parentUrl === 'delivery-note') {
+            $locationVisiblity = true;
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_TYPE;
+        } else if ($parentUrl === 'delivery-note-cum-invoice') {
+            $locationVisiblity = true;
+            $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
+        } else if ($parentUrl === 'lease-invoices') {
+            $locationVisiblity = false;
+            $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
+        }
+        request() -> merge(['type' => $orderType]);
+        $user = Helper::getAuthenticatedUser();
+        $users = AuthUser::where('organization_id', $user -> organization_id) -> where('status', ConstantHelper::ACTIVE) -> get();
+        $servicesBooks = [];
+        if (isset($request -> revisionNumber))
+        {
+            $order = ErpSaleInvoiceHistory::with(['customer','media_files','discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details']) -> with('items', function ($query) {
+                $query -> with('discount_ted', 'tax_ted', 'item_locations', 'bundles') -> with(['item' => function ($itemQuery) {
+                    $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
+                }]);
+            }) -> where('source_id', $id)->firstOrFail();
+        } else {
+            $order = ErpSaleInvoice::with(['customer','media_files','discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details',  'location_address_details']) -> with('items', function ($query) {
+                $query -> with('discount_ted', 'tax_ted', 'item_locations', 'bundles') -> with(['item' => function ($itemQuery) {
+                    $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom']);
+                }]);
+            }) -> where('id', $id) -> firstOrFail();
+        }
+        $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $organization = Organization::where('id', $user->organization_id)->first();
+        if (isset($order)) {
+            $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$order -> book ?-> service ?-> alias);
+            foreach ($order -> items as &$siItem) {
+                if ($order -> book ?-> master_service ?-> type != ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                    $siItem -> invoice_qty = 0;
+                    $siItem -> save();
+                }
+                if (count($siItem -> bundles) > 0) {
+                    $siItem -> disable_qty = true;
+                } else {
+                    $siItem -> disable_qty = false;
+                }
+                if ($siItem -> so_item_id !== null) {
+                    $pulled = ErpSoItem::find($siItem -> so_item_id);
+                    if (isset($pulled)) {
+                        $siItem -> max_attribute = $pulled -> order_qty;
+                        $siItem -> is_editable = false;
                     } else {
-                        $siItem -> disable_qty = false;
+                        $siItem -> max_attribute = 999999;
+                        $siItem -> is_editable = true;
                     }
-                    if ($siItem -> so_item_id !== null) {
-                        $pulled = ErpSoItem::find($siItem -> so_item_id);
-                        if (isset($pulled)) {
-                            $siItem -> max_attribute = $pulled -> order_qty;
-                            $siItem -> is_editable = false;
-                        } else {
-                            $siItem -> max_attribute = 999999;
-                            $siItem -> is_editable = true;
-                        }
-                    } else if ($siItem -> land_lease_id || $siItem -> land_schedule_id) {
-                        $pulled = LandLease::find($siItem -> land_lease_id);
-                        if (isset($pulled)) {
-                            $siItem -> max_attribute = 999999;
-                            $siItem -> is_editable = false;
-                        } else {
-                            $siItem -> max_attribute = 999999;
-                            $siItem -> is_editable = true;
-                        }
-                    }
-                    else {
-                        // if (count($siItem -> mapped_so_item_ids()) > 0) {
-                        //     $referenceItems = ErpSoItem::whereIn('id', $siItem -> mapped_so_item_ids()) -> get();
-                        //     $maxAttribute = 0;
-                        //     foreach ($referenceItems as $refItem) {
-                        //         $maxAttribute += $refItem -> balance_qty;
-                        //     }
-                        //     $maxAttribute += $siItem -> order_qty;
-                        //     $siItem -> max_attribute = $maxAttribute;
-                        //     $siItem -> is_editable = false;
-                        // } else {
-                            $siItem -> max_attribute = 999999;
-                            $siItem -> is_editable = true;
-                        // }
-                    }
-                    $packingListDetail = $siItem -> packets;
-                    if (isset($packingListDetail) && count($packingListDetail) > 0) {
-                        $siItem -> package = $packingListDetail -> first() -> package_number;
+                } else if ($siItem -> land_lease_id || $siItem -> land_schedule_id) {
+                    $pulled = LandLease::find($siItem -> land_lease_id);
+                    if (isset($pulled)) {
+                        $siItem -> max_attribute = 999999;
+                        $siItem -> is_editable = false;
+                    } else {
+                        $siItem -> max_attribute = 999999;
+                        $siItem -> is_editable = true;
                     }
                 }
+                else {
+                    // if (count($siItem -> mapped_so_item_ids()) > 0) {
+                    //     $referenceItems = ErpSoItem::whereIn('id', $siItem -> mapped_so_item_ids()) -> get();
+                    //     $maxAttribute = 0;
+                    //     foreach ($referenceItems as $refItem) {
+                    //         $maxAttribute += $refItem -> balance_qty;
+                    //     }
+                    //     $maxAttribute += $siItem -> order_qty;
+                    //     $siItem -> max_attribute = $maxAttribute;
+                    //     $siItem -> is_editable = false;
+                    // } else {
+                        $siItem -> max_attribute = 999999;
+                        $siItem -> is_editable = true;
+                    // }
+                }
+                $packingListDetail = $siItem -> packets;
+                if (isset($packingListDetail) && count($packingListDetail) > 0) {
+                    $siItem -> package = $packingListDetail -> first() -> package_number;
+                }
             }
-           
-            $revision_number = $order->revision_number;
-            $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
-            $userType = Helper::userCheck();
-            $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
-            $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
-            $request -> merge(['type' => $type]);
-            $books = Helper::getBookSeriesNew($type) -> get();
-            $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
-            $revNo = $order->revision_number;
-            if($request->has('revisionNumber')) {
-                $revNo = intval($request->revisionNumber);
-            } else {
-                $revNo = $order->revision_number;
-            }
-            $docValue = $order->total_amount ?? 0;
-            $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
-            $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
-            $typeName = "Sales Invoice";
-            if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                $typeName = "Delivery Note";
-            } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                $typeName = "Delivery Note CUM Invoice";
-            } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
-                $typeName = "Lease Invoice";
-            }
-            $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-            $einvoice = $order -> irnDetail() -> first();
-            $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
-                $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS;
-            if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
-                $enableEinvoice = false;
-            }
-            $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
-            $transportationModes = EwayBillMaster::where('status', 'active')
-                ->where('type', '=', 'transportation-mode')
-                ->orderBy('id', 'ASC')
-                ->get();
-            $editTransporterFields = false;
-            if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
-                $editTransporterFields = true;
-            }
-            $dynamicFieldsUI = $order -> dynamicfieldsUi();
-            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
-
-            $data = [
-                'user' => $user,
-                'users' => $users,
-                'series' => $books,
-                'order' => $order,
-                'countries' => $countries,
-                'buttons' => $buttons,
-                'approvalHistory' => $approvalHistory,
-                'type' => $type,
-                'editBundle' => $editBundle,
-                'revision_number' => $revision_number,
-                'docStatusClass' => $docStatusClass,
-                'typeName' => $typeName,
-                'stores' => $stores,
-                'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
-                'services' => $servicesBooks['services'],
-                'redirect_url' => $redirect_url,
-                'location_visibility' => $locationVisiblity,
-                'einvoice' => $einvoice,
-                'enableEinvoice' => $enableEinvoice,
-                'subStores' => $subStores,
-                'dynamicFieldsUi' => $dynamicFieldsUI,
-                'transportationModes' => $transportationModes,
-                'current_financial_year' => $selectedfyYear,
-                'editTransporterFields' => $editTransporterFields
-            ];
-            return view('salesInvoice.create_edit', $data);
-           
-        } catch(Exception $ex) {
-            dd($ex -> getMessage());
         }
+        
+        $revision_number = $order->revision_number;
+        $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
+        $userType = Helper::userCheck();
+        $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
+        $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
+        $request -> merge(['type' => $type]);
+        $books = Helper::getBookSeriesNew($type) -> get();
+        $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
+        $revNo = $order->revision_number;
+        if($request->has('revisionNumber')) {
+            $revNo = intval($request->revisionNumber);
+        } else {
+            $revNo = $order->revision_number;
+        }
+        $docValue = $order->total_amount ?? 0;
+        $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
+        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
+        $typeName = "Sales Invoice";
+        if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+            $typeName = "Delivery Note";
+        } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+            $typeName = "Delivery Note CUM Invoice";
+        } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+            $typeName = "Lease Invoice";
+        }
+        $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+        $einvoice = $order -> irnDetail() -> first();
+        $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
+            $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS;
+        if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
+            $enableEinvoice = false;
+        }
+        $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
+        $transportationModes = EwayBillMaster::where('status', 'active')
+            ->where('type', '=', 'transportation-mode')
+            ->orderBy('id', 'ASC')
+            ->get();
+        $editTransporterFields = false;
+        if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
+            $editTransporterFields = true;
+        }
+        $dynamicFieldsUI = $order -> dynamicfieldsUi();
+        $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
+        $data = [
+            'user' => $user,
+            'users' => $users,
+            'series' => $books,
+            'order' => $order,
+            'countries' => $countries,
+            'buttons' => $buttons,
+            'approvalHistory' => $approvalHistory,
+            'type' => $type,
+            'editBundle' => $editBundle,
+            'revision_number' => $revision_number,
+            'docStatusClass' => $docStatusClass,
+            'typeName' => $typeName,
+            'stores' => $stores,
+            'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
+            'services' => $servicesBooks['services'],
+            'redirect_url' => $redirect_url,
+            'location_visibility' => $locationVisiblity,
+            'einvoice' => $einvoice,
+            'enableEinvoice' => $enableEinvoice,
+            'subStores' => $subStores,
+            'dynamicFieldsUi' => $dynamicFieldsUI,
+            'transportationModes' => $transportationModes,
+            'current_financial_year' => $selectedfyYear,
+            'editTransporterFields' => $editTransporterFields
+        ];
+        return view('salesInvoice.create_edit', $data);
     }
 
     public function store(ErpSaleInvoiceRequest $request)
@@ -513,14 +509,14 @@ class ErpSaleInvoiceController extends Controller
             DB::beginTransaction();
             $user = Helper::getAuthenticatedUser();
             $book = Book::find($request -> book_id);
-            $type = SaleModuleHelper::getAndReturnInvoiceType($book -> service -> alias);
+            $type = $book -> master_service -> alias;
             $request -> merge(['type' => $type]);
             $invoiceRequired = false;
             $store = ErpStore::find($request -> store_id);
-            // $invoiceRequiredParam = OrganizationBookParameter::where('book_id', $request -> book_id) -> where('parameter_name', ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM) -> first();
-            // if (isset($invoiceRequiredParam) && $invoiceRequiredParam -> parameter_value[0] == 'yes') {
-            //     $invoiceRequired = true;
-            // }
+            $subStore = null;
+            if (in_array($type, [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])) {
+                $subStore = ErpSubStore::find($request -> sub_store_id);
+            }
             //Auth credentials
             $organization = Organization::find($user -> organization_id);
             $organizationId = $organization ?-> id ?? null;
@@ -789,6 +785,8 @@ class ErpSaleInvoiceController extends Controller
                     'reference_number' => $request -> reference_no,
                     'store_id' => $request -> store_id ?? null,
                     'store_code' => $store ?-> store_code ?? null,
+                    'sub_store_id' => $request -> sub_store_id ?? null,
+                    'sub_store_code' => $subStore ?-> name ?? null,
                     'customer_id' => $request -> customer_id,
                     'customer_code' => $request -> customer_code,
                     'customer_email' => $customerEmail,
@@ -970,10 +968,8 @@ class ErpSaleInvoiceController extends Controller
                             $invoiceQty = 0;
                             if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                 $dnoteQty = isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0;
-                                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                    $invoiceQty = isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0;
-                                }
-                            } else {
+                            }
+                            if ($saleInvoice -> document_type === ConstantHelper::SI_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                 $invoiceQty = isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0;
                             }
                             $customersItemDetails = ItemHelper::getCustomerItemDetails($item -> id, $saleInvoice -> customer_id);
@@ -981,8 +977,8 @@ class ErpSaleInvoiceController extends Controller
                                 'sale_invoice_id' => $saleInvoice -> id,
                                 'item_id' => $item -> id,
                                 'item_code' => $item -> item_code,
-                                'store_id' => isset($request -> item_store[$itemKey]) ? $request -> item_store[$itemKey] : null,
-                                'sub_store_id' => isset($request -> item_sub_store[$itemKey]) ? $request -> item_sub_store[$itemKey] : null,
+                                'store_id' => isset($store) ? $store -> id : null,
+                                'sub_store_id' => isset($subStore) ? $subStore -> id: null,
                                 'item_name' => $item -> item_name,
                                 'customer_item_id' => $customersItemDetails['customer_item_id'],
                                 'customer_item_code' => $customersItemDetails['customer_item_code'],
@@ -992,7 +988,7 @@ class ErpSaleInvoiceController extends Controller
                                 'uom_id' => isset($request -> uom_id[$itemKey]) ? $request -> uom_id[$itemKey] : null, //Need to change
                                 'uom_code' => isset($uom) ? $uom -> name : null,
                                 'order_qty' => isset($request -> item_qty[$itemKey]) ? $request -> item_qty[$itemKey] : 0,
-                                'invoice_qty' => 0,
+                                'invoice_qty' => $invoiceQty,
                                 'dnote_qty' => $dnoteQty,
                                 'inventory_uom_id' => $item -> uom ?-> id,
                                 'inventory_uom_code' => $item -> uom ?-> name,
@@ -1101,37 +1097,36 @@ class ErpSaleInvoiceController extends Controller
                         //Order Pulling condition
                         if (isset($request -> quotation_item_type[$itemDataKey])) {
                             $pullType = $request -> quotation_item_type[$itemDataKey];
-                            if ($pullType === ConstantHelper::SO_SERVICE_ALIAS || $pullType === PackingListConstants::SERVICE_ALIAS) {
+                            if ($pullType === ConstantHelper::SO_SERVICE_ALIAS) {
                                 $qtItem = ErpSoItem::find($request -> quotation_item_ids[$itemDataKey]);
                                 if (isset($qtItem)) {
                                     //If Order is pulled inside DN
-                                    if ($invoiceRequired) {
+                                    if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                                         $qtItem -> dnote_qty = ($qtItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                         $soItem -> dnote_qty = ($soItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                    } else {
-                                        $qtItem -> dnote_qty = ($qtItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                        $soItem -> dnote_qty = ($soItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                        // $qtItem -> invoice_qty = ($qtItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                        // $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                    }
+                                    if ($saleInvoice -> document_type === ConstantHelper::SI_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                                        $qtItem -> invoice_qty = ($qtItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                        $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                     }
                                     $qtItem -> save();
                                     $soItem -> sale_order_id = $qtItem -> header ?-> id;
                                     $soItem -> so_item_id = $qtItem ?-> id;
                                     $soItem -> save();
                                 }
-                                if (isset($request -> plist_detail_ids[$itemDataKey])) {
-                                    $plistIds = json_decode($request -> plist_detail_ids[$itemDataKey]);
-                                    $plistDetails = PackingListDetail::whereIn('id', $plistIds) -> get();
-                                    foreach ($plistDetails as $plistDetail) {
-                                        ErpInvoiceItemPacket::create([
-                                            'invoice_item_id' => $soItem -> id,
-                                            'plist_detail_id' => $plistDetail -> id,
-                                            'package_number' => $plistDetail -> packing_number
-                                        ]);
-                                        $plistDetail -> dn_item_id = $soItem -> id;
-                                        $plistDetail -> save();
-                                    }
-                                }
+                                // if (isset($request -> plist_detail_ids[$itemDataKey])) {
+                                //     $plistIds = json_decode($request -> plist_detail_ids[$itemDataKey]);
+                                //     $plistDetails = PackingListDetail::whereIn('id', $plistIds) -> get();
+                                //     foreach ($plistDetails as $plistDetail) {
+                                //         ErpInvoiceItemPacket::create([
+                                //             'invoice_item_id' => $soItem -> id,
+                                //             'plist_detail_id' => $plistDetail -> id,
+                                //             'package_number' => $plistDetail -> packing_number
+                                //         ]);
+                                //         $plistDetail -> dn_item_id = $soItem -> id;
+                                //         $plistDetail -> save();
+                                //     }
+                                // }
                                 
                                 // $itemQty = isset($oldSoItem) ? $soItem -> order_qty - $oldSoItem -> order_qty : $soItem -> order_qty;
                                 // $referenceFromIds = json_decode($request -> reference_from[$itemDataKey]);
@@ -1195,11 +1190,11 @@ class ErpSaleInvoiceController extends Controller
                                 //         )
                                 //     ], 422);
                                 // }
-                            } else if ($pullType === ConstantHelper::SI_SERVICE_ALIAS || $pullType === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                            } else if ($pullType === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                                 $qtItem = ErpInvoiceItem::find($request -> quotation_item_ids[$itemDataKey]);
                                 if (isset($qtItem)) {
                                     $qtItem -> invoice_qty = ($qtItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
-                                    // $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                    $soItem -> invoice_qty = ($soItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                     //Check if sales order exists
                                     if ($qtItem -> so_item_id) {
                                         $saleOrderItem = ErpSoItem::find($qtItem -> so_item_id);
@@ -1208,16 +1203,11 @@ class ErpSaleInvoiceController extends Controller
                                             $saleOrderItem -> save();
                                         }
                                     }
-                                    //If invoice is required then update both quantites
-                                    if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::SI_SERVICE_ALIAS) {
-                                        $qtItem -> invoice_qty = $itemDataValue['order_qty'];
-                                    }
                                     $soItem -> dnote_id = $qtItem -> header ?-> id;
                                     $soItem -> dnote_item_id = $qtItem ?-> id;
                                     if(isset($qtItem->so_item_id)){
                                         $soItem -> so_item_id = $qtItem ?-> so_item_id;
                                         $soItem -> sale_order_id = $qtItem -> sale_order_id;
-                                           
                                     }
                                     $qtItem -> save();
                                     $soItem -> save();
@@ -1251,6 +1241,20 @@ class ErpSaleInvoiceController extends Controller
 
                                     $plItemDetail -> dnote_qty = ($plItemDetail -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
                                     $plItemDetail -> save();
+
+                                    //Back update in SO
+                                    if ($plItemDetail -> order_item_id) {
+                                        $saleOrderItem = ErpSoItem::find($plItemDetail -> order_item_id);
+                                        if (isset($saleOrderItem)) {
+                                            if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                                                $saleOrderItem -> dnote_qty = ($saleOrderItem -> dnote_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                            }
+                                            if ($saleInvoice -> document_type === ConstantHelper::SI_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                                                $saleOrderItem -> invoice_qty = ($saleOrderItem -> invoice_qty - (isset($oldSoItem) ? $oldSoItem -> order_qty : 0)) + $itemDataValue['order_qty'];
+                                            }
+                                            $saleOrderItem -> save();
+                                        }
+                                    }
                                 }
                             }
                            
@@ -1528,7 +1532,7 @@ class ErpSaleInvoiceController extends Controller
                     }
                     $saleInvoice -> save();
                 }
-                $saleInvoice -> document_type = isset($request -> type) && in_array($request -> type, ConstantHelper::SALE_INVOICE_DOC_TYPES) ? $request -> type : ConstantHelper::SI_SERVICE_ALIAS;
+                // $saleInvoice -> document_type = isset($request -> type) && in_array($request -> type, ConstantHelper::SALE_INVOICE_DOC_TYPES) ? $request -> type : ConstantHelper::SI_SERVICE_ALIAS;
                 $saleInvoice -> save();
                 //Media
                 if ($request->hasFile('attachments')) {
@@ -1547,15 +1551,15 @@ class ErpSaleInvoiceController extends Controller
                 //     $actionType = 'submit'; // Approve // reject // submit
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
-                // if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                //     $status = self::maintainStockLedger($saleInvoice);
-                //     if (!$status) {     
-                //         DB::rollBack();
-                //         return response() -> json([
-                //             'message' => 'Stock not available'
-                //         ], 422);
-                //     }
-                // }
+                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                    $error = self::maintainStockLedger($saleInvoice);
+                    if ($error) {     
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => $error
+                        ], 422);
+                    }
+                }
                 $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
                 if ($saleInvoice -> document_status === ConstantHelper::POSTED){
                     if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
@@ -1583,14 +1587,22 @@ class ErpSaleInvoiceController extends Controller
                     ->first();
 
                 // Create job
-                if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
-                    (new WhmJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
+                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                    if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
+                        (new WhmJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
+                    }
                 }
-
                 DB::commit();
                 $module = "Invoice";
                 $redirect_url = route('sale.invoice.index');
-                if ($saleInvoice -> type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+                if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                    $module = "Delivery Note";
+                    $redirect_url = route("sale.deliveryNote.index");
+                } elseif ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                    $module = "Delivery Note CUM Invoice";
+                    $redirect_url = route("sale.deliveryNoteCumInvoice.index");
+                }elseif ($saleInvoice -> document_type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+                    $module = "Lease Invoice";
                     $redirect_url = route('sale.leaseInvoice.index');
                 }
                 return response() -> json([
@@ -1677,14 +1689,14 @@ class ErpSaleInvoiceController extends Controller
                             ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
                             ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
                     })
-                    ->whereColumn('dnote_qty', '<', 'order_qty')
+                    ->whereRaw('((order_qty - short_close_qty - GREATEST(picked_qty, plist_qty, dnote_qty)) + srn_qty) > 0')
                     ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds));
 
-            } elseif (in_array($request->doc_type, [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])) {
+            } elseif (in_array($request->doc_type, [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])) {
                 $query = ErpInvoiceItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
                     ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
                         $subQuery->withDefaultGroupCompanyOrg()
-                            // ->whereIn('document_type', [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
+                            ->whereIn('document_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
                             ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
                             ->whereIn('book_id', $applicableBookIds)
                             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id)->where('store_id', $request->store_id))
@@ -1712,7 +1724,7 @@ class ErpSaleInvoiceController extends Controller
                 }) ->with('sale_order')-> whereNull('dn_item_id');
             } else if ($request -> doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
                 $query = ErpPlItemDetail::withWhereHas('header', function ($subQuery) use($request, $applicableBookIds) {
-                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> whereIn('book_id', $applicableBookIds) 
+                    $subQuery -> withDefaultGroupCompanyOrg() -> whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) -> where('staging_sub_store_id', $request -> sub_store_id) -> whereIn('book_id', $applicableBookIds) 
                     -> when($request -> book_id, function ($bookQuery) use($request) {
                         $bookQuery -> where('book_id', $request -> book_id);
                     }) -> when($request -> document_id, function ($docQuery) use($request) {
@@ -1771,6 +1783,17 @@ class ErpSaleInvoiceController extends Controller
                         request('store_id'),
                         request('sub_store_id') ?? null
                     ), 2) : '0.00')
+                ->addColumn('uom_name', function ($item) {
+                return $item -> uom ?-> name;
+            })
+            ->addColumn('balance_qty', function ($item) use($request) {
+                if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
+                    return number_format($item->dnote_pull_balance_qty ?? 0, 6);
+                } else {
+                    return number_format($item->balance_qty ?? 0, 2);
+                }
+            })
+                ->editColumn('order_qty', fn($item) => number_format($item?->order_qty ?? 0, 6))
                 ->editColumn('qty', fn($item) => number_format($item->qty ?? 0, 2))
                 ->editColumn('balance_qty', fn($item) => number_format($item->balance_qty ?? 0, 2))
                 ->editColumn('rate', fn($item) => number_format($item->rate ?? 0, 2))
@@ -1883,6 +1906,20 @@ class ErpSaleInvoiceController extends Controller
             ]);
         }
     }
+    public function getSalesItemsForPullingNew(Request $request)
+    {
+        try {
+            $pullType = $request -> doc_type;
+            $parameters = $request -> all();
+            $pullDocService = new PullDocService($pullType, $parameters);
+            return $pullDocService -> getRecords()['data'];
+        } catch(Exception $ex) {
+            return response() -> json([
+                'message' => 'Some internal error occurred',
+                'error' => $ex -> getMessage()
+            ], 500);
+        }
+    }
 
     public function getSalesLandForPulling(Request $request)
     {
@@ -1948,7 +1985,7 @@ class ErpSaleInvoiceController extends Controller
             $headers = [];
             if ($request -> doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
                 $modelName = resolve("App\\Models\\ErpSaleOrder");
-            } else if ($request -> doc_type === ConstantHelper::SI_SERVICE_ALIAS || $request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+            } elseif ($request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                 $modelName = resolve("App\\Models\\ErpSaleInvoice");
             } else {
                 $modelName = null;
@@ -1983,9 +2020,9 @@ class ErpSaleInvoiceController extends Controller
                 foreach ($headers as $header) {
                     if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
                         $saleOrderItems = $header -> sale_order_items();
-                        foreach ($saleOrderItems as &$saleOrderItem) {
-                            $saleOrderItem -> actual_qty = $saleOrderItem -> order_qty;
-                        }
+                        // foreach ($saleOrderItems as &$saleOrderItem) {
+                        //     $saleOrderItem -> actual_qty = $saleOrderItem -> order_qty;
+                        // }
                     }
                     foreach ($header -> items as $orderItemKey => &$orderItem) {
                         $orderItem -> stock_qty = $orderItem -> getStockBalanceQty($request -> store_id ?? 0);
@@ -1994,6 +2031,7 @@ class ErpSaleInvoiceController extends Controller
                             $header -> items[$orderItemKey] = $saleOrderItems[$orderItemKey];
                             $header -> items[$orderItemKey] -> id = $orderItem -> id;
                             $header -> items[$orderItemKey] -> item_attributes_array = $orderItem -> item_attributes_array();
+                            $header -> items[$orderItemKey] -> actual_qty = $orderItem -> order_qty;
                         }
                     }
                 }
@@ -2499,36 +2537,34 @@ class ErpSaleInvoiceController extends Controller
         $user = Helper::getAuthenticatedUser();
         $detailIds = $saleInvoice->items->pluck('id')->toArray();
         $issueRecords = InventoryHelper::settlementOfInventoryAndStock($saleInvoice->id, $detailIds, $saleInvoice -> document_type, $saleInvoice->document_status, 'issue');
-        if(!empty($issueRecords['data']) && count($issueRecords['data']) > 0){
-            ErpInvoiceItemLocation::where('sale_invoice_id', $saleInvoice->id)
-                ->whereIn('invoice_item_id', $detailIds)
-                ->delete();
-
-            foreach($issueRecords['data'] as $key => $val){
-
-                $invoiceItem = ErpInvoiceItem::where('id', @$val->issuedBy->document_detail_id) -> first();
-
-                ErpInvoiceItemLocation::create([
-                    'sale_invoice_id' => $saleInvoice -> id,
-                    'invoice_item_id' => @$val->issuedBy->document_detail_id,
-                    'item_id' => $val -> issuedBy -> item_id,
-                    'item_code' => $val -> issuedBy -> item_code,
-                    'store_id' => $val -> issuedBy -> store_id,
-                    'store_code' => $val -> issuedBy -> store,
-                    'rack_id' => $val -> issuedBy -> rack_id,
-                    'rack_code' => $val -> issuedBy -> rack,
-                    'shelf_id' => $val -> issuedBy -> shelf_id,
-                    'shelf_code' => $val -> issuedBy -> shelf,
-                    'bin_id' => $val -> issuedBy -> bin_id,
-                    'bin_code' => $val -> issuedBy -> bin,
-                    'quantity' => ItemHelper::convertToAltUom($val -> issuedBy -> item_id, $invoiceItem ?-> uom_id ?? $val->issuedBy?->inventory_uom_id, $val -> issuedBy -> issue_qty),
-                    'inventory_uom_qty' => $val -> issuedBy -> issue_qty
-                ]);
-            }
-            return true;
-        } else {
-            return false;
+        if($issueRecords['status'] == 'error'){
+            return $issueRecords['message'];
         }
+        ErpInvoiceItemLocation::where('sale_invoice_id', $saleInvoice->id)
+            ->whereIn('invoice_item_id', $detailIds)
+            ->delete();
+
+        foreach($issueRecords['data'] as $val){
+            $invoiceItem = ErpInvoiceItem::where('id', @$val->issuedBy->document_detail_id) -> first();
+
+            ErpInvoiceItemLocation::create([
+                'sale_invoice_id' => $saleInvoice -> id,
+                'invoice_item_id' => @$val->issuedBy->document_detail_id,
+                'item_id' => $val -> issuedBy -> item_id,
+                'item_code' => $val -> issuedBy -> item_code,
+                'store_id' => $val -> issuedBy -> store_id,
+                'store_code' => $val -> issuedBy -> store,
+                'rack_id' => $val -> issuedBy -> rack_id,
+                'rack_code' => $val -> issuedBy -> rack,
+                'shelf_id' => $val -> issuedBy -> shelf_id,
+                'shelf_code' => $val -> issuedBy -> shelf,
+                'bin_id' => $val -> issuedBy -> bin_id,
+                'bin_code' => $val -> issuedBy -> bin,
+                'quantity' => ItemHelper::convertToAltUom($val -> issuedBy -> item_id, $invoiceItem ?-> uom_id ?? $val->issuedBy?->inventory_uom_id, $val -> issuedBy -> issue_qty),
+                'inventory_uom_qty' => $val -> issuedBy -> issue_qty
+            ]);
+        }
+        return null;
     }
 
     public function getBundlesForPulledSo(Request $request)

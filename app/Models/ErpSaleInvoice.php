@@ -37,6 +37,7 @@ class ErpSaleInvoice extends Model
         'gst_status',
         'store_id',
         'store_code',
+        'sub_store_id',
         'department_id',
         'department_code',
         'customer_id',
@@ -207,6 +208,10 @@ class ErpSaleInvoice extends Model
     public function erpStore()
     {
         return $this -> belongsTo(ErpStore::class, 'store_id');
+    }
+    public function subStore()
+    {
+        return $this -> belongsTo(ErpSubStore::class, 'sub_store_id');
     }
     public function getTaxableAmountAttribute()
     {

@@ -453,11 +453,6 @@
                 </div>
             </div>
         </div>
-        {{-- Discount summary modal --}}
-        <!-- @include('procurement.inspection.partials.summary-disc-modal') -->
-        {{-- Add expenses modal--}}
-        <!-- @include('procurement.inspection.partials.summary-exp-modal') -->
-        {{-- Add Outstanding PO modal--}}
         @include('procurement.inspection.partials.outstanding-mrn-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
@@ -465,8 +460,6 @@
             </div>
         </div>
     </form>
-    {{-- Item upload modal --}}
-    @include('partials.import-item-modal')
     {{-- Attribute popup --}}
     <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -525,8 +518,6 @@
             </div>
         </div>
     </div>
-    {{-- Taxes --}}
-    <!-- @include('procurement.inspection.partials.tax-detail-modal') -->
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>

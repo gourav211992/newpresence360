@@ -70,7 +70,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input oninput="allowOnlyUppercase(event)" type="text" name="book_code" class="form-control" 
+                                                        <input oninput="allowOnlyUppercase(event)" type="text" name="book_code" class="form-control"
                                                             value="{{ $book->book_code }}" disabled />
                                                     </div>
                                                 </div>
@@ -81,7 +81,7 @@
                                                                 class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="book_name" class="form-control" 
+                                                        <input type="text" name="book_name" class="form-control"
                                                             value="{{ $book->book_name }}" />
                                                     </div>
                                                 </div>
@@ -183,7 +183,7 @@
                                                                             <th >Prefix</th>
                                                                             <th >Suffix</th>
                                                                             <th >Starting No.</th>
-            
+
                                                                             <th class = "center-align-content" width = "20px">Action</th>
                                                                         </tr>
                                                                     </thead>
@@ -279,7 +279,7 @@
                                                                                         name="starting_no[]"
                                                                                         value="{{ $pattern->starting_no }}">
                                                                                 </td>
-                                                                                
+
                                                                                 <td class = "center-align-content">
                                                                                     @if ($no == 1)
                                                                                         <a href="#"
@@ -458,8 +458,8 @@
                                                                                 <td>
                                                                                     @php $users = []; @endphp
                                                                                     @foreach ($workflowGroup->approvers as $workflow)
-                                                                                        @php 
-                                                                                        $users[] = $workflow->user_id; 
+                                                                                        @php
+                                                                                        $users[] = $workflow->user_id;
                                                                                         @endphp
                                                                                     @endforeach
                                                                                     <select
@@ -487,7 +487,7 @@
                                                                                     <input type="text"
                                                                                         {{$workflowGroup -> allow_change ? '' : 'disabled'}}
                                                                                         value="{{ $workflowGroup->min_value }}"
-                                                                                        name="min_value[]" 
+                                                                                        name="min_value[]"
                                                                                         data-id="{{ $level }}"
                                                                                         {{ $serviceType === 'master' ? 'readonly' : '' }}
                                                                                         class="form-control mw-100 min-value">
@@ -724,7 +724,7 @@
                                                                                         @foreach ($amendment->approvers as $flow)
                                                                                             @php $amendUsers[] = $flow->user_id; @endphp
                                                                                         @endforeach
-                                                                                        <select class="form-select mw-100 select2 amendmentUserSelect" name="amendment_user[{{ $loop->index }}][]" multiple id = "amend_users_{{$amendLevel}}"> 
+                                                                                        <select class="form-select mw-100 select2 amendmentUserSelect" name="amendment_user[{{ $loop->index }}][]" multiple id = "amend_users_{{$amendLevel}}">
                                                                                             <option disabled value="">Select Approver</option>
                                                                                             @foreach ($amendment -> employees as $user)
                                                                                                 <option
@@ -925,6 +925,30 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            $(document).on('change', 'select[name="reset_pattern[]"]', function () {
+                const $this = $(this);
+                const row = $this.closest('tr');
+                const index = row.index();
+
+                const prefix = row.find(`[name="prefix[]"]`);
+                const suffix = row.find(`[name="suffix[]"]`);
+                const startingNo = row.find(`[name="starting_no[]"]`);
+
+                if ($this.val() === 'Never') {
+                    prefix.removeAttr('readonly');
+                    suffix.removeAttr('readonly');
+                    startingNo.removeAttr('readonly');
+                } else {
+                    prefix.attr('readonly', true);
+                }
+            });
+
+            $(document).ready(function () {
+                $('select[name="reset_pattern[]"]').each(function () {
+                    $(this).trigger('change');
+                });
+            });
+
             // Add new item row
             document.querySelector('.add_number_pattern').addEventListener('click', function(e) {
                 e.preventDefault();
@@ -1077,7 +1101,7 @@
                     console.error('Error fetching org services data:', xhr.responseText);
                 }
             });
-            
+
         });
 
         $(document).on('change', '.userSelect', function() {
@@ -1204,7 +1228,7 @@
                     let selectedUsers = $(".userSelect option:selected").map(function() {
                         return $(this).val();
                     }).get();
-                    
+
                     var usersHtml='';
                     $.each(users, function( ukey, uValue ) {
                         const newVal=uValue['id']+"|"+uValue['type'];
@@ -1361,7 +1385,7 @@
                 // Delete a row
                 $('#workflow-body').on('click', '.delete-row', function(e) {
                     e.preventDefault();
-                    
+
                     let row = $(this).closest('tr');
                     let levelRow = row.prevAll('.level-row').first();
                     row.remove();
@@ -1427,7 +1451,7 @@ $(document).on('click', '.amendment_plus', function (e) {
                     </div>
                 </div>
             </div>
-               
+
             <td class = "center-align-content">
                 <a href="#" class="text-primary amendment_plus"><i data-feather="plus-square"></i></a>
                 <a href="#" class="text-danger delete-row ms-2"><i data-feather="trash-2"></i></a>
@@ -1495,7 +1519,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
             console.error('Error fetching org services data:', xhr.responseText);
         }
     });
-            
+
 });
 
     function onReferenceServiceChange(element)
@@ -1510,7 +1534,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
                 selectedIds.push(selectedServices[index].value);
             }
             const seriesElement = document.getElementById('reference_series_input');
-            
+
             var innerSeriesHTMLVal = '';
             var selectedBooks = [];
             var selectedBookElements = document.getElementById('reference_series_input').selectedOptions;
@@ -1635,7 +1659,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
         // Disable removal of pre-selected items
         $('.approvalUserSelect').on('select2:unselecting', function(e) {
             var $option = $(e.params.args.data.element);
-            
+
             // Check if the item is removable
             if ($option.data('fixed') === true) {
                 e.preventDefault(); // Prevent unselecting pre-selected items
@@ -1771,7 +1795,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
                             icon: 'error',
                         });
                     }
-                    
+
                 },
                 error: function () {
                     dynamicFieldsValueSection.innerHTML = ``;

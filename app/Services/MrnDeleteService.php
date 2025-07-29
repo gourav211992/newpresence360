@@ -43,9 +43,9 @@ class MrnDeleteService
                 $documentHeaderId = $mrnItem->mrn_header_id;
                 $documentDetailId = $mrnItem->id;
                 $itemId = $mrnItem->item_id;
-                $storeId = $mrnItem->store_id;
-                $subStoreId = $mrnItem->sub_store_id;
-                $documentStatus = $mrnItem->document_status;
+                $storeId = $mrn->store_id;
+                $subStoreId = $mrn->sub_store_id;
+                $documentStatus = $mrn->document_status;
                 $selectedAttr = collect($mrnItem->attributes)->pluck('attr_value')->filter()->values()->toArray();
                 if ($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS) {
                     $mrnData = [
@@ -85,9 +85,6 @@ class MrnDeleteService
 
                 $orderQty = $mrnItem->order_qty;
 
-                $mrnItem->teds()->delete();
-                $mrnItem->attributes()->delete();
-
                 if ($geItem = $mrnItem->geItem) {
                     $geItem->mrn_qty -= $orderQty;
                     $geItem->save();
@@ -121,6 +118,8 @@ class MrnDeleteService
                         break;
                 }
 
+                $mrnItem->teds()->delete();
+                $mrnItem->attributes()->delete();
                 $mrnItem->delete();
             }
         }

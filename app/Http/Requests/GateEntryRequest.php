@@ -59,16 +59,17 @@ class GateEntryRequest extends FormRequest
             'supplier_invoice_no' => [
                 'nullable',
                 'max:50',
-                Rule::unique('erp_gate_entry_headers')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('group_id', $this->group_id)
-                            ->where('organization_id', $this->organization_id)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($mrnId), // ignore when updating
+                // Rule::unique('erp_gate_entry_headers')
+                //     ->where(function ($query) {
+                //         return $query
+                //             ->where('group_id', $this->group_id)
+                //             ->where('organization_id', $this->organization_id)
+                //             ->whereNull('deleted_at');
+                //     })
+                //     ->ignore($mrnId), // ignore when updating
             ],
             'supplier_invoice_date' => 'nullable|date',
+            'manual_entry_no' => 'nullable|max:50',
             'transporter_name' => 'nullable|max:50',
             'vehicle_no' => [
                 'nullable',
@@ -124,7 +125,7 @@ class GateEntryRequest extends FormRequest
                 }
             }
         }
-        $rules['components.*.attr_group_id.*.attr_name'] = 'required';
+        // $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.accepted_qty'] = 'required|numeric|min:0.01';
         $rules['components.*.rate'] = 'required|numeric|min:0.01';

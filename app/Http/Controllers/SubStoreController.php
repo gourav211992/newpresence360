@@ -94,6 +94,10 @@ class SubStoreController extends Controller
     public function store(SubStoreRequest $request)
     {
         $validatedData = $request->validated();
+        $authUser = Helper::getAuthenticatedUser();
+        $isSuperAdmin = ($authUser && $authUser->user_type === 'IAM-SUPER');
+        $organization = $authUser->organization;
+        $groupId = $organization?->group_id;
         try {
             $erpSubStore =new ErpSubStore();
             $data= [
@@ -116,7 +120,13 @@ class SubStoreController extends Controller
                 }
             }
             foreach ($validatedData['store_id'] as $storeId) {
-                $store = ErpStore::find($storeId);
+
+                if ($isSuperAdmin) {
+                $store = ErpStore::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                            ->where('group_id', $groupId)->where('id', $storeId)->first();
+                } else {
+                    $store = ErpStore::find($storeId);
+                }
                 ErpSubStoreParent::create([
                     'group_id' => $store -> group_id,
                     'company_id' => $store -> company_id,

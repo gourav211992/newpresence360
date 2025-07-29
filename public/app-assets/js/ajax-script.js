@@ -60,6 +60,9 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         'deletedAttachmentIds',
         'deletedDelivery',
         'deletedMrnItemIds',
+        'deletedPRItemIds',
+        'deletedPBItemIds',
+        'deletedInspItemIds',
         'deletedItemLocationIds'
     ];
 

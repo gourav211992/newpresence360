@@ -3,6 +3,7 @@ namespace App\Helpers;
 
 use DB;
 use Auth;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -267,29 +268,40 @@ class InventoryHelperV2
         $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
             ->where('utilized_id', $issueStock->id)
             ->get();
-
+        
         $stockQty = 0;
         if ($utilizedStockLedger->isNotEmpty()) {
             foreach ($utilizedStockLedger as $val) {
+                // $normalizedAttributes = self::normalizeJsonAttributes($val->item_attributes);
                 $stockQty += $val->receipt_qty;
-                $similarUtilizedRecord = StockLedger::withDefaultGroupCompanyOrg()
-                    ->where('document_header_id', $val->document_header_id)
-                    ->where('document_detail_id', $val->document_detail_id)
-                    ->where('book_type', $val->book_type)
-                    ->where('transaction_type', $val->transaction_type)
-                    ->where('store_id', $val->store_id)
-                    ->where('sub_store_id', $val->sub_store_id)
-                    ->whereJsonContains('item_attributes', $val->item_attributes)
+                $normalized = InventoryHelperV2::normalizeJsonAttributes($val->item_attributes);
+
+                $potentialMatches = StockLedger::withDefaultGroupCompanyOrg()
+                    ->where([
+                        'document_header_id' => $val->document_header_id,
+                        'document_detail_id' => $val->document_detail_id,
+                        'book_type'          => $val->book_type,
+                        'transaction_type'   => $val->transaction_type,
+                        'store_id'           => $val->store_id,
+                        'sub_store_id'       => $val->sub_store_id,
+                    ])
                     ->whereNull('utilized_id')
-                    ->first();
+                    ->get();
+
+                $target = InventoryHelperV2::normalizeJsonAttributes($val->item_attributes);
+
+                $similarUtilizedRecord = $potentialMatches->first(function ($record) use ($target) {
+                    return InventoryHelperV2::normalizeJsonAttributes($record->item_attributes) === $target;
+                });
 
                 if ($similarUtilizedRecord) {
                     // Merge quantities and reset utilization
                     $stockQty += $similarUtilizedRecord->receipt_qty;
-                    // $similarUtilizedRecord->attributes()->delete();
+                    $similarUtilizedRecord->attributes()->delete();
                     $similarUtilizedRecord->delete();
 
                 }
+
                 $val->receipt_qty = $stockQty;
                 $val->save();
                 $val->total_cost = ($val->receipt_qty * $val->cost_per_unit);
@@ -306,6 +318,31 @@ class InventoryHelperV2
             $issueStock->delete();
         }
         return true;
+    }
+
+    public static function normalizeJsonAttributes($attributes): string
+    {
+        if (is_string($attributes)) {
+            $attributes = json_decode($attributes, true);
+        }
+
+        if (!is_array($attributes)) {
+            return '[]';
+        }
+
+        // Sort individual items
+        foreach ($attributes as &$item) {
+            if (is_array($item)) {
+                ksort($item);
+            }
+        }
+
+        // Sort by top-level keys to avoid reordering issue
+        usort($attributes, function ($a, $b) {
+            return strcmp(json_encode($a), json_encode($b));
+        });
+
+        return json_encode($attributes, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     public static function checkStockForDelete($documentDetail, $isDelete)
@@ -331,7 +368,8 @@ class InventoryHelperV2
 
     public static function checkStockForIssueDelete($documentDetail, $isDelete)
     {
-        if($documentDetail['book_type'] == ConstantHelper::MRN_SERVICE_ALIAS)
+        $documentType = $documentDetail['book_type'] ?? $documentDetail['document_type'];
+        if($documentType == ConstantHelper::MRN_SERVICE_ALIAS)
         {
             $issueStock = self::deleteIssueStock($documentDetail);
         }
@@ -352,6 +390,7 @@ class InventoryHelperV2
         );
     }
 
+    // Check/Update Stock For Receipt
     public static function checkStockForUpdate($mrnItem)
     {
         $availStock = self::checkStockAvailable($mrnItem);
@@ -373,6 +412,57 @@ class InventoryHelperV2
         ]);
     }
 
+    // Check/Update Stock For Issue
+    public static function checkIssueStockForUpdate($documentDetail)
+    {
+        $selectedAttr = $documentDetail['selectedAttr'] ?? [];
+        $attributeGroups = Attribute::whereIn('id', $selectedAttr)->pluck('attribute_group_id')->values();
+
+        $baseQuery = StockLedger::withDefaultGroupCompanyOrg()
+            ->where('document_header_id', $documentDetail['document_header_id'])
+            ->where('document_detail_id', $documentDetail['document_detail_id'])
+            ->where('item_id', $documentDetail['item_id'])
+            ->where('store_id', $documentDetail['store_id'])
+            ->where('sub_store_id', $documentDetail['sub_store_id'])
+            ->where('transaction_type', 'issue')
+            ->where('book_type', $documentDetail['document_type'])
+            ->whereNull('utilized_id')
+            ->where(function ($q) {
+                $q->whereNull('hold_qty')->orWhere('hold_qty', '<=', 0);
+            });
+
+        // Apply attribute filters
+        if ($attributeGroups->isNotEmpty() && !empty($selectedAttr)) {
+            foreach ($attributeGroups as $index => $groupId) {
+                if (isset($selectedAttr[$index])) {
+                    $baseQuery->whereJsonContains('item_attributes', [
+                        'attr_name' => (string)$groupId,
+                        'attr_value' => (string)$selectedAttr[$index],
+                    ]);
+                }
+            }
+        }
+
+        // Clone query to avoid re-execution conflict
+        $issueStock = (clone $baseQuery)
+            ->first();
+
+        $checkIssueStock = (clone $baseQuery)
+            ->where('receipt_qty', '<', $documentDetail['inventory_uom_qty'])
+            ->first();
+
+        if($checkIssueStock){
+            return self::errorResponse(
+                "You cannot increase the quantity as issue stock is only {$issueStock->receipt_qty}."
+            );
+        } else{
+            return self::successResponse("Available Issue Stock", [
+                'issueStock' => $issueStock
+            ]);
+        }
+    }
+
+    // Error Response
     private static function errorResponse($message)
     {
         return [
@@ -384,6 +474,7 @@ class InventoryHelperV2
 
     }
 
+    // Success Response
     private static function successResponse($response,$data)
     {
         return [

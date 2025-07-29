@@ -363,6 +363,10 @@
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_billing_address">{{isset($order) ? $order -> billing_address_details ?-> display_address : ''}}</div>
                                                                     <input type = "hidden" id = "current_billing_address_id"></input>
+
+                                                                    <input type = "hidden" id = "current_billing_country_id" name = "billing_country_id" value = "{{isset($order) && isset($order -> billing_address_details) ? $order -> billing_address_details -> country_id : ''}}"></input>
+                                                                    <input type = "hidden" id = "current_billing_state_id" name = "billing_state_id" value = "{{isset($order) && isset($order -> billing_address_details) ? $order -> billing_address_details -> state_id : ''}}"></input>
+
                                                                     <input type="hidden" name="new_billing_country_id" id="new_billing_country_id" value="">
                                                                     <input type="hidden" name="new_billing_state_id" id="new_billing_state_id" value="">
                                                                     <input type="hidden" name="new_billing_city_id" id="new_billing_city_id" value="">
@@ -2163,6 +2167,8 @@
                                 if (currentElement.id == "billing_address_dropdown") {
                                     document.getElementById('current_billing_address').textContent = item.label;
                                     document.getElementById('current_billing_address_id').value = item.id;
+                                    document.getElementById('current_billing_country_id').value = item.country_id;
+                                    document.getElementById('current_billing_state_id').value = item.state_id;
                                     // $('#billing_country_id_input').val(item.country_id).trigger('change');
                                     // changeDropdownOptions(document.getElementById('billing_country_id_input'), ['billing_state_id_input'], ['states'], '/states/', null, ['billing_city_id_input']);
                                 }
@@ -4788,7 +4794,9 @@
                         $("#current_billing_address").text(currentOrder.billing_address_details?.display_address);
                         $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
                         $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
+                        $("#current_billing_country_id").val(currentOrder.billing_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                        $("#current_billing_state_id").val(currentOrder.billing_address_details?.state_id);
                         //ID
                         $("#current_shipping_address_id").val(currentOrder.shipping_address_details?.id);
                         $("#current_billing_address_id").val(currentOrder.billing_address_details?.id);
@@ -5737,6 +5745,7 @@ document.addEventListener('input', function (e) {
             data: {
                 menu_alias: "{{request() -> segments()[0]}}",
                 service_alias: "so",
+                book_id : "{{ isset($order) ? $order -> book_id : '' }}"
             },
             success: function(data) {
                 if (data.status == 'success') {

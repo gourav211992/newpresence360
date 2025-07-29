@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Exports\ExpenseAdviceExport;
@@ -8,7 +9,6 @@ use DB;
 use View;
 use Session;
 use Yajra\DataTables\DataTables;
-
 
 use Illuminate\Http\Request;
 use App\Http\Requests\EditExpenseRequest;
@@ -63,12 +63,15 @@ use App\Helpers\InventoryHelper;
 use App\Helpers\FinancialPostingHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Jobs\SendEmailJob;
+use App\Models\AlternateUOM;
 use App\Models\AuthUser;
 use App\Models\Category;
 use App\Models\Employee;
 use App\Models\ErpExpDynamicField;
 use App\Models\ErpItem;
 use App\Models\ErpVendor;
+use App\Services\ExpenseCheckAndUpdateService;
+use App\Services\ExpenseDeleteService;
 use App\Services\ExpenseService;
 use Carbon\Carbon;
 use DateTime;
@@ -95,11 +98,10 @@ class ExpenseAdviseController extends Controller
      */
     public function index()
     {
-        $parentUrl = request() -> segments()[0];
-
+        $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $orderType = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
-        request() -> merge(['type' => $orderType]);
+        request()->merge(['type' => $orderType]);
         if (request()->ajax()) {
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
@@ -112,9 +114,9 @@ class ExpenseAdviseController extends Controller
                     'currency'
                 ]
             )
-            ->withDefaultGroupCompanyOrg()
-            ->where('company_id', $organization->company_id)
-            ->latest();
+                ->withDefaultGroupCompanyOrg()
+                ->where('company_id', $organization->company_id)
+                ->latest();
             return DataTables::of($records)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) {
@@ -161,28 +163,28 @@ class ExpenseAdviseController extends Controller
                     return $row->items ? count($row->items) : 0;
                 })
                 ->editColumn('total_item_amount', function ($row) {
-                    return number_format($row->total_item_amount,2);
+                    return number_format($row->total_item_amount, 2);
                 })
                 ->addColumn('total_discount', function ($row) {
-                    return number_format($row->total_discount,2);
+                    return number_format($row->total_discount, 2);
                 })
                 ->addColumn('taxable_amount', function ($row) {
-                    return number_format(($row->total_item_amount - $row->total_discount),2);
+                    return number_format(($row->total_item_amount - $row->total_discount), 2);
                 })
                 ->addColumn('total_taxes', function ($row) {
-                    return number_format($row->total_taxes,2);
+                    return number_format($row->total_taxes, 2);
                 })
                 ->addColumn('expense_amount', function ($row) {
-                    return number_format($row->expense_amount,2);
+                    return number_format($row->expense_amount, 2);
                 })
                 ->addColumn('total_amount', function ($row) {
-                    return number_format($row->total_amount,2);
+                    return number_format($row->total_amount, 2);
                 })
                 ->rawColumns(['document_status'])
                 ->make(true);
         }
         return view('procurement.expense-advise.index', [
-            'servicesBooks'=>$servicesBooks,
+            'servicesBooks' => $servicesBooks,
         ]);
     }
 
@@ -192,28 +194,26 @@ class ExpenseAdviseController extends Controller
     public function create(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-
-        $parentUrl = request() -> segments()[0];
+        $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
         $serviceAlias = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
-
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
-        $customers = Customer::where('status',ConstantHelper::ACTIVE)->get();
+        $customers = Customer::where('status', ConstantHelper::ACTIVE)->get();
         $purchaseOrders = PurchaseOrder::with('vendor')->get();
         $saleOrders = ErpSaleOrder::with('customer')->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         return view('procurement.expense-advise.create', [
-            'books'=>$books,
+            'books' => $books,
             'vendors' => $vendors,
-            'customers'=>$customers,
-            'saleOrders'=>$saleOrders,
-            'servicesBooks'=>$servicesBooks,
+            'customers' => $customers,
+            'saleOrders' => $saleOrders,
+            'servicesBooks' => $servicesBooks,
             'purchaseOrders' => $purchaseOrders,
-            'locations' =>$locations
+            'locations' => $locations
         ]);
     }
 
@@ -221,7 +221,6 @@ class ExpenseAdviseController extends Controller
     public function store(ExpenseAdviseRequest $request)
     {
         $user = Helper::getAuthenticatedUser();
-
         DB::beginTransaction();
         try {
             $parameters = [];
@@ -232,11 +231,12 @@ class ExpenseAdviseController extends Controller
 
             $user = Helper::getAuthenticatedUser();
             $organization = Organization::where('id', $user->organization_id)->first();
-            $organizationId = $organization ?-> id ?? null;
-            $groupId = $organization ?-> group_id ?? null;
-            $companyId = $organization ?-> company_id ?? null;
+            $organizationId = $organization?->id ?? null;
+            $groupId = $organization?->group_id ?? null;
+            $companyId = $organization?->company_id ?? null;
             $purchaseOrderId = null;
             $saleOrderId = null;
+            $refType = null;
             //Tax Country and State
             $firstAddress = $organization->addresses->first();
             $companyCountryId = null;
@@ -258,8 +258,7 @@ class ExpenseAdviseController extends Controller
             $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalAmount = 0.00;
-
-            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($request -> currency_id, $request -> document_date);
+            $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($request->currency_id, $request->document_date);
             if ($currencyExchangeData['status'] == false) {
                 return response()->json([
                     'message' => $currencyExchangeData['message']
@@ -284,16 +283,16 @@ class ExpenseAdviseController extends Controller
             $expense->shipping_address = $request->shipping_address;
             $expense->revision_number = 0;
             $document_number = $request->document_number ?? null;
-            $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
+            $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
             if (!isset($numberPatternData)) {
                 return response()->json([
                     'message' => "Invalid Book",
                     'error' => "",
                 ], 422);
             }
-            $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $request -> document_no;
-            $regeneratedDocExist = ExpenseHeader::withDefaultGroupCompanyOrg() -> where('book_id',$request->book_id)
-                ->where('document_number',$document_number)->first();
+            $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $request->document_no;
+            $regeneratedDocExist = ExpenseHeader::withDefaultGroupCompanyOrg()->where('book_id', $request->book_id)
+                ->where('document_number', $document_number)->first();
             //Again check regenerated doc no
             if (isset($regeneratedDocExist)) {
                 return response()->json([
@@ -307,11 +306,9 @@ class ExpenseAdviseController extends Controller
             $expense->doc_prefix = $numberPatternData['prefix'];
             $expense->doc_suffix = $numberPatternData['suffix'];
             $expense->doc_no = $numberPatternData['doc_no'];
-
             $expense->document_number = $document_number;
             $expense->document_date = $request->document_date;
             $expense->final_remark = $request->remarks ?? null;
-
             $expense->total_item_amount = 0.00;
             $expense->total_discount = 0.00;
             $expense->taxable_amount = 0.00;
@@ -358,8 +355,7 @@ class ExpenseAdviseController extends Controller
                 $shippingAddress->save();
             }
             # Store location address
-            if($expense?->erpStore)
-            {
+            if ($expense?->erpStore) {
                 $storeAddress  = $expense?->erpStore->address;
                 $storeLocation = $expense->store_address()->firstOrNew();
                 $storeLocation->fill([
@@ -384,15 +380,15 @@ class ExpenseAdviseController extends Controller
 
             $totalHeaderDiscount = 0;
             if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
-            foreach ($request->all()['disc_summary'] as $DiscountValue) {
-                $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
-            }
+                foreach ($request->all()['disc_summary'] as $DiscountValue) {
+                    $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
+                }
 
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
-            foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
-            }
+                foreach ($request->all()['exp_summary'] as $expValue) {
+                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                }
 
             if (isset($request->all()['components'])) {
                 $expenseItemArr = [];
@@ -402,39 +398,70 @@ class ExpenseAdviseController extends Controller
                 $itemTotalHeaderDiscount = 0;
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
-                foreach($request->all()['components'] as $c_key => $component) {
+                foreach ($request->all()['components'] as $c_key => $component) {
+                    $inputQty = floatval($component['accepted_qty'] ?? $component['order_qty'] ?? 0);
                     $item = Item::find($component['item_id'] ?? null);
-                    $so_detail_id = null;
-                    $po_detail_id = null;
-                    $so_id = null;
-                    if(isset($component['po_detail_id']) && $component['po_detail_id']){
-                        $poDetail =  PoItem::find($component['po_detail_id']);
-                        $po_detail_id = $poDetail->id ?? null;
-                        $purchaseOrderId = $poDetail->purchase_order_id;
-                        if($poDetail){
-                            $poDetail->grn_qty += floatval($component['accepted_qty']);
-                            $poDetail->save();
-                            $so_id = $poDetail->so_id;
+                    if (!$item) {
+
+                        \DB::rollBack();
+
+                        return response()->json(['message' => 'Item not found.'], 422);
+                    }
+                    if($component['purchase_order_id'])
+                    {
+                        $refType = 'po';
+                    }
+                    if (isset($component['po_detail_id']) && $component['po_detail_id']) {
+                        $poDetail = PoItem::find($component['po_detail_id']);
+                        $po_detail_id = $mrnDetail->id ?? null;
+                        $poHeaderId = $component['purchase_order_id'];
+                        if ($poDetail) {
+                            $inputQty = ($component['order_qty'] ?? $component['accepted_qty']);
+                            $balanceQty = ($poDetail->order_qty - ($poDetail->expense_advise_qty ?? 0.00));
+                            if ($balanceQty < $inputQty) {
+                                DB::rollBack();
+                                return response()->json([
+                                    'message' => 'Input qty can not be greater than balance qty.'
+                                ], 422);
+                            }
+                            // $poDetail->expense_advise_qty += floatval($inputQty);
+                            // $poDetail->save();
+                        } else {
+                            DB::rollBack();
+                            return response()->json([
+                                'message' => 'MRN Not Found'
+                            ], 422);
                         }
                     }
+                    switch ($refType) {
+                        case ConstantHelper::PO_SERVICE_ALIAS:
+                            $result = self::processPurchaseOrderComponent($component, $item, $inputQty);
+                            break;
+                        default:
+                            $result = self::processDirectComponent($component, $item, $inputQty);
+                            break;
+                    }
+                    if ($result !== true) {
+                        return $result;
+                    }
+
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
                     $inventoryUom = Unit::find($item->uom_id ?? null);
-                    $inventory_uom_id = $inventoryUom->id;
-                    $inventory_uom_code = $inventoryUom->name;
-                    if(@$component['uom_id'] == $item->uom_id) {
-                        $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00 ;
+                    $inventory_uom_id = $inventoryUom->id ?? null;
+                    $inventory_uom_code = $inventoryUom->name ?? null;
+                    if (@$component['uom_id'] == $item->uom_id) {
+                        $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00;
                     } else {
-                        $alUom = $item->alternateUOMs()->where('uom_id', $component['uom_id'])->first();
-                        if($alUom) {
+                        $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
+                        if ($alUom) {
                             $inventory_uom_qty = floatval($component['accepted_qty']) * $alUom->conversion_to_inventory;
                         }
                     }
 
                     $itemValue = floatval($component['accepted_qty']) * floatval($component['rate']);
                     $itemDiscount = floatval($component['discount_amount']) ?? 0.00;
-
                     $itemTotalValue += $itemValue;
                     $itemTotalDiscount += $itemDiscount;
                     $itemValueAfterDiscount = $itemValue - $itemDiscount;
@@ -443,8 +470,8 @@ class ExpenseAdviseController extends Controller
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $expenseItemArr[] = [
                         'expense_header_id' => $expense->id,
-                        'purchase_order_item_id' => (isset($component['po_detail_id']) && $component['po_detail_id']) ?? null,
-                        'so_id' => $so_id,
+                        'purchase_order_item_id' => $component['po_detail_id'] ?? null,
+                        'so_id' => $component['so_id'] ?? null,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $component['hsn_id'] ?? null,
@@ -457,7 +484,7 @@ class ExpenseAdviseController extends Controller
                         'inventory_uom_qty' => $inventory_uom_qty ?? 0.00,
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
-                        'header_discount_amount' => 0.00,
+                        'header_discount_amount' => floatval($component['exp_amount_header']) ?? 0.00,
                         'header_exp_amount' => 0.00,
                         'tax_value' => 0.00,
                         'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
@@ -471,14 +498,13 @@ class ExpenseAdviseController extends Controller
                 }
 
                 $isTax = false;
-                if(isset($parameters['tax_required']) && !empty($parameters['tax_required']))
-                {
+                if (isset($parameters['tax_required']) && !empty($parameters['tax_required'])) {
                     if (in_array('yes', array_map('strtolower', $parameters['tax_required']))) {
                         $isTax = true;
                     }
                 }
 
-                foreach($expenseItemArr as &$expenseItem) {
+                foreach ($expenseItemArr as &$expenseItem) {
                     /*Header Level Item discount*/
                     $headerDiscount = 0;
                     $headerDiscount = ($expenseItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
@@ -487,20 +513,17 @@ class ExpenseAdviseController extends Controller
                     $itemTotalHeaderDiscount += $headerDiscount;
 
                     //Tax
-                    if($isTax) {
+                    if ($isTax) {
                         $itemTax = 0;
                         $itemPrice = ($expenseItem['basic_value'] - $headerDiscount - $expenseItem['discount_amount']);
                         $billingAddress = $expense->billingAddress;
-
-                        $partyCountryId = isset($billingAddress) ? $billingAddress -> country_id : null;
-                        $partyStateId = isset($billingAddress) ? $billingAddress -> state_id : null;
-
-                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> hidden_country_id, $partyStateId ?? $request -> hidden_state_id, 'purchase');
-
+                        $partyCountryId = isset($billingAddress) ? $billingAddress->country_id : null;
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
+                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'purchase');
                         $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                $itemTax += ((float)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
                             }
                         }
                         $expenseItem['tax_value'] = $itemTax;
@@ -514,15 +537,14 @@ class ExpenseAdviseController extends Controller
                 }
                 unset($expenseItem);
 
-                foreach($expenseItemArr as $_key => $expenseItem) {
+                foreach ($expenseItemArr as $_key => $expenseItem) {
                     $itemPriceAterBothDis =  $expenseItem['basic_value'] - $expenseItem['discount_amount'] - $expenseItem['header_discount_amount'];
-                    if($applicabilityType === ConstantHelper::COLLECTION) {
+                    if ($applicabilityType === ConstantHelper::COLLECTION) {
                         $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
                     } else {
                         $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
                     }
                     $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-
                     $expenseDetail = new ExpenseDetail;
                     $expenseDetail->expense_header_id = $expenseItem['expense_header_id'];
                     $expenseDetail->purchase_order_item_id = $expenseItem['purchase_order_item_id'];
@@ -553,7 +575,7 @@ class ExpenseAdviseController extends Controller
                     $component = $request->all()['components'][$_key] ?? [];
 
                     #Save component Attr
-                    foreach($expenseDetail->item->itemAttributes as $itemAttribute) {
+                    foreach ($expenseDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $expenseAttr = new ExpenseItemAttribute;
                             $expenseAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
@@ -568,8 +590,8 @@ class ExpenseAdviseController extends Controller
                     }
 
                     /*Item Level Discount Save*/
-                    if(isset($component['discounts'])) {
-                        foreach($component['discounts'] as $dis) {
+                    if (isset($component['discounts'])) {
+                        foreach ($component['discounts'] as $dis) {
                             if (isset($dis['dis_amount']) && $dis['dis_amount']) {
                                 $ted = new ExpenseTed;
                                 $ted->expense_header_id = $expense->id;
@@ -584,15 +606,15 @@ class ExpenseAdviseController extends Controller
                                 $ted->ted_amount = $dis['dis_amount'] ?? 0.00;
                                 $ted->applicability_type = 'Deduction';
                                 $ted->save();
-                                $totalItemLevelDiscValue = $totalItemLevelDiscValue+$dis['dis_amount'];
+                                $totalItemLevelDiscValue = $totalItemLevelDiscValue + $dis['dis_amount'];
                             }
                         }
                     }
 
                     #Save Componet item Tax
-                    if(isset($component['taxes'])) {
-                        foreach($component['taxes'] as $tax) {
-                            if(isset($tax['t_value']) && $tax['t_value']) {
+                    if (isset($component['taxes'])) {
+                        foreach ($component['taxes'] as $tax) {
+                            if (isset($tax['t_value']) && $tax['t_value']) {
                                 $ted = new ExpenseTed;
                                 $ted->expense_header_id = $expense->id;
                                 $ted->expense_detail_id = $expenseDetail->id;
@@ -601,7 +623,7 @@ class ExpenseAdviseController extends Controller
                                 $ted->ted_id = $tax['t_d_id'] ?? null;
                                 $ted->ted_name = $tax['t_type'] ?? null;
                                 $ted->ted_code = $tax['t_type'] ?? null;
-                                $ted->assesment_amount = $expenseDetail->assesment_amount;
+                                // $ted->assesment_amount = $expenseDetail->assesment_amount;
                                 $ted->assesment_amount = $expenseItem['basic_value'] - $expenseItem['discount_amount'] - $expenseItem['header_discount_amount'];
                                 $ted->ted_percentage = $tax['t_perc'] ?? 0.00;
                                 $ted->ted_amount = $tax['t_value'] ?? 0.00;
@@ -613,8 +635,8 @@ class ExpenseAdviseController extends Controller
                 }
 
                 /*Header level save discount*/
-                if(isset($request->all()['disc_summary'])) {
-                    foreach($request->all()['disc_summary'] as $dis) {
+                if (isset($request->all()['disc_summary'])) {
+                    foreach ($request->all()['disc_summary'] as $dis) {
                         if (isset($dis['d_amnt']) && $dis['d_amnt']) {
                             $ted = new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
@@ -624,7 +646,7 @@ class ExpenseAdviseController extends Controller
                             $ted->ted_id = $dis['ted_d_id'] ?? null;
                             $ted->ted_name = $dis['d_name'];
                             $ted->ted_code = $dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue-$itemTotalDiscount;
+                            $ted->assesment_amount = $itemTotalValue - $itemTotalDiscount;
                             $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
                             $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
                             $ted->applicability_type = 'Deduction';
@@ -634,9 +656,9 @@ class ExpenseAdviseController extends Controller
                 }
 
                 /*Header level save discount*/
-                if(isset($request->all()['exp_summary'])) {
-                    foreach($request->all()['exp_summary'] as $dis) {
-                        if(isset($dis['e_amnt']) && $dis['e_amnt']) {
+                if (isset($request->all()['exp_summary'])) {
+                    foreach ($request->all()['exp_summary'] as $dis) {
+                        if (isset($dis['e_amnt']) && $dis['e_amnt']) {
                             if ($applicabilityType === ConstantHelper::COLLECTION) {
                                 $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
                             } else {
@@ -662,20 +684,23 @@ class ExpenseAdviseController extends Controller
                 /*Update total in main header Pb*/
                 $expense->total_item_amount = $itemTotalValue ?? 0.00;
                 $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
+                if ($itemTotalValue < $totalDiscValue) {
                     DB::rollBack();
                     return response()->json([
                         'message' => 'Negative value not allowed'
                     ], 422);
                 }
+
                 $expense->total_discount = $totalDiscValue ?? 0.00;
                 $expense->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
                 $expense->total_taxes = $totalTax ?? 0.00;
+
                 if ($applicabilityType === ConstantHelper::COLLECTION) {
                     $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $finaltotalTax) ?? 0.00;
                 } else {
                     $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax) ?? 0.00;
                 }
+
                 $expense->expense_amount = $totalHeaderExpense ?? 0.00;
                 if ($applicabilityType === ConstantHelper::COLLECTION) {
                     $totalAmount = (($itemTotalValue - $totalDiscValue) + ($finaltotalTax + $totalHeaderExpense)) ?? 0.00;
@@ -686,10 +711,11 @@ class ExpenseAdviseController extends Controller
                 $expense->save();
 
                 /*Update po and so in main header Expense Advise*/
-                $expense->purchase_order_id = $purchaseOrderId;
-                // $expense->sale_order_id = $saleOrderId;
+                $poIds = array_column($request->all()['components'], 'purchase_order_id');
+                $uniquePoIds = array_unique($poIds);
+                $finalPoId = count($uniquePoIds) === 1 ? reset($uniquePoIds) : array_values($uniquePoIds);
+                $expense->purchase_order_id = $finalPoId;
                 $expense->save();
-
             } else {
                 DB::rollBack();
                 return response()->json([
@@ -700,7 +726,6 @@ class ExpenseAdviseController extends Controller
 
             /*Store currency data*/
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($expense->vendor->currency_id, $expense->document_date);
-
             $expense->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
             $expense->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
             $expense->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
@@ -721,17 +746,15 @@ class ExpenseAdviseController extends Controller
                 $currentLevel = $expense->approval_level ?? 1;
                 $revisionNumber = $expense->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
-            }
-
-            $expense = ExpenseHeader::find($expense->id);
-            if ($request->document_status == 'submitted') {
+                $modelName = get_class($expense);
                 $totalValue = $expense->total_amount ?? 0;
-                $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
-                $expense->document_status = $document_status;
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $expense->document_status = $approveDocument['approvalStatus'] ?? $expense->document_status;
+                // $expense->document_status = $document_status;
             } else {
                 $expense->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             }
+
             /*Expense Attachment*/
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $expense->uploadDocuments($request->file('attachment'), 'pb', false);
@@ -739,25 +762,24 @@ class ExpenseAdviseController extends Controller
             $expense->save();
 
             $redirectUrl = '';
-            if(($expense->document_status == ConstantHelper::APPROVED) || ($expense->document_status == ConstantHelper::POSTED)) {
-                $parentUrl = request() -> segments()[0];
-                $redirectUrl = url($parentUrl. '/' . $expense->id . '/pdf');
+            if (($expense->document_status == ConstantHelper::APPROVED) || ($expense->document_status == ConstantHelper::POSTED)) {
+                $parentUrl = request()->segments()[0];
+                $redirectUrl = url($parentUrl . '/' . $expense->id . '/pdf');
             }
-            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense -> id, $request -> dynamic_field ?? []);
-            if ($status && !$status['status'] ) {
+            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense->id, $request->dynamic_field ?? []);
+            if ($status && !$status['status']) {
                 DB::rollBack();
-                return response() -> json([
+                return response()->json([
                     'message' => $status['message'],
                     'error' => ''
                 ], 422);
             }
-
             DB::commit();
 
             return response()->json([
                 'message' => 'Record created successfully',
                 'data' => $expense,
-                'redirectUrl'=>$redirectUrl
+                'redirectUrl' => $redirectUrl
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -771,12 +793,11 @@ class ExpenseAdviseController extends Controller
     public function show(string $id)
     {
         $user = Helper::getAuthenticatedUser();
-
         $expense = ExpenseHeader::with(['vendor', 'currency', 'items', 'book'])
             ->findOrFail($id);
         $totalItemValue = $expense->items()->sum('basic_value');
         $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplay($expense->series_id,$expense->document_status , $expense->id, $expense->total_amount, $expense->approval_level, $expense->created_by ?? 0, $userType['type']);
+        $buttons = Helper::actionButtonDisplay($expense->series_id, $expense->document_status, $expense->id, $expense->total_amount, $expense->approval_level, $expense->created_by ?? 0, $userType['type']);
         $approvalHistory = Helper::getApprovalHistory($expense->series_id, $expense->id, $expense->revision_number);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$expense->document_status];
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
@@ -786,7 +807,7 @@ class ExpenseAdviseController extends Controller
         return view('procurement.expense-advise.view', [
             'mrn' => $expense,
             'buttons' => $buttons,
-            'erpStores'=>$erpStores,
+            'erpStores' => $erpStores,
             'totalItemValue' => $totalItemValue,
             'approvalHistory' => $approvalHistory,
             'docStatusClass' => $docStatusClass,
@@ -799,31 +820,38 @@ class ExpenseAdviseController extends Controller
      */
     public function edit(Request $request, string $id)
     {
-        $parentUrl = request() -> segments()[0];
+        $parentUrl = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
         $serviceAlias = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
-
         $user = Helper::getAuthenticatedUser();
         $expense = ExpenseHeader::with(['vendor', 'currency', 'items', 'items.costCenter', 'book'])
             ->findOrFail($id);
+        $headerIds = $expense->purchase_order_id ?? null;
+        $headerIds = $headerIds ? (array) $headerIds : [];
+        $detailsIds = collect($expense['items'] ?? [])
+            ->pluck('purchase_order_item_id')
+            ->filter()
+            ->values()
+            ->all();
+
         $totalItemValue = $expense->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $expense->revision_number;
         $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplay($expense->book_id,$expense->document_status , $expense->id, $expense->total_amount, $expense->approval_level, $expense->created_by ?? 0, $userType['type'], $revision_number);
+        $buttons = Helper::actionButtonDisplay($expense->book_id, $expense->document_status, $expense->id, $expense->total_amount, $expense->approval_level, $expense->created_by ?? 0, $userType['type'], $revision_number);
         $revNo = $expense->revision_number;
-        if($request->has('revisionNumber')) {
+        if ($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
             $revNo = $expense->revision_number;
         }
         $approvalHistory = Helper::getApprovalHistory($expense->book_id, $expense->id, $revNo, $expense->total_amount);
         $view = 'procurement.expense-advise.edit';
-        if($request->has('revisionNumber') && $request->revisionNumber != $expense->revision_number) {
+        if ($request->has('revisionNumber') && $request->revisionNumber != $expense->revision_number) {
             $expense = $expense->source;
             $expense = ExpenseHeaderHistory::where('revision_number', $request->revisionNumber)
                 ->where('header_id', $expense->header_id)
@@ -837,21 +865,23 @@ class ExpenseAdviseController extends Controller
         $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
-        $dynamicFieldsUI = $expense -> dynamicfieldsUi();
+        $dynamicFieldsUI = $expense->dynamicfieldsUi();
         return view($view, [
             'mrn' => $expense,
             'user' => $user,
-            'books'=>$books,
+            'books' => $books,
             'buttons' => $buttons,
             'vendors' => $vendors,
-            'costCenters'=>$costCenters,
+            'costCenters' => $costCenters,
             'docStatusClass' => $docStatusClass,
             'totalItemValue' => $totalItemValue,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
-            'locations'=>$locations,
+            'locations' => $locations,
             'erpStores' => $erpStores,
-            'dynamicFieldsUI' => $dynamicFieldsUI
+            'dynamicFieldsUI' => $dynamicFieldsUI,
+            'headerIds' => $headerIds,
+            'detailsIds' => $detailsIds,
         ]);
     }
 
@@ -861,9 +891,10 @@ class ExpenseAdviseController extends Controller
         $expense = ExpenseHeader::find($id);
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationId = $organization ?-> id ?? null;
-        $groupId = $organization ?-> group_id ?? null;
-        $companyId = $organization ?-> company_id ?? null;
+        $organizationId = $organization?->id ?? null;
+        $groupId = $organization?->group_id ?? null;
+        $companyId = $organization?->company_id ?? null;
+        $reference_type = null;
         //Tax Country and State
         $firstAddress = $organization->addresses->first();
         $companyCountryId = null;
@@ -889,8 +920,7 @@ class ExpenseAdviseController extends Controller
             $currentStatus = $expense->document_status;
             $actionType = $request->action_type;
 
-            if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
-            {
+            if ($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment') {
                 $revisionData = [
                     ['model_type' => 'header', 'model_name' => 'ExpenseHeader', 'relation_column' => ''],
                     ['model_type' => 'detail', 'model_name' => 'ExpenseDetail', 'relation_column' => 'expense_header_id'],
@@ -901,34 +931,21 @@ class ExpenseAdviseController extends Controller
                 $this->amendmentSubmit($request, $id);
             }
 
-            $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedExpenseItemIds'];
+            $keys = ['deletedItemDiscTedIds', 'deletedHeaderDiscTedIds', 'deletedHeaderExpTedIds', 'deletedMrnItemIds'];
             $deletedData = [];
 
             foreach ($keys as $key) {
                 $deletedData[$key] = json_decode($request->input($key, '[]'), true);
             }
 
-            if (count($deletedData['deletedHeaderExpTedIds'])) {
-                ExpenseTed::whereIn('id',$deletedData['deletedHeaderExpTedIds'])->delete();
-            }
-
-            if (count($deletedData['deletedHeaderDiscTedIds'])) {
-                ExpenseTed::whereIn('id',$deletedData['deletedHeaderDiscTedIds'])->delete();
-            }
-
-            if (count($deletedData['deletedItemDiscTedIds'])) {
-                ExpenseTed::whereIn('id',$deletedData['deletedItemDiscTedIds'])->delete();
-            }
-
-            if (count($deletedData['deletedExpenseItemIds'])) {
-                $expenseItems = ExpenseDetail::whereIn('id',$deletedData['deletedExpenseItemIds'])->get();
-                # all ted remove item level
-                foreach($expenseItems as $expenseItem) {
-                    $expenseItem->teds()->delete();
-                    # all attr remove
-                    $expenseItem->attributes()->delete();
-                    $expenseItem->delete();
-                }
+            $deleteService = new ExpenseDeleteService();
+            $deleteResponse = $deleteService->deleteByRequest($deletedData, $expense);
+            if ($deleteResponse['status'] === 'error') {
+                \DB::rollBack();
+                return response()->json([
+                    'message' => $deleteResponse['message'],
+                    'error' => ''
+                ], 422);
             }
 
             # Expense Header save
@@ -977,8 +994,7 @@ class ExpenseAdviseController extends Controller
             }
 
             # Store location address
-            if($expense?->erpStore)
-            {
+            if ($expense?->erpStore) {
                 $storeAddress  = $expense?->erpStore->address;
                 $storeLocation = $expense->store_address()->firstOrNew();
                 $storeLocation->fill([
@@ -1004,15 +1020,15 @@ class ExpenseAdviseController extends Controller
 
             $totalHeaderDiscount = 0;
             if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
-            foreach ($request->all()['disc_summary'] as $DiscountValue) {
-                $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
-            }
+                foreach ($request->all()['disc_summary'] as $DiscountValue) {
+                    $totalHeaderDiscount += floatval($DiscountValue['d_amnt']) ?? 0.00;
+                }
 
             $totalHeaderExpense = 0;
             if (isset($request->all()['exp_summary']) && count($request->all()['exp_summary']) > 0)
-            foreach ($request->all()['exp_summary'] as $expValue) {
-                $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
-            }
+                foreach ($request->all()['exp_summary'] as $expValue) {
+                    $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
+                }
 
             if (isset($request->all()['components'])) {
                 $expenseItemArr = [];
@@ -1022,17 +1038,44 @@ class ExpenseAdviseController extends Controller
                 $itemTotalHeaderDiscount = 0;
                 $itemValueAfterDiscount = 0;
                 $totalItemValueAfterDiscount = 0;
-                foreach($request->all()['components'] as $c_key => $component) {
+                foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $so_detail_id = null;
                     $po_detail_id = null;
-                    if(isset($component['po_detail_id']) && $component['po_detail_id']){
-                        $poDetail =  PoItem::find($component['po_detail_id']);
-                        $po_detail_id = $poDetail->id ?? null;
-                        if($poDetail){
-                            $poDetail->grn_qty += floatval($component['accepted_qty']);
-                            $poDetail->save();
+                    if (isset($component['detail_id']) && $component['detail_id']) {
+                        $expenseDetail = ExpenseDetail::find($component['detail_id']);
+                    }
+                    if ($expense->purchase_order_id) {
+                        $reference_type = 'po';
+                    }
+
+                    $validateQty = self::validateQuantityBackend($component, $reference_type);
+                    if ($validateQty['status'] === 'error') {
+                        DB::rollBack();
+                        return response()->json([
+
+                            'message' => $validateQty['message']
+
+                        ], 422);
+                    }
+
+                    // $inputQty = floatval($component['accepted_qty'] ?? 0);
+                    if (isset($component['po_detail_id']) && $component['po_detail_id']) {
+                        $poItem = PoItem::find($component['po_detail_id'] ?? @$expenseDetail->purchase_order_item_id);
+                        if (isset($poItem) && $poItem) {
+                            if (isset($poItem->id) && $poItem->id) {
+                                $orderQty = floatval(@$expenseDetail->accepted_qty) ?? 0.00;
+                                $componentQty = floatval($component['accepted_qty'] ?? $component['order_qty']);
+                                $qtyDifference = $componentQty - $orderQty;
+                                if ($qtyDifference) {
+                                    $poItem->expense_advise_qty += $qtyDifference;
+                                }
+                            } else {
+                                // $poItem->order_qty += $component['qty'];
+                            }
+                            $poItem->save();
                         }
+                    } else {
                     }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
@@ -1040,17 +1083,16 @@ class ExpenseAdviseController extends Controller
                     $inventoryUom = Unit::find($item->uom_id ?? null);
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
-                    if(@$component['uom_id'] == $item->uom_id) {
-                        $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00 ;
+                    if (@$component['uom_id'] == $item->uom_id) {
+                        $inventory_uom_qty = floatval($component['accepted_qty']) ?? 0.00;
                     } else {
-                        $alUom = $item->alternateUOMs()->where('uom_id', $component['uom_id'])->first();
-                        if($alUom) {
+                        $alUom = AlternateUOM::where('item_id', $component['item_id'])->where('uom_id', $component['uom_id'])->first();
+                        if ($alUom) {
                             $inventory_uom_qty = floatval($component['accepted_qty']) * $alUom->conversion_to_inventory;
                         }
                     }
                     $itemValue = floatval($component['accepted_qty']) * floatval($component['rate']);
                     $itemDiscount = floatval($component['discount_amount']) ?? 0.00;
-
                     $itemTotalValue += $itemValue;
                     $itemTotalDiscount += $itemDiscount;
                     $itemValueAfterDiscount = $itemValue - $itemDiscount;
@@ -1058,8 +1100,9 @@ class ExpenseAdviseController extends Controller
                     $totalItemValueAfterDiscount += $itemValueAfterDiscount;
                     $uom = Unit::find($component['uom_id'] ?? null);
                     $expenseItemArr[] = [
+                        'index' => $c_key,
                         'expense_header_id' => $expense->id,
-                        'purchase_order_item_id' => $po_detail_id,
+                        'purchase_order_item_id' => $component['po_detail_id'],
                         // 'sale_order_item_id' => $so_detail_id,
                         'item_id' => $component['item_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
@@ -1074,7 +1117,7 @@ class ExpenseAdviseController extends Controller
                         'rate' => floatval($component['rate']) ?? 0.00,
                         'discount_amount' => floatval($component['discount_amount']) ?? 0.00,
                         'header_discount_amount' => 0.00,
-                        'header_exp_amount' => 0.00,
+                        'header_exp_amount' => floatval($component['exp_amount_header']) ?? 0.00,
                         'tax_value' => 0.00,
                         'company_currency_id' => @$component['company_currency_id'] ?? 0.00,
                         'company_currency_exchange_rate' => @$component['company_currency_exchange_rate'] ?? 0.00,
@@ -1087,33 +1130,31 @@ class ExpenseAdviseController extends Controller
                 }
 
                 $isTax = false;
-                if(isset($parameters['tax_required']) && !empty($parameters['tax_required']))
-                {
+                if (isset($parameters['tax_required']) && !empty($parameters['tax_required'])) {
                     if (in_array('yes', array_map('strtolower', $parameters['tax_required']))) {
                         $isTax = true;
                     }
                 }
 
-                foreach($expenseItemArr as &$expenseItem) {
+                foreach ($expenseItemArr as &$expenseItem) {
                     /*Header Level Item discount*/
                     $headerDiscount = 0;
                     $headerDiscount = ($expenseItem['taxable_amount'] / $totalValueAfterDiscount) * $totalHeaderDiscount;
                     $valueAfterHeaderDiscount = $expenseItem['taxable_amount'] - $headerDiscount; // after both discount
                     $expenseItem['header_discount_amount'] = $headerDiscount;
                     $itemTotalHeaderDiscount += $headerDiscount;
-                    if($isTax) {
+                    if ($isTax) {
                         //Tax
                         $itemTax = 0;
                         $itemPrice = ($expenseItem['basic_value'] - $headerDiscount - $expenseItem['discount_amount']);
                         $shippingAddress = $expense->shippingAddress;
-
-                        $partyCountryId = isset($shippingAddress) ? $shippingAddress -> country_id : null;
-                        $partyStateId = isset($shippingAddress) ? $shippingAddress -> state_id : null;
-                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->shipping_country_id, $partyStateId ?? $request->shipping_state_id, 'purchase');
+                        $partyCountryId = isset($shippingAddress) ? $shippingAddress->country_id : null;
+                        $partyStateId = isset($shippingAddress) ? $shippingAddress->state_id : null;
+                        $taxDetails = TaxHelper::calculateTax($expenseItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request->hidden_country_id, $partyStateId ?? $request->hidden_state_id, 'purchase');
                         $applicabilityType = $taxDetails[0]['applicability_type'];
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
-                                $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
+                                $itemTax += ((float)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
                             }
                         }
                         $expenseItem['tax_value'] = $itemTax;
@@ -1126,9 +1167,8 @@ class ExpenseAdviseController extends Controller
                     }
                 }
                 unset($expenseItem);
-
-                foreach($expenseItemArr as $_key => $expenseItem) {
-                    $_key = $_key + 1;
+                foreach ($expenseItemArr as $_key => $expenseItem) {
+                    $_key = $expenseItem['index'];
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemPriceAterBothDis =  $expenseItem['basic_value'] - $expenseItem['discount_amount'] - $expenseItem['header_discount_amount'];
                     if ($applicabilityType === ConstantHelper::COLLECTION) {
@@ -1137,27 +1177,8 @@ class ExpenseAdviseController extends Controller
                         $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
                     }
                     $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
-
                     # Expense Detail Save
-                    $expenseDetail = ExpenseDetail::find($component['expense_detail_id'] ?? null) ?? new ExpenseDetail;
-
-                    // if((isset($component['po_detail_id']) && $component['po_detail_id']) || (isset($expenseDetail->purchase_order_item_id) && $expenseDetail->purchase_order_item_id)) {
-                    //     $poItem = PoItem::find($component['po_detail_id'] ?? $expenseDetail->purchase_order_item_id);
-                    //     if(isset($poItem) && $poItem) {
-                    //         if(isset($poItem->id) && $poItem->id) {
-                    //             $orderQty = floatval($expenseDetail->accepted_qty);
-                    //             $componentQty = floatval($component['accepted_qty']);
-                    //             $qtyDifference = $poItem->order_qty - $orderQty + $componentQty;
-                    //             if($qtyDifference) {
-                    //                 $poItem->grn_qty = $qtyDifference;
-                    //             }
-                    //         } else {
-                    //             $poItem->order_qty += $component['qty'];
-                    //         }
-                    //         $poItem->save();
-                    //     }
-                    // }
-
+                    $expenseDetail = ExpenseDetail::find($component['detail_id'] ?? null) ?? new ExpenseDetail;
                     $expenseDetail->expense_header_id = $expenseItem['expense_header_id'];
                     $expenseDetail->purchase_order_item_id = $expenseItem['purchase_order_item_id'];
                     // $expenseDetail->sale_order_item_id = $expenseItem['sale_order_item_id'];
@@ -1184,7 +1205,7 @@ class ExpenseAdviseController extends Controller
                     $expenseDetail->save();
 
                     #Save component Attr
-                    foreach($expenseDetail->item->itemAttributes as $itemAttribute) {
+                    foreach ($expenseDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $expenseAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                             $expenseAttrName = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_name'];
@@ -1200,8 +1221,8 @@ class ExpenseAdviseController extends Controller
                     }
 
                     /*Item Level Discount Save*/
-                    if(isset($component['discounts'])) {
-                        foreach($component['discounts'] as $dis) {
+                    if (isset($component['discounts'])) {
+                        foreach ($component['discounts'] as $dis) {
                             if (isset($dis['dis_amount']) && $dis['dis_amount']) {
                                 $ted = ExpenseTed::find(@$dis['id']) ?? new ExpenseTed;
                                 $ted->expense_header_id = $expense->id;
@@ -1216,14 +1237,14 @@ class ExpenseAdviseController extends Controller
                                 $ted->ted_amount = $dis['dis_amount'] ?? 0.00;
                                 $ted->applicability_type = 'Deduction';
                                 $ted->save();
-                                $totalItemLevelDiscValue = $totalItemLevelDiscValue+$dis['dis_amount'];
+                                $totalItemLevelDiscValue = $totalItemLevelDiscValue + $dis['dis_amount'];
                             }
                         }
                     }
 
                     #Save Component item Tax
-                    if(isset($component['taxes'])) {
-                        foreach($component['taxes'] as $key => $tax) {
+                    if (isset($component['taxes'])) {
+                        foreach ($component['taxes'] as $key => $tax) {
                             $expenseAmountId = null;
                             $ted = ExpenseTed::find(@$tax['id']) ?? new ExpenseTed;
                             $ted->expense_header_id = $expense->id;
@@ -1243,8 +1264,8 @@ class ExpenseAdviseController extends Controller
                 }
 
                 /*Header level save discount*/
-                if(isset($request->all()['disc_summary'])) {
-                    foreach($request->all()['disc_summary'] as $dis) {
+                if (isset($request->all()['disc_summary'])) {
+                    foreach ($request->all()['disc_summary'] as $dis) {
                         if (isset($dis['d_amnt']) && $dis['d_amnt']) {
                             $expenseAmountId = @$dis['d_id'] ?? null;
                             $ted = ExpenseTed::find($expenseAmountId) ?? new ExpenseTed;
@@ -1255,7 +1276,7 @@ class ExpenseAdviseController extends Controller
                             $ted->ted_id = $dis['ted_d_id'] ?? null;
                             $ted->ted_name = $dis['d_name'];
                             $ted->ted_code = @$dis['d_name'];
-                            $ted->assesment_amount = $itemTotalValue-$itemTotalDiscount;
+                            $ted->assesment_amount = $itemTotalValue - $itemTotalDiscount;
                             $ted->ted_percentage = $dis['d_perc'] ?? 0.00;
                             $ted->ted_amount = $dis['d_amnt'] ?? 0.00;
                             $ted->applicability_type = 'Deduction';
@@ -1265,10 +1286,10 @@ class ExpenseAdviseController extends Controller
                 }
 
                 /*Header level save discount*/
-                if(isset($request->all()['exp_summary'])) {
-                    foreach($request->all()['exp_summary'] as $dis) {
-                        if(isset($dis['e_amnt']) && $dis['e_amnt']) {
-                            if($applicabilityType === ConstantHelper::COLLECTION) {
+                if (isset($request->all()['exp_summary'])) {
+                    foreach ($request->all()['exp_summary'] as $dis) {
+                        if (isset($dis['e_amnt']) && $dis['e_amnt']) {
+                            if ($applicabilityType === ConstantHelper::COLLECTION) {
                                 $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $finaltotalTax;
                             } else {
                                 $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount - $finaltotalTax;
@@ -1294,7 +1315,7 @@ class ExpenseAdviseController extends Controller
                 /*Update total in main header Expense*/
                 $expense->total_item_amount = $itemTotalValue ?? 0.00;
                 $totalDiscValue = ($itemTotalHeaderDiscount + $itemTotalDiscount) ?? 0.00;
-                if($itemTotalValue < $totalDiscValue){
+                if ($itemTotalValue < $totalDiscValue) {
                     DB::rollBack();
                     return response()->json([
                         'message' => 'Negative value not allowed'
@@ -1303,7 +1324,7 @@ class ExpenseAdviseController extends Controller
                 $expense->total_discount = $totalDiscValue ?? 0.00;
                 $expense->taxable_amount = ($itemTotalValue - $totalDiscValue) ?? 0.00;
                 $expense->total_taxes = $totalTax ?? 0.00;
-                if($applicabilityType === ConstantHelper::COLLECTION) {
+                if ($applicabilityType === ConstantHelper::COLLECTION) {
                     $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) + $finaltotalTax) ?? 0.00;
                 } else {
                     $expense->total_after_tax_amount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax) ?? 0.00;
@@ -1317,16 +1338,28 @@ class ExpenseAdviseController extends Controller
                 $expense->total_amount = $totalAmount ?? 0.00;
                 $expense->save();
             } else {
-                DB::rollBack();
-                return response()->json([
+                if ($request->document_status == ConstantHelper::SUBMITTED) {
+                    DB::rollBack();
+                    return response()->json([
                         'message' => 'Please add atleast one row in component table.',
                         'error' => "",
                     ], 422);
+                } else {
+                    // No items left — reset all values
+                    $expense->total_discount = 0.00;
+                    $expense->taxable_amount = 0.00;
+                    $expense->total_taxes = 0.00;
+                    $expense->total_after_tax_amount = 0.00;
+                    $expense->expense_amount = 0.00;
+                    $expense->total_amount = 0.00;
+                    $expense->total_item_amount = 0.00;
+                    $expense->purchase_order_id = null;
+                    $expense->save();
+                }
             }
 
             /*Store currency data*/
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($expense->vendor->currency_id, $expense->document_date);
-
             $expense->org_currency_id = $currencyExchangeData['data']['org_currency_id'];
             $expense->org_currency_code = $currencyExchangeData['data']['org_currency_code'];
             $expense->org_currency_exg_rate = $currencyExchangeData['data']['org_currency_exg_rate'];
@@ -1347,71 +1380,67 @@ class ExpenseAdviseController extends Controller
             $attachments = $request->file('attachment');
             $currentLevel = $expense->approval_level ?? 1;
             $modelName = get_class($expense);
-            if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
-            {
+            if ($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment') {
                 //*amendmemnt document log*/
                 $revisionNumber = $expense->revision_number + 1;
                 $actionType = 'amendment';
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $amendRemarks, $amendAttachments, $currentLevel, $actionType, 0, $modelName);
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $expense->total_amount, $modelName);
                 $expense->revision_number = $revisionNumber;
                 $expense->approval_level = 1;
                 $expense->revision_date = now();
                 $amendAfterStatus = $expense->document_status;
                 $checkAmendment = Helper::checkAfterAmendApprovalRequired($request->book_id);
-                if(isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
+                if (isset($checkAmendment->approval_required) && $checkAmendment->approval_required) {
                     $totalValue = $expense->grand_total_amount ?? 0;
-                    $amendAfterStatus = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                    $amendAfterStatus = Helper::checkApprovalRequired($request->book_id, $totalValue);
                 }
                 if ($amendAfterStatus == ConstantHelper::SUBMITTED) {
                     $actionType = 'submit';
-                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
+                    $totalValue = $expense->total_amount ?? 0;
+                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 }
                 $expense->document_status = $amendAfterStatus;
                 $expense->save();
-
             } else {
                 if ($request->document_status == ConstantHelper::SUBMITTED) {
                     $revisionNumber = $expense->revision_number ?? 0;
                     $actionType = 'submit';
-                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, 0, $modelName);
-
+                    $totalValue = $expense->total_amount ?? 0;
+                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                     $totalValue = $expense->grand_total_amount ?? 0;
-                    $document_status = Helper::checkApprovalRequired($request->book_id,$totalValue);
+                    $document_status = Helper::checkApprovalRequired($request->book_id, $totalValue);
                     $expense->document_status = $document_status;
                 } else {
                     $expense->document_status = $request->document_status ?? ConstantHelper::DRAFT;
                 }
             }
 
-            /*MRN Attachment*/
+            /*Expense Attachment*/
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $expense->uploadDocuments($request->file('attachment'), 'expense', false);
             }
-
             $expense->save();
 
             $redirectUrl = '';
-            if(($expense->document_status == ConstantHelper::APPROVED) || ($expense->document_status == ConstantHelper::POSTED)) {
-                $parentUrl = request() -> segments()[0];
-                $redirectUrl = url($parentUrl. '/' . $expense->id . '/pdf');
+            if (($expense->document_status == ConstantHelper::APPROVED) || ($expense->document_status == ConstantHelper::POSTED)) {
+                $parentUrl = request()->segments()[0];
+                $redirectUrl = url($parentUrl . '/' . $expense->id . '/pdf');
             }
 
-            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense -> id, $request -> dynamic_field ?? []);
-            if ($status && !$status['status'] ) {
+            $status = DynamicFieldHelper::saveDynamicFields(ErpExpDynamicField::class, $expense->id, $request->dynamic_field ?? []);
+            if ($status && !$status['status']) {
                 DB::rollBack();
-                return response() -> json([
+                return response()->json([
                     'message' => $status['message'],
                     'error' => ''
                 ], 422);
             }
             DB::commit();
-
             return response()->json([
                 'message' => 'Record updated successfully',
                 'data' => $expense,
-                'redirectUrl'=>$redirectUrl
+                'redirectUrl' => $redirectUrl
             ]);
-
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -1424,17 +1453,17 @@ class ExpenseAdviseController extends Controller
     public function addItemRow(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $item = json_decode($request->item,true) ?? [];
-        $componentItem = json_decode($request->component_item,true) ?? [];
+        $item = json_decode($request->item, true) ?? [];
+        $componentItem = json_decode($request->component_item, true) ?? [];
         $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         /*Check last tr in table mandatory*/
-        if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
+        if (isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
             if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['row_length'] != 0) {
                 // return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
             }
         }
         $rowCount = intval($request->count) == 0 ? 1 : intval($request->count) + 1;
-        $html = view('procurement.expense-advise.partials.item-row',compact(['rowCount', 'costCenters']))->render();
+        $html = view('procurement.expense-advise.partials.item-row', compact(['rowCount', 'costCenters']))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -1450,22 +1479,23 @@ class ExpenseAdviseController extends Controller
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;
-        $shipping = $vendor->addresses()->where(function($query) {
-                        $query->where('type', 'shipping')->orWhere('type', 'both');
-                    })->latest()->first();
-        $billing = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
+        $shipping = $vendor->addresses()->where(function ($query) {
+            $query->where('type', 'shipping')->orWhere('type', 'both');
+        })->latest()->first();
+        $billing = $vendor->addresses()->where(function ($query) {
+            $query->where('type', 'billing')->orWhere('type', 'both');
+        })->latest()->first();
         $html = view(
             'procurement.expense-advise.partials.po-item-row',
             compact(
                 'items',
                 'costCenters'
-                )
             )
+        )
             ->render();
-        return response()->json([
-            'data' =>
+        return response()->json(
+            [
+                'data' =>
                 [
                     'html' => $html,
                     'vendor' => $vendor,
@@ -1494,11 +1524,12 @@ class ExpenseAdviseController extends Controller
             compact(
                 'items',
                 'costCenters'
-                )
             )
+        )
             ->render();
-        return response()->json([
-            'data' =>
+        return response()->json(
+            [
+                'data' =>
                 [
                     'html' => $html,
                 ],
@@ -1536,7 +1567,7 @@ class ExpenseAdviseController extends Controller
             $itemAttributes = $item?->itemAttributes;
             $itemAttributeArray = $item->item_attributes_array();
         }
-        $html = view('procurement.expense-advise.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr','itemAttributes'))->render();
+        $html = view('procurement.expense-advise.partials.comp-attribute', compact('item', 'attributeGroups', 'rowCount', 'selectedAttr', 'itemAttributes'))->render();
         $hiddenHtml = '';
         foreach ($itemAttributes as $attribute) {
             $selected = '';
@@ -1568,7 +1599,7 @@ class ExpenseAdviseController extends Controller
         $disName = $request->dis_name;
         $disPerc = $request->dis_perc;
         $disAmount = $request->dis_amount;
-        $html = view('procurement.expense-advise.partials.add-disc-row',compact('tblRowCount','rowCount','disName','disAmount','disPerc'))->render();
+        $html = view('procurement.expense-advise.partials.add-disc-row', compact('tblRowCount', 'rowCount', 'disName', 'disAmount', 'disPerc'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -1585,11 +1616,11 @@ class ExpenseAdviseController extends Controller
             return response()->json(['error' => 'No address found for the organization.'], 404);
         }
         $price = $request->input('price', 6000);
-        $document_date =$request->document_date ?? date('Y-m-d');
+        $document_date = $request->document_date ?? date('Y-m-d');
         $hsnId = null;
-        $item = Item::find($request -> item_id);
+        $item = Item::find($request->item_id);
         if (isset($item)) {
-            $hsnId = $item -> hsn_id;
+            $hsnId = $item->hsn_id;
         } else {
             return response()->json(['error' => 'Invalid Item'], 500);
         }
@@ -1597,19 +1628,19 @@ class ExpenseAdviseController extends Controller
         if ($transactionType === "sale") {
             $fromCountry = $companyCountryId;
             $fromState = $companyStateId;
-            $upToCountry = $request->input('party_country_id', $companyCountryId) ?? 0;
-            $upToState = $request->input('party_state_id', $companyStateId) ?? 0;
+            $upToCountry = $request->input('hidden_country_id', $companyCountryId) ?? 0;
+            $upToState = $request->input('hidden_state_id', $companyStateId) ?? 0;
         } else {
-            $fromCountry = $request->input('party_country_id', $companyCountryId) ?? 0;
-            $fromState = $request->input('party_state_id', $companyStateId) ?? 0;
+            $fromCountry = $request->input('hidden_country_id', $companyCountryId) ?? 0;
+            $fromState = $request->input('hidden_state_id', $companyStateId) ?? 0;
             $upToCountry = $companyCountryId;
             $upToState = $companyStateId;
         }
         try {
-            $taxDetails = TaxHelper::calculateTax( $hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,'purchase',$document_date);
+            $taxDetails = TaxHelper::calculateTax($hsnId, $price, $fromCountry, $fromState, $upToCountry, $upToState, 'purchase', $document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            $html = view('procurement.expense-advise.partials.item-tax',compact('taxDetails','rowCount','itemPrice'))->render();
+            $html = view('procurement.expense-advise.partials.item-tax', compact('taxDetails', 'rowCount', 'itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -1625,13 +1656,13 @@ class ExpenseAdviseController extends Controller
         $typeId = $request?->typeId ?? null;
 
         $vendor = Vendor::withDefaultGroupCompanyOrg()
-        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+            ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
 
         $moduleTypeId = match ($type) {
             'po' => $typeId,
             default => $vendorId,
         };
-        
+
         $typeData = match ($type) {
             'po' => PurchaseOrder::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
@@ -1639,11 +1670,11 @@ class ExpenseAdviseController extends Controller
             default => Vendor::withDefaultGroupCompanyOrg()
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId),
-        };  
-        
+        };
+
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-        
+
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
@@ -1655,28 +1686,28 @@ class ExpenseAdviseController extends Controller
         };
 
         if (!$vendorAddress) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Address not found for '. $vendor?->company_name
+                    'error_message' => 'Address not found for ' . $vendor?->company_name
                 )
             ]);
         }
         if (!isset($typeData->currency_id)) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Currency not found for '. $vendor?->company_name
+                    'error_message' => 'Currency not found for ' . $vendor?->company_name
                 )
             ]);
         }
         if (!isset($paymentTerm)) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
+                    'error_message' => 'Payment Terms not found for ' . $vendor?->company_name
                 )
             ]);
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($typeData?->currency_id ?? 0, $documentDate ?? '');
-        
+
         $storeId = $request?->store_id ?? null;
         $store = ErpStore::find($storeId);
         $locationAddress = $store?->address;
@@ -1687,20 +1718,20 @@ class ExpenseAdviseController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
         $orgAddress = $organizationAddress?->display_address;
-        
+
         return response()->json(
             [
                 'data' => [
-                    'status' => 200, 
-                    'vendor' =>$vendor, 
+                    'status' => 200,
+                    'vendor' => $vendor,
                     'message' => 'fetched',
-                    'currency' => $currency, 
+                    'currency' => $currency,
                     'org_address' => $orgAddress,
-                    'paymentTerm' => $paymentTerm, 
-                    'vendor_address' => $vendorAddress, 
+                    'paymentTerm' => $paymentTerm,
+                    'vendor_address' => $vendorAddress,
                     'currency_exchange' => $currencyData
-                ], 
-                'delivery_address' => $locationAddress, 
+                ],
+                'delivery_address' => $locationAddress,
             ]
         );
     }
@@ -1708,20 +1739,20 @@ class ExpenseAdviseController extends Controller
     public function getAddress1(Request $request)
     {
         $vendor = Vendor::withDefaultGroupCompanyOrg()
-        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
+            ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
         $currency = $vendor->currency;
         $paymentTerm = $vendor->paymentTerms;
-        $shipping = $vendor->addresses()->where(function($query) {
-                        $query->where('type', 'shipping')->orWhere('type', 'both');
-                    })->latest()->first();
-        $billing = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
+        $shipping = $vendor->addresses()->where(function ($query) {
+            $query->where('type', 'shipping')->orWhere('type', 'both');
+        })->latest()->first();
+        $billing = $vendor->addresses()->where(function ($query) {
+            $query->where('type', 'billing')->orWhere('type', 'both');
+        })->latest()->first();
 
         $vendorId = $vendor->id;
         $documentDate = $request->document_date;
-        $billingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['billing', 'both'])-> get();
-        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId) -> where('addressable_type', Vendor::class) -> whereIn('type', ['shipping','both'])-> get();
+        $billingAddresses = ErpAddress::where('addressable_id', $vendorId)->where('addressable_type', Vendor::class)->whereIn('type', ['billing', 'both'])->get();
+        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId)->where('addressable_type', Vendor::class)->whereIn('type', ['shipping', 'both'])->get();
 
         $user = Helper::getAuthenticatedUser();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -1731,44 +1762,44 @@ class ExpenseAdviseController extends Controller
         $orgAddress = $organizationAddress?->display_address;
 
         foreach ($billingAddresses as $billingAddress) {
-            $billingAddress -> value = $billingAddress -> id;
-            $billingAddress -> label = $billingAddress -> display_address;
+            $billingAddress->value = $billingAddress->id;
+            $billingAddress->label = $billingAddress->display_address;
         }
         foreach ($shippingAddresses as $shippingAddress) {
-            $shippingAddress -> value = $shippingAddress -> id;
-            $shippingAddress -> label = $shippingAddress -> display_address;
+            $shippingAddress->value = $shippingAddress->id;
+            $shippingAddress->label = $shippingAddress->display_address;
         }
         if (count($shippingAddresses) == 0) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Shipping Address not found for '. $vendor ?-> company_name
+                    'error_message' => 'Shipping Address not found for ' . $vendor?->company_name
                 )
             ]);
         }
         if (count($billingAddresses) == 0) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Billing Address not found for '. $vendor ?-> company_name
+                    'error_message' => 'Billing Address not found for ' . $vendor?->company_name
                 )
             ]);
         }
         if (!isset($vendor->currency_id)) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Currency not found for '. $vendor ?-> company_name
+                    'error_message' => 'Currency not found for ' . $vendor?->company_name
                 )
             ]);
         }
         if (!isset($vendor->payment_terms_id)) {
-            return response() -> json([
+            return response()->json([
                 'data' => array(
-                    'error_message' => 'Payment Terms not found for '. $vendor ?-> company_name
+                    'error_message' => 'Payment Terms not found for ' . $vendor?->company_name
                 )
             ]);
         }
         $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor->currency_id ?? 0, $documentDate ?? '');
 
-        return response()->json(['data' => ['shipping' => $shipping,'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData, 'org_address' => $orgAddress], 'status' => 200, 'message' => 'fetched']);
+        return response()->json(['data' => ['shipping' => $shipping, 'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData, 'org_address' => $orgAddress], 'status' => 200, 'message' => 'fetched']);
     }
 
     # Get edit address modal
@@ -1777,33 +1808,33 @@ class ExpenseAdviseController extends Controller
         $type = $request->type;
         $addressId = $request->address_id;
         $vendor = Vendor::find($request->vendor_id ?? null);
-        if(!$vendor) {
+        if (!$vendor) {
             return response()->json([
                 'message' => 'Please First select vendor.',
                 'error' => null,
             ], 500);
         }
-        if($request->type == 'shipping') {
-            $addresses = $vendor->addresses()->where(function($query) {
+        if ($request->type == 'shipping') {
+            $addresses = $vendor->addresses()->where(function ($query) {
                 $query->where('type', 'shipping')->orWhere('type', 'both');
             })->latest()->get();
 
-            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function($query) {
+            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function ($query) {
                 $query->where('type', 'shipping')->orWhere('type', 'both');
             })->latest()->first();
         } else {
-            $addresses = $vendor->addresses()->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->get();
-            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function($query) {
-                    $query->where('type', 'billing')->orWhere('type', 'both');
-                })->latest()->first();
+            $addresses = $vendor->addresses()->where(function ($query) {
+                $query->where('type', 'billing')->orWhere('type', 'both');
+            })->latest()->get();
+            $selectedAddress = $vendor->addresses()->where('id', $addressId)->where(function ($query) {
+                $query->where('type', 'billing')->orWhere('type', 'both');
+            })->latest()->first();
         }
         $html = '';
-        if(!intval($request->onChange)) {
-            $html = view('procurement.expense-advise.partials.edit-address-modal',compact('addresses','selectedAddress'))->render();
+        if (!intval($request->onChange)) {
+            $html = view('procurement.expense-advise.partials.edit-address-modal', compact('addresses', 'selectedAddress'))->render();
         }
-        return response()->json(['data' => ['html' => $html,'selectedAddress' => $selectedAddress], 'status' => 200, 'message' => 'fetched!']);
+        return response()->json(['data' => ['html' => $html, 'selectedAddress' => $selectedAddress], 'status' => 200, 'message' => 'fetched!']);
     }
 
     # Save Address
@@ -1828,17 +1859,17 @@ class ExpenseAdviseController extends Controller
 
         $vendor = Vendor::find($vendorId ?? null);
         $selectedAddress = $vendor->addresses()
-        ->where('id', $addressId)
-        ->where(function($query) use ($addressType) {
-            if ($addressType == 'shipping') {
-                $query->where('type', 'shipping')
-                      ->orWhere('type', 'both');
-            } else {
-                $query->where('type', 'billing')
-                      ->orWhere('type', 'both');
-            }
-        })
-        ->first();
+            ->where('id', $addressId)
+            ->where(function ($query) use ($addressType) {
+                if ($addressType == 'shipping') {
+                    $query->where('type', 'shipping')
+                        ->orWhere('type', 'both');
+                } else {
+                    $query->where('type', 'billing')
+                        ->orWhere('type', 'both');
+                }
+            })
+            ->first();
 
         $newAddress = null;
 
@@ -1871,38 +1902,46 @@ class ExpenseAdviseController extends Controller
         return response()->json(['data' => ['new_address' => $newAddress], 'status' => 200, 'message' => 'fetched!']);
     }
 
-    # On select row get item detail
     public function getItemDetail(Request $request)
     {
-        $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
-        $itemId = $request->item_id;
+        $selectedAttr = json_decode($request->selectedAttr, 200) ?? [];
+
+        $purchaseOrder = null;
+        $poDetail = null;
+        $quantity = $request->qty;
+        $headerId = $request->headerId;
+        $detailId = $request->detailId;
         $item = Item::find($request->item_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = intval($request->qty) ?? 0;
         $uomName = $item->uom->name ?? 'NA';
-        if($item->uom_id == $uomId) {
+        if ($item->uom_id == $uomId) {
         } else {
             $alUom = $item->alternateUOMs()->where('uom_id', $uomId)->first();
             $qty = @$alUom->conversion_to_inventory * $qty;
         }
         $remark = $request->remark ?? null;
+        $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
         $purchaseOrder = PurchaseOrder::find($request->purchase_order_id);
         $poDetail = PoItem::find($request->po_detail_id);
-        $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
+        $type = $request->type;
+
         $html = view(
             'procurement.expense-advise.partials.comp-item-detail',
             compact(
-                'qty',
                 'item',
+                'purchaseOrder',
+                'selectedAttr',
                 'remark',
                 'uomName',
-                'poDetail',
-                'selectedAttr',
-                'purchaseOrder',
+                'qty',
+                'headerId',
+                'detailId',
                 'specifications',
+                'poDetail',
+                'type'
             )
-        )
-        ->render();
+        )->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -1934,7 +1973,7 @@ class ExpenseAdviseController extends Controller
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$expense->document_status] ?? '';
         $taxes = ExpenseTed::where('expense_header_id', $expense->id)
             ->where('ted_type', 'Tax')
-            ->select('ted_type','ted_id','ted_name', 'ted_percentage', DB::raw('SUM(ted_amount) as total_amount'),DB::raw('SUM(assesment_amount) as total_assesment_amount'))
+            ->select('ted_type', 'ted_id', 'ted_name', 'ted_percentage', DB::raw('SUM(ted_amount) as total_amount'), DB::raw('SUM(assesment_amount) as total_assesment_amount'))
             ->groupBy('ted_name', 'ted_percentage')
             ->get();
         $sellerShippingAddress = $expense->latestShippingAddress();
@@ -1997,8 +2036,8 @@ class ExpenseAdviseController extends Controller
         $companyStateId = $firstAddress->state_id;
 
         # Save Item level discount
-        foreach($expense->items as $expense_item) {
-            $itemPrice = $expense_item->rate*$expense_item->accepted_qty;
+        foreach ($expense->items as $expense_item) {
+            $itemPrice = $expense_item->rate * $expense_item->accepted_qty;
             $totalItemAmnt = $totalItemAmnt + $itemPrice;
             $itemDis = $expense_item->itemDiscount()->sum('ted_amount');
             $expense_item->discount_amount = $itemDis;
@@ -2009,8 +2048,8 @@ class ExpenseAdviseController extends Controller
         $totalItemValueAfterTotalItemDisc = $expense->total_item_amount - $expense->items()->sum('discount_amount');
         $totalHeaderDiscount = $expense->total_header_disc_amount;
 
-        foreach($expense->items as $expense_item) {
-            $itemPrice = $expense_item->rate*$expense_item->accepted_qty;
+        foreach ($expense->items as $expense_item) {
+            $itemPrice = $expense_item->rate * $expense_item->accepted_qty;
             $itemPriceAfterItemDis = $itemPrice - $expense_item->discount_amount;
             # Calculate header discount
             // Calculate and save header discount
@@ -2028,24 +2067,24 @@ class ExpenseAdviseController extends Controller
                 $itemTax = 0;
                 $cTaxDeIds = array_column($taxDetails, 'id');
                 $existTaxIds = ExpenseTed::where('expense_detail_id', $expense_item->id)
-                                ->where('ted_type','Tax')
-                                ->pluck('ted_id')
-                                ->toArray();
+                    ->where('ted_type', 'Tax')
+                    ->pluck('ted_id')
+                    ->toArray();
 
                 $array1 = array_map('strval', $existTaxIds);
                 $array2 = array_map('strval', $cTaxDeIds);
                 sort($array1);
                 sort($array2);
 
-                if($array1 != $array2) {
+                if ($array1 != $array2) {
                     # Changes
-                    ExpenseTed::where("expense_detail_id",$expense_item->id)
-                        ->where('ted_type','Tax')
+                    ExpenseTed::where("expense_detail_id", $expense_item->id)
+                        ->where('ted_type', 'Tax')
                         ->delete();
                 }
 
                 foreach ($taxDetails as $taxDetail) {
-                    $itemTax += ((double)$taxDetail['tax_percentage']/100*$priceAfterBothDis);
+                    $itemTax += ((float)$taxDetail['tax_percentage'] / 100 * $priceAfterBothDis);
 
                     $ted = ExpenseTed::firstOrNew([
                         'expense_detail_id' => $expense_item->id,
@@ -2061,11 +2100,11 @@ class ExpenseAdviseController extends Controller
                     $ted->ted_name = $taxDetail['tax_type'] ?? null;
                     $ted->assesment_amount = $expense_item->assessment_amount_total;
                     $ted->ted_percentage = $taxDetail['tax_percentage'] ?? 0.00;
-                    $ted->ted_amount = ((double)$taxDetail['tax_percentage']/100*$priceAfterBothDis) ?? 0.00;
+                    $ted->ted_amount = ((float)$taxDetail['tax_percentage'] / 100 * $priceAfterBothDis) ?? 0.00;
                     $ted->applicability_type = $taxDetail['applicability_type'] ?? 'Collection';
                     $ted->save();
                 }
-                if($itemTax) {
+                if ($itemTax) {
                     $expense_item->tax_value = $itemTax;
                     $expense_item->save();
                     $totalTaxAmnt = $totalTaxAmnt + $itemTax;
@@ -2075,18 +2114,18 @@ class ExpenseAdviseController extends Controller
         }
 
         # Save expenses
-        $totalValueAfterBothDis = $totalItemValueAfterTotalItemDisc -$totalHeaderDiscount;
+        $totalValueAfterBothDis = $totalItemValueAfterTotalItemDisc - $totalHeaderDiscount;
         $headerExpensesTotal = $expense->expenses()->sum('ted_amount');
 
         if ($headerExpensesTotal) {
-            foreach($expense->items as $expense_item) {
-                $itemPriceAterBothDis = ($expense_item->rate*$expense_item->accepted_qty) - $expense_item->header_discount_amount - $expense_item->discount_amount;
+            foreach ($expense->items as $expense_item) {
+                $itemPriceAterBothDis = ($expense_item->rate * $expense_item->accepted_qty) - $expense_item->header_discount_amount - $expense_item->discount_amount;
                 $exp = $itemPriceAterBothDis / $totalValueAfterBothDis * $headerExpensesTotal;
                 $expense_item->header_exp_amount = $exp;
                 $expense_item->save();
             }
         } else {
-            foreach($expense->items as $expense_item) {
+            foreach ($expense->items as $expense_item) {
                 $expense_item->header_exp_amount = 0.00;
                 $expense_item->save();
             }
@@ -2113,13 +2152,13 @@ class ExpenseAdviseController extends Controller
         try {
             $pTedId = $request->id;
             $ted = ExpenseTed::find($pTedId);
-            if($ted) {
+            if ($ted) {
                 $tedPoId = $ted->expense_header_id;
                 $ted->delete();
                 $this->updateCalculation($tedPoId);
             }
             DB::commit();
-            return response()->json(['status' => 200,'message' => 'data deleted successfully.']);
+            return response()->json(['status' => 200, 'message' => 'data deleted successfully.']);
         } catch (Exception $e) {
             DB::rollBack();
             \Log::error('Error deleting component: ' . $e->getMessage());
@@ -2134,13 +2173,13 @@ class ExpenseAdviseController extends Controller
         try {
             $pTedId = $request->id;
             $ted = ExpenseTed::find($pTedId);
-            if($ted) {
+            if ($ted) {
                 $tedPoId = $ted->expense_header_id;
                 $ted->delete();
                 $this->updateCalculation($tedPoId);
             }
             DB::commit();
-            return response()->json(['status' => 200,'message' => 'data deleted successfully.']);
+            return response()->json(['status' => 200, 'message' => 'data deleted successfully.']);
         } catch (Exception $e) {
             DB::rollBack();
             \Log::error('Error deleting component: ' . $e->getMessage());
@@ -2155,13 +2194,13 @@ class ExpenseAdviseController extends Controller
         try {
             $pTedId = $request->id;
             $ted = ExpenseTed::find($pTedId);
-            if($ted) {
+            if ($ted) {
                 $tedPoId = $ted->expense_header_id;
                 $ted->delete();
                 $this->updateCalculation($tedPoId);
             }
             DB::commit();
-            return response()->json(['status' => 200,'message' => 'data deleted successfully.']);
+            return response()->json(['status' => 200, 'message' => 'data deleted successfully.']);
         } catch (Exception $e) {
             DB::rollBack();
             \Log::error('Error deleting component: ' . $e->getMessage());
@@ -2176,7 +2215,7 @@ class ExpenseAdviseController extends Controller
         try {
             // Header History
             $expenseHeader = ExpenseHeader::find($request->id);
-            if(!$expenseHeader) {
+            if (!$expenseHeader) {
                 return response()->json(['error' => 'Expense Header not found'], 404);
             }
             $expenseHeaderData = $expenseHeader->toArray();
@@ -2227,8 +2266,8 @@ class ExpenseAdviseController extends Controller
 
             // Detail History
             $expenseDetails = ExpenseDetail::where('expense_header_id', $expenseHeader->id)->get();
-            if(!empty($expenseDetails)){
-                foreach($expenseDetails as $key => $detail){
+            if (!empty($expenseDetails)) {
+                foreach ($expenseDetails as $key => $detail) {
                     $expenseDetailData = $detail->toArray();
                     unset($expenseDetailData['id']); // You might want to remove the primary key, 'id'
                     $expenseDetailData['header_id'] = $detail->expense_header_id;
@@ -2241,8 +2280,8 @@ class ExpenseAdviseController extends Controller
                     $expenseAttributes = ExpenseItemAttribute::where('expense_header_id', $expenseHeader->id)
                         ->where('expense_detail_id', $detail->id)
                         ->get();
-                    if(!empty($expenseAttributes)){
-                        foreach($expenseAttributes as $key1 => $attribute){
+                    if (!empty($expenseAttributes)) {
+                        foreach ($expenseAttributes as $key1 => $attribute) {
                             $expenseAttributeData = $attribute->toArray();
                             unset($expenseAttributeData['id']); // You might want to remove the primary key, 'id'
                             $expenseAttributeData['header_id'] = $detail->expense_header_id;
@@ -2261,8 +2300,8 @@ class ExpenseAdviseController extends Controller
                         ->where('ted_level', '=', 'D')
                         ->get();
 
-                    if(!empty($itemExtraAmounts)){
-                        foreach($itemExtraAmounts as $key4 => $extraAmount){
+                    if (!empty($itemExtraAmounts)) {
+                        foreach ($itemExtraAmounts as $key4 => $extraAmount) {
                             $extraAmountData = $extraAmount->toArray();
                             unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
                             $extraAmountData['header_id'] = $detail->expense_header_id;
@@ -2282,8 +2321,8 @@ class ExpenseAdviseController extends Controller
                 ->where('ted_level', '=', 'H')
                 ->get();
 
-            if(!empty($expenseExtraAmounts)){
-                foreach($expenseExtraAmounts as $key4 => $extraAmount){
+            if (!empty($expenseExtraAmounts)) {
+                foreach ($expenseExtraAmounts as $key4 => $extraAmount) {
                     $extraAmountData = $extraAmount->toArray();
                     unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
                     $extraAmountData['header_id'] = $detail->expense_header_id;
@@ -2294,9 +2333,9 @@ class ExpenseAdviseController extends Controller
                 }
             }
 
-            $randNo = rand(10000,99999);
+            $randNo = rand(10000, 99999);
 
-            $revisionNumber = "Expense".$randNo;
+            $revisionNumber = "Expense" . $randNo;
             $expenseHeader->revision_number += 1;
             // $expenseHeader->status = "draft";
             // $expenseHeader->document_status = "draft";
@@ -2311,7 +2350,7 @@ class ExpenseAdviseController extends Controller
                 $currentLevel = $expenseHeader->approval_level ?? 1;
                 $revisionNumber = $expenseHeader->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType);
                 $expenseHeader->document_status = $approveDocument['approvalStatus'];
             }
             $expenseHeader->save();
@@ -2331,173 +2370,297 @@ class ExpenseAdviseController extends Controller
     }
 
     # Get PO Item List
-    public function getPo(Request $request){
-        // Initialize variables
-        $applicableBookIds = [];
-        $headerBookId = $request->header_book_id ?? null;
+    public function getPo(Request $request)
+    {
+        $query = $this->buildPoQuery($request);
+        return DataTables::of($query)
+            ->addColumn('select_checkbox', function ($row) use ($request) {
+                $moduleType = 'p-order';
+                $ref_no = ($row?->po?->book?->book_code ?? 'NA') . '-' . ($row?->po?->document_number ?? 'NA');
+
+                $dataCurrentPo = ($row->purchase_order_id ?? 'null');
+
+                $decoded = urldecode(urldecode($request->selected_po_ids));
+                $selected_po_ids = json_decode($decoded, true) ?? [];
+                $poDetail = PoItem::find($selected_po_ids)->pluck('purchase_order_id')->toArray();
+                $dataExistingPo = $request->type == 'create' && $row?->purchase_order_id
+                    ? ($selected_po_ids[0] ?? 'null')
+                    : 'null';
+
+                // Determine if checkbox should be disabled
+                if (empty($selected_po_ids)) {
+                    $disabled = '';
+                } else {
+                    $disabled = (!in_array($dataCurrentPo, $poDetail)) ? 'disabled' : '';
+                }
+
+                return "<div class='form-check form-check-inline me-0'>
+                            <input class='form-check-input po_item_checkbox' type='checkbox' name='po_item_check' value='{$row->id}' data-module='{$moduleType}' data-current-po='{$dataCurrentPo}' data-existing-po='{$dataExistingPo}' {$disabled}>
+                            <input type='hidden' name='reference_no' id='reference_no' value='{$ref_no}'>
+                        </div>";
+            })
+            ->addColumn('vendor', fn($row) => $row?->po?->vendor?->company_name ?? 'NA')
+            ->addColumn('po_doc', fn($row) => ($row?->po?->book?->book_code ?? 'NA') . ' - ' . ($row?->po?->document_number ?? 'NA'))
+            ->addColumn('po_date', fn($row) => $row?->po?->getFormattedDate('document_date') ?? '-')
+            ->addColumn('item_code', fn($row) => $row?->item?->item_code ?? 'NA')
+            ->addColumn('item_name', fn($row) => $row?->item?->item_name ?? 'NA')
+            ->addColumn('attributes', function ($row) {
+                return $row?->attributes->map(function ($attr) {
+                    return "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->headerAttribute->name}</strong>: {$attr->headerAttributeValue->value}</span>";
+                })->implode(' ');
+            })
+            ->addColumn('order_qty', function ($row) {
+                return number_format((($row->order_qty ?? 0) - ($row->short_close_qty ?? 0)), 2);
+            })
+            ->addColumn('inv_order_qty', function ($row) {
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    return number_format((($row->balance_qty ?? 0)), 2);
+                }
+                return number_format(0, 2);
+            })
+            ->addColumn('expense_advise_qty', fn($row) => number_format(($row->expense_advise_qty ?? 0), 2))
+            ->addColumn('balance_qty', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $expQty = $row->expense_advise_qty ?? 0;
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->balance_qty ?? 0);
+                }
+                return number_format(($orderQty - $expQty), 2);
+            })
+            ->addColumn('rate', fn($row) => number_format(($row->rate ?? 0), 2))
+            ->addColumn('total_amount', function ($row) {
+                $orderQty = ($row->order_qty ?? 0) - ($row->short_close_qty ?? 0);
+                $expQty = $row->expense_advise_qty ?? 0;
+                if ($row?->po?->supp_invoice_required == 'yes') {
+                    $orderQty = ($row->balance_qty ?? 0);
+                }
+                return number_format(($orderQty - $expQty) * ($row->rate ?? 0), 2);
+            })
+            ->rawColumns([
+                'select_checkbox',
+                'attributes',
+                'vendor',
+                'po_doc',
+                'po_date',
+                'item_code',
+                'item_name',
+                'order_qty',
+                'inv_order_qty',
+                'expense_advise_qty',
+                'balance_qty',
+                'rate',
+                'total_amount'
+            ])
+            ->make(true);
+    }
+
+    # This for both bulk and single po
+    protected function buildPoQuery(Request $request)
+    {
+        $documentDate = $request->document_date ?? null;
         $seriesId = $request->series_id ?? null;
         $docNumber = $request->document_number ?? null;
         $itemId = $request->item_id ?? null;
+        $storeId = $request->store_id ?? null;
         $vendorId = $request->vendor_id ?? null;
+        $headerBookId = $request->header_book_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $headerIds = $request->header_ids ?? '';
+        $detailsIds = $request->details_ids ?? '';
 
-        // Fetch applicable book IDs from the headerBookId
+        if (is_string($headerIds)) {
+            $headerIds = array_filter(explode(',', $headerIds));
+        }
+
+        if (is_string($detailsIds)) {
+            $detailsIds = array_filter(explode(',', $detailsIds));
+        }
+
+        $decoded = urldecode(urldecode($request->selected_po_ids));
+        $selected_po_ids = json_decode($decoded, true) ?? [];
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
-        $poItemIds = [];
         $poItems = PoItem::select(
             'erp_po_items.*',
             'erp_purchase_orders.id as po_id',
-            'erp_purchase_orders.vendor_id as vendor_id',
-            'erp_purchase_orders.book_id as book_id'
-            )
+            'erp_purchase_orders.vendor_id',
+            'erp_purchase_orders.book_id',
+            'erp_purchase_orders.gate_entry_required',
+            'erp_purchase_orders.supp_invoice_required'
+        )
             ->leftJoin('erp_purchase_orders', 'erp_purchase_orders.id', 'erp_po_items.purchase_order_id')
             ->whereIn('erp_purchase_orders.book_id', $applicableBookIds)
-            ->whereRaw('order_qty > expense_advise_qty')
-            ->whereHas('item', function($item){
+            ->where('erp_purchase_orders.gate_entry_required', 'no')
+            ->where('erp_purchase_orders.supp_invoice_required', 'no')
+            ->whereRaw('((order_qty - short_close_qty) > expense_advise_qty)')
+            ->whereHas('item', function ($item) use ($itemSearch) {
                 $item->where('type', 'Service');
+                if ($itemSearch) {
+                    $item->where(function ($query) use ($itemSearch) {
+                        $query->where('erp_items.item_name', 'LIKE', "%{$itemSearch}%")
+                            ->orWhere('erp_items.item_code', 'LIKE', "%{$itemSearch}%");
+                    });
+                }
             })
-            ->get();
-
-        foreach ($poItems as $poItem) {
-            $checkInvoiceRequired = Vendor::whereHas('supplier_books')->find($poItem->vendor_id);
-            if($checkInvoiceRequired) {
-                $siItem = PoItem::where('po_item_id', $poItem->id)
-                    ->whereHas('po', function($po){
-                        $po->where('type', 'supplier-invoice');
-                    })
-                    ->whereRaw('order_qty > expense_advise_qty')
-                    ->first();
-                if($siItem){
-                    $poItemIds[] = $siItem->id;
-                    // $siItemIds[] = $siItem->id;
+            ->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId, $storeId) {
+                $po->whereIn('document_status', [
+                    ConstantHelper::APPROVED,
+                    ConstantHelper::APPROVAL_NOT_REQUIRED,
+                    ConstantHelper::POSTED
+                ]);
+                if ($seriesId) {
+                    $po->where('erp_purchase_orders.book_id', $seriesId);
                 }
-            } else {
-                $poItemIds[] = $poItem->id;
-            }
-        }
-
-        // Query to get PO items with the required conditions
-        $poItems = PoItem::with('attributes')->whereIn('id',$poItemIds)
-            ->where(function ($query) use ($seriesId, $docNumber, $itemId, $vendorId) {
-            // Ensure item exists
-            $query->whereHas('item', function($item){
-                $item->where('type', 'Service');
-            });
-
-            // Check POs
-            $query->whereHas('po', function ($po) use ($seriesId, $docNumber, $vendorId) {
-                // Filter by book_id (headerBookId)
-                $po->withDefaultGroupCompanyOrg();
-                $po->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED]);
-                // Filter by series ID
-                if($seriesId) {
-                    $po->where('erp_purchase_orders.book_id',$seriesId);
-                }
-
-                // Filter by document number
                 if ($docNumber) {
-                    $po->where('erp_purchase_orders.document_number', $docNumber);
+                    $po->where('erp_purchase_orders.id', $docNumber);
                 }
-
-                // Filter by vendor ID
                 if ($vendorId) {
                     $po->where('erp_purchase_orders.vendor_id', $vendorId);
                 }
+                if ($storeId) {
+                    $po->where('erp_purchase_orders.store_id', $storeId);
+                }
             });
 
-            // Filter by item ID if provided
-            if ($itemId) {
-                $query->where('item_id', $itemId);
+        if ($itemId) {
+            $poItems->where('item_id', $itemId);
+        }
+
+        if ($request->type === 'create' && count($selected_po_ids)) {
+            $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
+        } elseif ($request->type === 'edit') {
+            $poItems->whereIn('erp_purchase_orders.id', $headerIds);
+            $poItems->whereNotIn('erp_po_items.id', $detailsIds);
+            $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
+        }
+
+        $poItems = $poItems->orderBy('po_id', 'desc')->get();
+
+        $poItemMap = [];
+        foreach ($poItems as $poItem) {
+            $poItemId = $poItem->id;
+            if (!isset($poItemMap[$poItemId])) {
+                $poItem->balance_qty = ($poItem->order_qty - $poItem->short_close_qty) - $poItem->expense_advise_qty;
+                $poItemMap[$poItemId] = $poItem;
             }
+        }
 
-            // Ensure remaining quantity condition
-            $query->whereRaw('order_qty > expense_advise_qty');
-        })->get();
-
-        $html = view('procurement.expense-advise.partials.po-item-list', ['poItems' => $poItems])->render();
-        return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
-
+        return $poItemMap;
     }
 
-    # Submit PI Item list
+    # Process PO Item list
     public function processPoItem(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $ids = json_decode($request->ids,true) ?? [];
+        $type = 'po';
+        $ids = json_decode($request->ids, true) ?? [];
+        $moduleTypes = json_decode($request->moduleTypes, true) ?? [];
         $vendor = null;
-        $finalDiscounts = collect();
-        $finalExpenses = collect();
+        // Ensure all module types are the same
+        if (count(array_unique($moduleTypes)) > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "Multiple different module types are not allowed."
+            ]);
+        }
+
+        $moduleType = $moduleTypes[0] ?? null;
+        $tableRowCount = $request->tableRowCount ?: 0;
+
         $poItems = PoItem::whereIn('id', $ids)->get();
-        $uniquePoIds = PoItem::whereIn('id', $ids)
-                    ->distinct()
-                    ->pluck('purchase_order_id')
-                    ->toArray();
-        if(count($uniquePoIds) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time expense advise create from one PO."]);
+        foreach ($poItems as $poItem) {
+            $poItem->avail_order_qty = $poItem->order_qty ?? 0;
+            $poItem->available_qty = ((($poItem->order_qty ?? 0) - ($poItem->short_close_qty ?? 0)) - ($poItem->expense_advise_qty ?? 0));
         }
+        $uniquePoIds = $poItems->pluck('purchase_order_id')->unique()->toArray();
+        if (count($uniquePoIds) > 1) {
+            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "Expense advise can be created from one PO at a time."]);
+        }
+
+        $locations = InventoryHelper::getAccessibleLocations('stock');
         $pos = PurchaseOrder::whereIn('id', $uniquePoIds)->get();
-        $discounts = collect();
-        $expenses = collect();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $orgAddress = $organizationAddress?->display_address;
-        foreach ($pos as $po) {
-            foreach ($po->headerDiscount as $headerDiscount) {
-                if (!intval($headerDiscount->ted_perc)) {
-                    $tedPerc = (floatval($headerDiscount->ted_amount) / floatval($headerDiscount->assessment_amount)) * 100;
-                    $headerDiscount['ted_perc'] = $tedPerc;
-                }
-                $discounts->push($headerDiscount);
-            }
 
-            foreach ($po->headerExpenses as $headerExpense) {
-                if (!intval($headerExpense->ted_perc)) {
-                    $tedPerc = (floatval($headerExpense->ted_amount) / floatval($headerExpense->assessment_amount)) * 100;
-                    $headerExpense['ted_perc'] = $tedPerc;
-                }
-                $expenses->push($headerExpense);
+        $purchaseData = PurchaseOrder::whereIn('id', $uniquePoIds)
+            ->with(['items' => function ($query) use ($ids) {
+                $query->whereIn('id', $ids);
+            }])
+            ->get();
+
+        $purchaseOrder = PurchaseOrder::whereIn('id', $uniquePoIds)->first();
+
+        $finalExpenses = [];
+        $poExpenses = PurchaseOrder::whereIn('id', $uniquePoIds)
+            ->with(['headerExpenses' => function ($query) {
+                $query->where('ted_level', 'H');
+            }])
+            ->get()
+            ->keyBy('id');
+
+        $selectedPoItemValues = PoItem::whereIn('id', $ids)
+            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
+            ->groupBy('purchase_order_id')
+            ->pluck('total', 'purchase_order_id');
+
+        $poValues = PoItem::whereIn('purchase_order_id', $uniquePoIds)
+            ->select('purchase_order_id', \DB::raw('SUM(order_qty * rate) as total'))
+            ->groupBy('purchase_order_id')
+            ->pluck('total', 'purchase_order_id');
+
+        foreach ($poExpenses as $poId => $po) {
+            $poValue = $poValues[$poId] ?? 0;
+            $selectedPoItemValue = $selectedPoItemValues[$poId] ?? 0;
+
+            foreach ($po->headerExpenses as $expense) {
+                $perc = $poValue > 0 ? ($expense->ted_amount / $poValue) * 100 : 0;
+                $amount = number_format(($selectedPoItemValue * $perc / 100), 2);
+
+                $finalExpenses[] = [
+                    'id' => $expense->id,
+                    'ref_type' => 'po',
+                    'purchase_order_id' => $expense->purchase_order_id,
+                    'ted_id' => $expense->ted_id,
+                    'ted_name' => $expense->ted_name,
+                    'ted_amount' => $amount,
+                    'ted_perc' => round($perc, 8),
+                ];
             }
         }
-        $groupedDiscounts = $discounts
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
-            });
-        $groupedExpenses = $expenses
-            ->groupBy('ted_id')
-            ->map(function ($group) {
-                return $group->sortByDesc('ted_perc')->first(); // Select the record with max `ted_perc`
-            });
-        $finalDiscounts = $groupedDiscounts->values()->toArray();
-        $finalExpenses = $groupedExpenses->values()->toArray();
 
-        $poIds = $poItems->pluck('purchase_order_id')->all();
-        $vendorId = PurchaseOrder::whereIn('id',$poIds)->pluck('vendor_id')->toArray();
-        $vendorId = array_unique($vendorId);
-        $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
-        if(count($vendorId) && count($vendorId) > 1) {
-            return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple vendor of PO item at time."]);
+        $vendorId = $pos->pluck('vendor_id')->unique();
+        if ($vendorId->count() > 1) {
+            return response()->json([
+                'data' => ['pos' => ''],
+                'status' => 422,
+                'message' => "You can not select multiple vendors of PO items at a time."
+            ]);
         } else {
-            $vendorId = $vendorId[0];
-            $vendor = Vendor::find($vendorId);
-            if ($vendor) {
-                $vendor->billing = $vendor->addresses()
-                    ->whereIn('type', ['billing', 'both'])
-                    ->latest()
-                    ->first();
-                $vendor->shipping = $vendor->addresses()
-                    ->whereIn('type', ['shipping', 'both'])
-                    ->latest()
-                    ->first();
-
-                $vendor->currency = $vendor->currency;
-                $vendor->paymentTerm = $vendor->paymentTerm;
-            }
+            $vendor = Vendor::find($vendorId->first());
         }
-        $html = view('procurement.expense-advise.partials.po-item-row', ['poItems' => $poItems, 'costCenters' => $costCenters])->render();
-        return response()->json(['data' => ['pos' => $html, 'vendor' => $vendor,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses, 'org_address' => $orgAddress], 'status' => 200, 'message' => "fetched!"]);
+
+        $html = view('procurement.expense-advise.partials.po-item-row', [
+            'pos' => $pos,
+            'type' => $type,
+            'poItems' => $poItems,
+            'locations' => $locations,
+            'moduleType' => $moduleType,
+            'purchaseData' => $purchaseData,
+            'tableRowCount' => $tableRowCount
+        ])->render();
+
+        return response()->json([
+            'data' => [
+                'pos' => $html,
+                'vendor' => $vendor,
+                // 'vendorAsn' => $vendorAsn,
+                'moduleType' => $moduleType,
+                'finalExpenses' => $finalExpenses,
+                'purchaseOrder' => $purchaseOrder,
+            ],
+            'status' => 200,
+            'message' => "fetched!"
+        ]);
     }
 
     # Get SO Item List
@@ -2516,49 +2679,49 @@ class ExpenseAdviseController extends Controller
             'erp_sale_orders.id as so_id',
             'erp_sale_orders.vendor_id as vendor_id',
             'erp_sale_orders.book_id as book_id'
-            )
+        )
             ->leftJoin('erp_sale_orders', 'erp_sale_orders.id', 'erp_so_items.sale_order_id')
             ->whereIn('erp_sale_orders.book_id', $applicableBookIds)
             ->whereRaw('order_qty > expense_advise_qty')
-            ->whereHas('item', function($item){
+            ->whereHas('item', function ($item) {
                 $item->where('type', 'Service');
             })
             ->get();
 
         $soItems = PoItem::with('attributes')
-        ->where(function ($query) use ($seriesId, $docNumber, $itemId, $customerId) {
-            // Ensure item exists
-            $query->whereHas('item', function($item){
-                $item->where('type', 'Service');
-            });
+            ->where(function ($query) use ($seriesId, $docNumber, $itemId, $customerId) {
+                // Ensure item exists
+                $query->whereHas('item', function ($item) {
+                    $item->where('type', 'Service');
+                });
 
-            // Check POs
-            $query->whereHas('header', function ($header) use ($seriesId, $docNumber, $customerId) {
-                // Filter by book_id (headerBookId)
-                // Filter by series ID
-                if($seriesId) {
-                    $header->where('book_id',$seriesId);
+                // Check POs
+                $query->whereHas('header', function ($header) use ($seriesId, $docNumber, $customerId) {
+                    // Filter by book_id (headerBookId)
+                    // Filter by series ID
+                    if ($seriesId) {
+                        $header->where('book_id', $seriesId);
+                    }
+
+                    // Filter by document number
+                    if ($docNumber) {
+                        $header->where('document_number', $docNumber);
+                    }
+
+                    // Filter by customer ID
+                    if ($customerId) {
+                        $header->where('customer_id', $customerId);
+                    }
+                });
+
+                // Filter by item ID if provided
+                if ($itemId) {
+                    $query->where('item_id', $itemId);
                 }
 
-                // Filter by document number
-                if ($docNumber) {
-                    $header->where('document_number', $docNumber);
-                }
-
-                // Filter by customer ID
-                if ($customerId) {
-                    $header->where('customer_id', $customerId);
-                }
-            });
-
-            // Filter by item ID if provided
-            if ($itemId) {
-                $query->where('item_id', $itemId);
-            }
-
-            // Ensure remaining quantity condition
-            $query->whereRaw('order_qty > expense_advise_qty');
-        })->get();
+                // Ensure remaining quantity condition
+                $query->whereRaw('order_qty > expense_advise_qty');
+            })->get();
 
         $html = view('procurement.expense-advise.partials.so-item-list', ['soItems' => $soItems])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
@@ -2568,16 +2731,16 @@ class ExpenseAdviseController extends Controller
     public function processSoItem(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-        $ids = json_decode($request->ids,true) ?? [];
+        $ids = json_decode($request->ids, true) ?? [];
         $customer = null;
         $finalDiscounts = collect();
         $finalExpenses = collect();
         $soItems = ErpSoItem::whereIn('id', $ids)->get();
         $uniqueSoIds = ErpSoItem::whereIn('id', $ids)
-                    ->distinct()
-                    ->pluck('sale_order_id')
-                    ->toArray();
-        if(count($uniqueSoIds) > 1) {
+            ->distinct()
+            ->pluck('sale_order_id')
+            ->toArray();
+        if (count($uniqueSoIds) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "One time expense advise create from one SO."]);
         }
         $soHeader = PurchaseOrder::whereIn('id', $uniqueSoIds)->get();
@@ -2615,29 +2778,29 @@ class ExpenseAdviseController extends Controller
         $finalExpenses = $groupedExpenses->values()->toArray();
 
         $soIds = $soItems->pluck('sale_order_id')->all();
-        $customerId = PurchaseOrder::whereIn('id',$soIds)->pluck('customer_id')->toArray();
+        $customerId = PurchaseOrder::whereIn('id', $soIds)->pluck('customer_id')->toArray();
         $customerId = array_unique($customerId);
         $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
-        if(count($customerId) && count($customerId) > 1) {
+        if (count($customerId) && count($customerId) > 1) {
             return response()->json(['data' => ['pos' => ''], 'status' => 422, 'message' => "You can not selected multiple customer of SO item at time."]);
         }
         $html = view('procurement.expense-advise.partials.so-item-row', ['soItems' => $soItems, 'costCenters' => $costCenters])->render();
-        return response()->json(['data' => ['pos' => $html, 'customer' => $customer,'finalDiscounts' => $finalDiscounts,'finalExpenses' => $finalExpenses], 'status' => 200, 'message' => "fetched!"]);
+        return response()->json(['data' => ['pos' => $html, 'customer' => $customer, 'finalDiscounts' => $finalDiscounts, 'finalExpenses' => $finalExpenses], 'status' => 200, 'message' => "fetched!"]);
     }
 
     public function getPostingDetails(Request $request)
     {
         try {
-            $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "get");
-            return response() -> json([
+            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "get");
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
-            return response() -> json([
+        } catch (Exception $ex) {
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage()
+                'error' => $ex->getMessage()
             ]);
         }
     }
@@ -2646,22 +2809,22 @@ class ExpenseAdviseController extends Controller
     {
         try {
             DB::beginTransaction();
-            $data = FinancialPostingHelper::financeVoucherPosting($request -> book_id ?? 0, $request -> document_id ?? 0, "post");
+            $data = FinancialPostingHelper::financeVoucherPosting($request->book_id ?? 0, $request->document_id ?? 0, "post");
             if ($data['status']) {
                 DB::commit();
             } else {
                 DB::rollBack();
             }
-            return response() -> json([
+            return response()->json([
                 'status' => 'success',
                 'data' => $data
             ]);
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            return response() -> json([
+            return response()->json([
                 'status' => 'exception',
                 'message' => 'Some internal error occured',
-                'error' => $ex -> getMessage()
+                'error' => $ex->getMessage()
             ]);
         }
     }
@@ -2671,20 +2834,20 @@ class ExpenseAdviseController extends Controller
     {
         DB::beginTransaction();
         try {
-            $mrn = ExpenseHeader::find($request->id);
-            if (isset($mrn)) {
-                $revoke = Helper::approveDocument($mrn->book_id, $mrn->id, $mrn->revision_number, '', [], 0, ConstantHelper::REVOKE, $mrn->total_amount, get_class($mrn));
+            $expense = ExpenseHeader::find($request->id);
+            if (isset($expense)) {
+                $revoke = Helper::approveDocument($expense->book_id, $expense->id, $expense->revision_number, '', [], 0, ConstantHelper::REVOKE, $expense->total_amount, get_class($expense));
                 if ($revoke['message']) {
                     DB::rollBack();
-                    return response() -> json([
+                    return response()->json([
                         'status' => 'error',
                         'message' => $revoke['message'],
                     ]);
                 } else {
-                    $mrn->document_status = $revoke['approvalStatus'];
-                    $mrn->save();
+                    $expense->document_status = $revoke['approvalStatus'];
+                    $expense->save();
                     DB::commit();
-                    return response() -> json([
+                    return response()->json([
                         'status' => 'success',
                         'message' => 'Revoked succesfully',
                     ]);
@@ -2693,9 +2856,9 @@ class ExpenseAdviseController extends Controller
                 DB::rollBack();
                 throw new ApiGenericException("No Document found");
             }
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            throw new ApiGenericException($ex -> getMessage());
+            throw new ApiGenericException($ex->getMessage());
         }
     }
 
@@ -2704,7 +2867,7 @@ class ExpenseAdviseController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $categories = Category::withDefaultGroupCompanyOrg()->where('parent_id', null)->get();
-        $sub_categories = Category::withDefaultGroupCompanyOrg()->where('parent_id', '!=',null)->get();
+        $sub_categories = Category::withDefaultGroupCompanyOrg()->where('parent_id', '!=', null)->get();
         $items = Item::withDefaultGroupCompanyOrg()->get();
         $vendors = Vendor::withDefaultGroupCompanyOrg()->get();
         $employees = Employee::where('organization_id', $user->organization_id)->get();
@@ -2713,14 +2876,14 @@ class ExpenseAdviseController extends Controller
             ->get();
         $attribute_groups = AttributeGroup::withDefaultGroupCompanyOrg()->get();
         $purchaseOrderIds = ExpenseHeader::withDefaultGroupCompanyOrg()
-                            ->distinct()
-                            ->pluck('purchase_order_id');
+            ->distinct()
+            ->pluck('purchase_order_id');
         $purchaseOrders = PurchaseOrder::whereIn('id', $purchaseOrderIds)->get();
         $soIds = ExpenseDetail::whereHas('expenseHeader', function ($query) {
-                    $query->withDefaultGroupCompanyOrg();
-                })
-                ->distinct()
-                ->pluck('so_id');
+            $query->withDefaultGroupCompanyOrg();
+        })
+            ->distinct()
+            ->pluck('so_id');
 
         $so = ErpSaleOrder::whereIn('id', $soIds)->get();
         $gateEntry = ExpenseHeader::withDefaultGroupCompanyOrg()->get();
@@ -2747,7 +2910,7 @@ class ExpenseAdviseController extends Controller
         $mAttributeValue = $request->query('m_attributeValue');
 
         $query = ExpenseHeader::query()
-        ->withDefaultGroupCompanyOrg();
+            ->withDefaultGroupCompanyOrg();
 
         if ($poId) {
             $query->where('purchase_order_id', $poId);
@@ -2757,24 +2920,29 @@ class ExpenseAdviseController extends Controller
         }
 
         $query->with([
-            'items' => function($query) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
-            $query->whereHas('item', function($q) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
-                if ($itemId) {
-                    $q->where('id', $itemId);
-                }
-                if ($soId) {
-                    $q->where('so_id', $soId);
-                }
-                if ($mCategoryId) {
-                    $q->where('category_id', $mCategoryId);
-                }
-                if ($mSubCategoryId) {
-                    $q->where('subcategory_id', $mSubCategoryId);
-                }
-            });
-        },
-        'items.item', 'items.item.category', 'items.item.subCategory', 'vendor',
-        'items.so', 'po']);
+            'items' => function ($query) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
+                $query->whereHas('item', function ($q) use ($itemId, $soId, $mCategoryId, $mSubCategoryId) {
+                    if ($itemId) {
+                        $q->where('id', $itemId);
+                    }
+                    if ($soId) {
+                        $q->where('so_id', $soId);
+                    }
+                    if ($mCategoryId) {
+                        $q->where('category_id', $mCategoryId);
+                    }
+                    if ($mSubCategoryId) {
+                        $q->where('subcategory_id', $mSubCategoryId);
+                    }
+                });
+            },
+            'items.item',
+            'items.item.category',
+            'items.item.subCategory',
+            'vendor',
+            'items.so',
+            'po'
+        ]);
 
         // Date Filtering
         if (($startDate && $endDate) || $period) {
@@ -2821,7 +2989,7 @@ class ExpenseAdviseController extends Controller
 
     public function addScheduler(Request $request)
     {
-        try{
+        try {
             $headers = $request->input('displayedHeaders');
             $data = $request->input('displayedData');
             $itemName = '';
@@ -2867,53 +3035,44 @@ class ExpenseAdviseController extends Controller
                 $formattedendDate = $endDate->format('d-m-y');
             }
 
-            if ($request->filled('po_no'))
-            {
+            if ($request->filled('po_no')) {
                 $poData = PurchaseOrder::find($request->input('po_no'));
                 $poNo = optional($poData)->document_number;
             }
 
-            if ($request->filled('so_no'))
-            {
+            if ($request->filled('so_no')) {
                 $soData = ErpSaleOrder::find($request->input('so_no'));
                 $soNo = optional($soData)->document_number;
             }
 
-            if ($request->filled('gate_entry_no'))
-            {
+            if ($request->filled('gate_entry_no')) {
                 $gateEntryNo = $request->input('gate_entry_no');
             }
 
-            if ($request->filled('lot_no'))
-            {
+            if ($request->filled('lot_no')) {
                 $lotNo = $request->input('lot_no');
             }
 
-            if ($request->filled('status'))
-            {
+            if ($request->filled('status')) {
                 $status = $request->input('status');
             }
 
-            if ($request->filled('m_category'))
-            {
+            if ($request->filled('m_category')) {
                 $categories = Category::find($request->input('m_category'));
                 $categoryName = optional($categories)->name;
             }
 
-            if ($request->filled('m_subCategory'))
-            {
+            if ($request->filled('m_subCategory')) {
                 $subCategories = Category::find($request->input('m_subCategory'));
                 $subCategoriesName = optional($subCategories)->name;
             }
 
-            if ($request->filled('item'))
-            {
+            if ($request->filled('item')) {
                 $itemData = ErpItem::find($request->input('item'));
                 $itemName = optional($itemData)->item_name;
             }
 
-            if ($request->filled('vendor'))
-            {
+            if ($request->filled('vendor')) {
                 $vendorData = ErpVendor::find($request->input('vendor'));
                 $vendorName = optional($vendorData)->company_name;
             }
@@ -2934,18 +3093,16 @@ class ExpenseAdviseController extends Controller
             $fileName = 'expense-advise.xlsx';
             $filePath = storage_path('app/public/expense-advise/' . $fileName);
             $directoryPath = storage_path('app/public/expense-advise');
-            if($formattedstartDate && $formattedendDate)
-            {
+            if ($formattedstartDate && $formattedendDate) {
                 $customHeader = array_merge(
                     array_fill(0, $centerPosition, ''),
-                    ['Expense Advise Report(From '.$formattedstartDate.' to '.$formattedendDate.')' ],
+                    ['Expense Advise Report(From ' . $formattedstartDate . ' to ' . $formattedendDate . ')'],
                     array_fill(0, $blankSpaces - $centerPosition, '')
                 );
-            }
-            else{
+            } else {
                 $customHeader = array_merge(
                     array_fill(0, $centerPosition, ''),
-                    ['Expense Advise Report' ],
+                    ['Expense Advise Report'],
                     array_fill(0, $blankSpaces - $centerPosition, '')
                 );
             }
@@ -2966,12 +3123,11 @@ class ExpenseAdviseController extends Controller
             $email_to = $request->email_to ?? [];
             $email_cc = $request->email_cc ?? [];
 
-            foreach($email_to as $email)
-            {
+            foreach ($email_to as $email) {
                 $user = AuthUser::where('email', $email)
-                ->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
-                ->where('status', ConstantHelper::ACTIVE)
-                ->get();
+                    ->where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->get();
 
                 if ($user->isEmpty()) {
                     $user = new AuthUser();
@@ -3009,13 +3165,12 @@ class ExpenseAdviseController extends Controller
                     </tr>
                 </table>
                 HTML;
-                self::sendMail($user,$title,$description,$cc,$bcc, $attachment,$mail_from,$mail_from_name);
+                self::sendMail($user, $title, $description, $cc, $bcc, $attachment, $mail_from, $mail_from_name);
             }
             return response()->json([
                 'status' => 'success',
                 'message' => 'emails sent successfully.'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
@@ -3023,21 +3178,18 @@ class ExpenseAdviseController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-
-
     }
-    public function sendMail($receiver, $title, $description, $cc= null, $bcc= null, $attachment, $mail_from=null, $mail_from_name=null)
+    public function sendMail($receiver, $title, $description, $cc = null, $bcc = null, $attachment, $mail_from = null, $mail_from_name = null)
     {
         if (!$receiver || !isset($receiver->email)) {
             return "Error: Receiver details are missing or invalid.";
         }
 
-        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name,$title,$description,$cc,$bcc, $attachment));
-        return response() -> json([
+        dispatch(new SendEmailJob($receiver, $mail_from, $mail_from_name, $title, $description, $cc, $bcc, $attachment));
+        return response()->json([
             'status' => 'success',
             'message' => 'Email request sent succesfully',
         ]);
-
     }
 
     public function expenseAdviseReport(Request $request)
@@ -3145,19 +3297,19 @@ class ExpenseAdviseController extends Controller
                 $reportRow->document_number = $header->document_number;
                 $reportRow->document_date = $header->document_date;
                 $reportRow->po_no = !empty($header->po?->book_code) && !empty($header->po?->document_number)
-                                    ? $header->po?->book_code . ' - ' . $header->po?->document_number
-                                    : '';
+                    ? $header->po?->book_code . ' - ' . $header->po?->document_number
+                    : '';
                 $reportRow->so_no = !empty($header->so?->book_code) && !empty($header->so?->document_number)
-                                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
-                                    : '';
-                $reportRow->vendor_name = $header->vendor ?-> company_name;
+                    ? $header->so?->book_code . ' - ' . $header->so?->document_number
+                    : '';
+                $reportRow->vendor_name = $header->vendor?->company_name;
                 $reportRow->vendor_rating = null;
-                $reportRow->category_name = $expenseAdviseItem->item ?->category ?-> name;
-                $reportRow->sub_category_name = $expenseAdviseItem->item ?->category ?-> name;
-                $reportRow->item_type = $expenseAdviseItem->item ?->type;
+                $reportRow->category_name = $expenseAdviseItem->item?->category?->name;
+                $reportRow->sub_category_name = $expenseAdviseItem->item?->category?->name;
+                $reportRow->item_type = $expenseAdviseItem->item?->type;
                 $reportRow->sub_type = null;
-                $reportRow->item_name = $expenseAdviseItem->item ?->item_name;
-                $reportRow->item_code = $expenseAdviseItem->item ?->item_code;
+                $reportRow->item_name = $expenseAdviseItem->item?->item_name;
+                $reportRow->item_code = $expenseAdviseItem->item?->item_code;
 
                 // Amount Details
                 $reportRow->receipt_qty = number_format($expenseAdviseItem->accepted_qty, 2);
@@ -3202,4 +3354,78 @@ class ExpenseAdviseController extends Controller
             ->make(true);
     }
 
+    private static function processPurchaseOrderComponent($component, $item, $inputQty)
+    {
+        $po = PoItem::find($component['po_detail_id']);
+        return $po ? self::updatePoQty($item, $po, $inputQty, 'purchase-order') : self::notFoundResponse('PO Item');
+    }
+
+    // Update Purchase Order Quantity
+    private static function updatePoQty($item, $poDetail, $inputQty, $type)
+    {
+        $orderQty = floatval($poDetail->order_qty);
+        $expQty = floatval($poDetail->expense_advise_qty ?? 0);
+        $totalQty = $expQty + $inputQty;
+        if ($totalQty > $orderQty) {
+            return response()->json(['message' => 'Order Qty cannot exceed PO Qty.'], 422);
+        }
+
+        $poDetail->expense_advise_qty += $inputQty;
+        $poDetail->save();
+
+        return true;
+    }
+
+    private static function notFoundResponse($label)
+    {
+        \DB::rollBack();
+        return response()->json(['message' => "{$label} not found."], 422);
+    }
+
+    // # Validate Order Qty For Frontend
+    private static function validateQuantityBackend($component, $refType)
+    {
+        $inputData = [
+            'item_id'            => $component['item_id'] ?? null,
+            'po_header_id'      => $component['purchase_order_id'],
+            'po_detail_id'      => $component['po_detail_id'],
+            'expense_item_id' => $component['detail_id'],
+            'qty'                => $component['accepted_qty'],
+            'type'               => $refType,
+        ];
+
+        $checkService = new ExpenseCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        return $data;
+    }
+
+    // Validate Order Qty For Frontend
+    public function validateQuantity(Request $request)
+    {
+        $type = null;
+        if ($request->po_header_id) {
+            $type = 'po';
+        }
+        $inputData = [
+            'item_id'            => $request->item_id,
+            'po_header_id'      => $request->po_header_id,
+            'po_detail_id'      => $request->po_detail_id,
+            'expense_item_id'      => $request->detail_id,
+            'qty'                => $request->qty,
+            'type'               => $type,
+        ];
+        $checkService = new ExpenseCheckAndUpdateService();
+        $data = $checkService->validateOrderQuantity($inputData);
+        if ($data['status'] === 'success') {
+            return response()->json(['message' => $data['message'], 'status' => 200, 'accepted_qty' => $data['accepted_qty']['accepted_qty'] ?? 0.00]);
+        } else {
+            return response()->json(['message' => $data['message'], 'status' => 422, 'accepted_qty' => $data['accepted_qty']['accepted_qty'] ?? 0.00]);
+        }
+    }
+
+    private static function processDirectComponent($component, $item, $inputQty)
+    {
+        return true;
+        // return self::validateComponentQuantities($component, $inputQty) === true ? true : self::validateComponentQuantities($component, $inputQty);
+    }
 }

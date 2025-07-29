@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+// use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\Log;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // DB::listen(function ($query) {
+        //     Log::debug('SQL: ' . $query->sql);
+        //     Log::debug('Bindings: ' . json_encode($query->bindings));
+        //     Log::debug('Time: ' . $query->time . ' ms');
+        // });
+
         View::composer('*', function ($view) {
 
             $user = Helper::getAuthenticatedUser();

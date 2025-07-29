@@ -97,6 +97,11 @@ class ExpenseDetail extends Model
         return $this->belongsTo(Item::class, 'item_id');
     }
 
+    public function poItem()
+    {
+        return $this->belongsTo(PoItem::class, 'purchase_order_item_id');
+    }
+
     public function hsn()
     {
         return $this->belongsTo(Hsn::class, 'hsn_id');

@@ -420,39 +420,39 @@
                     <div style="">Item</div>
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     HSN Code
                 </td>
                 <td
-                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Quantity
                 </td>
                 <td
-                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     UOM
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Rate
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Value
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Discount
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     Taxable<br> Value
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; text-align: center; background: #80808070;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; text-align: center; background: #80808070;">
                     Tax <br> Amt
                 </td>
                 <td
-                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; text-align: center; background: #80808070;">
+                    style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; text-align: center; background: #80808070;">
                     Tax <br>Group
                 </td>
             </tr>
@@ -463,112 +463,158 @@
                 $totalTaxValue = 0.00;
             @endphp
             @foreach($order->items as $key => $val)
-                        <tr>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                                {{ $key + 1 }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                                <b> {{ isset($val->customer_item_name) ? @$val -> customer_item_name : @$val -> item_name }}</b><br>
-                          @if($val?->attributes->count())
-                                    @php 
-                                        $html = '';
-                                        foreach ($val?->attributes as $data) {
-                                            $attr = $data->attribute_name;
-                                            $attrValue = $data->attribute_value;
-                                            if ($attr && $attrValue) {
-                                                if ($html) {
-                                                    $html .= ' , ';
-                                                }
-                                                $html .= "$attr : $attrValue";
-                                            } else {
-                                                $html .= ":";
-                                            }
-                                        }
-                                    @endphp
-                                    {{$html}}
-                                    <br>
-                                @endif
-                                @if(isset($val->specifications))
-                                    @foreach($val->specifications as $data)
-                                        @if(isset($data->value))
-                                            {{$data->specification_name}}:{{$data->value}}<br>
-                                        @endif
-                                    @endforeach
-                                @endif
-                                {{ isset($val->customer_item_code) ? @$val -> customer_item_code : @$val -> item_code }}<br />
-                                {{@$val->remarks}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                                {{ @$val->hsn_code }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->order_qty}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->uom->name}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{@$val->rate}}
-                            </td>
-                            @php
-                                $total = $val->order_qty * $val->rate;
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                                {{number_format($total, 2) }}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($val->item_discount_amount + $val->header_discount_amount, 2)}}
-                            </td>
-                            @php
-                                $total = $val->order_qty * $val->rate;
-                                $netValue = $total - ($val->item_discount_amount + $val->header_discount_amount);
-                            @endphp
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
-                                {{number_format($netValue, 2)}}
-                            </td>
-                            <td
-                                style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                                @php
-                                    $totalTaxAmount=0;
-                                    if ($val->tax_ted && $val->tax_ted->count() > 0) {
-                                        foreach ($val->tax_ted as $tax) {
-                                            $taxName = $tax->ted_name . " " . number_format($tax->ted_percentage, 2) . " %";
+            @php
+                $hsnGroups = [];
+                $totalTaxPercentage = 0.00;
+                if ($val->item && $val->item->hsn) {
+                    $hsnCode = $val->item->hsn->code;
+                    $teds = $val->tax_ted;
 
-                                            // Add tax values to the taxBracket
-                                            if (isset($taxBracket[$taxName])) {
-                                                $taxBracket[$taxName][0] += $tax->ted_amount;
-                                                $taxBracket[$taxName][1] += $tax->assessment_amount;
-                                            } else {
-                                                $taxBracket[$taxName][0] = $tax->ted_amount;
-                                                $taxBracket[$taxName][1] = $tax->assessment_amount;
-                                            }
+                    $taxableValue = $val->order_qty * $val->rate;
 
-                                            // Add the current tax amount to the total tax
-                                            $totalTaxAmount += $tax->ted_amount;
+                    foreach ($teds as $ted) {
+                        $taxPercentage = $ted->ted_percentage;
+                        $taxType = $ted->ted_name;
+                        $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
+
+                        if (!isset($hsnGroups[$hsnCode])) {
+                            $hsnGroups[$hsnCode] = [
+                                'hsn_code' => $hsnCode,
+                                'taxable_rate' => 0.00,
+                                'taxable_value' => 0.00,
+                                'tax_amount' => 0.00,
+                                'tax_group' => $ted->ted_group_code,
+                            ];
+                        }
+
+                        // Initialize tax type amount if not set
+                        if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
+                            $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.00;
+                        }
+                        $totalTaxPercentage += $taxPercentage;
+                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                        $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
+                        $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                    }
+                }
+
+                // Now, calculate total tax_amount for each HSN group
+                foreach ($hsnGroups as &$group) {
+                    $taxAmount = 0.00;
+                    foreach ($group as $key => $value) {
+                        if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
+                            $taxAmount += (float)$value;
+                        }
+                    }
+                    $group['tax_amount'] = $taxAmount;
+                }
+            @endphp
+                <tr>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                        {{ (INT)$key + 1 }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        <b> {{ isset($val->customer_item_name) ? @$val -> customer_item_name : @$val -> item_name }}</b><br>
+                    @if($val?->attributes->count())
+                            @php 
+                                $html = '';
+                                foreach ($val?->attributes as $data) {
+                                    $attr = $data->attribute_name;
+                                    $attrValue = $data->attribute_value;
+                                    if ($attr && $attrValue) {
+                                        if ($html) {
+                                            $html .= ' , ';
                                         }
+                                        $html .= "$attr : $attrValue";
+                                    } else {
+                                        $html .= ":";
+                                    }
+                                }
+                            @endphp
+                            {{$html}}
+                            <br>
+                        @endif
+                        @if(isset($val->specifications))
+                            @foreach($val->specifications as $data)
+                                @if(isset($data->value))
+                                    {{$data->specification_name}}:{{$data->value}}<br>
+                                @endif
+                            @endforeach
+                        @endif
+                        {{ isset($val->customer_item_code) ? @$val -> customer_item_code : @$val -> item_code }}<br />
+                        {{@$val->remarks}}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{ @$val->hsn_code }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->order_qty}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->uom->name}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->rate}}
+                    </td>
+                    @php
+                        $total = $val->order_qty * $val->rate;
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{number_format($total, 2) }}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{number_format($val->item_discount_amount + $val->header_discount_amount, 2)}}
+                    </td>
+                    @php
+                        $total = $val->order_qty * $val->rate;
+                        $netValue = $total - ($val->item_discount_amount + $val->header_discount_amount);
+                    @endphp
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: right;">
+                        {{number_format($netValue, 2)}}
+                    </td>
+                    <td
+                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
+                        @php
+                            $totalTaxAmount=0;
+                            if ($val->tax_ted && $val->tax_ted->count() > 0) {
+                                foreach ($val->tax_ted as $tax) {
+                                    $taxName = $tax->ted_name . " " . number_format($tax->ted_percentage, 2) . " %";
+
+                                    // Add tax values to the taxBracket
+                                    if (isset($taxBracket[$taxName])) {
+                                        $taxBracket[$taxName][0] += $tax->ted_amount;
+                                        $taxBracket[$taxName][1] += $tax->assessment_amount;
+                                    } else {
+                                        $taxBracket[$taxName][0] = $tax->ted_amount;
+                                        $taxBracket[$taxName][1] = $tax->assessment_amount;
                                     }
 
-                                    $totalCGSTValue += $val->cgst_value['value'];
-                                    $totalSGSTValue += $val->sgst_value['value'];
-                                    $totalIGSTValue += $val->igst_value['value'];
-                                    $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
-                                @endphp
-                                {{$totalTaxAmount}}
-                            </td>
-                            <td
-                                style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
-                                {{isset($val->tax_ted->toArray()[0]['ted_group_code']) ? $val->tax_ted->toArray()[0]['ted_group_code'] : "NA"}}
-                            </td>
-                        </tr>
+                                    // Add the current tax amount to the total tax
+                                    $totalTaxAmount += $tax->ted_amount;
+                                }
+                            }
+
+                            $totalCGSTValue += $val->cgst_value['value'];
+                            $totalSGSTValue += $val->sgst_value['value'];
+                            $totalIGSTValue += $val->igst_value['value'];
+                            $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
+                        @endphp
+                        {{$totalTaxAmount}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center;">
+                        {{isset($val->tax_ted->toArray()[0]['ted_group_code']) ? $val->tax_ted->toArray()[0]['ted_group_code'] : "NA"}}
+                    </td>
+                </tr>
             @endforeach
         </table>
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -667,10 +713,8 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
-                        </tr>
-                        <tr>
                             <td>
-                                <div style="min-height: 80px;">
+                                <div style="min-height: 8px;">
                                     {{$order->remarks}}
                                 </div>
                             </td>
@@ -678,6 +722,35 @@
                     </table>
                 </td>
             </tr>
+
+            <tr>
+                <td colspan="2"
+                    style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;"> <b>HSN / SAC</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Tax Rate</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Taxable Amount</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>CGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>SGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
+                        </tr>
+                        @foreach($hsnGroups as $hsnCode => $hsnData)
+                            <tr>
+                                <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format($hsnData['taxable_rate'], 2) }} %</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['taxable_value'], 2) }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['tax_amount'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </td>
+            </tr>
+            
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 30%; border-top: none; border-right: none; vertical-align: top;">

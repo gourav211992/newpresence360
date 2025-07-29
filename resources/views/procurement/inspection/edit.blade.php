@@ -36,15 +36,17 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <a href="{{ route('inspection.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
-                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                                        <rect x="6" y="14" width="12" height="8"></rect>
-                                    </svg>
-                                    Print
-                                </a>
+                                @if(!intval(request('amendment') ?? 0) && $mrn->document_status != \App\Helpers\ConstantHelper::DRAFT && $mrn->document_status != \App\Helpers\ConstantHelper::SUBMITTED && $mrn->document_status != \App\Helpers\ConstantHelper::PARTIALLY_APPROVED)
+                                    <a href="{{ route('inspection.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
+                                            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                            <rect x="6" y="14" width="12" height="8"></rect>
+                                        </svg>
+                                        Print
+                                    </a>
+                                @endif
                                 @if($buttons['draft'])
                                     <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" name="action" value="draft">
                                         <i data-feather='save'></i> Save as Draft
@@ -145,7 +147,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id" readonly>
                                                             <option value="{{$mrn->sub_store_id}}">
-                                                                {{ ucfirst($mrn?->erpSubStore->store_name) }}
+                                                                {{ ucfirst($mrn?->erpSubStore?->name) }}
                                                             </option>
                                                         </select>
                                                     </div>
@@ -157,7 +159,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select rejected_sub_store_id" id="rejected_sub_store_id" name="rejected_sub_store_id" readonly>
                                                             <option value="{{$mrn->rejected_sub_store_id}}">
-                                                                {{ ucfirst($mrn?->rejectedSubStore->store_name) }}
+                                                                {{ ucfirst($mrn?->rejectedSubStore?->name) }}
                                                             </option>
                                                         </select>
                                                     </div>
@@ -503,9 +505,6 @@
                 </div>
                 <div class="modal-body px-sm-2 mx-50 pb-2">
                     <h1 class="text-center mb-1" id="shareProjectTitle">Remarks</h1>
-                    {{--
-                    <p class="text-center">Enter the details below.</p>
-                    --}}
                     <div class="row mt-2">
                         <div class="col-md-12 mb-1">
                             <label class="form-label">Remarks</label>
@@ -522,7 +521,7 @@
         </div>
     </div>
     {{-- Item Locations --}}
-    @include('procurement.inspection.partials.item-location-modal')
+    <!-- @include('procurement.inspection.partials.item-location-modal') -->
     <!-- Item Locations Modal End -->
 
     {{-- Delete component modal --}}
@@ -543,9 +542,6 @@
         </div>
     </div>
     
-    {{-- Taxes --}}
-    @include('procurement.inspection.partials.tax-detail-modal')
-
     {{-- Amendment Modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">

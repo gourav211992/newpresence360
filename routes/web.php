@@ -200,6 +200,7 @@ Route::get('/assign-menu', function () {
     return Helper::setMenuAccessToEmployee($menuName, $menuAlias, $serviceIds);
 });
 
+Route::get('/lorry-receipt/approve/{id}/{email}', [ErpLorryReceiptController::class, 'approveReceipt'])->name('lorry-receipt.approve');
 
 Route::get('/testing', [TestingController::class, 'testing']);
 
@@ -327,7 +328,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
     Route::get('ledgerAmendment/{id}', [LedgerController::class, 'amendment'])->name('ledgers.amendment');
     Route::get('ledger/update_null_data', [LedgerController::class, 'updateNull'])->name('ledgers.update-null-data');
-   
+
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
     Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
@@ -1559,6 +1560,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
             Route::get('/order/report', 'expenseAdviseReport')->name('order.report');
+            Route::get('/validate-quantity', 'validateQuantity')->name('get.validate-quantity');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1849,7 +1851,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/create', 'create')->name('create');
             Route::get('/edit/{id}', 'edit')->name('edit');
             Route::get('copy/{id}', 'copy')->name('copy');
-            
+
             Route::get('export/{id}', 'export')->name('export');
         });
 
@@ -2004,12 +2006,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('maintenance-inspection-checklists.create');
         Route::get('/{id}/edit', 'edit')->name('maintenance-inspection-checklists.edit');
     });
-
-    Route::prefix('item-inspection-checklists')->controller(InspectionChecklistController::class)->group(function () {
-        Route::get('/', 'index')->name('item-inspection-checklists.index');
-        Route::get('/create', 'create')->name('item-inspection-checklists.create');
-        Route::get('/{id}/edit', 'edit')->name('item-inspection-checklists.edit');
-    });
+    
     Route::prefix('stations')->controller(StationController::class)->group(function () {
         Route::get('/', 'index')->name('stations.index');
         Route::get('/create', 'create')->name('stations.create');
@@ -2340,6 +2337,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::delete('/logistics/lorry-receipt/{id}', [ErpLorryReceiptController::class, 'destroy'])->name('logistics.lorry-receipt.destroy');
     Route::get('/get-cost-centers-by-location/{locationId}', [ErpLorryReceiptController::class, 'getCostCentersByLocation']);
     Route::post('/get-location-pricing', [ErpLorryReceiptController::class, 'getFreePointData']);
+    Route::post('/logistics/lorry-receipt/send-mail', [ErpLorryReceiptController::class, 'lorryMail'])->name('logistics.lorry-receipt.lorryMail');
     Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class,'revoke'])->name('logistics.lorry-receipt.revoke');
     Route::get('/logistics/lorry-receipt/generate-pdf/{id}', [ErpLorryReceiptController::class, 'generatePdf'])->name('logistics.lorry-receipt.generate-pdf');
 
@@ -2596,9 +2594,9 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('fixed-asset/export-successful', [RegistrationController::class,'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
     Route::get('fixed-asset/export-failed', [RegistrationController::class,'exportFailedItems'])->name('finance.fixed-asset.export.failed');
     Route::post('fixed-asset/get-code', [RegistrationController::class, 'generateAssetCode'])->name('finance.fixed-asset.asset-code');
-    
-    
-    
+
+
+
     Route::resource('fixed-asset/issue-transfer', IssueTransferController::class)->names([
         'index' => 'finance.fixed-asset.issue-transfer.index',
         'create' => 'finance.fixed-asset.issue-transfer.create',

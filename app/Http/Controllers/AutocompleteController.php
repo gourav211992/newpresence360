@@ -479,7 +479,7 @@ class AutocompleteController extends Controller
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code', 'uom_id']);
             } elseif ($type === 'sale_module_items') {
-                $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS, ConstantHelper::TRADED_ITEM, ConstantHelper::ASSET,ConstantHelper::WIP_SEMI_FINISHED])
+                $subTypeIds = SubType::whereIn('name', [ConstantHelper::FINISHED_GOODS,ConstantHelper::WIP_SEMI_FINISHED])
                 -> get() -> pluck('id') -> toArray();
                 $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];
                 if (isset($itemType) && isset($itemType[0])) {
@@ -499,6 +499,8 @@ class AutocompleteController extends Controller
                         $typeQuery -> when($itemType == ConstantHelper::GOODS, function ($subQuery) use($subTypeIds) {
                             $subQuery -> whereHas('subTypes', function ($subTypeQuery) use($subTypeIds) {
                                 $subTypeQuery -> whereIn('sub_type_id', $subTypeIds);
+                            }) ->orWhere(function ($tradedQuery) {
+                                $tradedQuery -> where('is_traded_item', 1) -> orWhere('is_asset', 1);
                             });
                         });
                     })

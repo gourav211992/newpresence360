@@ -55,7 +55,12 @@
                                                 <th>Product</th>
                                                 <th>Type</th>
                                                 <th>Produced Qty</th>
-                                                <th>Value</th>
+                                                <th>Accepted (A)</th>
+                                                <th>Substandard (B)</th>
+                                                <th>Rejected (C)</th>
+                                                <th class="{{$isWipQty ? '' : 'd-none'}}">Wip Qty</th>
+                                                <th class="{{$isWipQty ? '' : 'd-none'}}">Total Qty</th>
+                                                {{-- <th>Value</th> --}}
                                                 <th>Shift</th>
                                                 {{-- <th class = "numeric-alignment">Amount</th> --}}
                                                 <th style = 'text-align:center'>Status</th>
@@ -161,6 +166,7 @@
     function renderData(data) {
         return data ? data : 'N/A'; 
     }
+    let showWipQty = '{{$isWipQty}}' ? true : false;
     var columns = [
         { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
         { data: 'id', name: 'id', visible: false, searchable: false },
@@ -208,10 +214,30 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'value', name: 'value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        { data: 'accepted_qty', name: 'accepted_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
         },
+        { data: 'subprime_qty', name: 'subprime_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'rejected_qty', name: 'rejected_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'wip_qty', className: showWipQty ? '' : 'd-none', name: 'wip_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'total_qty', className: showWipQty ? '' : 'd-none', name: 'total_qty', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+               $(td).addClass('no-wrap');
+            }
+        },
+        // { data: 'value', name: 'value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        //        $(td).addClass('no-wrap');
+        //     }
+        // },
         { data: 'shift_name', name: 'shift_name', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }

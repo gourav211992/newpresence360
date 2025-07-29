@@ -37,18 +37,18 @@ class OrganizationMenu extends Model
         $baseUrl = '/';
 
         $baseUrls = [
-            'app' => env("APP_PORTAL_URL", 'https://app.thepresence360.com/'),
-            'erp' => env("ERP_URL", 'https://erp.thepresence360.com/'),
-            'hrms_member' => env("HRMS_URL", 'https://login.thepresence360.com/'),
-            'hrms' => env("HRMS_URL", 'https://login.thepresence360.com/'),
-            'portal' => env("PORTAL_URL", 'https://portal.thepresence360.com/'),
-            'web' => env('WEB_URL', 'https://web.thepresence360.com/'),
-            'auth' => env('AUTH_URL', 'https://auth.thepresence360.com/'),
-            'onboarding' => env('ONBOARDING_URL', 'https://onboarding.thepresence360.com/'),
-            'admin' => env('ADMIN_URL', 'https://admin.thepresence360.com/'),
-            'root' => env('ROOT_URL', 'https://root.thepresence360.com/'),
-            'attendance' => env('ATTENDNACE_URL', 'https://attendance.thepresence360.com/'),
-            'leave' => env('LEAVE_URL', 'https://leave.thepresence360.com/')
+            'app' => env("APP_PORTAL_URL", 'https://app.thepresence360.com'),
+            'erp' => env("ERP_URL", 'https://erp.thepresence360.com'),
+            'hrms_member' => env("HRMS_URL", 'https://login.thepresence360.com'),
+            'hrms' => env("HRMS_URL", 'https://login.thepresence360.com'),
+            'portal' => env("PORTAL_URL", 'https://portal.thepresence360.com'),
+            'web' => env('WEB_URL', 'https://web.thepresence360.com'),
+            'auth' => env('AUTH_URL', 'https://auth.thepresence360.com'),
+            'onboarding' => env('ONBOARDING_URL', 'https://onboarding.thepresence360.com'),
+            'admin' => env('ADMIN_URL', 'https://admin.thepresence360.com'),
+            'root' => env('ROOT_URL', 'https://root.thepresence360.com'),
+            'attendance' => env('ATTENDNACE_URL', 'https://attendance.thepresence360.com'),
+            'leave' => env('LEAVE_URL', 'https://leave.thepresence360.com')
         ];
         
         $serviceGroupAlias = @$this->menu->serviceGroup->alias;
@@ -66,7 +66,7 @@ class OrganizationMenu extends Model
 
         $alias = str_replace('_', '/', $this->alias);
 
-        return $baseUrl.$alias;
+        return $baseUrl. '/'. $alias;
     }
 
     public function getMenuLinkAttribute()

@@ -125,7 +125,6 @@ class MoBomMapping extends Model
         foreach ($itemAttributes as $itemAttr) {
             $selectedAttributeIds[] = $itemAttr['attribute_value'];
         }
-        // ($itemId, $selectedAttr=null, $uomId=null, $storeId=null, $subStoreId=null, $orderId=null, $stationId = null)
         $storeId = $this->mo_product->mo->store_id ?? null;
         $subStoreId = $this->mo_product->mo->sub_store_id ?? null;
         $stationId = $this->mo_product->mo->station_id ?? null;
@@ -139,7 +138,7 @@ class MoBomMapping extends Model
         $stocks = InventoryHelper::totalInventoryAndStock($this->item_id, $selectedAttributeIds, $this->uom_id, $storeId,$subStoreId,$soItemId,$stationId, $rm_type, $itemWipStationId);
         $stockBalanceQty = 0;
         if (isset($stocks)) {
-            $stockBalanceQty = $stocks['confirmedStocks'] + $stocks['reservedStocks'];
+            $stockBalanceQty = $stocks['confirmedStocks'] - $stocks['reservedStocks'];
         }
 
         return $stockBalanceQty;

@@ -395,7 +395,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
 
         if (!$hasFilters) {
             $records = [];
@@ -497,7 +497,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
 
         // If no valid filters were applied, return an empty JSON response
         if (!$hasFilters) {
@@ -612,7 +612,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
 
         $records = $query->get()->toArray();
         $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
@@ -706,7 +706,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
 
         $records = $query->get();
         // $records->each(function ($item) {

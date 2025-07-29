@@ -7,7 +7,7 @@
     </style>
 @endsection
 @section('content')
-    <form id="mrnEditForm"  data-module="ge" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}"
+    <form id="mrnEditForm" data-module="ge" class="ajax-input-form" method="POST" action="{{ route('gate-entry.update', $mrn->id) }}"
         data-redirect="/gate-entries" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
@@ -209,46 +209,35 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                @if (
-                                                        ($mrn->document_status == 'draft' || $mrn->document_status == 'rejected')
-                                                    )
+                                                @if (($mrn->document_status == 'draft' || $mrn->document_status == 'rejected'))
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
                                                             <label class="form-label">Reference From <span
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-5 action-button">
-                                                                <button type="button"
-                                                                    class="btn btn-outline-primary btn-sm mb-0 poSelect">
-                                                                    <i data-feather="plus-square"></i>
-                                                                    Outstanding PO
-                                                                </button>
-                                                                <button type="button"
-                                                                    class="btn btn-outline-primary btn-sm mb-0 joSelect">
-                                                                    <i data-feather="plus-square"></i>
-                                                                    Outstanding JO
-                                                                </button>
+                                                            <button type="button"
+                                                                class="btn btn-outline-primary btn-sm mb-0 poSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding PO
+                                                            </button>
+                                                            <button type="button"
+                                                                class="btn btn-outline-primary btn-sm mb-0 joSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding JO
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 @endif
-                                                    <div class="row align-items-center mb-1" id="referenceNoDiv">
-                                                        {{-- <div class="col-md-3">
-                                                            <label class="form-label">Reference No.<span
-                                                                    class="text-danger">*</span></label>
-                                                        </div> --}}
-                                                        <div class="col-md-5">
-                                                            {{-- <input type="text" name="reference_number"
-                                                                class="form-control" id="reference_number_input"
-                                                                value="@if ($mrn->reference_type == 'po') {{ $mrn?->purchaseOrder?->book_code }} - {{ $mrn?->purchaseOrder?->document_number }} @elseif($mrn->reference_type == 'jo') {{ $mrn?->jobOrder?->book_code }} - {{ $mrn?->jobOrder?->document_number }} @endif"
-                                                                readonly> --}}
-
-                                                            <input type="hidden" name="reference_type"
-                                                                class="form-control reference_type" id="reference_type_input"
-                                                                readonly>
-                                                            <input type="hidden" name="purchase_order_id" class="form-control"
-                                                            value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
-                                                        </div>
+                                                <div class="row align-items-center mb-1" id="referenceNoDiv">
+                                                    <div class="col-md-5">
+                                                        <input type="hidden" name="reference_type"
+                                                            class="form-control reference_type" id="reference_type_input"
+                                                            readonly>
+                                                        <input type="hidden" name="purchase_order_id" class="form-control"
+                                                        value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
                                                     </div>
+                                                </div>
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', [
@@ -484,6 +473,17 @@
                                                                 class="form-control vehicle_no"
                                                                 value="{{ @$mrn->vehicle_no }}"
                                                                 placeholder="Enter Vehicle No." />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                                Manual Entry No.
+                                                            </label>
+                                                            <input type="text" name="manual_entry_no"
+                                                                value="{{ @$mrn->manual_entry_no }}"
+                                                                class="form-control"
+                                                                placeholder="Enter Manual Entry No.">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1112,10 +1112,6 @@
             </div>
         </div>
     </div>
-
-
-
-
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -1138,9 +1134,9 @@
             $("#reference_type_input").val(currentProcessType);
             if(currentProcessType === null)
             {
-                $(".joSelect").show();
-                $(".poSelect").show();
-                $(".asn-container").show();
+                $(".joSelect").hide();
+                $(".poSelect").hide();
+                $(".asn-container").hide();
             }
             else{
                 if (currentProcessType === 'po') {
@@ -2216,7 +2212,6 @@
                     $('#postvoucher').modal('show');
                 }
             });
-
         }
 
         function postVoucher(element) {
@@ -2487,6 +2482,15 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+                    });
                 } else {
                     getPurchaseOrders();
                 }
@@ -2781,19 +2785,16 @@
                 });
                 return false;
             }
-            let moduleTypes = getSelectedJoTypes();
+            let moduleTypes = getSelectedPoTypes();
 
             $("[name='po_item_ids']").val(ids);
             $(".joSelect").hide();
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
-                // $("#reference_number_input").val(referenceNo);
             } else {
                 $("#referenceNoDiv").hide();
-                // $("#reference_number_input").val('');
             }
-            $("#reference_type_input").val('po');
 
             // for component item code
             function initializeAutocomplete2(selector, type) {
@@ -2877,6 +2878,7 @@
                                     .focus();
                             }
                         }, 100);
+                        $("#reference_type_input").val('po');
                         getItemDetail($input.closest('tr'), currentProcessType);
                         getItemCostPrice($input.closest('tr'));
                         return false;
@@ -2930,6 +2932,15 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
                 // Re-initialize DataTable
             }
@@ -3128,12 +3139,9 @@
             $("#addNewItemBtn").hide();
             if (referenceNo) {
                 $("#referenceNoDiv").show();
-                // $("#reference_number_input").val(referenceNo);
             } else {
                 $("#referenceNoDiv").hide();
-                // $("#reference_number_input").val('');
             }
-            $("#reference_type_input").val('jo');
 
             // for comjonent item code
             function initializeAutocomplete2(selector, type) {
@@ -3231,7 +3239,7 @@
                     }
                 });
             }
-
+            $("#reference_type_input").val('jo');
             let currencyId = $("select[name='currency_id']").val();
             let transactionDate = $("input[name='document_date']").val() || '';
             let groupItems = [];
@@ -3468,7 +3476,7 @@
                     } else {
                         $("#f_header_expense_hidden").addClass('d-none');
                     }
-
+                    $("#reference_type_input").val(processType);
                     setTimeout(() => {
                         setTableCalculation();
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {
@@ -3492,7 +3500,6 @@
             $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
             $(".shipping_detail, .billing_detail").text('-');
             $("#reference_from").removeClass('d-none');
-            $('.asn_process').prop('disabled', false);
 
             Swal.fire({
                 title: 'Error!',
