@@ -533,7 +533,7 @@
                                             return `${d}-${m}-${y}`;
                                         }
 
-                                        let fromDateObj = parseYMD(sub_asset.last_dep_date);
+                                        let fromDateObj = parseYMD(sub_asset.capitalize_date);
                                         let toDateObj = parseYMD($('#to_date_param').val());
                                         let rangefrom =  parseYMD($('#from_date_param').val());
                                         let fromDateObjCap = parseYMD(sub_asset.capitalize_date);
@@ -603,9 +603,9 @@
                                             let posted_days = 0;
 
                                             if (asset.dep_type !== null && asset.dep_type !== "{{$dep_type}}") {
-                                                // Calculate difference between capitalize_date and last_dep_date
+                                                // Calculate difference between capitalize_date and capitalize_date
                                                 let capitalizeDate = new Date(sub_asset.capitalize_date);
-                                                let lastDepDate = new Date(sub_asset.last_dep_date);
+                                                let lastDepDate = new Date(sub_asset.capitalize_date);
 
                                                 // Make sure both dates are valid
                                                 if (!isNaN(capitalizeDate) && !isNaN(lastDepDate)) {
