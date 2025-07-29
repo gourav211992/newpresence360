@@ -176,8 +176,7 @@
                                                     <div class="col-md-5">
                                                         <select class="form-select select2 company-field" name="ledger_id" id="ledger"
                                                             required>
-                                                            <option value="" {{ old('ledger') ? '' : 'selected' }}>
-                                                                Select</option>
+                                                          
                                                             @foreach ($ledgers as $ledger)
                                                                 <option value="{{ $ledger->id }}"
                                                                     {{ old('ledger') == $ledger->id ? 'selected' : '' }}>
@@ -468,9 +467,10 @@
 @section('scripts')
 
     <script type="text/javascript">
+    
         $('#setup').on('submit', function(e) {
             e.preventDefault();
-        if($('#prefix-feedback').text().trim)!="" && $('#company').is(':checked')){
+        if(($('#prefix-feedback').text().trim)!="" && $('#company').is(':checked')){
             showToast('error','Prefix already taken');
             return;
         }
@@ -523,9 +523,9 @@
                 const ledgerId = $(this).val();
                  const groupDropdown = $(groupSelector);
                  if (ledgerId === '') {
-            groupDropdown.empty(); // Optional: Clear group dropdown if ledger is empty
-            return;
-        }
+                        groupDropdown.empty(); // Optional: Clear group dropdown if ledger is empty
+                        return;
+                }
                 $.ajax({
                     url: '{{ route('finance.fixed-asset.getLedgerGroups') }}',
                     method: 'GET',
@@ -554,6 +554,7 @@
         handleLedgerChange('#sales_ledger', '#sales_ledger_group');
         handleLedgerChange('#wri_ledger', '#wri_ledger_group');
         handleLedgerChange('#dep_ledger', '#dep_ledger_group', "{{ $dep_ledger_group_id }}");
+        $('#ledger').trigger('change');
 
 
         var categories = [
