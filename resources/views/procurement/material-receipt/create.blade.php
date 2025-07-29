@@ -344,8 +344,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="text" name="gate_entry_no" id="gate_entry_no"
-                                                                class="form-control bg-white gate_entry_no"
-                                                                placeholder="Enter Gate Entry no">
+                                                                class="form-control gate_entry_no"
+                                                                placeholder="Enter Gate Entry no" readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -355,8 +355,8 @@
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="gate_entry_date"
-                                                                class="form-control bg-white gate-entry gate_entry_date" id="datepicker2"
-                                                                placeholder="Enter Gate Entry Date">
+                                                                class="form-control gate-entry gate_entry_date" id="datepicker2"
+                                                                placeholder="Enter Gate Entry Date" readonly>
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -424,6 +424,16 @@
                                                             <input type="text" name="vehicle_no"
                                                             class="form-control vehicle_no"
                                                             placeholder="Enter Vehicle No." />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                            Manual Entry No.
+                                                            </label>
+                                                            <input type="text" name="manual_entry_no"
+                                                                class="form-control bg-white"
+                                                                placeholder="Enter Manual Entry No.">
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1266,6 +1276,8 @@
                 $(".joSelect").removeClass('d-none');
                 $(".poSelect").removeClass('d-none');
                 $(".soSelect").removeClass('d-none');
+                $(".supplier_invoice_no").prop('readonly', false);
+                $(".supplier_invoice_date").prop('readonly', false);
                 $("#importItem").show();
                 $("#referenceNoDiv").hide();
                 $("#reference_number_input").val('');
@@ -1607,6 +1619,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.po_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
                 // Re-initialize DataTable
             }
@@ -2059,6 +2086,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.jo_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
                 // Re-initialize DataTable
             }
@@ -3319,11 +3361,15 @@
 
                     $("#poModal, #joModal").modal('hide');
                     $('.asn_process').prop('disabled', true);
-
+                    $(".supplier_invoice_no").prop('readonly', false);
+                    $(".supplier_invoice_date").prop('readonly', false);
+                    
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');
                             $(".asn-container").removeClass('d-none');
+                            $(".supplier_invoice_no").prop('readonly', true);
+                            $(".supplier_invoice_date").prop('readonly', true);
                             // $('.asn_process').prop('disabled', true);
                             break;
 

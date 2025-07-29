@@ -7,9 +7,11 @@ use App\Helpers\Helper;
 use App\Models\NumberPattern;
 use Auth;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\ProcessesComponentJson;
 
 class EditExpenseRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,6 +25,11 @@ class EditExpenseRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {
@@ -54,7 +61,7 @@ class EditExpenseRequest extends FormRequest
 
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.accepted_qty'] = 'required|numeric|min:1';
-        $rules['components.*.rate'] = 'required|numeric|min:1'; 
+        $rules['components.*.rate'] = 'required|numeric|min:1';
         $rules['components.*.remark'] = 'nullable|max:250';
 
         return $rules;
@@ -76,6 +83,6 @@ class EditExpenseRequest extends FormRequest
             'components.*.accepted_qty.numeric' => 'Accepted Qty must be integer',
             'components.*.rate.numeric' => 'Rate must be integer',
         ];
- 
+
     }
 }

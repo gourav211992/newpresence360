@@ -56,6 +56,7 @@ class GateEntryHeader extends Model
         'consignment_no',
         'transporter_name',
         'vehicle_no',
+        'manual_entry_no',
         'billing_to',
         'ship_to',
         'billing_address',

@@ -43,19 +43,22 @@
         <td>
             <input type="text" id = "item_accepted_qty_{{$slipItemIndex}}"  value = "{{$slipItem->accepted_qty}}" oninput = "changeItemQty(this, {{$slipItemIndex}});" onblur = "setFormattedNumericValue(this);" name = "item_accepted_qty[{{$slipItemIndex}}]" class="form-control mw-100 text-end" />
         </td>
-        @if($slipItem?->mo_product?->mo?->is_last_station)
+        {{-- @if($slipItem?->mo_product?->mo?->is_last_station) --}}
         <td>
             <input type="text" id = "item_sub_prime_qty_{{$slipItemIndex}}"  value = "{{$slipItem->subprime_qty}}" oninput = "changeItemQty(this, {{$slipItemIndex}});" onblur = "setFormattedNumericValue(this);" name = "item_sub_prime_qty[{{$slipItemIndex}}]" class="form-control mw-100 text-end" />
         </td>
-        @endif
+        {{-- @endif --}}
         <td>
             <input type="text" id = "item_rejected_qty_{{$slipItemIndex}}"  value = "{{$slipItem->rejected_qty}}" name = "item_rejected_qty[{{$slipItemIndex}}]" class="form-control mw-100 text-end disabled-input" />
         </td>
-        @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
+        @if($isWipQty)
+        <td><input type="text" id="item_wip_qty_{{$slipItemIndex}}" value = "{{$slipItem->wip_qty}}" name = "item_wip_qty[{{$slipItemIndex}}]" oninput = "changeItemQty(this, {{$slipItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
+        <td><input type="text" id="item_total_qty_{{$slipItemIndex}}" value = "{{($slipItem->wip_qty + $slipItem->qty)}}" name = "item_total_qty[{{$slipItemIndex}}]" oninput = "changeItemQty(this, {{$slipItemIndex}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" /></td>
+        @endif
+        {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
         <td><input type="text" id = "item_rate_{{$slipItemIndex}}" value = "{{number_format($slipItem -> rate,4)}}" name = "item_rate[{{$slipItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
         <td><input type="text" id = "item_item_value_{{$slipItemIndex}}" value = "{{number_format($slipItem -> item_value,2)}}" name = "item_item_value[{{$slipItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
-        @endif
-        
+        @endif --}}
         @if($machines->isNotEmpty())
         <td>
             <input type="hidden" name="machine_id[{{ $slipItemIndex }}]" value="">

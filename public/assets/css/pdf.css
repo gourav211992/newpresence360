@@ -1,0 +1,25 @@
+/* === Optimized PDF Watermark Styles === */
+body {
+    font-family: DejaVu Sans, sans-serif;
+    position: relative;
+}
+
+.pdf-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg); /* center and tilt */
+    max-width: 80%;
+    max-height: 70%;
+    opacity: 0.3;
+    z-index: -1;
+    pointer-events: none;
+    page-break-inside: avoid;
+}
+
+.pdf-watermark img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}

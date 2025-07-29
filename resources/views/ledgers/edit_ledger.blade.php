@@ -27,13 +27,56 @@
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
 
-            <form id="formUpdate" action="{{ route('ledgers.update', $data->id) }}" method="POST">
+            <form id="formUpdate" action="{{ route('ledgers.update', $data->id) }}" enctype="multipart/form-data" method="POST">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="updated_groups" id="updated_groups">
                 <input type="hidden" name="ledger_code_type" value="{{ $data->ledger_code_type }}">
                 <input type="hidden" name="prefix" value="{{$data->prefix}}" />
                 <input type="hidden" name="actionType" id="actionType" value="submit"/>
+               <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Ledger
+                </h4>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <input type="hidden" name="action_type" id="action_type_main">
+            </div>
+            <div class="modal-body pb-2">
+                <div class="row mt-1">
+                <div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
+                    </div>
+                    <div class = "row">
+                        <div class = "col-md-8">
+                            <div class="mb-1">
+                                <label class="form-label">Upload Document</label>
+                                <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                            </div>
+                        </div>
+                        <div class = "col-md-4" style = "margin-top:19px;">
+                            <div class="row" id = "amend_files_preview">
+                            </div>
+                        </div>
+                    </div>
+                    <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">  
+                <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('amendConfirmPopup')">Cancel</button> 
+                <button type="button" class="btn btn-primary" onclick = "submitAmend();">Submit</button>
+            </div>
+        </div>
+    </div>
+    </div>
+                
+
 
 
                 <div class="content-header pocreate-sticky">
@@ -350,6 +393,8 @@
         </div>
     </div>
 
+
+
     <!-- Modal for group updates -->
     <div class="modal fade text-start" id="postvoucher" tabindex="-1" aria-labelledby="myModalLabel17"
         aria-hidden="true">
@@ -420,6 +465,7 @@
       <div class="modal-content">
         <form id="approveLedgerForm" method="POST" action="{{ route('approveLedger') }}" data-redirect="{{ route('ledgers.index') }}" enctype='multipart/form-data'>
           @csrf
+
           <input type="hidden" class = "cannot_disable" name="action_type" id="action_type">
           <input type="hidden" class = "cannot_disable" name="id" value="{{isset($data) ? $data -> id : ''}}">
          <div class="modal-header">
@@ -795,21 +841,10 @@
         });
 
         function SubmitUpdate() {
-            Swal.fire({
-                title: "Are you sure?",
-                text: "This change will reflect on all your voucher entry with same group and updated in all report",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Yes, update it!"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $('.preloader').show();
-                    let groupsData = [];
+            let groupsData = [];
                     let updatedGroupValues = new Set();
                     let hasDuplicate = false;
-
+               if($('#actionType').val()=="amendment"){
                     $('#group-table tr').each(function() {
                         let removeGroup = $(this).find('input[name="removeGroup[]"]').val();
                         let removeGroupName = $(this).find('input[name="removeGroupName[]"]').val();
@@ -829,7 +864,7 @@
                     });
 
                     if (hasDuplicate) {
-                        $('.preloader').hide();
+                       // $('.preloader').hide();
                         showToast('error', 'Duplicate updated groups are not allowed!');
                         return;
                     }
@@ -837,9 +872,53 @@
 
 
                     $('#updated_groups').val(JSON.stringify(groupsData));
+                    openAmendConfirmModal();
+                }
+                    else{
+            
+            Swal.fire({
+                title: "Are you sure?",
+                text: "This change will reflect on all your voucher entry with same group and updated in all report",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#3085d6",
+                cancelButtonColor: "#d33",
+                confirmButtonText: "Yes, update it!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                   $('#group-table tr').each(function() {
+                        let removeGroup = $(this).find('input[name="removeGroup[]"]').val();
+                        let removeGroupName = $(this).find('input[name="removeGroupName[]"]').val();
+                        let updatedGroup = $(this).find('select[name="updatedGroup[]"]').val();
+
+                        if (updatedGroupValues.has(updatedGroup)) {
+                            hasDuplicate = true;
+                        } else {
+                            updatedGroupValues.add(updatedGroup);
+                        }
+
+                        groupsData.push({
+                            removeGroup: removeGroup,
+                            removeGroupName: removeGroupName,
+                            updatedGroup: updatedGroup
+                        });
+                    });
+
+                    if (hasDuplicate) {
+                       // $('.preloader').hide();
+                        showToast('error', 'Duplicate updated groups are not allowed!');
+                        return;
+                    }
+
+
+
+                    $('#updated_groups').val(JSON.stringify(groupsData));
+                    $('.preloader').show();
                     $('#formUpdate').submit();
+            
                 }
             });
+        }
         }
 
         function showToast(type, message, title) {
@@ -1126,6 +1205,18 @@
             }
         });
     });
+    function submitAmend()
+    {$('.preloader').show();
+         $("#amendConfirmPopup").modal('hide');
+         $('#formUpdate').submit();
+    }
+     function openAmendConfirmModal()
+    {
+        $('#postvoucher').modal('hide');
+        $("#amendConfirmPopup").modal("show");
+
+    }
+
        
 
 

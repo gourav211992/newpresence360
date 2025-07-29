@@ -35,17 +35,17 @@
         </td>
         <td>
             @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
-            <input type="text" id = "item_avl_rate_{{$psBomConsIndex}}" value = "{{number_format($psBomCons->rate,4)}}" name = "cons[{{$psBomConsIndex}}][item_avl_rate]"  class="form-control mw-100 text-end" readonly/>
+            {{-- <input type="text" id = "item_avl_rate_{{$psBomConsIndex}}" value = "{{number_format($psBomCons->rate,4)}}" name = "cons[{{$psBomConsIndex}}][item_avl_rate]"  class="form-control mw-100 text-end" readonly/> --}}
             @else
                 <input type="text" id = "item_avl_qty_{{$psBomConsIndex}}" value = "{{$psBomCons->avl_stock}}" name = "cons[{{$psBomConsIndex}}][item_avl_qty]"  class="form-control mw-100 text-end" readonly/>
             @endif
             {{-- <input type="text" id = "item_qty_{{$psBomConsIndex}}" value = "{{$psBomCons -> qty}}" name = "item_qty[{{$psBomConsIndex}}]"  class="form-control mw-100 text-end disabled-input"/> --}}
         </td>
-        @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
+        {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
         <td>
             <input type="text" id = "item_avl_value_{{$psBomConsIndex}}" value = "{{number_format($psBomCons->item_value,2)}}" name = "cons[{{$psBomConsIndex}}][item_avl_item_value]"  class="form-control mw-100 text-end" readonly/>
         </td>
-        @endif
+        @endif --}}
         {{-- <input type="hidden" id="mo_product_id_{{$psBomConsIndex}}" name = "mo_product_id[{{$psBomConsIndex}}]"  value="{{$psBomCons?->mo_product_id}}">
         <input type="hidden" id="mo_id_{{$psBomConsIndex}}" name="mo_id[{{$psBomConsIndex}}]"  value="{{$psBomCons?->mo?->id}}">
         <input type="hidden" id="so_id_{{$psBomConsIndex}}" name="so_id[{{$psBomConsIndex}}]"  value="{{$psBomCons?->so_id}}">

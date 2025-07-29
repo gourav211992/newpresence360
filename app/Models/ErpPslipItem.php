@@ -42,6 +42,7 @@ class ErpPslipItem extends Model
         'accepted_qty',
         'subprime_qty',
         'rejected_qty',
+        'wip_qty',
         'machine_id',
         'cycle_count'
     ];

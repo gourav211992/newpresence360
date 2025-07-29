@@ -2,7 +2,7 @@
 
 @section('content')
     <!-- BEGIN: Content-->
-    <form class="ajax-input-form" method="POST" action="{{ route('inspection-checklists.store') }}"  data-redirect="@if ($currentUrlSegment === 'maintenance-inspection-checklists'){{ route('maintenance-inspection-checklists.index') }}@elseif ($currentUrlSegment === 'item-inspection-checklists'){{ route('item-inspection-checklists.index') }} @else {{ route('inspection-checklists.index') }} @endif">
+    <form class="ajax-input-form" method="POST" action="{{ route('inspection-checklists.store') }}" data-redirect="@if ($currentUrlSegment === 'maintenance-inspection-checklists'){{ route('maintenance-inspection-checklists.index') }} @else {{ route('inspection-checklists.index') }} @endif">
         @csrf
         <input type="hidden" name="current_url_segment" value="{{ $currentUrlSegment }}">
         <div class="app-content content">

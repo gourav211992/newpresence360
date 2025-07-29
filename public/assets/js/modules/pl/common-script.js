@@ -496,7 +496,7 @@ function onSeriesChange(element, reset = true)
         data: {
             menu_alias: menuAlias,
             service_alias: element.value,
-            book_id : reset ? null : (order ? order.book_id : null)
+            book_id : (order && order?.book_id ? order.book_id : null)
         },
         success: function(data) {
             if (data.status == 'success') {
@@ -1344,7 +1344,7 @@ function onServiceChange(element, reset = true)
         data: {
             menu_alias: window.location.pathname.split('/')[1],
             service_alias: element.value,
-            book_id : reset ? null : ""
+            book_id : reset ? null : (order && order?.book_id ? order.book_id : '')
         },
         success: function(data) {
             if (data.status == 'success') {
@@ -1932,6 +1932,8 @@ function changeDropdownOptions(mainDropdownElement, dependentDropdownIds, dataKe
                         if (currentElement.id == "billing_address_dropdown") {
                             document.getElementById('current_billing_address').textContent = item.label;
                             document.getElementById('current_billing_address_id').value = item.id;
+                            document.getElementById('current_billing_country_id').value = item.country_id;
+                            document.getElementById('current_billing_state_id').value = item.state_id;
                             // $('#billing_country_id_input').val(item.country_id).trigger('change');
                             // changeDropdownOptions(document.getElementById('billing_country_id_input'), ['billing_state_id_input'], ['states'], '/states/', null, ['billing_city_id_input']);
                         }
@@ -1998,6 +2000,10 @@ function itemOnChange(selectedElementId, index, routeUrl) // Retrieve element an
             setItemAttributes('items_dropdown_' + index, index);
 
             onItemClick(index);
+
+            if (typeof checkStockData === 'function') {
+                    checkStockData(index);
+                }
            
         }).catch(error => {
             console.log("Error : ", error);

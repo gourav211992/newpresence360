@@ -1229,6 +1229,7 @@ class MaterialReceiptController extends Controller
             $mrn->final_remarks = $request->remarks ?? '';
             $mrn->cost_center_id = $request->cost_center_id ?? '';
             $mrn->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $mrn->manual_entry_no = $request->manual_entry_no ?? '';
             if(@$request->reference_type)
             {
                 $mrn->reference_type = $request->reference_type;

@@ -1054,7 +1054,6 @@ class VoucherController extends Controller
     public function update(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
-            'voucher_name' => 'required|string',
             'date' => 'required|date',
             'document' => 'nullable|array',
             'document.*' => 'file',
@@ -1068,8 +1067,6 @@ class VoucherController extends Controller
             'parent_ledger_id.*' => 'required|numeric|min:1',  //parent_ledger_id
         ], [
             // Custom error messages
-            'voucher_name.required' => 'The voucher name is required.',
-            'voucher_name.string' => 'The voucher name must be a string.',
             'date.required' => 'The date is required.',
             'date.date' => 'The date must be a valid date format.',
             'document.array' => 'The document field must be an array.',
@@ -1097,6 +1094,16 @@ class VoucherController extends Controller
                 ->withErrors($validator); // Pass the validation errors back to the session
         }
         $voucher = Voucher::find($id);
+        if ($request->actionType == "amendment") {
+            $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'Voucher', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'ItemDetail', 'relation_column' => 'voucher_id']
+            ];
+            Helper::documentAmendment($revisionData, $id);
+            Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $request->amend_remarks, $request->file('amend_attachments'), $voucher->approval_level, 'amendment', 0, get_class($voucher));
+            $voucher->revision_number = $voucher->revision_number + 1;
+            $voucher->save();
+        }
         $voucher->remarks = $request->remarks;
         $voucher->amount = $request->amount;
 
@@ -1210,6 +1217,7 @@ class VoucherController extends Controller
                     'date' => $request->date,
                 ]);
             }
+            
 
 
         }

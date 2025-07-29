@@ -1746,8 +1746,7 @@ class CrDrReportController extends Controller
         if ($group) {
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
             if (count($ledger_groups) > 0) {
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1758,8 +1757,7 @@ class CrDrReportController extends Controller
                     ->get();
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1819,8 +1817,7 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()->where('parent_group_id', $group->id)->pluck('id');
 
             if (count($ledger_groups) > 0) {
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
@@ -1831,8 +1828,7 @@ class CrDrReportController extends Controller
                     ->get();
             } else if (isset($group->id)) {
                 $ledger_groups = [$group->id];
-                $all_ledgers = Ledger::withDefaultGroupCompanyOrg()
-                    ->where('status', 1)
+                $all_ledgers = Ledger::where('status', 1)
                     ->where(function ($query) use ($ledger_groups) {
                         $query->whereIn('ledger_group_id', $ledger_groups);
 

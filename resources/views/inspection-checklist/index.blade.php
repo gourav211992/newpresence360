@@ -22,14 +22,12 @@
                 </div>
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
-                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="
-                                @if ($currentUrlSegment === 'maintenance-inspection-checklists')
-                                    {{ route('maintenance-inspection-checklists.create') }}
-                                @elseif ($currentUrlSegment === 'item-inspection-checklists')
-                                    {{ route('item-inspection-checklists.create') }}
-                                @else
-                                    {{ route('inspection-checklists.create') }}
-                                @endif">
+                            <a class="btn btn-primary btn-sm mb-50 mb-sm-0" 
+                             href="@if ($currentUrlSegment === 'maintenance-inspection-checklists')
+                                        {{ route('maintenance-inspection-checklists.create') }}
+                                    @else
+                                        {{ route('inspection-checklists.create') }}
+                                    @endif">
                                 <i data-feather="plus-circle"></i> Add New
                             </a>
                     </div>
@@ -76,11 +74,9 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: currentUrlSegment === 'maintenance-inspection-checklists' 
-                        ? "{{ route('maintenance-inspection-checklists.index') }}"
-                        : currentUrlSegment === 'item-inspection-checklists'
-                            ? "{{ route('item-inspection-checklists.index') }}"
-                            : "{{ route('inspection-checklists.index') }}",
+                   url: currentUrlSegment === 'maintenance-inspection-checklists'
+                    ? "{{ route('maintenance-inspection-checklists.index') }}"
+                    : "{{ route('inspection-checklists.index') }}",
                     data: function(d) {
                         d.urlSegment = currentUrlSegment;
                     }

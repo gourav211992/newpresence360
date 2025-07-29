@@ -15,9 +15,11 @@ use App\Models\ErpSoItem;
 use App\Models\ExpenseDetail;
 use App\Models\NumberPattern;
 use App\Models\ItemAttribute;
+use App\Traits\ProcessesComponentJson;
 
 class ExpenseAdviseRequest extends FormRequest
 {
+    use ProcessesComponentJson;
     /**
      * Determine if the user is authorized to make this request.
     */
@@ -31,6 +33,11 @@ class ExpenseAdviseRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
     */
+
+    protected function prepareForValidation(): void
+    {
+        $this->processComponentJson('components_json');
+    }
 
     public function rules(): array
     {

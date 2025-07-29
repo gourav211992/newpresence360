@@ -419,15 +419,19 @@
                                                                    <th>UOM</th>
                                                                    <th class="text-end">SO Qty</th>
                                                                    <th class="text-end">Produced Qty</th>
-                                                                   <th class="text-end">Accepted Qty</th>
-                                                                   <th class="text-end {{@$slip?->mo?->is_last_station ? '' : 'd-none'}}" id="subprime_qty_col">Substandard Qty</th>
-                                                                   <th class="text-end">Rejected Qty</th>
-                                                                   @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
+                                                                   <th class="text-end">Accepted (A)</th>
+                                                                   <th class="text-end" id="subprime_qty_col">Substandard (B)</th>
+                                                                   <th class="text-end">Rejected (C)</th>
+                                                                   @if($isWipQty)
+                                                                   <th class="text-end" id="wip_qty_col">WIP Qty</th>
+                                                                   <th class="text-end" id="total_qty_col">Total Qty</th>
+                                                                   @endif
+                                                                   {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
-                                                                   @endif
-                                                                   <th class="{{$machines->isNotEmpty() ? : 'd-done'}}" id="machineName">Machine</th>
-                                                                   <th class="{{$machines->isNotEmpty() ? : 'd-done'}}" id="cycleCount">Cycle Count</th>
+                                                                   @endif --}}
+                                                                   <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="machineName">Machine</th>
+                                                                   <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="cycleCount">Cycle Count</th>
                                                                    <th>Action</th>
                                                                  </tr>
                                                                </thead>
@@ -438,9 +442,9 @@
                                                             <tfoot>
                                                                 <tr valign="top">
                                                                    @if (isset($slip))
-                                                                       <td id = "item_details_td" colspan="16" rowspan="10">
+                                                                       <td id = "item_details_td" colspan="{{$isWipQty ? '17' : '15'}}" rowspan="10">
                                                                     @else
-                                                                       <td id = "item_details_td" colspan="14" rowspan="10">
+                                                                       <td id = "item_details_td" colspan="{{$isWipQty ? '15' : '13'}}" rowspan="10">
                                                                    @endif
                                                                        <table class="table border">
                                                                            <tr>
@@ -529,8 +533,8 @@
                                                                     <th>UOM</th>
                                                                     <th class="text-end">Required Qty</th>
                                                                     @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
-                                                                        <th class="text-end">Rate</th>
-                                                                        <th class="text-end">Value</th>
+                                                                        {{-- <th class="text-end">Rate</th>
+                                                                        <th class="text-end">Value</th> --}}
                                                                     @else
                                                                         <th class="text-end">Avl Stock</th>
                                                                     @endif
@@ -542,9 +546,9 @@
                                                             <tfoot>
                                                                 <tr valign="top">
                                                                    @if (isset($slip))
-                                                                       <td id = "item_details_td" colspan="14" rowspan="10">
-                                                                       @else
                                                                        <td id = "item_details_td" colspan="12" rowspan="10">
+                                                                       @else
+                                                                       <td id = "item_details_td" colspan="10" rowspan="10">
                                                                    @endif
                                                                        <table class="table border">
                                                                            <tr>
@@ -3476,9 +3480,9 @@ function openHeaderPullModal(type = null)
                     if(currentOrders?.is_machine) {
                         $("#machineName").removeClass('d-none');
                         $("#cycleCount").removeClass('d-none');
-                        $("#item_details_td").attr('colspan','15');
+                        $("#item_details_td").attr('colspan','17');
                     } else {
-                        $("#item_details_td").attr('colspan','14');
+                        $("#item_details_td").attr('colspan','15');
                         $("#machineName").addClass('d-none');
                         $("#cycleCount").addClass('d-none');
                     }
@@ -3504,11 +3508,11 @@ function openHeaderPullModal(type = null)
                     } else {
                         $("#fg_label").text("WIP Store");
                     }
-                    if(!currentOrders.mo.is_last_station) {
-                        $("#subprime_qty_col").addClass('d-none');
-                    } else {
-                        $("#subprime_qty_col").removeClass('d-none');
-                    }
+                    // if(!currentOrders.mo.is_last_station) {
+                    //     $("#subprime_qty_col").addClass('d-none');
+                    // } else {
+                    //     $("#subprime_qty_col").removeClass('d-none');
+                    // }
                     $(".select2").select2();
                 },
                 error: function(xhr) {
@@ -3842,6 +3846,28 @@ $(document).on("keyup", "#production-items input[name*='item_qty']", (e) => {
     renderBundleDetails(itemIndex, false);
 });
 
+// When WIP quantity changes
+$(document).on("input", "#production-items input[name*='item_wip_qty']", function (e) {
+    validateWipAgainstQty($(e.target));
+});
+
+// When Item quantity changes
+$(document).on("input", "#production-items input[name*='item_qty']", function (e) {
+    let $tr = $(e.target).closest('tr');
+    let $wipInput = $tr.find("input[name*='item_wip_qty']");
+    validateWipAgainstQty($wipInput);
+});
+
+function validateWipAgainstQty($wipInput) {
+    let wipQty = Number($wipInput.val()) || 0;
+    let $tr = $wipInput.closest('tr');
+    let itemQty = Number($tr.find("input[name*='item_qty']").val()) || 0;
+    $tr.find("input[name*='item_total_qty']").val(wipQty + itemQty);
+    // let itemSoQty = Number($tr.find("input[name*='item_so_qty']").val()) || 0;
+    // if (wipQty > (itemSoQty - itemQty)) {
+    //     $wipInput.val(itemSoQty - itemQty);
+    // }
+}
 </script>
 @endsection
 @endsection

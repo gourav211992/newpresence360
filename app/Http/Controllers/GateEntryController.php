@@ -1083,6 +1083,7 @@ class GateEntryController extends Controller
             $mrn->final_remark = $request->remarks ?? '';
             $mrn->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $mrn->reference_type = $request->reference_type;
+            $mrn->manual_entry_no = $request->manual_entry_no;
             if ($mrn->reference_type == ConstantHelper::PO_SERVICE_ALIAS) {
                 $mrn->purchase_order_id = $request->purchase_order_id;
                 $mrn->job_order_id = null;

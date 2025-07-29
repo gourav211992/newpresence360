@@ -35,8 +35,8 @@ class PRCheckAndUpdateService
         }
 
         // === Case 1: Edit (PR Detail exists) ===
-        if (!empty($inputData['pr_item_id'])) {
-            $prDetail = PRDetail::find($inputData['pr_item_id']);
+        if (!empty($inputData['detail_id'])) {
+            $prDetail = PRDetail::find($inputData['detail_id']);
             $mrnOrderQty = number_format((float) $prDetail?->mrnDetail?->accepted_qty ?? 0.00, 2);
             if (!$prDetail) {
                 return self::errorResponse("PR Detail not found.", [
@@ -71,6 +71,14 @@ class PRCheckAndUpdateService
                         'order_qty' => $mrnOrderQty
                     ]);
                 }
+            }
+
+            // Check Issue Stock From Stock Ledger
+            $checkStock = self::checkIssueStock($prDetail, $inputQty);
+            if ($checkStock['status'] === 'error') {
+                return self::errorResponse($checkStock['message'], [
+                    'order_qty' => $mrnOrderQty
+                ]);
             }
         } // === Case 2: Create (Direct PR) ===
         else {
@@ -107,19 +115,19 @@ class PRCheckAndUpdateService
         ]);
     }
 
-    // Check Confirmed Stock 
-    private static function checkConfirmedStock($mrnItem, $inputQty)
+    // Check Issue Stock 
+    private static function checkIssueStock($prItem, $inputQty)
     {
-        $inventoryUomQty = ItemHelper::convertToBaseUom($mrnItem->item_id, $mrnItem->uom_id, $inputQty);
-        $documentHeaderId = $mrnItem->mrn_header_id;
-        $documentDetailId = $mrnItem->id;
-        $itemId = $mrnItem->item_id;
-        $uomId = $mrnItem->uom_id;
-        $storeId = $mrnItem->store_id;
-        $subStoreId = $mrnItem->sub_store_id;
-        $documentStatus = $mrnItem->document_status;
-        $selectedAttr = collect($mrnItem->attributes)->pluck('attr_value')->filter()->values()->toArray();
-        $mrnData = [
+        $inventoryUomQty = ItemHelper::convertToBaseUom($prItem->item_id, $prItem->uom_id, $inputQty);
+        $documentHeaderId = $prItem->header_id;
+        $documentDetailId = $prItem->id;
+        $itemId = $prItem->item_id;
+        $uomId = $prItem->uom_id;
+        $storeId = $prItem->store_id;
+        $subStoreId = $prItem->sub_store_id;
+        $documentStatus = $prItem->document_status;
+        $selectedAttr = collect($prItem->attributes)->pluck('attr_value')->filter()->values()->toArray();
+        $prData = [
             'document_header_id' => $documentHeaderId,
             'document_detail_id' => $documentDetailId,
             'uom_id' => $uomId,
@@ -128,11 +136,11 @@ class PRCheckAndUpdateService
             'document_type' => 'mrn',
             'attributes' => $selectedAttr,
             'sub_store_id' => $subStoreId,
-            'transaction_type' => 'receipt',
+            'transaction_type' => 'issue',
             'document_status' => $documentStatus,
             'inventory_uom_qty' => $inventoryUomQty
         ];
-        $checkStockAvailable = InventoryHelperV2::checkStockForUpdate($mrnData);
+        $checkStockAvailable = InventoryHelperV2::checkIssueStockForUpdate($prData);
         return $checkStockAvailable;
     }
 

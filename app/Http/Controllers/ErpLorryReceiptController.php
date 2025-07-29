@@ -7,6 +7,7 @@ use App\Helpers\BookHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Models\Address;
+use Illuminate\Http\Request;
 use App\Models\ErpRouteMaster;
 use App\Http\Requests\LorryReceiptRequest;
 use App\Models\ErpLogisticsMultiFixedPricing;
@@ -20,6 +21,9 @@ use App\Models\ErpLogisticsLrLocation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\AuthUser;
+use Illuminate\Support\Facades\Crypt;
+use App\Jobs\SendEmailJob;
 use Yajra\DataTables\DataTables;
 use App\Helpers\InventoryHelper;
 use App\Models\CostCenterOrgLocations;
@@ -29,7 +33,8 @@ use App\Models\Organization;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\City;
-use Illuminate\Http\Request;
+use App\Mail\LorryReceiptMail;
+use Illuminate\Support\Facades\Mail;
 use Exception;
 use Auth;
 use Carbon\Carbon;
@@ -109,7 +114,7 @@ class ErpLorryReceiptController extends Controller
                     'approved'   => 'badge-light-success',
                     'rejected'=> 'badge-light-danger',
                     'submitted'=>'badge-light-primary',
-                    'Partially_approved' => 'badge-light-warning',
+                    'partially_approved' => 'badge-light-warning',
                 ];
                 $badge = $colors[$row->document_status] ?? 'badge-light-secondary';
                 return '<span class="badge rounded-pill ' . $badge . '">' . ucfirst($row->document_status) . '</span>';
@@ -172,6 +177,9 @@ class ErpLorryReceiptController extends Controller
 
 public function edit(Request $request, $id)
 {
+     $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get();
    
     $user = Helper::getAuthenticatedUser();
     $segments = request()->segments(); 
@@ -279,7 +287,8 @@ public function edit(Request $request, $id)
         'vehicleTypes',
         'locations',
         'lorryCharges',
-        'revision_number'
+        'revision_number',
+        'users'
     ));
 }
 
@@ -713,7 +722,7 @@ public function destroy($id)
     }
  }
 
-  public function generatePdf(Request $request, $id)
+ public function buildLorryReceiptPdf($id)
 {
     $user = Helper::getAuthenticatedUser();
     $segments = request()->segments(); 
@@ -754,8 +763,183 @@ public function destroy($id)
         'locationPathSecond' => $locationPathSecond,
     ]);
 
+    return $pdf;
+
+}
+ public function generatePdf(Request $request, $id)
+{
+    $pdf = $this->buildLorryReceiptPdf($id);
     return $pdf->stream('lorry-receipt-preview.pdf');
 }
+
+
+public function lorryMail(Request $request)
+{
+    $request->validate([
+        'email_to' => 'required|email',
+    ], [
+        'email_to.required' => 'Recipient email is required.',
+        'email_to.email'    => 'Please enter a valid email address.',
+    ]);
+
+    $lr = ErpLorryReceipt::with(['consignee'])->findOrFail($request->id);
+    $consignee = $lr->consignee;
+
+    $sendTo = $request->email_to;
+    $consignee->email = $sendTo;
+    $cc = $request->cc_to ? implode(',', $request->cc_to) : null;
+    $remarks = $request->remarks ?? '';
+    $title = "Lorry Receipt Generated";
+    $mail_from = '';
+    $mail_from_name = '';
+    $name = $consignee->company_name ?? 'Customer';
+
+    $encryptedEmail = Crypt::encryptString($consignee->email);
+    $approveLink = route('lorry-receipt.approve', ['id' => $lr->id, 'email' => $encryptedEmail]); 
+
+    
+    $description = <<<HTML
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; padding: 24px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: Arial, sans-serif;">
+      
+        <tr>
+            <td>
+                <h2 style="color: #2c3e50;">Your Lorry Receipt</h2>
+                <p style="font-size: 16px; color: #555;">Dear {$name},</p>
+                <p style='font-size: 15px; color: #333;'>{$remarks}</p>
+                <p style="font-size: 15px; color: #333;">The receipt is attached with this email. Please review it at your convenience</p>
+
+               <p></p>
+
+                <p style="text-align: center; margin: 20px 0;">
+                    <a href="{$approveLink}" target="_blank" style="background-color: #7415ae; color: #ffffff; padding: 12px 24px; border-radius: 5px; font-size: 16px; text-decoration: none; font-weight: bold;">
+                        Approve Receipt
+                    </a>
+                </p>
+            </td>
+        </tr>
+    </table>
+    HTML;
+
+    $pdf = $this->buildLorryReceiptPdf($request->id);
+    $pdfFilename = 'lorry_receipt_' . $request->id . '_' . time() . '.pdf';
+    $pdfPath = storage_path("app/temp_mails/{$pdfFilename}");
+
+    if (!file_exists(dirname($pdfPath))) {
+        mkdir(dirname($pdfPath), 0777, true);
+    }
+
+    file_put_contents($pdfPath, $pdf->output());
+
+    $htmlFilename = 'lorry_receipt_preview_' . time() . '.html';
+    $htmlPath = storage_path("app/temp_mails/{$htmlFilename}");
+    file_put_contents($htmlPath, $description);
+
+    $attachments = [
+        [
+            'file' => file_get_contents($pdfPath),
+            'options' => [
+                'as' => $pdfFilename,
+                'mime' => 'application/pdf'
+            ]
+        ],
+     
+    ];
+
+    return $this->sendMail($consignee, $title, $description, $cc, $attachments, $mail_from, $mail_from_name);
+}
+ public function sendMail($receiver, $title, $description, $cc = null, $attachments = [], $mail_from = null, $mail_from_name = null,$bcc=null)
+    {
+        try {
+            if (!$receiver || !isset($receiver->email)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Receiver details are missing or invalid.',
+                ], 400);
+            }
+            $storedAttachments = [];
+
+            foreach ($attachments as $attachment) {
+                $filename = $attachment['options']['as'] ?? uniqid() . '.pdf';
+                $mime = $attachment['options']['mime'] ?? 'application/octet-stream';
+                $tempPath = storage_path("app/temp_mails/{$filename}");
+
+                if (!file_exists(dirname($tempPath))) {
+                    mkdir(dirname($tempPath), 0777, true);
+                }
+
+                file_put_contents($tempPath, $attachment['file']);
+
+                $storedAttachments[] = [
+                    'path' => $tempPath,
+                    'as' => $filename,
+                    'mime' => $mime
+                ];
+            }
+
+            dispatch(new SendEmailJob(
+            $receiver,
+            $mail_from,
+            $mail_from_name,
+            $title,
+            $description,
+            $cc,
+            $bcc,
+            $storedAttachments
+            ));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Email request sent successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending email: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to send email. ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+public function approveReceipt($id, $encryptedEmail)
+{
+    $email = Crypt::decryptString($encryptedEmail);
+
+    $customer = Customer::where('email', $email)->first();
+    $data = [
+        'name' => $customer ? $customer->company_name : 'User',
+        'remarks' => '',
+        'status' => '',
+    ];
+
+    if (!$customer) {
+        $data['remarks'] = 'Unauthorized: Email not found in records.';
+        $data['status'] = 'error';
+        return view('logistics.lorry-receipt.success', $data);
+    }
+
+    $lr = ErpLorryReceipt::findOrFail($id);
+
+    if ($lr->consignee->email !== $email) {
+        $data['remarks'] = 'Unauthorized: Email does not match consignee. You are not allowed to approve this receipt.';
+        $data['status'] = 'error';
+        return view('logistics.lorry-receipt.success', $data);
+    }
+
+     if ($lr->consignee_status == 'approved') {
+        $data['remarks'] = 'Your Lorry Receipt has been already approved!.';
+        $data['status'] = 'success';
+        return view('logistics.lorry-receipt.success', $data);
+    }
+
+    $lr->consignee_status = 'approved';
+    $lr->save();
+
+    $data['remarks'] = 'Your Lorry Receipt has been successfully approved!';
+    $data['status'] = 'success';
+
+    return view('logistics.lorry-receipt.success', $data);
+}
+
 
 
 

@@ -52,6 +52,7 @@
                 enctype="multipart/form-data" onsubmit="return check_amount()">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="actionType" id="actionType" value="submit"/>
                 <input type="hidden" name="doc_number_type" id="doc_number_type">
                 <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
                 <input type="hidden" name="doc_prefix" id="doc_prefix">
@@ -82,6 +83,47 @@
 
 
                 <input type="hidden" name="status" id="status">
+                  <div class="modal fade" id="amendConfirmPopup" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17">Amend Voucher
+                </h4>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <input type="hidden" name="action_type" id="action_type_main">
+            </div>
+            <div class="modal-body pb-2">
+                <div class="row mt-1">
+                <div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="amend_remarks" class="form-control cannot_disable"></textarea>
+                    </div>
+                    <div class = "row">
+                        <div class = "col-md-8">
+                            <div class="mb-1">
+                                <label class="form-label">Upload Document</label>
+                                <input name = "amend_attachments[]" onchange = "addFiles(this, 'amend_files_preview')" type="file" class="form-control cannot_disable" max_file_count = "2" multiple/>
+                            </div>
+                        </div>
+                        <div class = "col-md-4" style = "margin-top:19px;">
+                            <div class="row" id = "amend_files_preview">
+                            </div>
+                        </div>
+                    </div>
+                    <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">  
+                <button type="button" class="btn btn-outline-secondary me-1" onclick="closeModal('amendConfirmPopup')">Cancel</button> 
+                <button type="button" class="btn btn-primary" onclick = "submitAmend('voucherForm');">Submit</button>
+            </div>
+        </div>
+    </div>
+    </div>
 
                 <div class="content-header pocreate-sticky">
                     <div class="row">
@@ -104,11 +146,19 @@
                             <div class="form-group breadcrumb-right">
                                 <a type="button" href="{{ route('vouchers.index') }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
+                               
 
                                 @if (isset($fyear) && $fyear['authorized'])
-                                    @if ($buttons['draft'])
+                                <a type="button" onclick = "openAmendConfirmModal('draft');"
+                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 d-none" id="btnDraft"
+                                            name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
+                                <a type="button" onclick = "openAmendConfirmModal('submitted');"
+                                            class="btn btn-primary btn-sm d-none" id="btnSubmit" name="action"
+                                            value="submitted"><i data-feather="check-circle"></i> Submit</a>
+                               
+                                @if ($buttons['draft'])
                                         <a type="button" onclick = "submitForm('draft');"
-                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
+                                            class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 d-none" id="draft"
                                             name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
                                     @endif
                                     @if ($buttons['submit'])
@@ -142,7 +192,7 @@
                                     @endif --}}
 
                                     @if ($buttons['amend'])
-                                        <a type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm"
+                                        <a type="button" data-bs-toggle="modal" id="btnAmend" data-bs-target="#amendmentconfirm"
                                             class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
                                             Amendment</a>
                                     @endif
@@ -248,7 +298,7 @@
                                                     </div>
 
                                                     <div class="col-md-6">
-                                                        <select class="form-select select2" name="book_type_id"
+                                                        <select class="form-select select2 disable" name="book_type_id"
                                                             id="book_type_id" required onchange="getBooks()" disabled>
                                                             <option value="{{ $data?->series?->org_service_id }}"
                                                                 selected>
@@ -265,7 +315,7 @@
                                                     </div>
 
                                                     <div class="col-md-6">
-                                                        <select class="form-select" id="book_id" name="book_id"
+                                                        <select class="form-select  disable" id="book_id" name="book_id"
                                                             required onchange="get_voucher_details()" disabled>
                                                             <option value="{{ $data?->book_id }}" selected>
                                                                 {{ $data?->series?->book_code }}</option>
@@ -283,7 +333,7 @@
                                                     </div>
 
                                                     <div class="col-md-6">
-                                                        <input type="text" class="form-control" name="voucher_name"
+                                                        <input type="text" class="form-control  disable" name="voucher_name"
                                                             id="voucher_name" required value="{{ $data->voucher_name }}"
                                                             readonly />
                                                         @error('voucher_name')
@@ -819,26 +869,37 @@
                     <input type="hidden" name="id" value="{{ $data->id }}">
                     <div class="modal-header">
                         <div>
-                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="myModalLabel17"></h4>
+                            <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="approve_reject_heading_label"></h4>
                             <p class="mb-0 fw-bold voucehrinvocetxt mt-0">{{ Carbon\Carbon::now()->format('d-m-Y') }}
                             </p>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body pb-2">
-                        <div class="row mt-1">
-                            <div class="col-md-12">
-                                <div class="mb-1">
-                                    <label class="form-label">Remarks <span class="text-danger">*</span></label>
-                                    <textarea name="remarks" class="form-control"></textarea>
-                                </div>
-                                <div class="mb-1">
-                                    <label class="form-label">Upload Document</label>
-                                    <input type="file" multiple class="form-control" />
-                                </div>
-                            </div>
+                   <div class="modal-body pb-2">
+            <div class="row mt-1">
+               <div class="col-md-12">
+                  <div class="mb-1">
+                     <label class="form-label">Remarks</label>
+                     <textarea name="remarks" class="form-control cannot_disable"></textarea>
+                  </div>
+                  <div class="row">
+                    <div class = "col-md-8">
+                        <div class="mb-1">
+                            <label class="form-label">Upload Document</label>
+                            <input type="file" name = "attachments[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
                         </div>
                     </div>
+                    <div class = "col-md-4" style = "margin-top:19px;">
+                        <div class = "row" id = "approval_files_preview">
+
+                        </div>
+                    </div>
+                  </div>
+                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                  
+               </div>
+            </div>
+         </div>
                     <div class="modal-footer justify-content-center">
                         <button type="reset" class="btn btn-outline-secondary me-1">Cancel</button>
                         <button type="submit" class="btn btn-primary" id="submit-button">Submit</button>
@@ -862,11 +923,11 @@
                     <p>Are you sure you want to <strong>Amendment</strong> this <strong>Voucher</strong>? After Amendment
                         this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
+                    <button type="button" onclick="submitamend('voucherForm')" class="btn btn-primary">Confirm</button>
                 </div>
             </div>
         </div>
-    </div>
+    </div> 
     <div class="modal fade" id="remarksModal" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -896,6 +957,7 @@
 
 @section('scripts')
     <script src="{{ url('/app-assets/js/jquery-ui.js') }}"></script>
+    <script src="{{asset('assets/js/fileshandler.js')}}"></script>
     <script>
         // $('#voucherForm').on('submit', function () {
         //     $('.preloader').show();
@@ -1104,7 +1166,7 @@
         function check_amount() {
             $('#draft').attr('disabled', true);
             $('#submitted').attr('disabled', true);
-            $('.preloader').show();
+            //$('.preloader').show();
 
             let seen = new Set(); // Create a Set to track unique combinations
             let duplicateFound = false; // Flag to track duplicates
@@ -1124,7 +1186,7 @@
             });
 
             if (duplicateFound) {
-                $('.preloader').hide();
+              //  $('.preloader').hide();
                 showToast("error", "Duplicate ledger groups found. Please correct and try again.");
                 return false;
             }
@@ -1137,7 +1199,7 @@
 
                 // Check if both the credit and debit amounts are 0
                 if (debAmount == 0 && crdAmount == 0) {
-                    $('.preloader').hide();
+                //    $('.preloader').hide();
                     showToast('error', 'Can not save ledgers with Credit and Debit amount both being 0');
                     $('#draft').attr('disabled', false);
                     $('#submitted').attr('disabled', false);
@@ -1150,16 +1212,17 @@
 
             if (parseFloat(removeCommas($('#crd_total').text())) == 0 || parseFloat(removeCommas($('#dbt_total').text())) ==
                 0) {
-                $('.preloader').hide();
+                //$('.preloader').hide();
                 showToast("error", 'Debit and credit amount should be greater than 0');
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
                 return false;
             }
             if (parseFloat(removeCommas($('#crd_total').text())) == parseFloat(removeCommas($('#dbt_total').text()))) {
+                $('.preloader').show();
                 return true;
             } else {
-                $('.preloader').hide();
+                //$('.preloader').hide();
                 showToast("error", 'Debit and credit amount total should be same!!');
                 $('#draft').attr('disabled', false);
                 $('#submitted').attr('disabled', false);
@@ -1677,13 +1740,13 @@
 
         function setApproval() {
             document.getElementById('action_type').value = "approve";
-            $('#myModalLabel17').text('Approve Voucher');
+           document.getElementById('approve_reject_heading_label').textContent = "Approve Voucher";
 
         }
 
         function setReject() {
             document.getElementById('action_type').value = "reject";
-            $('#myModalLabel17').text('Reject Voucher');
+            document.getElementById('approve_reject_heading_label').textContent = "Reject Voucher";
 
         }
 
@@ -2066,5 +2129,9 @@
         $(function() {
             initializeLedgerAutocomplete($("#item-details-body"));
         });
+        function submitAmend()
+    {
+        $('#submitButton').click();
+    }
     </script>
 @endsection

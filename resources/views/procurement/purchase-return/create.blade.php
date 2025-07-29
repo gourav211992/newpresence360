@@ -169,6 +169,11 @@
                                                         </button>
                                                         <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
                                                     </div>
+                                                    <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                        <div class="col-md-5">
+                                                            <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -660,6 +665,10 @@
         let currentProcessType = null;
         let tableRowCount = 0;
         let selectedCostCenterId = "";
+        window.onload = function () {
+            localStorage.removeItem('selectedMrnIds');
+            currentProcessType = null;
+        };
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -1119,6 +1128,17 @@
             });
             if (itemIds.length) {
                 itemIds.forEach(function(item,index) {
+                    let mrnItemHiddenId = $(`#row_${item}`).find("input[name*='[mrn_item_hidden_ids]']").val();
+
+                    if(mrnItemHiddenId) {
+                        let idsToRemove = mrnItemHiddenId.split(',');
+                        let selectedMrnIds = localStorage.getItem('selectedMrnIds');
+                        if(selectedMrnIds) {
+                            selectedMrnIds = JSON.parse(selectedMrnIds);
+                            let updatedIds = selectedMrnIds.filter(id => !idsToRemove.includes(id));
+                            localStorage.setItem('selectedMrnIds', JSON.stringify(updatedIds));
+                        }
+                    }
                     $(`#row_${item}`).remove();
                 });
             } else {
@@ -1130,7 +1150,7 @@
             }
             if(!$("tr[id*='row_']").length) {
                 $("#itemTable > thead .form-check-input").prop('checked',false);
-                $(".poSelect").prop('disabled',false);
+                $(".mrnSelect").prop('disabled',false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
             }
@@ -1556,19 +1576,20 @@
                 selected_mrn_ids = encodeURIComponent(selectedMrnIds)
             }
             return {
-                    document_date: document_date,
-                    header_book_id: header_book_id,
-                    series_id: series_id,
-                    document_number: document_number,
-                    item_id: item_id,
-                    vendor_id: vendor_id,
-                    return_type: return_type,
-                    store_id: store_id,
-                    sub_store_id: sub_store_id,
-                    so_id: so_id,
-                    item_search: item_search,
-                    selected_mrn_ids: selected_mrn_ids
-                };
+                so_id: so_id,
+                type: 'create',
+                item_id: item_id,
+                store_id: store_id,
+                series_id: series_id,
+                vendor_id: vendor_id,
+                return_type: return_type,
+                item_search: item_search,
+                sub_store_id: sub_store_id,
+                document_date: document_date,
+                header_book_id: header_book_id,
+                document_number: document_number,
+                selected_mrn_ids: selected_mrn_ids
+            };
         }
 
         function getMrn()
@@ -1995,6 +2016,7 @@
 
                     const modelType = 'mrn';
                     const order = data.data.mrnHeader;
+                    $("#reference_type_input").val(modelType);
                     // console.log(vendor?.id, modelType, order.id);
                     
                     vendorOnChange(vendor?.id, modelType, order.id);
@@ -2091,7 +2113,8 @@
                     }
 
                     // General details
-                    if (moduleType === 'mrn' && mrnHeader) {
+                    console.log('moduleType', moduleType);
+                    if (mrnHeader) {
                         $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
                         $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
                         $("[name='eway_bill_no']").val(mrnHeader.eway_bill_no);
@@ -2100,6 +2123,8 @@
                     } else {
                         $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
                     }
+
+                    $("#reference_type_input").val(modelType);
 
                     setTimeout(() => {
                         setTableCalculation();
@@ -2137,7 +2162,7 @@
             $(".shipping_detail, .billing_detail").text('-');
             $("#reference_from").removeClass('d-none');
             $('.asn_process').prop('disabled', false);
-
+            $("#reference_type_input").val('');
             Swal.fire({
                 title: 'Error!',
                 text: message,

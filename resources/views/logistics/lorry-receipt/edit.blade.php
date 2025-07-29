@@ -47,7 +47,11 @@
                                 <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
                                 <rect x="6" y="14" width="12" height="8"></rect></svg> Print
                             </a>
+                             <button type = "button" onclick = "sendMailTo();"  class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
+                              @if(auth()->check() && $lr->consignee_id == optional(auth()->user())->auth_user_id)
+                              <button type = "button" onclick = "sendMailTo();"  class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i>Consignee Approve</button>
                             @endif
+                        @endif
                         @if(isset($buttons) && is_array($buttons) && isset($lr))
                            @if($buttons['draft'] ?? false)
                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" onclick="setStatusAndSubmit('draft')">
@@ -850,6 +854,62 @@
             </div>
         </div>
     </div>
+    {{-- Send Mail Modal --}}
+<div class="modal fade" id="sendMail" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
+   <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+          <input type="hidden" name="action_type" id="action_type">
+          <input type="hidden" name="id" value="{{isset($lr) ? $lr -> id : ''}}">
+         <div class="modal-header">
+            <div>
+               <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="send_mail_heading_label">
+               </h4>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+         </div>
+         <div class="modal-body pb-2">
+            <div class="row mt-1">
+                {{--<div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">Email From</label>
+                        <input type="text" id='cust_mail' name="email_from" class="form-control cannot_disable">
+                    </div>
+                </div>--}}
+                <div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">Email To</label>
+                        <input type="text" id='cust_mail' name="email_to" class="form-control mail_modal cannot_disable" placeholder="Enter Consignee Email">
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">CC To</label>
+                        <select name="cc_to[]" class="select2 form-control mail_modal cannot_disable" multiple>
+                            @foreach ($users as $index => $user)
+                                <option value="{{ $user->email }}" {{ $user->id == $lr->created_by ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="mb-1">
+                        <label class="form-label">Remarks</label>
+                        <textarea name="remarks" id="mail_remarks" class="form-control mail_modal cannot_disable"></textarea>
+                    </div>
+                </div>
+            </div>
+         <div class="modal-footer justify-content-center">  
+            <button type="reset" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+            <button type="submit" id="mail_submit" class="btn btn-primary">Submit</button>
+         </div>
+      </div>
+   </div>
+</div>
+</div>
+
 @endsection
 @section('scripts')
 <script>
@@ -1983,6 +2043,103 @@ document.addEventListener('click', function (e) {
             let amendmentUrl = url.toString();
             window.location.replace(amendmentUrl);
         });
+
+        /* Trigger Send Mail Modal With Data*/
+function sendMailTo() {
+        $('.ajax-validation-error-span').remove();
+        $('.reset_mail').removeClass('is-invalid');
+        $('.mail_modal').prop('readonly', false);
+        $('.mail_modal').prop('disabled', false);
+        $('[name="cc_to[]"]').prop('disabled', false);
+        $('[name="cc_to[]"]').prop('readonly', false);
+
+        const vendorEmail = "{{ isset($po) ? $po->vendor->email : '' }}";
+        const vendorName = "{{ isset($po) ? $po->vendor->company_name : '' }}";
+        const emailInput = document.getElementById('cust_mail');
+        const header = document.getElementById('send_mail_heading_label');
+        if (emailInput) {
+            emailInput.value = vendorEmail;
+        }
+        if(header)
+        {
+            header.innerHTML = "Send Mail";
+        }
+        $("#mail_remarks").val("Your Lorry Receipt has been successfully generated.");
+        $('#sendMail').modal('show');
+    }
+
+    $("#mail_submit").on('click', function(e) {
+    e.preventDefault();
+    document.getElementById('erp-overlay-loader').style.display = "flex";
+    $('#mail_submit').prop('disabled', true);
+    let actionType = $("#action_type").val();
+    let id = $("input[name='id']").val();
+    let emailTo = $("#cust_mail").val();
+    let ccTo = $('[name="cc_to[]"]').val();
+    let remarks = $("#mail_remarks").val();
+    if(!emailTo) {
+        Swal.fire({
+            title: 'Error!',
+            text: "Please enter email to.",
+            icon: 'error',
+        });
+        document.getElementById('erp-overlay-loader').style.display = "none";
+        $('#mail_submit').prop('disabled', false);
+        return false;
+    }
+    if(!remarks) {
+        Swal.fire({
+            title: 'Error!',
+            text: "Please enter remarks.",
+            icon: 'error',
+        });
+        document.getElementById('erp-overlay-loader').style.display = "none";
+        $('#mail_submit').prop('disabled', false);
+        return false;
+    }
+    $.ajax({
+        url: '{{route("logistics.lorry-receipt.lorryMail",['type' => 'lorry-receipt'])}}',
+        type: 'POST',
+        data: {
+            action_type: actionType,
+            id: id,
+            email_to: emailTo,
+            cc_to: ccTo,
+            remarks: remarks,
+        },
+        success: function(response) {
+            console.log(response);
+            if (response.status == 'success') {
+                Swal.fire({
+                    title: 'Success!',
+                    text: response.message,
+                    icon: 'success',
+                });
+                $('#sendMail').modal('hide');
+                setTimeout(() => { 
+                    history.go(-1);
+                },1000);
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: response.message,
+                    icon: 'error',
+                });
+            }
+            document.getElementById('erp-overlay-loader').style.display = "none";
+            $('#mail_submit').prop('disabled', false);
+        },
+        error: function(xhr, status, error) {
+            Swal.fire({
+                title: 'Error!',
+                text: xhr.responseJSON.message || "Something went wrong!",
+                icon: 'error',
+            });
+            $('#mail_submit').prop('disabled', false);
+            document.getElementById('erp-overlay-loader').style.display = "none";
+        }
+    });
+});
 </script>
 
 @endsection

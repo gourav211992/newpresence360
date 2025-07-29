@@ -46,6 +46,7 @@ class PRHeaderHistory extends Model
         'revision_date',
         'approval_level',
         'reference_number',
+        'reference_type',
         'store_id',
         'sub_store_id',
         'supplier_invoice_no',

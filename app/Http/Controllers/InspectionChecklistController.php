@@ -24,13 +24,12 @@ class InspectionChecklistController extends Controller
         $currentUrlSegment = request()->segment(1);
         if ($request->ajax()) {
             $query = InspectionChecklist::query();
-            if ($currentUrlSegment === 'item-inspection-checklists') {
-                $query->where('type', ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE);
-            } elseif ($currentUrlSegment === 'maintenance-inspection-checklists') {
+            if ($currentUrlSegment === 'maintenance-inspection-checklists') {
                 $query->where('type', ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE);
             } else {
-                $query->where(function($q) {
-                    $q->orWhereNull('type');
+                $query->where(function ($q) {
+                    $q->whereNull('type')
+                    ->orWhere('type', ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE);
                 });
             }
             $inspectionChecklists = $query->orderBy('id', 'desc');
@@ -40,11 +39,9 @@ class InspectionChecklistController extends Controller
                     ->addColumn('status', function ($row) {
                         return '<span class="badge rounded-pill badge-light-' . ($row->status === 'active' ? 'success' : 'danger') . ' badgeborder-radius">' . ucfirst($row->status) . '</span>';
                     })
-                    ->addColumn('action', function ($row) use ($currentUrlSegment) {
+                   ->addColumn('action', function ($row) use ($currentUrlSegment) {
                     if ($currentUrlSegment === 'maintenance-inspection-checklists') {
                         $editUrl = route('maintenance-inspection-checklists.edit', $row->id);
-                    } elseif ($currentUrlSegment === 'item-inspection-checklists') {
-                        $editUrl = route('item-inspection-checklists.edit', $row->id);
                     } else {
                         $editUrl = route('inspection-checklists.edit', $row->id);
                     }
@@ -71,19 +68,10 @@ class InspectionChecklistController extends Controller
     {
         $status = ConstantHelper::STATUS;
         $currentUrlSegment = request()->segment(1);
-        $checklistTypes = [];
-
-        if ($currentUrlSegment === 'maintenance-inspection-checklists') {
-            $checklistTypes[] = ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE ; 
-        }
-        if ($currentUrlSegment === 'item-inspection-checklists') {   
-            $checklistTypes[] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE ; 
-        }
         $dataTypes = ConstantHelper::DATA_TYPES;
        return view('inspection-checklist.create', [
             'status' => $status,
             'dataTypes' => $dataTypes,
-            'checklistTypes' => $checklistTypes,
             'currentUrlSegment'=>$currentUrlSegment
         ]);
     }
@@ -97,13 +85,10 @@ class InspectionChecklistController extends Controller
             DB::beginTransaction();
             $validatedData = $request->validated();
             $currentUrlSegment = $request->input('current_url_segment');
-
-            if ($currentUrlSegment === 'maintenance-inspection-checklists') {
-                $validatedData['type'] = ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE;
-            } elseif ($currentUrlSegment === 'item-inspection-checklists') {
-                $validatedData['type'] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE;
+           if ($currentUrlSegment === 'maintenance-inspection-checklists') {
+            $validatedData['type'] = ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE;
             } else {
-                $validatedData['type'] = null;
+                $validatedData['type'] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE;
             }
             $parentUrl = ConstantHelper::INSPECTION_CHECKLIST_ALIAS;
             $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
@@ -178,18 +163,10 @@ class InspectionChecklistController extends Controller
         $inspectionChecklist = InspectionChecklist::findOrFail($id);
         $status = ConstantHelper::STATUS;
         $currentUrlSegment = request()->segment(1);
-        $checklistTypes = [];
-        if ($currentUrlSegment === 'maintenance-inspection-checklists') {
-            $checklistTypes[] = ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE;
-        }
-        if ($currentUrlSegment === 'item-inspection-checklists') {   
-            $checklistTypes[] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE; 
-        }
         $dataTypes = ConstantHelper::DATA_TYPES;
         return view('inspection-checklist.edit', [
             'inspectionChecklist' => $inspectionChecklist,
             'status' => $status,
-            'checklistTypes' => $checklistTypes,
             'currentUrlSegment'=>$currentUrlSegment,
             'dataTypes' => $dataTypes,
         ]);
@@ -207,12 +184,9 @@ class InspectionChecklistController extends Controller
             $currentUrlSegment = $request->input('current_url_segment');
             if ($currentUrlSegment === 'maintenance-inspection-checklists') {
                 $validatedData['type'] = ConstantHelper::MAINTENANCE_INSPECTION_CHECKLIST_TYPE;
-            } elseif ($currentUrlSegment === 'item-inspection-checklists') {
-                $validatedData['type'] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE;
             } else {
-                $validatedData['type'] = null; 
+                $validatedData['type'] = ConstantHelper::ITEM_INSPECTION_CHECKLIST_TYPE;
             }
-
             $parentUrl = ConstantHelper::INSPECTION_CHECKLIST_ALIAS;
             $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
     

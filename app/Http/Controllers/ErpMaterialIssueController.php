@@ -53,6 +53,7 @@ use App\Models\Station;
 use App\Models\StockLedger;
 use App\Models\Unit;
 use App\Models\Vendor;
+use App\Services\MaterialIssue\MaterialIssue;
 use Carbon\Carbon;
 use PDF;
 use Exception;
@@ -390,13 +391,15 @@ class ErpMaterialIssueController extends Controller
     }
     public function store(ErpMaterialIssueRequest $request)
     {
-        // dd($request -> all());
         try {
             //Reindex
-            $request -> item_qty =  array_values($request -> item_qty);
+            $request -> item_qty =  array_values($request -> item_qty ?? []);
             $request -> item_remarks =  array_values($request -> item_remarks ?? []);
-            $request -> uom_id =  array_values($request -> uom_id);
-            $request -> item_rate =  array_values($request -> item_rate);
+            $request -> uom_id =  array_values($request -> uom_id ?? []);
+            $request -> item_rate =  array_values($request -> item_rate ?? []);
+
+            //Create Service
+            $miService = new MaterialIssue();
 
             DB::beginTransaction();
             $user = Helper::getAuthenticatedUser();
@@ -484,51 +487,10 @@ class ErpMaterialIssueController extends Controller
                     $miItems = ErpMiItem::whereIn('id',$deletedData['deletedSiItemIds'])->get();
                     # all ted remove item level
                     foreach($miItems as $miItem) {
-                        if (isset($miItem -> mo_item_id)) {
-                            //Back update in MO ITEM
-                            $moItem = MoItem::find($miItem -> mo_item_id);
-                            if (isset($moItem)) {
-                                $moItem -> mi_qty = $moItem -> mi_qty - $miItem -> issue_qty;
-                                $moItem -> save();
-                            }
-                        }
-                        if (isset($miItem -> pwo_item_id)) {
-                            //Back update in PWO ITEM
-                            $pwoItem = ErpPwoItem::find($miItem -> pwo_item_id);
-                            if (isset($pwoItem)) {
-                                $pwoItem -> mi_qty = $pwoItem -> mi_qty - $miItem -> issue_qty;
-                                $pwoItem -> save();
-                            }
-                        }
-                        if (isset($miItem -> pi_item_id)) {
-                            //Back update in PI ITEM
-                            $piItem = PiItem::find($miItem -> pi_item_id);
-                            if (isset($piItem)) {
-                                $piItem -> mi_qty = $piItem -> mi_qty - $miItem -> issue_qty;
-                                $piItem -> save();
-                            }
-                        }
-                        if (isset($miItem -> jo_item_id)) {
-                            //Back update in JO ITEM
-                            $joItem = JoItem::find($miItem -> jo_item_id);
-                            if (isset($joItem)) {
-                                $joItem -> mi_qty = $joItem -> mi_qty - $miItem -> issue_qty;
-                                $joItem -> save();
-                            }
-                        }
-                        if (isset($miItem -> jo_product_id)) {
-                            //Back update in JO ITEM
-                            $joProduct = JoProduct::find($miItem -> jo_product_id);
-                            if (isset($joProduct)) {
-                                $joProduct -> mi_qty = $joProduct -> mi_qty - $miItem -> issue_qty;
-                                $joProduct -> save();
-                            }
-                        }
-                        # all attr remove
-                        $miItem->attributes()->delete();
-                        $miItem->delete();
+                        $miService -> deleteItem($miItem);
                     }
                 }
+
             } else { //Create
                 $materialIssue = ErpMaterialIssueHeader::create([
                     'organization_id' => $organizationId,

@@ -144,7 +144,7 @@ class MaterialReceiptRequest extends FormRequest
                 }
             }
         }
-        $rules['components.*.attr_group_id.*.attr_name'] = 'required';
+        // $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.order_qty'] = 'required|numeric|min:0.01';
         // if ($this->input('components.*.is_inspection') === 0) {
@@ -219,18 +219,16 @@ class MaterialReceiptRequest extends FormRequest
             $referenceType = $this->input('reference_type');
             $items = [];
             foreach ($components as $key => $component) {
-                // $itemValue = floatval($component['item_total_cost']);
-                // if($itemValue < 0) {
-                //     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
-                // }
+                $itemValue = floatval($component['item_total_cost']);
+                if($itemValue < 0) {
+                    $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
+                }
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
-                $poId = match ($referenceType) {
-                    'po' => $component['purchase_order_id'] ?? null,
-                    'jo' => $component['job_order_id'] ?? null,
-                    default => null,
-                };
+
+                $poId = $referenceType === 'po' ? ($component['purchase_order_id'] ?? null) : null;
+                $joId = $referenceType === 'jo' ? ($component['job_order_id'] ?? null) : null;
 
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
@@ -243,26 +241,20 @@ class MaterialReceiptRequest extends FormRequest
                         ];
                     }
                 }
-                $currentItem = [
-                    'item_id' => $itemId,
-                    'uom_id' => $uomId,
-                    'attributes' => $attributes,
-                    'so_id' => $soId,
-                    'po_id' => $poId,
-                ];
+                $currentItem = compact('itemId', 'uomId', 'soId', 'poId', 'joId', 'attributes');
                 foreach ($items as $existingItem) {
-                    if (
-                        $existingItem['item_id'] === $currentItem['item_id'] &&
-                        $existingItem['uom_id'] === $currentItem['uom_id'] &&
+                    $isDuplicate = 
+                        $existingItem['itemId'] === $currentItem['itemId'] &&
+                        $existingItem['uomId'] === $currentItem['uomId'] &&
+                        $existingItem['soId'] === $currentItem['soId'] &&
                         $existingItem['attributes'] === $currentItem['attributes'] &&
-                        $existingItem['so_id'] === $currentItem['so_id'] &&
-                        $existingItem['po_id'] === $currentItem['po_id']
-                    ) {
-                        $validator->errors()->add(
-                            "components.$key.item_id",
-                            "Duplicate item!"
-                            // "Duplicate entry found for item_id: {$itemId}, uom_id: {$uomId}."
+                        (
+                            ($referenceType === 'po' && $existingItem['poId'] === $currentItem['poId']) ||
+                            ($referenceType === 'jo' && $existingItem['joId'] === $currentItem['joId'])
                         );
+
+                    if ($isDuplicate) {
+                        $validator->errors()->add("components.$key.item_id", "Duplicate item!");
                         return;
                     }
                 }
@@ -335,3 +327,56 @@ class MaterialReceiptRequest extends FormRequest
         });
     }
 }
+
+
+
+// $items = [];
+
+// foreach ($components as $key => $component) {
+//     $itemValue = floatval($component['item_total_cost']);
+//     if ($itemValue < 0) {
+//         $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
+//     }
+
+//     $itemId = $component['item_id'] ?? null;
+//     $uomId = $component['uom_id'] ?? null;
+//     $soId = $component['so_id'] ?? null;
+
+//     $poId = $referenceType === 'po' ? ($component['purchase_order_id'] ?? null) : null;
+//     $joId = $referenceType === 'jo' ? ($component['job_order_id'] ?? null) : null;
+
+//     // Normalize and sort attributes
+//     $attributes = collect($component['attr_group_id'] ?? [])
+//         ->map(fn($attr) => [
+//             'attr_id'    => (int) key($attr),
+//             'attr_value' => $attr['attr_name'] ?? null,
+//         ])
+//         ->filter(fn($attr) => $attr['attr_id'] && $attr['attr_value'])
+//         ->values()
+//         ->all();
+
+//     // Canonical sorting of attributes for duplicate match
+//     usort($attributes, fn($a, $b) => $a['attr_id'] <=> $b['attr_id']);
+
+//     $currentItem = compact('itemId', 'uomId', 'soId', 'poId', 'joId', 'attributes');
+
+//     foreach ($items as $existingItem) {
+//         $isDuplicate = 
+//             $existingItem['itemId'] === $currentItem['itemId'] &&
+//             $existingItem['uomId'] === $currentItem['uomId'] &&
+//             $existingItem['soId'] === $currentItem['soId'] &&
+//             $existingItem['attributes'] === $currentItem['attributes'] &&
+//             (
+//                 ($referenceType === 'po' && $existingItem['poId'] === $currentItem['poId']) ||
+//                 ($referenceType === 'jo' && $existingItem['joId'] === $currentItem['joId'])
+//             );
+
+//         if ($isDuplicate) {
+//             $validator->errors()->add("components.$key.item_id", "Duplicate item!");
+//             return;
+//         }
+//     }
+
+//     $items[] = $currentItem;
+// }
+

@@ -23,7 +23,7 @@
                         @if(!isset(request() -> revisionNumber))
                         <button type = "button" onclick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
                             @if (isset($order))
-                                @if(($einvoice || !$enableEinvoice) && $buttons['print'])
+                                @if($buttons['print'])
                                 <button class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light dropdown-toggle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
@@ -146,7 +146,6 @@
                                                                     <option value = "{{$currentService -> alias}}" {{isset($selectedService) ? ($selectedService == $currentService -> alias ? 'selected' : '') : ''}}>{{$currentService -> name}}</option>
                                                                 @endforeach
                                                             </select>
-                                                            <input type = "hidden" value = "yes" id = "invoice_to_follow_input" />
                                                         </div>
 
                                                     </div>
@@ -201,7 +200,24 @@
                                                         </div>
                                                     </div>
 
+                                                    @if ((isset($order) && in_array($order -> document_type, ['dnote', 'si-dnote']) || (in_array($type, ['dnote', 'si-dnote']))))
+                                                    <div class="row align-items-center mb-1 lease-hidden">
+                                                        <div class="col-md-3"> 
+                                                            <label class="form-label">Store<span class="text-danger">*</span></label>  
+                                                        </div>  
 
+                                                        <div class="col-md-5">  
+                                                            <select class="form-select disable_on_edit" name = "sub_store_id" id = "sub_store_id_input">
+                                                                @if (isset($order) && $order -> sub_store_id)
+                                                                    <option value = "{{ $order -> sub_store_id }}">{{ $order -> subStore ?-> name }}</option>
+                                                                @endif
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+                                                    
+                                                    
+                                                    
 
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
@@ -319,7 +335,7 @@
                                                </div>
                                                 @if($approvalHist->created_at)
                                                     <h6>
-                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->timezone('Asia/Kolkata')->format('d/m/Y | h.iA') }}
                                                     </h6>
                                                 @endif
                                                 @if($approvalHist->remarks)
@@ -435,6 +451,8 @@
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <div class="mrnaddedd-prim" id = "current_billing_address">{{isset($order) ? $order -> billing_address_details ?-> display_address : ''}}</div>
                                                                     <input type = "hidden" id = "current_billing_address_id"></input>
+                                                                    <input type = "hidden" id = "current_billing_country_id" name = "billing_country_id" value = "{{isset($order) && isset($order -> billing_address_details) ? $order -> billing_address_details -> country_id : ''}}"></input>
+                                                                    <input type = "hidden" id = "current_billing_state_id" name = "billing_state_id" value = "{{isset($order) && isset($order -> billing_address_details) ? $order -> billing_address_details -> state_id : ''}}"></input>
                                                                     <input type="hidden" name="new_billing_country_id" id="new_billing_country_id" value="">
                                                                     <input type="hidden" name="new_billing_state_id" id="new_billing_state_id" value="">
                                                                     <input type="hidden" name="new_billing_city_id" id="new_billing_city_id" value="">
@@ -589,7 +607,6 @@
                                                                     <th width="240px">Item Name</th>
                                                                     <th>Attributes</th>
                                                                     <th>UOM</th>
-                                                                    <th width = "150px">Store</th>
                                                                     <th class = "numeric-alignment">Qty</th>
                                                                     <th class = "numeric-alignment">Rate</th>
                                                                     <th class = "numeric-alignment">Value</th>
@@ -672,13 +689,7 @@
 
                                                                             </select>
                                                                         </td>
-                                                                        <td class = "sub_store_dependent">
-                                                                        <select class="form-select" style = "min-width:100%;" name = "item_sub_store[{{$orderItemIndex}}]" id = "item_sub_store_{{$orderItemIndex}}" onchange = "getStoresData({{$orderItemIndex}}, '', true);">
-                                                                            @foreach ($subStores as $subStore)
-                                                                                <option value = "{{$subStore -> id}}" {{$orderItem -> sub_store_id === $subStore -> id ? 'selected' : ''}}>{{$subStore -> name}}</option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                        </td>
+                                                                        
                                                                         <input type = "hidden" value = "{{$orderItem -> store_id}}" name = "item_store[{{$orderItemIndex}}]" />
                                                                         <td><input {{$orderItem -> disable_qty ? 'readonly' : ''}} type="text" id = "item_qty_{{$orderItemIndex}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> order_qty}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{($orderItem -> max_attribute)}}" /></td>
                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" name = "item_rate[]" {{$docType == 'dnote' ? 'readonly' : ''}} oninput = "changeItemRate(this, '{{$orderItemIndex}}');" value = "{{$orderItem -> rate}}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
@@ -719,9 +730,9 @@
                                                              </tbody>
 
                                                              <tfoot>
-
-                                                                 <tr class="totalsubheadpodetail">
-                                                                    <td colspan="8" id = "item_row_colspan"></td>
+                                                                 
+                                                                 <tr class="totalsubheadpodetail"> 
+                                                                    <td colspan="7" id = "item_row_colspan"></td>
                                                                     <td class="text-end" id = "all_items_total_value">00.00</td>
                                                                     <td class="text-end" id = "all_items_total_discount">00.00</td>
                                                                     <input type = "hidden" id = "all_items_total_tax"></input>
@@ -730,7 +741,7 @@
                                                                 </tr>
 
                                                                  <tr valign="top">
-                                                                    <td id = "item_details_td" colspan="8" rowspan="10">
+                                                                    <td id = "item_details_td" colspan="7" rowspan="10">
                                                                         <table class="table border">
                                                                             <tr>
                                                                                 <td class="p-0">
@@ -830,7 +841,7 @@
                                                                         </table>
                                                                     </td>
 
-                                                                    <td colspan="4" id = "invoice_summary_td">
+                                                                    <td colspan="5" id = "invoice_summary_td">
                                                                         <table class="table border mrnsummarynewsty" id = "summary_table">
                                                                             <tr>
                                                                                 <td colspan="2" class="p-0">
@@ -1044,7 +1055,8 @@
 											<th>Doc Date</th>
                                             <th>Currency</th>
                                             <th>Customer Name</th>
-											<th>Item</th>
+											<th>Item Code</th>
+											<th>Item Name</th>
 											<th>Attributes</th>
 											<th>UOM</th>
 											<th>Quantity</th>
@@ -1135,7 +1147,8 @@
 											<th>Doc Date</th>
                                             <th>Currency</th>
                                             <th>Customer Name</th>
-											<th>Item</th>
+											<th>Item Code</th>
+											<th>Item Name</th>
 											<th>Attributes</th>
 											<th>UOM</th>
 											<th>Quantity</th>
@@ -2527,12 +2540,6 @@
 
                    </select>
                </td>
-               <td class = "sub_store_dependent">
-               <select class="form-select" style = "min-width:100%;" name = "item_sub_store[${newIndex}]" id = "item_sub_store_${newIndex}" onchange = "getStoresData(${newIndex}, '', true)">
-
-                                                            </select>
-                </td>
-                <input type = "hidden" value = "${$("#store_id_input").val()}" name = "item_store[${newIndex}]" />
                <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
               <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" oninput = "changeItemRate(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
                <td><input type="text" id = "item_value_${newIndex}" disabled class="form-control mw-100 text-end item_values_input" /></td>
@@ -2581,14 +2588,6 @@
             uomCodeInput.addEventListener('input', function() {
                 checkStockData(newIndex);
             });
-            subStoreCodeInput.addEventListener('input', function() {
-                checkStockData(newIndex);
-            });
-            // qtyInput.addEventListener('input', function() {
-            //     const newQty = this.value;
-            //     getStoresData(newIndex, newQty);
-            // });
-            subStoreDependencyRender();
         }
 
         function deleteItemRows()
@@ -3465,7 +3464,7 @@
     {
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
         const docType = $("#service_id_input").val();
-        const invoiceToFollowParam = $("#invoice_to_follow_input").val() == "yes";
+        const invoiceToFollowParam = $("#service_id_input").val() == "dnote";
         const apiUrl = "{{route('sale.invoice.process.items')}}";
         let docId = [];
         let soItemsId = [];
@@ -3542,7 +3541,9 @@
                         $("#current_billing_address").text(currentOrder.billing_address_details?.display_address);
                         $("#current_shipping_address").text(currentOrder.shipping_address_details?.display_address);
                         $("#current_shipping_country_id").val(currentOrder.shipping_address_details?.country_id);
+                        $("#current_billing_country_id").val(currentOrder.billing_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
+                        $("#current_billing_state_id").val(currentOrder.billing_address_details?.state_id);
                             const locationElement = document.getElementById('store_id_input');
                             if (locationElement) {
                                 const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
@@ -3630,7 +3631,7 @@
                                 var bundleInfoIcon = ``;
                                 if (openPullType == 'so') {
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer item_bundles" onclick = "getBundles(${currentOrderIndexVal}, ${item.id})" id = "item_bundles_${currentOrderIndexVal}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
-                                    disableQty = "readonly";
+                                    // disableQty = "readonly";
                                 }
                                 if (openPullType == 'plist') {
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer" packet="${item.package}" qty = "${item.order_qty}" onclick = "setPackets(this);" >    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
@@ -3640,31 +3641,7 @@
                                 }
                                 var headerStoreId = $("#store_id_input").val();
                                 var headerStoreCode = $("#store_id_input").attr("data-name");
-                                var stores = @json($stores);
-                                var storesHTML = ``;
-                                stores.forEach(store => {
-                                    if (store.id == headerStoreId) {
-                                        storesHTML += `<option value = "${store.id}" selected>${store.store_name}</option>`
-                                    } else {
-                                        storesHTML += `<option value = "${store.id}">${store.store_name}</option>`
-                                    }
-                                });
-
-                                let subStoresHTML = ``;
-                                currentSubStoreArray.forEach(subStore => {
-                                    if (subStoreId == subStore.id) {
-                                        subStoresHTML += `<option value = ${subStore.id} ${subStore.id == subStoreId ? 'selected' : ''}> ${subStore.name} </option>`;
-                                    }
-                                });
-
-                                if (currentOrder?.staging_sub_store_id) {
-                                    subStoresHTML += `<option value = "${currentOrder.staging_sub_store_id}" selected>${currentOrder?.staging_sub_store_code}</option>`
-                                }
-
-                                if (currentOrder?.sub_store_id) {
-                                    subStoresHTML += `<option value = "${currentOrder.sub_store_id}" selected>${currentOrder?.sub_store_code}</option>`
-                                }
-
+                                
                                 mainTableItem.innerHTML += `
                                 <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');">
                                     <td class="customernewsection-form">
@@ -3708,12 +3685,7 @@
 
                                     </select>
                                         </td>
-                                        <td class = "">
-                                        <select class="form-select" style = "min-width:100%;" name = "item_sub_store[${currentOrderIndexVal}]" id = "item_sub_store_${currentOrderIndexVal}" oninput = "getStoresData(${currentOrderIndexVal}, '', true)">
-                                                                                        ${subStoresHTML}
-                                        </select>
-                                        </td>
-                                        <input type = "hidden" value = "${$("#store_id_input").val()}" name = "item_store[${currentOrderIndexVal}]" />
+                                        
                                         <td><input ${disableQty} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
                                         <td><input ${disableQty} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${invoiceToFollowParam ? 'readonly' : ''} /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
@@ -3927,11 +3899,9 @@
                             getStoresData(index,null,false);
                         }
                     }
-                    subStoreDependencyRender();
                 },
                 error: function(xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
-                    subStoreDependencyRender();
                 }
             });
         } else {
@@ -3961,7 +3931,10 @@
                 }
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const itemId = row?.id;
-                const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
+                let isEnabled = true;
+                if (type == 'so' || type == "pl") {
+                    isEnabled = Number(row.avl_stock.replace(/,/g, '')) > 0;
+                }
                 return `<div class="form-check form-check-inline me-0">
                     <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
                         ${isEnabled ? '' : 'disabled'}
@@ -4027,6 +4000,7 @@
                     { data: 'header.currency_code', name: 'currency_code' },
                     { data: 'header.customer.company_name', name: 'company_name' },
                     { data: 'item_code', name: 'item_code' },
+                    { data: 'item_name', name: 'item_name' },
                     {
                         data: 'attributes',
                         name: 'attributes',
@@ -4059,13 +4033,13 @@
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
             .map((_, i) => document.getElementById('qt_id_' + i)?.value)
             .filter(Boolean);
-        console.log('columns', getColumns());
         const filters = {
             doc_type: $(tableSelector+"_value"),
             header_book_id: $("#series_id_input"),
             land_plot_id: $("#land_plot_id_qt_val_land"),
             land_parcel_id: $("#land_parcel_id_qt_val_land"),
             store_id: $("#store_id_input"),
+            sub_store_id : $("#sub_store_id_input"),
             selected_ids: selectedIds
         };
 
@@ -4827,7 +4801,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             }
         }
 
-        onHeaderLocationChange(document.getElementById('store_id_input'));
+        // onHeaderLocationChange(document.getElementById('store_id_input'));
 
     }
 
@@ -4903,6 +4877,12 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                         docElement.setAttribute('checked-bundle', encodeURIComponent(JSON.stringify(newBundleCheckedArray)));
                     }
                     $('#BundleInfo').modal('show');
+                } else {
+                    Swal.fire({
+                    title: 'Not Found',
+                    text: "Bundles not available",
+                    icon: 'info',
+                });
                 }
             },
             error: function(xhr) {
@@ -5117,36 +5097,6 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
     let currentSubStoreArray = [];
     let lastSelectedSubStore = null;
 
-    function subStoreDependencyRender()
-    {
-        let currentDocType = $("#service_id_input").val();
-        let dependentFields = document.querySelectorAll('.sub_store_dependent');
-        for (let index = 0; index < dependentFields.length; index++) {
-            if (currentDocType !== 'dnote') {
-                dependentFields[index].classList.add('d-none');
-            } else {
-                if (currentSubStoreArray.length > 0) {
-                    dependentFields[index].classList.remove('d-none');
-                } else {
-                    dependentFields[index].classList.add('d-none');
-                }
-            }
-        }
-        if (currentDocType !== 'dnote') {
-            // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
-            // document.getElementById('item_details_td').setAttribute('colspan', 7);
-        } else {
-            if (currentSubStoreArray.length > 0) {
-                // document.getElementById('item_row_colspan').setAttribute('colspan', 8);
-                // document.getElementById('item_details_td').setAttribute('colspan', 8);
-            } else {
-                // document.getElementById('item_row_colspan').setAttribute('colspan', 7);
-                // document.getElementById('item_details_td').setAttribute('colspan', 7);
-            }
-
-        }
-    }
-
     function setLocationStoreOnItem(itemId, itemIndex)
     {
         const locId = $("#store_id_input").val();
@@ -5161,11 +5111,9 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             success: function(data) {
                 if (data.status === 200) {
                     currentSubStoreArray = data.data;
-                    subStoreDependencyRender();
                     renderStoreOnItemChange(itemIndex);
                 } else {
                     currentSubStoreArray = [];
-                    subStoreDependencyRender();
                     Swal.fire({
                         title: 'Error!',
                         text: data.message,
@@ -5176,7 +5124,6 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr);
                 currentSubStoreArray = [];
-                subStoreDependencyRender();
                 Swal.fire({
                     title: 'Error!',
                     text: xhr?.responseJSON?.message,
@@ -5188,16 +5135,18 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
 
     function onHeaderLocationChange(element)
     {
+        let order = @json(isset($order) ? $order : null);
+        if (order) {
+            return;
+        }
         const storeId = element.value;
         let currentDocType = $("#service_id_input").val();
         currentSubStoreArray = [];
-        if (currentDocType !== 'dnote') {
-            subStoreDependencyRender();
-            return;
-        }
         let payloadData = {
             store_id : storeId
         };
+        let subStoreElement = document.getElementById('sub_store_id_input');
+        subStoreElement.innerHTML = "";
         $.ajax({
             url: "{{route('subStore.get.from.stores')}}",
             method: 'GET',
@@ -5206,10 +5155,14 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             success: function(data) {
                 if (data.status === 200) {
                     currentSubStoreArray = data.data;
-                    subStoreDependencyRender();
+                    let newHTML = ``;
+                    currentSubStoreArray.forEach(element => {
+                        newHTML += `<option value = "${element.id}"> ${element.name} </option>`;
+                    });
+                    subStoreElement.innerHTML = newHTML;
                 } else {
                     currentSubStoreArray = [];
-                    subStoreDependencyRender();
+                    subStoreElement.innerHTML = ``;
                     Swal.fire({
                         title: 'Error!',
                         text: data.message,
@@ -5220,7 +5173,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr);
                 currentSubStoreArray = [];
-                subStoreDependencyRender();
+                subStoreElement.innerHTML = ``;
                 Swal.fire({
                     title: 'Error!',
                     text: xhr?.responseJSON?.message,
@@ -5324,8 +5277,8 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                 item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
                 uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
                 selectedAttr : selectedItemAttr,
-                store_id: $("#item_store_" + itemRowId).val(),
-                sub_store_id: $("#item_sub_store_" + itemRowId).val()
+                store_id: $("#store_id_input").val(),
+                sub_store_id: $("#sub_store_id_input").val()
             },
             success: function(data) {
 
@@ -5354,57 +5307,6 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             });
     }
 
-    function checkStockData(itemRowId)
-    {
-        let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
-                let selectedItemAttr = [];
-                if (itemAttributes && itemAttributes.length > 0) {
-                    itemAttributes.forEach(element => {
-                    element.values_data.forEach(subElement => {
-                        if (subElement.selected) {
-                            selectedItemAttr.push(subElement.id);
-                        }
-                    });
-                });
-                }
-        $.ajax({
-            url: "{{route('get_item_inventory_details')}}",
-            method: 'GET',
-            dataType: 'json',
-            data: {
-                quantity: document.getElementById('item_qty_' + itemRowId).value,
-                item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
-                uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
-                selectedAttr : selectedItemAttr,
-                store_id: $("#item_store_" + itemRowId).val(),
-                sub_store_id: $("#item_sub_store_" + itemRowId).val()
-            },
-            success: function(data) {
-
-                    var inputQtyBox = document.getElementById('item_qty_' + itemRowId);
-                    var actualQty = inputQtyBox.value;
-                    inputQtyBox.setAttribute('max-stock',data.stocks.confirmedStockAltUom);
-                    if (inputQtyBox.getAttribute('max-stock')) {
-                        var maxStock = parseFloat(inputQtyBox.getAttribute('max-stock') ? inputQtyBox.getAttribute('max-stock') : 0);
-                        if (maxStock <= 0) {
-                            inputQtyBox.value = 0;
-                            inputQtyBox.readOnly = true;
-                        } else {
-                            if (actualQty > maxStock) {
-                                inputQtyBox.value = maxStock;
-                                inputQtyBox.readOnly  = false;
-                            } else {
-                                inputQtyBox.readOnly  = false;
-                            }
-                        }
-                    }
-
-            },
-            error: function(xhr) {
-                console.error('Error fetching customer data:', xhr.responseText);
-            }
-            });
-    }
     function checkAllSO(element)
     {
         const selectableElements = document.getElementsByClassName('pull_checkbox');
@@ -5475,6 +5377,10 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
         selectedValues = {};
         getOrders(type);
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        onHeaderLocationChange(document.getElementById('store_id_input'));
+    });    
 
 </script>
 @endsection

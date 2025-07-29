@@ -377,6 +377,16 @@
                                                             placeholder="Enter Vehicle No." />
                                                         </div>
                                                     </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">
+                                                            Manual Entry No.
+                                                            </label>
+                                                            <input type="text" name="manual_entry_no"
+                                                                class="form-control bg-white"
+                                                                placeholder="Enter Manual Entry No.">
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -822,7 +832,6 @@
 
             /*Reference from*/
             let reference_from_service = parameters.reference_from_service;
-            console.log(reference_from_service);
 
             if(reference_from_service.length) {
                 let po = '{{\App\Helpers\ConstantHelper::PO_SERVICE_ALIAS}}';
@@ -1182,7 +1191,6 @@
                     icon: 'error',
                 });
             }
-            console.log($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length);
 
             if(!$("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                 $(".joSelect").removeClass('d-none');
@@ -1493,6 +1501,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     poOrderTable = $(tableSelector).DataTable();
                     poOrderTable.ajax.reload();
+                    $('#poModal').off('change', '.po_item_checkbox').on('change', '.po_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.po_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.po_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
                 // Re-initialize DataTable
             }
@@ -1518,8 +1541,6 @@
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
         {
             let modalType = '#poModal';
-            if (currentProcessType == 'jo')
-                modalType = '#joModal';
 
             $("#" + selector).autocomplete({
                 source: function(request, response) {
@@ -1930,6 +1951,21 @@
                 if ($.fn.DataTable.isDataTable(tableSelector)) {
                     joOrderTable = $(tableSelector).DataTable();
                     joOrderTable.ajax.reload();
+                    $('#joModal').off('change', '.jo_item_checkbox').on('change', '.jo_item_checkbox', function () {
+                        const currentAsn = $(this).attr('data-current-asn');
+                        const currentGe = $(this).attr('data-current-ge');
+                        const isChecked = $(this).is(':checked');
+
+                        // If data-current-asn is valid
+                        if (currentAsn && currentAsn !== 'null') {
+                            $(`.jo_item_checkbox[data-current-asn="${currentAsn}"]`).prop('checked', isChecked);
+                        }
+
+                        // If data-current-ge is valid
+                        if (currentGe && currentGe !== 'null') {
+                            $(`.jo_item_checkbox[data-current-ge="${currentGe}"]`).prop('checked', isChecked);
+                        }
+                    });
                 }
                 // Re-initialize DataTable
             }
@@ -2566,7 +2602,7 @@
                     } else {
                         $("#f_header_expense_hidden").addClass('d-none');
                     }
-
+                    $("#reference_type_input").val(processType);
                     setTimeout(() => {
                         setTableCalculation();
                         $("#itemTable .mrntableselectexcel tr").each((index, item) => {

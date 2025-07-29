@@ -181,64 +181,52 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
 });
 
 /*qty on change*/
-$(document).on('change',"[name*='accepted_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    checkDuplicateObjects(qty);
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let itemId = $(e.target).closest('tr').find('[name*=item_id]').val();
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let receiptQuantity = $(e.target).closest('tr').find("[name*='order_qty']");
-    let rejectedQuantity = $(e.target).closest('tr').find("[name*='rejected_qty']");
-    let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='mrn_detail_id']").val();
-    let pbDetailId = $(e.target).closest('tr').find("[name*='pb_detail_id']").val();
-    let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
-    // if(Number(acceptedQuantity.val()) < 1) {
-    //     acceptedQuantity.val(oldValue);
-    //     // rejectedQuantity.val(oldValue);
-    //     Swal.fire({
-    //         title: 'Error!',
-    //         text: 'Accepted Quantity must be positive integer.',
-    //         icon: 'error',
-    //     });
-    //     return false;
-    // }
-    if(Number(acceptedQuantity.val()) > Number(receiptQuantity.val())) {
-        acceptedQuantity.val(receiptQuantity.val());
-        Swal.fire({
-            title: 'Error!',
-            text: 'Accepted Quantity can not be greater than receipt quantity.',
-            icon: 'error',
-        });
-        return false;
-    } else{
-        if(mrnDetailId || pbDetailId){
-            let actionUrl = '/expense-advise/validate-quantity?item_id='+itemId+'&mrnDetailId='+mrnDetailId+'&pbDetailId='+pbDetailId+'&qty='+acceptedQuantity.val();
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.data.error_message) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.data.error_message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
-            });
-        }
-        let aq = parseFloat(acceptedQuantity.val());
-        let rq = parseFloat(receiptQuantity.val()) - parseFloat(acceptedQuantity.val());
-        acceptedQuantity.val(aq.toFixed(2));
-        rejectedQuantity.val(rq.toFixed(2));
+$(document).on('change', "[name*='accepted_qty']", async function (e) {
+    const $tr = $(e.target).closest('tr');
+    const $qtyInput = $(e.target);
+    const acceptedQty = parseFloat($qtyInput.val()) || 0;
 
-        if (Number(itemCost.val())) {
-            let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
-            itemValue.val(totalItemValue.toFixed(2));
-        } else {
-            itemValue.val('');
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+
+    $qtyInput.val(acceptedQty.toFixed(2));
+    checkDuplicateObjects($qtyInput);
+
+    if (acceptedQty <= 0) {
+        Swal.fire({ title: 'Error!', text: 'Qty. cannot be zero.', icon: 'error' });
+        $qtyInput.val(acceptedQty.toFixed(2));
+        return;
+    }
+
+    const getVal = (selector) => {
+        const el = $tr.find(selector);
+        return el.length ? el.val() : '';
+    };
+
+    const data = {};
+    const safeSet = (key, val) => { if (val) data[key] = val; };
+
+    safeSet('item_id', itemId);
+    safeSet('po_header_id', getVal("[name*='[purchase_order_id]']"));
+    safeSet('po_detail_id', getVal("[name*='[po_detail_id]']"));
+    safeSet('detail_id', getVal("[name*='[detail_id]']"));
+    safeSet('qty', acceptedQty.toFixed(2));
+
+    try {
+        const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+        const result = await response.json();
+        const resultQty = parseFloat(result.accepted_qty) || 0;
+        const finalQty = resultQty.toFixed(2);
+        $qtyInput.val(finalQty);
+
+        if (result.status !== 200 && result.message) {
+            Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
+            return false;
         }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ title: 'Error!', text: 'Quantity validation failed.', icon: 'error' });
     }
 });
 

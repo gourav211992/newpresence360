@@ -34,6 +34,7 @@
     </style>
 </head>
 <body>
+    @include('components.pdf-watermark')
     <div style="width:700px; font-size: 11px; font-family:Arial;">
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -304,7 +305,7 @@
                     Value
                 </td>
             </tr>
-            @php 
+            @php
                 $totalCGSTValue = 0.00;
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
@@ -318,17 +319,17 @@
                     <td
                         style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
                         <b> {{ @$val?->item?->item_name }}</b><br/>
-                        
+
                         @if($val?->attributes->count())
-                            @php 
+                            @php
                                 $html = '';
                                 foreach($val?->attributes as $attribute) {
                                 $attr = \App\Models\AttributeGroup::where('id', @$attribute->attribute_name)->first();
                                 $attrValue = \App\Models\Attribute::where('id', @$attribute->attribute_value)->first();
-                                    
-                                    if ($attr && $attrValue) { 
+
+                                    if ($attr && $attrValue) {
                                             if($html) {
-                                                $html.= ', ';    
+                                                $html.= ', ';
                                             }
                                             $html .= "$attr->name : $attrValue->value";
                                     } else {
@@ -361,7 +362,7 @@
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                        {{ucfirst(@$val?->item?->uom?->name)}}
                     </td>
-                    
+
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{@$val->rate}}
@@ -390,28 +391,28 @@
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->cgst_value['rate'], 2) }}    
+                        {{ number_format($val->cgst_value['rate'], 2) }}
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->cgst_value['value'], 2) }}  
+                        {{ number_format($val->cgst_value['value'], 2) }}
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->sgst_value['rate'], 2) }}   
+                        {{ number_format($val->sgst_value['rate'], 2) }}
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->sgst_value['value'], 2) }}   
+                        {{ number_format($val->sgst_value['value'], 2) }}
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->igst_value['rate'], 2) }}   
+                        {{ number_format($val->igst_value['rate'], 2) }}
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: right;">
-                        {{ number_format($val->igst_value['value'], 2) }}   
-                        @php 
+                        {{ number_format($val->igst_value['value'], 2) }}
+                        @php
                             $totalCGSTValue += $val->cgst_value['value'];
                             $totalSGSTValue += $val->sgst_value['value'];
                             $totalIGSTValue += $val->igst_value['value'];
@@ -688,7 +689,7 @@
             <tr>
                 <td colspan="2"
                     style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    @foreach($po->termsConditions as $poTerm) 
+                    @foreach($po->termsConditions as $poTerm)
                         {!! $poTerm->termAndCondition?->term_detail !!}
                     @endforeach
                 </td>
