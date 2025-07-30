@@ -380,18 +380,24 @@ class ItemImportExportService
     
     }
 
-    public function validateItemAttributes($attributes, &$errors)
+   public function validateItemAttributes($attributes, &$errors)
     {
         if ($attributes) {
             foreach ($attributes as $attribute) {
                 $attributeGroup = $this->getAttributeGroupByName($attribute['name'], $errors);
-    
-                if ($attributeGroup) {
-                    if ($attribute['value']) {
-                        $attributeValues = explode(',', $attribute['value']);
-                        foreach ($attributeValues as $value) {
-                            $this->getAttributeByName($value, $attributeGroup, $errors); // Call, but don't add errors here
-                        }
+                if (!$attributeGroup) {
+                    $errors[] = "Attribute group not found: {$attribute['name']}";
+                    continue;
+                }
+                if (!isset($attribute['value']) || $attribute['value'] === '') {
+                    $errors[] = "Attribute value missing for group: {$attribute['name']}";
+                    continue;
+                }
+                $attributeValues = explode(',', $attribute['value']);
+                foreach ($attributeValues as $value) {
+                    $attributeObj = $this->getAttributeByName($value, $attributeGroup, $errors);
+                    if (!$attributeObj) {
+                        $errors[] = "Attribute not found: {$value} in group {$attribute['name']}";
                     }
                 }
             }
@@ -402,10 +408,35 @@ class ItemImportExportService
     {
         if ($specifications) {
             foreach ($specifications as $specGroup) {
+                if (!isset($specGroup['group_name']) || $specGroup['group_name'] === '') {
+                    if (!in_array("Specification group name missing.", $errors)) {
+                        $errors[] = "Specification group name missing.";
+                    }
+                    continue;
+                }
+                $specGroupObj = $this->getProductSpecificationGroupByName($specGroup['group_name'], $errors);
+                if (!$specGroupObj) {
+                    $msg = "Specification group not found: {$specGroup['group_name']}";
+                    if (!in_array($msg, $errors)) {
+                        $errors[] = $msg;
+                    }
+                }
                 if (isset($specGroup['specifications']) && is_array($specGroup['specifications'])) {
                     foreach ($specGroup['specifications'] as $spec) {
-                        $this->getProductSpecificationByName($spec['name'], $errors);
-                        $this->getProductSpecificationGroupByName($specGroup['group_name'], $errors);
+                        if (!isset($spec['name']) || $spec['name'] === '') {
+                            $msg = "Specification name missing in group: {$specGroup['group_name']}";
+                            if (!in_array($msg, $errors)) {
+                                $errors[] = $msg;
+                            }
+                            continue;
+                        }
+                        $specObj = $this->getProductSpecificationByName($spec['name'], $errors);
+                        if (!$specObj) {
+                            $msg = "Specification not found: {$spec['name']} in group {$specGroup['group_name']}";
+                            if (!in_array($msg, $errors)) {
+                                $errors[] = $msg;
+                            }
+                        }
                     }
                 }
             }
@@ -417,9 +448,15 @@ class ItemImportExportService
     {
         if ($alternateUoms) {
             foreach ($alternateUoms as $uomData) {
-                $uom = $this->getUomId($uomData['uom']);
-                if (!$uom) {
-                    $errors[] = "UOM not found for {$uomData['uom']}";
+                if (!isset($uomData['uom']) || $uomData['uom'] === '') {
+                    $errors[] = "Alternate UOM value missing.";
+                    continue;
+                }
+                try {
+                    $uom = $this->getUomId($uomData['uom']);
+                } catch (Exception $e) {
+                    $errors[] = "UOM not found: {$uomData['uom']}";
+                    continue;
                 }
             }
         }
@@ -652,7 +689,6 @@ class ItemImportExportService
         $pincodeVal = null;
         $errors = [];
 
-        // देश की जांच
         if (isset($countryName)) {
             if (trim($countryName) === '') {
                 $errors['country'] = "Country name is empty.";
@@ -666,7 +702,6 @@ class ItemImportExportService
             }
         }
 
-        // स्टेट की जांच
         if (isset($stateName)) {
             if (trim($stateName) === '') {
                 $errors['state'] = "State name is empty.";
@@ -684,7 +719,6 @@ class ItemImportExportService
             }
         }
 
-        // शहर की जांच
         if (isset($cityName)) {
             if (trim($cityName) === '') {
                 $errors['city'] = "City name is empty.";
@@ -702,7 +736,6 @@ class ItemImportExportService
             }
         }
 
-        // पिनकोड की जांच
         if (isset($pincode)) {
             if (trim($pincode) === '') {
                 $errors['pincode'] = "Pincode is empty.";

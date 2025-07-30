@@ -41,6 +41,7 @@
 </head>
 
 <body>
+    {{-- @include('components.pdf-watermark',['status' => isset($pi->document_status) ? $pi->document_status : '']) --}}
     <div style="width:700px; font-size: 11px; font-family:Arial;">
         @include('pdf.partials.header', [
             'orgLogo' => $orgLogo,

@@ -956,6 +956,7 @@ class ExpenseAdviseController extends Controller
             $expense->store_id = $request->header_store_id ?? '';
             $expense->cost_center_id = $request->cost_center_id ?? '';
             $expense->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            $expense->reference_type = $request->reference_type ?? '';
             $expense->save();
 
             $vendorBillingAddress = $expense->billingAddress ?? null;
@@ -2530,9 +2531,17 @@ class ExpenseAdviseController extends Controller
         if ($request->type === 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
         } elseif ($request->type === 'edit') {
-            $poItems->whereIn('erp_purchase_orders.id', $headerIds);
-            $poItems->whereNotIn('erp_po_items.id', $detailsIds);
-            $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
+            if (!empty($headerIds)) {
+                $poItems->whereIn('erp_purchase_orders.id', $headerIds);
+            }
+
+            if (!empty($detailsIds)) {
+                $poItems->whereNotIn('erp_po_items.id', $detailsIds);
+            }
+
+            if (!empty($selected_po_ids)) {
+                $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
+            }
         }
 
         $poItems = $poItems->orderBy('po_id', 'desc')->get();
@@ -3387,11 +3396,11 @@ class ExpenseAdviseController extends Controller
     {
         $inputData = [
             'item_id'            => $component['item_id'] ?? null,
-            'po_header_id'      => $component['purchase_order_id'],
-            'po_detail_id'      => $component['po_detail_id'],
-            'expense_item_id' => $component['detail_id'],
-            'qty'                => $component['accepted_qty'],
-            'type'               => $refType,
+            'po_header_id'      => $component['purchase_order_id'] ?? null,
+            'po_detail_id'      => $component['po_detail_id'] ?? null,
+            'expense_item_id' => $component['detail_id'] ?? null,
+            'qty'                => $component['accepted_qty'] ?? null,
+            'type'               => $refType ?? '',
         ];
 
         $checkService = new ExpenseCheckAndUpdateService();

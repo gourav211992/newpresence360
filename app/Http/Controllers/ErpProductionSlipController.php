@@ -1159,11 +1159,11 @@ class ErpProductionSlipController extends Controller
         $products = collect();
         $items = collect();
         if(isset($pslip -> items) && $pslip -> items) {
-            $items = $pslip -> items;
+            $products = $pslip -> items;
         }
         if(isset($pslip->consumptions))
         {
-            $products = $pslip -> consumptions;            
+            $items = $pslip -> consumptions;            
         }
 
         $totalAmount = 0;

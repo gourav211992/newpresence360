@@ -1065,11 +1065,13 @@
                     organizations = value['organizations'];
                 }
             });
-            $("#level_organization_id" + id).html("");
-            $("#level_organization_id" + id).append("<option disabled selected value=''>Select Unit</option>");
+            // Clear and repopulate ONLY the current row's organization dropdown
+            const $orgDropdown = $(this).closest('tr').find('.level_organizations');
+            $orgDropdown.html("");
+            $orgDropdown.append("<option disabled selected value=''>Select Unit</option>");
+
             $.each(organizations, function(key, value) {
-                $("#level_organization_id" + id).append("<option value='" + value['id'] + "'>" + value[
-                    'name'] + "</option>");
+                $orgDropdown.append("<option value='" + value['id'] + "'>" + value['name'] + "</option>");
             });
         });
 

@@ -215,6 +215,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($saleOrder);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $saleOrder->approval_level = $approveDocument['nextLevel'];
             $saleOrder->document_status = $approveDocument['approvalStatus'];
             $saleOrder->save();
@@ -252,6 +259,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($saleInvoice);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $saleInvoice->approval_level = $approveDocument['nextLevel'];
             $saleInvoice->document_status = $approveDocument['approvalStatus'];
             $saleInvoice->save();
@@ -289,6 +303,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($packingList);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $packingList->approval_level = $approveDocument['nextLevel'];
             $packingList->document_status = $approveDocument['approvalStatus'];
             $packingList->save();
@@ -329,6 +350,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type;
             $modelName = get_class($saleReturn);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $saleReturn->approval_level = $approveDocument['nextLevel'];
             $saleReturn->document_status = $approveDocument['approvalStatus'];
             $saleReturn->save();
@@ -768,6 +796,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -804,6 +839,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -821,7 +863,7 @@ class DocumentApprovalController extends Controller
             ], 500);
         }
     }
-    public function materialReturn (Request $request)
+    public function materialReturn(Request $request)
     {
         $request->validate([
             'remarks' => 'nullable|string|max:255',
@@ -840,6 +882,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
@@ -876,6 +925,13 @@ class DocumentApprovalController extends Controller
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($doc);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();

@@ -29,4 +29,9 @@ class ErpEquipMaintenanceDetail extends Model
     {
         return $this->hasMany(ErpEquipMaintenanceChecklist::class, 'erp_equip_maintenance_id');
     }
+
+    public function maintenanceType()
+    {
+        return $this->belongsTo(ErpMaintenanceType::class, 'maintenance_type_id');
+    }
 }

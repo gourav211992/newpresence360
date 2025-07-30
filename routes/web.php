@@ -174,6 +174,7 @@ use App\Http\Controllers\ErpMaintananceController;
 use App\Http\Controllers\CloseFy\CloseFyController;
 use App\Http\Controllers\Report\TransactionReportController;
 use App\Http\Controllers\PackingListController;
+use App\Http\Controllers\DefectTrackerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -2882,14 +2883,21 @@ Route::middleware(['user.auth'])->group(function () {
     
     });
 
-    Route::prefix('maintainance')->group(function () {
+     Route::prefix('maintenance')->group(function () {
 
-        Route::get('/', [ErpMaintananceController::class, 'index'])->name('maintainance.index');
-        Route::get('/create', [ErpMaintananceController::class, 'create'])->name('maintainance.create');
-        Route::post('/store', [ErpMaintananceController::class, 'store'])->name('maintainance.store');
-        Route::get('/edit/{id}', [ErpMaintananceController::class, 'edit'])->name('maintainance.edit');
-        Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintainance.update');
+        Route::get('/', [ErpMaintananceController::class, 'index'])->name('maintenance.index');
+        Route::get('/create', [ErpMaintananceController::class, 'create'])->name('maintenance.create');
+        Route::post('/store', [ErpMaintananceController::class, 'store'])->name('maintenance.store');
+        Route::get('/edit/{id}', [ErpMaintananceController::class, 'edit'])->name('maintenance.edit');
+        Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintenance.update');
+        Route::post('/approve', [ErpMaintananceController::class, 'documentApproval'])->name('maintenance.approval');
+        Route::get('amend/{id}', [ErpMaintananceController::class, 'amendment'])->name('maintenance.amendment');
+      
+    });
 
+    Route::prefix('defect-tracker')->group(function () {
+        Route::get('/', [DefectTrackerController::class, 'index'])->name('defect-tracker.index');
+        Route::post('/update/{id}', [DefectTrackerController::class, 'update'])->name('defect-tracker.update');
     });
 
     //For testing purpose -> Stock reservation case , please ignore, will remove

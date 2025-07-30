@@ -18,6 +18,9 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
 
+
+    'cookies_domain' => env('COOKIES_DOMAIN', '.thepresence360.com'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

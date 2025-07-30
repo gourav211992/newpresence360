@@ -42,7 +42,7 @@
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="border: 1px solid #000;  vertical-align: top; width: 35%;">
-                    <div style="font-size: 25px; text-align: center; font-weight: bold; color: #222; letter-spacing: 0.5px; margin-bottom: 3px;">
+                    <div style="font-size: 25px; text-align: center; font-weight: bold; color: #222; letter-spacing: 0.5px; margin-bot7m: 3px;">
                         {{ @$organization->name }}
                     </div>
                     <div style="font-size: 15px; border-bottom: #000,solid; text-align: center; color: #444; line-height: 1.5;">
@@ -173,7 +173,8 @@
                         So Date : {{ $order?->document_date ? date('d-M-y', strtotime($order->document_date)) : '' }}
                     </td>
                     <td colspan="1" style="padding: 6px; border-right: 1px solid #000; background: #80808070; text-align: left; font-weight: bold">
-                        Delivery Date : {{ $order?->delivery_date ? date('d-M-y', strtotime($order->delivery_date)) : '' }}
+                        Delivery Date : {{ isset($order?->soItem?->item_deliveries?->delivery_date) ? date('d-M-y', strtotime($order?->soItem?->item_deliveries?->delivery_date )) : '' }}<br>
+                        Party Order No:     {{ isset($val->so) ? strtoupper($val->so->reference_number) : " " }}
                     </td>
                 </tr>
 
@@ -186,6 +187,9 @@
                     </td>
                     <td style="font-weight: bold; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                         Attribute
+                    </td>
+                    <td style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                        <div style="">Product</div>
                     </td>
                     <td style="font-weight: bold; padding: 4px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                         UOM
@@ -203,26 +207,23 @@
                         Sheets#
                     </td>
                     @endif
-                    <td style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        <div style="">Product</div>
-                    </td>
                     <td
-                    style="font-weight: bold; width:23.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
-                        <div style="">Party Order No.</div>
+                    style="font-weight: bold; width:20.44% padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
+                        <div style="">Actual GSM</div>
                     </td>
                 </tr>
                 @foreach($products as $key => $val)
                 <tr>
                     <td
-                    style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+                    style="width:5%; vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
                         {{ $key + 1 }}
                     </td>
                     <td
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        style="vertical-align: middle; width:10%; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{@$val->customer->company_name}}
                     </td>
                     <td
-                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        style=" vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         @if($val?->attributes->count())
                         @php 
                             $html = '';
@@ -242,49 +243,48 @@
                         {!! $html !!}
                         @endif
                     </td>
-                    <td
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        {{@$val->uom->name}}
-                    </td>
-                    <td
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{@$val->qty}}
-                    </td>
                     @if(count($machine_check))
                         <td
-                            style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                             {{@$val->machine->name}}
                         </td>
                     @endif
                     @if(count($sheet_check))
                         <td
-                            style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                             {{@$val->number_of_sheet}}
                         </td>
                     @endif
                     <td
-                    style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                        <b> {{ isset($val->item_name) ? @$val -> item_name : "" }}</b><br>
-                        <b> {{ isset($val->item_code) ? @$val -> item_code : "" }}</b><br>
+                    style="vertical-align: middle; padding:7px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                        <b> {{ isset($val->item_name) ? @$val -> item_name : "" }}</b>(
+                        <b> {{ isset($val->item_code) ? @$val -> item_code : "" }}</b>)<br>
                         @if(isset($val->item->specifications))
-                        @foreach($val->item->specifications as $data)
-                        @if(isset($data->value))
-                        {{$data->specification_name}}:{{$data->value}}<br>
-                        @endif
-                        @endforeach
+                            @foreach($val->item->specifications as $data)
+                                @if(isset($data->value))
+                                {{$data->specification_name}}:{{$data->value}}<br>
+                                @endif
+                            @endforeach
                         @endif
                         {{@$val->remarks}}
                     </td>
                     <td
-                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ isset($val->so) ? strtoupper($val->so->reference_no) : " " }}
+                        style="vertical-align: middle; width:8%; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                        {{@$val->uom->name}}
+                    </td>
+                    <td
+                        style="vertical-align: middle; width:8%; padding:7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{@$val->qty}}
+                    </td>
+                    <td
+                        style=" width:15%; vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
+
                     </td>
                 </tr>
                 @endforeach
             </tbody>
         </table>
 
-        
         
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <thead>
@@ -305,15 +305,15 @@
             <tbody>
                 @foreach($items as $key => $val)
                 <tr>
-                    <td style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; text-align: center;">
+                    <td style="vertical-align: middle; padding: 7px 3px; border: 1px solid #000; border-top: none; text-align: center;">
                         {{ $key + 1 }}
                     </td>
-                    <td width='140px' style="vertical-align: middle; padding: 2px 3px; border: 1px solid #000; border-top: none; text-align: center;">
+                    <td width='140px' style="vertical-align: middle; padding:7px 3px; border: 1px solid #000; border-top: none; text-align: center;">
                         {{ $val->station->name }}
                     </td>
-                    <td width="150px" style="vertical-align: middle; padding: 10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                      <b>{{ @$val->item->item_name }}</b><br>
-                        {{ @$val->item->item_code }}<br />
+                    <td width="150px" style="vertical-align: middle; padding: 7px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
+                      <b>{{ @$val->item->item_name }}</b>(
+                        {{ @$val->item->item_code }})<br />
                         @if(isset($val->specifications))
                             @foreach($val->specifications as $data)
                                 @if(isset($data->value))
@@ -324,7 +324,7 @@
 
                         {{ @$val->remarks }}
                     </td>
-                    <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                    <td width='40px' style="vertical-align: middle; padding: 7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         @if($val?->attributes->count())
                             @php 
                                 $html = '';
@@ -344,13 +344,13 @@
                             {{ $html }}<br>
                         @endif
                     </td>
-                    <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                    <td width='40px' style="vertical-align: middle; padding: 7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{ $val->rm_type == "rm" ? "RM" : "WIP" }}
                     </td>
-                    <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
+                    <td width='40px' style="vertical-align: middle; padding: 7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{ @$val->uom->name }}
                     </td>
-                    <td style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                    <td style="vertical-align: middle; padding: 7px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
                         {{ @$val->qty }}
                     </td>
                 </tr>
@@ -403,94 +403,95 @@
                 </td>
             </tr> 
         </table>
-        <table style="width: 100%; padding-top:10px; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-        <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid;background: #80808070; text-align: center; font-weight: bold;">roll No.</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold; background: #80808070; text-align: center; ">meter</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no.</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no.</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
-            </tr>
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">1</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">7</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">13</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">19</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">25</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
+        <div style="page-break-inside: avoid;">
+            <table style="width: 100%; padding-top:10px; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid;background: #80808070; text-align: center; font-weight: bold;">roll No.</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold; background: #80808070; text-align: center; ">meter</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no.</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no.</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">roll no</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; font-weight: bold;background: #80808070; text-align: center;">meter</td>
+                </tr>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">1</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">7</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">13</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">19</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">25</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
 
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">2</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">8</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">14</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">20</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">26</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">3</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">9</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">15</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">21</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">27</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">4</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">10</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">16</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">22</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">28</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">5</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">11</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">17</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">23</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">29</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">2</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">8</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">14</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">20</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">26</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">3</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">9</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">15</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">21</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">27</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">4</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">10</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">16</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">22</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">28</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">5</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">11</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">17</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">23</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">29</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
 
-            <tr>
-                <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">6</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">12</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">18</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">24</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">30</td>
-                <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
-            </tr>
-        </table>
+                <tr>
+                    <td style=" margin-top: 10px; text-transform: uppercase; padding: 5px; border: black thin solid; text-align: center; border-top: none;">6</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none;  text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">12</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">18</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">24</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;">30</td>
+                    <td style="text-transform: uppercase; padding: 5px; border: black thin solid; border-left: none; text-align: center;  border-top: none;"></td>
+                </tr>
+            </table>
+        </div>                        
     </body>
-
 </html>

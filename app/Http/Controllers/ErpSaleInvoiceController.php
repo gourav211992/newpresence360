@@ -638,6 +638,7 @@ class ErpSaleInvoiceController extends Controller
                 $saleInvoice -> consignee_name = $request -> consignee_name;
                 $saleInvoice -> consignment_no = $request -> consignment_no;
                 $saleInvoice -> vehicle_no = $request -> vehicle_no;
+                $saleInvoice -> lr_number = $request -> lr_number ?? null;
                 $saleInvoice -> transporter_name = $request -> transporter_name;
                 $saleInvoice -> transportation_mode = $transportationMode ?-> description;
                 $saleInvoice -> eway_bill_master_id = $transportationMode ?-> id;
@@ -795,6 +796,7 @@ class ErpSaleInvoiceController extends Controller
                     'consignee_name' => $request -> consignee_name,
                     'consignment_no' => $request -> consignment_no,
                     'vehicle_no' => $request -> vehicle_no,
+                    'lr_number' => $request -> lr_number ?? null,
                     'transporter_name' => $request -> transporter_name,
                     'transportation_mode' => $transportationMode ?-> description,
                     'eway_bill_master_id' => $transportationMode ?-> id,
@@ -1697,7 +1699,7 @@ class ErpSaleInvoiceController extends Controller
                     ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
                         $subQuery->withDefaultGroupCompanyOrg()
                             ->whereIn('document_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
-                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED])
                             ->whereIn('book_id', $applicableBookIds)
                             ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id)->where('store_id', $request->store_id))
                             ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))

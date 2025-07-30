@@ -16,7 +16,8 @@
 </head>
 
 <body>
-    @include('components.pdf-watermark')
+    {{-- @include('components.pdf-watermark',['status' => isset($mrn->document_status) ? $mrn->document_status : '']) --}}
+    {{-- @include('components.pdf-watermark') --}}
     <div style="width:700px; font-size: 11px; font-family:Arial;">
 
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">

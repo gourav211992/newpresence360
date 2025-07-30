@@ -38,7 +38,14 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                 data: function(d) {
                     // Loop through each filter key-value pair
                     $.each(filters, function(key, value) {
-                        d[key] = $(value).val();  // Get the value from the HTML input
+                        if (Array.isArray(value)) {
+                            d[key]=[];
+                            value.forEach((ky, val) => {
+                                d[key].push(ky);  // Get the value from the HTML input
+                            });
+                        } else {
+                            d[key] = $(value).val();  // Get the value from the HTML input
+                        }
                     });
                 }
             },

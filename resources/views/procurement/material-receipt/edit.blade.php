@@ -2073,6 +2073,16 @@
 
         function postVoucher(element)
         {
+            Swal.fire({
+            title: 'Are you sure?',
+            text: "Note: you want to submit the details, after that you can not make any changes to that",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, post it!',
+            cancelButtonText: 'Cancel'
+            }).then((result) => {
+            if (result.isConfirmed) {
+            $('.preloader').show();
             const bookId = "{{isset($mrn) ? $mrn -> book_id : ''}}";
             const documentId = "{{isset($mrn) ? $mrn -> id : ''}}";
             const postingApiUrl = "{{route('material-receipt.post')}}"
@@ -2102,6 +2112,7 @@
                                 text: response.message,
                                 icon: 'error',
                             });
+                            $('.preloader').hide();
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
@@ -2110,10 +2121,16 @@
                             text: 'Some internal error occured',
                             icon: 'error',
                         });
+                        $('.preloader').hide();
                     }
                 });
-
             }
+            }
+            else{
+                $('.preloader').hide();
+                $('#postvoucher').modal('hide');
+            }
+            })
         }
 
         // Function to initialize the product section autocomplete

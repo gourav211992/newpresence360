@@ -52,6 +52,7 @@ class ErpSaleInvoice extends Model
         'transportation_mode',
         'transporter_name',
         'vehicle_no',
+        'lr_number',
         'billing_address',
         'shipping_address',
         'currency_id',

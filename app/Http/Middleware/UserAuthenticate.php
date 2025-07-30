@@ -125,7 +125,7 @@ class UserAuthenticate
                 $user->authenticable_type = $authUser->authenticable_type;
                 $user->auth_type = $authType;
                 $user->db_name = $dbName;
-                Auth::guard('web2')->login($user);
+                // Auth::guard('web2')->login($user);
             }
 
             $request->merge(['auth_type' => $authType]);

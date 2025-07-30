@@ -108,10 +108,10 @@ class SaleModuleHelper
     public static function checkTaxApplicability(int $customerId, int $bookId) : bool
     {
         //Book Level Tax
-        $bookLevelTaxParam = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::TAX_REQUIRED_PARAM, $bookId)['data'];
-        if (in_array("no", $bookLevelTaxParam) || count($bookLevelTaxParam) == 0) {
-            return false;
-        }
+        // $bookLevelTaxParam = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::TAX_REQUIRED_PARAM, $bookId)['data'];
+        // if (in_array("no", $bookLevelTaxParam) || count($bookLevelTaxParam) == 0) {
+        //     return false;
+        // }
         //Customer Level Tax
         // $customerLevelTaxParam = Compliance::where('morphable_type', Customer::class) -> where('morphable_id', $customerId) -> first();
         // if (!isset($customerLevelTaxParam)) {

@@ -6,576 +6,387 @@
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper container-xxl p-0">
-            <div class="content-header pocreate-sticky">
-				<div class="row">
-					<div class="content-header-left col-md-6 mb-2">
-						<div class="row breadcrumbs-top">
-							<div class="col-12">
-								<h2 class="content-header-title float-start mb-0">Maintenance</h2>
-								<div class="breadcrumb-wrapper">
-									<ol class="breadcrumb">
-										<li class="breadcrumb-item"><a href="index.html">Home</a>
-										</li>  
-										<li class="breadcrumb-item active">Add New</li> 
-									</ol>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
-						<div class="form-group breadcrumb-right">   
-							<button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                            <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button> 
-                            <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
-<!--
-                            <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button> 
-							<button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button>  
+	        <form id="maintenance" action="{{ route('maintenance.store') }}" method="POST" enctype="multipart/form-data">
+		        @csrf
+		        <input type ="hidden" name="book_code" id ="book_code_input">
+		        <input type="hidden" name="doc_number_type" id="doc_number_type">
+		        <input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+		        <input type="hidden" name="doc_prefix" id="doc_prefix">
+		        <input type="hidden" name="doc_suffix" id="doc_suffix">
+		        <input type="hidden" name="doc_no" id="doc_no">
+		        <div class="content-header pocreate-sticky">
+			        <div class="row">
+				        <div class="content-header-left col-md-6 mb-2">
+					        <div class="row breadcrumbs-top">
+						        <div class="col-12">
+							        <h2 class="content-header-title float-start mb-0">Maintenance</h2>
+							        <div class="breadcrumb-wrapper">
+								        <ol class="breadcrumb">
+									        <li class="breadcrumb-item"><a href="{{ route('maintenance.index') }}">Home</a>
+									        </li>
+									        <li class="breadcrumb-item active">Add New</li>
+								        </ol>
+							        </div>
+						        </div>
+					        </div>
+				        </div>
+				        <div class="content-header-right text-sm-end col-md-6 mb-50 mb-sm-0">
+					        <div class="form-group breadcrumb-right">
+						        <button onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
+						        {{--                            <button data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>--}}
+						        <!--
+                            <button class="btn btn-danger btn-sm mb-50 mb-sm-0" data-bs-target="#reject" data-bs-toggle="modal"><i data-feather="x-circle"></i> Reject</button>
+							<button class="btn btn-success btn-sm mb-50 mb-sm-0" data-bs-target="#approved" data-bs-toggle="modal"><i data-feather="check-circle" ></i> Approve</button>
 -->
-							<button onClick="javascript: history.go(-1)" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather="check-circle"></i> Submit</button> 
-						</div>
-					</div>
-				</div>
-			</div>
-            <div class="content-body">
-                 
-                
-				
-				<section id="basic-datatable">
-                    <div class="row">
-                        <div class="col-12">
-                            
-                            
-                            <div class="card">
-								 <div class="card-body customernewsection-form">  
-                                        <div class="row">
-                                            <div class="col-md-12">
-                                                <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between"> 
-                                                    <div>
-                                                        <h4 class="card-title text-theme">Basic Information</h4>
-                                                        <p class="card-text">Fill the details</p>
-                                                    </div> 
-                                                </div> 
-                                            </div> 
+
+						        <button type="button" onclick="submitForm('draft')" id="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0"><i data-feather='save'></i> Save as Draft</button>
+						        <button type="button" onclick="submitForm('submitted')" class="btn btn-primary btn-sm mb-50 mb-sm-0" id="submitted"><i data-feather="check-circle"></i>Submit</button>
+						        <input type="hidden" name="status" id="status">
+						        <input id="submitButton" type="submit" value="Submit" class="hidden" />
+					        </div>
+				        </div>
+			        </div>
+		        </div>
+		        <div class="content-body">
 
 
-                                            <div class="col-md-8"> 
-												
-													<div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Series <span class="text-danger">*</span></label>  
-                                                        </div>  
 
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select">
-                                                                <option>Select</option> 
-                                                            </select>
-                                                        </div>
-                                                     </div>
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Doc No <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5"> 
-                                                            <input type="text" class="form-control">
-                                                        </div> 
-                                                     </div>  
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Doc Date <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5"> 
-                                                            <input type="date" class="form-control">
-                                                        </div> 
-                                                     </div>  
-												
-													
-													<div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Category <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select">
-                                                                <option>Select</option> 
-                                                            </select>
-                                                        </div>
-                                                     </div>
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Equipment <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5">  
-                                                            <select class="form-select">
-                                                                <option>Select</option> 
-                                                            </select>
-                                                        </div>
-                                                     </div>
-
-                                                     
-												
-
-<!--
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Maintenance Type <span class="text-danger">*</span></label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5"> 
-                                                            <select class="form-select">
-                                                                <option>Select</option> 
-                                                            </select>
-                                                        </div> 
-                                                     </div>  
-
-                                                    <div class="row align-items-center mb-1">
-                                                        <div class="col-md-3"> 
-                                                            <label class="form-label">Due Date </label>  
-                                                        </div>  
-
-                                                        <div class="col-md-5"> 
-                                                            <input type="date" class="form-control">
-                                                        </div> 
-                                                     </div> 
---> 
+			        <section id="basic-datatable">
+				        <div class="row">
+					        <div class="col-12">
 
 
-                                            </div> 
-                                            
-                                            <div class="col-md-4"> 
-
-                                                    <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                        <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                            <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No. 
-                                                                <select class="form-select">
-                                                                    <option>00</option>
-                                                                    <option>01</option>
-                                                                    <option>02</option>
-                                                                    <option>03</option>
-                                                                </select>
-                                                            </strong>
-                                                            
-                                                        </h5>
-                                                        <ul class="timeline ms-50 newdashtimline ">
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepak Kumar</h6> 
-                                                                        <span class="badge rounded-pill badge-light-primary">Amendment</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Aniket Singh</h6> 
-                                                                        <span class="badge rounded-pill badge-light-danger">Rejected</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-warning timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deewan Singh</h6>
-                                                                        <span class="badge rounded-pill badge-light-warning">Pending</span>
-                                                                    </div>
-                                                                    <h5>(5 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-info timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Brijesh Kumar</h6>
-                                                                        <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(10 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li> 
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-danger timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepender Singh</h6>
-                                                                       <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(5 day ago)</h5>
-                                                                    <p><a href="#"><i data-feather="download"></i></a> Description will come here </p> 
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-
-                                                </div>
-
-                                        </div> 
-                                </div>
-                            </div>
-                            
-                              
-                            
-                            
-							
-                            <div class="card">
-								 <div class="card-body customernewsection-form"> 
-                                     
-                                     
-                                            <div class="border-bottom mb-2 pb-25">
-                                                     <div class="row">
-                                                        <div class="col-md-6">
-                                                            <div class="newheader "> 
-                                                                <h4 class="card-title text-theme">Checklist and Defect Detail</h4>
-                                                                <p class="card-text">Fill the details</p>
-                                                            </div>
-                                                        </div>
-<!--
-                                                        <div class="col-md-6 text-sm-end">
-                                                            <a href="#" class="btn btn-sm btn-outline-danger me-50">
-                                                                <i data-feather="x-circle"></i> Delete</a>
-                                                            <a href="#" class="btn btn-sm btn-outline-primary">
-                                                                <i data-feather="plus"></i> Add New Item</a>
-                                                         </div>
--->
-                                                    </div> 
-                                             </div>
-											 
-											 
-											  
-									 		<div class="step-custhomapp bg-light">
-												<ul class="nav nav-tabs my-25 custapploannav" role="tablist">
-													<li class="nav-item">
-														<a class="nav-link active" data-bs-toggle="tab" href="#payment">Checklist</a>
-													</li>
-													<li class="nav-item">
-														<a class="nav-link" data-bs-toggle="tab" href="#attachment">Defect</a>
-													</li> 
-												</ul>
-											</div>
-									 
-									 		<div class="tab-content pb-1">
-												<div class="tab-pane active" id="payment">
-                                                	<div class="row">  
-														 <div class="col-md-12"> 
-															 <div class="table-responsive pomrnheadtffotsticky">
-																 <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
-																	<thead>
-																		 <tr>
-																			<th style="width: 30px">#</th>
-																			<th width="200">Maintenance Type</th>
-																			<th width="300px">Checklist</th>
-																			<th>Frequency</th>
-																		  </tr>
-																		</thead>
-																		<tbody class="mrntableselectexcel">
-																			  <tr>
-																				  <td>1</td>
-																				  <td class="poprod-decpt p-50"><strong class="font-small-4">Running</strong></td>
-																				  <td class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td>
-																				  <td class="poprod-decpt p-50">Monthly</td>
-																			     
-																			  </tr>
+						        <div class="card">
+							        <div class="card-body customernewsection-form">
+								        <div class="row">
+									        <div class="col-md-12">
+										        <div class="newheader border-bottom mb-2 pb-25 d-flex flex-wrap justify-content-between">
+											        <div>
+												        <h4 class="card-title text-theme">Basic Information</h4>
+												        <p class="card-text">Fill the details</p>
+											        </div>
+										        </div>
+									        </div>
 
 
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 1</td>
-																			     <td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
-																				 </td>
-																				 <td></td>
-																			  </tr>
+									        <div class="col-md-8">
 
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 2</td>
-																			     <td class="poprod-decpt">
-																					<div class="form-check form-check-primary custom-checkbox ms-50">
-																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
-																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
-																					</div> 
-																				 </td>
-																				 <td></td>
-																			  </tr>
-																			
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 3</td>
-																			     <td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
-																				 </td>
-																				 <td></td>
-																			  </tr>
-																			  
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 4</td>
-																			     <td class="poprod-decpt">
-																					<div class="form-check form-check-primary custom-checkbox ms-50">
-																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
-																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
-																					</div> 
-																				 </td>
-																				 <td></td>
-																			  </tr>
+										        <div class="row align-items-center mb-1">
+											        <div class="col-md-3">
+												        <label class="form-label">Series <span class="text-danger">*</span></label>
+											        </div>
 
-																			 <tr>
-																				 <td>1</td>
-																				 <td class="poprod-decpt p-50"><strong class="font-small-4">Running</strong></td>
-																				 <td class="poprod-decpt p-50"><strong class="font-small-4">Greecing and Oiling</strong></td>	
-																				 <td class="poprod-decpt p-50">Monthly</td>
-																			     
-																			  </tr>
+											        <div class="col-md-5">
+												        <!-- Series Dropdown -->
+												        <select class="form-select" name="book_id" id="book_id" required>
+													        @if ($series)
+														        @foreach ($series as $index => $ser)
+															        <option value="{{ $ser->id }}"
+																	        {{ old('book_id') == $ser->id ? 'selected' : '' }}>
+																        {{ $ser->book_code }}
+															        </option>
+														        @endforeach
+													        @endif
+												        </select>
+											        </div>
+										        </div>
+
+										        <div class="row align-items-center mb-1">
+											        <div class="col-md-3">
+												        <label class="form-label">Doc No <span class="text-danger">*</span></label>
+											        </div>
+
+											        <div class="col-md-5">
+												        <input type="text" class="form-control" name="document_number"
+												               id="document_number" value="{{ old('document_number') }}"
+												               readonly required>
+											        </div>
+										        </div>
+
+										        <div class="row align-items-center mb-1">
+											        <div class="col-md-3">
+												        <label class="form-label">Doc Date <span class="text-danger">*</span></label>
+											        </div>
+
+											        <div class="col-md-5">
+												        <input type="date" name="doc_date" class="form-control">
+											        </div>
+										        </div>
 
 
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 1</td>
-																			     <td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Text" class="form-control mw-100"  />
-																				 </td>
-																				 <td></td>
-																			  </tr>
+										        <div class="row align-items-center mb-1">
+											        <div class="col-md-3">
+												        <label class="form-label">Category <span class="text-danger">*</span></label>
+											        </div>
 
-																			  <tr>
-																				 <td></td>
-																				 <td class="ps-1">Checklist 2</td>
-																			     <td class="poprod-decpt">
-																					<div class="form-check form-check-primary custom-checkbox ms-50">
-																						<input type="checkbox" class="mt-25 form-check-input" id="Email">
-																						<label class="mb-50 mt-25 form-check-label" for="Email">Yes/No</label>
-																					</div> 
-																				 </td>
-																				 <td></td>
-																			  </tr>
-																			 
-																	 </tbody>
+											        <div class="col-md-5">
+												        <!-- Category Dropdown -->
+												        <select name="category" class="form-select " id="categoryDropdown">
+													        <option value="">Select</option>
+													        @foreach($categories as $item)
+														        <option value="{{ $item->id }}">{{ $item->name }}</option>
+													        @endforeach
+												        </select>
+											        </div>
+										        </div>
+
+										        <div class="row align-items-center mb-1">
+											        <div class="col-md-3">
+												        <label class="form-label">Equipment <span class="text-danger">*</span></label>
+											        </div>
+
+											        <div class="col-md-5">
+												        <!-- Equipment Dropdown -->
+												        <select name="equipment" class="form-select" id="equipmentDropdown">
+													        <option value="">Select</option>
+												        </select>
+											        </div>
+										        </div>
 
 
 
 
-																</table>
-															</div> 
-														</div>  
-													 </div>
-												</div>
-												<div class="tab-pane" id="attachment">
-                                                	<div class="row">  
-														 <div class="col-md-12"> 
-															 <div class="table-responsive pomrnheadtffotsticky">
-																 <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
-																	<thead>
-																		 <tr>
-																			<th>
-																				#
-																			</th>
-																			<th width="150">Item Code</th>
-																			<th width="150">Item Name</th>
-																			<th>Attribute</th>
-																			<th>UOM</th>
-																			<th>Qty</th>
-																			<th>Defect Type</th>
-																			<th>Priority</th>
-																			<th>Due Date</th>
-																			<th>Description</th>
-																		  </tr>
-																		</thead>
-																		<tbody class="mrntableselectexcel">
-																			 <tr>
-																				 <td>1</td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt">
-																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
-																				 </td>
-																				 <td><select class="form-select">
-																				   <option>Select</option>
-																				   <option selected>KG</option>
-																				 </select></td>
-																				 <td class="poprod-decpt">5</td>
-																				 <td>
-																					 <select class="form-select mw-100">
-																					   <option>Select</option> 
-																					 </select>
-																				</td>
-																				<td class="poprod-decpt">High</td>
-																				<td class="poprod-decpt">
-																					08-10-2025
-																				</td>
-																				<td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
-																				</td>
-																			  </tr>
+										        <!--
+																									<div class="row align-items-center mb-1">
+																										<div class="col-md-3">
+																											<label class="form-label">Maintenance Type <span class="text-danger">*</span></label>
+																										</div>
+
+																										<div class="col-md-5">
+																											<select class="form-select">
+																												<option>Select</option>
+																											</select>
+																										</div>
+																									 </div>
+
+																									<div class="row align-items-center mb-1">
+																										<div class="col-md-3">
+																											<label class="form-label">Due Date </label>
+																										</div>
+
+																										<div class="col-md-5">
+																											<input type="date" class="form-control">
+																										</div>
+																									 </div>
+												-->
 
 
-																			 <tr>
-																				 <td>2</td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt">
-																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
-																				 </td>
-																				 <td><select class="form-select">
-																				   <option>Select</option>
-																				   <option selected>KG</option>
-																				 </select></td>
-																				 <td class="poprod-decpt">4</td>
-																				 <td>
-																					 <select class="form-select mw-100">
-																					   <option>Select</option> 
-																					 </select>
-																				</td>
-																				<td class="poprod-decpt">Medium</td>
-																				<td class="poprod-decpt">
-																					08-10-2025
-																				</td>
-																				<td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
-																				</td>
-																			  </tr>
+									        </div>
 
-																			<tr>
-																				 <td>3</td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt">
-																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
-																				 </td>
-																				 <td><select class="form-select">
-																				   <option>Select</option>
-																				   <option selected>KG</option>
-																				 </select></td>
-																				 <td class="poprod-decpt">7</td>
-																				 <td>
-																					 <select class="form-select mw-100">
-																					   <option>Select</option> 
-																					 </select>
-																				</td>
-																				<td class="poprod-decpt">Low</td>
-																				<td class="poprod-decpt">
-																					08-10-2025
-																				</td>
-																				<td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
-																				</td>
-																			  </tr>
+									        {{--                                            <div class="col-md-4"> --}}
 
-																			<tr>
-																				<td>4</td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="SPA001" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt"><input type="text" placeholder="Select" value="Spare Part Name" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																				 <td class="poprod-decpt">
-																				 	<span class="badge rounded-pill badge-light-primary"><strong>Color</strong>: Black</span>
-																				 </td>
-																				 <td><select class="form-select">
-																				   <option>Select</option>
-																				   <option selected>KG</option>
-																				 </select></td>
-																				 <td class="poprod-decpt">7</td>
-																				 <td>
-																					 <select class="form-select mw-100">
-																					   <option>Select</option> 
-																					 </select>
-																				</td>
-																				<td class="poprod-decpt">High</td>
-																				<td class="poprod-decpt">
-																					08-10-2025
-																				</td>
-																				<td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
-																				</td>
-																			  </tr>
+									        {{--                                                    <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">--}}
+									        {{--                                                        <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">--}}
+									        {{--                                                            <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>--}}
+									        {{--                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No. --}}
+									        {{--                                                                <select class="form-select">--}}
+									        {{--                                                                    <option>00</option>--}}
+									        {{--                                                                    <option>01</option>--}}
+									        {{--                                                                    <option>02</option>--}}
+									        {{--                                                                    <option>03</option>--}}
+									        {{--                                                                </select>--}}
+									        {{--                                                            </strong>--}}
+									        {{--                                                            --}}
+									        {{--                                                        </h5>--}}
+									        {{--                                                        <ul class="timeline ms-50 newdashtimline ">--}}
+									        {{--                                                            <li class="timeline-item">--}}
+									        {{--                                                                <span class="timeline-point timeline-point-indicator"></span>--}}
+									        {{--                                                                <div class="timeline-event">--}}
+									        {{--                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">--}}
+									        {{--                                                                        <h6>Deepak Kumar</h6> --}}
+									        {{--                                                                        <span class="badge rounded-pill badge-light-primary">Amendment</span>--}}
+									        {{--                                                                    </div>--}}
+									        {{--                                                                    <h5>(2 min ago)</h5>--}}
+									        {{--                                                                    <p>Description will come here</p> --}}
+									        {{--                                                                </div>--}}
+									        {{--                                                            </li>--}}
+									        {{--                                                            <li class="timeline-item">--}}
+									        {{--                                                                <span class="timeline-point timeline-point-indicator"></span>--}}
+									        {{--                                                                <div class="timeline-event">--}}
+									        {{--                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">--}}
+									        {{--                                                                        <h6>Aniket Singh</h6> --}}
+									        {{--                                                                        <span class="badge rounded-pill badge-light-danger">Rejected</span>--}}
+									        {{--                                                                    </div>--}}
+									        {{--                                                                    <h5>(2 min ago)</h5>--}}
+									        {{--                                                                    <p>Description will come here</p> --}}
+									        {{--                                                                </div>--}}
+									        {{--                                                            </li>--}}
+									        {{--                                                            <li class="timeline-item">--}}
+									        {{--                                                                <span class="timeline-point timeline-point-warning timeline-point-indicator"></span>--}}
+									        {{--                                                                <div class="timeline-event">--}}
+									        {{--                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">--}}
+									        {{--                                                                        <h6>Deewan Singh</h6>--}}
+									        {{--                                                                        <span class="badge rounded-pill badge-light-warning">Pending</span>--}}
+									        {{--                                                                    </div>--}}
+									        {{--                                                                    <h5>(5 min ago)</h5>--}}
+									        {{--                                                                    <p>Description will come here</p> --}}
+									        {{--                                                                </div>--}}
+									        {{--                                                            </li>--}}
+									        {{--                                                            <li class="timeline-item">--}}
+									        {{--                                                                <span class="timeline-point timeline-point-info timeline-point-indicator"></span>--}}
+									        {{--                                                                <div class="timeline-event">--}}
+									        {{--                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">--}}
+									        {{--                                                                        <h6>Brijesh Kumar</h6>--}}
+									        {{--                                                                        <span class="badge rounded-pill badge-light-success">Approved</span>--}}
+									        {{--                                                                    </div>--}}
+									        {{--                                                                    <h5>(10 min ago)</h5>--}}
+									        {{--                                                                    <p>Description will come here</p> --}}
+									        {{--                                                                </div>--}}
+									        {{--                                                            </li> --}}
+									        {{--                                                            <li class="timeline-item">--}}
+									        {{--                                                                <span class="timeline-point timeline-point-danger timeline-point-indicator"></span>--}}
+									        {{--                                                                <div class="timeline-event">--}}
+									        {{--                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">--}}
+									        {{--                                                                        <h6>Deepender Singh</h6>--}}
+									        {{--                                                                       <span class="badge rounded-pill badge-light-success">Approved</span>--}}
+									        {{--                                                                    </div>--}}
+									        {{--                                                                    <h5>(5 day ago)</h5>--}}
+									        {{--                                                                    <p><a href="#"><i data-feather="download"></i></a> Description will come here </p> --}}
+									        {{--                                                                </div>--}}
+									        {{--                                                            </li>--}}
+									        {{--                                                        </ul>--}}
+									        {{--                                                    </div>--}}
 
-																			<tr>
-																				<td>5</td>
-																				 <td class="poprod-decpt">-</td>
-																				 <td class="poprod-decpt">-</td>
-																				 <td>-</td>
-																				 <td>-</td>
-																				 <td class="poprod-decpt">-</td>
-																				 <td>
-																					 <select class="form-select mw-100">
-																					   <option>Select</option> 
-																					 </select>
-																				</td>
-																				<td class="poprod-decpt">Medium</td>
-																				<td class="poprod-decpt">
-																					08-10-2025
-																				</td>
-																				<td class="poprod-decpt">
-																					<input type="text" placeholder="Enter Description" class="form-control mw-100"  />
-																				</td>
-																			  </tr>
+									        {{--                                                </div>--}}
 
-
-																	 </tbody>
+								        </div>
+							        </div>
+						        </div>
 
 
 
 
-																</table>
-															</div>
- 
-														</div> 
 
-													 </div>
-												</div>
-									 		</div>
-									 
-									 		<div class="row mt-2"> 
-													<div class="col-md-12">
-														 <div class="col-md-4">
-															<div class="mb-1">
-																<label class="form-label">Upload Document</label>
-																<input type="file" class="form-control">
-															</div>
-														</div> 
-												 </div>
+						        <div class="card">
+							        <div class="card-body customernewsection-form">
 
 
+								        <div class="border-bottom mb-2 pb-25">
+									        <div class="row">
+										        <div class="col-md-6">
+											        <div class="newheader ">
+												        <h4 class="card-title text-theme">Checklist and Defect Detail</h4>
+												        <p class="card-text">Fill the details</p>
+											        </div>
+										        </div>
+										        <!--
+																										<div class="col-md-6 text-sm-end">
+																											<a href="#" class="btn btn-sm btn-outline-danger me-50">
+																												<i data-feather="x-circle"></i> Delete</a>
+																											<a href="#" class="btn btn-sm btn-outline-primary">
+																												<i data-feather="plus"></i> Add New Item</a>
+																										 </div>
+												-->
+									        </div>
+								        </div>
 
-													<div class="col-md-12">
-														<div class="mb-1">  
-															<label class="form-label">Final Remarks</label> 
-															<textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
 
-														</div>
-													</div>
 
-												 </div>
-  
-											
-											 
-								</div>
-                            </div>
-                            
-                            
-                            
-                             
-                            
-                            
-                        </div>
-                    </div>
-                    <!-- Modal to add new record -->
-                     
-                </section>
-                 
+								        <div class="step-custhomapp bg-light">
+									        <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
+										        <li class="nav-item">
+											        <a class="nav-link active" data-bs-toggle="tab" href="#payment">Checklist</a>
+										        </li>
+										        <li class="nav-item">
+											        <a class="nav-link" data-bs-toggle="tab" href="#attachment">Defect</a>
+										        </li>
+									        </ul>
+								        </div>
 
-            </div>
+								        <div class="tab-content pb-1">
+									        <div class="tab-pane active" id="payment">
+										        <div class="row">
+											        <div class="col-md-12">
+												        <div class="table-responsive pomrnheadtffotsticky">
+													        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+														        <thead>
+														        <tr>
+															        <th style="width: 30px">#</th>
+															        <th width="200">Maintenance Type</th>
+															        <th width="300px">Checklist</th>
+															        <th>Frequency</th>
+														        </tr>
+														        </thead>
+														        <tbody class="mrntableselectexcel">
+
+														        </tbody>
+
+													        </table>
+												        </div>
+											        </div>
+										        </div>
+									        </div>
+									        <div class="tab-pane" id="attachment">
+										        <div class="row">
+											        <div class="col-md-12">
+												        <div class="table-responsive pomrnheadtffotsticky">
+													        <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+														        <thead>
+														        <tr>
+															        <th>
+																        #
+															        </th>
+															        <th width="150">Item Code</th>
+															        <th width="150">Item Name</th>
+															        <th>Attribute</th>
+															        <th>UOM</th>
+															        <th>Qty</th>
+															        <th>Defect Type</th>
+															        <th>Priority</th>
+															        <th>Due Date</th>
+															        <th>Description</th>
+														        </tr>
+														        </thead>
+														        <tbody class="mrntableselectexcel">
+														        </tbody>
+													        </table>
+												        </div>
+
+											        </div>
+
+										        </div>
+									        </div>
+								        </div>
+
+								        <div class="row mt-2">
+									        <div class="col-md-12">
+										        <div class="col-md-4">
+											        <div class="mb-1">
+												        <label class="form-label">Upload Document</label>
+												        <input type="file" name="upload_document" class="form-control">
+											        </div>
+										        </div>
+									        </div>
+
+									        <div class="col-md-12">
+										        <div class="mb-1">
+											        <label class="form-label">Final Remarks</label>
+											        <textarea type="text" rows="4" name="final_remarks" class="form-control" placeholder="Enter Remarks here..."></textarea>
+
+										        </div>
+									        </div>
+
+								        </div>
+
+
+
+							        </div>
+						        </div>
+
+
+
+
+
+
+					        </div>
+				        </div>
+				        <!-- Modal to add new record -->
+
+			        </section>
+
+
+		        </div>
+	        </form>
         </div>
     </div>
     <!-- END: Content-->
@@ -831,585 +642,327 @@
     </style>
     <script>
         $(document).ready(function () {
+			var equipments = @json($equipments);
+            var deductTypes = @json($defectTypes);
 
-            var allLocations = @json($locations);
-            // var allCategories = @json($categories);
-            var maintenanceTypes = @json($maintenanceTypes);
+            $('#book_id').on('change', function() {
+                let currentDate = new Date().toISOString().split('T')[0];
+                let bookId = $('#book_id').val();
+                let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
+                    "&document_date=" + currentDate;
+                fetch(actionUrl).then(response => {
+                    return response.json().then(data => {
+                        if (data.status == 200) {
+                            $("#book_code_input").val(data.data.book_code);
+                            if (!data.data.doc.document_number) {
+                                $("#document_number").val('');
+                                $('#doc_number_type').val('');
+                                $('#doc_reset_pattern').val('');
+                                $('#doc_prefix').val('');
+                                $('#doc_suffix').val('');
+                                $('#doc_no').val('');
+                            } else {
+                                $("#document_number").val(data.data.doc.document_number);
+                                $('#doc_number_type').val(data.data.doc.type);
+                                $('#doc_reset_pattern').val(data.data.doc.reset_pattern);
+                                $('#doc_prefix').val(data.data.doc.prefix);
+                                $('#doc_suffix').val(data.data.doc.suffix);
+                                $('#doc_no').val(data.data.doc.doc_no);
+                            }
+                            if (data.data.doc.type == 'Manually') {
+                                $("#document_number").attr('readonly', false);
+                            } else {
+                                $("#document_number").attr('readonly', true);
+                            }
 
-            // On organization change, filter locations
-            $('#organization_id').on('change', function () {
-                var orgId = $(this).val();
-                var locationSelect = $('#location_id');
-                locationSelect.html('<option value="">Select</option>');
-                // $('#category_id').html('<option value="">Select</option>');
-                console.log(allLocations, orgId);
-                if (orgId) {
-                    console.log(allLocations, orgId);
-                    allLocations.forEach(function (loc) {
-                        if (loc.organization_id == orgId) {
-                            locationSelect.append('<option value="' + loc.id + '">' + loc
-                                            .store_name +
-                                    '</option>');
                         }
-                    });
-                }
-            });
-
-            $('#location_id').on('change', function () {
-                var locationId = $(this).val();
-                var categorySelect = $('#category_id');
-                categorySelect.html('<option value="">Select</option>');
-                var categories = [
-                    {
-                        id: 1,
-                        store_name: 'Category 1'
-                    },
-                    {
-                        id: 2,
-                        store_name: 'Category 2'
-                    },
-                    {
-                        id: 3,
-                        store_name: 'Category 3'
-                    }
-                ];
-
-                if (locationId) {
-                    categories.forEach(function (cat) {
-                        // if (cat.id == locationId) {
-                        categorySelect.append('<option value="' + cat.id + '">' + cat
-                                        .store_name +
-                                '</option>');
-                        // }
-                    });
-                }
-            });
-        });
-
-
-        $(document).ready(function () {
-            var maintenanceTypes = @json($maintenanceTypes);
-
-            function getMaintenanceRow() {
-                const rowId = 'row-' + Math.random().toString(36).substring(2, 10);
-
-                // Build options from maintenanceTypes
-                let typeOptions = `<option value="">Select</option>`;
-                maintenanceTypes.forEach(function (type) {
-                    typeOptions += `<option value="${type.id}">${type.name}</option>`;
-                });
-
-                let row = `<tr data-row-id="${rowId}">
-                            <td class="customernewsection-form">
-                                <div class="form-check form-check-primary custom-checkbox">
-                                    <input type="checkbox" class="form-check-input row-checkbox">
-                                    <label class="form-check-label"></label>
-                                </div>
-                            </td>
-                            <td class="poprod-decpt">
-                                <select name="maintenance[${rowId}][type]" class="form-select mw-100 maintenance-type">
-                                    ${typeOptions}
-                                </select>
-                            </td>
-                            <td class="poprod-decpt">
-                                <select name="maintenance[${rowId}][frequency]" class="form-select mw-100">
-                                    <option value="">Select</option>
-                                    <option value="Daily">Daily</option>
-                                    <option value="Weekly">Weekly</option>
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Semi-Annually">Semi-Annually</option>
-                                    <option value="Annually">Annually</option>
-                                </select>
-                            </td>
-                            <td class="poprod-decpt">
-                                <input type="time" name="maintenance[${rowId}][time]" placeholder="Enter Time" class="form-control mw-100 mb-25" />
-                            </td>
-                            <td class="poprod-decpt checklist-cell">
-                                <span class="checklist-badges"></span>
-                                <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                                <input type="hidden" name="maintenance[${rowId}][checklists]" class="selected-checklists" value="" />
-                            </td>
-                        </tr>`;
-
-                $(function () {
-                    $(".ledgerselecct").autocomplete({
-                        source: maintenanceTypes.map(item => item.name),
-                        minLength: 0
-                    }).focus(function () {
-                        if (this.value == "") {
-                            $(this).autocomplete("search");
+                        if (data.status == 404) {
+                            $("#document_number").val('');
+                            $('#doc_number_type').val('');
+                            $('#doc_reset_pattern').val('');
+                            $('#doc_prefix').val('');
+                            $('#doc_suffix').val('');
+                            $('#doc_no').val('');
+                            showToast('error', data.message);
                         }
                     });
                 });
+            });
+            $('#book_id').trigger('change');
 
-                return row;
+            $('#categoryDropdown').on('change', function () {
+				const categoryId = $(this).val();
+				if (!categoryId) return;
+
+				// get equipments by matching the category id with categoryId
+				const filteredEquipments = equipments.filter(e => e.category_id === parseInt(categoryId));
+
+				const $equipmentDropdown = $('#equipmentDropdown');
+				$equipmentDropdown.empty();
+				$equipmentDropdown.append('<option value="">Select Equipment</option>');
+				filteredEquipments.forEach(equipment => {
+					$equipmentDropdown.append(`<option value="${equipment.id}">${equipment.name}</option>`);
+				});
+			});
+
+            $('#equipmentDropdown').on('change', function () {
+                const equipmentId = $(this).val();
+                if (!equipmentId) return;
+
+                const equipment = equipments.find(e => e.id === parseInt(equipmentId));
+
+                // console.log(equipment);
+                renderChecklistTable(equipment.maintenance_details);
+                renderDefectsTable(equipment.spare_parts);
+            });
+
+            function renderChecklistTable(maintenanceDetails) {
+                const $tbody = $('.tab-pane#payment tbody.mrntableselectexcel');
+                $tbody.empty();
+				console.log(maintenanceDetails, 'maintenanceDetails');
+                maintenanceDetails.forEach((detail, index) => {
+                    $tbody.append(`
+			            <tr>
+			                <td>${index + 1}</td>
+			                <td class="poprod-decpt p-50"><strong class="font-small-4">${detail.maintenance_type?.name ?? ''}</strong></td>
+			                <td class="poprod-decpt p-50"><strong class="font-small-4">${detail.name ?? ''}</strong></td>
+			                <td class="poprod-decpt p-50">${detail.frequency}</td>
+			            </tr>
+			        `);
+                    detail.checklists.forEach((checklist, i) => {
+						console.log(checklist, i, 'here');
+                        const input = checklist.type === 'text'
+                            ? `<input type="text" name="checklist_answers[${checklist.id}][text]" class="form-control mw-100" value="${checklist.value ?? ''}" placeholder="Enter answer">`
+                            : `<div class="form-check form-check-primary custom-checkbox ms-50">
+                        <input type="checkbox" value="yes" name="checklist_answers[${checklist.id}][checkbox]" class="mt-25 form-check-input" ${checklist.value === 'yes' ? 'checked' : ''} />
+                        <label class="mb-50 mt-25 form-check-label">Yes/No</label>
+                   </div>`;
+                        $tbody.append(`
+                <tr>
+                    <td></td>
+                    <td class="ps-1">Checklist ${i + 1}</td>
+                    <td class="poprod-decpt">${input}</td>
+                    <td></td>
+                </tr>
+            `);
+                    });
+                });
             }
 
-            let checklistRowRef = null;
+            function renderDefectsTable(spareparts) {
+                const $tbody = $('.tab-pane#attachment tbody.mrntableselectexcel');
+                $tbody.empty();
 
-            $(document).on('click', '.open-checklist-modal', function () {
-                checklistRowRef = $(this).closest('tr');
+                const deductTypeOptions = deductTypes.map(defect =>
+                    `<option value="${defect.id}" data-priority="${defect.priority}" data-days="${defect.estimated_time}">
+				                ${defect.name}
+				             </option>`
+                ).join('');
 
-                // Get current selection from hidden input in the row
-                let selected = checklistRowRef.find('.selected-checklists').val().split(',').filter(Boolean);
+                spareparts.forEach((part, index) => {
+	                let spareAttributes = JSON.parse(part.attributes);
+	                const attributes = Object.entries(spareAttributes)
+	                    .map(([name, value]) =>
+	                        `<span class="badge rounded-pill badge-light-primary"><strong>${name}</strong>: ${value}</span>`
+	                    ).join(' ');
 
-                console.log(selected)
-                // Uncheck all first
-                $('#checklist .modal-body input[type="checkbox"]').prop('checked', false);
-
-                // Pre-check those which are already selected
-                $('#checklist .modal-body input[type="checkbox"]').each(function () {
-                    if (selected.includes($(this).val())) {
-                        $(this).prop('checked', true);
-                    }
+	                $tbody.append(`
+			            <tr>
+			                <td>${index + 1}</td>
+			                <td class="poprod-decpt"><input type="text" value="${part.item_code}" class="form-control mw-100" readonly /></td>
+			                <td class="poprod-decpt"><input type="text" value="${part.item_name}" class="form-control mw-100" readonly /></td>
+			                <td class="poprod-decpt">${attributes}</td>
+			                <td><select class="form-select"><option selected>${part.uom}</option></select></td>
+			                <td class="poprod-decpt">${part.qty}</td>
+			                <td>
+								<select class="form-select mw-100 defect-type-select" name="defects[${part.id}][deduct_type]">
+									<option value="">Select</option>
+									${deductTypeOptions}
+								</select>
+							</td>
+			                <td class="poprod-decpt">
+								<span class="priority-cell"></span>
+								<input type="hidden" name="defects[${part.id}][priority]" />
+							</td>
+       						<td class="poprod-decpt">
+								<span class="due-date-cell"></span>
+								<input type="hidden" name="defects[${part.id}][due_date]" />
+							</td>
+			                <td class="poprod-decpt">
+								<input type="text" class="form-control mw-100" placeholder="Enter Description" name="defects[${part.id}][description]" />
+							</td>
+			            </tr>
+			        `);
                 });
 
-                $('#checklist').modal('show');
+                const nextIndex = spareparts.length + 1;
+                $tbody.append(`
+				        <tr data-row-id="row-${nextIndex}" class="editable-final-row">
+				            <td>${nextIndex}</td>
+				            <td class="poprod-decpt"><input type="text" placeholder="-" class="form-control mw-100" /></td>
+				            <td class="poprod-decpt"><input type="text" placeholder="-" class="form-control mw-100" /></td>
+				            <td>-</td>
+				            <td>-</td>
+				            <td class="poprod-decpt"><input type="number" placeholder="-" class="form-control mw-100" /></td>
+				            <td>
+					            <select class="form-select mw-100 defect-type-select" name="defects[custom_final][deduct_type]">
+					                <option value="">Select</option>
+					                ${deductTypeOptions}
+					            </select>
+					        </td>
+					        <td class="poprod-decpt">
+					            <span class="priority-cell"></span>
+					            <input type="hidden" name="defects[custom_final][priority]" />
+					        </td>
+					        <td class="poprod-decpt">
+					            <span class="due-date-cell"></span>
+					            <input type="hidden" name="defects[custom_final][due_date]" />
+					        </td>
+					        <td class="poprod-decpt">
+					            <input type="text" placeholder="Enter Description" class="form-control mw-100" name="defects[custom_final][description]" />
+					        </td>
+				        </tr>
+				    `);
 
-                $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
-                    console.log('erer');
-                    var tbody = $(this).closest('table').find('tbody');
-                    var checked = $(this).is(':checked');
-                    tbody.find('input.form-check-input').prop('checked', checked);
+                $('.defect-type-select').on('change', function () {
+                    console.log('erer')
+                    const selectedOption = $(this).find('option:selected');
+                    const priority = selectedOption.data('priority') || '-';
+                    const dueDays = selectedOption.data('days') || '-';
+
+                    const $row = $(this).closest('tr');
+
+                    const dueDate = new Date();
+                    dueDate.setDate(dueDate.getDate() + dueDays);
+                    const formattedDueDate = dueDate.toISOString().split('T')[0];
+
+                    console.log($row, $row.find('.priority-cell'))
+                    // Update visible cells
+                    $row.find('.priority-cell').text(priority);
+                    $row.find('.due-date-cell').text(formattedDueDate);
+
+                    // Update hidden inputs
+                    $row.find('input[name^="defects"][name$="[priority]"]').val(priority);
+                    $row.find('input[name^="defects"][name$="[due_date]"]').val(formattedDueDate);
                 });
-            });
-
-            $('#checklist').on('hide.bs.modal', function (e) {
-                // Only proceed if we just clicked submit
-                if ($(document.activeElement).hasClass('btn-primary')) {
-                    let selectedIds = [];
-                    let selectedNames = [];
-                    let selectedData = [];
-
-                    $('#checklist .modal-body input[type="checkbox"]:checked').each(function () {
-                        const checklistId = $(this).val();
-                        const checklistName = $(this).closest('tr').find('td:nth-child(2)').text().trim();
-                        const checklistDesc = $(this).closest('tr').find('td:nth-child(3)').text().trim() || null;
-                        const checklistType = $(this).closest('tr').find('td:nth-child(4)').text().trim() || null;
-
-                        selectedIds.push(checklistId);
-                        selectedNames.push(checklistName);
-                        selectedData.push({
-                            id: checklistId,
-                            name: checklistName,
-                            description: checklistDesc,
-                            type: checklistType
-                        });
-                    });
-
-                    // Store data in hidden field in row
-                    if (checklistRowRef) {
-                        const rowId = checklistRowRef.data('row-id');
-
-                        let badgesHtml = '';
-                        selectedNames.slice(0, 2).forEach(function (name) {
-                            badgesHtml +=
-                                    `<span class="badge rounded-pill badge-light-primary">${name}</span> `;
-                        });
-
-                        if (selectedNames.length > 2) {
-                            badgesHtml +=
-                                    `<span class="badge rounded-pill badge-light-primary">+${selectedNames.length - 2}</span>`;
-                        }
-
-                        // Create hidden inputs for each checklist
-                        let hiddenInputs = '';
-                        selectedData.forEach(function (checklist, index) {
-                            hiddenInputs += `
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][id]" value="${checklist.id}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][name]" value="${checklist.name}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][description]" value="${checklist.description || ''}">
-                                <input type="hidden" name="maintenance[${rowId}][checklists][${index}][type]" value="${checklist.type || ''}">
-                            `;
-                        });
-
-                        console.log(selectedIds)
-                        // Put badges and button back in the cell
-                        checklistRowRef.find('.checklist-cell').html(
-                                `<span class="checklist-badges">${badgesHtml}</span>
-                            <button type="button" class="btn p-25 btn-sm btn-outline-secondary open-checklist-modal" style="font-size: 10px">Add Checklist</button>
-                            <input type="hidden" class="selected-checklists" value="${selectedIds.join(',')}" />
-                            ${hiddenInputs}`
-                        );
-                    }
-                }
-            });
-
-            // Template row for Spare Part
-            // function getSparePartRow() {
-            //     return `<tr>
-            //                 <td class="customernewsection-form">
-            //                     <div class="form-check form-check-primary custom-checkbox">
-            //                         <input type="checkbox" class="form-check-input row-checkbox">
-            //                         <label class="form-check-label"></label>
-            //                     </div>
-            //                 </td>
-            //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
-            //                 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25" /></td>
-            //                 <td class="poprod-decpt">
-            //                     <button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-            //                 </td>
-            //                 <td><select class="form-select"><option>Select</option><option selected>KG</option></select></td>
-            //                 <td><input type="text" value="10" class="form-control mw-100" /></td>
-            //             </tr>`;
-            // }
-            let items = @json($items);
-
-            function getSparePartRow() {
-                console.log(items)
-                let itemOptions = `<option value="">Select</option>`;
-                items.forEach(function (item) {
-                    itemOptions += `<option value="${item.id}" data-name="${item.item_name}" data-code="${item.item_code}">${item.item_code}</option>`;
-                });
-
-                const rowId = 'spare-' + Math.random().toString(36).substring(2, 10);
-                return `<tr data-row-id="${rowId}">
-                    <td class="customernewsection-form">
-                        <div class="form-check form-check-primary custom-checkbox">
-                            <input type="checkbox" class="form-check-input row-checkbox">
-                            <label class="form-check-label"></label>
-                        </div>
-                    </td>
-                    <td class="poprod-decpt">
-                        <select class="form-select mw-100 item-code-dropdown" name="spareparts[${rowId}][item_code]">
-                            ${itemOptions}
-                        </select>
-                    </td>
-                    <td class="poprod-decpt">
-                        <input type="text" class="form-control mw-100 item-name-input" name="spareparts[${rowId}][item_name]" />
-                    </td>
-                    <td class="poprod-decpt">
-                        <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-secondary open-attribute-modal" style="font-size: 10px">Attributes</button>
-                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value="{}" />
-                    </td>
-                    <td>
-                        <select class="form-select" name="spareparts[${rowId}][uom]">
-                            <option value="">Select</option>
-                            <option value="KG">KG</option>
-                            <option value="PCS">PCS</option>
-                            <option value="BOX">BOX</option>
-                            <option value="UNIT">UNIT</option>
-                        </select>
-                    </td>
-                    <td>
-                        <input type="number" name="spareparts[${rowId}][qty]" value="1" min="0" step="0.01" class="form-control mw-100" />
-                    </td>
-                </tr>`;
             }
 
-            let attributeRowRef = null;
-            $(document).on('click', '.open-attribute-modal', function () {
-                attributeRowRef = $(this).closest('tr');
+            window.submitForm = function(status) {
+                $('#status').val(status);
 
-                const rowId = attributeRowRef.data('row-id');
+                let isValid = true;
+                let errorMessage = '';
 
-                $('.attribute-select').val('');
-
-                // Load existing attributes if any
-                const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                if (input.length && input.val()) {
-                    try {
-                        const attributes = JSON.parse(input.val());
-                        Object.entries(attributes).forEach(([key, value]) => {
-                            $(`.attribute-select[data-attribute="${key}"]`).val(value);
-                        });
-                    } catch (e) {
-                        console.error('Invalid JSON in attributes input:', e);
-                    }
+                // Basic field validations
+                if ($('select[name="series"]').val() === '') {
+                    isValid = false;
+                    errorMessage += 'Series is required.<br>';
+                }
+                if ($('#categoryDropdown').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Category is required.<br>';
+                }
+                if ($('#equipmentDropdown').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Equipment is required.<br>';
+                }
+                if ($('input[name="document_number"]').val().trim() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Doc No is required.<br>';
+                }
+                if ($('input[name="doc_date"]').val() === '' && isValid) {
+                    isValid = false;
+                    errorMessage += 'Doc Date is required.<br>';
                 }
 
+                // Defects table validation
+                $('.tab-pane#attachment tbody tr').each(function (index, row) {
+                    const $row = $(row);
+                    const isLastRow = $row.hasClass('editable-final-row');
+                    const defectType = $row.find('.defect-type-select').val();
+                    const itemCode = $row.find('td:eq(1) input').val()?.trim();
+                    const itemName = $row.find('td:eq(2) input').val()?.trim();
 
-                $('#attribute').modal('show');
-
-            });
-
-            $('#attribute').on('hide.bs.modal', function (e) {
-                if ($(document.activeElement).hasClass('btn-primary')) {
-                    if (!attributeRowRef) return;
-
-                    const attributes = {};
-
-                    // Collect all selected attributes
-                    $('.attribute-select').each(function () {
-                        const attrName = $(this).data('attribute');
-                        const attrValue = $(this).val();
-
-                        if (attrValue) {
-                            attributes[attrName] = attrValue;
-                        }
-                    });
-
-                    const rowId = attributeRowRef.data('row-id');
-
-                    // Store as JSON in the hidden input
-                    const input = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                    input.val(JSON.stringify(attributes));
-
-                    // Display selected attributes in the same row (column 4)
-                    let badgeHtml = '';
-                    Object.entries(attributes).forEach(([key, value]) => {
-                        badgeHtml += `<span class="badge rounded-pill badge-light-primary">${key}: ${value}</span> `;
-                    });
-
-                    const cellHtml = `
-                        ${badgeHtml}
-                        <button type="button" data-row-id="${rowId}" class="btn p-25 btn-sm btn-outline-primary open-attribute-modal" style="font-size: 10px">Attributes </button>
-                        <input type="hidden" name="spareparts[${rowId}][attributes]" class="attributes-input" value='${JSON.stringify(attributes)}' />
-                    `;
-
-                    $(`tr[data-row-id="${rowId}"]`).find('td').eq(3).html(cellHtml);
-
-                }
-            });
-
-            $(document).on('change', '.item-code-dropdown', function () {
-                let selectedOption = $(this).find('option:selected');
-                let itemName = selectedOption.data('name') || '';
-                $(this).closest('tr').find('.item-name-input').val(itemName);
-
-                let selectedItem = items.find(item => item.id === parseInt(selectedOption.val()));
-                console.log(selectedItem, selectedOption.val())
-                if (selectedItem) {
-                    $('#part-detail-name').html(selectedItem.item_name);
-                    $('#part-detail-hsn').html(selectedItem.hsn_id);
-                    $('#part-detail-color').html(selectedItem.color ?? 'N/A');
-                    $('#part-detail-size').html(selectedItem.size ?? 'N/A');
-                    $('#part-detail-uom').html(selectedItem.uom_id ?? 'N/A');
-                    $('#part-detail-qty').html(selectedItem.qty ?? 'N/A');
-                    $('#part-detail-remarks').html(selectedItem.item_remark ?? 'N/A');
-                }
-            });
-
-            $(document).on('click', '.open-attribute-modal', function () {
-                const rowId = $(this).data('row-id');
-                $('#attribute-row-id').val(rowId);
-
-                // Reset all attribute selects
-                $('.attribute-select').val('');
-
-                // Load existing attributes if any
-                const attributesInput = $(`input[name="spareparts[${rowId}][attributes]"]`);
-                if (attributesInput.length && attributesInput.val()) {
-                    try {
-                        const attributes = JSON.parse(attributesInput.val());
-
-                        // Set values in the modal
-                        for (const [key, value] of Object.entries(attributes)) {
-                            $(`.attribute-select[data-attribute="${key}"]`).val(value);
-                        }
-                    } catch (e) {
-                        console.error('Error parsing attributes:', e);
-                    }
-                }
-
-                $('#attribute').modal('show');
-            });
-
-            $('#save-attributes').on('click', function () {
-                const rowId = $('#attribute-row-id').val();
-                if (!rowId) return;
-
-                const attributes = {};
-
-                // Collect all selected attributes
-                $('.attribute-select').each(function () {
-                    const attrName = $(this).data('attribute');
-                    const attrValue = $(this).val();
-
-                    if (attrValue) {
-                        attributes[attrName] = attrValue;
+                    if (!isLastRow && (itemCode || itemName) && defectType === '') {
+                        isValid = false;
+                        errorMessage += `Defect Type is required for defect row ${index + 1}.<br>`;
                     }
                 });
 
-                // Store as JSON in the hidden input
-                $(`input[name="spareparts[${rowId}][attributes]"]`).val(JSON.stringify(attributes));
-
-                // Show a visual indicator that attributes are set
-                const attributeCount = Object.keys(attributes).length;
-                const attributeBtn = $(`.open-attribute-modal[data-row-id="${rowId}"]`);
-
-                if (attributeCount > 0) {
-                    attributeBtn.removeClass('btn-outline-secondary').addClass('btn-outline-primary');
-                    attributeBtn.html(`Attributes (${attributeCount})`);
-                } else {
-                    attributeBtn.removeClass('btn-outline-primary').addClass('btn-outline-secondary');
-                    attributeBtn.html('Attributes');
-                }
-
-                // Close the modal
-                $('#attribute').modal('hide');
-            });
-
-
-            // Add row based on active tab
-            $('#addRowBtn').on('click', function (e) {
-                e.preventDefault();
-                var activeTab = $('.tab-pane.active').attr('id');
-                if (activeTab === 'Maintenance') {
-                    $('#maintenanceRows').append(getMaintenanceRow());
-                } else if (activeTab === 'Spare') {
-                    $('#spareRows').append(getSparePartRow());
-                }
-            });
-
-            // Delete selected rows from active tab
-            $('#deleteRowBtn').on('click', function (e) {
-                e.preventDefault();
-
-                let activeTab = $('.tab-pane.active').attr('id');
-                let checkboxes, table;
-
-                if (activeTab === 'Maintenance') {
-                    checkboxes = $('#maintenanceRows').find('input.row-checkbox:checked');
-                    table = $('#maintenanceRows').closest('table');
-                } else if (activeTab === 'Spare') {
-                    checkboxes = $('#spareRows').find('input.row-checkbox:checked');
-                    table = $('#spareRows').closest('table');
-                }
-
-                if (checkboxes.length === 0) {
+                // Show error if any validation failed
+                if (!isValid) {
                     Swal.fire({
-                        icon: 'warning',
-                        title: 'No rows selected',
-                        text: 'Please select at least one row to delete.',
+                        title: 'Validation Error',
+                        html: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
                     });
-                    return;
+                    return false;
                 }
 
-                checkboxes.closest('tr').remove();
-                table.find('thead input[type="checkbox"]').prop('checked', false);
-            });
+                // Confirmation messages
+                const confirmOptions = {
+                    draft: {
+                        title: 'Save as Draft',
+                        text: 'Are you sure you want to save this maintenance as draft?',
+                        confirmButtonText: 'Yes, save it!'
+                    },
+                    submitted: {
+                        title: 'Submit Maintenance',
+                        text: 'Are you sure you want to submit this maintenance?',
+                        confirmButtonText: 'Yes, submit it!'
+                    }
+                };
 
-            // (Optional) "Select All" checkbox per table
-            $('.myrequesttablecbox thead input[type="checkbox"]').on('change', function () {
-                var tbody = $(this).closest('table').find('tbody');
-                var checked = $(this).is(':checked');
-                tbody.find('input.row-checkbox').prop('checked', checked);
-            });
+                const options = confirmOptions[status];
+
+                // Final confirmation before submit
+                Swal.fire({
+                    title: options.title,
+                    text: options.text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: options.confirmButtonText,
+                    cancelButtonText: 'No, cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $('#submitButton').click();
+                    }
+                });
+            }
+
+
+
+            function showToast(icon, title) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                        toast.onmouseenter = Swal.stopTimer;
+                        toast.onmouseleave = Swal.resumeTimer;
+                    },
+                });
+                Toast.fire({
+                    icon,
+                    title
+                });
+            }
+
+	        @if (session('success'))
+            showToast("success", "{{ session('success') }}");
+	        @endif
+
+	        @if (session('error'))
+            showToast("error", "{{ session('error') }}");
+	        @endif
+
+	        @if ($errors->any())
+            showToast('error', "@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach");
+	        @endif
+
         });
-
-        function submitForm(status) {
-            $('#status').val(status);
-
-            let isValid = true;
-            let errorMessage = '';
-
-            // Basic Information validation
-            if ($('#organization_id').val() === '') {
-                isValid = false;
-                errorMessage += 'Organization is required.<br>';
-            }
-
-            if ($('#location_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Location is required.<br>';
-            }
-
-            if ($('#category_id').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Category is required.<br>';
-            }
-
-            if ($('input[name="name"]').val() === '' && isValid) {
-                isValid = false;
-                errorMessage += 'Name is required.<br>';
-            }
-
-            // Validate maintenance rows if any exist
-            $('#maintenanceRows tr').each(function () {
-                const typeSelect = $(this).find('select[name^="maintenance"][name$="[type]"]');
-                const frequencyInput = $(this).find('input[name^="maintenance"][name$="[frequency]"]');
-
-                if (typeSelect.val() !== '' || frequencyInput.val() !== '' && isValid) {
-                    if (typeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Maintenance type is required for all maintenance rows.<br>';
-                    }
-
-                    if (frequencyInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Frequency is required for all maintenance rows.<br>';
-                    }
-                }
-            });
-
-            // Validate spare parts rows if any exist
-            $('#spareRows tr').each(function () {
-                const itemCodeSelect = $(this).find('select[name^="spareparts"][name$="[item_code]"]');
-                const itemNameInput = $(this).find('input[name^="spareparts"][name$="[item_name]"]');
-                const uomInput = $(this).find('input[name^="spareparts"][name$="[uom]"]');
-                const qtyInput = $(this).find('input[name^="spareparts"][name$="[qty]"]');
-
-                if (itemCodeSelect.val() !== '' || itemNameInput.val() !== '' && isValid) {
-                    if (itemCodeSelect.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item code is required for all spare part rows.<br>';
-                    }
-
-                    if (itemNameInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'Item name is required for all spare part rows.<br>';
-                    }
-
-                    if (uomInput.val() === '') {
-                        isValid = false;
-                        errorMessage += 'UOM is required for all spare part rows.<br>';
-                    }
-
-                    if (qtyInput.val() === '' || parseFloat(qtyInput.val()) < 0) {
-                        isValid = false;
-                        errorMessage += 'Valid quantity is required for all spare part rows.<br>';
-                    }
-                }
-            });
-
-            if (!isValid) {
-                Swal.fire({
-                    title: 'Validation Error',
-                    html: errorMessage,
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-                return false;
-            }
-
-            // If draft, confirm with user
-            if (status === 'draft') {
-                Swal.fire({
-                    title: 'Save as Draft',
-                    text: 'Are you sure you want to save this equipment as draft?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, save it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            } else {
-                // If submitting, confirm with user
-                Swal.fire({
-                    title: 'Submit Equipment',
-                    text: 'Are you sure you want to submit this equipment?',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'Yes, submit it!',
-                    cancelButtonText: 'No, cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#submitButton').click();
-                    }
-                });
-            }
-        }
-
-        function check_amount() {
-
-            $('#draft').attr('disabled', true);
-            $('#submitted').attr('disabled', true);
-            $('.preloader').show();
-        }
     </script>
 @endsection

@@ -37,6 +37,7 @@ class ErpSaleInvoiceRequest extends FormRequest
                 'required',
                 'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
             ],
+            // 'lr_number' => 'required|max:25',
             'transporter_mode' => 'required|integer',
             'currency_id' => 'required|numeric|integer|exists:mysql_master.currency,id',
             // 'payment_terms_id' => 'required|numeric|integer|exists:erp_payment_terms,id',

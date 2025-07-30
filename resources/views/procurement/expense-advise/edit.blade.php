@@ -1005,7 +1005,7 @@
             $("#reference_type_input").val(currentProcessType);
             if(currentProcessType === null)
             {
-                $(".poSelect").hide();
+                $(".poSelect").show();
                 $("#addNewItemBtn").show();
             }
             else{

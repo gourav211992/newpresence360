@@ -15,6 +15,7 @@ use App\Http\Requests\InspectionRequest;
 use App\Http\Requests\EditInspectionRequest;
 
 use App\Models\InspectionTed;
+use App\Models\InspChecklist;
 use App\Models\InspectionHeader;
 use App\Models\InspectionDetail;
 use App\Models\InspectionItemAttribute;
@@ -364,6 +365,11 @@ class InspectionController extends Controller
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
+                    $checklistValidation = self::validateInspectionCheckList($component);
+                    if ($checklistValidation) {
+                        \DB::rollBack();
+                        return $checklistValidation; // ❗ Stop further processing
+                    }
                     $so_id = null;
                     $inputQty = 0.00;
                     $balanceQty = 0.00;
@@ -494,6 +500,32 @@ class InspectionController extends Controller
                             $inspectionAttr->attr_name = $itemAttribute->attribute_group_id;
                             $inspectionAttr->attr_value = $inspectionAttrName ?? null;
                             $inspectionAttr->save();
+                        }
+                    }
+
+                    #Save item checklists
+                    if (!empty($component['inspectionData'])) {
+                        $itemChecklists = is_string($component['inspectionData'])
+                            ? json_decode($component['inspectionData'], true)
+                            : $component['inspectionData'];
+
+                        if (is_array($itemChecklists)) {
+                            foreach ($itemChecklists as $i => $val) {
+                                $inspChecklist = new InspChecklist();
+                                $inspChecklist->header_id = $inspection->id;
+                                $inspChecklist->detail_id = $inspectionDetail->id;
+                                $inspChecklist->item_id = $inspectionDetail->item_id;
+                                $inspChecklist->checklist_id = $val['checkList_id'];
+                                $inspChecklist->checklist_name = $val['checkList_name'];
+                                $inspChecklist->checklist_detail_id = $val['detail_id'];
+                                $inspChecklist->name = $val['parameter_name'];
+                                $inspChecklist->value = $val['parameter_value'];
+                                $inspChecklist->result = $val['result'];
+                                $inspChecklist->save();
+
+                            }
+                        } else {
+                            \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
                         }
                     }
                 }
@@ -1426,17 +1458,18 @@ class InspectionController extends Controller
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
         $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $uomId, $storeId, $subStoreId);
         $detailedStocks = InventoryHelper::fetchStockSummary($itemId, $selectedAttr,  $uomId, $qty, $storeId, $subStoreId);
+        
         $html = view(
             'procurement.inspection.partials.comp-item-detail',
             compact(
                 'item',
                 'mrn',
-                'selectedAttr',
+                'qty',
+                'poItem',
                 'remark',
                 'uomName',
-                'qty',
+                'selectedAttr',
                 'specifications',
-                'poItem',
                 'totalStockData',
                 'detailedStocks'
             )
@@ -2399,5 +2432,42 @@ class InspectionController extends Controller
             ->rawColumns(['item_attributes', 'status'])
             ->make(true);
     }
+
+    // Validate Inspection Checklist
+    private static function validateInspectionCheckList(array $component)
+    {
+        $inspectionJson = $component['inspectionData'] ?? null;
+        if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+        
+        $inspectionItems = json_decode($inspectionJson, true);
+        if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
+            return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
+        }
+        
+        $grouped = collect($inspectionItems)->groupBy('detail_id');
+        foreach ($grouped as $detailId => $entries) {
+            $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
+            $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
+            if (empty($param['parameter_name'])) {
+                return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
+            }
+
+            if (!isset($result['result']) || !in_array($result['result'], ['yes', 'no'], true)) {
+                return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
+            }
+        }
+
+        return null; // ✅ No issues found
+    }
+
+
+    # Helper Functions for Responses
+    private static function notFoundResponse(string $label)
+    {
+        return response()->json([
+            'message' => $label,
+        ], 422);
+    }
+
 
 }

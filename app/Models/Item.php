@@ -267,7 +267,7 @@ class Item extends Model
         return ucwords($status);
     }
 
-   public function getStatusAttribute()
+    public function getStatusAttribute()
     {
         $status = str_replace('_', ' ', $this->attributes['status'] ?? '');
         return ucwords($status);
@@ -290,6 +290,38 @@ class Item extends Model
             }
         }
         return $attrData;
+    }
+
+    // Load Inspection Checklists
+    public function loadInspectionChecklists()
+    {
+        $checkLists = [];
+        
+        if ($this->is_inspection) {
+            if ($this->inspectionChecklist()->exists()) {
+                $checkLists = $this->inspectionChecklist()->with('details.values')->get()->toArray();
+            } elseif ($this->category_id && $this->category && $this->category->inspectionChecklist()->exists()) {
+                $checkLists = $this->category->inspectionChecklist()->with('details.values')->get()->toArray();
+            }
+        } else{
+            $checkLists = $this->category->inspectionChecklist()->with('details.values')->get()->toArray();
+        }
+
+        return $checkLists;
+    }
+
+    // Check Item Inspection
+    public function hasInspection()
+    {
+        if (!is_null($this->is_inspection)) {
+            return $this->is_inspection == '1' ? 'yes' : 'no';
+        }
+    
+        if ($this->category_id && $this->category && !is_null($this->category->is_inspection)) {
+            return $this->category->is_inspection == '1' ? 'yes' : 'no';
+        }
+    
+        return '';
     }
 
 }
