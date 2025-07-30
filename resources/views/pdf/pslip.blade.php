@@ -317,7 +317,7 @@
                             {{ @$val->remarks }}
                         </td>
                         <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                            @if($val?->attributes->count())
+                            @if(isset($val?->attributes) && count($val?->attributes))
                                 @php 
                                     $html = '';
                                     foreach ($val?->attributes as $data) {

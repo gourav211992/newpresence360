@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\AuthUser;
 use Illuminate\Validation\Rule;
 use App\Models\CostCenterOrgLocations;
@@ -128,9 +129,9 @@ class Helper
     public static function getBookSeries($serviceAlias)
     {
         $series = Book::withDefaultGroupCompanyOrg()
-        ->whereHas('org_service', function ($orgService) use ($serviceAlias) {
-            $orgService->where('alias', $serviceAlias);
-        })->where('status', ConstantHelper::ACTIVE)->where('manual_entry', 1);
+            ->whereHas('org_service', function ($orgService) use ($serviceAlias) {
+                $orgService->where('alias', $serviceAlias);
+            })->where('status', ConstantHelper::ACTIVE)->where('manual_entry', 1);
         //Code modified due to change in requirement -> Jagdeep
         return $series;
     }
@@ -167,9 +168,9 @@ class Helper
         return $bookTypes;
     }
 
-  public static function getFinancialYear(string $date): mixed
+    public static function getFinancialYear(string $date): mixed
     {
-         $user = self::getAuthenticatedUser();
+        $user = self::getAuthenticatedUser();
         $startDate = request()->cookie('fyear_start_date') ?? $date;
         $endDate = request()->cookie('fyear_end_date') ?? $date;
 
@@ -179,22 +180,22 @@ class Helper
             ->first();
 
         if (isset($financialYear)) {
-                  $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                 $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
-                $authorized = true;
-                $currentUserId =  $user->auth_user_id;
-                $currentUserType = $user->authenticable_type;
+            $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+            $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
+            $authorized = true;
+            $currentUserId = $user->auth_user_id;
+            $currentUserType = $user->authenticable_type;
             if ($financialYear->fy_close == true && is_array($financialYear->access_by)) {
 
-                    $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
+                $authorized = !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
                     return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
-                               $entry['user_id'] == $currentUserId &&
-                               $entry['authenticable_type'] == $currentUserType &&
+                        $entry['user_id'] == $currentUserId &&
+                        $entry['authenticable_type'] == $currentUserType &&
                         (
                             $entry['authorized'] == false || $entry['locked'] == true
                         );
-                    });
-                }
+                });
+            }
             return [
                 'alias' => $financialYear->alias,
                 'id' => $financialYear->id,
@@ -418,20 +419,21 @@ class Helper
                 $voucher_no = ($prefix ? $prefix . "-" : "") . ($currentDocNo) . ($suffix ? "-" . $suffix : "");
 
                 //Condition for Sales Invoice/ Sales Return and Purchase Return
-                $shouldCheckTransportDocForPrSr = in_array($book -> service ?-> service ?-> alias, [ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS,
-                 ConstantHelper::SR_SERVICE_ALIAS]);
+                $shouldCheckTransportDocForPrSr = in_array($book->service?->service?->alias, [
+                    ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS,
+                    ConstantHelper::SR_SERVICE_ALIAS
+                ]);
                 $shouldCheckTransportDocForSi = false;
 
-                if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) &&
-                    isset($parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}))
-                {
-                    $shouldCheckTransportDocForSi = $parameters -> {ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] == "no";
+                if (
+                    $serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) &&
+                    isset($parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM})
+                ) {
+                    $shouldCheckTransportDocForSi = $parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] == "no";
                 }
 
-                if ($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi)
-                {
-                    if (strlen($book -> book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT)
-                    {
+                if ($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi) {
+                    if (strlen($book->book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT) {
                         $data = [
                             'type' => null,
                             'document_number' => null,
@@ -567,14 +569,18 @@ class Helper
 
     public static function userCheck()
     {
-        $authUser = Auth::guard('web')->user();
-        if ($authUser) {
-            $data = ['user_id' => Auth::guard('web')->user()->auth_user_id, 'user_type' => 'App\Models\User', 'type' => Auth::guard('web')->user()->authenticable_type];
-            return $data;
-        } else {
-            $data = ['user_id' => Auth::guard('web2')->user()->auth_user_id, 'user_type' => 'App\Models\Employee', 'type' => Auth::guard('web2')->user()->authenticable_type];
+
+        $user = request()->user();
+        if ($user) {
+            $data = ['user_id' => $user->id, 'user_type' => get_class($user), 'type' => $user->authenticable_type];
             return $data;
         }
+
+        return [
+            'user_id' => null,
+            'user_type' => null,
+            'type' => null
+        ];
     }
 
     public static function checkCount($data)
@@ -607,9 +613,9 @@ class Helper
         ];
     }
 
-    public static function getGroupsData($groups, $startDate, $endDate, $organizations, $currency = 'org',$cost=null,$location=null)
+    public static function getGroupsData($groups, $startDate, $endDate, $organizations, $currency = 'org', $cost = null, $location = null)
     {
-        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost,$location);
+        $profitLoss = Helper::getReservesSurplus($startDate, $endDate, $organizations, 'trialBalance', $currency, $cost, $location);
 
         $fy = self::getFinancialYear($startDate);
 
@@ -618,40 +624,40 @@ class Helper
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
             $allChildIds = Helper::getGroupsQuery(organizations: $organizations)
-            ->whereIn('id',$allChildIds)->pluck('id')->toArray();
+                ->whereIn('id', $allChildIds)->pluck('id')->toArray();
             $non_carry = Helper::getNonCarryGroups();
-            if(in_array($master->id,$non_carry))
-            $carry=0;
+            if (in_array($master->id, $non_carry))
+                $carry = 0;
             else
-            $carry=1;
+                $carry = 1;
 
 
             $ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
                         }
                     });
             })->where('status', 1)->pluck('id')->toArray();
 
 
-                $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
+            $transactions = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     // $query->where('cost_center_id', $cost);
                     return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
+                        ? $query->whereIn('cost_center_id', $cost)
+                        : $query->where('cost_center_id', $cost);
                 })
                 ->whereIn('ledger_id', $ledgers)
-                ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
+                ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $location) {
                     $query->whereBetween('document_date', [$startDate, $endDate]);
                     $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
                     $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location',(int)$location);
+                        $query->where('location', (int) $location);
                     });
 
                 })
@@ -670,46 +676,45 @@ class Helper
             // $lastClosingMaster = $transactions->pluck('closing')->last() ?? 0;
 
 
-                $openingData = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
+            $openingData = ItemDetail::whereIn('ledger_parent_id', $allChildIds)
                 ->when($cost, function ($query) use ($cost) {
                     // $query->where('cost_center_id', $cost);
-                     return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
+                    return is_array($cost)
+                        ? $query->whereIn('cost_center_id', $cost)
+                        : $query->where('cost_center_id', $cost);
                 })
-                ->whereIn('ledger_id',$ledgers)
-                ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$cost,$location) {
+                ->whereIn('ledger_id', $ledgers)
+                ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $fy, $carry, $cost, $location) {
                     $query->where('document_date', '<', $startDate);
-                    if(!$carry)
-                    $query->where('document_date', '>=', $fy['start_date']);
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                    if (!$carry)
+                        $query->where('document_date', '>=', $fy['start_date']);
+                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
                     });
                     $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location',(int)$location);
+                        $query->where('location', (int) $location);
                     });
-                 })
+                })
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
 
 
-                $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
-                if($master->name=="Liabilities")
-                {
-                    if($profitLoss['closing_type']=="Dr")
+            $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
+            if ($master->name == "Liabilities") {
+                if ($profitLoss['closing_type'] == "Dr")
                     $opening = $opening + $profitLoss['closingFinal'];
-                    else if($profitLoss['closing_type']=="Cr")
+                else if ($profitLoss['closing_type'] == "Cr")
                     $opening = $opening - $profitLoss['closingFinal'];
 
-                }
-                $opening_type = $opening < 0 ? 'Cr' : 'Dr';
-                $open = $openingData->total_debit - $openingData->total_credit;
-                $closingText = '';
-                $closing = $open + $totalMasterDebit - $totalMasterCredit;
-                if ($closing != 0) {
-                    $closingText = $closing < 0 ? 'Cr' : 'Dr';
-                }
+            }
+            $opening_type = $opening < 0 ? 'Cr' : 'Dr';
+            $open = $openingData->total_debit - $openingData->total_credit;
+            $closingText = '';
+            $closing = $open + $totalMasterDebit - $totalMasterCredit;
+            if ($closing != 0) {
+                $closingText = $closing < 0 ? 'Cr' : 'Dr';
+            }
 
 
 
@@ -720,8 +725,8 @@ class Helper
             $master->opening = abs($opening);
             $master->open = $opening;
             $master->opening_type = $opening_type;
-            $master->closing = $closing < 0 ? abs($closing):$closing;
-            $master->closing_type = $closing > 0 ? 'Dr':'Cr';
+            $master->closing = $closing < 0 ? abs($closing) : $closing;
+            $master->closing_type = $closing > 0 ? 'Dr' : 'Cr';
 
             unset($master->children);
         }
@@ -729,22 +734,22 @@ class Helper
         return $groups;
     }
 
-    public static function getBalanceSheetData($groups, $startDate, $endDate, $organizations, $type, $currency = "org",$cost=null,$location=null)
+    public static function getBalanceSheetData($groups, $startDate, $endDate, $organizations, $type, $currency = "org", $cost = null, $location = null)
     {
         foreach ($groups as $master) {
             $allChildIds = $master->getAllChildIds();
             $allChildIds[] = $master->id;
             $allChildIds = Helper::getGroupsQuery($organizations)
-            ->whereIn('id',$allChildIds)->pluck('id')->toArray();
+                ->whereIn('id', $allChildIds)->pluck('id')->toArray();
             $allChildIds = Helper::getGroupsQuery($organizations)
-            ->whereIn('id',$allChildIds)->pluck('id')->toArray();
+                ->whereIn('id', $allChildIds)->pluck('id')->toArray();
 
 
             $ledgers = Ledger::where(function ($query) use ($allChildIds) {
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
                         }
                     });
             })->where('status', 1)->pluck('id')->toArray();
@@ -752,9 +757,9 @@ class Helper
 
             $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
 
-                ->whereIn('ledger_parent_id',$allChildIds)
-                ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$location) {
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                ->whereIn('ledger_parent_id', $allChildIds)
+                ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $location) {
+                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
@@ -762,13 +767,13 @@ class Helper
                     $query->when(!empty($location), function ($query) use ($location) {
                         $query->where('location', $location);
                     });
-                  $query->whereBetween('document_date', [$startDate, $endDate]);
+                    $query->whereBetween('document_date', [$startDate, $endDate]);
                 })
                 ->when($cost, function ($query) use ($cost) {
                     // $query->where('cost_center_id', $cost);
                     return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
+                        ? $query->whereIn('cost_center_id', $cost)
+                        : $query->where('cost_center_id', $cost);
                 })->get();
 
             // Calculate totals for the master group
@@ -779,17 +784,17 @@ class Helper
             $totalMasterCredit = $transactions->sum(fn($t) => self::removeCommas($t->$creditField));
             $totalMasterDebit = $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
 
-            $openingData =  ItemDetail::whereIn('ledger_id', $ledgers)
-            ->when($cost, function ($query) use ($cost) {
-                // $query->where('cost_center_id', $cost);
-                return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-            })
-            ->whereIn('ledger_parent_id',$allChildIds)
-                ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
+            $openingData = ItemDetail::whereIn('ledger_id', $ledgers)
+                ->when($cost, function ($query) use ($cost) {
+                    // $query->where('cost_center_id', $cost);
+                    return is_array($cost)
+                        ? $query->whereIn('cost_center_id', $cost)
+                        : $query->where('cost_center_id', $cost);
+                })
+                ->whereIn('ledger_parent_id', $allChildIds)
+                ->whereHas('voucher', function ($query) use ($organizations, $startDate, $location) {
                     $query->where('document_date', '<', $startDate);
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                         $query->whereIn('organization_id', $organizations);
@@ -801,8 +806,8 @@ class Helper
                 ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                 ->first();
 
-                $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
-                $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
+            $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
+            $opening = $openingData->total_credit - $openingData->total_debit ?? 0;
 
 
 
@@ -844,36 +849,36 @@ class Helper
     }
 
     public static function formatIndianNumber($number)
-{
-    // Remove any existing commas
-    $number = str_replace(',', '', $number);
+    {
+        // Remove any existing commas
+        $number = str_replace(',', '', $number);
 
-    // Ensure it's a float and keep two decimal places
-    $number = number_format(floatval($number), 2, '.', '');
+        // Ensure it's a float and keep two decimal places
+        $number = number_format(floatval($number), 2, '.', '');
 
-    // Split into whole and decimal parts
-    $parts = explode('.', $number);
-    $wholePart = $parts[0];
-    $decimalPart = isset($parts[1]) ? $parts[1] : '00';
+        // Split into whole and decimal parts
+        $parts = explode('.', $number);
+        $wholePart = $parts[0];
+        $decimalPart = isset($parts[1]) ? $parts[1] : '00';
 
-    // If length of whole part is less than or equal to 3, no formatting needed
-    if (strlen($wholePart) <= 3) {
-        return $wholePart . '.' . $decimalPart;
+        // If length of whole part is less than or equal to 3, no formatting needed
+        if (strlen($wholePart) <= 3) {
+            return $wholePart . '.' . $decimalPart;
+        }
+
+        // Break into last 3 digits and the rest
+        $lastThreeDigits = substr($wholePart, -3);
+        $restOfTheNumber = substr($wholePart, 0, -3);
+
+        // Format the rest with commas after every 2 digits
+        $restOfTheNumber = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $restOfTheNumber);
+
+        // Combine and return formatted number
+        return $restOfTheNumber . ',' . $lastThreeDigits . '.' . $decimalPart;
     }
 
-    // Break into last 3 digits and the rest
-    $lastThreeDigits = substr($wholePart, -3);
-    $restOfTheNumber = substr($wholePart, 0, -3);
 
-    // Format the rest with commas after every 2 digits
-    $restOfTheNumber = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $restOfTheNumber);
-
-    // Combine and return formatted number
-    return $restOfTheNumber . ',' . $lastThreeDigits . '.' . $decimalPart;
-}
-
-
-     public static function removeCommas($input)
+    public static function removeCommas($input)
     {
         // Remove commas from the input using str_replace
         // return str_replace(',', '', $input);
@@ -886,27 +891,28 @@ class Helper
         return $input;
     }
 
-    public static function getLedgerData($ledger_id, $startDate, $endDate, $companyId, $organization_id, $ledger_parent,$currency = "org",$cost=null,$location=null)
+    public static function getLedgerData($ledger_id, $startDate, $endDate, $companyId, $organization_id, $ledger_parent, $currency = "org", $cost = null, $location = null)
     {
 
-            $itemVouchers = ItemDetail::where('ledger_id', $ledger_id)
+        $itemVouchers = ItemDetail::where('ledger_id', $ledger_id)
             ->when($cost, function ($query) use ($cost) {
                 // $query->where('cost_center_id', $cost)
                 return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);;
+                    ? $query->whereIn('cost_center_id', $cost)
+                    : $query->where('cost_center_id', $cost);
+                ;
             })
-        ->where('ledger_parent_id',$ledger_parent)
-        ->whereHas('voucher', function ($query) use ($organization_id,$startDate,$endDate,$location){
+            ->where('ledger_parent_id', $ledger_parent)
+            ->whereHas('voucher', function ($query) use ($organization_id, $startDate, $endDate, $location) {
 
-            $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-            $query->where('organization_id', $organization_id);
-            $query->whereBetween('document_date', [$startDate, $endDate]);
-            $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location',(int)$location);
-            });
+                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                $query->where('organization_id', $organization_id);
+                $query->whereBetween('document_date', [$startDate, $endDate]);
+                $query->when(!empty($location), function ($query) use ($location) {
+                    $query->where('location', (int) $location);
+                });
 
-        })->pluck('voucher_id')
+            })->pluck('voucher_id')
             ->toArray();
 
 
@@ -917,17 +923,17 @@ class Helper
             ->whereNotNull('approvalStatus')
             ->whereBetween('document_date', [$startDate, $endDate])
             ->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location',(int)$location);
+                $query->where('location', (int) $location);
             })
             ->with([
-                'items' => function ($it) use ($currency,$cost) {
+                'items' => function ($it) use ($currency, $cost) {
                     $it->when($cost, function ($query) use ($cost) {
                         // $query->where('cost_center_id', $cost);
                         return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
                             : $query->where('cost_center_id', $cost);
                     });
-                    $it->select('id', "debit_amt_{$currency} as debit_amt", "credit_amt_{$currency} as credit_amt", 'voucher_id', 'ledger_id','ledger_parent_id')->with([
+                    $it->select('id', "debit_amt_{$currency} as debit_amt", "credit_amt_{$currency} as credit_amt", 'voucher_id', 'ledger_id', 'ledger_parent_id')->with([
                         'ledger' => function ($l) {
                             $l->select('id', 'name');
                         }
@@ -946,20 +952,20 @@ class Helper
         return $data;
     }
 
-    public static function getBalanceSheetLedgers($group_id, $startDate, $endDate, $organizations, $currency = "org",$cost=null,$location=null)
+    public static function getBalanceSheetLedgers($group_id, $startDate, $endDate, $organizations, $currency = "org", $cost = null, $location = null)
     {
 
-        $liabilities_group =  Helper::getGroupsQuery($organizations)->where('name', "Liabilities")
-                                ->value('id');
+        $liabilities_group = Helper::getGroupsQuery($organizations)->where('name', "Liabilities")
+            ->value('id');
 
 
 
         $assets_group = Helper::getGroupsQuery($organizations)->where('name', "Assets")
-    ->value('id');
+            ->value('id');
 
         $liabilities = Helper::getGroupsQuery($organizations)
-        ->where('parent_group_id', $liabilities_group)
-        ->pluck('id')->toArray();
+            ->where('parent_group_id', $liabilities_group)
+            ->pluck('id')->toArray();
 
         $type = "assets";
         if (in_array($group_id, $liabilities)) {
@@ -969,108 +975,108 @@ class Helper
         $childrens = $group->getAllChildIds();
         $childrens[] = $group->id;
         $childrens = Helper::getGroupsQuery($organizations)
-            ->whereIn('id',$childrens)->pluck('id')->toArray();
+            ->whereIn('id', $childrens)->pluck('id')->toArray();
 
 
         $data = Ledger::where(function ($query) use ($childrens) {
             $query->whereIn('ledger_group_id', $childrens)
                 ->orWhere(function ($subQuery) use ($childrens) {
                     foreach ($childrens as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
                     }
                 });
         })->where('status', 1)
-        ->select('id', 'name','ledger_group_id')
+            ->select('id', 'name', 'ledger_group_id')
             ->withSum([
-                'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
+                'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $childrens, $cost, $organizations, $location) {
                     $query->whereIn('ledger_parent_id', $childrens)
-                    ->when($cost, function ($query) use ($cost) {
-                        // $query->where('cost_center_id', $cost);
-                        return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                    })
-                    ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                        ->when($cost, function ($query) use ($cost) {
+                            // $query->where('cost_center_id', $cost);
+                            return is_array($cost)
+                                ? $query->whereIn('cost_center_id', $cost)
+                                : $query->where('cost_center_id', $cost);
+                        })
+                        ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                $query->whereIn('organization_id', $organizations);
+                            });
+                            $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
+
+                            $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                            $query->whereBetween('document_date', [$startDate, $endDate]);
+                            $query->orderBy('document_date', 'asc');
+
                         });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
-
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                        $query->orderBy('document_date', 'asc');
-
-                    });
                 }
             ], "debit_amt_{$currency}")
             ->withSum([
-                'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
+                'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $childrens, $cost, $organizations, $location) {
                     $query->whereIn('ledger_parent_id', $childrens)
-                    ->when($cost, function ($query) use ($cost) {
-                        // $query->where('cost_center_id', $cost);
-                        return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                    })
-                    ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                        ->when($cost, function ($query) use ($cost) {
+                            // $query->where('cost_center_id', $cost);
+                            return is_array($cost)
+                                ? $query->whereIn('cost_center_id', $cost)
+                                : $query->where('cost_center_id', $cost);
+                        })
+                        ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
-                        });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                        $query->orderBy('document_date', 'asc');
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                $query->whereIn('organization_id', $organizations);
+                            });
+                            $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
+                            $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                            $query->whereBetween('document_date', [$startDate, $endDate]);
+                            $query->orderBy('document_date', 'asc');
 
-                    });
+                        });
                 }
             ], "credit_amt_{$currency}")
             ->with([
-                'details' => function ($query) use ($startDate, $endDate,$childrens,$cost,$organizations,$location) {
+                'details' => function ($query) use ($startDate, $endDate, $childrens, $cost, $organizations, $location) {
                     $query->whereIn('ledger_parent_id', $childrens)
-                    ->when($cost, function ($query) use ($cost) {
-                        // $query->where('cost_center_id', $cost);
-                        return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                    })
-                    ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                        ->when($cost, function ($query) use ($cost) {
+                            // $query->where('cost_center_id', $cost);
+                            return is_array($cost)
+                                ? $query->whereIn('cost_center_id', $cost)
+                                : $query->where('cost_center_id', $cost);
+                        })
+                        ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
-                        });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->whereBetween('document_date', [$startDate, $endDate]);
-                        $query->orderBy('document_date', 'asc');
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                $query->whereIn('organization_id', $organizations);
+                            });
+                            $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
+                            $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                            $query->whereBetween('document_date', [$startDate, $endDate]);
+                            $query->orderBy('document_date', 'asc');
 
-                    });
+                        });
                 }
             ])
             ->get()
-            ->map(function ($ledger) use ($type,$childrens,$organizations,$startDate,$currency,$cost,$location) {
+            ->map(function ($ledger) use ($type, $childrens, $organizations, $startDate, $currency, $cost, $location) {
                 // Set to 0 if the sum is null
                 $details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;
                 $details_sum_credit_amt = $ledger->details_sum_credit_amt ?? 0;
 
-                $openingData =  ItemDetail::where('ledger_id',$ledger->id)
-                ->when($cost, function ($query) use ($cost) {
-                    // $query->where('cost_center_id', $cost);
-                    return is_array($cost)
+                $openingData = ItemDetail::where('ledger_id', $ledger->id)
+                    ->when($cost, function ($query) use ($cost) {
+                        // $query->where('cost_center_id', $cost);
+                        return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
                             : $query->where('cost_center_id', $cost);
-                })
-                    ->whereIn('ledger_parent_id',$childrens)
-                   ->whereHas('voucher', function ($query) use($organizations,$startDate,$location) {
+                    })
+                    ->whereIn('ledger_parent_id', $childrens)
+                    ->whereHas('voucher', function ($query) use ($organizations, $startDate, $location) {
                         $query->where('document_date', '<', $startDate);
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                        $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
                         $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
@@ -1082,8 +1088,8 @@ class Helper
                     ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
                     ->first();
 
-                    $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
-                    $opening =  $openingData->total_credit - $openingData->total_debit ?? 0;
+                $openingt = $openingData->total_debit - $openingData->total_credit ?? 0;
+                $opening = $openingData->total_credit - $openingData->total_debit ?? 0;
 
 
 
@@ -1100,7 +1106,7 @@ class Helper
                         return in_array($item, $childrens);
                     });
 
-                    $ledger->ledger_group_id = (int)$filteredValue ?? null; // Use found value or null if no match
+                    $ledger->ledger_group_id = (int) $filteredValue ?? null; // Use found value or null if no match
                 }
 
 
@@ -1136,11 +1142,11 @@ class Helper
         $currUser = Helper::userCheck();
 
         if ($docStatus == ConstantHelper::DRAFT || $docStatus == ConstantHelper::REJECTED) {
-            if ($user -> auth_user_id === $createdBy) {
+            if ($user->auth_user_id === $createdBy) {
                 $draft = true;
                 $submit = true;
             }
-            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+            if ($revisionNumber == 0 && $createdBy === $user->auth_user_id) {
                 $delete = true;
             }
         }
@@ -1150,8 +1156,8 @@ class Helper
                 ->where('level', 1)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1171,8 +1177,8 @@ class Helper
             $amendmentWorkflow = AmendmentWorkflow::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->whereHas('approvers', function ($approvers) use ($user) {
-                    $approvers->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approvers->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->where('min_value', '<=', $docValue)
                 ->orderByDesc('min_value')
@@ -1181,17 +1187,17 @@ class Helper
                 $amend = true;
             }
 
-            if($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS ) {
+            if ($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS) {
                 $close = true;
             } else {
                 $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
-                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                    ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
                 if (isset($postingRequiredParam)) {
                     $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
                     $post = $isPostingRequired;
                 }
             }
-            if ($revisionNumber == 0 && $user -> auth_user_id === $createdBy) {
+            if ($revisionNumber == 0 && $user->auth_user_id === $createdBy) {
                 $amendDelete = true;
             }
             $print = true;
@@ -1201,8 +1207,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1227,7 +1233,7 @@ class Helper
         if ($docStatus == ConstantHelper::CLOSED) {
             if ($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS) {
                 $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
-                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                    ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
                 if (isset($postingRequiredParam)) {
                     $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
                     $post = $isPostingRequired;
@@ -1276,21 +1282,21 @@ class Helper
         $currUser = Helper::userCheck();
 
         if ($docStatus == ConstantHelper::DRAFT || $docStatus == ConstantHelper::REJECTED) {
-            if ($user -> auth_user_id === $createdBy) {
+            if ($user->auth_user_id === $createdBy) {
                 $draft = true;
                 $submit = true;
             }
-            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+            if ($revisionNumber == 0 && $createdBy === $user->auth_user_id) {
                 $delete = true;
             }
         }
         if ($docStatus == ConstantHelper::SUBMITTED || $docStatus == ConstantHelper::REJECTED) {
-            if ($revisionNumber == 0 && $createdBy === $user -> auth_user_id) {
+            if ($revisionNumber == 0 && $createdBy === $user->auth_user_id) {
                 $delete = true;
             }
         }
-         if ($docStatus == ConstantHelper::DRAFT) {
-            if ($revisionNumber == 1 && $createdBy === $user -> auth_user_id) {
+        if ($docStatus == ConstantHelper::DRAFT) {
+            if ($revisionNumber == 1 && $createdBy === $user->auth_user_id) {
                 $delete = true;
             }
         }
@@ -1300,8 +1306,8 @@ class Helper
                 ->where('level', 1)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1321,8 +1327,8 @@ class Helper
             $amendmentWorkflow = AmendmentWorkflow::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->whereHas('approvers', function ($approvers) use ($user) {
-                    $approvers->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approvers->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->where('min_value', '<=', $docValue)
                 ->orderByDesc('min_value')
@@ -1331,17 +1337,17 @@ class Helper
                 $amend = true;
             }
 
-            if($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS ) {
+            if ($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS) {
                 $close = true;
             } else {
                 $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
-                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                    ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
                 if (isset($postingRequiredParam)) {
                     $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
                     $post = $isPostingRequired;
                 }
             }
-            if ($revisionNumber == 0 && $user -> auth_user_id === $createdBy) {
+            if ($revisionNumber == 0 && $user->auth_user_id === $createdBy) {
                 $amendDelete = true;
             }
             $print = true;
@@ -1351,8 +1357,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1377,7 +1383,7 @@ class Helper
         if ($docStatus == ConstantHelper::CLOSED) {
             if ($bookTypeServiceAlias == ConstantHelper::MO_SERVICE_ALIAS) {
                 $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
-                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                    ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
                 if (isset($postingRequiredParam)) {
                     $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
                     $post = $isPostingRequired;
@@ -1438,8 +1444,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1457,8 +1463,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1472,42 +1478,42 @@ class Helper
         }
         if ($docStatus == ConstantHelper::PARTIALLY_APPROVED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
-            ->where('organization_id', $user->organization_id)
-            ->whereHas('approvers', function ($approver) use ($user) {
-                $approver->where('user_id', $user -> auth_user_id);
+                ->where('organization_id', $user->organization_id)
+                ->whereHas('approvers', function ($approver) use ($user) {
+                    $approver->where('user_id', $user->auth_user_id);
                     // ->where('user_type', $currUser['type']);
-            })
-            ->orderByDesc('min_value')
-            ->first();
-        if ($approvalWorkflow) {
-            // $docApproval = DocumentApproval::where('document_type', '=', "$bookTypeServiceAlias")
-            //                 ->where('document_id', $docId)
-            //                 ->where('user_id', $user->id)
-            //                 ->where('user_type', $currUser['type'])
-            //                 ->where('revision_number', $revisionNumber)
-            //                 ->where('approval_type', 'approve')
-            //                 ->first();
-            $checkApproved = self::checkApprovedHistory($bookTypeServiceAlias, $docId, $revisionNumber, [$user->id]);
+                })
+                ->orderByDesc('min_value')
+                ->first();
+            if ($approvalWorkflow) {
+                // $docApproval = DocumentApproval::where('document_type', '=', "$bookTypeServiceAlias")
+                //                 ->where('document_id', $docId)
+                //                 ->where('user_id', $user->id)
+                //                 ->where('user_type', $currUser['type'])
+                //                 ->where('revision_number', $revisionNumber)
+                //                 ->where('approval_type', 'approve')
+                //                 ->first();
+                $checkApproved = self::checkApprovedHistory($bookTypeServiceAlias, $docId, $revisionNumber, [$user->id]);
 
-            if (!count($checkApproved)) {
-                if ($approvalWorkflow->level == $docApprLevel) {
-                    $approve = true;
-                    $reject=true;
+                if (!count($checkApproved)) {
+                    if ($approvalWorkflow->level == $docApprLevel) {
+                        $approve = true;
+                        $reject = true;
+                    }
                 }
             }
+
+            $view = true;
+            $email = false;
+
         }
-
-        $view = true;
-        $email = false;
-
-    }
         if ($docStatus == ConstantHelper::ASSIGNED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
                 ->where('organization_id', $user->organization_id)
                 ->where('level', 1)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1524,7 +1530,7 @@ class Helper
         }
 
 
-         if ($userCheck['user_id'] === $createdBy &&  $userCheck['type']=== $creatorType ) {
+        if ($userCheck['user_id'] === $createdBy && $userCheck['type'] === $creatorType) {
             $approve = false;
         }
 
@@ -1556,12 +1562,12 @@ class Helper
             'fee_paid' => false,
             'legal_doc' => false,
             'post' => false,
-            'voucher'=> false
+            'voucher' => false
         ];
 
         $user = self::getAuthenticatedUser();
         $userAuth = Helper::userCheck();
-       $book = Book::findOrFail($bookId);
+        $book = Book::findOrFail($bookId);
 
         $bookTypeServiceAlias = $book?->service?->alias;
         $currUser = Helper::userCheck();
@@ -1615,10 +1621,10 @@ class Helper
         // Handle Approval Status
         if ($docStatus == ConstantHelper::APPROVED || $docStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) {
             $postingRequiredParam = OrganizationBookParameter::where('book_id', $bookId)
-            ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
+                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_REQUIRED_PARAM)->first();
 
             $postingRequiredParam2 = OrganizationBookParameter::where('book_id', $bookId)
-            ->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+                ->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
 
             if (isset($postingRequiredParam) && isset($postingRequiredParam2->parameter_value[0])) {
                 $isPostingRequired = ($postingRequiredParam->parameter_value[0] ?? '') === "yes" ? true : false;
@@ -1663,8 +1669,8 @@ class Helper
                 ->where('level', 1)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1692,8 +1698,8 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->where('min_value', '<=', $docValue)
                 ->whereHas('approvers', function ($approver) use ($user) {
-                    $approver->where('user_id', $user -> auth_user_id);
-                        // ->where('user_type', $currUser['type']);
+                    $approver->where('user_id', $user->auth_user_id);
+                    // ->where('user_type', $currUser['type']);
                 })
                 ->orderByDesc('min_value')
                 ->first();
@@ -1710,7 +1716,7 @@ class Helper
 
         // Creator of document cannot approve
         // if ($user->id === $createdBy && self::userCheck()['type'] == $creatorType) {
-        if ($user->auth_user_id === $createdBy ) {
+        if ($user->auth_user_id === $createdBy) {
             $buttons['approve'] = false;
         }
 
@@ -1738,7 +1744,7 @@ class Helper
         // if (Auth::guard('web2')->check()) {
         //     $user_type = 'employee';
         // }
-        $docApproval->user_type = $user -> authenticable_type;
+        $docApproval->user_type = $user->authenticable_type;
         $docApproval->save();
 
         # Save attachment file
@@ -1754,12 +1760,12 @@ class Helper
         if ($modelName) {
             $model = resolve($modelName);
             $document = $model::find($docId);
-            $createdBy = $document ?-> created_by;
-            if (isset($document) && isset($document -> document_status)) {
-                if ($actionType == ConstantHelper::REVOKE && $document -> document_status != ConstantHelper::SUBMITTED) {
+            $createdBy = $document?->created_by;
+            if (isset($document) && isset($document->document_status)) {
+                if ($actionType == ConstantHelper::REVOKE && $document->document_status != ConstantHelper::SUBMITTED) {
                     $message = "Can't Revoke. Document is already Approved/Rejected";
                 }
-                if (($actionType == "approve" || $actionType == "reject") && $document -> document_status == ConstantHelper::DRAFT) {
+                if (($actionType == "approve" || $actionType == "reject") && $document->document_status == ConstantHelper::DRAFT) {
                     $message = "Can't Approve/Reject. Document has been revoked";
                 }
             }
@@ -1778,7 +1784,7 @@ class Helper
                 ->where('organization_id', $user->organization_id)
                 ->whereHas('level', function ($level) use ($currentLevel) {
                     $level->where('level', $currentLevel);
-                }) -> where('user_id', '!=', $createdBy)
+                })->where('user_id', '!=', $createdBy)
                 ->get();
             $rights = isset($approvalWorkflows[0]) ? $approvalWorkflows[0]->bookLevel?->rights : '';
             if ($rights == 'all') {
@@ -1820,7 +1826,7 @@ class Helper
                 } else {
                     $nextLevel = $currentLevel;
                     $approvalStatus = ConstantHelper::APPROVED;
-                    if ($bookTypeServiceAlias != ConstantHelper::MO_SERVICE_ALIAS){
+                    if ($bookTypeServiceAlias != ConstantHelper::MO_SERVICE_ALIAS) {
                         $nextLevel = $currentLevel;
                         $approvalStatus = ConstantHelper::APPROVED;
                         $postData = FinancialPostingHelper::financeVoucherPosting($book->id, $docId, 'post', true);
@@ -1839,19 +1845,19 @@ class Helper
             $approvalStatus = ConstantHelper::REJECTED;
         }
         if ($actionType == 'completed' || $actionType == 'auto-completed') {
-            if($bookTypeServiceAlias==ConstantHelper::TR_SERVICE_ALIAS){
+            if ($bookTypeServiceAlias == ConstantHelper::TR_SERVICE_ALIAS) {
                 $nextLevel = $currentLevel;
                 $approvalStatus = ConstantHelper::COMPLETED;
             }
         }
         if ($actionType == 'auto-closed' || $actionType == 'closed') {
-            if($bookTypeServiceAlias==ConstantHelper::TR_SERVICE_ALIAS){
+            if ($bookTypeServiceAlias == ConstantHelper::TR_SERVICE_ALIAS) {
                 $nextLevel = $currentLevel;
                 $approvalStatus = ConstantHelper::CLOSED;
             }
         }
         if ($actionType == 'shortlist') {
-            if($bookTypeServiceAlias==ConstantHelper::TR_SERVICE_ALIAS){
+            if ($bookTypeServiceAlias == ConstantHelper::TR_SERVICE_ALIAS) {
                 $nextLevel = $currentLevel;
                 $approvalStatus = ConstantHelper::SHORTLISTED;
             }
@@ -1863,18 +1869,18 @@ class Helper
 
         if ($actionType == 'submit') {
             $approvalWorkflow = ApprovalWorkflow::where('book_id', $book->id)
-            ->where('organization_id', $user->organization_id)
-            ->whereHas('level', function ($level) use ($currentLevel) {
-                $level->where('level', $currentLevel);
-            }) -> where('user_id', '!=', $createdBy)
-            ->get();
+                ->where('organization_id', $user->organization_id)
+                ->whereHas('level', function ($level) use ($currentLevel) {
+                    $level->where('level', $currentLevel);
+                })->where('user_id', '!=', $createdBy)
+                ->get();
             if (count($approvalWorkflow) == 0) {
                 $approvalStatus = ConstantHelper::APPROVAL_NOT_REQUIRED;
             } else {
-            $approvalStatus = self::checkApprovalRequired($book -> id, $docValue);
+                $approvalStatus = self::checkApprovalRequired($book->id, $docValue);
             }
             if ($approvalStatus === ConstantHelper::APPROVAL_NOT_REQUIRED) {
-                if ($bookTypeServiceAlias != ConstantHelper::MO_SERVICE_ALIAS){
+                if ($bookTypeServiceAlias != ConstantHelper::MO_SERVICE_ALIAS) {
                     //Finance posting
                     $postData = FinancialPostingHelper::financeVoucherPosting($book->id, $docId, 'post', true);
                     if (isset($postData['status']) && $postData['status']) {
@@ -1891,12 +1897,12 @@ class Helper
             //Approval is required after amendment
             if (isset($approvalRequired->approval_required) && $approvalRequired->approval_required) {
                 $approvalWorkflow = ApprovalWorkflow::where('book_id', $book->id)
-                ->where('organization_id', $user->organization_id)
-                ->whereHas('level')->get();
+                    ->where('organization_id', $user->organization_id)
+                    ->whereHas('level')->get();
                 if (count($approvalWorkflow) == 0) {
                     $approvalStatus = ConstantHelper::APPROVAL_NOT_REQUIRED;
                 } else {
-                  $approvalStatus = ConstantHelper::SUBMITTED;
+                    $approvalStatus = ConstantHelper::SUBMITTED;
                 }
 
             }
@@ -1912,7 +1918,7 @@ class Helper
 
         # When document close
         if ($actionType == 'close') {
-            if ($bookTypeServiceAlias = ConstantHelper::MO_SERVICE_ALIAS){
+            if ($bookTypeServiceAlias = ConstantHelper::MO_SERVICE_ALIAS) {
                 $approvalStatus = ConstantHelper::CLOSED;
                 $postData = FinancialPostingHelper::financeVoucherPosting($book->id, $docId, 'post', true);
                 if (isset($postData['status']) && $postData['status']) {
@@ -2021,7 +2027,7 @@ class Helper
                 $custom->approval_date = null;
                 $custom->remarks = null;
                 $custom->approval_type = 'pending';
-                $custom->user_type = $authUser ?-> user_type;
+                $custom->user_type = $authUser?->user_type;
 
                 $custom->setRawAttributes([
                     'user_id' => $approvalAr,
@@ -2029,7 +2035,7 @@ class Helper
                     'approval_date' => null,
                     'remarks' => null,
                     'approval_type' => 'pending',
-                    'user_type' => $authUser ?-> user_type
+                    'user_type' => $authUser?->user_type
                 ], true);
 
                 $data[] = $custom;
@@ -2067,176 +2073,176 @@ class Helper
         return $history;
     }
 
-    public static function getTrialBalanceGroupLedgers($group_id, $startDate, $endDate, $organizations, $currency = "org",$cost=null,$location=null)
+    public static function getTrialBalanceGroupLedgers($group_id, $startDate, $endDate, $organizations, $currency = "org", $cost = null, $location = null)
     {
         $non_carry = Helper::getNonCarryGroups();
-        if(in_array($group_id,$non_carry))
-        $carry=0;
+        if (in_array($group_id, $non_carry))
+            $carry = 0;
         else
-        $carry=1;
+            $carry = 1;
 
         $fy = self::getFinancialYear($startDate);
 
 
         $groups = Helper::getGroupsQuery($organizations)
-        ->where('parent_group_id',$group_id)
-        ->pluck('id');
+            ->where('parent_group_id', $group_id)
+            ->pluck('id');
 
 
-        $datas = Group::whereIn('id',$groups)->get();
+        $datas = Group::whereIn('id', $groups)->get();
 
 
 
         if (self::checkCount($datas) > 0) {
             $type = 'group';
-            $data = self::getGroupsData($datas, $startDate, $endDate, $organizations, $currency,$cost,$location);
+            $data = self::getGroupsData($datas, $startDate, $endDate, $organizations, $currency, $cost, $location);
         } else {
             $type = 'ledger';
 
             $data = Ledger::where(function ($query) use ($group_id) {
                 $query->whereJsonContains('ledger_group_id', (string) $group_id)
-                      ->orWhere('ledger_group_id', $group_id);
+                    ->orWhere('ledger_group_id', $group_id);
             })->where('status', 1)->select('id', 'name')
-            ->with([
-                'details' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
-                    $query->where('ledger_parent_id', $group_id)
-                    ->when(!empty($cost), function ($query) use ($cost) {
-                         return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                        // $query->where('cost_center_id', $cost);
-                    })
-                          ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                ->with([
+                    'details' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                        $query->where('ledger_parent_id', $group_id)
+                            ->when(!empty($cost), function ($query) use ($cost) {
+                                return is_array($cost)
+                                    ? $query->whereIn('cost_center_id', $cost)
+                                    : $query->where('cost_center_id', $cost);
+                                // $query->where('cost_center_id', $cost);
+                            })
+                            ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations,$location) {
-                            $query->whereIn('organization_id', $organizations);
-                        });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
-                              $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                              $query->orderBy('document_date', 'asc');
-                             $query->whereBetween('document_date', [$startDate, $endDate]);
+                                $query->when(!empty($organizations), function ($query) use ($organizations, $location) {
+                                    $query->whereIn('organization_id', $organizations);
+                                });
+                                $query->when(!empty($location), function ($query) use ($location) {
+                                    $query->where('location', $location);
+                                });
+                                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                $query->orderBy('document_date', 'asc');
+                                $query->whereBetween('document_date', [$startDate, $endDate]);
 
-                          });
-                }
-            ])->withSum([
-                'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
-                    $query->where('ledger_parent_id', $group_id)
-                    ->when(!empty($cost), function ($query) use ($cost) {
-                        // dd($cost);
-                        // $query->where('cost_center_id', $cost);
-                        return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                    })
-                    ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                            });
+                    }
+                ])->withSum([
+                        'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                            $query->where('ledger_parent_id', $group_id)
+                                ->when(!empty($cost), function ($query) use ($cost) {
+                                    // dd($cost);
+                                    // $query->where('cost_center_id', $cost);
+                                    return is_array($cost)
+                                        ? $query->whereIn('cost_center_id', $cost)
+                                        : $query->where('cost_center_id', $cost);
+                                })
+                                ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
-                        });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
+                                    $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                        $query->whereIn('organization_id', $organizations);
+                                    });
+                                    $query->when(!empty($location), function ($query) use ($location) {
+                                        $query->where('location', $location);
+                                    });
 
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->orderBy('document_date', 'asc');
-                       $query->whereBetween('document_date', [$startDate, $endDate]);
+                                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                    $query->orderBy('document_date', 'asc');
+                                    $query->whereBetween('document_date', [$startDate, $endDate]);
 
-                    });
-                }
-            ], "debit_amt_{$currency}")
-            ->withSum([
-                'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id,$cost,$organizations,$location) {
-                    $query->where('ledger_parent_id', $group_id)
-                    ->when(!empty($cost), function ($query) use ($cost) {
-                        // $query->where('cost_center_id', $cost);
-                         return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                    })
-                    ->withwhereHas('voucher', function ($query) use($startDate,$endDate,$organizations,$location) {
+                                });
+                        }
+                    ], "debit_amt_{$currency}")
+                ->withSum([
+                    'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                        $query->where('ledger_parent_id', $group_id)
+                            ->when(!empty($cost), function ($query) use ($cost) {
+                                // $query->where('cost_center_id', $cost);
+                                return is_array($cost)
+                                    ? $query->whereIn('cost_center_id', $cost)
+                                    : $query->where('cost_center_id', $cost);
+                            })
+                            ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                        $query->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
-                        });
-                        $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                        });
-                        $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                        $query->orderBy('document_date', 'asc');
-                       $query->whereBetween('document_date', [$startDate, $endDate]);
+                                $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                    $query->whereIn('organization_id', $organizations);
+                                });
+                                $query->when(!empty($location), function ($query) use ($location) {
+                                    $query->where('location', $location);
+                                });
+                                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                $query->orderBy('document_date', 'asc');
+                                $query->whereBetween('document_date', [$startDate, $endDate]);
 
-                    });
-                }
-            ], "credit_amt_{$currency}")
-            ->get()
-            ->map(function ($ledger) use ($group_id,$organizations,$startDate,$endDate,$currency,$fy,$carry,$cost,$location) {
+                            });
+                    }
+                ], "credit_amt_{$currency}")
+                ->get()
+                ->map(function ($ledger) use ($group_id, $organizations, $startDate, $endDate, $currency, $fy, $carry, $cost, $location) {
 
-                $openingData = ItemDetail::where('ledger_parent_id', $group_id)
-                ->when(!empty($cost), function ($query) use ($cost) {
-                    // $query->where('cost_center_id', $cost);
-                     return is_array($cost)
-                            ? $query->whereIn('cost_center_id', $cost)
-                            : $query->where('cost_center_id', $cost);
-                })
-                ->where('ledger_id',$ledger->id)
-                ->whereHas('voucher', function ($query) use($organizations,$startDate,$endDate,$fy,$carry,$location) {
-                    $query->where('document_date', '<', $startDate);
-                    if(!$carry)
-                    $query->where('document_date', '>=', $fy['start_date']);
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                    $openingData = ItemDetail::where('ledger_parent_id', $group_id)
+                        ->when(!empty($cost), function ($query) use ($cost) {
+                            // $query->where('cost_center_id', $cost);
+                            return is_array($cost)
+                                ? $query->whereIn('cost_center_id', $cost)
+                                : $query->where('cost_center_id', $cost);
+                        })
+                        ->where('ledger_id', $ledger->id)
+                        ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $fy, $carry, $location) {
+                            $query->where('document_date', '<', $startDate);
+                            if (!$carry)
+                                $query->where('document_date', '>=', $fy['start_date']);
+                            $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
-                    $query->when(!empty($organizations), function ($query) use ($organizations) {
-                        $query->whereIn('organization_id', $organizations);
-                    });
-                    $query->when(!empty($location), function ($query) use ($location) {
-                            $query->where('location', $location);
-                    });
-                })
-                ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
-                ->first();
+                            $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                $query->whereIn('organization_id', $organizations);
+                            });
+                            $query->when(!empty($location), function ($query) use ($location) {
+                                $query->where('location', $location);
+                            });
+                        })
+                        ->selectRaw("SUM(debit_amt_{$currency}) as total_debit, SUM(credit_amt_{$currency}) as total_credit")
+                        ->first();
 
-                $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
-                $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
-                if($ledger->details_sum_debit_amt==0 && $ledger->details_sum_credit_amt==0){
-                        $voucher = ItemDetail::where('ledger_id',$ledger->id)->with('vouchers');
+                    $opening = $openingData->total_debit - $openingData->total_credit ?? 0;
+                    $opening_type = ($openingData->total_debit > $openingData->total_credit) ? 'Dr' : 'Cr';
+                    if ($ledger->details_sum_debit_amt == 0 && $ledger->details_sum_credit_amt == 0) {
+                        $voucher = ItemDetail::where('ledger_id', $ledger->id)->with('vouchers');
                         Log::info('Zero-sum ledger detected', [
                             'ledger_id' => $ledger->id,
-                            'vouchers'=>$voucher->toArray(),
+                            'vouchers' => $voucher->toArray(),
                             'ledger_name' => $ledger->name,
                             'group_id' => $group_id ?? 'N/A',
-                            ]);
-                        }
+                        ]);
+                    }
 
 
-                // Set to 0 if the sum is null
-                $ledger->details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;
-                $ledger->details_sum_credit_amt = $ledger->details_sum_credit_amt ?? 0;
-                $closing = $opening+($ledger->details_sum_debit_amt - $ledger->details_sum_credit_amt);
+                    // Set to 0 if the sum is null
+                    $ledger->details_sum_debit_amt = $ledger->details_sum_debit_amt ?? 0;
+                    $ledger->details_sum_credit_amt = $ledger->details_sum_credit_amt ?? 0;
+                    $closing = $opening + ($ledger->details_sum_debit_amt - $ledger->details_sum_credit_amt);
 
-                $ledger->opening = abs($opening);
-                $ledger->open = $opening;
-                $ledger->closing = abs($closing);
-                $ledger->closing_type = $closing<0?"Cr":"Dr";
-                $ledger->opening_type = $opening_type;
-                $ledger->group_id = $group_id; // Default type if no details exist
+                    $ledger->opening = abs($opening);
+                    $ledger->open = $opening;
+                    $ledger->closing = abs($closing);
+                    $ledger->closing_type = $closing < 0 ? "Cr" : "Dr";
+                    $ledger->opening_type = $opening_type;
+                    $ledger->group_id = $group_id; // Default type if no details exist
+    
+                    unset($ledger->details);
 
-                unset($ledger->details);
-
-                return $ledger;
-            });
+                    return $ledger;
+                });
 
 
-      }
+        }
 
-        return ['type' => $type, 'data' => $data,'date0'=>$startDate,'date1'=>$endDate];
+        return ['type' => $type, 'data' => $data, 'date0' => $startDate, 'date1' => $endDate];
     }
-    public static function getReservesSurplus($startDate,$endDate, $organizations, $type, $currency = "org",$cost=null,$location=null)
+    public static function getReservesSurplus($startDate, $endDate, $organizations, $type, $currency = "org", $cost = null, $location = null)
     {
         // Get previous day from current start date
 
-        $data = self::getPlGroupsData($startDate,$endDate, $organizations, $currency,$cost,null,$location);
+        $data = self::getPlGroupsData($startDate, $endDate, $organizations, $currency, $cost, null, $location);
         $details = self::getPlGroupDetails($data);
 
         $netProfit = $details['netProfit'];
@@ -2259,13 +2265,13 @@ class Helper
         }
     }
 
-    public static function getPlGroupsData($startDate, $endDate, $organizations, $currency = "org",$cost=null,$type=null,$location=null)
+    public static function getPlGroupsData($startDate, $endDate, $organizations, $currency = "org", $cost = null, $type = null, $location = null)
     {
 
-        $data = PLGroups::select('id', 'name', 'group_ids')->get()->map(function ($plGroup) use ($type,$cost,$startDate, $endDate, $organizations, $currency,$location) {
-        $groups =  Helper::getGroupsQuery($organizations)->whereIn('id', $plGroup->group_ids)
-        ->select('id', 'name')
-        ->get();
+        $data = PLGroups::select('id', 'name', 'group_ids')->get()->map(function ($plGroup) use ($type, $cost, $startDate, $endDate, $organizations, $currency, $location) {
+            $groups = Helper::getGroupsQuery($organizations)->whereIn('id', $plGroup->group_ids)
+                ->select('id', 'name')
+                ->get();
 
             $totalCredit = 0;
             $totalDebit = 0;
@@ -2276,41 +2282,41 @@ class Helper
                 $allChildIds = $master->getAllChildIds();
                 $allChildIds[] = $master->id;
                 $allChildIds = Helper::getGroupsQuery($organizations)
-                ->whereIn('id',$allChildIds)->pluck('id')->toArray();
+                    ->whereIn('id', $allChildIds)->pluck('id')->toArray();
 
 
                 $ledgers = Ledger::where(function ($query) use ($allChildIds) {
-                $query->whereIn('ledger_group_id', $allChildIds)
-                    ->orWhere(function ($subQuery) use ($allChildIds) {
-                        foreach ($allChildIds as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id',(string)$child);
-                        }
-                    });
-            })->where('status', 1)->pluck('id')->toArray();
+                    $query->whereIn('ledger_group_id', $allChildIds)
+                        ->orWhere(function ($subQuery) use ($allChildIds) {
+                            foreach ($allChildIds as $child) {
+                                $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                            }
+                        });
+                })->where('status', 1)->pluck('id')->toArray();
                 $non_carry = Helper::getNonCarryGroups();
                 $fy = self::getFinancialYear($startDate);
 
 
-                if(in_array($master->id,$non_carry))
-                $carry=0;
+                if (in_array($master->id, $non_carry))
+                    $carry = 0;
                 else
-                $carry=1;
+                    $carry = 1;
                 $transactions = ItemDetail::whereIn('ledger_id', $ledgers)
-                ->whereIn('ledger_parent_id',$allChildIds)
-                ->when($cost, function ($query) use ($cost) {
+                    ->whereIn('ledger_parent_id', $allChildIds)
+                    ->when($cost, function ($query) use ($cost) {
                         return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
                             : $query->where('cost_center_id', $cost);
-                })
-                ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                    })
+                    ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $carry, $fy, $location) {
+                        $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
-                    $query->when(!empty($organizations), function ($query) use ($organizations) {
-                        $query->whereIn('organization_id', $organizations);
-                    });
-                    $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location', $location);
-                    });
+                        $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        });
+                        $query->when(!empty($location), function ($query) use ($location) {
+                            $query->where('location', $location);
+                        });
                         $query->whereBetween('document_date', [$startDate, $endDate]);
 
                     })->get();
@@ -2323,32 +2329,32 @@ class Helper
 
 
                 $transactionsOpen = ItemDetail::whereIn('ledger_id', $ledgers)
-                ->whereIn('ledger_parent_id',$allChildIds)
-                 ->when($cost, function ($query) use ($cost) {
-                         return is_array($cost)
+                    ->whereIn('ledger_parent_id', $allChildIds)
+                    ->when($cost, function ($query) use ($cost) {
+                        return is_array($cost)
                             ? $query->whereIn('cost_center_id', $cost)
                             : $query->where('cost_center_id', $cost);
                     })
-                ->whereHas('voucher', function ($query) use ($organizations,$startDate,$endDate,$carry,$fy,$location)  {
-                    $query->where('document_date', '<', $startDate);
-                    //if(!$carry)
-                    //$query->where('document_date', '>=', $fy['start_date']);
-                    $query->whereIn('approvalStatus',ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                    ->whereHas('voucher', function ($query) use ($organizations, $startDate, $endDate, $carry, $fy, $location) {
+                        $query->where('document_date', '<', $startDate);
+                        //if(!$carry)
+                        //$query->where('document_date', '>=', $fy['start_date']);
+                        $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
 
-                    $query->when(!empty($organizations), function ($query) use ($organizations) {
-                        $query->whereIn('organization_id', $organizations);
-                    });
-                    $query->when(!empty($location), function ($query) use ($location) {
-                        $query->where('location', $location);
-                    });
-                })->get();
+                        $query->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+                        });
+                        $query->when(!empty($location), function ($query) use ($location) {
+                            $query->where('location', $location);
+                        });
+                    })->get();
 
-                $totalCreditOpen +=$transactionsOpen->sum(fn($t) => self::removeCommas($t->$creditField));
+                $totalCreditOpen += $transactionsOpen->sum(fn($t) => self::removeCommas($t->$creditField));
                 $totalDebitOpen += $transactionsOpen->sum(fn($t) => self::removeCommas($t->$debitField));
 
 
-                    $totalCredit +=$transactions->sum(fn($t) => self::removeCommas($t->$creditField));
-                    $totalDebit += $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
+                $totalCredit += $transactions->sum(fn($t) => self::removeCommas($t->$creditField));
+                $totalDebit += $transactions->sum(fn($t) => self::removeCommas($t->$debitField));
 
 
                 unset($master->children);
@@ -2362,10 +2368,10 @@ class Helper
 
 
             $closingText = '';
-            if($type=="profitloss")
-            $closing = $totalDebit - $totalCredit;
+            if ($type == "profitloss")
+                $closing = $totalDebit - $totalCredit;
             else
-            $closing = $opening + ($totalDebit - $totalCredit);
+                $closing = $opening + ($totalDebit - $totalCredit);
 
             if ($closing != 0) {
                 $closingText = $closing > 0 ? 'Dr' : 'Cr';
@@ -2380,139 +2386,136 @@ class Helper
         return $data;
     }
     public static function getPlGroupDetails($groups)
-{
-    $totalSales = 0;
-    $totalPurchase = 0;
+    {
+        $totalSales = 0;
+        $totalPurchase = 0;
 
-    $saleInd = 0;
-    $purchaseInd = 0;
+        $saleInd = 0;
+        $purchaseInd = 0;
 
-    $opening = 0;
-    $purchase = 0;
-    $directExpense = 0;
-    $indirectExpense = 0;
-    $salesAccount = 0;
-    $directIncome = 0;
-    $indirectIncome = 0;
+        $opening = 0;
+        $purchase = 0;
+        $directExpense = 0;
+        $indirectExpense = 0;
+        $salesAccount = 0;
+        $directIncome = 0;
+        $indirectIncome = 0;
 
-    $grossProfit = 0;
-    $grossLoss = 0;
-    $subTotal = 0;
-    $overAllTotal = 0;
-    $netProfit = 0;
-    $netLoss = 0;
+        $grossProfit = 0;
+        $grossLoss = 0;
+        $subTotal = 0;
+        $overAllTotal = 0;
+        $netProfit = 0;
+        $netLoss = 0;
 
-    foreach ($groups as $group) {
-        switch ($group->name) {
-            case "Opening Stock":
-                $totalPurchase += $group->closing;
-                $opening = $group->closing;
-                break;
-            case "Purchase Accounts":
-                $totalPurchase += $group->closing;
-                $purchase = $group->closing;
-                break;
-            case "Direct Expenses":
-                $totalPurchase += $group->closing;
-                $directExpense = $group->closing;
-                break;
-            case "Indirect Expenses":
-                $purchaseInd += $group->closing;
-                $indirectExpense = $group->closing;
-                break;
-            case "Sales Accounts":
-                $totalSales += $group->closing;
-                $salesAccount = $group->closing;
-                break;
-            case "Direct Income":
-                $totalSales += $group->closing;
-                $directIncome = $group->closing;
-                break;
-            case "Indirect Income":
-                $saleInd += $group->closing;
-                $indirectIncome = $group->closing;
-                break;
+        foreach ($groups as $group) {
+            switch ($group->name) {
+                case "Opening Stock":
+                    $totalPurchase += $group->closing;
+                    $opening = $group->closing;
+                    break;
+                case "Purchase Accounts":
+                    $totalPurchase += $group->closing;
+                    $purchase = $group->closing;
+                    break;
+                case "Direct Expenses":
+                    $totalPurchase += $group->closing;
+                    $directExpense = $group->closing;
+                    break;
+                case "Indirect Expenses":
+                    $purchaseInd += $group->closing;
+                    $indirectExpense = $group->closing;
+                    break;
+                case "Sales Accounts":
+                    $totalSales += $group->closing;
+                    $salesAccount = $group->closing;
+                    break;
+                case "Direct Income":
+                    $totalSales += $group->closing;
+                    $directIncome = $group->closing;
+                    break;
+                case "Indirect Income":
+                    $saleInd += $group->closing;
+                    $indirectIncome = $group->closing;
+                    break;
+            }
         }
+
+        $difference = $totalSales - $totalPurchase;
+        $diffVal = abs($difference);
+
+        // Calculate Gross Profit/Loss
+        if ($totalSales >= $totalPurchase) {
+            $grossProfit = $diffVal;
+            $subTotal = $totalSales;
+        } else {
+            $grossLoss = $diffVal;
+            $subTotal = $totalPurchase;
+        }
+
+        // Calculate Gross Profit or Loss
+        $grossProfit = $salesAccount + $directIncome - ($opening + $purchase + $directExpense);
+        $grossLoss = 0;
+        if ($grossProfit < 0) {
+            $grossLoss = abs($grossProfit);
+            $grossProfit = 0;
+        }
+
+        // Calculate Net Profit or Loss
+        if ($grossProfit > 0) {
+            $net = $grossProfit + $indirectIncome - $indirectExpense;
+            if ($net >= 0) {
+                $netProfit = $net;
+            } else {
+                $netLoss = abs($net);
+            }
+        } elseif ($grossLoss > 0) {
+            $net = $indirectIncome - ($grossLoss + $indirectExpense);
+            if ($net >= 0) {
+                $netProfit = $net;
+            } else {
+                $netLoss = abs($net);
+            }
+        } else {
+            // Only indirect values exist
+            $net = $indirectIncome - $indirectExpense;
+            if ($net >= 0) {
+                $netProfit = $net;
+            } else {
+                $netLoss = abs($net);
+            }
+        }
+
+        // Subtotal (Gross Profit side)
+        $subTotal = max($grossProfit, $grossLoss);
+
+        if ($netProfit > 0) {
+            $saleInd = $subTotal + $indirectIncome;
+            $purchaseInd = $subTotal + $indirectExpense;
+        } elseif ($netLoss > 0) {
+            $saleInd = $subTotal + $indirectIncome + $netLoss;
+            $purchaseInd = $subTotal + $indirectExpense;
+        }
+        $overAllTotal = max($saleInd, $purchaseInd);
+
+        return [
+            'salesInd' => $saleInd,
+            'purchaseInd' => $purchaseInd,
+            'opening' => $opening,
+            'purchase' => $purchase,
+            'directExpense' => $directExpense,
+            'indirectExpense' => $indirectExpense,
+            'salesAccount' => $salesAccount,
+            'directIncome' => $directIncome,
+            'indirectIncome' => $indirectIncome,
+            'grossProfit' => $grossProfit,
+            'grossLoss' => $grossLoss,
+            'subTotal' => $subTotal,
+            'overAllTotal' => $overAllTotal,
+            'netProfit' => $netProfit,
+            'netLoss' => $netLoss
+        ];
     }
-
-    $difference = $totalSales - $totalPurchase;
-    $diffVal = abs($difference);
-
-    // Calculate Gross Profit/Loss
-    if ($totalSales >= $totalPurchase) {
-        $grossProfit = $diffVal;
-        $subTotal = $totalSales;
-    } else {
-        $grossLoss = $diffVal;
-        $subTotal = $totalPurchase;
-    }
-
- // Calculate Gross Profit or Loss
-$grossProfit = $salesAccount + $directIncome - ($opening + $purchase + $directExpense);
-$grossLoss = 0;
-if ($grossProfit < 0) {
-    $grossLoss = abs($grossProfit);
-    $grossProfit = 0;
-}
-
-// Calculate Net Profit or Loss
-if ($grossProfit > 0) {
-    $net = $grossProfit + $indirectIncome - $indirectExpense;
-    if ($net >= 0) {
-        $netProfit = $net;
-    } else {
-        $netLoss = abs($net);
-    }
-} elseif ($grossLoss > 0) {
-    $net = $indirectIncome - ($grossLoss + $indirectExpense);
-    if ($net >= 0) {
-        $netProfit = $net;
-    } else {
-        $netLoss = abs($net);
-    }
-} else {
-    // Only indirect values exist
-    $net = $indirectIncome - $indirectExpense;
-    if ($net >= 0) {
-        $netProfit = $net;
-    } else {
-        $netLoss = abs($net);
-    }
-}
-
-// Subtotal (Gross Profit side)
-$subTotal = max($grossProfit, $grossLoss);
-
-if ($netProfit > 0)
-{
-    $saleInd = $subTotal + $indirectIncome;
-    $purchaseInd = $subTotal + $indirectExpense;
-}
-elseif ($netLoss > 0)
-{
-    $saleInd = $subTotal + $indirectIncome + $netLoss;
-    $purchaseInd = $subTotal + $indirectExpense;
-}
-$overAllTotal = max($saleInd, $purchaseInd);
-
-return [
-    'salesInd' => $saleInd,
-    'purchaseInd' => $purchaseInd,
-    'opening' => $opening,
-    'purchase' => $purchase,
-    'directExpense' => $directExpense,
-    'indirectExpense' => $indirectExpense,
-    'salesAccount' => $salesAccount,
-    'directIncome' => $directIncome,
-    'indirectIncome' => $indirectIncome,
-    'grossProfit' => $grossProfit,
-    'grossLoss' => $grossLoss,
-    'subTotal' => $subTotal,
-    'overAllTotal' => $overAllTotal,
-    'netProfit' => $netProfit,
-    'netLoss' => $netLoss
-];
-}
 
 
     public static function getAuthenticatedUser()
@@ -2522,39 +2525,41 @@ return [
         // Auth::guard('web')->login(User::find(2));
         // auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         // auth() -> user() -> auth_user_id = $authUser->id;
+        return request() -> user();
         if (Auth::guard('web')->check()) {
             return Auth::guard('web')->user();
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
         } else {
-            return request() -> user();
+        return request() -> user();
+
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
     {
         $employeeIds = Employee::where(function ($query) use ($organizationId) {
             $query->whereHas('access_rights_org', function ($subQuery) use ($organizationId) {
-                 $subQuery->where('organization_id', $organizationId);
-             })->orWhere('organization_id', $organizationId);
+                $subQuery->where('organization_id', $organizationId);
+            })->orWhere('organization_id', $organizationId);
         })->get()->pluck('id');
 
-        $userIds= User::where(function ($query) use ($organizationId) {
+        $userIds = User::where(function ($query) use ($organizationId) {
             $query->whereHas('access_rights_org', function ($subQuery) use ($organizationId) {
-                 $subQuery->where('organization_id', $organizationId);
-             })->orWhere('organization_id', $organizationId);
+                $subQuery->where('organization_id', $organizationId);
+            })->orWhere('organization_id', $organizationId);
         })->get()->pluck('id');
 
         $user = self::getAuthenticatedUser();
         $employees = AuthUser::where('db_name', $user->db_name)
-        -> where(function ($subQuery) use($employeeIds, $userIds) {
-            $subQuery->where(function ($empQuery) use($employeeIds) {
-                $empQuery -> where('authenticable_type', 'employee') -> whereIn('authenticable_id', $employeeIds);
-            }) -> orWhere(function ($userQuery) use($userIds) {
-                $userQuery -> where('authenticable_type', 'user') -> whereIn('authenticable_id', $userIds);
-            });
-        })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER])
-        -> where('status', ConstantHelper::ACTIVE)
-        ->get();
+            ->where(function ($subQuery) use ($employeeIds, $userIds) {
+                $subQuery->where(function ($empQuery) use ($employeeIds) {
+                    $empQuery->where('authenticable_type', 'employee')->whereIn('authenticable_id', $employeeIds);
+                })->orWhere(function ($userQuery) use ($userIds) {
+                    $userQuery->where('authenticable_type', 'user')->whereIn('authenticable_id', $userIds);
+                });
+            })->whereNotIn('user_type', [ConstantHelper::IAM_VENDOR_USER, ConstantHelper::IAM_ROOT_USER])
+            ->where('status', ConstantHelper::ACTIVE)
+            ->get();
         return $employees;
     }
 
@@ -2562,8 +2567,8 @@ return [
     {
 
         $logoUrl = "";
-        $organization= Organization::find($organizationId);
-        if($organization && $organization->organization_logo){
+        $organization = Organization::find($organizationId);
+        if ($organization && $organization->organization_logo) {
             return $organization->organization_logo;
         }
 
@@ -2661,20 +2666,21 @@ return [
     //         return false;
     //     }
     // }
-    public static function getModelFromServiceAlias($alias){
+    public static function getModelFromServiceAlias($alias)
+    {
         $baseNamespace = "App\\Models\\";
 
-            // Get the model name from the mapping array
-            $modelName = ConstantHelper::SERVICE_ALIAS_MODELS[$alias] ?? null;
-            if ($modelName) {
-                $modelClass = $baseNamespace.$modelName;
-                if (class_exists($modelClass)) {
-                    return $modelClass;
-                }
-                else return null;
-            } else {
+        // Get the model name from the mapping array
+        $modelName = ConstantHelper::SERVICE_ALIAS_MODELS[$alias] ?? null;
+        if ($modelName) {
+            $modelClass = $baseNamespace . $modelName;
+            if (class_exists($modelClass)) {
+                return $modelClass;
+            } else
                 return null;
-            }
+        } else {
+            return null;
+        }
 
     }
     public static function getRouteNameFromServiceAlias($alias, $id)
@@ -2736,9 +2742,9 @@ return [
         return false;
     }
 
-   public static function createRevisionHistory($modelObj, $headerColumn = null, $headerId = [], $detailColumn = null, $detailId = [])
+    public static function createRevisionHistory($modelObj, $headerColumn = null, $headerId = [], $detailColumn = null, $detailId = [])
     {
-        try{
+        try {
             $arr = [];
 
             foreach ($modelObj as $modelOb) {
@@ -2815,8 +2821,8 @@ return [
                     }
                 }
 
-                  //compliances
-                  if (method_exists($modelOb, 'compliances') && $modelOb->compliances()->exists()) {
+                //compliances
+                if (method_exists($modelOb, 'compliances') && $modelOb->compliances()->exists()) {
                     $compliance = $modelOb->compliances;
 
                     Compliance::create([
@@ -2879,10 +2885,10 @@ return [
                     }
                 }
 
-                 //Note
-                 if (method_exists($modelOb, 'notes') && $modelOb->notes()->count()) {
+                //Note
+                if (method_exists($modelOb, 'notes') && $modelOb->notes()->count()) {
                     foreach ($modelOb->notes as $note) {
-                      $note=  Note::create([
+                        $note = Note::create([
                             'noteable_id' => $insertedHistoryId,
                             'noteable_type' => $HistoryModelInstance::class,
                             'remark' => $note->remark,
@@ -3000,10 +3006,10 @@ return [
                         <td>' . $n++ . '</td>
                         <td>
                             ' . ucwords(str_replace(
-                        ['loan', 'Doc', 'Fee'],
-                        ['Loan', 'Document', 'Fee'],
-                        preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
-                    )) . '
+                            ['loan', 'Doc', 'Fee'],
+                            ['Loan', 'Document', 'Fee'],
+                            preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
+                        )) . '
                         </td>
                         <td>
                             <a target="_blank" href="' . asset('storage/' . $data->$column->doc) . '">
@@ -3086,7 +3092,7 @@ return [
     public static function getAccessibleServicesFromMenuAlias(string $menuAlias, string $selectedServiceAlias = null): array
     {
         $authUser = Helper::getAuthenticatedUser();
-        $organizationMenu = OrganizationMenu::withDefaultGroupCompanyOrg() -> where([
+        $organizationMenu = OrganizationMenu::withDefaultGroupCompanyOrg()->where([
             ['alias', $menuAlias]
         ])->first();
         if (!isset($organizationMenu)) {
@@ -3109,19 +3115,19 @@ return [
                     'message' => 'All Data Found'
                 ];
             } else {
-                $services = EmployeeBookMapping::where('service_menu_id', $organizationMenu ?-> serviceMenu ?-> id) -> where('employee_id', $authUser -> auth_user_id) -> first();
+                $services = EmployeeBookMapping::where('service_menu_id', $organizationMenu?->serviceMenu?->id)->where('employee_id', $authUser->auth_user_id)->first();
                 if (!isset($services)) { //Assign all services and books data if no record is found
-                    $serviceIds = $organizationMenu ?-> serviceMenu ?-> erp_service_id ?? [];
+                    $serviceIds = $organizationMenu?->serviceMenu?->erp_service_id ?? [];
 
-                    if(is_string($serviceIds)) {
+                    if (is_string($serviceIds)) {
                         $serviceIds = json_decode($serviceIds, true) ?? [];
                     }
 
                     $bookIds = [];
-                    $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds ?? [])->when($selectedServiceAlias, function ($aliasQuery) use($selectedServiceAlias) {
-                        $aliasQuery -> where('alias', $selectedServiceAlias);
+                    $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds ?? [])->when($selectedServiceAlias, function ($aliasQuery) use ($selectedServiceAlias) {
+                        $aliasQuery->where('alias', $selectedServiceAlias);
                     })->get();
-                    $currentBook = Book::withDefaultGroupCompanyOrg() -> whereIn('service_id', $serviceIds ?? []) -> first();
+                    $currentBook = Book::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds ?? [])->first();
                     return [
                         'services' => $organizationServices,
                         'books' => [],
@@ -3131,14 +3137,14 @@ return [
                         'message' => 'All Data Found'
                     ];
                 } else {
-                    $serviceIds = $services ?-> erp_service_ids ?? [];
-                    $bookIds = $services ?-> book_ids ?? [];
-                    $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds)->when($selectedServiceAlias, function ($aliasQuery) use($selectedServiceAlias) {
-                        $aliasQuery -> where('alias', $selectedServiceAlias);
+                    $serviceIds = $services?->erp_service_ids ?? [];
+                    $bookIds = $services?->book_ids ?? [];
+                    $organizationServices = OrganizationService::withDefaultGroupCompanyOrg()->whereIn('service_id', $serviceIds)->when($selectedServiceAlias, function ($aliasQuery) use ($selectedServiceAlias) {
+                        $aliasQuery->where('alias', $selectedServiceAlias);
                     })->get();
                     if ($organizationServices && count($organizationServices) > 0) {
-                        $organizationServices = $organizationServices -> filter(function ($orgService) use($bookIds) {
-                            $isBookExist = Book::withDefaultGroupCompanyOrg() -> whereIn('id', $bookIds) -> where('org_service_id', $orgService -> id) -> first();
+                        $organizationServices = $organizationServices->filter(function ($orgService) use ($bookIds) {
+                            $isBookExist = Book::withDefaultGroupCompanyOrg()->whereIn('id', $bookIds)->where('org_service_id', $orgService->id)->first();
                             return $isBookExist;
                         });
                     }
@@ -3155,7 +3161,7 @@ return [
         }
     }
 
-    public static function setMenuAccessToEmployee(String $menuName, String $menuAlias, array $serviceIds): string
+    public static function setMenuAccessToEmployee(string $menuName, string $menuAlias, array $serviceIds): string
     {
         DB::beginTransaction();
         if (!($menuName && $menuAlias && count($serviceIds)) > 0) {
@@ -3270,25 +3276,47 @@ return [
     {
         $actualStatus = isset(ConstantHelper::DOC_APPROVAL_STATUS_MAPPING[$status]) ? ConstantHelper::DOC_APPROVAL_STATUS_MAPPING[$status] : $status;
         $documentApproval = DocumentApproval::where('document_name', $modelClass)
-        -> where('document_id', $documentId) -> where('approval_type', $actualStatus) -> latest() -> first();
+            ->where('document_id', $documentId)->where('approval_type', $actualStatus)->latest()->first();
         if (!isset($documentApproval)) {
-            $documentApproval =  DocumentApproval::where('document_name', $modelClass)
-            -> where('document_id', $documentId) -> where('approval_type', 'submit') -> latest() -> first();
+            $documentApproval = DocumentApproval::where('document_name', $modelClass)
+                ->where('document_id', $documentId)->where('approval_type', 'submit')->latest()->first();
         }
-        return $documentApproval ?-> user ?-> name;
+        return $documentApproval?->user?->name;
     }
-    public static function numberToWords($num) {
+    public static function numberToWords($num)
+    {
         $ones = [
-            0 => 'zero', 1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four',
-            5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine',
-            10 => 'ten', 11 => 'eleven', 12 => 'twelve', 13 => 'thirteen',
-            14 => 'fourteen', 15 => 'fifteen', 16 => 'sixteen', 17 => 'seventeen',
-            18 => 'eighteen', 19 => 'nineteen'
+            0 => 'zero',
+            1 => 'one',
+            2 => 'two',
+            3 => 'three',
+            4 => 'four',
+            5 => 'five',
+            6 => 'six',
+            7 => 'seven',
+            8 => 'eight',
+            9 => 'nine',
+            10 => 'ten',
+            11 => 'eleven',
+            12 => 'twelve',
+            13 => 'thirteen',
+            14 => 'fourteen',
+            15 => 'fifteen',
+            16 => 'sixteen',
+            17 => 'seventeen',
+            18 => 'eighteen',
+            19 => 'nineteen'
         ];
 
         $tens = [
-            2 => 'twenty', 3 => 'thirty', 4 => 'forty', 5 => 'fifty',
-            6 => 'sixty', 7 => 'seventy', 8 => 'eighty', 9 => 'ninety'
+            2 => 'twenty',
+            3 => 'thirty',
+            4 => 'forty',
+            5 => 'fifty',
+            6 => 'sixty',
+            7 => 'seventy',
+            8 => 'eighty',
+            9 => 'ninety'
         ];
 
         $levels = ['', 'thousand', 'lakh', 'crore'];
@@ -3311,7 +3339,8 @@ return [
         return ucfirst(trim($integerWords . $decimalWords));
     }
 
-    private static function convertIntegerToWords($num, $ones, $tens, $levels) {
+    private static function convertIntegerToWords($num, $ones, $tens, $levels)
+    {
         if ($num == 0) {
             return 'zero';
         }
@@ -3353,18 +3382,40 @@ return [
         return trim(implode(' ', $words));
     }
 
-    private static function convertBelowThousand($num) {
+    private static function convertBelowThousand($num)
+    {
         $ones = [
-            0 => 'zero', 1 => 'one', 2 => 'two', 3 => 'three', 4 => 'four',
-            5 => 'five', 6 => 'six', 7 => 'seven', 8 => 'eight', 9 => 'nine',
-            10 => 'ten', 11 => 'eleven', 12 => 'twelve', 13 => 'thirteen',
-            14 => 'fourteen', 15 => 'fifteen', 16 => 'sixteen', 17 => 'seventeen',
-            18 => 'eighteen', 19 => 'nineteen'
+            0 => 'zero',
+            1 => 'one',
+            2 => 'two',
+            3 => 'three',
+            4 => 'four',
+            5 => 'five',
+            6 => 'six',
+            7 => 'seven',
+            8 => 'eight',
+            9 => 'nine',
+            10 => 'ten',
+            11 => 'eleven',
+            12 => 'twelve',
+            13 => 'thirteen',
+            14 => 'fourteen',
+            15 => 'fifteen',
+            16 => 'sixteen',
+            17 => 'seventeen',
+            18 => 'eighteen',
+            19 => 'nineteen'
         ];
 
         $tens = [
-            2 => 'twenty', 3 => 'thirty', 4 => 'forty', 5 => 'fifty',
-            6 => 'sixty', 7 => 'seventy', 8 => 'eighty', 9 => 'ninety'
+            2 => 'twenty',
+            3 => 'thirty',
+            4 => 'forty',
+            5 => 'fifty',
+            6 => 'sixty',
+            7 => 'seventy',
+            8 => 'eighty',
+            9 => 'ninety'
         ];
 
         if ($num < 20) {
@@ -3375,227 +3426,229 @@ return [
             return $ones[intval($num / 100)] . ' hundred' . ($num % 100 ? ' ' . self::convertBelowThousand($num % 100) : '');
         }
     }
-    public static function getChildLedgerGroupsByNameArray($names,$ledger_name=null)
-        {
-            $organizationId = Helper::getAuthenticatedUser()->organization_id;
-            $groups = collect(); // Initialize empty collection
+    public static function getChildLedgerGroupsByNameArray($names, $ledger_name = null)
+    {
+        $organizationId = Helper::getAuthenticatedUser()->organization_id;
+        $groups = collect(); // Initialize empty collection
 
-            foreach ($names as $name) {
-                // Get all matching groups (org-specific and global)
+        foreach ($names as $name) {
+            // Get all matching groups (org-specific and global)
 
 
-                $matchedGroups = Helper::getGroupsQuery()->where('name', $name)->get();
+            $matchedGroups = Helper::getGroupsQuery()->where('name', $name)->get();
 
-                $groups = $groups->merge($matchedGroups);
-            }
+            $groups = $groups->merge($matchedGroups);
+        }
 
-            $allChildIds = [];
+        $allChildIds = [];
 
-            foreach ($groups as $group) {
-                $childIds = $group->getAllChildIds(); // Assume this returns array
-                $childIds[] = $group->id; // Add parent group ID
-                $allChildIds = array_merge($allChildIds, $childIds);
-                $allChildIds = Helper::getGroupsQuery()
-                ->whereIn('id',$allChildIds)->pluck('id')->toArray();
-            }
-            if($ledger_name=="names")
-               return Helper::getGroupsQuery()->whereIn('id',$allChildIds)->pluck('name')->toArray();
+        foreach ($groups as $group) {
+            $childIds = $group->getAllChildIds(); // Assume this returns array
+            $childIds[] = $group->id; // Add parent group ID
+            $allChildIds = array_merge($allChildIds, $childIds);
+            $allChildIds = Helper::getGroupsQuery()
+                ->whereIn('id', $allChildIds)->pluck('id')->toArray();
+        }
+        if ($ledger_name == "names")
+            return Helper::getGroupsQuery()->whereIn('id', $allChildIds)->pluck('name')->toArray();
 
-            // Remove duplicate IDs
-            else
+        // Remove duplicate IDs
+        else
             return array_unique($allChildIds);
-        }
-        public static function getNonCarryGroups(){
-            return self::getChildLedgerGroupsByNameArray(ConstantHelper::NON_CARRY_FORWARD_BALANCE_GROUPS);
-        }
+    }
+    public static function getNonCarryGroups()
+    {
+        return self::getChildLedgerGroupsByNameArray(ConstantHelper::NON_CARRY_FORWARD_BALANCE_GROUPS);
+    }
 
-        public static function prepareValidatedDataWithPolicy($parentUrlAlias = null)
-        {
-            $user = self::getAuthenticatedUser();
-            $organization = $user->organization;
-            $validatedData = [];
+    public static function prepareValidatedDataWithPolicy($parentUrlAlias = null)
+    {
+        $user = self::getAuthenticatedUser();
+        $organization = $user->organization;
+        $validatedData = [];
 
-            $parentUrl = $parentUrlAlias ?? '';
+        $parentUrl = $parentUrlAlias ?? '';
 
-            $services = self::getAccessibleServicesFromMenuAlias($parentUrl);
+        $services = self::getAccessibleServicesFromMenuAlias($parentUrl);
 
-            if ($services && $services['services'] && $services['services']->isNotEmpty()) {
-                $firstService = $services['services']->first();
-                $serviceId = $firstService->service_id;
+        if ($services && $services['services'] && $services['services']->isNotEmpty()) {
+            $firstService = $services['services']->first();
+            $serviceId = $firstService->service_id;
 
-                $policyData = self::getPolicyByServiceId($serviceId);
+            $policyData = self::getPolicyByServiceId($serviceId);
 
-                if ($policyData && isset($policyData['policyLevelData'])) {
-                    $policyLevelData = $policyData['policyLevelData'];
-                    $validatedData['group_id'] = $policyLevelData['group_id'];
-                    $validatedData['company_id'] = $policyLevelData['company_id'];
-                    $validatedData['organization_id'] = $policyLevelData['organization_id'];
-                } else {
-                    $validatedData['group_id'] = $organization->group_id;
-                    $validatedData['company_id'] = $organization->company_id;
-                    $validatedData['organization_id'] = null;
-                }
+            if ($policyData && isset($policyData['policyLevelData'])) {
+                $policyLevelData = $policyData['policyLevelData'];
+                $validatedData['group_id'] = $policyLevelData['group_id'];
+                $validatedData['company_id'] = $policyLevelData['company_id'];
+                $validatedData['organization_id'] = $policyLevelData['organization_id'];
             } else {
                 $validatedData['group_id'] = $organization->group_id;
                 $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
-
-            return $validatedData;
+        } else {
+            $validatedData['group_id'] = $organization->group_id;
+            $validatedData['company_id'] = $organization->company_id;
+            $validatedData['organization_id'] = null;
         }
 
-        //get active location
-        public static function getStoreLocation($org_ids){
-            $query = InventoryHelper::getAccessibleLocations();
+        return $validatedData;
+    }
 
-             $filtered = $query->filter(function ($store) use ($org_ids) {
-                if (is_array($org_ids)) {
-                    return in_array($store->organization_id, $org_ids);
-                } else {
-                    return $store->organization_id == $org_ids;
-                }
-            });
+    //get active location
+    public static function getStoreLocation($org_ids)
+    {
+        $query = InventoryHelper::getAccessibleLocations();
 
-            return $filtered->values();
-        }
-
-         public static function uniqueRuleWithConditions(string $table,array $conditions = [],int $ignoreId = null,string $ignoreColumn = 'id',bool $checkDeletedAt = true)
-        {
-            $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
-                foreach ($conditions as $column => $value) {
-                    $query->where($column, $value);
-                }
-                if ($checkDeletedAt) {
-                    $query->whereNull('deleted_at');
-                }
-            });
-
-            if ($ignoreId) {
-                $rule->ignore($ignoreId, $ignoreColumn);
-            }
-
-            return $rule;
-        }
-
-
-      public static function getAllPastFinancialYear($organizationId = null): mixed
-        {
-            if($organizationId){
-
-                $financialYears = ErpFinancialYear::where('organization_id', $organizationId)->get();
-            }else{
-                $financialYears = ErpFinancialYear::get();
-            }
-            if ($financialYears->isNotEmpty()) {
-                return $financialYears
-                    ->filter(function ($financialYear) {
-                        return \Carbon\Carbon::parse($financialYear->end_date)->isPast(); // Only past end dates
-                    })
-                    ->map(function ($financialYear) {
-                        $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                        $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
-                        return [
-                            'id' => $financialYear->id,
-                            'alias' => $financialYear->alias,
-                            'start_date' => $financialYear->start_date,
-                            'end_date' => $financialYear->end_date,
-                            'range' => $startYear . '-' . $endYearShort,
-                            'lock_fy' => $financialYear->lock_fy,
-                            'fy_close' => $financialYear->fy_close,
-                            'authorized_users' => $financialYear->authorizedUsers()
-                        ];
-                    })->values();
-            }
-
-            return null;
-        }
-
-   public static function getFinancialYears($organizationId = null)
-        {
-            $currentUserId = Helper::getAuthenticatedUser()->auth_user_id;
-            $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
-
-            if ($organizationId) {
-                $financialYears = ErpFinancialYear::where('organization_id', $organizationId)
-                    ->orderBy('id', 'desc')
-                    ->get();
+        $filtered = $query->filter(function ($store) use ($org_ids) {
+            if (is_array($org_ids)) {
+                return in_array($store->organization_id, $org_ids);
             } else {
-                $financialYears = ErpFinancialYear::orderBy('id', 'desc')
-                    ->get();
+                return $store->organization_id == $org_ids;
             }
+        });
 
-            if ($financialYears->isNotEmpty()) {
-        return $financialYears
-            ->filter(function ($financialYear) use ($currentUserId, $currentUserType) {
-                if ($financialYear->fy_close === true && is_array($financialYear->access_by)) {
-                    return !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
-                        return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
+        return $filtered->values();
+    }
+
+    public static function uniqueRuleWithConditions(string $table, array $conditions = [], int $ignoreId = null, string $ignoreColumn = 'id', bool $checkDeletedAt = true)
+    {
+        $rule = Rule::unique($table)->where(function ($query) use ($conditions, $checkDeletedAt) {
+            foreach ($conditions as $column => $value) {
+                $query->where($column, $value);
+            }
+            if ($checkDeletedAt) {
+                $query->whereNull('deleted_at');
+            }
+        });
+
+        if ($ignoreId) {
+            $rule->ignore($ignoreId, $ignoreColumn);
+        }
+
+        return $rule;
+    }
+
+
+    public static function getAllPastFinancialYear($organizationId = null): mixed
+    {
+        if ($organizationId) {
+
+            $financialYears = ErpFinancialYear::where('organization_id', $organizationId)->get();
+        } else {
+            $financialYears = ErpFinancialYear::get();
+        }
+        if ($financialYears->isNotEmpty()) {
+            return $financialYears
+                ->filter(function ($financialYear) {
+                    return \Carbon\Carbon::parse($financialYear->end_date)->isPast(); // Only past end dates
+                })
+                ->map(function ($financialYear) {
+                    $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e.g., 24
+                    return [
+                        'id' => $financialYear->id,
+                        'alias' => $financialYear->alias,
+                        'start_date' => $financialYear->start_date,
+                        'end_date' => $financialYear->end_date,
+                        'range' => $startYear . '-' . $endYearShort,
+                        'lock_fy' => $financialYear->lock_fy,
+                        'fy_close' => $financialYear->fy_close,
+                        'authorized_users' => $financialYear->authorizedUsers()
+                    ];
+                })->values();
+        }
+
+        return null;
+    }
+
+    public static function getFinancialYears($organizationId = null)
+    {
+        $currentUserId = Helper::getAuthenticatedUser()->auth_user_id;
+        $currentUserType = Helper::getAuthenticatedUser()->authenticable_type;
+
+        if ($organizationId) {
+            $financialYears = ErpFinancialYear::where('organization_id', $organizationId)
+                ->orderBy('id', 'desc')
+                ->get();
+        } else {
+            $financialYears = ErpFinancialYear::orderBy('id', 'desc')
+                ->get();
+        }
+
+        if ($financialYears->isNotEmpty()) {
+            return $financialYears
+                ->filter(function ($financialYear) use ($currentUserId, $currentUserType) {
+                    if ($financialYear->fy_close === true && is_array($financialYear->access_by)) {
+                        return !collect($financialYear->access_by)->contains(function ($entry) use ($currentUserId, $currentUserType) {
+                            return isset($entry['user_id'], $entry['authorized'], $entry['authenticable_type'], $entry['locked']) &&
                                 $entry['user_id'] == $currentUserId &&
                                 $entry['authenticable_type'] == $currentUserType &&
                                 $entry['authorized'] === false &&
                                 $entry['locked'] !== true; // only filter if NOT locked
-                    });
-                }
-                return true;
-            })
-            ->map(function ($financialYear) {
-                $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
-                $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y');
-                return [
-                    'id' => $financialYear->id,
-                    'alias' => $financialYear->alias,
-                    'start_date' => $financialYear->start_date,
-                    'end_date' => $financialYear->end_date,
-                    'range' => $startYear . '-' . $endYearShort,
-                    'authorized_users' => $financialYear->authorizedUsers()
-                ];
-            })
-            ->values();
+                        });
+                    }
+                    return true;
+                })
+                ->map(function ($financialYear) {
+                    $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
+                    $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y');
+                    return [
+                        'id' => $financialYear->id,
+                        'alias' => $financialYear->alias,
+                        'start_date' => $financialYear->start_date,
+                        'end_date' => $financialYear->end_date,
+                        'range' => $startYear . '-' . $endYearShort,
+                        'authorized_users' => $financialYear->authorizedUsers()
+                    ];
+                })
+                ->values();
+        }
+
+        return null;
+    }
+    // public static function getFyAuthorizedUsers(string $date): mixed
+    // {
+    //     $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
+    //         ->where('end_date', '>=', $date)
+    //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
+    //         ->first();
+    //     if (isset($financialYear)) {
+    //         return [
+    //             'alias' => $financialYear->alias,
+    //             'authorized_users' => $financialYear->authorizedUsers()
+    //         ];
+    //     } else {
+    //         return null;
+    //     }
+    // }
+
+    public static function getGroupsQuery($organizations = [], $status = ["active"])
+    {
+        $groups = Group::where(function ($q) {
+            $q->withDefaultGroupCompanyOrg()
+                ->orWhere('edit', 0);
+        })->whereIn('status', $status);
+
+        return $groups;
     }
 
-            return null;
-        }
-        // public static function getFyAuthorizedUsers(string $date): mixed
-        // {
-        //     $financialYear = ErpFinancialYear::where('start_date', '<=', $date)
-        //         ->where('end_date', '>=', $date)
-        //         ->orWhere('fy_status',ConstantHelper::FY_CURRENT_STATUS)
-        //         ->first();
-        //     if (isset($financialYear)) {
-        //         return [
-        //             'alias' => $financialYear->alias,
-        //             'authorized_users' => $financialYear->authorizedUsers()
-        //         ];
-        //     } else {
-        //         return null;
-        //     }
-        // }
-
-        public static function getGroupsQuery($organizations=[],$status=["active"])
-        {
-            $groups = Group::where(function ($q) {
-                $q->withDefaultGroupCompanyOrg()
-                ->orWhere('edit', 0);
-            })->whereIn('status', $status);
-
-            return $groups;
-        }
-
-        public static function getCurrentFy($date = null)
-        {
-            $date = $date ?? date('Y-m-d');
-            $startDate = session('fyear_start_date') ?? $date;
-            $endDate = session('fyear_end_date') ?? $date;
-            $financialYear = ErpFinancialYear::where(function ($query) use ($startDate, $endDate) {
-                $query->where('start_date', '<=', $startDate)
-                    ->where('end_date', '>=', $endDate);
-            })
+    public static function getCurrentFy($date = null)
+    {
+        $date = $date ?? date('Y-m-d');
+        $startDate = session('fyear_start_date') ?? $date;
+        $endDate = session('fyear_end_date') ?? $date;
+        $financialYear = ErpFinancialYear::where(function ($query) use ($startDate, $endDate) {
+            $query->where('start_date', '<=', $startDate)
+                ->where('end_date', '>=', $endDate);
+        })
             ->orWhere('fy_status', ConstantHelper::FY_CURRENT_STATUS)
             ->first();
 
-            return $financialYear ?? null;
+        return $financialYear ?? null;
 
-        }
+    }
 
     public static function getActiveCostCenters($id = null)
     {
@@ -3625,7 +3678,7 @@ return [
             ->toArray();
     }
 
-    public static function getVoucherBalance($voucher_id=null, $doc_type, $ledger, $group)
+    public static function getVoucherBalance($voucher_id = null, $doc_type, $ledger, $group)
     {
         $request = new Request();
         $request->merge([
@@ -3637,4 +3690,145 @@ return [
         $data = VoucherController::getLedgerVouchers($request);
         return $data;
     }
+
+
+    public static function createPartyLedger($type, $name, $code)
+    {
+        try {
+            return DB::transaction(function () use ($type, $name, $code) {
+                $itemCodeType = "manual";
+                $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
+                $book = null;
+                $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
+                $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
+
+                if ($services && $services['current_book']) {
+                    if (isset($services['current_book'])) {
+                        $book = $services['current_book'];
+                        if ($book) {
+                            $parameters = new \stdClass();
+                            foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
+                                $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
+                                $parameters->{$paramName} = $param;
+                            }
+                            if (isset($parameters->ledger_code_type) && is_array($parameters->ledger_code_type)) {
+                                $itemCodeType = $parameters->ledger_code_type[0] ?? null;
+                            }
+                        }
+                    }
+                }
+
+                $group = $type === "customer" ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
+                if (empty($group)) {
+                    return [
+                        'success' => false,
+                        'message' => 'Ledger group type not found.',
+                        'data' => []
+                    ];
+                }
+
+                $groupParts = array_map('trim', explode(',', $group));
+                $existingGroups = self::getGroupsQuery()
+                    ->whereIn('name', $groupParts)->latest()
+                    ->pluck('name', 'id')
+                    ->toArray();
+
+                $groupIds = array_keys($existingGroups);
+                if ($itemCodeType != "manual") {
+                    if (empty($groupIds)) {
+                        return [
+                            'success' => false,
+                            'message' => 'Ledger group ID not found.',
+                            'data' => []
+                        ];
+                    }
+
+                    $group_id = $groupIds[0];
+                    $itemInitials = Group::getPrefix($group_id);
+                    $baseCode = $itemInitials;
+                    $nextSuffix = '001';
+                    $finalItemCode = $baseCode . $nextSuffix;
+
+                    while (Ledger::where('code', $finalItemCode)->exists()) {
+                        $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
+                        $finalItemCode = $baseCode . $nextSuffix;
+                    }
+
+                    $code = $finalItemCode;
+                }
+
+                if (Ledger::where('code', $code)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'Ledger code already exists.',
+                        'data' => []
+                    ];
+                }
+
+                if (Ledger::where('name', $name)->exists()) {
+                    return [
+                        'success' => false,
+                        'message' => 'Ledger name already exists.',
+                        'data' => []
+                    ];
+                }
+                $validatedData['ledger_code_type'] = $itemCodeType;
+                $validatedData['book_id'] = $book->id;
+                $validatedData['created_by'] = self::getAuthenticatedUser()->id;
+                $validatedData['code'] = $code;
+                $validatedData['name'] = $name;
+                $validatedData['ledger_group_id'] = json_encode([$group_id]);
+
+                $ledger = Ledger::create($validatedData);
+
+                $bookId = $ledger->book_id;
+                $docId = $ledger->id;
+                $currentLevel = $ledger->approval_level ?? 1;
+                $revisionNumber = $ledger->revision_number ?? 0;
+                $actionType = 'submit';
+                $modelName = get_class($ledger);
+                $totalValue = 0;
+
+                $approveDocument = Helper::approveDocument(
+                    $bookId,
+                    $docId,
+                    $revisionNumber,
+                    null,
+                    null,
+                    $currentLevel,
+                    $actionType,
+                    $totalValue,
+                    $modelName
+                );
+
+                $document_status = $approveDocument['approvalStatus'];
+                $ledger->document_status = $document_status;
+                $ledger->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ? 1 : 0;
+                $ledger->save();
+
+                return [
+                    'success' => true,
+                    'message' => ucfirst($type) . ' Ledger created successfully.',
+                    'data' => [
+                        'id' => $ledger->id,
+                        'ledger_code' => $code,
+                        'ledger_name' => $name,
+                    ]
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::error('Error creating party ledger: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'An error occurred while creating the ledger.',
+                'data' => [],
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+    
+
 }

@@ -393,7 +393,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Consignee Name<span class="text-danger">*</span></label>
+                                                            <label class="form-label">Consignee Name</label>
                                                             <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" />
                                                         </div>
                                                     </div>
@@ -524,7 +524,7 @@
                                                         </div>
                                                 </div>
 
-                                                <div class="col-md-3">
+                                                <div class="col-md-2">
                                                         <div class="mb-1">
                                                             <label class="form-label">Transport Mode<span class="text-danger">*</span></label>
                                                             <select class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "transporter_mode_input" name = "transporter_mode" value = "{{isset($order) ? $order -> vehicle_no : ''}}" >
@@ -537,7 +537,7 @@
                                                         </div>
                                                 </div>
 
-                                                <div class="col-md-3">
+                                                <div class="col-md-2">
                                                     <div class="mb-1">
                                                         <label class="form-label">
                                                                 Vehicle No.
@@ -548,6 +548,16 @@
                                                                 title="Format:<br>[A-Z]{2} – 2 uppercase letters (e.g., 'MH')<br>[0-9]{2} – 2 digits (e.g., '12')<br>[A-Z]{0,3} – 0 to 3 uppercase letters (e.g., 'AB', 'ABZ')<br>[0-9]{4} – 4 digits (e.g., '1234')"></i>
                                                             </label>
                                                         <input type="text" class="form-control {{isset($editTransporterFields) && $editTransporterFields ? 'cannot_disable' : ''}}" id = "vehicle_no_input" name = "vehicle_no" value = "{{isset($order) ? $order -> vehicle_no : ''}}" />
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-2">
+                                                    <div class="mb-1">
+                                                        <label class="form-label">
+                                                                Lorry Receipt No.
+                                                                <span class="text-danger">*</span>
+                                                            </label>
+                                                        <input type="text" class="form-control"  id = "lr_number_input" name = "lr_number" value = "{{isset($order) ? $order -> lr_number : ''}}" />
                                                     </div>
                                                 </div>
 
@@ -3460,6 +3470,18 @@
         document.getElementById('action_type').value = "pod";
         document.getElementById('pod_heading_label').textContent = "Proof of Delivery ";
     }
+    function reEnableSelectedPullType(type = 'so')
+    {
+        if (type == 'so') {
+            document.getElementById('select_order_button').removeAttribute('disabled');
+        } else if (type == 'pl') {
+            document.getElementById('pl_button').removeAttribute('disabled');
+        } else if (type == 'plist') {
+            document.getElementById('pack_list_button').removeAttribute('disabled');
+        } else if (type == 'dnote') {
+            document.getElementById('select_dn_button').removeAttribute('disabled');
+        }
+    }
     function processOrder(type = 'so')
     {
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
@@ -3544,6 +3566,12 @@
                         $("#current_billing_country_id").val(currentOrder.billing_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
                         $("#current_billing_state_id").val(currentOrder.billing_address_details?.state_id);
+                        //General Detail
+                        // $("#transporter_name_input").val(currentOrder?.transporter_name);
+                        // $("#transporter_mode_input").val(currentOrder?.transportation_mode);
+                        // $("#vehicle_no_input").val(currentOrder?.vehicle_no);
+                        // $("#lr_number_input").val(currentOrder?.lr_number);
+
                             const locationElement = document.getElementById('store_id_input');
                             if (locationElement) {
                                 const displayAddress = locationElement.options[locationElement.selectedIndex].getAttribute('display-address');
@@ -3899,6 +3927,7 @@
                             getStoresData(index,null,false);
                         }
                     }
+                    reEnableSelectedPullType(openPullType);
                 },
                 error: function(xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
@@ -4031,8 +4060,9 @@
         }
 
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
-            .map((_, i) => document.getElementById('qt_id_' + i)?.value)
-            .filter(Boolean);
+            .map((_, i) => document.getElementById('qt_id_' + i))
+            .filter(Boolean)
+            .map(el => el.value);
         const filters = {
             doc_type: $(tableSelector+"_value"),
             header_book_id: $("#series_id_input"),
@@ -5146,7 +5176,9 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             store_id : storeId
         };
         let subStoreElement = document.getElementById('sub_store_id_input');
-        subStoreElement.innerHTML = "";
+        if (subStoreElement) {
+            subStoreElement.innerHTML = "";
+        }
         $.ajax({
             url: "{{route('subStore.get.from.stores')}}",
             method: 'GET',
@@ -5159,10 +5191,14 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
                     currentSubStoreArray.forEach(element => {
                         newHTML += `<option value = "${element.id}"> ${element.name} </option>`;
                     });
-                    subStoreElement.innerHTML = newHTML;
+                    if (subStoreElement) {
+                        subStoreElement.innerHTML = newHTML;
+                    }
                 } else {
                     currentSubStoreArray = [];
-                    subStoreElement.innerHTML = ``;
+                    if (subStoreElement) {
+                        subStoreElement.innerHTML = '';
+                    }
                     Swal.fire({
                         title: 'Error!',
                         text: data.message,
@@ -5173,7 +5209,9 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             error: function(xhr) {
                 console.error('Error fetching customer data:', xhr);
                 currentSubStoreArray = [];
-                subStoreElement.innerHTML = ``;
+                if (subStoreElement) {
+                    subStoreElement.innerHTML = ``;
+                }
                 Swal.fire({
                     title: 'Error!',
                     text: xhr?.responseJSON?.message,

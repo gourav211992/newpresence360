@@ -66,14 +66,14 @@ class MaterialReceiptRequest extends FormRequest
             'gate_entry_no' => [
                 'nullable',
                 'max:50',
-                Rule::unique('erp_mrn_headers')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('group_id', $this->group_id)
-                            ->where('organization_id', $this->organization_id)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($mrnId), // ignore when updating
+                // Rule::unique('erp_mrn_headers')
+                //     ->where(function ($query) {
+                //         return $query
+                //             ->where('group_id', $this->group_id)
+                //             ->where('organization_id', $this->organization_id)
+                //             ->whereNull('deleted_at');
+                //     })
+                //     ->ignore($mrnId), // ignore when updating
             ],
             'gate_entry_date' => 'nullable|date',
             'eway_bill_no' => 'nullable|max:50',
@@ -81,14 +81,14 @@ class MaterialReceiptRequest extends FormRequest
             'supplier_invoice_no' => [
                 'nullable',
                 'max:50',
-                Rule::unique('erp_mrn_headers')
-                    ->where(function ($query) {
-                        return $query
-                            ->where('group_id', $this->group_id)
-                            ->where('organization_id', $this->organization_id)
-                            ->whereNull('deleted_at');
-                    })
-                    ->ignore($mrnId), // ignore when updating
+                // Rule::unique('erp_mrn_headers')
+                //     ->where(function ($query) {
+                //         return $query
+                //             ->where('group_id', $this->group_id)
+                //             ->where('organization_id', $this->organization_id)
+                //             ->whereNull('deleted_at');
+                //     })
+                //     ->ignore($mrnId), // ignore when updating
             ],
             'supplier_invoice_date' => 'nullable|date',
             'transporter_name' => 'nullable|max:50',

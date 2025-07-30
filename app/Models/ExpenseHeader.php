@@ -41,6 +41,7 @@ class ExpenseHeader extends Model
         'revision_date',
         'approval_level',
         'reference_number',
+        'reference_type',
         'store_id',
         'department_id',
         'gate_entry_no',

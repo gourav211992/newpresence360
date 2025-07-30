@@ -111,7 +111,7 @@ class InventoryHelper
             }
             else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS && $transactionType === 'issue'){
                 $documentDetail = self::settlementForPsvForIssue($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
-            } 
+            }
             else if($bookType == ConstantHelper::PSV_SERVICE_ALIAS && $transactionType === 'receipt'){
                 $documentDetail = self::settlementForPsvForReceive($documentHeaderId, $documentDetailId, $bookType, $documentStatus,$transactionType);
             }
@@ -602,7 +602,7 @@ class InventoryHelper
     }
 
     // Update document status while update mrn
-    private static function insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = NULL, $stockType = 'R')
+    private static function insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $utilizedQty, $utlStockLedger = NULL, $stockType = 'R', $jobType=null)
     {
         $user = Helper::getAuthenticatedUser();
         try{
@@ -836,7 +836,7 @@ class InventoryHelper
                     $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
                     $stockLedger->original_receipt_date = $documentHeader->document_date;
 
-                  
+
                 }
             }
 
@@ -1097,13 +1097,23 @@ class InventoryHelper
                     }
                     if (!empty($attributes) && is_array($attributes)) {
                         foreach ($attributes as $docAttribute) {
+                            if($jobType == ConstantHelper::TYPE_JOB_ORDER) {
+                                $itemAttributeId = $docAttribute['item_attribute_id'];
+                                $attributeName = $docAttribute['attr_name'];
+                                $attributeValue = $docAttribute['attr_value'];
+                            }
+                            if($jobType == ConstantHelper::TYPE_SUBCONTRACTING) {
+                                $itemAttributeId = $docAttribute['attribute_id'];
+                                $attributeName = $docAttribute['attribute_name'];
+                                $attributeValue = $docAttribute['attribute_value'];
+                            }
                             $ledgerAttribute = new StockLedgerItemAttribute();
                             $ledgerAttribute->stock_ledger_id = $stockLedger->id;
                             $ledgerAttribute->item_id = $documentItemLocation->item_id ?? null;
                             $ledgerAttribute->item_code = $documentItemLocation->item_code ?? null;
-                            $ledgerAttribute->item_attribute_id = $docAttribute['item_attribute_id'];
-                            $ledgerAttribute->attribute_name = $docAttribute['attr_name'] ?? null;
-                            $ledgerAttribute->attribute_value = $docAttribute['attr_value'] ?? null;
+                            $ledgerAttribute->item_attribute_id = $itemAttributeId;
+                            $ledgerAttribute->attribute_name = $attributeName ?? null;
+                            $ledgerAttribute->attribute_value = $attributeValue ?? null;
                             $ledgerAttribute->status = "active";
                             $ledgerAttribute->save();
 
@@ -1190,13 +1200,13 @@ class InventoryHelper
             ];
 
         } catch (\Exception $e) {
-            \Log::error('Error in insertStockLedger: ' . $e->getMessage(), [
+            \Log::error('Error in insertStockLedger: ' . $e->getMessage()  .'on line' .$e->getLine(), [
                 'exception' => $e
             ]);
 
             return [
                 'status' => 'error',
-                'message' => 'Error inserting stock ledger: ' . $e->getMessage(),
+                'message' => 'Error inserting stock ledger: ' . $e->getMessage() .'on line' .$e->getLine(),
                 'invoiceLedger' => ''
             ];
         }
@@ -1215,7 +1225,7 @@ class InventoryHelper
             $adjustedQty = 0;
             $reservedQty = 0;
             $message = '';
-            if($issueQty && ($issueQty > $inventoryUomQty)){
+            if(!is_null($issueQty) && ($issueQty > $inventoryUomQty)){
                 $balanceQty = $issueQty - $inventoryUomQty;
                 $response = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
 
@@ -1405,7 +1415,7 @@ class InventoryHelper
 
             return [
                 'status' => 'error',
-                'message' => 'Error updating stock ledger: ' . $e->getMessage(),
+                'message' => 'Error updating stock ledger: ' . $e->getMessage() . ' on line ' .$e->getLine(),
                 'invoiceLedger' => ''
             ];
 
@@ -2527,7 +2537,7 @@ class InventoryHelper
                 'attributes'
             )
             ->get();
-        
+
         if(isset($documentItems) && $documentItems){
             foreach ($documentItems as $documentItem) {
                 $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
@@ -3150,7 +3160,7 @@ class InventoryHelper
     }
 
     // Settlement For Material Issue For Issue From MRN
-    public static function settlementForMIForIssueFromMrn($document, $bookType, $documentStatus, $transactionType)
+    public static function settlementForMIForIssueFromMrn($document, $bookType, $documentStatus, $transactionType, $jobType)
     {
         $user = Helper::getAuthenticatedUser();
         $records = array();
@@ -3168,18 +3178,20 @@ class InventoryHelper
             $utilizedQty = 0;
             $issueQty = $stockLedger->issue_qty;
             $stockReservation = null;
-            $invoiceLedger = self::insertStockLedger($stockLedger, $document,  $bookType, $documentStatus, $transactionType, $utilizedQty, NULL, "R");
+            $invoiceLedger = self::insertStockLedger($stockLedger, $document,  $bookType, $documentStatus, $transactionType, $utilizedQty, NULL, "R", $jobType);
             if($invoiceLedger['status'] == 'error'){
                 // DB::rollBack();
                 $data = self::errorResponse($invoiceLedger['message']);
             }
-
-            $documentDetail = self::updateStockLedger($invoiceLedger, $document, $bookType, $documentStatus, $transactionType, $issueQty, $stockReservation, $document->id);
-            if (($documentDetail['status'] == 'success') && empty($records)) {
-                $data = self::successResponse($documentDetail['message'], $records);
-            } else{
-                // DB::rollBack();
-                $data = self::errorResponse($documentDetail['message']);
+            else
+            {
+                $documentDetail = self::updateStockLedger($invoiceLedger, $document, $bookType, $documentStatus, $transactionType, $issueQty, $stockReservation, $document->id, $jobType);
+                if (($documentDetail['status'] == 'success') && empty($records)) {
+                    $data = self::successResponse($documentDetail['message'], $records);
+                } else{
+                    // DB::rollBack();
+                    $data = self::errorResponse($documentDetail['message']);
+                }
             }
             // DB::commit();
             return $data;

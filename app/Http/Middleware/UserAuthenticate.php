@@ -75,11 +75,11 @@ class UserAuthenticate
             if ($authType == 'auth-0') {
                 $authType = 'user';
                 $user = User::find($tokenRow['user_id']);
-                Auth::guard('web')->login($user);
+                // Auth::guard('web')->login($user);
             } else if ($authType == 'auth-1') {
                 $authType = 'employee';
                 $user = Employee::find($tokenRow['user_id']);
-                Auth::guard('web2')->login($user);
+                // Auth::guard('web2')->login($user);
             }
 
             $request->merge(['auth_type' => $authType]);
@@ -130,7 +130,7 @@ class UserAuthenticate
                 $user->authenticable_type = $authUser->authenticable_type;
                 $user->auth_type = $authType;
                 $user->db_name = $dbName;
-                Auth::guard('web')->login($user);
+                // Auth::guard('web')->login($user);
             }else {
                 $authType = 'employee';
                 $user = Employee::find($authUser->authenticable_id);
@@ -138,7 +138,7 @@ class UserAuthenticate
                 $user->authenticable_type = $authUser->authenticable_type;
                 $user->auth_type = $authType;
                 $user->db_name = $dbName;
-                Auth::guard('web2')->login($user);
+                // Auth::guard('web2')->login($user);
             }
 
             $request->merge(['auth_type' => $authType]);

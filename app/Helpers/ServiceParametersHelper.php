@@ -220,13 +220,13 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
+        // [
+        //     "name" => self::TAX_REQUIRED_PARAM,
+        //     "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['yes'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ]
     ];
     const FIXED_ASSET_SERVICE_PARAMETERS = [
         [
@@ -590,13 +590,13 @@ class ServiceParametersHelper
             'service_level_visibility' => true,
             'type' => self::GL_PARAMETERS
         ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
+        // [
+        //     "name" => self::TAX_REQUIRED_PARAM,
+        //     "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['yes'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ]
     ];
     const SINV_SERVICE_PARAMETERS = [
         [
@@ -658,13 +658,13 @@ class ServiceParametersHelper
             'service_level_visibility' => true,
             'type' => self::GL_PARAMETERS
         ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
+        // [
+        //     "name" => self::TAX_REQUIRED_PARAM,
+        //     "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['yes'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ]
     ];
     const LEASE_INV_SERVICE_PARAMETERS = [
         [
@@ -930,13 +930,13 @@ class ServiceParametersHelper
             'service_level_visibility' => true,
             'type' => self::GL_PARAMETERS
         ],
-        [
-            "name" => self::TAX_REQUIRED_PARAM,
-            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
-            "default_value" => ['yes'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ]
+        // [
+        //     "name" => self::TAX_REQUIRED_PARAM,
+        //     "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['yes'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ]
     ];
     /*BOM PO PI*/
     const PI_SERVICE_PARAMETERS = [

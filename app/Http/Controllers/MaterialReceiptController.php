@@ -5147,7 +5147,8 @@ class MaterialReceiptController extends Controller
             $mrnJoItem,
             ConstantHelper::MRN_SERVICE_ALIAS,
             $mrn->document_status,
-            'issue'
+            'issue',
+            $joType
         );
 
         return $response;

@@ -246,9 +246,18 @@ function resetSeries()
 
 function disableHeader()
 {
+    const itemInputs = document.getElementsByClassName('comp_item_code');
+    let itemsPresent = false;
+    if (itemInputs.length > 0) {
+        itemsPresent = true;
+    }
     const disabledFields = document.getElementsByClassName('disable_on_edit');
     for (let disabledIndex = 0; disabledIndex < disabledFields.length; disabledIndex++) {
-        disabledFields[disabledIndex].disabled = true;
+        if (disabledFields[disabledIndex].value && itemsPresent) {
+            disabledFields[disabledIndex].disabled = true;
+        } else {
+            disabledFields[disabledIndex].disabled = false;
+        }
     }
     const editBillButton = document.getElementById('billAddressEditBtn');
     if (editBillButton) {
@@ -376,8 +385,6 @@ function editScript()
     localStorage.setItem('deletedSiItemIds', JSON.stringify([]));
     localStorage.setItem('deletedAttachmentIds', JSON.stringify([]));
     if (order) {
-        //Disable header fields which cannot be changed
-        disableHeader();
         //Item Discount
         order.items.forEach((item, itemIndex) => {
             const totalValue = item.item_discount_amount;
@@ -468,6 +475,10 @@ function editScript()
         if (typeof window.setAllTotalFields === 'function') {
             setAllTotalFields();
         }
+            let mainPullHeader = document.getElementById('selection_section');
+            if (mainPullHeader) {
+                mainPullHeader.classList.add('d-none');
+            }
         //Disable header fields which cannot be changed
         disableHeader();
         //Set all documents
@@ -1185,7 +1196,7 @@ $(document).on('submit', '.ajax-submit-2', function (e) {
 
 function viewModeScript(disable = true)
 {
-    if ((editOrder || revNoQuery) && order) {
+    if ((!editOrder || revNoQuery) && order) {
         document.querySelectorAll('input, textarea, select').forEach(element => {
             if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
                 // element.disabled = disable;
@@ -1552,8 +1563,8 @@ function onItemClick(itemRowId)
                 item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
                 uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
                 selectedAttr : selectedItemAttr,
-                store_id: $("#store_id_input").val(),
-                sub_store_id : $("#sub_store_id_input").val(),
+                store_id: $("#store_id_input").val() ? $("#store_id_input").val() : $("#store_from_id_input").val(),
+                sub_store_id : $("#sub_store_id_input").val() ? $("#sub_store_id_input").val() : $("#sub_store_from_id_input").val(),
                 service_alias : 'psv',
                 header_id : order ? order.id : null,
                 detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')

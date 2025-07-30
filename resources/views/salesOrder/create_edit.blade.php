@@ -254,7 +254,7 @@
                                                </div>
                                                 @if($approvalHist->created_at)
                                                     <h6>
-                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('d/m/Y') }} | {{ \Carbon\Carbon::parse($approvalHist->created_at)->format('h.iA') }}
+                                                        {{ \Carbon\Carbon::parse($approvalHist->created_at)->timezone('Asia/Kolkata')->format('d/m/Y | h.iA') }}
                                                     </h6>
                                                 @endif
                                                 @if($approvalHist->remarks)
@@ -311,7 +311,7 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Consignee Name<span class="text-danger">*</span></label>
+                                                            <label class="form-label">Consignee Name</label>
                                                             <input type="text" class="form-control ledgerselecct ui-autocomplete-input" autocomplete="off"  id = "consignee_name_input" name = "consignee_name" value = "{{isset($order) ? $order -> consignee_name : ''}}" />
                                                         </div>
                                                     </div>

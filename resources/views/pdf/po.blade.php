@@ -34,7 +34,7 @@
     </style>
 </head>
 <body>
-    @include('components.pdf-watermark')
+    {{-- @include('components.pdf-watermark',['status' => isset($po->document_status) ? $po->document_status : '']) --}}
     <div style="width:700px; font-size: 11px; font-family:Arial;">
 
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">

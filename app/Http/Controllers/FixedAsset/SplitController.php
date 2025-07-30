@@ -97,7 +97,7 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
                     }
                 });
         })->get();
@@ -221,7 +221,7 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
                     }
                 });
         })->get();
@@ -264,7 +264,7 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
                     }
                 });
         })->get();

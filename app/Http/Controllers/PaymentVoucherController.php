@@ -150,7 +150,7 @@ class PaymentVoucherController extends Controller
         ->where(function ($query) use ($group_id) {
             $query->where(function ($q) use ($group_id) {
                 foreach ($group_id as $id) {
-                    $q->orWhereJsonContains('ledger_group_id', (string) $id);
+                    $q->orWhereJsonContains('ledger_group_id', (string) $id)->orWhereJsonContains('ledger_group_id',$id);
                 }
 
                 $q->orWhereIn('ledger_group_id', $group_id);

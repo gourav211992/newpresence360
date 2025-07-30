@@ -64,8 +64,7 @@ class ItemController extends Controller
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
         if (request()->ajax()) {
-            $query = Item::withDraftListingLogic() 
-                ->with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
+            $query = Item::with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
                 ->orderBy('id', 'desc');
                 
             if ($status = request(key: 'status')) {

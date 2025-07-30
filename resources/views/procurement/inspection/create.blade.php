@@ -28,10 +28,13 @@
         }
         .tooltip-inner { text-align: left}
         .subStore { display: none; }
+        .pass-label {
+            font-weight: 500;
+        }
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
+    <form class="ajax-input-form finalSubmitBtn" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         @csrf
         <div class="app-content content ">
@@ -453,7 +456,10 @@
                 </div>
             </div>
         </div>
+        <!-- Outstanding MRN Modal  -->
         @include('procurement.inspection.partials.outstanding-mrn-modal')
+        <!-- Inspection CHecklist Modal  -->
+        @include('procurement.inspection.partials.inspection-checklist-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">

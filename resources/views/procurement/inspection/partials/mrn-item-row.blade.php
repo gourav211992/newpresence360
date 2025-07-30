@@ -2,6 +2,8 @@
     @php
         $rowCount = $key + 1;
         $qty = ($item->order_qty ?? 0.00) - ($item->inspection_qty ?? 0.00);
+        $hasInspection = $item->item->hasInspection();
+        $inspectionChecklistData = $hasInspection === 'yes' ? $item->item->loadInspectionChecklists() : [];
     @endphp
     <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
         <input type="hidden" name="components[{{$rowCount}}][mrn_header_id]" value="{{$item->mrn_header_id}}">
@@ -68,6 +70,26 @@
         </td>
         <td>
             <div class="d-flex">
+                @if($hasInspection === 'yes' && !empty($inspectionChecklistData))
+                    <input type="hidden" name="components[{{$rowCount}}][inspectionData]" />
+                    <div class="cursor-pointer ms-50 text-success inspectionChecklistBtn"
+                        data-row-count="{{ $rowCount }}"
+                        data-checklist='@json(["is_inspection" => 1, "checkLists" => $inspectionChecklistData])'
+                        data-bs-toggle="modal"
+                        data-bs-target="#inspectionChecklistModal"
+                        title="Inspection Checklist">
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" class="text-primary"
+                            data-bs-original-title="Inspection Checklist" aria-label="Inspection Checklist">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-clipboard-check" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M10.854 6.146a.5.5 0 0 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708L12 8.707l1.146 1.147a.5.5 0 0 0 .708-.708L12.707 8l1.147-1.146a.5.5 0 0 0-.708-.708L12 7.293 10.854 6.146z"/>
+                                <path
+                                    d="M10 1.5v1h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1v-1a1 1 0 1 1 2 0v1h2v-1a1 1 0 1 1 2 0zM5 4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5z"/>
+                            </svg>
+                        </span>
+                    </div>
+                @endif
                 <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

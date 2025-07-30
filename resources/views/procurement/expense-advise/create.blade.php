@@ -149,6 +149,7 @@
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
                                                             <i data-feather="plus-square"></i> Outstanding PO
                                                         </button>
+                                                        <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input">
                                                     </div>
                                                     <!-- <div class="col-md-3 action-button">
                                                         <button type="button" class="btn btn-outline-primary btn-sm mb-0 soSelect">
@@ -1097,6 +1098,7 @@
                 $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
+                $("#reference_type_input").val('');
                 getLocation();
             }
             setTableCalculation();
@@ -1792,7 +1794,7 @@
                 type: 'po',
                 module_type: moduleTypes,
             };
-
+            $("#reference_type_input").val('po');
             asnProcess(processData, 'po-process');
         });
 
@@ -1982,10 +1984,12 @@
                     switch (moduleProcess) {
                         case 'po-process':
                             $(".poSelect").removeClass('d-none');
+                            $("#reference_type_input").val('po');
                             break;
 
                         default:
                             $(".poSelect").addClass('d-none');
+                            $("#reference_type_input").val('');
                             break;
                     }
 
