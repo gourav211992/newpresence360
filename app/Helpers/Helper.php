@@ -71,6 +71,7 @@ use App\Models\Note;
 use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
 use App\Models\ErpFyMonth;
+use Monolog\Handler\IFTTTHandler;
 
 class Helper
 {
@@ -569,14 +570,18 @@ class Helper
 
     public static function userCheck()
     {
-        $authUser = Auth::guard('web')->user();
-        if ($authUser) {
-            $data = ['user_id' => Auth::guard('web')->user()->auth_user_id, 'user_type' => 'App\Models\User', 'type' => Auth::guard('web')->user()->authenticable_type];
-            return $data;
-        } else {
-            $data = ['user_id' => Auth::guard('web2')->user()->auth_user_id, 'user_type' => 'App\Models\Employee', 'type' => Auth::guard('web2')->user()->authenticable_type];
+
+        $user = request()->user();
+        if ($user) {
+            $data = ['user_id' => $user->id, 'user_type' => get_class($user), 'type' => $user->authenticable_type];
             return $data;
         }
+
+        return [
+            'user_id' => null,
+            'user_type' => null,
+            'type' => null
+        ];
     }
 
     public static function checkCount($data)
@@ -2521,12 +2526,14 @@ class Helper
         // Auth::guard('web')->login(User::find(2));
         // auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         // auth() -> user() -> auth_user_id = $authUser->id;
+        return request() -> user();
         if (Auth::guard('web')->check()) {
             return Auth::guard('web')->user();
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
         } else {
-            return request()->user();
+        return request() -> user();
+
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
@@ -3686,11 +3693,11 @@ class Helper
     }
 
 
-    public static function createPartyLedger($type, $name, $code)
+    public static function createPartyLedger($type, $name, $code,$group_id)
     {
         try {
-            return DB::transaction(function () use ($type, $name, $code) {
-                $itemCodeType = "manual";
+            return DB::transaction(function () use ($type, $name, $code,$group_id) {
+                $itemCodeType = "Manual";
                 $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
                 $book = null;
                 $validatedData = Helper::prepareValidatedDataWithPolicy($parentUrl);
@@ -3710,7 +3717,19 @@ class Helper
                             }
                         }
                     }
+                    else
+                        return [
+                        'success' => false,
+                        'message' => 'Book not found for ledgers.',
+                        'data' => []
+                    ];
                 }
+                else
+                    return [
+                        'success' => false,
+                        'message' => 'Service not found for ledgers.',
+                        'data' => []
+                    ];
 
                 $group = $type === "customer" ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
                 if (empty($group)) {
@@ -3722,22 +3741,34 @@ class Helper
                 }
 
                 $groupParts = array_map('trim', explode(',', $group));
-                $existingGroups = self::getGroupsQuery()
-                    ->whereIn('name', $groupParts)->latest()
-                    ->pluck('name', 'id')
-                    ->toArray();
+                $partyGroups = self::getGroupsQuery()
+                    ->whereIn('name', $groupParts)->latest()->first();
+                
 
-                $groupIds = array_keys($existingGroups);
-                if ($itemCodeType != "manual") {
-                    if (empty($groupIds)) {
+                if (empty($partyGroups)) {
                         return [
                             'success' => false,
-                            'message' => 'Ledger group ID not found.',
+                            'message' => $group." not found",
                             'data' => []
                         ];
                     }
 
-                    $group_id = $groupIds[0];
+               
+
+                
+                $existingGroups = $partyGroups->getAllChildIds();
+                $existingGroups[] = $partyGroups->id;
+
+                
+                if(!in_array((int)$group_id,$existingGroups))
+                    return [
+                            'success' => false,
+                            'message' => 'Group ID not mapped with '.$group,
+                            'data' => []
+                        ];
+
+
+                if ($itemCodeType == "Auto") {
                     $itemInitials = Group::getPrefix($group_id);
                     $baseCode = $itemInitials;
                     $nextSuffix = '001';
@@ -3771,42 +3802,41 @@ class Helper
                 $validatedData['created_by'] = self::getAuthenticatedUser()->id;
                 $validatedData['code'] = $code;
                 $validatedData['name'] = $name;
-                $validatedData['ledger_group_id'] = json_encode([$group_id]);
+                $validatedData['ledger_group_id'] = json_encode([(string)$group_id]);
+                $validatedData['status'] = 1;
+                $validatedData['document_status'] = ConstantHelper::APPROVAL_NOT_REQUIRED;
+                
 
                 $ledger = Ledger::create($validatedData);
 
-                $bookId = $ledger->book_id;
-                $docId = $ledger->id;
-                $currentLevel = $ledger->approval_level ?? 1;
-                $revisionNumber = $ledger->revision_number ?? 0;
-                $actionType = 'submit';
-                $modelName = get_class($ledger);
-                $totalValue = 0;
+                // $bookId = $ledger->book_id;
+                // $docId = $ledger->id;
+                // $currentLevel = $ledger->approval_level ?? 1;
+                // $revisionNumber = $ledger->revision_number ?? 0;
+                // $actionType = 'approve';
+                // $modelName = get_class($ledger);
+                // $totalValue = 0;
 
-                $approveDocument = Helper::approveDocument(
-                    $bookId,
-                    $docId,
-                    $revisionNumber,
-                    null,
-                    null,
-                    $currentLevel,
-                    $actionType,
-                    $totalValue,
-                    $modelName
-                );
-
-                $document_status = $approveDocument['approvalStatus'];
-                $ledger->document_status = $document_status;
-                $ledger->status = in_array($document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]) ? 1 : 0;
-                $ledger->save();
+                // $approveDocument = Helper::approveDocument(
+                //     $bookId,
+                //     $docId,
+                //     $revisionNumber,
+                //     null,
+                //     null,
+                //     $currentLevel,
+                //     $actionType,
+                //     $totalValue,
+                //     $modelName
+                // );
 
                 return [
                     'success' => true,
                     'message' => ucfirst($type) . ' Ledger created successfully.',
                     'data' => [
-                        'id' => $ledger->id,
+                        'ledger_id' => $ledger->id,
                         'ledger_code' => $code,
                         'ledger_name' => $name,
+                        'ledger_group_id'=>$group_id,
                     ]
                 ];
             });

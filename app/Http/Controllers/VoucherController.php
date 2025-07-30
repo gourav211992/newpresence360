@@ -62,7 +62,15 @@ class VoucherController extends Controller
 
             $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
                 $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
-            })->whereIn("organization_id",$orgs)->with('ErpLocation', 'organization')
+            })->whereIn("organization_id",$orgs)
+        ->with([ 'ErpLocation' => function ($query) use ($request, $orgs) {
+        $query->when(function () use ($request) {
+            return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
+        }, function ($q) {
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+        })->whereIn('organization_id', $orgs);
+    }])
+            ->with('organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereIn('location', $locationIds)
                 ->withWhereHas('items', function ($i) use ($ledger, $request, $ledger_group) {
