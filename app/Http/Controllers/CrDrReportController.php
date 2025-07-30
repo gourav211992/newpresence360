@@ -14,6 +14,7 @@ use App\Models\PaymentVoucherDetails;
 use App\Console\Commands\GenerateCrDrReport;
 use Illuminate\Support\Facades\Cache;
 use App\Helpers\Helper;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Helpers\InventoryHelper;
 use App\Helpers\ConstantHelper;
 use App\Models\Group;
@@ -117,7 +118,7 @@ class CrDrReportController extends Controller
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
                         foreach ($ledger_groups as $child) {
-                            $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     })
                     ->get();
@@ -132,7 +133,7 @@ class CrDrReportController extends Controller
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
                         foreach ($ledger_groups as $child) {
-                            $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     })
                     ->get();
@@ -209,7 +210,7 @@ class CrDrReportController extends Controller
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
                         foreach ($ledger_groups as $child) {
-                            $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     })
                     ->get();
@@ -223,7 +224,7 @@ class CrDrReportController extends Controller
                         $query->whereIn('ledger_group_id', $ledger_groups);
 
                         foreach ($ledger_groups as $child) {
-                            $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     })
                     ->get();
@@ -276,7 +277,7 @@ class CrDrReportController extends Controller
             $ledgers = Ledger::where('status', 1)
                 ->where(function ($query) use ($group) {
                     $query->where('ledger_group_id', $group)
-                        ->orWhereJsonContains('ledger_group_id', (string) $group);
+                        ->orWhereJsonContains('ledger_group_id', (string) $group)->orWhereJsonContains('ledger_group_id', $group);
                 })
                 ->pluck('id')
                 ->toArray();
@@ -434,7 +435,7 @@ class CrDrReportController extends Controller
                         ->where(function ($query) use ($childs) {
                             $query->whereIn('ledger_group_id', $childs);
                             foreach ($childs as $child) {
-                                $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                                $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                             }
                         })->pluck('id')->toArray();
 
@@ -665,7 +666,7 @@ class CrDrReportController extends Controller
                 $query->whereIn('ledger_group_id', $search_ledger);
 
                 foreach ($search_ledger as $child) {
-                    $query->orWhereJsonContains('ledger_group_id', (string) $child);
+                    $query->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                 }
             })
             ->get();
@@ -1741,21 +1742,23 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()
                 ->where('parent_group_id', $group->id)
                 ->pluck('id');
+            $ledger_groups[] = $group->id;
 
             Log::info('Fetched child ledger groups', ['ledger_groups' => $ledger_groups]);
 
             // If no child groups, use the current group ID
-            if ($ledger_groups->isEmpty()) {
-                $ledger_groups = collect([$group->id]);
-                Log::info('No child groups found. Using current group as fallback', ['group_id' => $group->id]);
-            }
+            // if ($ledger_groups->isEmpty()) {
+            //     $ledger_groups = collect([$group->id]);
+            //     Log::info('No child groups found. Using current group as fallback', ['group_id' => $group->id]);
+            // }
+           
 
             // Fetch ledgers
             $all_ledgers = Ledger::where(function ($query) use ($ledger_groups) {
                 $query->whereIn('ledger_group_id', $ledger_groups)
                     ->orWhere(function ($subQuery) use ($ledger_groups) {
                         foreach ($ledger_groups as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     });
             })->where('status', 1)->get();
@@ -1815,21 +1818,22 @@ class CrDrReportController extends Controller
             $ledger_groups = Helper::getGroupsQuery()
                 ->where('parent_group_id', $group->id)
                 ->pluck('id');
+            $ledger_groups[] = $group->id;
 
-            Log::info('Fetched child ledger groups', ['ledger_groups' => $ledger_groups]);
+            // Log::info('Fetched child ledger groups', ['ledger_groups' => $ledger_groups]);
 
-            // If no child groups, use the current group ID
-            if ($ledger_groups->isEmpty()) {
-                $ledger_groups = collect([$group->id]);
-                Log::info('No child groups found. Using current group as fallback', ['group_id' => $group->id]);
-            }
+            // // If no child groups, use the current group ID
+            // if ($ledger_groups->isEmpty()) {
+            //     $ledger_groups = collect([$group->id]);
+            //     Log::info('No child groups found. Using current group as fallback', ['group_id' => $group->id]);
+            // }
 
             // Fetch ledgers
             $all_ledgers = Ledger::where(function ($query) use ($ledger_groups) {
                 $query->whereIn('ledger_group_id', $ledger_groups)
                     ->orWhere(function ($subQuery) use ($ledger_groups) {
                         foreach ($ledger_groups as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     });
             })->where('status', 1)->get();
@@ -1868,10 +1872,16 @@ class CrDrReportController extends Controller
         $group_id[] = $ledger_group->id;
         $accessibleLocations = InventoryHelper::getAccessibleLocations();
         $locationIds = $accessibleLocations->pluck('id')->toArray();
-        $ledger_ids = Ledger::where(function ($query) use ($group_id, $request) {
+        $ledger_ids = Ledger::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            })
+        ->when(!empty($organizations), function ($query) use ($organizations) {
+                            $query->whereIn('organization_id', $organizations);
+        })
+         ->where(function ($query) use ($group_id, $request) {
                 $query->where(function ($q) use ($group_id, $request) {
                     foreach ($group_id as $id) {
-                        $q->orWhereJsonContains('ledger_group_id', (string) $id);
+                        $q->orWhereJsonContains('ledger_group_id', (string) $id)->orWhereJsonContains('ledger_group_id', $id);
                     }
 
                     $q->orWhereIn('ledger_group_id', $group_id);
@@ -1891,7 +1901,8 @@ class CrDrReportController extends Controller
             $cost_center_ids = $request->cost_center_id ?? null;
             // dd($cost_center_ids);
         } elseif (!empty($request->cost_group_id)) {
-            $cost_group = CostGroup::with('costCenters')
+            $cost_group = CostGroup::withDefaultGroupCompanyOrg()
+                ->with('costCenters')
                 ->where('id', $request->cost_group_id)
                 ->where('status', 'active')
                 ->first();
@@ -1906,7 +1917,10 @@ class CrDrReportController extends Controller
             $ledgerGroupIds = is_array($ledgerGroupIds)
                 ? $ledgerGroupIds
                 : [$ledger->ledger_group_id];
-            $data = Voucher::when(!empty($organizations), function ($query) use ($organizations) {
+            $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            })
+            ->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         })->with('ErpLocation', 'organization')
                 ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
@@ -1979,7 +1993,10 @@ class CrDrReportController extends Controller
                     $voucher->document_date = $voucher->document_date;
 
                     $balance = VoucherReference::where('voucher_id', $voucher->id)
-                        ->withWhereHas('voucherPayRec', function ($query) use ($organizations) {
+                        ->withWhereHas('voucherPayRec', function ($query) use ($organizations,$request) {
+                            $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
+                            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                        });
                             $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         });
@@ -2001,7 +2018,10 @@ class CrDrReportController extends Controller
 
             $advanceSum = PaymentVoucherDetails::where('type', $cus_type)
                 ->whereIn('reference', ['On Account'])
-                ->withWhereHas('voucher', function ($query) use($organizations) {
+                ->withWhereHas('voucher', function ($query) use($organizations,$request) {
+                $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
+                $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                 });
                   $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         })->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);
@@ -2031,7 +2051,10 @@ class CrDrReportController extends Controller
 
             $advanceItems = PaymentVoucherDetails::where('type', $cus_type)
                 ->where('reference', 'Advance')
-                ->withWhereHas('voucher', function ($query) use ($organizations) {
+                ->withWhereHas('voucher', function ($query) use ($organizations,$request) {
+                    $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
+                $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+            });
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
                         })->whereNotIn('document_status', ConstantHelper::DOCUMENT_STATUS_REJECTED);

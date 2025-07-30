@@ -328,6 +328,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
     Route::get('ledgerAmendment/{id}', [LedgerController::class, 'amendment'])->name('ledgers.amendment');
     Route::get('ledger/update_null_data', [LedgerController::class, 'updateNull'])->name('ledgers.update-null-data');
+    Route::get('create-party-ledger', [LedgerController::class, 'createPartyLedger'])->name('ledgers.create.party-ledger');
 
     // closefy
     Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
