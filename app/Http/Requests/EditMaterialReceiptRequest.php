@@ -164,54 +164,80 @@ class EditMaterialReceiptRequest extends FormRequest
             $referenceType = $this->input('reference_type');
             $items = [];
             foreach ($components as $key => $component) {
-                $itemValue = floatval($component['item_total_cost']);
-                if($itemValue < 0) {
+                $itemValue = floatval($component['item_total_cost'] ?? 0);
+                if ($itemValue < 0) {
                     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
                 }
+
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
+
                 $poId = match ($referenceType) {
                     'po' => $component['purchase_order_id'] ?? null,
                     'jo' => $component['job_order_id'] ?? null,
                     default => null,
                 };
+
                 $attributes = [];
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;
                     $attr_value = $attrName['attr_name'] ?? null;
-                    if ($attr_id && $attr_value) {
+                    if ($attr_id && $attr_value !== null) {
                         $attributes[] = [
                             'attr_id' => $attr_id,
                             'attr_value' => $attr_value,
                         ];
                     }
                 }
+
                 $currentItem = [
                     'item_id' => $itemId,
                     'uom_id' => $uomId,
-                    'attributes' => $attributes,
                     'so_id' => $soId,
                     'po_id' => $poId,
+                    'attributes' => $attributes,
                 ];
+
                 foreach ($items as $existingItem) {
                     if (
                         $existingItem['item_id'] === $currentItem['item_id'] &&
                         $existingItem['uom_id'] === $currentItem['uom_id'] &&
-                        $existingItem['attributes'] === $currentItem['attributes'] &&
                         $existingItem['so_id'] === $currentItem['so_id'] &&
-                        $existingItem['po_id'] === $currentItem['po_id']
+                        $existingItem['po_id'] === $currentItem['po_id'] &&
+                        $this->attributesEqual($existingItem['attributes'], $currentItem['attributes'])
                     ) {
-                        $validator->errors()->add(
-                            "components.$key.item_id",
-                            "Duplicate item!"
-                            // "Duplicate entry found for item_id: {$itemId}, uom_id: {$uomId}."
-                        );
+                        $validator->errors()->add("components.$key.item_id", "Duplicate item!");
                         return;
                     }
                 }
+
                 $items[] = $currentItem;
             }
         });
+    }
+
+    protected function attributesEqual(array $a, array $b): bool
+    {
+        if (count($a) !== count($b)) {
+            return false;
+        }
+
+        // Sort by attr_id and attr_value for consistent comparison
+        usort($a, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+        usort($b, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+
+        foreach ($a as $i => $attrA) {
+            $attrB = $b[$i] ?? null;
+            if (
+                !$attrB ||
+                $attrA['attr_id'] != $attrB['attr_id'] ||
+                $attrA['attr_value'] != $attrB['attr_value']
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

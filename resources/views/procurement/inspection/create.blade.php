@@ -34,7 +34,7 @@
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form finalSubmitBtn" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
+    <form class="ajax-input-form" method="POST" action="{{ route('inspection.store') }}" data-redirect="/inspection" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         @csrf
         <div class="app-content content ">

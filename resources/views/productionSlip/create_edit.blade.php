@@ -329,8 +329,8 @@
                                                     <label class="form-label">Type </label>
                                                     <input type="text" @if(isset($slip)) value="{{$slip->is_last_station == true ? 'Final' : 'WIP'}}" @endif id="mo_type_name" placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" name="mo_type_name" />
                                                 </div>
-                                            </div>
-                                            <div class="col {{ isset($slip) && optional($slip->mo->station)->name ? '' : 'd-none' }}">
+                                            </div> 
+                                            <div class="col {{ isset($slip) && optional($slip?->mo?->station)->name ? '' : 'd-none' }}">
                                                 <div class="mb-1">
                                                     <label class="form-label">Station </label>
                                                     <input type="text" @if(isset($slip)) value="{{$slip?->mo?->station?->name}}" @endif placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" id="station_name" name="station_name"  />
@@ -2070,9 +2070,11 @@
             });
         }
         renderIcons();
+<<<<<<< HEAD
+=======
 
+>>>>>>> 84bc09dc5da0332b161ccbc2951ef55cbf448962
         let finalAmendSubmitButton = document.getElementById("amend-submit-button");
-
         viewModeScript(finalAmendSubmitButton ? false : true);
 
     }
@@ -2535,7 +2537,7 @@ function viewModeScript(disable = true)
     const currentOrder = @json(isset($slip) ? $slip : null);
     const editOrder = "{{( isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? false : true}}";
     const revNoQuery = "{{ isset(request() -> revisionNumber) ? true : false }}";
-
+    
     if ((editOrder || revNoQuery) && currentOrder) {
         document.querySelectorAll('input, textarea, select').forEach(element => {
             if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
@@ -3076,6 +3078,13 @@ document.addEventListener('input', function (e) {
         renderIcons();
     }
 
+    function getTotalQty(itemIndex) 
+    {
+        let a = Number(document.getElementById('item_accepted_qty_' + itemIndex)?.value) || 0;
+        let b = Number(document.getElementById('item_sub_prime_qty_' + itemIndex)?.value) || 0;
+        let c = a+b;
+        return c;
+    }
     function assignDefaultBundleInfoArray(itemIndex, openModalFlag = false)
     {
         const bundleElement = document.getElementById('item_bundles_' + itemIndex);
@@ -3084,14 +3093,15 @@ document.addEventListener('input', function (e) {
             bundleScheduleArray = JSON.parse(decodeURIComponent(bundleElement.getAttribute('data-bundles')));
         }
         const qtyInput = document.getElementById('item_qty_' + itemIndex);
+        const totalQty = getTotalQty(itemIndex);
         //Create
         if (!bundleScheduleArray.length) {
-            if (qtyInput && qtyInput.value > 0) { //Only add if qty is greater than 0
+            if (qtyInput && totalQty > 0) { //Only add if qty is greater than 0
                 bundleScheduleArray.push({
                     bundle_no : "{{$startingBundleNo}}",
                     editable : "{{$editableBundle}}",
                     bundle_type : 'Bundle',
-                    qty : qtyInput.value
+                    qty : totalQty
                 });
                 bundleElement.setAttribute('data-bundles', encodeURIComponent(JSON.stringify(bundleScheduleArray)));
             }
@@ -3111,7 +3121,8 @@ document.addEventListener('input', function (e) {
             bundlesArray[index][key] = element.value;
             if (key == 'qty') {
                 //Check Qty
-                let maxQty = document.getElementById('item_qty_' + itemIndex).value;
+                // let maxQty = document.getElementById('item_qty_' + itemIndex).value;
+                let maxQty = getTotalQty(itemIndex);
                 let existingQty = 0;
                 bundlesArray.forEach((bundle) => {
                     existingQty += parseFloat(bundle.qty);
@@ -3138,6 +3149,7 @@ document.addEventListener('input', function (e) {
         const tableInput = document.getElementById('bundle_schedule_table');
         const itemIndex = tableInput ? tableInput.getAttribute('current-item-index') : 0;
         const qtyInput = document.getElementById('item_qty_' + itemIndex);
+        const totalQty = getTotalQty(itemIndex);
 
         const itemQtysInput = document.getElementsByClassName('bundle_qties_' + itemIndex);
         var existingQty = 0;
@@ -3145,7 +3157,7 @@ document.addEventListener('input', function (e) {
             existingQty += parseFloat(itemQtysInput[index].value);
         }
 
-        if (existingQty >= parseFloat(qtyInput ? qtyInput.value : 0)) {
+        if (existingQty >= parseFloat(qtyInput ? totalQty : 0)) {
             Swal.fire({
                 title: 'Warning!',
                 text: 'Cannot exceed quantity',
@@ -3154,14 +3166,14 @@ document.addEventListener('input', function (e) {
             return;
         }
 
-        const newQty = parseFloat(qtyInput ? qtyInput.value : 0) - existingQty;
+        const newQty = parseFloat(qtyInput ? totalQty : 0) - existingQty;
 
         const bundleElement = document.getElementById('item_bundles_' + itemIndex);
         var bundlesArray = [];
         if (bundleElement.getAttribute('data-bundles')) {
             bundlesArray = JSON.parse(decodeURIComponent(bundleElement.getAttribute('data-bundles')));
         }
-        if (qtyInput && qtyInput.value > 0) { //Only add if qty is greater than 0
+        if (qtyInput && totalQty > 0) { //Only add if qty is greater than 0
             bundlesArray.push({
                 bundle_type : 'Bundle',
                 bundle_no: bundlesArray.length + 1,
@@ -3828,19 +3840,23 @@ $(document).on("click", "#raw-materials .item_header_rows", (e) => {
     fetchItemDetailsFromRow($row);
 });
 
-$(document).on("keyup", "#production-items input[name*='item_qty']", (e) => {
+$(document).on("keyup",
+ "#production-items input[name*='item_accepted_qty'] , #production-items input[name*='item_sub_prime_qty']",
+  (e) => {
+    console.log(e.target.name);
     let qty = Number(e.target.value) || 0;
     let $tr = $(e.target).closest('tr');
     let trId = $tr.attr('id') || '';
     let itemIndex = trId.split('_').pop();
     const bundleElement = document.getElementById('item_bundles_' + itemIndex);
     var bundleScheduleArray = [];
-    const qtyInput = document.getElementById('item_qty_' + itemIndex);
+    // const qtyInput = document.getElementById('item_qty_' + itemIndex);
+    const totalQty = getTotalQty(itemIndex);
     bundleScheduleArray.push({
                 bundle_no : "{{$startingBundleNo}}",
                 editable : "{{$editableBundle}}",
                 bundle_type : 'Bundle',
-                qty : qtyInput.value
+                qty : totalQty
             });
     bundleElement.setAttribute('data-bundles', encodeURIComponent(JSON.stringify(bundleScheduleArray)));
     renderBundleDetails(itemIndex, false);

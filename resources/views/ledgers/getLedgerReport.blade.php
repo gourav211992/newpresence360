@@ -44,7 +44,7 @@
 											<div class="row">
 												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
-														<label class="form-label">Company</label>
+														<label class="form-label">Company <span class="text-danger">*</span></label>
 														<select class="form-select select2 companySelect" required id="company_id">
 															<option value="" selected disabled>Select Company</option>
 															@foreach ($companies as $company)
@@ -55,7 +55,7 @@
 												</div>
 												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
-														<label class="form-label">Organization</label>
+														<label class="form-label">Organization <span class="text-danger">*</span></label>
 														<select class="form-select select2" id="organization_id" required>
 															<option value="" selected disabled>Select Organization</option>
 														</select>
@@ -102,7 +102,7 @@
 												</div>
                                                 <div class="col-md-2 mb-2">
                                                     <div class="mb-1 mb-sm-0">
-                                                    <label class="form-label">Currency</label>
+                                                    <label class="form-label">Currency <span class="text-danger">*</span></label>
                                                     <select id="currency" class="form-select select2" required>
                                                         <option value="org"> {{strtoupper(CurrencyHelper::getOrganizationCurrency()->short_name) ?? ""}} (Organization)</option>
                                                         <option value="comp">{{strtoupper(CurrencyHelper::getCompanyCurrency()->short_name)??""}} (Company)</option>
@@ -339,10 +339,30 @@
             $('.cost_group').hide();
             $('#cost_center_id').prop('required', false);
             $('#cost_group_id').prop('required', false);
+            
+            // Auto-select first company on page load if no URL parameters
             let urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('organization_id') == "")
-                $('#organization_id').val(urlParams.get('organization_id'));
-
+            
+            // If no company is selected via URL parameters, select the first company
+            if (!urlParams.get('company_id')) {
+                // Select the first company if available
+                if (companies && companies.length > 0) {
+                    const firstCompany = companies[0];
+                    $('#company_id').val(firstCompany.id).trigger('change');
+                    
+                    // After company change is triggered, select the first organization
+                    setTimeout(function() {
+                        if (firstCompany.organizations && firstCompany.organizations.length > 0) {
+                            $('#organization_id').val(firstCompany.organizations[0].id).trigger('change');
+                        }
+                    }, 100); // Small delay to ensure company change event completes
+                }
+            } else {
+                // Handle URL parameters if they exist
+                if (urlParams.get('organization_id') == "")
+                    $('#organization_id').val(urlParams.get('organization_id'));
+            }
+            
             if (urlParams.get('cost_center_id') == "")
                 $('#cost_center_id').val(urlParams.get('cost_center_id'));
             if (urlParams.get('cost_group_id') == "")

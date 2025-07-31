@@ -1716,11 +1716,11 @@ class PurchaseReturnController extends Controller
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
-            'mrn' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
+            'mrn' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
             default => ErpAddress::where('addressable_id', $moduleTypeId)
-                ->where('addressable_type', Vendor::class)
-                ->latest()
-                ->first(),
+            ->where('addressable_type', Vendor::class)
+            ->latest()
+            ->first(),
         };
 
         if (!$vendorAddress) {

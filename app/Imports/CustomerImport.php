@@ -129,18 +129,6 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithChunkReading
         $uploadedCustomer = null;
         try {
             $customerInitials = strtoupper(substr($row['customer_name'], 0, 3));
-            $gstinRegDate = $row['gstin_reg_date'] ?? null;
-            $gstinRegistrationDate = null;
-            if ($gstinRegDate) {
-                if (is_numeric($gstinRegDate)) {
-                    $gstinRegistrationDate = \Carbon\Carbon::createFromFormat('Y-m-d', '1900-01-01')
-                        ->addDays($gstinRegDate - 2)
-                        ->format('Y-m-d');
-                } else {
-                    $gstinRegistrationDate = $gstinRegDate;
-                    \Log::warning("Non-numeric GSTIN registration date encountered: " . $gstinRegDate);
-                }
-            }
             $tdsWefDate = $row['tds_wef_date'] ?? null;
             $tdsWefDatee = null;
             if ($tdsWefDate) {
@@ -523,6 +511,7 @@ private function processCustomerFromUpload($uploadedCustomers)
                 'company_name.required' => 'The customer name is required.',
                 'company_name.string' => 'Customer name must be a valid string.',
                 'company_name.max' => 'Customer name cannot exceed 255 characters.',
+                'company_name.unique' => 'Customer name already exists. Please choose a different name.',
                 'country_id.exists' => 'The country selected is invalid.',
                 'state_id.exists' => 'The state selected is invalid.',
                 'city_id.exists' => 'The city selected is invalid.',
@@ -623,7 +612,7 @@ private function processCustomerFromUpload($uploadedCustomers)
             $customer = new Customer($customerData);
             $customer->document_status = ConstantHelper::DRAFT;
             $customer->status = ConstantHelper::DRAFT;
-            $customer->book_id = $book ? $book->id : null;
+            $customer->book_id = $book ? $book->id : null; 
 
             $customer->save();
 

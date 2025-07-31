@@ -196,7 +196,7 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
         let acceptedQty = resultQty;
 
         $acceptedQtyInput.val(acceptedQty.toFixed(2));
-        
+
         if (Number($itemCost.val())) {
             let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
             $itemValue.val(totalValue.toFixed(2));
@@ -303,7 +303,7 @@ function setTableCalculation(edit = null) {
     if (edit === null) {
         edit = window.location.pathname.includes('/edit');
     }
-    
+
     const reference_type = $('.reference_type').val();
     let totalItemValue = 0;
     let totalItemDiscount = 0;
@@ -577,7 +577,6 @@ function setTableCalculation(edit = null) {
                         <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${idx+1}][e_amnt]">
                     `);
                 };
-                console.log('tedId', tedId,poItemIds, poIds, reference_type);
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
 
                     const p = fetch('/gate-entries/get-selected-item-amount', {
@@ -598,7 +597,6 @@ function setTableCalculation(edit = null) {
                     .then(response => response.json())
                     .then(data => {
                         let baseAmount = data.status === 200 ? data.data.poItemValue : totalAfterTax;
-                        console.log('baseAmount', baseAmount);
 
                         computeAndUpdate(baseAmount, index);
                     })
@@ -1368,12 +1366,12 @@ function qtyEnabledDisabled() {
                     qtyDisabled = true;
                 }
             });
-            $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
+            // $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
             if(qtyDisabled) {
-                $(item).find("[name*='[order_qty]']").val('');
+                // $(item).find("[name*='[order_qty]']").val('');
             }
         } else {
-            $(item).find("[name*='[order_qty]']").attr('readonly',false);
+            // $(item).find("[name*='[order_qty]']").attr('readonly',false);
         }
     });
 }

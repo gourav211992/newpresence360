@@ -7,7 +7,7 @@
             default => $item?->order_qty,
         };
         $rowCount = $key + 1;
-        $readonly = '';
+        $readOnly = '';
         $acceptedReadOnly = 'readonly';
         if ($item->gate_entry_detail_id) {
             $readOnly = 'readonly';
@@ -58,7 +58,7 @@
             <input type="hidden" name="components[{{ $rowCount }}][hsn_code]" value="{{ @$item->hsn_code }}" />
             <input type="hidden" name="components[{{ $rowCount }}][is_inspection]"
                 value="{{ $item?->is_inspection }}" />
-            <input type="hidden" name="components[{{ $rowCount }}][so_id]" value="{{ $item?->so_id }}">
+            <input type="hidden" name="components[{{ $rowCount }}][so_id]" value="{{ $item?->poItem?->so_id }}">
             @php
                 $selectedAttr = $item->attributes
                     ? $item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all()

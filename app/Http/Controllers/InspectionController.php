@@ -752,7 +752,6 @@ class InspectionController extends Controller
         }
         DB::beginTransaction();
         try {
-            // dd($request->all());
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -859,7 +858,11 @@ class InspectionController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
-
+                    $checklistValidation = self::validateInspectionCheckList($component);
+                    if ($checklistValidation) {
+                        \DB::rollBack();
+                        return $checklistValidation; // ❗ Stop further processing
+                    }
                     $validateQty = self::validateQuantityBackend($component, 'mrn');
                     if ($validateQty['status'] === 'error') {
                         \DB::rollBack();
@@ -872,7 +875,12 @@ class InspectionController extends Controller
                         $mrn_detail_id = $mrnDetail->id ?? null;
                         $mrnHeaderId = $component['mrn_header_id'];
                         if ($mrnDetail) {
-                            $mrnDetail->inspection_qty += floatval($component['order_qty']);
+                            $orderQty = floatval($mrnDetail->order_qty);
+                            $componentQty = floatval($component['order_qty']);
+                            $qtyDifference = $componentQty - $orderQty;
+                            if($qtyDifference) {
+                                $mrnDetail->inspection_qty += $qtyDifference;
+                            }
                             $mrnDetail->save();
                         }
                     }
@@ -985,6 +993,32 @@ class InspectionController extends Controller
                             $inspAttr->save();
                         }
                     }
+
+                    #Save item checklists
+                    if (!empty($component['inspectionData'])) {
+                        $itemChecklists = is_string($component['inspectionData'])
+                            ? json_decode($component['inspectionData'], true)
+                            : $component['inspectionData'];
+
+                        if (is_array($itemChecklists)) {
+                            foreach ($itemChecklists as $i => $val) {
+                                $inspChecklist = InspChecklist::find($val['insp_checklist_id']) ?? new InspChecklist();
+                                $inspChecklist->header_id = $inspection->id;
+                                $inspChecklist->detail_id = $inspectionDetail->id;
+                                $inspChecklist->item_id = $inspectionDetail->item_id;
+                                $inspChecklist->checklist_id = $val['checkList_id'];
+                                $inspChecklist->checklist_name = $val['checkList_name'];
+                                $inspChecklist->checklist_detail_id = $val['detail_id'];
+                                $inspChecklist->name = $val['parameter_name'];
+                                $inspChecklist->value = $val['parameter_value'];
+                                $inspChecklist->result = $val['result'];
+                                $inspChecklist->save();
+
+                            }
+                        } else {
+                            \Log::warning("Invalid JSON for itemChecklists: " . print_r($component['inspectionData'], true));
+                        }
+                    }
                 }
             } else {
                 DB::rollBack();
@@ -1074,6 +1108,7 @@ class InspectionController extends Controller
                 'redirect_url' => $redirectUrl
             ]);
         } catch (\Exception $e) {
+            dd($e->getMessage(), $e->getLine());
             \DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
@@ -1269,18 +1304,17 @@ class InspectionController extends Controller
                 ->with(['currency:id,name', 'paymentTerms:id,name'])
                 ->find($vendorId),
         };
-
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-
+        
         $documentDate = $request?->document_date;
-
+        
         $vendorAddress = match ($type) {
-            'mrn' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
+            'mrn' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
             default => ErpAddress::where('addressable_id', $moduleTypeId)
-                ->where('addressable_type', Vendor::class)
-                ->latest()
-                ->first(),
+            ->where('addressable_type', Vendor::class)
+            ->latest()
+            ->first(),
         };
 
         if (!$vendorAddress) {
@@ -1486,7 +1520,7 @@ class InspectionController extends Controller
             'mrn_header_id'      => $component['mrn_header_id'],
             'mrn_detail_id'      => $component['mrn_detail_id'],
             'inspection_item_id' => $component['inspection_item_id'],
-            'qty'                => $component['qty'],
+            'qty'                => $component['order_qty'],
             'type'               => $refType,
         ];
 
@@ -2452,7 +2486,7 @@ class InspectionController extends Controller
                 return self::notFoundResponse('Parameter name missing in checklist for item'. $component['item_name']);
             }
 
-            if (!isset($result['result']) || !in_array($result['result'], ['yes', 'no'], true)) {
+            if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
                 return self::notFoundResponse('Pass/Fail (result) missing in checklist for item'. $component['item_name']);
             }
         }

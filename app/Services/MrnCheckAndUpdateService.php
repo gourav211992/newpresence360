@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Services;
 
 use Illuminate\Http\Request;
@@ -32,7 +32,7 @@ class MrnCheckAndUpdateService
         $item = Item::find($inputData['item_id']);
         $type = $inputData['type'];
         $inputQty = (float) $inputData['qty'] ?? 0.00;
-        
+
         if (!$item) {
             return self::errorResponse("Item not found.", [
                 'order_qty' => $inputQty
@@ -42,7 +42,7 @@ class MrnCheckAndUpdateService
         // === Case 1: Edit (MRN Detail exists) ===
         if (!empty($inputData['mrn_detail_id'])) {
             $mrnDetail = MrnDetail::find($inputData['mrn_detail_id']);
-            $mrnOrderQty = number_format((float) $mrnDetail->order_qty ?? 0.00, 2);
+            $mrnOrderQty = (float) $mrnDetail->order_qty ?? 0.00;
             if (!$mrnDetail) {
                 return self::errorResponse("Mrn Item not found.", [
                     'order_qty' => $mrnOrderQty
@@ -50,7 +50,7 @@ class MrnCheckAndUpdateService
             }
 
             if ($mrnDetail->purchase_bill_qty > $inputQty) {
-                $pbQty = number_format((float) $mrnDetail->purchase_bill_qty, 2);
+                $pbQty = (float) $mrnDetail->purchase_bill_qty ?? 0.00;
                 return self::errorResponse("Order qty cannot be less than purchase bill quantity ({$pbQty}) as it has already been used.", [
                     'order_qty' => $mrnOrderQty
                 ]);
@@ -106,7 +106,7 @@ class MrnCheckAndUpdateService
 
                 if ($balanceQty < $inputQty) {
                     return self::errorResponse("Order qty cannot be greater than Gate Entry qty.", [
-                        'order_qty' => number_format((float)$geDetail->accepted_qty, 2)
+                        'order_qty' => (float) $geDetail->accepted_qty ?? 0.00
                     ]);
                 }
 
@@ -120,7 +120,7 @@ class MrnCheckAndUpdateService
 
                 if ($balanceQty < $inputQty) {
                     return self::errorResponse("Order qty cannot be greater than ASN qty.", [
-                        'order_qty' => number_format((float)$asnDetail->supplied_qty, 2)
+                        'order_qty' => (float) $asnDetail->supplied_qty ?? 0.00
                     ]);
                 }
 
@@ -131,7 +131,7 @@ class MrnCheckAndUpdateService
             // if (!$geValidated && !$asnValidated && !empty($poDetail)) {
             //     if (($poDetail->order_qty - $poDetail->grn_qty) < $inputQty) {
             //         return self::errorResponse("Order qty exceeds PO quantity.", [
-            //             'order_qty' => number_format((float)$poDetail->order_qty, 2)
+            //             'order_qty' => number_format((float) $poDetail->order_qty, 2)
             //         ]);
             //     }
             // }
@@ -151,18 +151,18 @@ class MrnCheckAndUpdateService
                 if ($positiveTol > 0 || $negativeTol > 0) {
                     if ($totalQty > $maxAllowed) {
                         return self::errorResponse("Order qty exceeds allowed positive tolerance.", [
-                            'order_qty' => number_format($orderQty, 2)
+                            'order_qty' => (float) $orderQty ?? 0.00
                         ]);
                     }
 
                     if ($totalQty < $minAllowed) {
                         return self::errorResponse("Order qty is below allowed negative tolerance.", [
-                            'order_qty' => number_format($orderQty, 2)
+                            'order_qty' => (float) $orderQty ?? 0.00
                         ]);
                     }
                 } elseif ($totalQty > $orderQty) {
                     return self::errorResponse("Order qty cannot be greater than po qty.", [
-                        'order_qty' => number_format($orderQty, 2)
+                        'order_qty' => (float) $orderQty ?? 0.00
                     ]);
                 }
             }
@@ -175,7 +175,7 @@ class MrnCheckAndUpdateService
         ]);
     }
 
-    // Check Confirmed Stock 
+    // Check Confirmed Stock
     private static function checkConfirmedStock($mrnItem, $inputQty)
     {
         $inventoryUomQty = ItemHelper::convertToBaseUom($mrnItem->item_id, $mrnItem->uom_id, $inputQty);

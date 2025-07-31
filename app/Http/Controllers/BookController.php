@@ -890,7 +890,13 @@ class BookController extends Controller
                     } else {
                         $levelInsert->min_value = $request->min_value[$key];
                     }
-                    $levelInsert->rights = $request->rights[$key];
+                    $rightsValue = $request->rights[$key] ?? null;
+
+                    if (is_array($rightsValue)) {
+                        $levelInsert->rights = json_encode($rightsValue); // for multi-select case
+                    } else {
+                        $levelInsert->rights = $rightsValue; // plain string like "anyone"
+                    }
                     $levelInsert->company_id = $request->level_company_id[$key];
                     $levelInsert->organization_id = $request->level_organization_id[$key];
                     $levelInsert->save();

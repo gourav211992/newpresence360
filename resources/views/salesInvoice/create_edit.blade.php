@@ -555,7 +555,6 @@
                                                     <div class="mb-1">
                                                         <label class="form-label">
                                                                 Lorry Receipt No.
-                                                                <span class="text-danger">*</span>
                                                             </label>
                                                         <input type="text" class="form-control"  id = "lr_number_input" name = "lr_number" value = "{{isset($order) ? $order -> lr_number : ''}}" />
                                                     </div>
@@ -3661,6 +3660,9 @@
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer item_bundles" onclick = "getBundles(${currentOrderIndexVal}, ${item.id})" id = "item_bundles_${currentOrderIndexVal}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
                                     // disableQty = "readonly";
                                 }
+                                if (openPullType == 'dnote') {
+                                    disableQty = "readonly";
+                                }
                                 if (openPullType == 'plist') {
                                     bundleInfoIcon = `<div class="me-50 cursor-pointer" packet="${item.package}" qty = "${item.order_qty}" onclick = "setPackets(this);" >    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Package" class="text-primary"><i data-feather="package"></i></span>`;
                                     plistHTML = `<input type ='hidden' value = '${JSON.stringify([item.package_id])}' name = 'plist_detail_ids[${currentOrderIndexVal}]' />`;
@@ -3714,8 +3716,8 @@
                                     </select>
                                         </td>
                                         
-                                        <td><input ${disableQty} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
-                                        <td><input ${disableQty} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" ${invoiceToFollowParam ? 'readonly' : ''} /></td>
+                                        <td><input ${disableQty ? 'readonly' : ''} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
+                                        <td><input ${disableQty ? 'readonly' : ''} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
                                         <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "${item?.header_discount_amount}" ></input>
                                         <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "${item?.header_expense_amount}"></input>
@@ -3969,7 +3971,7 @@
                         ${isEnabled ? '' : 'disabled'}
                         name="po_check"
                         id="po_checkbox_${meta.row}"
-                        oninput="checkQuotation(this);"
+                        oninput="checkQuotation(this, '', '${type}');"
                         doc-id="${docId}"
                         current-doc-id="0"
                         document-id="${mainDocId}"
@@ -4229,7 +4231,7 @@
 
     let current_doc_id = 0;
 
-    function checkQuotation(element, message = '')
+    function checkQuotation(element, message = '', type = 'so')
     {
         if (element.getAttribute('can-check-message')) {
             Swal.fire({
@@ -4261,6 +4263,14 @@
             }
         } else {
             current_doc_id = element.getAttribute('doc-id');
+            if (type == 'dnote') {
+                let otherElementsForSameDoc = document.getElementsByClassName('po_checkbox');
+                for (let index = 0; index < otherElementsForSameDoc.length; index++) {
+                    if (otherElementsForSameDoc[index].getAttribute('doc-id') == current_doc_id) {
+                        otherElementsForSameDoc[index].checked = true;
+                    }
+                }
+            }
         }
 
     }

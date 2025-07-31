@@ -109,17 +109,20 @@
                             <div class="px-2 mb-1 mt-1">
                                 <div class="step-custhomapp bg-light">
                                     <ul class="nav nav-tabs my-25 custapploannav" role="tablist">
+                                        {{-- Closing Balance tab hidden
                                         <li class="nav-item">
-                                            <a class="nav-link active" data-bs-toggle="tab" href="#Transfer">Closing Balance</a>
+                                            <a class="nav-link" data-bs-toggle="tab" href="#Transfer">Closing Balance</a>
                                         </li>
+                                        --}}
                                         <li class="nav-item">
-                                            <a class="nav-link" data-bs-toggle="tab" href="#Access">Access Management</a>
+                                            <a class="nav-link active" data-bs-toggle="tab" href="#Access">Access Management</a>
                                         </li>
                                     </ul>
                                 </div>
 
                                 <div class="tab-content ">
-                                    <div class="tab-pane active" id="Transfer">
+                                    {{-- Closing Balance Tab Content Hidden
+                                    <div class="tab-pane" id="Transfer">
                                         <div class="row align-items-center">
                                             <div class="col-md-8">
 
@@ -148,13 +151,14 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="tab-pane" id="Access">
+                                    --}}
+                                    <div class="tab-pane active" id="Access">
                                         @php
                                         $locked = $authorized_users['locked'] ?? null;
                                         @endphp
                                         @if (isset($organizationId) && $organizationId)
                                         <div class="text-end mb-2">
-                                            @if(!is_null($locked) && !$locked)
+                                            @if(!is_null($locked) && !$locked && request()->has('fmonth'))
                                             <a id="saveAccessBy" href="#" class="btn-dark btn-sm access-by">
                                                 <i data-feather='check-circle'></i> Save
                                             </a>
@@ -610,7 +614,7 @@
                 );
 
                 // Call the function to fetch filtered data
-            getInitialGroups();
+            //getInitialGroups();
             }
 
             $('#company_name').text(

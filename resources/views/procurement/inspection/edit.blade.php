@@ -458,6 +458,10 @@
                 </div>
             </div>
         </div>
+        <!-- Outstanding MRN Modal  -->
+        @include('procurement.inspection.partials.outstanding-mrn-modal')
+        <!-- Inspection CHecklist Modal  -->
+        @include('procurement.inspection.partials.inspection-checklist-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">

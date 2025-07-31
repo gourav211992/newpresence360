@@ -2238,7 +2238,7 @@ $(document).on('click', '.prProcess', (e) => {
     groupItems = JSON.stringify(groupItems);
 
     ids = JSON.stringify(ids);
-    let current_row_count = $("tbody tr[id*='row_']").length;
+    let current_row_count = $("#itemTable tbody tr[id*='row_']").length;
     let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
     let actionUrl = '{{ route("po.process.pi-item", ["type" => ":type"]) }}'
     .replace(':type', type) 

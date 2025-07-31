@@ -1784,8 +1784,8 @@ class GateEntryController extends Controller
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
-            'po' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
-            'jo' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
+            'po' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
+            'jo' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
             default => ErpAddress::where('addressable_id', $moduleTypeId)
                 ->where('addressable_type', Vendor::class)
                 ->latest()
