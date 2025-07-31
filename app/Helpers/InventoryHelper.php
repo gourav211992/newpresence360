@@ -2510,7 +2510,8 @@ class InventoryHelper
                         $stockLedger = new StockLedger();
                     }
                     $utilizedQty = 0;
-                    $issueQty = $stockLedger->issue_qty;
+                    // $issueQty = $stockLedger->issue_qty;
+                    $issueQty = null;
                     $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation,  $bookType, $documentStatus, $transactionType, $utilizedQty);
                     $updatedInvoiceLedger = self::updateStockLedger($invoiceLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $issueQty);
                 }

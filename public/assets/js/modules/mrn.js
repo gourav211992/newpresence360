@@ -268,7 +268,6 @@ $(document).on('change',"[name*='rate']",(e) => {
     if (Number(orderQuantity.val())) {
         let itemRate = parseFloat(rate.value);
         // if(itemRate < 1) {
-        //     console.log('oldValue', oldValue);
         //     itemRate = oldValue;
         //     orderRate.val(oldValue);
         //     Swal.fire({
@@ -344,7 +343,7 @@ function setTableCalculation(edit = null) {
     if (edit === null) {
         edit = window.location.pathname.includes('/edit');
     }
-    
+
     const reference_type = $('.reference_type').val();
     let totalItemValue = 0;
     let totalItemDiscount = 0;
@@ -376,7 +375,7 @@ function setTableCalculation(edit = null) {
             poItemIds.push(poItemId);
             itemQtys[poItemId] = qty; // assign qty keyed by poItemId
         }
-    
+
         if (poId) {
             poIds.push(poId);
         }
@@ -591,27 +590,27 @@ function setTableCalculation(edit = null) {
             .attr('style', totalAfterTax < 0 ? 'color: red !important;' : '');
 
         let rows = $(".display_summary_exp_row").find("[name*='[e_perc]']");
-        
+
         let fetchPromises = [];
         let expAmounts = [];
         let totalRows = rows.length;
-        
+
         if (totalRows && totalAfterTax) {
             rows.each(function(index, eachItem) {
                 let hiddenPerc = Number($(`[name="exp_summary[${index+1}][hidden_e_perc]"]`).val()) || 0;
                 let expDiscPerc = hiddenPerc || Number($(eachItem).val());
                 let tedId = Number($(`[name="exp_summary[${index+1}][e_id]"]`).val()) || 0;
-        
+
                 const computeAndUpdate = (baseAmount, idx) => {
                     let eachExpTypePrice = (baseAmount * expDiscPerc) / 100;
                     expAmounts[idx] = eachExpTypePrice; // store individually for later accumulation
-        
+
                     $(`[name="exp_summary[${idx+1}][e_amnt]"]`).closest('td').html(`
                         ${eachExpTypePrice.toFixed(2)}
                         <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${idx+1}][e_amnt]">
                         `);
                     };
-                    
+
                 if (tedId && poItemIds.length && poIds.length && ((reference_type == 'po') || (reference_type == 'jo'))) {
                     const p = fetch('/material-receipts/get-selected-item-amount', {
                         method: 'POST',
@@ -625,29 +624,28 @@ function setTableCalculation(edit = null) {
                             ted_id: tedId,
                             edit: edit,
                             itemQtys: itemQtys,
-                            reference_type: reference_type, 
+                            reference_type: reference_type,
                         })
                     })
                     .then(response => response.json())
                     .then(data => {
                         let baseAmount = data.status === 200 ? data.data.poItemValue : totalAfterTax;
-                        console.log('baseAmount', baseAmount);
-                        
+
                         computeAndUpdate(baseAmount, index);
                     })
                     .catch(() => {
                         computeAndUpdate(totalAfterTax, index);
                     });
-        
+
                     fetchPromises.push(p);
                 } else {
                     computeAndUpdate(totalAfterTax, index);
                 }
             });
-        
+
             Promise.all(fetchPromises).then(() => {
                 let totalHeaderExp = expAmounts.reduce((sum, val) => sum + (val || 0), 0);
-        
+
                 $("#expSummaryFooter #total")
                     .attr('amount', totalHeaderExp.toFixed(2))
                     .text(totalHeaderExp.toFixed(2))
@@ -655,9 +653,9 @@ function setTableCalculation(edit = null) {
                 $("#f_exp")
                     .text(totalHeaderExp.toFixed(2))
                     .css('color', totalHeaderExp < 0 ? 'red' : '');
-        
+
                 grandTotal = totalAfterTax + totalHeaderExp;
-                
+
                 $("#f_total_after_exp")
                     .attr('amount',grandTotal.toFixed(2))
                     .text(grandTotal.toFixed(2))
@@ -697,8 +695,7 @@ function setTableCalculation(edit = null) {
                         })
                     }
                     if(totalHeaderExp) {
-                        console.log('totalHeaderExp', totalHeaderExp);
-                        
+
                         each_net_value = itemValue6 - itemDisc6 - itemHeaderDisc6 + itemTax6;
                         exp_header_amnt_item = each_net_value / total_net_total * totalHeaderExp;
                         $(item6).find("[name*='[exp_amount_header]']").val(exp_header_amnt_item.toFixed(2));
@@ -707,10 +704,10 @@ function setTableCalculation(edit = null) {
                     }
                 });
             });
-        
+
         } else {
             let totalHeaderExp = 0;
-        
+
             rows.each(function(index, eachItem) {
                 let eachExpTypePrice = 0;
                 $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
@@ -719,7 +716,7 @@ function setTableCalculation(edit = null) {
                 `);
                 totalHeaderExp += eachExpTypePrice;
             });
-        
+
             $("#expSummaryFooter #total")
                 .attr('amount', totalHeaderExp.toFixed(2))
                 .text(totalHeaderExp.toFixed(2))
@@ -727,9 +724,9 @@ function setTableCalculation(edit = null) {
             $("#f_exp")
                 .text(totalHeaderExp.toFixed(2))
                 .css('color', totalHeaderExp < 0 ? 'red' : '');
-        
+
             grandTotal = totalAfterTax + totalHeaderExp;
-            
+
             $("#f_total_after_exp")
                 .attr('amount',grandTotal.toFixed(2))
                 .text(grandTotal.toFixed(2))
@@ -1402,12 +1399,12 @@ function qtyEnabledDisabled() {
                     qtyDisabled = true;
                 }
             });
-            $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
+            // $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
             if(qtyDisabled) {
-                $(item).find("[name*='[order_qty]']").val('');
+                // $(item).find("[name*='[order_qty]']").val('');
             }
         } else {
-            $(item).find("[name*='[order_qty]']").attr('readonly',false);
+            // $(item).find("[name*='[order_qty]']").attr('readonly',false);
         }
     });
 }
@@ -1437,6 +1434,8 @@ function checkDuplicateObjects(inputEle) {
     let items = [];
     $("tr[id*='row_']").each(function(index, item) {
         let itemId = $(item).find("input[name*='[item_id]']").val();
+        let poId = $(item).find("input[name*='[purchase_order_id]']").val();
+        let soId = $(item).find("input[name*='[so_id]']").val();
         let attrName = $(item).find("input[name*='[attr_name]']").val();
         let uomId = $(item).find("select[name*='[uom_id]']").val();
         if (itemId && attrName && uomId) {
@@ -1457,6 +1456,8 @@ function checkDuplicateObjects(inputEle) {
                 item_id: itemId,
                 uom_id: uomId,
                 attributes: attr,
+                poId: poId,
+                soId: soId,
             });
         }
     });
@@ -1540,7 +1541,6 @@ $(document).on('change', '.header_store_id', function () {
 
 // 2. Handle sub-store change
 $(document).on('change', '.sub_store', function () {
-    console.log("🔁 Sub-store changed");
     const selectedStoreId = $('.header_store_id').val();
     const selectedSubStoreId = $(this).val();
     const isRequired = $(this).find(':selected').data('warehouse-required');
@@ -1630,7 +1630,6 @@ function checkWarehouseSetup(storeId, subStoreId) {
         dataType: 'json',
         data: { store_id: storeId, sub_store_id: subStoreId },
         success: function (data) {
-            console.log(data);
 
             if (data.status === 204 && !data.is_setup) {
                 Swal.fire({
@@ -1925,7 +1924,6 @@ function updatePacketTotal() {
 
 function updateAddButtonState() {
     const total = Number($('#storagePacketTotal').text());
-    console.log(`Total packets: ${total}, Expected inventory quantity: ${expectedInvQty}`);
 
     $('.add-storage-row-header').prop('disabled', total >= expectedInvQty);
 }

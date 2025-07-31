@@ -672,11 +672,13 @@ class ErpProductionSlipController extends Controller
                         // }  
                     }
                 } else {
-                    DB::rollBack();
-                    return response()->json([
-                        'message' => 'Please add atleast one row in product table.',
-                        'error' => "",
-                    ], 422);
+                    if($request -> pslip_id && $request->document_status == ConstantHelper::SUBMITTED) { 
+                        DB::rollBack();
+                        return response()->json([
+                            'message' => 'Please add atleast one row in product table.',
+                            'error' => "",
+                        ], 422);
+                    }
                 }
 
                 //Remove deleted items from production slip

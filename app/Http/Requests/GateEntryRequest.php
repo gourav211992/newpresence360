@@ -188,12 +188,58 @@ class GateEntryRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $components = $this->input('components', []);
+            $referenceType = $this->input('reference_type');
             $items = [];
             foreach ($components as $key => $component) {
-                $itemValue = floatval($component['item_total_cost']);
-                if($itemValue < 0) {
+                $itemValue = floatval($component['item_total_cost'] ?? 0);
+                if ($itemValue < 0) {
                     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
                 }
+
+                $itemId = $component['item_id'] ?? null;
+                $uomId = $component['uom_id'] ?? null;
+                $soId = $component['so_id'] ?? null;
+                $poId = $referenceType === 'po' ? ($component['purchase_order_id'] ?? null) : null;
+                $joId = $referenceType === 'jo' ? ($component['job_order_id'] ?? null) : null;
+
+                $attributes = [];
+                foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
+                    $attr_id = $groupId;
+                    $attr_value = $attrName['attr_name'] ?? null;
+                    if ($attr_id && $attr_value !== null) {
+                        $attributes[] = [
+                            'attr_id' => $attr_id,
+                            'attr_value' => $attr_value,
+                        ];
+                    }
+                }
+                $currentItem = compact('itemId', 'uomId', 'soId', 'poId', 'joId', 'attributes');
+                foreach ($items as $existingItem) {
+                    $isDuplicate =
+                        $existingItem['itemId'] === $currentItem['itemId'] &&
+                        $existingItem['uomId'] === $currentItem['uomId'] &&
+                        $existingItem['soId'] === $currentItem['soId'] &&
+                        (
+                            ($referenceType === 'po' && $existingItem['poId'] === $currentItem['poId']) ||
+                            ($referenceType === 'jo' && $existingItem['joId'] === $currentItem['joId'])
+                        ) &&
+                        $this->attributesEqual($existingItem['attributes'], $currentItem['attributes']);
+
+                    if ($isDuplicate) {
+                        $validator->errors()->add("components.$key.item_id", "Duplicate item!");
+                        return;
+                    }
+                }
+
+                $items[] = $currentItem;
+            }
+        });
+
+
+        $validator->after(function ($validator) {
+            $components = $this->input('components', []);
+            $items = [];
+            foreach ($components as $key => $component) {
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $mrnItemId = $component['detail_id'] ?? null;
@@ -202,14 +248,11 @@ class GateEntryRequest extends FormRequest
                 $mrnItemId = $component['detail_id'] ?? null;
                 if ($itemId) {
                     $mrnItem = GateEntryDetail::find($mrnItemId);
-                    if ($mrnItemId) {
-                        $mrnItem = GateEntryDetail::find($mrnItemId);
-                        if ($mrnItem) {
-                            $minOrderQty = $mrnItem->mrn_qty;
-                            $inputQty = $component['accepted_qty'] ?? 0;
-                            if ($inputQty < $minOrderQty) {
-                                $validator->errors()->add("components.$key.accepted_qty", "Quantity can't be less than MRN.");
-                            }
+                    if ($mrnItem) {
+                        $minOrderQty = $mrnItem->mrn_qty;
+                        $inputQty = $component['accepted_qty'] ?? 0;
+                        if ($inputQty < $minOrderQty) {
+                            $validator->errors()->add("components.$key.accepted_qty", "Quantity can't be less than MRN.");
                         }
                     }
 
@@ -236,7 +279,7 @@ class GateEntryRequest extends FormRequest
                                 });
                             }
                         })
-                        ->selectRaw('SUM(order_qty - ge_qty) as balance_qty')
+                        ->selectRaw('SUM(order_qty - grn_qty) as balance_qty')
                         ->value('balance_qty') ?? 0;
 
                     if($mrnItem) {
@@ -252,5 +295,29 @@ class GateEntryRequest extends FormRequest
                 }
             }
         });
+    }
+
+    protected function attributesEqual(array $a, array $b): bool
+    {
+        if (count($a) !== count($b)) {
+            return false;
+        }
+
+        // Sort by attr_id and attr_value for consistent comparison
+        usort($a, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+        usort($b, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+
+        foreach ($a as $i => $attrA) {
+            $attrB = $b[$i] ?? null;
+            if (
+                !$attrB ||
+                $attrA['attr_id'] != $attrB['attr_id'] ||
+                $attrA['attr_value'] != $attrB['attr_value']
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

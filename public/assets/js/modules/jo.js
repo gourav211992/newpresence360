@@ -2096,7 +2096,7 @@ $(document).on('click', '.prProcess', (e) => {
         }
     }
     ids = JSON.stringify(ids);
-    let current_row_count = $("tbody tr[id*='row_']").length;
+    let current_row_count = $("#itemTable tbody tr[id*='row_']").length;
     let actionUrl = pwoProcessUrl
     + '?ids=' + encodeURIComponent(ids)
     + '&current_row_count='+current_row_count;

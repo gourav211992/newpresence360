@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\FinancialPostingHelper;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Helpers\SaleModuleHelper;
 use App\Models\ErpAddress;
 use Illuminate\Support\Facades\Cache;
@@ -130,6 +131,10 @@ class PaymentVoucherController extends Controller
 
     public function getParties(Request $r)
     {
+         if ($r->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS)
+            $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
+            else 
+                $orgs = [Helper::getAuthenticatedUser()->organization_id];
         $ledger_account = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
         $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
 
@@ -140,7 +145,15 @@ class PaymentVoucherController extends Controller
        // Determine relation and alias
         $relation = $r->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
         
-        $data = Ledger::with($relation)
+     
+       
+        $data = Ledger::with([ $relation => function ($query) use ($r, $orgs) {
+        $query->when(function () use ($r) {
+            return $r->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
+        }, function ($q) {
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+        })->whereIn('organization_id', $orgs);
+    }])
         // ->whereHas($relation, function ($query) use ($group_id) {
         //     $query->whereNotNull('credit_days')
         //         ->where('credit_days', '!=', 0)
@@ -181,7 +194,7 @@ class PaymentVoucherController extends Controller
                 'code' => $customer->code,
                 'customer' => $customer->customer,
                 'vendor' => $customer->vendor,
-                'organization'=>$customer->organization,
+                'organization'=>$customer->vendor->organization?? $customer->organization,
             ])
             ->toArray();
 

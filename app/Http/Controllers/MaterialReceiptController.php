@@ -5072,7 +5072,7 @@ class MaterialReceiptController extends Controller
                         $availStock = (float) $availableStock['confirmedStocks'];
                         $pendingStock = (float) $checkQty;
                         if ($availStock < $pendingStock) {
-                            $errorMessage = 'Available stock for item ' .$detail->item_code. ' is less than required.';
+                            $errorMessage = 'Available stock for item ' .$miMapping->item_code. '('. $joType.') is less than required.';
                             break;
                         }
                         $storeMrnJo = self::storeMrnJoItem($mrn, $detail, $miMapping, $joType, $storeId, $subStore);
@@ -5095,7 +5095,7 @@ class MaterialReceiptController extends Controller
                     $availStock = (float) $availableStock['confirmedStocks'];
                     $pendingStock = (float) $detail->inventory_uom_qty;
                     if ($availStock < $pendingStock) {
-                        $errorMessage = 'Available stock for item ' .$detail->item_code. ' is less than required.';
+                        $errorMessage = 'Available stock for item ' .$detail->item_code. '('. $joType.') is less than required.';
                         break;
                     }
                     // Build dummy $miMapping to reuse store logic

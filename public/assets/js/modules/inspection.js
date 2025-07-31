@@ -514,33 +514,34 @@ function getRejectedSubStores(storeLocationId)
 
 // Inspection Checklist Btn
 $(document).on('click', '.inspectionChecklistBtn', function () {
-    const rawData = $(this).attr('data-checklist');
+    const rawMasterData = $(this).attr('data-checklist');
+    const rawExistingData = $(this).attr('data-existing-checklist');
     const rowCount = $(this).data('row-count');
     $('.checklist-modal-body').data('row-count', rowCount);
 
-    let checklistData;
+    let masterChecklist = {}, existingChecklistMap = {};
 
     try {
-        checklistData = JSON.parse(rawData);
+        masterChecklist = JSON.parse(rawMasterData);
     } catch (e) {
-        console.error('Invalid checklist data:', e);
+        console.error('Invalid master checklist:', e);
         $('.checklist-modal-body').html('<div class="text-danger">Unable to load checklist data.</div>');
         return;
     }
 
-    // Load saved data
-    const $hidden = $(`input[name="components[${rowCount}][inspectionData]"]`);
-    let savedData = [];
-
-    if ($hidden.length && $hidden.val()) {
-        try {
-            savedData = JSON.parse($hidden.val());
-        } catch (e) {
-            console.warn('Invalid saved checklist data:', e);
-        }
+    try {
+        const existingChecklist = JSON.parse(rawExistingData || '{}');
+        // Flatten to key: checklist_id-detail_id
+        existingChecklistMap = {};
+        (existingChecklist.existingCheckLists || []).forEach(entry => {
+            const key = `${entry.checklist_id}-${entry.checklist_detail_id}`;
+            existingChecklistMap[key] = entry;
+        });
+    } catch (e) {
+        console.warn('Invalid saved checklist data:', e);
     }
 
-    const checklists = checklistData.checkLists || [];
+    const checklists = masterChecklist.checkLists || [];
     if (!checklists.length) {
         $('.checklist-modal-body').html('<div class="text-muted">No checklist available.</div>');
         return;
@@ -550,7 +551,7 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
 
     checklists.forEach((checklist) => {
         const checklistName = escapeHTML(checklist.name);
-        const checklistId = escapeHTML(checklist.id);
+        const checklistId = checklist.id;
 
         html += `
             <div class="mb-3 text-center fw-bold fs-5">${checklistName}</div>
@@ -565,39 +566,35 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
                             <th>Result</th>
                         </tr>
                     </thead>
-                <tbody>
-        `;
+                <tbody>`;
 
         (checklist.details || []).forEach((detail, index) => {
             const paramLabel = escapeHTML(detail.name || '');
-            const requiredAttr = detail.mandatory ? 'required' : '';
-            const isRequired = detail.mandatory ? '<span class="text-danger">*</span>' : '';
             const type = detail.data_type || 'text';
+            const requiredAttr = detail.mandatory ? 'required' : '';
             const detailId = detail.id;
 
             const namePrefix = `components[${rowCount}][checklist][${index}]`;
             const paramIdField = `${namePrefix}[parameter_item_id]`;
+            const paramChecklistIdField = `${namePrefix}[parameter_checkl_id]`;
             const paramNameField = `${namePrefix}[parameter_name]`;
             const paramValueField = `${namePrefix}[parameter_value]`;
             const resultField = `${namePrefix}[parameter_result]`;
 
             const rowId = `check_${rowCount}_${detailId}`;
+            const savedKey = `${checklistId}-${detailId}`;
+            const saved = existingChecklistMap[savedKey] || {};
+            const savedValue = saved.value || '';
+            const savedChecklistId = saved.id || '';
+            const savedResult = saved.result?.toLowerCase() || '';
 
-            const savedEntry = savedData.find(d =>
-                String(d.checkList_id) === String(checklist.id) &&
-                String(d.detail_id) === String(detailId)
-            );
-
-            const savedValue = savedEntry?.parameter_value || '';
-            const savedResult = savedEntry?.result === 'yes';
-
-            html += `<tr>`;
-
-            html += `<td class="text-start ps-3">
-                ${paramLabel} ${isRequired}
-                <input type="hidden" name="${paramNameField}" value="${paramLabel}" />
-                <input type="hidden" name="${paramIdField}" value="${detailId}" />
-            </td>`;
+            html += `<tr>
+                <td class="text-start ps-3">
+                    ${paramLabel} ${detail.mandatory ? '<span class="text-danger">*</span>' : ''}
+                    <input type="hidden" name="${paramNameField}" value="${paramLabel}" />
+                    <input type="hidden" name="${paramIdField}" value="${detailId}" />
+                    <input type="hidden" name="${paramChecklistIdField}" value="${savedChecklistId}" />
+                </td>`;
 
             html += `<td>`;
             switch (type) {
@@ -605,20 +602,21 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
                 case 'text':
                 default:
                     html += `<input type="${type === 'number' ? 'number' : 'text'}" name="${paramValueField}" value="${escapeHTML(savedValue)}" class="form-control mw-100" ${requiredAttr} />
-                             <div class="invalid-feedback">Required</div>`;
+                        <div class="invalid-feedback">Required</div>`;
                     break;
                 case 'date':
                     html += `<input type="date" name="${paramValueField}" value="${escapeHTML(savedValue)}" class="form-control mw-100" ${requiredAttr} />
-                             <div class="invalid-feedback">Required</div>`;
+                        <div class="invalid-feedback">Required</div>`;
                     break;
                 case 'list':
                     html += `<select name="${paramValueField}" class="form-select mw-100" ${requiredAttr}>
-                                <option value="">Select</option>`;
+                        <option value="">Select</option>`;
                     (detail.values || []).forEach(opt => {
                         const selected = opt.value === savedValue ? 'selected' : '';
                         html += `<option value="${escapeHTML(opt.value)}" ${selected}>${escapeHTML(opt.value)}</option>`;
                     });
-                    html += `</select><div class="invalid-feedback">Required</div>`;
+                    html += `</select>
+                        <div class="invalid-feedback">Required</div>`;
                     break;
                 case 'boolean':
                     html += `<select name="${paramValueField}" class="form-select mw-100" ${requiredAttr}>
@@ -633,12 +631,21 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
 
             html += `
                 <td>
-                    <div class="form-check form-switch d-flex justify-content-center align-items-center gap-2">
-                        <input class="form-check-input toggle-pass-check" type="checkbox"
-                            id="${rowId}_toggle" name="${resultField}" value="1"
-                            ${detail.mandatory ? 'data-required="1"' : ''}
-                            ${savedResult ? 'checked' : ''} />
-                        <span class="pass-label text-success ${savedResult ? '' : 'd-none'}">Pass</span>
+                    <div class="d-flex justify-content-center gap-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" 
+                                name="${resultField}" id="${rowId}_pass" value="pass"
+                                ${savedResult === 'pass' ? 'checked' : ''} 
+                                ${detail.mandatory ? 'data-required="1"' : ''}>
+                            <label class="form-check-label text-success" for="${rowId}_pass">Pass</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" 
+                                name="${resultField}" id="${rowId}_fail" value="fail"
+                                ${savedResult === 'fail' ? 'checked' : ''} 
+                                ${detail.mandatory ? 'data-required="1"' : ''}>
+                            <label class="form-check-label text-danger" for="${rowId}_fail">Fail</label>
+                        </div>
                     </div>
                 </td>
             </tr>`;
@@ -649,7 +656,6 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
 
     $('.checklist-modal-body').html(html);
 });
-
 
 $(document).on('change', '.toggle-pass-check', function () {
     const $label = $(this).closest('td').find('.pass-label');
@@ -680,29 +686,30 @@ $(document).on('click', '.submitChecklistBtn', function (e) {
     const $allRows = $modal.find(`table tbody tr`);
     let isValid = true;
     let data = [];
-    
+
     const checkListId = $('#checklist_id').val();
     const checkListName = $('#checklist_name').val();
-    // Reset validation state
+
+    // Reset previous validation states
     $modal.find('.is-invalid').removeClass('is-invalid');
-    $modal.find('.result-feedback').addClass('d-none');
+    $modal.find('.text-danger.result-feedback').remove(); // remove old error messages
 
     $allRows.each(function () {
         const $row = $(this);
 
+        const paramInspChckIdInput = $row.find(`[name*="[parameter_checkl_id]"]`);
         const paramItemIdInput = $row.find(`[name*="[parameter_item_id]"]`);
         const paramNameInput = $row.find(`[name*="[parameter_name]"]`);
         const paramValueInput = $row.find(`[name*="[parameter_value]"]`);
-        const resultInput = $row.find(`[name*="[parameter_result]"]`);
+        const resultFieldName = $row.find(`[name*="[parameter_result]"]`).attr('name');
+        const resultValue = $row.find(`[name="${resultFieldName}"]:checked`).val(); // ✅ radio selection
 
-        const idMatch = paramNameInput.attr('name').match(/\[checklist\]\[(\d+)\]/);
-        
+        const paramInspChckId = paramInspChckIdInput.val();
         const paramItemId = paramItemIdInput.val();
         const paramName = paramNameInput.val();
         const paramValue = paramValueInput.val();
-        const result = resultInput.is(':checked') ? 'yes' : 'no';
         const isParamRequired = paramValueInput.prop('required');
-        const isResultRequired = resultInput.data('required') === 1 || resultInput.data('required') === '1';
+        const isResultRequired = $row.find(`[name="${resultFieldName}"]`).data('required') === 1;
 
         // Validate parameter value
         if (isParamRequired && (!paramValue || paramValue.trim() === '')) {
@@ -710,20 +717,21 @@ $(document).on('click', '.submitChecklistBtn', function (e) {
             isValid = false;
         }
 
-        // Validate result
-        // if (isResultRequired && !resultInput.is(':checked')) {
-        //     $row.find('.result-feedback').removeClass('d-none');
-        //     isValid = false;
-        // }
+        // Validate Pass/Fail selection (radio)
+        if (isResultRequired && !resultValue) {
+            $row.find('td:last').append('<div class="text-danger result-feedback small mt-1">Please select Pass or Fail</div>');
+            isValid = false;
+        }
 
-        // Push formatted data
+        // Push structured data for saving
         data.push({
+            insp_checklist_id: paramInspChckId,
             checkList_id: checkListId,
             checkList_name: checkListName,
             detail_id: paramItemId,
             parameter_name: paramName,
             parameter_value: paramValue,
-            result: result
+            result: resultValue || '' // fallback if not selected
         });
     });
 
@@ -731,7 +739,7 @@ $(document).on('click', '.submitChecklistBtn', function (e) {
         Swal.fire({
             icon: 'error',
             title: 'Required Fields Missing',
-            text: 'Please fill all required fields and mark Pass/Fail before submitting.',
+            text: 'Please fill all required fields and select Pass/Fail before submitting.',
         });
         return;
     }

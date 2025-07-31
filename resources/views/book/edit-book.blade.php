@@ -1021,39 +1021,72 @@
             $(this).parent().parent().remove();
         });
 
-        $(document).on('change', '.companySelect', function() {
+function updateOrganizationDropdown($currentRow) {
+    let organizations = [];
+    const $companySelect = $currentRow.find('.companySelect');
+    const id = $companySelect.attr('data-id');
+    const company_id = $companySelect.val();
 
-            var organizations = [];
-            const id = $(this).attr('data-id');
-            const company_id = $(this).val();
-            // var selectedOrg = [];
+    // Get the currently selected org ID from the row
+    const $orgDropdown = $currentRow.find('[name="organization_id[]"]');
+    const currentOrgId = $orgDropdown.val();
 
-            // $('.companySelect').each(function() {
-            //     var selectedOption = $(this).find(":selected");
-            //     if (company_id==selectedOption.val()) {
-            //         console.log(selectedOption.val());
+    // Get the organizations for the selected company
+    $.each(companies, function (key, company) {
+        if (company['id'] == company_id) {
+            organizations = company['organizations'];
+        }
+    });
 
-            //         console.log("org:"+$("#organization_id"+$(this).attr('data-id')).find(":selected").val());
+    // Collect all previously selected org IDs from earlier rows
+    const selectedOrgIds = [];
+    $currentRow.prevAll('tr').each(function () {
+        const prevOrgId = $(this).find('[name="organization_id[]"]').val();
+        if (prevOrgId) {
+            selectedOrgIds.push(prevOrgId.toString());
+        }
+    });
 
-            //         // selectedOrg.push($(this).val());
-            //     }
-            // });
+    // Clear and rebuild the org dropdown
+    $orgDropdown.html("").append("<option disabled value=''>Select Unit</option>");
 
-            $.each(companies, function(key, value) {
-                if (value['id'] == company_id) {
-                    organizations = value['organizations'];
+    $.each(organizations, function (key, org) {
+        const orgIdStr = org['id'].toString();
+        const isSelected = orgIdStr === currentOrgId;
+        const isDisabled = selectedOrgIds.includes(orgIdStr) && !isSelected;
+
+        $orgDropdown.append(`
+            <option value="${org['id']}"
+                ${isSelected ? 'selected' : ''}
+                ${isDisabled ? 'disabled' : ''}>
+                ${org['name']}
+            </option>
+        `);
+    });
+
+    // If no value is selected and only one available, auto-select it
+    const availableOptions = $orgDropdown.find('option:not([disabled]):not(:first)');
+    if (!currentOrgId && availableOptions.length === 1) {
+        availableOptions.prop('selected', true);
+    }
+}
+
+
+        $(document).on('change', '.companySelect', function () {
+                const $currentRow = $(this).closest('tr');
+                updateOrganizationDropdown($currentRow);
+            });
+
+        // Also run once on page load for all existing rows
+        $(document).ready(function () {
+            $('#item-details-body tr').each(function () {
+                const $companySelect = $(this).find('.companySelect');
+                if ($companySelect.val()) {
+                    updateOrganizationDropdown($(this));
                 }
             });
-
-            $("#organization_id" + id).html("");
-            $("#organization_id" + id).append("<option disabled selected value=''>Select Unit</option>");
-            $.each(organizations, function(key, value) {
-                // if (!selectedOrg.includes(value['id'].toString())) {
-                $("#organization_id" + id).append("<option value='" + value['id'] + "'>" + value['name'] +
-                    "</option>");
-                // }
-            });
         });
+
 
         $(document).on('change', '.levelCompanySelect', function() {
             var organizations = [];
@@ -1301,62 +1334,68 @@
                     feather.replace(); // Reinitialize Feather icons
                 }
 
-                // Function to add a new row in the current level
-                $('#workflow-body').on('click', '.add-row', function(e) {
-                    e.preventDefault();
-                    let level = $(this).closest('tr').prev('.level-row').data('level');
-                    let newRow = `
-            <tr>
-                <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
-                <td>
-                    <select class="form-select mw-100 select2 levelCompanySelect" id = "company_select_${level}"
-                        data-id="${level}" name="level_company_id[]" >
-                        <option disabled selected value="">Select Company</option>
-                        @foreach ($companies as $company)
-                            <option value="{{ $company->id }}">{{ $company->name }}</option>
-                        @endforeach
-                    </select>
-                </td>
-                <td>
-                    <select class="form-select mw-100 select2 level_organizations" user-select-id = "${level-1}_0"
-                        name="level_organization_id[]" id="level_organization_id${level}" >
-                    </select>
-                </td>
-              <td>
-    <select class="form-select mw-100 select2 userSelect" data-id="${level}" name="user[${level - 1}][]" id = "user_select_${level-1}_0"  multiple>
-        <option disabled value="">Select Approver</option>
-         @foreach ($people as $user)
-                            <!-- Combine id and type in the value attribute, separated by a pipe | -->
-                            <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
-                        @endforeach
-    </select>
-</td>
+            // Function to add a new row in the current level
+            $('#workflow-body').on('click', '.add-row', function(e) {
+            e.preventDefault();
+            let level = $(this).closest('tr').prev('.level-row').data('level');
+            // Get all rows in current level including the one we're adding to
+            let rowsInLevel = $(this).closest('tr').siblings().filter(function() {
+                return $(this).prev('.level-row').data('level') == level;
+            }).add($(this).closest('tr'));
+            let rowCount = rowsInLevel.length;
 
-                <td>
-                    <input type="text" value="0" name="min_value[]" {{ $serviceType === 'master' ? 'readonly' : '' }}
-                        data-id="${level}" class="form-control mw-100 min-value">
-                </td>
-                <td class = "center-align-content">
-                    <div class="customernewsection-form">
-                        <div class="demo-inline-spacing">
-                            <div class="form-check form-check-primary mt-0 me-1">
-                                <input type="radio" id="anyone-${level}" name="rights[${level - 1}]" class="form-check-input" value="anyone">
-                                <label class="form-check-label fw-bolder" for="anyone-${level}">Any One</label>
-                            </div>
-                            <div class="form-check form-check-primary mt-0 me-0">
-                                <input type="radio" id="all-${level}" name="rights[${level - 1}]" class="form-check-input" value="all" checked>
-                                <label class="form-check-label fw-bolder" for="all-${level}">All</label>
+            let newRow = `
+                <tr>
+                    <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
+                    <td>
+                        <select class="form-select mw-100 select2 levelCompanySelect" id="company_select_${level}_${rowCount}"
+                            data-id="${level}" name="level_company_id[]">
+                            <option disabled selected value="">Select Company</option>
+                            @foreach ($companies as $company)
+                                <option value="{{ $company->id }}">{{ $company->name }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select mw-100 select2 level_organizations" user-select-id="${rowCount}_${level}"
+                            name="level_organization_id[]" id="level_organization_id${level}_${rowCount}">
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select mw-100 select2 userSelect" data-id="${level}" name="user[${level - 1}][${rowCount}][]" id="user_select_${rowCount}_${level}" multiple>
+                            <option disabled value="">Select Approver</option>
+                            @foreach ($people as $user)
+                                <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" value="0" name="min_value[]" {{ $serviceType === 'master' ? 'readonly' : '' }}
+                            data-id="${level}" class="form-control mw-100 min-value">
+                    </td>
+                    <td class="center-align-content">
+                        <div class="customernewsection-form">
+                            <div class="demo-inline-spacing">
+                                <div class="form-check form-check-primary mt-0 me-1">
+                                    <input type="radio" id="anyone-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="anyone">
+                                    <label class="form-check-label fw-bolder" for="anyone-${level}-${rowCount}">Any One</label>
+                                </div>
+                                <div class="form-check form-check-primary mt-0 me-0">
+                                    <input type="radio" id="all-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="all" checked>
+                                    <label class="form-check-label fw-bolder" for="all-${level}-${rowCount}">All</label>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </td>
-                <td class = "center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
-                <td class = "center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
-            </tr>`;
-                    $(this).closest('tr').after(newRow);
-                    initializeSelect2();
-                    feather.replace(); // Reinitialize Feather icons
-                });
+                    </td>
+                    <td class="center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
+                    <td class="center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
+                </tr>
+            `;
+
+            $(this).closest('tr').after(newRow);
+            initializeSelect2();
+            feather.replace();
+        });
 
                 // Add level row on click
                 $(document).on('click', '.add-level-row', function(e) {

@@ -382,7 +382,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                 ];
                 
                 $rules = [
-                    'organization_type_id' => 'nullable|exists:erp_organization_types,id',
+                   'organization_type_id' => 'nullable|exists:erp_organization_types,id',
                    'vendor_code' => [
                         'required_if:vendor_code_type,Manual', 
                         'max:255',
@@ -527,7 +527,8 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'company_name.required' => 'The vendor name is required.',
                     'company_name.string' => 'Vendor name must be a valid string.',
                     'company_name.max' => 'Vendor name cannot exceed 255 characters.',
-                    
+                    'company_name.unique' => 'Vendor name already exists. Please choose a different name.',
+
                     'country_id.exists' => 'The country selected is invalid.',
                     'state_id.exists' => 'The state selected is invalid.',
                     'city_id.exists' => 'The city selected is invalid.',
@@ -628,7 +629,7 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'country_id' => $locationIds['country_id'] ?? null,
                     'state_id' => $locationIds['state_id'] ?? null,
                     'city_id' => $locationIds['city_id'] ?? null,
-                    'pincode_master_id' => $locationIds['pincode_id'] ?? null, 
+                    'pincode_id' => $locationIds['pincode_id'] ?? null,
                     'address' => $uploadedVendor->address,
                     'is_billing' => 1,
                     'is_shipping' => 0,
@@ -647,7 +648,6 @@ class VendorImport implements ToCollection, WithHeadingRow, WithChunkReading
                 if (!empty($gstAddressErrors)) {
                     $errors = array_merge($errors, $gstAddressErrors);
                 }
-
                 if (!empty($errors)){
                     if (isset($uploadedVendor)) {
                         $uploadedVendor->update([

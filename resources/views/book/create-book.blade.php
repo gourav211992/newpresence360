@@ -59,7 +59,7 @@
                                                         <input type="text" id = "org_service_dropdown" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" >
                                                         <input type="hidden" id = "org_service_id_input" name="org_service_id">
                                                         <input type="hidden" id = "org_service_alias_input">
-                                                        
+
                                                     </div>
                                                     <!-- <div class="col-md-3">
                                                         <a href="{{ route('bookType.create') }}"
@@ -89,7 +89,7 @@
                                                               />
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="row align-items-center mb-1">
 
                                                     <div class="col-md-3">
@@ -182,7 +182,7 @@
                                                                             <th >Prefix</th>
                                                                             <th >Suffix</th>
                                                                             <th >Starting No.</th>
-            
+
                                                                             <th class = "center-align-content" width = "20px">Action</th>
                                                                         </tr>
                                                                     </thead>
@@ -197,7 +197,7 @@
                                                                                     <option disabled selected
                                                                                         value="">Select
                                                                                     </option>
-                                                                                    
+
                                                                                     @foreach ($companies as $company)
                                                                                         <option
                                                                                             value="{{ $company->id }}">
@@ -257,7 +257,7 @@
                                                                                     class="form-control mw-100"
                                                                                     name="starting_no[]" value = "1">
                                                                             </td>
-                                                                            
+
                                                                             <td class = "center-align-content"><a href="#"
                                                                                     class="text-primary add_number_pattern"><i
                                                                                         data-feather="plus-square"></i></a>
@@ -396,7 +396,7 @@
                                                                                         data-feather="trash-2"></i></a>
                                                                             </td>
                                                                             <td class = "center-align-content"><a href="#"
-                                                                                    class="text-primary add-row" style = "display:none;"><i
+                                                                                    class="text-primary add-row"><i
                                                                                         data-feather="plus-square"></i></a>
                                                                             </td>
                                                                         </tr>
@@ -500,10 +500,10 @@
                                                             </div>
                                                         </div>
                                                         <div class="tab-pane" id="Configuration">
-                                                            
+
                                                         </div>
                                                         <div class="tab-pane transaction_service_tab" style = "display:none;" id="gl_params">
-                                                            
+
                                                         </div>
                                                         <div class="tab-pane" id="dynamic_field_section">
                                                             <div class='row align-items-center mb-1'>
@@ -576,7 +576,7 @@
                 selectedIds.push(selectedServices[index].value);
             }
             const seriesElement = document.getElementById('reference_series_input');
-            
+
             var innerSeriesHTMLVal = '';
             var selectedBooks = [];
             var selectedBookElements = document.getElementById('reference_series_input').selectedOptions;
@@ -728,7 +728,7 @@
                                 <input type="number" id = "starting_no_${rowCount}" value = "1"
                                     class="form-control mw-100" name="starting_no[]">
                             </td>
-                            
+
                             <td><a href="#" class="text-danger remove-item"><i
                                         data-feather="trash-2"></i></a></td>
                         </tr>`;
@@ -748,36 +748,59 @@
             $(this).parent().parent().remove();
         });
 
-        $(document).on('change', '.companySelect', function() {
-            var organizations = [];
-            const id = $(this).attr('data-id');
-            const company_id = $(this).val();
-            // var selectedOrg = [];
+        $(document).on('click', '.remove-item', function() {
+            $(this).parent().parent().remove();
+        });
 
-            // $('.companySelect').each(function() {
-            //     var selectedOption = $(this).find(":selected");
-            //     if (company_id==selectedOption.val()) {
-            //         console.log(selectedOption.val());
+        function updateOrganizationDropdown($currentRow) {
+            let organizations = [];
+            const $companySelect = $currentRow.find('.companySelect');
+            const id = $companySelect.attr('data-id');
+            const company_id = $companySelect.val();
 
-            //         console.log("org:"+$("#organization_id"+$(this).attr('data-id')).find(":selected").val());
-
-            //         // selectedOrg.push($(this).val());
-            //     }
-            // });
-
-            $.each(companies, function(key, value) {
+            // Get the organizations for the selected company
+            $.each(companies, function (key, value) {
                 if (value['id'] == company_id) {
                     organizations = value['organizations'];
                 }
             });
 
-            $("#organization_id" + id).html("");
-            $("#organization_id" + id).append("<option disabled selected value=''>Select Unit</option>");
-            $.each(organizations, function(key, value) {
-                // if (!selectedOrg.includes(value['id'].toString())) {
-                $("#organization_id" + id).append("<option value='" + value['id'] + "'>" + value['name'] +
-                    "</option>");
-                // }
+            // Collect all previously selected organization IDs from earlier rows
+            const selectedOrgIds = [];
+            $currentRow.prevAll('tr').each(function () {
+                const prevOrgId = $(this).find('[name="organization_id[]"]').val();
+                if (prevOrgId) {
+                    selectedOrgIds.push(prevOrgId.toString());
+                }
+            });
+
+            const $orgDropdown = $(`#organization_id${id}`);
+            $orgDropdown.html("").append("<option disabled selected value=''>Select Unit</option>");
+
+            $.each(organizations, function (key, value) {
+                const isDisabled = selectedOrgIds.includes(value['id'].toString());
+                $orgDropdown.append(`<option value="${value['id']}" ${isDisabled ? 'disabled' : ''}>${value['name']}</option>`);
+            });
+
+            // Auto-select if only one option is available
+            const availableOptions = $orgDropdown.find('option:not(:disabled)').not(':first');
+            if (availableOptions.length === 1) {
+                availableOptions.prop('selected', true);
+            }
+        }
+
+        $(document).on('change', '.companySelect', function () {
+                const $currentRow = $(this).closest('tr');
+                updateOrganizationDropdown($currentRow);
+            });
+
+        // Also run once on page load for all existing rows
+        $(document).ready(function () {
+            $('#item-details-body tr').each(function () {
+                const $companySelect = $(this).find('.companySelect');
+                if ($companySelect.val()) {
+                    updateOrganizationDropdown($(this));
+                }
             });
         });
 
@@ -829,7 +852,7 @@
                     console.error('Error fetching org services data:', xhr.responseText);
                 }
             });
-            
+
         });
 
         $(document).ready(function() {
@@ -994,7 +1017,7 @@
                         <td>
                             <input type="text" value="0" name="min_value[]"  data-id="${levelCounter}" class="form-control mw-100 min-value">
                         </td>
-                        
+
                         <td class = "center-align-content">
                             <div class="customernewsection-form">
                                 <div class="demo-inline-spacing">
@@ -1035,67 +1058,67 @@
                 renumberLevels();
             });
 
-            // Function to add a new row in the current level
             $('#workflow-body').on('click', '.add-row', function(e) {
-                e.preventDefault();
-                let level = $(this).closest('tr').prev('.level-row').data('level');
-                let newRow = `
-                        <tr class="${level}">
-                            <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
-                            <td>
-                                <select class="form-select mw-100 select2 levelCompanySelect" id = "company_select_${level}"
-                                    data-id="${level}" name="level_company_id[]"  >
-                                    <option disabled selected value="">Select Company</option>
-                                    @foreach ($companies as $company)
-                                        <option value="{{ $company->id }}">{{ $company->name }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td>
-                                <select class="form-select mw-100 select2 level_organizations" data-id = "${level}"
-                                    user-select-id = "${level-1}_0"
-                                    name="level_organization_id[]" id="level_organization_id${level}"  >
-                                </select>
-                            </td>
-                                    <td>
-                                <select class="form-select mw-100 select2 userSelect"
-                                    id = "user_select_${level-1}_0"
-                                    data-id="${level}" name="user[${level - 1}][]"   multiple>
-                                    <option disabled value="">Select Approver</option>
-                                    @foreach ($people as $user)
-                                        <!-- Combine id and type in the value attribute, separated by a pipe | -->
-                                        <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
-                                    @endforeach
-                                </select>
-                            </td>
-                            <td>
-                                <input type="text" value="0" name="min_value[]"  
-                                    data-id="${level}" class="form-control mw-100 min-value">
-                            </td>
-                            
-                            <td class = "center-align-content">
-                                <div class="customernewsection-form">
-                                    <div class="demo-inline-spacing">
-                                        <input type="hidden" name="rights[]" class="rights-value" value="all">
-                                        <div class="form-check form-check-primary mt-0 me-1">
-                                            <input type="radio" id="anyone-${level}" name="rights[${level - 1}]" class="form-check-input" value="anyone">
-                                            <label class="form-check-label fw-bolder" for="anyone-${level}">Any One</label>
-                                        </div>
-                                        <div class="form-check form-check-primary mt-0 me-0">
-                                            <input type="radio" id="all-${level}" name="rights[${level - 1}]" class="form-check-input" value="all" checked>
-                                            <label class="form-check-label fw-bolder" for="all-${level}">All</label>
-                                        </div>
-                                    </div>
+            e.preventDefault();
+            let level = $(this).closest('tr').prev('.level-row').data('level');
+            // Get all rows in current level including the one we're adding to
+            let rowsInLevel = $(this).closest('tr').siblings().filter(function() {
+                return $(this).prev('.level-row').data('level') == level;
+            }).add($(this).closest('tr'));
+            let rowCount = rowsInLevel.length;
+
+            let newRow = `
+                <tr>
+                    <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
+                    <td>
+                        <select class="form-select mw-100 select2 levelCompanySelect" id="company_select_${level}_${rowCount}"
+                            data-id="${level}" name="level_company_id[]">
+                            <option disabled selected value="">Select Company</option>
+                            @foreach ($companies as $company)
+                                <option value="{{ $company->id }}">{{ $company->name }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select mw-100 select2 level_organizations" user-select-id="${rowCount}_${level}"
+                            name="level_organization_id[]" id="level_organization_id${level}_${rowCount}">
+                        </select>
+                    </td>
+                    <td>
+                        <select class="form-select mw-100 select2 userSelect" data-id="${level}" name="user[${level - 1}][${rowCount}][]" id="user_select_${rowCount}_${level}" multiple>
+                            <option disabled value="">Select Approver</option>
+                            @foreach ($people as $user)
+                                <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" value="0" name="min_value[]"
+                            data-id="${level}" class="form-control mw-100 min-value">
+                    </td>
+                    <td class="center-align-content">
+                        <div class="customernewsection-form">
+                            <div class="demo-inline-spacing">
+                                <div class="form-check form-check-primary mt-0 me-1">
+                                    <input type="radio" id="anyone-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="anyone">
+                                    <label class="form-check-label fw-bolder" for="anyone-${level}-${rowCount}">Any One</label>
                                 </div>
-                            </td>
-                            <td class = "center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
-                            <td class = "center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
-                        </tr>`;
-                $(this).closest('tr').after(newRow);
-                
-                feather.replace(); // Reinitialize Feather icons
-                initializeSelect2();
-            });
+                                <div class="form-check form-check-primary mt-0 me-0">
+                                    <input type="radio" id="all-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="all" checked>
+                                    <label class="form-check-label fw-bolder" for="all-${level}-${rowCount}">All</label>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
+                    <td class="center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
+                </tr>
+            `;
+
+            $(this).closest('tr').after(newRow);
+            initializeSelect2();
+            feather.replace();
+        });
 
             // delete level row on click
             $(document).on('click', '.delete-level-row', function(e) {
@@ -1171,7 +1194,7 @@ $(document).on('click', '.amendment_plus', function (e) {
                     </div>
                 </div>
             </div>
-                                                                            </td> 
+                                                                            </td>
             <td class="center-align-content">
                 <a href="#" class="text-primary amendment_plus"><i data-feather="plus-square"></i></a>
                 <a href="#" class="text-danger delete-row ms-2"><i data-feather="trash-2"></i></a>
@@ -1229,7 +1252,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
             console.error('Error fetching org services data:', xhr.responseText);
         }
     });
-            
+
 });
 
 // Function to update row numbers
@@ -1518,7 +1541,7 @@ $(document).on('change', '.AmendmentCompanySelect', function() {
                             icon: 'error',
                         });
                     }
-                    
+
                 },
                 error: function () {
                     dynamicFieldsValueSection.innerHTML = ``;

@@ -1203,15 +1203,15 @@ class LedgerController extends Controller
     }
     public function createPartyLedger(Request $req)
     {
-        if ($req->has(['code', 'name', 'type'])) {
-            $result = Helper::createPartyLedger($req->type, $req->name, $req->code);
+        if ($req->has(['code', 'name', 'type','group_id'])) {
+            $result = Helper::createPartyLedger($req->type, $req->name, $req->code,$req->group_id);
 
             return response()->json($result);
         }
 
         return response()->json([
             'success' => false,
-            'message' => 'Missing required fields: code, name, or type.',
+            'message' => 'Missing required fields: code, name, type or group_id.',
             'data' => []
         ], 400);
     }

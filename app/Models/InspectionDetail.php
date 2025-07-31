@@ -241,4 +241,9 @@ class InspectionDetail extends Model
     {
         return $this->morphMany(ErpItemUniqueCode::class, 'morphable');
     }
+
+    public function checklists()
+    {
+        return $this->hasMany(InspChecklist::class, 'detail_id');
+    }
 }

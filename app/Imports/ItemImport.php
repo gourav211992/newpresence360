@@ -123,7 +123,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
     }
 
 
-    public function collection($rows)
+   public function collection($rows)
     {
         if (empty($rows) || count($rows) == 0) {
             return;
@@ -138,12 +138,18 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
         $itemCodeType = $serviceData['itemCodeType'];
 
         $uploadedItems = [];
+        $itemsToProcess = [];
+
         foreach ($rows as $row) {
             if (collect($row)->filter()->isEmpty()) {
                 continue;
             }
             $uploadedItem = null;
             $errorMessages = [];
+            $itemCode = null;
+            $subCategory = null;
+            $skipRow = false; 
+
             try {
                 $attributes = [];
                 for ($i = 1; $i <= 10; $i++) {
@@ -154,9 +160,9 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                         $allChecked = ($row["attribute_{$i}_all_checked"] ?? 'N') === 'Y' ? 1 : 0;
                         if ($attributeName) {
                             $attributes[] = [
-                                'name' =>$attributeName,
-                                'value' =>$attributeValue,
-                                'required_bom' =>$requiredBom,
+                                'name' => $attributeName,
+                                'value' => $attributeValue,
+                                'required_bom' => $requiredBom,
                                 'all_checked' => $allChecked,
                             ];
                         }
@@ -201,50 +207,75 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 $subTypeRaw = $row['sub_type'] ?? null;
                 $subType = $subTypeRaw ? explode(',', $subTypeRaw) : [];
 
-                $itemCode = null;
                 if ($itemCodeType === 'Manual') {
                     $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
                 } elseif ($itemCodeType === 'Auto') {
+
+                    if (empty($subType)) {
+                        $errorMessages[] = "Sub Type is required for Item Code generation.";
+                        Log::error("Sub Type is missing for Item Code generation.", ['row' => $row]);
+                        $skipRow = true;
+                    }
+
                     try {
-                        $subCategory = $this->service->getSubCategory($row['group']);
-                        if ($subCategory) {
-                            if ($subCategory->sub_cat_initials) {
-                                $subCategoryInitials = $subCategory->sub_cat_initials; 
-                            } elseif ($subCategory->cat_initials) {
-                                $subCategoryInitials = $subCategory->cat_initials; 
+                        if (!$skipRow) { 
+                            $subCategory = $this->service->getSubCategory($row['group']);
+
+                            if ($subCategory) {
+                                if ($subCategory->sub_cat_initials) {
+                                    $subCategoryInitials = $subCategory->sub_cat_initials;
+                                } elseif ($subCategory->cat_initials) {
+                                    $subCategoryInitials = $subCategory->cat_initials;
+                                }
                             }
                         }
                     } catch (Exception $e) {
                         $errorMessages[] = "Error fetching category: " . $e->getMessage();
                         Log::error("Error fetching category: " . $e->getMessage());
+                        $skipRow = true; 
                     }
-                    if (!empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
+
+                    if (!$skipRow && !empty($subType) && !empty($itemInitials) && !empty($subCategoryInitials)) {
                         $itemCode = $this->service->generateItemCode($subType, $subCategoryInitials, $itemInitials);
                     }
+                }
+
+                if ($skipRow) {
+                    $this->onFailure((object)[
+                        'item_code' => $row['item_code'] ?? null,
+                        'item_name' => $row['item_name'] ?? null,
+                        'uom' => $row['inventory_uom'] ?? null,
+                        'hsn' => $row['hsnsac'] ?? null,
+                        'type' => $row['type'] ?? null,
+                        'sub_type' => $row['sub_type'] ?? null,
+                        'remarks' => implode(', ', $errorMessages),
+                        'status' => 'Failed',
+                    ]);
+                    continue; 
                 }
 
                 $uploadedItem = UploadItemMaster::create([
                     'item_name' => $row['item_name'] ?? null,
                     'item_code' => $itemCode,
-                    'item_code_type' => $itemCodeType, 
+                    'item_code_type' => $itemCodeType,
                     'subcategory' => $row['group'] ?? null,
                     'hsn' => $row['hsnsac'] ?? null,
                     'uom' => $row['inventory_uom'] ?? null,
-                    'cost_price' =>$row['cost_price']?? null,
+                    'cost_price' => $row['cost_price'] ?? null,
                     'cost_price_currency' => $row['cost_price_currency'] ?? null,
-                    'sell_price' => $row['sale_price']?? null,
+                    'sell_price' => $row['sale_price'] ?? null,
                     'sell_price_currency' => $row['sell_price_currency'] ?? null,
                     'type' => ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods'),
                     'status' => 'Processed',
-                    'group_id' => $validatedData['group_id'], 
-                    'company_id' => $validatedData['company_id'], 
-                    'organization_id' => $validatedData['organization_id'], 
+                    'group_id' => $validatedData['group_id'],
+                    'company_id' => $validatedData['company_id'],
+                    'organization_id' => $validatedData['organization_id'],
                     'sub_type' => $row['sub_type'] ?? null,
                     'remarks' => "Processing item upload",
                     'batch_no' => $batchNo,
                     'user_id' => $user->id,
                     'min_stocking_level' => $row['min_stocking_level'] ?? null,
-                    'max_stocking_level' =>$row['max_stocking_level'] ?? null,
+                    'max_stocking_level' => $row['max_stocking_level'] ?? null,
                     'reorder_level' => $row['reorder_level'] ?? null,
                     'minimum_order_qty' => $row['minimum_order_qty'] ?? null,
                     'lead_days' => $row['lead_days'] ?? null,
@@ -256,44 +287,35 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 ]);
                 if ($uploadedItem) {
                     $uploadedItems[] = $uploadedItem;
+                    $itemsToProcess[] = $uploadedItem;
                 }
             } catch (Exception $e) {
-                $errorMessages[] = "Error importing item: " . $e->getMessage();
-                Log::error("Error importing item: " . $e->getMessage(), [
+                $errorMessages[] = "Error creating UploadItemMaster: " . $e->getMessage();
+                Log::error("Error creating UploadItemMaster: " . $e->getMessage(), [
                     'error' => $e,
                     'row' => $row
                 ]);
-            }
-            if (!empty($errorMessages)) {
-                if ($uploadedItem) {
-                    $uploadedItem->update([
-                        'status' => 'Failed',
-                        'remarks' => implode(', ', $errorMessages),
-                    ]);
-                    $this->onFailure($uploadedItem);
-                } else {
-                    Log::error("UploadItemMaster creation failed for row", ['row' => $row, 'errors' => $errorMessages]);
-                    $this->onFailure((object)[
-                        'item_code' => $row['item_code'] ?? null,
-                        'item_name' => $row['item_name'] ?? null,
-                        'uom' => $row['inventory_uom'] ?? null,
-                        'hsn' => $row['hsnsac'] ?? null,
-                        'type' => $row['type'] ?? null,
-                        'sub_type' => $row['sub_type'] ?? null,
-                        'remarks' => implode(', ', $errorMessages),
-                        'status' => 'Failed',
-                    ]);
-                }
+                $this->onFailure((object)[
+                    'item_code' => $row['item_code'] ?? null,
+                    'item_name' => $row['item_name'] ?? null,
+                    'uom' => $row['inventory_uom'] ?? null,
+                    'hsn' => $row['hsnsac'] ?? null,
+                    'type' => $row['type'] ?? null,
+                    'sub_type' => $row['sub_type'] ?? null,
+                    'remarks' => implode(', ', $errorMessages),
+                    'status' => 'Failed',
+                ]);
             }
         }
 
-        if (!empty($uploadedItems)) {
-            $this->processItemFromUpload($uploadedItems);
+        if (!empty($itemsToProcess)) {
+            $this->processItemFromUpload($itemsToProcess);
         }
     }
-    
+
     private function processItemFromUpload($uploadedItems)
     {
+
         $user = Helper::getAuthenticatedUser();
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
         $services = Helper::getAccessibleServicesFromMenuAlias($parentUrl);
@@ -499,6 +521,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'integer' => 'The :attribute must be an integer.',
                     'subcategory_id.required' => 'The group field is required.',
                 ];
+    
                 $validator = Validator::make($item->toArray(), $rules, $customMessages);
                 $validationMessages = $validator->errors()->all();
                 if (!empty($validationMessages) || !empty($errors)) {
@@ -513,6 +536,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 $item->document_status = ConstantHelper::DRAFT; 
                 $item->status = ConstantHelper::DRAFT; 
                 $item->save();
+            
                 $docId = $item->id;
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $document_status = $approveDocument['approvalStatus'];

@@ -202,6 +202,7 @@
         <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->jo->id}}">
         <input type="hidden" name="components[{{$rowCount}}][ge_qty]" value="{{$item->ge_qty}}">
         <input type="hidden" name="components[{{$rowCount}}][item_module_type]" value="{{$moduleType}}">
+        <input type="hidden" name="components[{{$rowCount}}][so_id]" value="{{$item->so_id}}">
     </tr>
 @endforeach
 

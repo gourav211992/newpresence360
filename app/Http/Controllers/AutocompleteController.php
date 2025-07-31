@@ -394,12 +394,13 @@ class AutocompleteController extends Controller
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code','uom_id']);
             }  elseif ($type === 'pi_comp_item') {
-                $subTypeIds = SubType::whereNotIn('name', [ConstantHelper::FINISHED_GOODS])
-                ->pluck('id');
-                $results = Item::whereHas('subTypes', function ($query) use ($subTypeIds) {
-                    $query->whereIn('sub_type_id', $subTypeIds);
-                    })
-                    ->searchByKeywords($term)
+                // $subTypeIds = SubType::whereNotIn('name', [ConstantHelper::FINISHED_GOODS])
+                // ->pluck('id');
+                // whereHas('subTypes', function ($query) use ($subTypeIds) {
+                //     $query->whereIn('sub_type_id', $subTypeIds);
+                //     })
+                //     ->
+                $results = Item::searchByKeywords($term)
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with([
                     'itemAttributes:id',

@@ -1783,6 +1783,7 @@ class CrDrReportController extends Controller
     }
     public function debitorsPendingPayment(Request $request)
     {
+        
         $start = null;
         $end = null;
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
@@ -1824,7 +1825,7 @@ class CrDrReportController extends Controller
 
             // // If no child groups, use the current group ID
             // if ($ledger_groups->isEmpty()) {
-            //     $ledger_groups = collect([$group->id]);
+            //     $ledger_groups etI= collect([$group->id]);
             //     Log::info('No child groups found. Using current group as fallback', ['group_id' => $group->id]);
             // }
 
@@ -1864,6 +1865,8 @@ class CrDrReportController extends Controller
         if ($request->organization_id) {
             $organizations = $request->organization_id;
         }
+        else 
+            $organizations = [Helper::getAuthenticatedUser()->organization_id];
         $cus_type = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
         $ledger_account = $request->type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? ConstantHelper::RECEIVABLE : ConstantHelper::PAYABLE;
         $ledger_group = Helper::getGroupsQuery()->where('name', $ledger_account)->first();
@@ -1872,13 +1875,7 @@ class CrDrReportController extends Controller
         $group_id[] = $ledger_group->id;
         $accessibleLocations = InventoryHelper::getAccessibleLocations();
         $locationIds = $accessibleLocations->pluck('id')->toArray();
-        $ledger_ids = Ledger::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
-            })
-        ->when(!empty($organizations), function ($query) use ($organizations) {
-                            $query->whereIn('organization_id', $organizations);
-        })
-         ->where(function ($query) use ($group_id, $request) {
+        $ledger_ids = Ledger::where(function ($query) use ($group_id, $request) {
                 $query->where(function ($q) use ($group_id, $request) {
                     foreach ($group_id as $id) {
                         $q->orWhereJsonContains('ledger_group_id', (string) $id)->orWhereJsonContains('ledger_group_id', $id);
@@ -1922,10 +1919,19 @@ class CrDrReportController extends Controller
             })
             ->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
-                        })->with('ErpLocation', 'organization')
-                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
-                ->whereIn('location', $locationIds)
-                ->withWhereHas('items', function ($i) use ($ledger, $request, $ledgerGroupIds, $cost_center_ids) {
+                        })->with([ 'ErpLocation' => function ($query) use ($request) {
+        $query->when(function () use ($request) {
+            return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
+        }, function ($q) {
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+        });
+    }])
+            ->with('organization')
+            ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+            // ->when($request->type != ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query) use($locationIds){
+            //     $query->whereIn('location', $locationIds);
+            // })
+            $data->withWhereHas('items', function ($i) use ($ledger, $request, $ledgerGroupIds, $cost_center_ids) {
                     $i->where('ledger_id', $ledger->id)
                         ->whereIn('ledger_parent_id', $ledgerGroupIds);
 
@@ -1947,9 +1953,14 @@ class CrDrReportController extends Controller
                             $lg->where('id', $request->ledgerGroup);
                         });
                     }
+                    $i->with([ 'ledger.vendor' => function ($query) use ($request) {
+                        $query->when(function () use ($request) {
+                            return $request->type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
+                        }, function ($q) {
+                            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                        });           }]);
                     $i->with([
                         'ledger.organization',
-                        'ledger.vendor',
                         'ledger.customer',
                         'ledger_group',
                         'costCenter',
@@ -2138,7 +2149,7 @@ class CrDrReportController extends Controller
                     'ledger_parent_id' => $item['ledger_parent_id'] ?? null,
                     'amount' => $item['amount'] ?? $voucher['amount'] ?? 0,
                     'settle_amt' => $voucher['settle_amt'] ?? 0,
-                    'organization' => $item['ledger']['organization']['name'] ?? '-',
+                    'organization' => $voucher['organization']['name'] ?? '-',
                 ];
             });
         });
@@ -2304,6 +2315,7 @@ class CrDrReportController extends Controller
 
     public function updateCacheData(Request $request)
     {
+       
         $payload = $request->all();
         // dd($payload);
         $token = $payload['token'] ?? null;
@@ -2514,6 +2526,10 @@ class CrDrReportController extends Controller
     }
 
     $user = Helper::getAuthenticatedUser()->id;
+            if ($type == ConstantHelper::PAYMENTS_SERVICE_ALIAS)
+            $orgs = Helper::getAuthenticatedUser()->access_rights_org->pluck('organization_id');
+            else 
+                $orgs = [Helper::getAuthenticatedUser()->organization_id];
     $data = UploadPendingPaymentMaster::where('user_id', $user)
         ->where('import_status', 'Success')
         ->where('doc_type', $type)
@@ -2524,9 +2540,15 @@ class CrDrReportController extends Controller
     $validationErrors = [];
     $reportedLedgers = [];
 
-    $flattened = collect($data)->flatMap(function ($voucher) use ($type, &$validationErrors, &$reportedLedgers) {
-        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers) {
-            $ledger = Ledger::with('customer', 'vendor')->find($item['ledger_id']);
+    $flattened = collect($data)->flatMap(function ($voucher) use ($orgs,$type, &$validationErrors, &$reportedLedgers) {
+        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers,$orgs,$request) {
+            $ledger = Ledger::with([ 'vendor' => function ($query) use ($orgs,$type) {
+        $query->when(function () use ($type) {
+            return $type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
+        }, function ($q) {
+            $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+        })->whereIn('organization_id', $orgs);
+    }])->with('customer')->find($item['ledger_id']);
             $group = Group::find($item['ledger_group_id']);
             $relation = $type == ConstantHelper::RECEIPTS_SERVICE_ALIAS ? 'customer' : 'vendor';
             $ledgerName = $ledger ? $ledger->name : ($item['ledger_name'] ?? 'Unknown Ledger');

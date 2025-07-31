@@ -62,7 +62,7 @@ class CloseFyController extends Controller
     $organization = $user->organization;
     $group_id = $organization->group_id;
     $company_id = $organization->company_id;
-    $organizationId = $request->organization_id ?: $organization->id;
+    $organizationId = $request->organization_id;
     $companies = $user->access_rights_org;
 
     $current_fyear = Helper::getFinancialYear(date('Y-m-d'));

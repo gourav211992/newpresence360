@@ -219,14 +219,14 @@ class MaterialReceiptRequest extends FormRequest
             $referenceType = $this->input('reference_type');
             $items = [];
             foreach ($components as $key => $component) {
-                $itemValue = floatval($component['item_total_cost']);
-                if($itemValue < 0) {
+                $itemValue = floatval($component['item_total_cost'] ?? 0);
+                if ($itemValue < 0) {
                     $validator->errors()->add("components.$key.item_name", "Item total can't be negative.");
                 }
+
                 $itemId = $component['item_id'] ?? null;
                 $uomId = $component['uom_id'] ?? null;
                 $soId = $component['so_id'] ?? null;
-
                 $poId = $referenceType === 'po' ? ($component['purchase_order_id'] ?? null) : null;
                 $joId = $referenceType === 'jo' ? ($component['job_order_id'] ?? null) : null;
 
@@ -234,7 +234,7 @@ class MaterialReceiptRequest extends FormRequest
                 foreach ($component['attr_group_id'] ?? [] as $groupId => $attrName) {
                     $attr_id = $groupId;
                     $attr_value = $attrName['attr_name'] ?? null;
-                    if ($attr_id && $attr_value) {
+                    if ($attr_id && $attr_value !== null) {
                         $attributes[] = [
                             'attr_id' => $attr_id,
                             'attr_value' => $attr_value,
@@ -243,21 +243,22 @@ class MaterialReceiptRequest extends FormRequest
                 }
                 $currentItem = compact('itemId', 'uomId', 'soId', 'poId', 'joId', 'attributes');
                 foreach ($items as $existingItem) {
-                    $isDuplicate = 
+                    $isDuplicate =
                         $existingItem['itemId'] === $currentItem['itemId'] &&
                         $existingItem['uomId'] === $currentItem['uomId'] &&
                         $existingItem['soId'] === $currentItem['soId'] &&
-                        $existingItem['attributes'] === $currentItem['attributes'] &&
                         (
                             ($referenceType === 'po' && $existingItem['poId'] === $currentItem['poId']) ||
                             ($referenceType === 'jo' && $existingItem['joId'] === $currentItem['joId'])
-                        );
+                        ) &&
+                        $this->attributesEqual($existingItem['attributes'], $currentItem['attributes']);
 
                     if ($isDuplicate) {
                         $validator->errors()->add("components.$key.item_id", "Duplicate item!");
                         return;
                     }
                 }
+
                 $items[] = $currentItem;
             }
         });
@@ -326,6 +327,30 @@ class MaterialReceiptRequest extends FormRequest
             }
         });
     }
+
+    protected function attributesEqual(array $a, array $b): bool
+    {
+        if (count($a) !== count($b)) {
+            return false;
+        }
+
+        // Sort by attr_id and attr_value for consistent comparison
+        usort($a, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+        usort($b, fn($x, $y) => [$x['attr_id'], $x['attr_value']] <=> [$y['attr_id'], $y['attr_value']]);
+
+        foreach ($a as $i => $attrA) {
+            $attrB = $b[$i] ?? null;
+            if (
+                !$attrB ||
+                $attrA['attr_id'] != $attrB['attr_id'] ||
+                $attrA['attr_value'] != $attrB['attr_value']
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 
@@ -361,7 +386,7 @@ class MaterialReceiptRequest extends FormRequest
 //     $currentItem = compact('itemId', 'uomId', 'soId', 'poId', 'joId', 'attributes');
 
 //     foreach ($items as $existingItem) {
-//         $isDuplicate = 
+//         $isDuplicate =
 //             $existingItem['itemId'] === $currentItem['itemId'] &&
 //             $existingItem['uomId'] === $currentItem['uomId'] &&
 //             $existingItem['soId'] === $currentItem['soId'] &&

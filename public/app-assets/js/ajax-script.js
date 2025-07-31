@@ -186,7 +186,9 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         contentType: false,
         processData: false,
         success: function (res) {
-            submitButton.disabled = false;
+            // Do not enable button while redirecting or showing a success message
+            // submitButton.disabled = true; 
+
             submitButton.innerHTML = submitButtonHtml;
             $('.ajax-validation-error-span').remove();
             $(".is-invalid").removeClass("is-invalid");
