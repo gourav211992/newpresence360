@@ -4006,6 +4006,16 @@ class Helper
             return $data;
         }
     }
+    public static function getContraBooks()
+    {
+        $service = Service::where('alias',ConstantHelper::CONTRA_VOUCHER)->first();
+        if(empty($service))
+            return [];
+        $books = Book::where('service_id',$service->id)
+        ->where('manual_entry',1)
+        ->where('status','active')->get();
+        return $books?? [];
+    }
     
 
 }

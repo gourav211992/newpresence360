@@ -189,6 +189,7 @@ class FinancialPostingHelper
 
     public static function financeVoucherPosting(int $bookId, int $documentId, string $type, bool $onApproval = false)
     {
+        $contra_entries = [];
         //Check Book
         $book = Book::find($bookId);
         if (!isset($book)) {
@@ -366,7 +367,7 @@ class FinancialPostingHelper
             }
         } else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
             $entries = self::paymentInvoiceVoucherDetails($documentId, '');
-            $contra = self::contraVoucherDetails($documentId, '');
+            $contra_entries = self::contraVoucherDetails($documentId, '');
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -7166,8 +7167,8 @@ class FinancialPostingHelper
                         'message' => $otherOrgPosting['message'],
                         'data' => []
                     );
-                $vouchersArray[$organization->id]=$sameOrgPosting;
-                $vouchersArray[$partyOrg->id]= $otherOrgPosting;
+                $vouchersArray[$organization->id][]=$sameOrgPosting;
+                $vouchersArray[$partyOrg->id][]= $otherOrgPosting;
             }
         }
         //Check if All Legders exists and posting is properly set
@@ -7181,7 +7182,9 @@ class FinancialPostingHelper
         if(empty($vouchersArray))
         return [];
 
-        foreach ($vouchersArray as $orgID => $postingArray) {
+        foreach ($vouchersArray as $orgID => $postingOrg) {
+            foreach ($postingOrg as $postingArray) {
+
          $organization = Organization::find($orgID);   
         //Check debit and credit tally
         foreach ($postingArray as $postAccount) {
@@ -7191,6 +7194,7 @@ class FinancialPostingHelper
                 $totalCreditAmount += $postingValue['credit_amount'];
             }
         }
+        
         $currency = Currency::find($document->currency_id);
 
         $userData = Helper::userCheck();
@@ -7239,7 +7243,7 @@ class FinancialPostingHelper
 
         $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
 
-        $vouchers[$orgID]= array(
+        $vouchers[$orgID][]= array(
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
@@ -7254,6 +7258,7 @@ class FinancialPostingHelper
                 'currency_code' => $currency?->short_name
             ]
         );
+    }
     }
     return $vouchers;
     }
