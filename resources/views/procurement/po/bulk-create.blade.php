@@ -172,12 +172,9 @@
                                                             <tr>
                                                                 <th class="d-none">Id</th>
                                                                 <th class="customernewsection-form" >
-                                                                    <div
-                                                                        class="form-check form-check-primary custom-checkbox">
-                                                                        <input type="checkbox"
-                                                                            class="form-check-input" id="Email">
-                                                                        <label class="form-check-label"
-                                                                            for="Email"></label>
+                                                                    <div class="form-check form-check-primary custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="allCheck">
+                                                                        <label class="form-check-label" for="allCheck"></label>
                                                                     </div>
                                                                 </th>
                                                                 <th>Indent No.</th>
@@ -562,7 +559,7 @@
         });
 
         // Checkbox code
-        $(document).on('change', '#itemTable th .form-check-input', (e) => {
+        $(document).on('change', '#allCheck', (e) => {
             if (e.target.checked) {
                 $("#itemTable tbody tr").each(function() {
                     if ($(this).find("[name*='[vendor_id]']").val()) {

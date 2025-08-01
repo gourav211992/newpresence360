@@ -79,6 +79,19 @@
         </td>
         @endif
 
+        @if($stationLines->isNotEmpty())
+        <td>
+            <select class="form-select" name="station_line_id[{{$slipItemIndex}}]">
+                @foreach ($stationLines as $stationLine)
+                    <option value="{{$stationLine?->id}}" {{$stationLine?->id == $slipItem->station_line_id ? 'selected' : ''}} data-name="{{$stationLine?->supervisor_name}}">{{$stationLine?->name}}</option>
+                @endforeach
+            </select>
+        </td>
+        <td>
+            <input type="text" id="supervisor_name_{{$slipItemIndex}}" value="{{$slipItem?->supervisor_name}}" name="supervisor_name[{{$slipItemIndex}}]" class="form-control mw-100" />
+        </td>
+        @endif
+
         <td>
         <div class="d-flex">
                 <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$slipItemIndex}}');">        

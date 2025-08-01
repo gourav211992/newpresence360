@@ -2262,6 +2262,31 @@ class MaterialReceiptController extends Controller
         $headerId = $request->headerId;
         $detailId = $request->detailId;
         $item = Item::find($request->item_id ?? null);
+
+        $attributeName = [];
+        $attributeValue = [];
+        foreach ($item->itemAttributes as $attribute) {
+            $attributeGroupId = $attribute->attribute_group_id ?? null;
+            $attributeIds = $attribute->attribute_id ?? [];
+
+            if (!is_array($attributeIds)) {
+                $attributeIds = [$attributeIds];
+            }
+
+            foreach ($attributeIds as $attrId) {
+                $attrId = (string) trim($attrId);
+                if (in_array($attrId, $selectedAttr, true)) {
+                    $attributeName[] = $attributeGroupId;
+                    $attributeValue[] = $attrId;
+                }
+            }
+        }
+
+        $attributes = [
+            'attribute_name' => $attributeName,
+            'attribute_value' => $attributeValue,
+        ];
+
         $uomId = $request->uom_id ?? null;
         $qty = intval($request->qty) ?? 0;
         $uomName = $item->uom->name ?? 'NA';
@@ -2329,7 +2354,11 @@ class MaterialReceiptController extends Controller
                 'storagePoints',
                 'type',
                 'totalCost',
-                'mrn'
+                'mrn',
+                'itemId',
+                'storeId',
+                'subStoreId',
+                'attributes'
             )
         )
         ->render();

@@ -282,9 +282,9 @@ class PurchaseReturnController extends Controller
                     'message' => $currencyExchangeData['message']
                 ], 422);
             }
-            
+
             $transportationMode = EwayBillMaster::find($request->transportation_mode);
-            
+
             $pb = new PRHeader();
             $pb->fill($request->all());
             $pb->store_id = $request->header_store_id;
@@ -439,26 +439,26 @@ class PurchaseReturnController extends Controller
                         $mrnHeaderId = $component['mrn_header_id'];
                         if ($mrnDetail) {
                             $inputQty = floatval($component['accepted_qty']);
-                        
+
                             $isRejected = $pb->qty_return_type === 'rejected';
                             $mrnQty      = $isRejected ? $mrnDetail->rejected_qty : $mrnDetail->accepted_qty;
                             $processedQty = $isRejected ? ($mrnDetail->pr_rejected_qty ?? 0.00) : ($mrnDetail->pr_qty ?? 0.00);
-                        
+
                             $balanceQty = $mrnQty - $processedQty;
-                        
+
                             if ($balanceQty < $inputQty) {
                                 DB::rollBack();
                                 return response()->json([
                                     'message' => 'Qty cannot be greater than available balance qty.'
                                 ], 422);
                             }
-                        
+
                             if ($isRejected) {
                                 $mrnDetail->pr_rejected_qty += $inputQty;
                             } else {
                                 $mrnDetail->pr_qty += $inputQty;
                             }
-                        
+
                             $mrnDetail->save();
                             $so_id = $mrnDetail->so_id;
                         }
@@ -912,7 +912,7 @@ class PurchaseReturnController extends Controller
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $pb -> dynamicfieldsUi();
-        
+
         return view($view, [
             'mrn' => $pb,
             'user' => $user,
@@ -1207,7 +1207,7 @@ class PurchaseReturnController extends Controller
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
                     $itemHeaderExp = floatval($pbItem['expense_amount']);
-                    
+
                     # PR Detail Save
                     $pbDetail = PRDetail::find($component['detail_id'] ?? null) ?? new PRDetail;
 
@@ -1464,7 +1464,7 @@ class PurchaseReturnController extends Controller
                     ], 422);
                 }
             }
-            
+
             $redirectUrl = '';
             if(($pb->document_status == ConstantHelper::POSTED)) {
                 $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($request -> vendor_id, $shippingAddress -> country_id, $storeLocation -> country_id, 'vendor');
@@ -1949,12 +1949,37 @@ class PurchaseReturnController extends Controller
         $selectedAttr = json_decode($request->selectedAttr, 200) ?? [];
         $itemId = $request->item_id;
         $item = Item::find($request->item_id ?? null);
+
+        $attributeName = [];
+        $attributeValue = [];
+        foreach ($item->itemAttributes as $attribute) {
+            $attributeGroupId = $attribute->attribute_group_id ?? null;
+            $attributeIds = $attribute->attribute_id ?? [];
+
+            if (!is_array($attributeIds)) {
+                $attributeIds = [$attributeIds];
+            }
+
+            foreach ($attributeIds as $attrId) {
+                $attrId = (string) trim($attrId);
+                if (in_array($attrId, $selectedAttr, true)) {
+                    $attributeName[] = $attributeGroupId;
+                    $attributeValue[] = $attrId;
+                }
+            }
+        }
+
+        $attributes = [
+            'attribute_name' => $attributeName,
+            'attribute_value' => $attributeValue,
+        ];
+
         $mrnDetail = MrnDetail::find($request->mrn_detail_id ?? null);
         $poItem = PoItem::with('po')->find($mrnDetail->purchase_order_item_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = intval($request->qty) ?? 0;
         $uomName = $item->uom->name ?? 'NA';
-        $storeId = $request->store_id ?? null;
+        $storeId = $request->header_store_id ?? null;
         $subStoreId = $request->sub_store_id ?? null;
         if ($item->uom_id == $uomId) {
         } else {
@@ -1978,7 +2003,11 @@ class PurchaseReturnController extends Controller
                 'specifications',
                 'poItem',
                 'totalStockData',
-                'detailedStocks'
+                'detailedStocks',
+                'itemId',
+                'storeId',
+                'subStoreId',
+                'attributes'
             )
         )
         ->render();
@@ -2456,7 +2485,7 @@ class PurchaseReturnController extends Controller
             'type'               => $request->type,
             'return_type'        => $request->return_type,
         ];
-        
+
         $checkService = new PRCheckAndUpdateService();
         $data = $checkService->validateOrderQuantity($inputData);
         if ($data['status'] === 'success') {
@@ -2557,7 +2586,7 @@ class PurchaseReturnController extends Controller
                 $prQty = $qtyTypeRequired === 'rejected'
                 ? ((float) $row?->pr_rejected_qty ?? 0)
                 : ((float) $row?->pr_qty ?? 0);
-                
+
                 return number_format($convertedQty, 2);
             })
             ->addColumn('rate', fn($row) =>
@@ -2569,7 +2598,7 @@ class PurchaseReturnController extends Controller
                     $row->uom_id,
                     (float) $row->available_qty ?? 0
                 );
-            
+
                 // $prQty = $qtyTypeRequired === 'rejected'
                 //     ? ((float) $row?->pr_rejected_qty ?? 0)
                 //     : ((float) $row?->pr_qty ?? 0);
@@ -2600,7 +2629,7 @@ class PurchaseReturnController extends Controller
 
 
     # This for both bulk and single mrn
-    protected function buildMrnQuery(Request $request) 
+    protected function buildMrnQuery(Request $request)
     {
         $finalData = array();
         $applicableBookIds = array();
@@ -2616,7 +2645,7 @@ class PurchaseReturnController extends Controller
         $detailsIds = $request->details_ids ?? '';
         $headerId = $request->header_id ?? '';
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        
+
         $subStoreId = $request->sub_store_id ?? null;
         // if($qtyTypeRequired == 'rejected'){
         //     $subStoreId = $request->rejected_sub_store_id ?? null;
@@ -2655,9 +2684,9 @@ class PurchaseReturnController extends Controller
                     ->where('stock_ledger.transaction_type', 'receipt')
                     ->whereNull('stock_ledger.deleted_at'); // ✅ this line is required;
             });
-            
+
         // $mrnItems = InventoryHelperV2::joinStockLedgerWithSubStore($mrnItems, $subStoreId);
-        
+
         // Apply quantity logic
         $mrnItems->whereRaw(
             $qtyTypeRequired === 'rejected'
@@ -2740,7 +2769,7 @@ class PurchaseReturnController extends Controller
         $qtyTypeRequired = $request->return_type ?? null;
         $storeId = $request->store_id ?? null;
         $subStoreId = $request->sub_store_id ?? null;
-        
+
         // MRN detail query with stock_ledger join
         $mrnItems = MrnDetail::query()
             ->select([

@@ -67,16 +67,33 @@
     </td>
 </tr>
 @if($totalStockData)
-    <tr>
-        <td class="poprod-decpt">
-            <span class="badge rounded-pill badge-light-primary">
-                <strong>Confirmed Stock</strong>:  {{@$totalStockData['confirmedStockAltUom']}}
-            </span>
-            <span class="badge rounded-pill badge-light-primary">
-                <strong>Pending Stock</strong>:  {{@$totalStockData['pendingStockAltUom']}}
-            </span>
-        </td>
-    </tr>
+<tr>
+    <td class="poprod-decpt">
+        <span class="badge rounded-pill badge-light-primary">
+            <strong>Confirmed Stock</strong>: {{ @$totalStockData['confirmedStockAltUom'] }}
+        </span>
+
+        <span class="badge rounded-pill badge-light-primary">
+            <strong>Pending Stock</strong>:
+            <form action="{{ url('/inventory-reports/get-stock-ledger-reports') }}" method="GET" target="_blank" style="display: inline;">
+                <input type="hidden" name="item" value="{{ $itemId ?? '' }}"/>
+                <input type="hidden" name="store_id" value="{{ $storeId ?? '' }}"/>
+                <input type="hidden" name="sub_store_id" value="{{ $subStoreId ?? '' }}"/>
+                <input type="hidden" name="type_of_stock_id" value="unconfirmed_stock"/>
+                @foreach($attributes['attribute_name'] ?? [] as $attrName)
+                    <input type="hidden" name="attribute_name[]" value="{{ $attrName }}"/>
+                @endforeach
+
+                @foreach($attributes['attribute_value'] ?? [] as $attrValue)
+                    <input type="hidden" name="attribute_value[]" value="{{ $attrValue }}"/>
+                @endforeach
+                <button type="submit" style="border: none; background-color: transparent; color: #002bff; padding: 0; cursor: pointer;">
+                    {{ @$totalStockData['pendingStockAltUom'] }}
+                </button>
+            </form>
+        </span>
+    </td>
+</tr>
 @endif
 @if($mrn)
     <tr>

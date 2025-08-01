@@ -44,7 +44,9 @@ class ErpPslipItem extends Model
         'rejected_qty',
         'wip_qty',
         'machine_id',
-        'cycle_count'
+        'cycle_count',
+        'station_line_id',
+        'supervisor_name'
     ];
 
     public $referencingRelationships = [

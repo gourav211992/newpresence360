@@ -25,6 +25,7 @@ class CommonHelper
     const ASSIGNED = 'assigned';
     const APPROVED_FORWARD = 'approved-forward';
     const FINAL_APPROVED = 'final-approved';
+    const APPROVED = 'approved';
     const JOB_CREATED = 'job-created';
     const ONHOLD = 'onhold';
     const REVOKED = 'revoked';
@@ -56,6 +57,15 @@ class CommonHelper
     const UNLOADING_REQUIRED = 'unloading_required';
     const ENFORCE_UIC_SCANNING = 'enforce_uic_scanning';
     const TRANSFERRED = 'transferred';
+    const PRODUCTIVITY = 'productivity';
+    const INNOVATION = 'innovation';
+    const QUALITY = 'quality';
+    const COST = 'cost';
+    const MORAL = 'moral';
+    const DELIVERY = 'delivery';
+    const SAFETY = 'safety';
+    const AFTER_KAIZEN = 'after kaizen';
+    const BEFORE_KAIZEN = 'before kaizen';
 
     const PAGE_LENGTHS = [
         self::PAGE_LENGTH_10,
@@ -111,6 +121,12 @@ class CommonHelper
     public static function dateFormat($date)
     {
         $date = $date ? date('d-m-Y', strtotime($date)) : '';
+        return $date;
+    }
+
+    public static function dateFormat2($date)
+    {
+        $date = $date ? date('d/m/Y', strtotime($date)) : '';
         return $date;
     }
 

@@ -201,9 +201,9 @@ $(document).on('change', "[name*='order_qty']", async function (e) {
             $itemValue.val('');
         }
 
-        if (acceptedQty > 0) {
-            generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
-        }
+        // if (acceptedQty > 0) {
+        //     generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
+        // }
 
 
         if (result.status !== 200 && result.message) {
@@ -250,9 +250,9 @@ $(document).on('change', "[name*='accepted_qty']", function (e) {
         $itemValue.val('');
     }
 
-    if (acceptedQty > 0) {
-        generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
-    }
+    // if (acceptedQty > 0) {
+    //     generatePackets(dataIndex, itemId, acceptedQty.toFixed(2));
+    // }
 });
 
 /*rate on change*/

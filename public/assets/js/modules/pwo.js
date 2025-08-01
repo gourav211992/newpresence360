@@ -270,6 +270,10 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                         attr.values_data.filter(v => v.selected).map(v => v.id)
                     );
                 }
+
+                checkBox.attr("data-store-name", ui.item.label);
+                checkBox.attr("data-store-id", ui.item.id);
+                
                 if(context == '#analyzeModal') {
                     let tr = $input.closest('tr')[0];
                     getStock(itemId, uomId, selectAttribute, storeId, tr);
@@ -302,6 +306,8 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                     let tr = $input.closest('tr')[0];
                     getStock(itemId, uomId, selectAttribute, storeId, tr);
                 }
+                checkBox.attr("data-store-name", '');
+                checkBox.attr("data-store-id", '');
             }
         });
         $input.on('input', function () {
@@ -326,6 +332,8 @@ function initStoreAutocomplete(context = "#analyzeModal") {
                     let tr = $input.closest('tr')[0];
                     getStock(itemId, uomId, selectAttribute, storeId, tr);
                 }
+                checkBox.attr("data-store-name", '');
+                checkBox.attr("data-store-id", '');
             }
         });
     });
@@ -445,6 +453,29 @@ $(document).on('click', '.analyzeProcessBtn', (e) => {
             icon: 'error',
         });
         return false;
+    }
+    
+    let isValid = true;
+   $('.analyze_row:checked').each(function() {
+        const $row = $(this).closest('tr');
+        const $storeInput = $row.find("input[name='store_id']");
+        const storeId = $storeInput.val();
+        if (!storeId) {
+            $row.find("input[name='store_name']").addClass('is-invalid'); // Bootstrap error styling
+            isValid = false;
+            return false;
+        } else {
+            $row.find("input[name='store_name']").removeClass('is-invalid');
+        }
+    });
+
+    if (!isValid) {
+        Swal.fire({
+            title: 'Error!',
+            text: 'Please select store for all checked rows.',
+            icon: 'error',
+        });
+        return;
     }
 
     ids = JSON.stringify(ids);

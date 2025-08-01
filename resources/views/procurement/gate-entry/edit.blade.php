@@ -324,17 +324,12 @@
                                                             <p>Vendor Address</p>
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
-                                                                    <label class="form-label w-100">Vendor Address <span
-                                                                            class="text-danger">*</span> <a
-                                                                            href="javascript:;"
-                                                                            class="float-end font-small-2 editAddressBtn d-none"
-                                                                            data-type="billing"><i
-                                                                                data-feather='edit-3'></i> Edit</a></label>
+                                                                    <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
-                                                                        @if ($mrn->latestBillingAddress())
-                                                                            {{ $mrn->latestBillingAddress()->display_address }}
+                                                                        @if($mrn->latestBillingAddress())
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                            {{ $mrn->bill_address?->display_address }}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -351,7 +346,7 @@
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
                                                                     <div class="mrnaddedd-prim org_address">
-                                                                        {{ $orgAddress }}</div>
+                                                                        {{ $deliveryAddress }}</div>
                                                                 </div>
                                                             </div>
                                                         </div>

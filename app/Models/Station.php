@@ -40,6 +40,11 @@ class Station extends Model
         return $this->hasMany(Station::class, 'parent_id');
     }
 
+    public function lines()
+    {
+        return $this->hasMany(StationLine::class, 'station_id');
+    }
+
     public function group()
     {
         return $this->belongsTo(OrganizationGroup::class, 'group_id');
