@@ -4,6 +4,7 @@ namespace App\Helpers;
 
 use App\Models\Book;
 use App\Models\ErpProductionSlip;
+use App\Models\Scopes\DefaultGroupCompanyOrgScope;
 use App\Models\ErpPsvHeader;
 use App\Models\FixedAssetRegistration;
 use App\Models\ErpSaleReturn;
@@ -16,6 +17,7 @@ use App\Models\FixedAssetRevImp;
 use App\Models\FixedAssetSub;
 use App\Models\VoucherReference;
 use App\Models\CostCenter;
+use App\Models\Organization;
 
 use App\Models\StockLedger;
 use App\Models\Vendor;
@@ -68,6 +70,7 @@ use App\Models\MfgOrder;
 class FinancialPostingHelper
 {
     const DEBIT = "Debit";
+    const CONTRA = "Contra";
     const CREDIT = "Credit";
     const COGS_ACCOUNT = 'COGS';
     const SALES_ACCOUNT = 'Sales';
@@ -363,6 +366,7 @@ class FinancialPostingHelper
             }
         } else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
             $entries = self::paymentInvoiceVoucherDetails($documentId, '');
+            $contra = self::contraVoucherDetails($documentId, '');
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -7117,6 +7121,142 @@ class FinancialPostingHelper
             ]
         );
     }
+    public static function contraVoucherDetails(int $documentId, string $remarks)
+    {
+        $organization = Helper::getAuthenticatedUser()->organization;
+        $accountSetup = isset(self::SERVICE_POSTING_MAPPING[ConstantHelper::PAYMENTS_SERVICE_ALIAS]) ? self::SERVICE_POSTING_MAPPING[ConstantHelper::PAYMENTS_SERVICE_ALIAS] : [];
+        if (!isset($accountSetup) || count($accountSetup) == 0) {
+            return array(
+                'status' => false,
+                'message' => 'Account Setup not found',
+                'data' => []
+            );
+        }
+        $document = PaymentVoucher::find($documentId);
+        $vendors = $document->details;
+        if (!isset($document)) {
+            return array(
+                'status' => false,
+                'message' => 'Document not found',
+                'data' => []
+            );
+        }
+        
+        $totalCreditAmount = 0;
+        $totalDebitAmount = 0;
+
+
+        $ledgerErrorStatus = null;
+        $vouchersArray=[];
+        foreach($vendors as $vendor){
+            $partyOrg = $vendor->party->organization;
+            if($partyOrg->id != $organization->id){
+                $sameOrgPosting = self::sameOrgPosting($partyOrg,$organization,$vendor);
+                if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false) 
+                    return array(
+                        'status' => false,
+                        'message' => $sameOrgPosting['message'],
+                        'data' => []
+                    );
+
+               $otherOrgPosting= self::otherOrgPosting($partyOrg,$organization,$vendor);
+                if (isset($otherOrgPosting['status']) && $otherOrgPosting['status'] === false) 
+                    return array(
+                        'status' => false,
+                        'message' => $otherOrgPosting['message'],
+                        'data' => []
+                    );
+                $vouchersArray[$organization->id]=$sameOrgPosting;
+                $vouchersArray[$partyOrg->id]= $otherOrgPosting;
+            }
+        }
+        //Check if All Legders exists and posting is properly set
+        if ($ledgerErrorStatus) {
+            return array(
+                'status' => false,
+                'message' => $ledgerErrorStatus,
+                'data' => []
+            );
+        }
+        if(empty($vouchersArray))
+        return [];
+
+        foreach ($vouchersArray as $orgID => $postingArray) {
+         $organization = Organization::find($orgID);   
+        //Check debit and credit tally
+        foreach ($postingArray as $postAccount) {
+            foreach ($postAccount as $postingValue) {
+
+                $totalDebitAmount += $postingValue['debit_amount'];
+                $totalCreditAmount += $postingValue['credit_amount'];
+            }
+        }
+        $currency = Currency::find($document->currency_id);
+
+        $userData = Helper::userCheck();
+
+        $book = Book::find($document->book_id);
+        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
+        if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
+            $glPostingBookId = $glPostingBookParam->parameter_value[0];
+        } else {
+            return array(
+                'status' => false,
+                'message' => self::ERROR_PREFIX . 'Financial Book Code is not specified',
+                'data' => []
+            );
+        }
+        $voucherHeader = [
+            'voucher_no' => $document->voucher_no,
+            'document_date' => $document->document_date,
+            'book_id' => $glPostingBookId,
+            'date' => $document->document_date,
+            'amount' => $totalCreditAmount,
+            'location' => $document->location ?? null,
+            'currency_id' => $document->currency_id,
+            'currency_code' => $document->currencyCode,
+            'org_currency_id' => $document->org_currency_id,
+            'org_currency_code' => $document->org_currency_code,
+            'org_currency_exg_rate' => $document->org_currency_exg_rate,
+            'comp_currency_id' => $document->comp_currency_id, // Missing comma added here
+            'comp_currency_code' => $document->comp_currency_code,
+            'comp_currency_exg_rate' => $document->comp_currency_exg_rate,
+            'group_currency_id' => $document->group_currency_id,
+            'group_currency_code' => $document->group_currency_code,
+            'group_currency_exg_rate' => $document->group_currency_exg_rate,
+            'reference_service' => $book?->service?->alias,
+            'reference_doc_id' => $document->id,
+            'group_id' => $organization->group_id,
+            'company_id' => $organization->company_id,
+            'organization_id' => $organization->id,
+            'voucherable_type' => $userData['user_type'],
+            'voucherable_id' => $userData['user_id'],
+            'approvalStatus' => ConstantHelper::APPROVED,
+            'document_status' => ConstantHelper::APPROVED,
+            'approvalLevel' => $document->approval_level,
+            'remarks' => $remarks,
+        ];
+
+        $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
+
+        $vouchers[$orgID]= array(
+            'status' => true,
+            'message' => 'Posting Details found',
+            'data' => [
+                'voucher_header' => $voucherHeader,
+                'voucher_details' => $voucherDetails,
+                'document_date' => $document->document_date,
+                'ledgers' => $postingArray,
+                'total_debit' => $totalDebitAmount,
+                'total_credit' => $totalCreditAmount,
+                'book_code' => $book?->book_code,
+                'document_number' => $document?->voucher_no,
+                'currency_code' => $currency?->short_name
+            ]
+        );
+    }
+    return $vouchers;
+    }
 
     public static function paymentVoucherPosting(int $bookId, int $documentId, string $type, string $remarks)
     {
@@ -7639,5 +7779,140 @@ class FinancialPostingHelper
             }
         }
         return $voucherDetails;
+    }
+    public static function sameOrgPosting($partyOrg,$organization,$vendor){
+                 $postingArray = array(
+                    self::CONTRA => [],
+                    self::VENDOR_ACCOUNT => [],
+                );
+                $orgVendor = Vendor::where('enter_company_org_id',$partyOrg->id)
+                ->where('company_name',$partyOrg->name)->first();
+
+                if (empty($orgVendor)) 
+                return array(
+                    'status' => false,
+                    'message' => $vendor->party->organization->name.' Vendor not found in '.$organization->name,
+                    'data' => []
+                );
+                
+                $contraLedgerId = $orgVendor->contra_ledger_id;
+                if (empty($contraLedgerId)) 
+                return array(
+                    'status' => false,
+                    'message' => $vendor->party->organization->name.' Contra Ledger not found in '.$organization->name,
+                    'data' => []
+                );
+                $contraLedgerGroupId = $orgVendor->contraLedger->group() ??null;
+                if (empty($contraLedgerGroupId)) 
+                return array(
+                    'status' => false,
+                    'message' => $vendor->party->organization->name.' Contra Ledger Group not found in '.$organization->name,
+                    'data' => []
+                );
+                $contraLedger = Ledger::find($contraLedgerId);
+                $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
+                if (!isset($contraLedger) || !isset($contraLedgerGroup)) 
+                    return array(
+                        'status' => false,
+                        'message' => 'Contra Ledger not setup',
+                        'data' => []
+                    );
+                    array_push($postingArray[self::CONTRA], [
+                    'ledger_id' => $contraLedger->id,
+                    'ledger_group_id' => $contraLedgerGroup->id,
+                    'ledger_code' => $contraLedger?->code,
+                    'ledger_name' => $contraLedger?->name,
+                    'ledger_group_code' => $contraLedgerGroup?->name,
+                    'debit_amount' => 0,
+                    'credit_amount' => $vendor->orgAmount,
+                ]);
+
+                $vendorLedger = Ledger::find($vendor->ledger_id);
+                $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
+                if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) 
+                    return array(
+                        'status' => false,
+                        'message' => 'Vendor Ledger not setup',
+                        'data' => []
+                    );
+                    array_push($postingArray[self::VENDOR_ACCOUNT], [
+                    'ledger_id' => $vendorLedger->id,
+                    'ledger_group_id' => $vendorLedgerGroup->id,
+                    'ledger_code' => $vendorLedger?->code,
+                    'ledger_name' => $vendorLedger?->name,
+                    'ledger_group_code' => $vendorLedgerGroup?->name,
+                    'debit_amount' => $vendor->orgAmount,
+                    'credit_amount' => 0,
+                ]);
+                return $postingArray;
+    }
+    public static function otherOrgPosting($partyOrg,$organization,$vendor){
+                 $postingArray = array(
+                    self::CONTRA => [],
+                    self::VENDOR_ACCOUNT => [],
+                );
+                $orgVendor = Vendor::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                ->where('organization_id',$partyOrg->id)
+                ->where('enter_company_org_id',$organization->id)
+                ->where('company_name',$organization->name)->first();
+
+                if (empty($orgVendor)) 
+                return array(
+                    'status' => false,
+                    'message' => $organization->name.' Vendor not found in '.$vendor->party->organization->name,
+                    'data' => []
+                );
+                
+                $contraLedgerId = $orgVendor->contra_ledger_id;
+                if (empty($contraLedgerId)) 
+                return array(
+                    'status' => false,
+                    'message' => $organization->name.' Contra Ledger not found in '.$vendor->party->organization->name,
+                    'data' => []
+                );
+                $contraLedgerGroupId = $orgVendor->contraLedger->group() ??null;
+                if (empty($contraLedgerGroupId)) 
+                return array(
+                    'status' => false,
+                    'message' => $organization->name.' Contra Ledger Group not found in '.$vendor->party->organization->name,
+                    'data' => []
+                );
+                
+                $contraLedger = Ledger::find($contraLedgerId);
+                $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
+                if (!isset($contraLedger) || !isset($contraLedgerGroup)) 
+                    return array(
+                        'status' => false,
+                        'message' => 'Contra Ledger not setup',
+                        'data' => []
+                    );
+                    array_push($postingArray[self::CONTRA], [
+                    'ledger_id' => $contraLedger->id,
+                    'ledger_group_id' => $contraLedgerGroup->id,
+                    'ledger_code' => $contraLedger?->code,
+                    'ledger_name' => $contraLedger?->name,
+                    'ledger_group_code' => $contraLedgerGroup?->name,
+                    'debit_amount' => $vendor->orgAmount,
+                    'credit_amount' => 0,
+                ]);
+
+                $vendorLedger = Ledger::find($vendor->ledger_id);
+                $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
+                if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) 
+                    return array(
+                        'status' => false,
+                        'message' => 'Vendor Ledger not setup',
+                        'data' => []
+                    );
+                    array_push($postingArray[self::VENDOR_ACCOUNT], [
+                    'ledger_id' => $vendorLedger->id,
+                    'ledger_group_id' => $vendorLedgerGroup->id,
+                    'ledger_code' => $vendorLedger?->code,
+                    'ledger_name' => $vendorLedger?->name,
+                    'ledger_group_code' => $vendorLedgerGroup?->name,
+                    'debit_amount' => 0,
+                    'credit_amount' => $vendor->orgAmount,
+                ]);
+                return $postingArray;
     }
 }

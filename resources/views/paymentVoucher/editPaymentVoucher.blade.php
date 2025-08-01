@@ -570,12 +570,15 @@
                                                                             <option value="{{ $item?->ledger_group_id ?? $item?->party?->ledger_group?->id }}">{{ $item?->ledger_group?->name ?? $item?->party?->ledger_group?->name }}</option>
                                                                         </select>
                                                                     </td>
+                                                                    
+                                                                  
+                                                                   
                                                                     <td>
                                                                         <input type="text" disabled
                                                                             placeholder="Select"
                                                                             class="form-control mw-100 mb-25 organization"
                                                                             id="organization{{$no}}"
-                                                                            value="{{ $item?->ledger?->organization?->name ?? $item?->party?->ledger?->organization?->name }}"  />
+                                                                            value="{{ $item?->party?->organization?->name?? $item?->ledger?->organization?->name }}" />
                                                                     </td>
                                                                     <td>
                                                                         <div class="position-relative d-flex align-items-center">

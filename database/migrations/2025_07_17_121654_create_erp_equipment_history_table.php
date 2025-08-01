@@ -18,8 +18,8 @@ return new class extends Migration
             $table->unsignedBigInteger('book_id');
             $table->string('document_number');
             $table->date('document_date')->nullable();
-            $table->enum('doc_number_type', ['Auto', 'Manually'])->default('Manually');
-            $table->enum('doc_reset_pattern', ['Never', 'Yearly', 'Quarterly', 'Monthly'])->nullable();
+            $table->string('doc_number_type')->default('Manually');
+            $table->string('doc_reset_pattern')->nullable();
             $table->string('doc_prefix')->nullable();
             $table->string('doc_suffix')->nullable();
             $table->integer('doc_no')->nullable();

@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::create('erp_equip_maintenance_checklists_history', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('source_id')->nullable();
             $table->unsignedBigInteger('erp_equip_maintenance_id');
             $table->string('name');
             $table->text('description')->nullable();

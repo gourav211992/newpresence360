@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::create('erp_equip_maintenance_detail_histories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('source_id')->nullable();
             $table->unsignedBigInteger('erp_equipment_id')->index();
             $table->unsignedBigInteger('maintenance_type_id')->nullable();
             $table->string('frequency');
