@@ -642,12 +642,12 @@ class PaymentVoucherController extends Controller
             $editUrlString = 'receipts.edit';
         }
         $currNumber = $r->revisionNumber;
-        $data = PaymentVoucher::with('details.party')->find($id);
+        $data = PaymentVoucher::with('details')->find($id);
         
         if ($r->has('revisionNumber') && $data->revision_number!=$currNumber){
-            $data = PaymentVoucherHistory::with('details.party')->where('source_id', $id)->where('revision_number', $currNumber)->first();
+            $data = PaymentVoucherHistory::with('details')->where('source_id', $id)->where('revision_number', $currNumber)->first();
         } else {
-            $data = PaymentVoucher::with('details.party')->find($id);
+            $data = PaymentVoucher::with('details')->find($id);
         }
 
 

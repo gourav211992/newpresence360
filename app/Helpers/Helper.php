@@ -3853,6 +3853,159 @@ class Helper
             ];
         }
     }
+    public static function generateContraDocNumber(int $book_id, string $document_date,$organization_id)
+    {
+
+        $book = Book::find($book_id);
+        $data = NumberPattern::where('book_id', $book_id)->orderBy('id', 'DESC')->first();
+        $serviceAlias = $data?->book?->org_service?->alias;
+        $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
+        $financialYear = self::getFinancialYear($document_date);
+        $financialQuarter = self::getFinancialYearQuarter($document_date);
+        $financialMonth = self::getFinancialMonth($document_date);
+
+        $prefix = "";
+        $suffix = "";
+        if ($data && $modelName) {
+
+            $model = resolve('App\\Models\\' . $modelName);
+          
+
+            if ($data->series_numbering === ConstantHelper::DOC_NO_TYPE_AUTO) {
+                $startFrom = $data->starting_no;
+                if ($startFrom >= 1) {
+                    $startFrom -= 1;
+                }
+                if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_NEVER) {
+                    $prefix = $data->prefix;
+                    $suffix = $data->suffix;
+                    $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('organization_id',$organization_id)
+                    ->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        // ->orderBy('doc_no', 'DESC')
+                        ->orderByRaw('CAST(doc_no AS UNSIGNED) DESC')
+                        ->pluck('doc_no')->first() ?? $startFrom;
+                } else if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_YEARLY) {
+                    if (!(isset($financialYear) && isset($financialQuarter) && isset($financialMonth))) {
+                        $data = [
+                            'type' => null,
+                            'document_number' => null,
+                            'prefix' => null,
+                            'suffix' => null,
+                            'doc_no' => null,
+                            'reset_pattern' => null,
+                            'error' => 'Financial Year not setup'
+                        ];
+                        return $data;
+                    }
+                    $prefix = $financialYear['alias'];
+                    $suffix = $data->suffix;
+                    $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->whereBetween('document_date', [$financialYear['start_date'], $financialYear['end_date']])
+                        ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
+                } else if ($data->reset_pattern === ConstantHelper::DOC_RESET_PATTERN_QUARTERLY) {
+                    if (!(isset($financialYear) && isset($financialQuarter) && isset($financialMonth))) {
+                        $data = [
+                            'type' => null,
+                            'document_number' => null,
+                            'prefix' => null,
+                            'suffix' => null,
+                            'doc_no' => null,
+                            'reset_pattern' => null,
+                            'error' => 'Financial Year not setup'
+                        ];
+                        return $data;
+                    }
+                    $prefix = $financialYear['alias'] . "-" . $financialQuarter['alias'];
+                    $suffix = $data->suffix;
+                    $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                    ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                        ->whereNotNull('doc_no')
+                        ->whereBetween('document_date', [$financialQuarter['start_date'], $financialQuarter['end_date']])
+                        ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
+                } else {
+                    if (isset($financialYear) && isset($financialQuarter) && isset($financialMonth)) {
+                        $prefix = $financialYear['alias'] . "-" . $financialMonth['alias'];
+                        $suffix = $data->suffix;
+                        $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+                            ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                            ->whereNotNull('doc_no')
+                            ->whereBetween('document_date', [$financialMonth['start_date'], $financialMonth['end_date']])
+                            ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
+                    }
+
+                }
+
+                $currentDocNo = ($currentDocNo ? $currentDocNo : 0) + 1;
+
+                $voucher_no = ($prefix ? $prefix . "-" : "") . ($currentDocNo) . ($suffix ? "-" . $suffix : "");
+
+                //Condition for Sales Invoice/ Sales Return and Purchase Return
+                $shouldCheckTransportDocForPrSr = in_array($book->service?->service?->alias, [
+                    ConstantHelper::PURCHASE_RETURN_SERVICE_ALIAS,
+                    ConstantHelper::SR_SERVICE_ALIAS
+                ]);
+                $shouldCheckTransportDocForSi = false;
+
+                if (
+                    $serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && isset($parameters) &&
+                    isset($parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM})
+                ) {
+                    $shouldCheckTransportDocForSi = $parameters->{ServiceParametersHelper::INVOICE_TO_FOLLOW_PARAM}[0] == "no";
+                }
+
+                if ($shouldCheckTransportDocForPrSr || $shouldCheckTransportDocForSi) {
+                    if (strlen($book->book_code . '-' . $voucher_no) > EInvoiceHelper::TRANPORTER_DOC_NO_MAX_LIMIT) {
+                        $data = [
+                            'type' => null,
+                            'document_number' => null,
+                            'prefix' => null,
+                            'suffix' => null,
+                            'doc_no' => null,
+                            'reset_pattern' => null,
+                            'error' => 'Document Number cannot exceed 15 characters'
+                        ];
+                        return $data;
+                    }
+                }
+                $data = [
+                    'type' => ConstantHelper::DOC_NO_TYPE_AUTO,
+                    'document_number' => $voucher_no,
+                    'prefix' => $prefix,
+                    'suffix' => $suffix,
+                    'doc_no' => $currentDocNo,
+                    'reset_pattern' => $data->reset_pattern,
+                    'error' => null
+                ];
+                return $data;
+            } else {
+                $data = [
+                    'type' => ConstantHelper::DOC_NO_TYPE_MANUAL,
+                    'document_number' => null,
+                    'prefix' => null,
+                    'suffix' => null,
+                    'doc_no' => null,
+                    'reset_pattern' => null,
+                    'error' => null
+                ];
+                return $data;
+            }
+        } else {
+            $data = [
+                'type' => null,
+                'document_number' => null,
+                'prefix' => null,
+                'suffix' => null,
+                'doc_no' => null,
+                'reset_pattern' => null,
+                'error' => 'Transaction not setup'
+            ];
+            return $data;
+        }
+    }
     
 
 }

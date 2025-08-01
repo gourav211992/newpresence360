@@ -351,6 +351,17 @@ class InventoryReportController extends Controller
             $hasFilters = true;
         }
 
+        if ($request->has('type_of_stock_id') && !empty($request->type_of_stock_id)) {
+            if($request->type_of_stock_id == 'confirmed_stock')
+            {
+                $query->whereIn('document_status', ['approved', 'approval_not_required', 'posted']);
+            }
+            else
+            {
+                $query->whereNotIn('document_status', ['approved', 'approval_not_required', 'posted']);
+            }
+        }
+
         $attrGroup = $request->query('attribute_name');
         $attrValue = $request->query('attribute_value');
 
@@ -569,6 +580,17 @@ class InventoryReportController extends Controller
 
         if($request->has('book_type_id') && !empty($request->book_type_id)) {
             $query->where('book_type', $request->book_type_id);
+        }
+
+        if ($request->has('type_of_stock_id') && !empty($request->type_of_stock_id)) {
+            if($request->type_of_stock_id == 'confirmed_stock')
+            {
+                $query->whereIn('document_status', ['approved', 'approval_not_required', 'posted']);
+            }
+            else
+            {
+                $query->whereNotIn('document_status', ['approved', 'approval_not_required', 'posted']);
+            }
         }
 
 

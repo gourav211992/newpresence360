@@ -828,7 +828,7 @@ class ExpenseAdviseController extends Controller
         $serviceAlias = ConstantHelper::EXPENSE_ADVISE_SERVICE_ALIAS;
         $books = Helper::getBookSeriesNew($serviceAlias, $parentUrl)->get();
         $user = Helper::getAuthenticatedUser();
-        $expense = ExpenseHeader::with(['vendor', 'currency', 'items', 'items.costCenter', 'book'])
+        $expense = ExpenseHeader::with(['vendor', 'currency', 'items', 'items.costCenter', 'book', 'erpStore'])
             ->findOrFail($id);
         $headerIds = $expense->purchase_order_id ?? null;
         $headerIds = $headerIds ? (array) $headerIds : [];
@@ -862,11 +862,14 @@ class ExpenseAdviseController extends Controller
         $revisionNumbers = $approvalHistory->pluck('revision_number')->unique()->values()->all();
         $costCenters = CostCenter::withDefaultGroupCompanyOrg()->get();
         $locations = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
+        $store = $expense->erpStore;
+        $deliveryAddress = $store?->address?->display_address;
         $erpStores = ErpStore::withDefaultGroupCompanyOrg()
             ->orderBy('id', 'DESC')
             ->get();
         $dynamicFieldsUI = $expense->dynamicfieldsUi();
         return view($view, [
+            'deliveryAddress'=> $deliveryAddress,
             'mrn' => $expense,
             'user' => $user,
             'books' => $books,
@@ -1337,6 +1340,10 @@ class ExpenseAdviseController extends Controller
                     $totalAmount = (($itemTotalValue - $totalDiscValue) - $finaltotalTax + $totalHeaderExpense) ?? 0.00;
                 }
                 $expense->total_amount = $totalAmount ?? 0.00;
+                $poIds = array_column($request->all()['components'], 'purchase_order_id');
+                $uniquePoIds = array_unique($poIds);
+                $finalPoId = count($uniquePoIds) === 1 ? reset($uniquePoIds) : array_values($uniquePoIds);
+                $expense->purchase_order_id = $finalPoId;
                 $expense->save();
             } else {
                 if ($request->document_status == ConstantHelper::SUBMITTED) {
@@ -1657,7 +1664,7 @@ class ExpenseAdviseController extends Controller
         $typeId = $request?->typeId ?? null;
 
         $vendor = Vendor::withDefaultGroupCompanyOrg()
-            ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
+        ->with(['currency:id,name', 'paymentTerms:id,name'])->find($vendorId);
 
         $moduleTypeId = match ($type) {
             'po' => $typeId,
@@ -1679,7 +1686,7 @@ class ExpenseAdviseController extends Controller
         $documentDate = $request?->document_date;
 
         $vendorAddress = match ($type) {
-            'po' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
+            'po' => $typeData?->latestShippingAddress() ?? $typeData?->ship_address,
             default => ErpAddress::where('addressable_id', $moduleTypeId)
                 ->where('addressable_type', Vendor::class)
                 ->latest()
@@ -1687,23 +1694,23 @@ class ExpenseAdviseController extends Controller
         };
 
         if (!$vendorAddress) {
-            return response()->json([
+            return response() -> json([
                 'data' => array(
-                    'error_message' => 'Address not found for ' . $vendor?->company_name
+                    'error_message' => 'Address not found for '. $vendor?->company_name
                 )
             ]);
         }
         if (!isset($typeData->currency_id)) {
-            return response()->json([
+            return response() -> json([
                 'data' => array(
-                    'error_message' => 'Currency not found for ' . $vendor?->company_name
+                    'error_message' => 'Currency not found for '. $vendor?->company_name
                 )
             ]);
         }
         if (!isset($paymentTerm)) {
-            return response()->json([
+            return response() -> json([
                 'data' => array(
-                    'error_message' => 'Payment Terms not found for ' . $vendor?->company_name
+                    'error_message' => 'Payment Terms not found for '. $vendor?->company_name
                 )
             ]);
         }
@@ -1724,7 +1731,7 @@ class ExpenseAdviseController extends Controller
             [
                 'data' => [
                     'status' => 200,
-                    'vendor' => $vendor,
+                    'vendor' =>$vendor,
                     'message' => 'fetched',
                     'currency' => $currency,
                     'org_address' => $orgAddress,
@@ -1735,72 +1742,6 @@ class ExpenseAdviseController extends Controller
                 'delivery_address' => $locationAddress,
             ]
         );
-    }
-
-    public function getAddress1(Request $request)
-    {
-        $vendor = Vendor::withDefaultGroupCompanyOrg()
-            ->with(['currency:id,name', 'paymentTerms:id,name'])->find($request->id);
-        $currency = $vendor->currency;
-        $paymentTerm = $vendor->paymentTerms;
-        $shipping = $vendor->addresses()->where(function ($query) {
-            $query->where('type', 'shipping')->orWhere('type', 'both');
-        })->latest()->first();
-        $billing = $vendor->addresses()->where(function ($query) {
-            $query->where('type', 'billing')->orWhere('type', 'both');
-        })->latest()->first();
-
-        $vendorId = $vendor->id;
-        $documentDate = $request->document_date;
-        $billingAddresses = ErpAddress::where('addressable_id', $vendorId)->where('addressable_type', Vendor::class)->whereIn('type', ['billing', 'both'])->get();
-        $shippingAddresses = ErpAddress::where('addressable_id', $vendorId)->where('addressable_type', Vendor::class)->whereIn('type', ['shipping', 'both'])->get();
-
-        $user = Helper::getAuthenticatedUser();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
-        $orgAddress = $organizationAddress?->display_address;
-
-        foreach ($billingAddresses as $billingAddress) {
-            $billingAddress->value = $billingAddress->id;
-            $billingAddress->label = $billingAddress->display_address;
-        }
-        foreach ($shippingAddresses as $shippingAddress) {
-            $shippingAddress->value = $shippingAddress->id;
-            $shippingAddress->label = $shippingAddress->display_address;
-        }
-        if (count($shippingAddresses) == 0) {
-            return response()->json([
-                'data' => array(
-                    'error_message' => 'Shipping Address not found for ' . $vendor?->company_name
-                )
-            ]);
-        }
-        if (count($billingAddresses) == 0) {
-            return response()->json([
-                'data' => array(
-                    'error_message' => 'Billing Address not found for ' . $vendor?->company_name
-                )
-            ]);
-        }
-        if (!isset($vendor->currency_id)) {
-            return response()->json([
-                'data' => array(
-                    'error_message' => 'Currency not found for ' . $vendor?->company_name
-                )
-            ]);
-        }
-        if (!isset($vendor->payment_terms_id)) {
-            return response()->json([
-                'data' => array(
-                    'error_message' => 'Payment Terms not found for ' . $vendor?->company_name
-                )
-            ]);
-        }
-        $currencyData = CurrencyHelper::getCurrencyExchangeRates($vendor->currency_id ?? 0, $documentDate ?? '');
-
-        return response()->json(['data' => ['shipping' => $shipping, 'billing' => $billing, 'paymentTerm' => $paymentTerm, 'currency' => $currency, 'currency_exchange' => $currencyData, 'org_address' => $orgAddress], 'status' => 200, 'message' => 'fetched']);
     }
 
     # Get edit address modal

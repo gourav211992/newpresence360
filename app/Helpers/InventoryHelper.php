@@ -4,6 +4,7 @@ namespace App\Helpers;
 use DB;
 use Auth;
 use stdClass;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use App\Models\PslipBomConsumption;
@@ -655,7 +656,8 @@ class InventoryHelper
                     $stockLedger->store_id = $documentItemLocation->store_id ?? null;
                     $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
                     $stockLedger->store = @$documentItemLocation->erpStore->store_code;
-                    $stockLedger->original_receipt_date = @$documentHeader->document_date;
+                    $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
+
                     $stockLedger->lot_number = $documentItemLocation?->mrnHeader?->lot_number ?? null;
                     $stockLedger->so_id = $documentItemLocation?->so_id ?? null;
                 } else{
@@ -714,6 +716,7 @@ class InventoryHelper
                 $stockLedger->store_id = $documentDetail->store_id ?? null;
                 $stockLedger->sub_store_id = $documentDetail->sub_store_id ?? null;
                 $stockLedger->store = @$documentDetail->erpStore->store_code;
+
                 $stockLedger->original_receipt_date = @$documentLotDetail->original_receipt_date;
                 $stockLedger->lot_number = @$documentLotDetail->lot_number;
             }
@@ -834,9 +837,7 @@ class InventoryHelper
                     $stockLedger->store_id = $documentHeader->store_id ?? null;
                     $stockLedger->store = $documentHeader?->store?->store_code;
                     $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
-                    $stockLedger->original_receipt_date = $documentHeader->document_date;
-
-
+                    $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
                 }
             }
 
@@ -1003,7 +1004,7 @@ class InventoryHelper
                 if ($transactionType == 'receipt') {
                     $stockLedger->receipt_qty = @$qty;
                     $stockLedger->lot_number = InventoryHelper::generateLotNumber($documentHeader -> document_date, $documentHeader -> book_code, $documentHeader -> document_number);
-                    $stockLedger->original_receipt_date = $documentHeader->document_date;
+                    $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
                 }
                 $stockLedger->book_id = @$documentHeader->book_id;
                 $totalItemCost = ($qty*$documentDetail->rate) - ($documentDetail?->item_discount_amount + $documentDetail->header_discount_amount);
@@ -1052,7 +1053,8 @@ class InventoryHelper
             $stockLedger->group_currency_id = @$documentHeader->group_currency_id;
             $stockLedger->group_currency_code = @$documentHeader->group_currency_code;
             $stockLedger->group_currency_exg_rate = @$documentHeader->group_currency_exg_rate;
-            // $stockLedger->original_receipt_date = @$documentHeader->document_date;
+            // $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
+
 
             //  Detail Data
             $itemId = '';
@@ -1273,8 +1275,8 @@ class InventoryHelper
                 $approvedStockLedger = $approvedStockLedger->get();
                 if ($approvedStockLedger->isNotEmpty()) {
                     $availableQty = $approvedStockLedger->sum('receipt_qty');
-                    if ($availableQty < (float)$issueQty) {
-                        $message = "Available stock is less than the issue quantity. Available: $availableQty, Requested: $issueQty";
+                    if ($availableQty < (float) $inventoryUomQty) {
+                        $message = "Available stock is less than the issue quantity. Available: $availableQty, Requested: $inventoryUomQty";
                         $status = 'error';
                         $stockLedger = null;
                     } else{

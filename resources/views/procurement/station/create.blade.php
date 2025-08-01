@@ -145,6 +145,37 @@
                                                         </tbody>
                                                     </table>
                                                 </div> --}}
+                                                <div class="table-responsive-md">
+                                                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>S.NO</th>
+                                                                <th>Line <span class="text-danger">*</span></th>
+                                                                <th>Supervisor Name</th>
+                                                                <th>Action</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="sub-category-box">
+                                                            <tr>
+                                                                <td>1</td>
+                                                                <td><input type="text" name="lines[0][name]" class="form-control mw-100" /></td>
+                                                                <td><input type="text" name="lines[0][supervisor_name]" class="form-control mw-100" /></td>
+                                                                <td>
+                                                                    <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                        <tfoot>
+                                                        <tr>
+                                                            <td colspan="3" class="text-end">
+                                                                <a href="#" class="add-contactpeontxt mt-0 text-primary addnew mt-0">
+                                                                    <i data-feather="plus"></i> Add New Item
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                      </tfoot>
+                                                    </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -161,7 +192,27 @@
 @section('scripts')
 <script>
 $(document).ready(function() {
-    var $tableBody = $('#sub-station-box');
+    var $tableBody = $('#sub-category-box');
+    function updateRowIndices() {
+        var $rows = $('#sub-category-box tr');
+        $tableBody.find('tr').each(function(index) {
+            var $row = $(this);
+            $row.find('td').eq(0).text(index + 1);
+            $row.find('input[name]').each(function() {
+                var name = $(this).attr('name');
+                $(this).attr('name', name.replace(/\[\d+\]/, '[' + index + ']'));
+            });
+         
+            if ($rows.length === 1) {
+            $(this).find('.delete-row').prop('disabled', true); 
+                $(this).find('.delete-row').css('opacity', '0.5'); 
+            } else {
+                $(this).find('.delete-row').prop('disabled', false); 
+                $(this).find('.delete-row').css('opacity', '1'); 
+            }
+        });
+    }
+
     function applyCapsLock() {
         $('input[type="text"], input[type="number"]').each(function() {
             $(this).val($(this).val().toUpperCase());
@@ -171,53 +222,31 @@ $(document).ready(function() {
             $(this).val(value); 
         });
     }
-    function updateRowIndices() {
-        var $rows = $('#sub-station-box tr');
-        $tableBody.find('tr').each(function(index) {
-            var $row = $(this);
-            $row.find('td').eq(0).text(index + 1); 
-            $row.find('input[name]').each(function() {
-                var name = $(this).attr('name');
-                $(this).attr('name', name.replace(/\[\d+\]/, '[' + index + ']')); 
-            });
-            if ($rows.length === 1) {
-                $(this).find('.delete-row').hide(); 
-                $(this).find('.add-address').show(); 
-            } else {
-                $(this).find('.delete-row').show(); 
-                $(this).find('.add-address').toggle(index === 0); 
-            }
-        });
-    }
-    function addNewRow() {
-        var rowCount = $tableBody.children().length; 
-        var $currentRow = $tableBody.find('tr:last'); 
-        var $newRow = $currentRow.clone(); 
-        $newRow.find('input').each(function() {
+
+    $('.addnew').on('click', function(e) {
+        e.preventDefault();
+        var $firstRow = $tableBody.find('tr').first();
+        var $newRow = $firstRow.clone();
+        var rowCount = $tableBody.children().length;
+
+        $newRow.find('[name]').each(function() {
             var name = $(this).attr('name');
-            $(this).attr('name', name.replace(/\[\d+\]/, '[' + rowCount + ']')); 
-            $(this).val('');
+            $(this).attr('name', name.replace(/\[\d+\]/, '[' + rowCount + ']'));
+            $(this).removeClass('is-invalid');
         });
-        $tableBody.append($newRow); 
-        updateRowIndices(); 
+        $newRow.find('input').val(''); 
+        $newRow.find('.ajax-validation-error-span').remove();
+        $tableBody.append($newRow);
+        updateRowIndices();
         feather.replace();
         applyCapsLock();
-    }
-
+    });
     $tableBody.on('click', '.delete-row', function(e) {
         e.preventDefault();
-        var $row = $(this).closest('tr');
-        $row.remove();
-        updateRowIndices();
+        $(this).closest('tr').remove();
+        updateRowIndices(); 
     });
-
-    $tableBody.on('click', '.add-address', function(e) {
-        e.preventDefault();
-        addNewRow(); 
-    });
-    if ($tableBody.children().length === 0) {
-        addNewRow(); 
-    }
+    updateRowIndices();
     applyCapsLock();
 });
 </script>

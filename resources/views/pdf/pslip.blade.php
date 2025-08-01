@@ -215,12 +215,12 @@
                     </td>
                     <td
                     style="vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                        <b> {{ isset($val->item) ? @$val -> item -> item_name : "" }}</b><br>
-                        <b> {{ isset($val->item_code) ? @$val -> item_code : "" }}</b><br>
+                        <b> {{ isset($val->item) ? @$val ?-> item ?-> item_name : "" }}</b><br>
+                        <b> {{ isset($val->item_code) ? @$val ?-> item_code : "" }}</b><br>
                         @if(isset($val->item->specifications))
-                        @foreach($val->item->specifications as $data)
+                        @foreach($val?->item?->specifications as $data)
                         @if(isset($data->value))
-                        {{$data->specification_name}}:{{$data->value}}<br>
+                        {{$data?->specification_name}}:{{$data?->value}}<br>
                         @endif
                         @endforeach
                         @endif
@@ -228,54 +228,48 @@
                     </td>
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        @if(count($val?->item_attributes_array()))
+                        @if(isset($val->attributes) && count(@$val->attributes))
                             @php 
                                 $html = '';
-                                foreach ($val?->item_attributes_array() as $data) {
-                                    $attr = $data['group_name'];
-                                    foreach($data['values_data'] as $checker)
-                                    {
-                                        if($checker->selected == 'true')
-                                        {
-                                            $attrValue = $checker->value;
-                                        }
-                                    }
-                                    if (isset($attr) && isset($attrValue)) {
+                                foreach ($val?->attributes as $data) {
+                                    $attr = $data?->headerAttribute?->name;
+                                    $attrValue = $data?->headerAttributeValue?->value;
+                                    if ($attr && $attrValue) {
                                         if ($html) {
                                             $html .= ' , ';
                                         }
-                                        $html .= "<b>$attr</b> : $attrValue";
+                                        $html .= "$attr : $attrValue";
                                     } else {
-                                        $html .= "";
+                                        $html .= ":";
                                     }
                                 }
                             @endphp
-                        {!! $html !!}
+                        {{ $html }}<br>
                         @endif
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        {{@$val->uom->name}}
+                        {{@$val?->uom?->name}}
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{@$val->qty}}
+                        {{@$val?->qty}}
                     </td>
                     <td
                         style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        {{@$val->so->customer->company_name}}
+                        {{@$val?->so?->customer?->company_name}}
                     </td>
                     <td
                     style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ isset($val->so) ? strtoupper($val->so->book_code . "-" . $val->so->document_number) : " " }}
+                        {{ isset($val->so) ? strtoupper($val?->so?->book_code . "-" . $val?->so?->document_number) : " " }}
                     </td>
                     <td
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ isset($val->so) ? strtoupper($val->so->document_date) : " " }}
+                        {{ isset($val->so) ? strtoupper($val?->so?->document_date) : " " }}
                     </td>
                     <td
                     style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ isset($val->so) ? strtoupper($val->so->reference_no) : " " }}
+                        {{ isset($val->so) ? strtoupper($val?->so?->reference_no) : " " }}
                     </td>
                 </tr>
                 @endforeach
@@ -304,46 +298,52 @@
                             {{ $key + 1 }}
                         </td>
                         <td style="vertical-align: middle; padding: 10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
-                            <b>{{ @$val->item->item_name }}</b><br>
-                            {{ @$val->item->item_code }}<br />
+                            <b>{{ @$val?->item?->item_name }}</b><br>
+                            {{ @$val?->item?->item_code }}<br />
                             @if(isset($val->specifications))
-                                @foreach($val->specifications as $data)
+                                @foreach($val?->specifications as $data)
                                     @if(isset($data->value))
-                                        {{ $data->specification_name }}: {{ $data->value }}<br>
+                                        {{ $data?->specification_name }}: {{ $data?->value }}<br>
                                     @endif
                                 @endforeach
                             @endif
 
-                            {{ @$val->remarks }}
+                            {{ @$val?->remarks }}
                         </td>
                         <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                            @if(isset($val?->attributes) && count($val?->attributes))
-                                @php 
-                                    $html = '';
-                                    foreach ($val?->attributes as $data) {
-                                        $attr = $data->headerAttribute?->name;
-                                        $attrValue = $data->headerAttributeValue?->value;
-                                        if ($attr && $attrValue) {
-                                            if ($html) {
-                                                $html .= ' , ';
-                                            }
-                                            $html .= "$attr : $attrValue";
-                                        } else {
-                                            $html .= ":";
+                            @if(!empty($val?->item_attributes_array()))
+                            @php 
+                                $html = '';
+                                foreach ($val?->item_attributes_array() as $data) {
+                                    $attr = $data['group_name'];
+                                    foreach($data['values_data'] as $checker)
+                                    {
+                                        if($checker?->selected == 'true')
+                                        {
+                                            $attrValue = $checker?->value;
                                         }
                                     }
-                                @endphp
-                            {{ $html }}<br>
-                            @endif
+                                    if (isset($attr) && isset($attrValue)) {
+                                        if ($html) {
+                                            $html .= ' , ';
+                                        }
+                                        $html .= "<b>$attr</b> : $attrValue";
+                                    } else {
+                                        $html .= "";
+                                    }
+                                }
+                            @endphp
+                        {!! $html !!}
+                        @endif
                         </td>
                         <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                            {{ $val->rm_type == "rm" ? "RM" : "WIP" }}
+                            {{ $val?->rm_type == "rm" ? "RM" : "WIP" }}
                         </td>
                         <td width='40px' style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                            {{ @$val->uom->name }}
+                            {{ @$val?->uom?->name }}
                         </td>
                         <td style="vertical-align: middle; padding: 10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                            {{ @$val->qty }}
+                            {{ @$val?->qty }}
                         </td>
                     </tr>
                     @endforeach
@@ -362,7 +362,7 @@
                         <tr>
                             <td>
                                 <div style="min-height: 20px;">
-                                    {{$order->remarks}}
+                                    {{$order?->remarks}}
                                 </div>
                             </td>
                         </tr>

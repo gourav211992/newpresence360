@@ -23,7 +23,7 @@
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
                                     <h2 class="content-header-title float-start mb-0">
-                                        {{$servicesBooks['services'][0]->name ?? "Material Receipt"}}
+                                        {{$servicesBooks['services'][0]->name ?? "GRN"}}
                                     </h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
@@ -1588,6 +1588,8 @@
                 po_detail_id: getVal("[name*='[po_detail_id]']"),
                 job_order_id: getVal("[name*='[job_order_id]']"),
                 jo_detail_id: getVal("[name*='[jo_detail_id]']"),
+                store_id : $('.header_store_id').val(),
+                sub_store_id : $('.sub_store').val(),
                 remark: getVal("[name*='[remark]']"),
                 uom_id: getVal("[name*='[uom_id]']"),
                 qty: getVal("[name*='[order_qty]']"),
@@ -4136,7 +4138,7 @@
                     $('.asn_process').prop('disabled', true);
                     $(".supplier_invoice_no").prop('readonly', false);
                     $(".supplier_invoice_date").prop('readonly', false);
-                    
+
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');

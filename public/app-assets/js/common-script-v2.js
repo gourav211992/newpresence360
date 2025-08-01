@@ -353,6 +353,16 @@ function show_validation_error(msg) {
             return; // Skip default logic
         }
 
+        if (index === 'before_kaizen') {
+            $('#kaizen-before-error').html('<span class="help-block text-danger fw-bolder">' + value + '</span>');
+            return;
+        }
+
+        if (index === 'after_kaizen') {
+            $('#kaizen-after-error').html('<span class="help-block text-danger fw-bolder">' + value + '</span>');
+            return;
+        }
+
         if (index.match(/^questions\.\d+\.options$/)) {
             let match = index.match(/^questions\.(\d+)\.options$/);
             if (match) {
@@ -401,8 +411,12 @@ function show_validation_error(msg) {
             // $('form [name="' + name + '"]').last().closest("").addClass("is-invalid error");
             $('form [name="' + name + '"]').last().find("").append('<span class="help-block text-danger fw-bolder">' + value + "</span>");
         } else if ($('form [name="' + name + '[]"]').length > 0) {
-            $('form [name="' + name + '[]"]').addClass("is-invalid error");
-            $('form [name="' + name + '[]"]').parent().after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
+            if ($('form [name="' + name + '[]"]').hasClass("kaizen_team")) {
+                $('form [name="' + name + '[]"]').next('.select2').after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
+            } else {
+                $('form [name="' + name + '[]"]').addClass("is-invalid error");
+                $('form [name="' + name + '[]"]').parent().after('<span class="help-block text-danger fw-bolder">' + value + "</span>");
+            }
         } else {
             if ($('form [name="' + name + '"]').attr("type") == "checkbox" || $('form [name="' + name + '"]').attr("type") == "radio") {
                 if ($('form [name="' + name + '"]').attr("type") == "checkbox") {

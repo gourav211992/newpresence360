@@ -140,21 +140,23 @@
                                                     @enderror
                                                 </div>
                                             </div>
-                                            {{-- <div class="table-responsive-md">
+                                            <div class="table-responsive-md">
                                                 <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable">
                                                     <thead>
                                                         <tr>
                                                             <th>S.No</th>
-                                                            <th>Sub Station Name</th>
+                                                            <th>Line</th>
+                                                            <th>Supervisor Name</th>
                                                             <th>Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="sub-station-box">
-                                                        @forelse ($station->subStations as $key => $subStation)
+                                                        @forelse ($station->lines as $key => $subStation)
                                                             <tr data-id="{{ $subStation->id }}">
                                                                 <td>{{ $key + 1 }}</td>
-                                                                <input type="hidden" name="substations[{{ $key }}][id]" value="{{ $subStation->id }}">
-                                                                <td><input type="text" name="substations[{{ $key }}][name]" class="form-control mw-100" value="{{ $subStation->name }}" /></td>
+                                                                <input type="hidden" name="lines[{{ $key }}][id]" value="{{ $subStation->id }}">
+                                                                <td><input type="text" name="lines[{{ $key }}][name]" class="form-control mw-100" value="{{ $subStation?->name }}" /></td>
+                                                                <td><input type="text" name="lines[{{ $key }}][supervisor_name]" class="form-control mw-100" value="{{ $subStation?->supervisor_name }}"/></td>
                                                                 <td>
                                                                     <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a> 
                                                                     <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
@@ -163,7 +165,8 @@
                                                         @empty
                                                         <tr id="template-row">
                                                             <td></td>
-                                                            <td><input type="text" name="substations[0][name]" class="form-control mw-100" /></td>
+                                                            <td><input type="text" name="lines[0][name]" class="form-control mw-100" /></td>
+                                                            <td><input type="text" name="lines[0][supervisor_name]" class="form-control mw-100" /></td>
                                                             <td>
                                                                 <a href="#" class="text-primary add-address"><i data-feather="plus-square"></i></a>
                                                                 <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
@@ -172,7 +175,7 @@
                                                         @endforelse
                                                     </tbody>
                                                 </table>
-                                            </div> --}}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

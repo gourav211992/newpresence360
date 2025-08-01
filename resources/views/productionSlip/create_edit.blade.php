@@ -429,9 +429,17 @@
                                                                    {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
+<<<<<<< HEAD
+                                                                   @endif
+                                                                   <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="machineName">Machine</th>
+                                                                   <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="cycleCount">Cycle Count</th>
+                                                                   <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodLine">Line</th>
+                                                                   <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodSupervisor">Supervisor</th>
+=======
                                                                    @endif --}}
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="machineName">Machine</th>
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="cycleCount">Cycle Count</th>
+>>>>>>> 25ec3e8f291bf39ad3baf993076f92f6a2735099
                                                                    <th>Action</th>
                                                                  </tr>
                                                                </thead>
@@ -2070,10 +2078,6 @@
             });
         }
         renderIcons();
-<<<<<<< HEAD
-=======
-
->>>>>>> 84bc09dc5da0332b161ccbc2951ef55cbf448962
         let finalAmendSubmitButton = document.getElementById("amend-submit-button");
         viewModeScript(finalAmendSubmitButton ? false : true);
 
@@ -3503,6 +3507,16 @@ function openHeaderPullModal(type = null)
                         setAttributesUI(itemIndex,"#raw-materials tbody");
                     });
 
+                    if(currentOrders?.stationLines?.length) {
+                       let col = Number($("#item_details_td").attr('colspan'));
+                       $("#item_details_td").attr('colspan',col+2);
+                       $("#prodLine").removeClass('d-none');
+                       $("#prodSupervisor").removeClass('d-none');
+                    } else {
+                        $("#prodLine").addClass('d-none');
+                        $("#prodSupervisor").addClass('d-none');
+                    }
+
                     if (feather) {
                         feather.replace({
                             width: 14,
@@ -3860,6 +3874,15 @@ $(document).on("keyup",
             });
     bundleElement.setAttribute('data-bundles', encodeURIComponent(JSON.stringify(bundleScheduleArray)));
     renderBundleDetails(itemIndex, false);
+});
+
+$(document).on('change', 'select[name^="station_line_id"]', function () {
+    const supervisorName = $(this).find('option:selected').data('name');
+    const indexMatch = $(this).attr('name').match(/\[(\d+)\]/);
+    if (indexMatch) {
+        const index = indexMatch[1];
+        $('#supervisor_name_' + index).val(supervisorName || '');
+    }
 });
 
 // When WIP quantity changes

@@ -60,6 +60,11 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('whm')
                 ->namespace('App\Http\Controllers\WHM')
                 ->group(base_path('routes/whm.php'));
+
+            Route::middleware(['web'])
+                ->prefix('kaizen')
+                ->namespace('App\Http\Controllers\Kaizen')
+                ->group(base_path('routes/kaizen.php'));
         });
     }
 }

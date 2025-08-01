@@ -13,6 +13,7 @@ use App\Helpers\ConstantHelper;
 use Illuminate\Support\Str;
 use App\Helpers\Helper;
 use App\Models\Organization;
+use App\Models\StationLine;
 use Auth;
 
 class StationController extends Controller
@@ -102,17 +103,13 @@ class StationController extends Controller
         try {
             $station = Station::create($validatedData);
 
-            $subStations = $validatedData['substations'] ?? [];
+            $subStations = $validatedData['lines'] ?? [];
             foreach ($subStations as $subStation) {
                 if (!empty($subStation['name'])) {
-                    Station::create([
+                    StationLine::create([
                         'name' => $subStation['name'],
-                        'parent_id' => $station->id,
-                        'alias' => $subStation['alias'] ?? null,
-                        'status' => $subStation['status'] ?? $station->status,
-                        'organization_id' => $validatedData['organization_id'],
-                        'group_id' => $validatedData['group_id'],
-                        'company_id' => $validatedData['company_id'],
+                        'supervisor_name' => $subStation['supervisor_name'] ?? null,
+                        'station_id' => $station->id
                     ]);
                 }
             }
@@ -188,43 +185,75 @@ class StationController extends Controller
                 'is_consumption' => $validatedData['is_consumption']
             ]);
 
-            $subStations = $validatedData['substations'] ?? [];
-            $newStationIds = [];
+            $lines = $request->input('lines', []);
+            $existingLineIds = [];
 
-            foreach ($subStations as $subStation) {
-                $subStationId = $subStation['id'] ?? null;
-                
-                if ($subStationId) {
-                    $sub = Station::find($subStationId);
-                    if ($sub) {
-                        $sub->update([
-                            'name' => $subStation['name'],
-                            'alias' => $subStation['alias'] ?? null,
-                            'status' => $subStation['status'] ?? $station->status,
-                            'parent_id' => $station->id,
-                            'organization_id' => $validatedData['organization_id'],
-                            'group_id' => $validatedData['group_id'],
-                            'company_id' => $validatedData['company_id'],
+            foreach ($lines as $line) {
+                if (!isset($line['name']) || trim($line['name']) === '') {
+                    continue;
+                }
+                if (!empty($line['id'])) {
+                    $stationLine = StationLine::where('id', $line['id'])
+                        ->where('station_id', $station->id)
+                        ->first();
+                    if ($stationLine) {
+                        $stationLine->update([
+                            'name' => $line['name'],
+                            'supervisor_name' => $line['supervisor_name'] ?? null,
                         ]);
-                        $newStationIds[] = $sub->id;
+                        $existingLineIds[] = $stationLine->id;
                     }
                 } else {
-                    $sub = Station::create([
-                        'name' => $subStation['name'],
-                        'alias' => $subStation['alias'] ?? null,
-                        'status' => $subStation['status'] ?? $station->status,
-                        'parent_id' => $station->id,
-                        'organization_id' => $validatedData['organization_id'],
-                        'group_id' => $validatedData['group_id'],
-                        'company_id' => $validatedData['company_id'],
+                    $newLine = StationLine::create([
+                        'station_id' => $station->id,
+                        'name' => $line['name'],
+                        'supervisor_name' => $line['supervisor_name'] ?? null,
                     ]);
-                    $newStationIds[] = $sub->id;
+                    $existingLineIds[] = $newLine->id;
                 }
             }
-
-            Station::where('parent_id', $station->id)
-                ->whereNotIn('id', $newStationIds)
+            // Delete removed lines
+            StationLine::where('station_id', $station->id)
+                ->whereNotIn('id', $existingLineIds)
                 ->delete();
+
+            // $subStations = $validatedData['substations'] ?? [];
+            // $newStationIds = [];
+
+            // foreach ($subStations as $subStation) {
+            //     $subStationId = $subStation['id'] ?? null;
+                
+            //     if ($subStationId) {
+            //         $sub = Station::find($subStationId);
+            //         if ($sub) {
+            //             $sub->update([
+            //                 'name' => $subStation['name'],
+            //                 'alias' => $subStation['alias'] ?? null,
+            //                 'status' => $subStation['status'] ?? $station->status,
+            //                 'parent_id' => $station->id,
+            //                 'organization_id' => $validatedData['organization_id'],
+            //                 'group_id' => $validatedData['group_id'],
+            //                 'company_id' => $validatedData['company_id'],
+            //             ]);
+            //             $newStationIds[] = $sub->id;
+            //         }
+            //     } else {
+            //         $sub = Station::create([
+            //             'name' => $subStation['name'],
+            //             'alias' => $subStation['alias'] ?? null,
+            //             'status' => $subStation['status'] ?? $station->status,
+            //             'parent_id' => $station->id,
+            //             'organization_id' => $validatedData['organization_id'],
+            //             'group_id' => $validatedData['group_id'],
+            //             'company_id' => $validatedData['company_id'],
+            //         ]);
+            //         $newStationIds[] = $sub->id;
+            //     }
+            // }
+
+            // Station::where('parent_id', $station->id)
+            //     ->whereNotIn('id', $newStationIds)
+            //     ->delete();
 
                 DB::commit();
 
@@ -248,11 +277,23 @@ class StationController extends Controller
     {
         DB::beginTransaction();
          try {
-            $substation = Station::findOrFail($id);
+            // $substation = Station::findOrFail($id);
+            // $referenceTables = [
+            //     'erp_stations' => ['parent_id'],
+            // ];
+            // $result = $substation->deleteWithReferences($referenceTables);
+            // if (!$result['status']) {
+            //     return response()->json([
+            //         'status' => false,
+            //         'message' => $result['message'],
+            //         'referenced_tables' => $result['referenced_tables'] ?? [],
+            //     ], 400);
+            // }
+            $line = StationLine::findOrFail($id);
             $referenceTables = [
-                'erp_stations' => ['parent_id'],
+                'erp_station_lines' => ['id'],
             ];
-            $result = $substation->deleteWithReferences($referenceTables);
+            $result = $line->deleteWithReferences($referenceTables);
             if (!$result['status']) {
                 return response()->json([
                     'status' => false,
@@ -293,7 +334,12 @@ class StationController extends Controller
                     'referenced_tables' => $result['referenced_tables'] ?? []
                 ], 400);
             }
-    
+            
+            // production line delete
+            if($station->lines->count()) {
+                $station->lines()->delete();
+            }
+            
             DB::commit();
 
             return response()->json([

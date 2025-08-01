@@ -1071,9 +1071,9 @@ class GateEntryController extends Controller
 
             # MRN Header save
             $totalTaxValue = 0.00;
-            $mrn->gate_entry_no = $request->gate_entry_no ?? '';
+            $mrn->gate_entry_no = ($mrn->book_code ?? '') .'-'. ($mrn->document_number ?? '');
+            $mrn->gate_entry_date = $mrn->document_date ? date('Y-m-d', strtotime($mrn->document_date)) : date('Y-m-d');
             $mrn->store_id = $request->header_store_id;
-            $mrn->gate_entry_date = $request->gate_entry_date ? date('Y-m-d', strtotime($request->gate_entry_date)) : '';
             $mrn->supplier_invoice_date = $request->supplier_invoice_date ? date('Y-m-d', strtotime($request->supplier_invoice_date)) : '';
             $mrn->supplier_invoice_no = $request->supplier_invoice_no ?? '';
             $mrn->eway_bill_no = $request->eway_bill_no ?? '';

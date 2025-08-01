@@ -801,11 +801,9 @@
 
         function vendorOnChange(vendorId, type=null, typeId=null) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let document_date = $("[name='document_date']").val();
             let actionUrl = "{{route('expense-adv.get.address')}}"
             +'?id='+vendorId+
             '&store_id='+store_id+
-            '&document_date='+document_date+
             '&type='+type+
             '&typeId='+typeId;
             fetch(actionUrl).then(response => {

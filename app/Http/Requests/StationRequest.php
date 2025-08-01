@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Helpers\Helper;
+use App\Models\StationLine;
 use Auth;
 
 class StationRequest extends FormRequest
@@ -80,10 +81,45 @@ class StationRequest extends FormRequest
             'group_id' => 'nullable|exists:groups,id', 
             'company_id' => 'nullable',
             'organization_id' => 'nullable|exists:organizations,id', 
-            'substations.*.id' => 'nullable|exists:erp_stations,id',
-            'substations.*.name' => 'nullable|string|max:100',
+            
+            'lines' => 'nullable|array',
+            'lines.*.id' => 'nullable',
+            'lines.*.name' => ['required', 'string', 'max:100'],
+            'lines.*.supervisor_name' => ['nullable', 'string', 'max:100'],
         ];
     }
+
+
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $lines = $this->input('lines', []);
+            $stationId = $this->route('id');
+            $names = [];
+            foreach ($lines as $index => $line) {
+                $name = trim($line['name'] ?? '');
+                // Check duplicate in request
+                if (in_array($name, $names)) {
+                    $validator->errors()->add("lines.$index.name", "Duplicate line name in the form.");
+                } else {
+                    $names[] = $name;
+                }
+                // Check existing in DB (for update)
+                if ($stationId && $name) {
+                    $existing = StationLine::where('station_id', $stationId)
+                        ->where('name', $name)
+                        ->when(isset($line['id']), function ($q) use ($line) {
+                            $q->where('id', '!=', $line['id']);
+                        })
+                        ->exists();
+                    if ($existing) {
+                        $validator->errors()->add("lines.$index.name", "Line name already exists for this station.");
+                    }
+                }
+            }
+        });
+    }
+
 
     public function messages(): array
     {
@@ -100,8 +136,8 @@ class StationRequest extends FormRequest
             'status.in' => 'The status must be one of the following: active, inactive.',
             'group_id.exists' => 'The selected group is invalid.',
             'organization_id.exists' => 'The selected organization is invalid.',
-            'substations.*.name.string' => ' names must be strings.',
-            'substations.*.name.max' => 'names may not be greater than 100 characters.',
+            'lines.*.name.string' => ' names must be strings.',
+            'lines.*.name.max' => 'names may not be greater than 100 characters.',
         ];
     }
 }

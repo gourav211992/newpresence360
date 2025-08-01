@@ -626,6 +626,7 @@ class VoucherController extends Controller
 
     public function index(Request $request)
     {
+       
         $parentURL = request()->segments()[0];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
         if (count($servicesBooks['services']) == 0) {

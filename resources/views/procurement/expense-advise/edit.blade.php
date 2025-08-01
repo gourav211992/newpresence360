@@ -326,13 +326,13 @@
                                                                                 <i data-feather='edit-3'></i> Edit
                                                                             </a>
                                                                         </label>
-                                                                        <div class="mrnaddedd-prim shipping_detail">
-                                                                            @if ($mrn->latestBillingAddress())
-                                                                                {{ $mrn->latestBillingAddress()->display_address }}
-                                                                            @else
-                                                                                {{ $mrn->bill_address?->display_address }}
-                                                                            @endif
-                                                                        </div>
+                                                                        <div class="mrnaddedd-prim billing_detail">
+                                                                        @if($mrn->latestBillingAddress())
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
+                                                                        @else
+                                                                            {{$mrn->bill_address?->display_address}}
+                                                                        @endif
+                                                                    </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -352,21 +352,8 @@
                                                                                 <i data-feather='edit-3'></i> Edit
                                                                             </a>
                                                                         </label>
-                                                                        <div class="mrnaddedd-prim billing_detail">
-                                                                            @if ($mrn->latestBillingAddress())
-                                                                                {{ $mrn->latestBillingAddress()->display_address }}
-                                                                                <input type="hidden"
-                                                                                    name="billing_address"
-                                                                                    id="billing_address"
-                                                                                    value="{{ $mrn->latestBillingAddress()->display_address }}">
-                                                                            @else
-                                                                                {{ $mrn->billingAddress?->display_address }}
-                                                                                <input type="hidden"
-                                                                                    name="billing_address"
-                                                                                    id="billing_address"
-                                                                                    value="{{ $mrn->billingAddress?->display_address }}">
-                                                                            @endif
-                                                                        </div>
+                                                                        <div class="mrnaddedd-prim org_address">
+                                                                        {{ $deliveryAddress }}</div>
                                                                     </div>
                                                                 </div>
                                                             </div>

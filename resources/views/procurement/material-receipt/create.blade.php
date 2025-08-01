@@ -102,7 +102,7 @@
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
                                     <h2 class="content-header-title float-start mb-0">
-                                        {{$servicesBooks['services'][0]->name ?? "Material Receipt"}}
+                                        {{$servicesBooks['services'][0]->name ?? "GRN"}}
                                     </h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
@@ -1488,6 +1488,8 @@
                 jo_detail_id: getVal("[name*='[jo_detail_id]']"),
                 sale_order_id: getVal("[name*='[sale_order_id]']"),
                 so_detail_id: getVal("[name*='[so_detail_id]']"),
+                store_id : $('.header_store_id').val(),
+                sub_store_id : $('.sub_store').val(),
                 remark: getVal("[name*='[remark]']"),
                 uom_id: getVal("[name*='[uom_id]']"),
                 qty: getVal("[name*='[order_qty]']"),
@@ -3363,7 +3365,7 @@
                     $('.asn_process').prop('disabled', true);
                     $(".supplier_invoice_no").prop('readonly', false);
                     $(".supplier_invoice_date").prop('readonly', false);
-                    
+
                     switch (moduleProcess) {
                         case 'asn-process':
                             $("#reference_from").addClass('d-none');
@@ -3401,6 +3403,7 @@
                         $("[name='eway_bill_no']").val(geHeader.eway_bill_no);
                         $("[name='transporter_name']").val(geHeader.transporter_name);
                         $("[name='vehicle_no']").val(geHeader.vehicle_no);
+                        $("[name='manual_entry_no']").val(geHeader.manual_entry_no);
                     } else if (moduleType === 'suppl-inv' && vendorAsn) {
                         $("[name='supplier_invoice_no']").val(vendorAsn.suppl_invoice_no);
                         $("[name='supplier_invoice_date']").val(vendorAsn.suppl_invoice_date);

@@ -170,6 +170,7 @@ class ErpProductionSlipController extends Controller
         $organizationId = $organization ?-> id ?? null;
         $shifts = Shift::where('organization_id',$organizationId)->where("status", ConstantHelper::ACTIVE)->get();
         $machines = collect();
+        $stationLines = collect();
         $groupAlias = $user?->auth_user?->group_alias ?? 'Staqo';
         $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
         $data = [
@@ -184,6 +185,7 @@ class ErpProductionSlipController extends Controller
             'redirect_url' => $redirectUrl,
             'shifts' => $shifts,
             'machines' => $machines,
+            'stationLines' => $stationLines,
             'isWipQty' => $isWipQty
         ];
 
@@ -257,6 +259,11 @@ class ErpProductionSlipController extends Controller
                 ->where('status', ConstantHelper::ACTIVE)
                 ->get(); 
             }
+            $stationLines = collect();
+            if($doc?->mo) {
+                $stationLines = $doc?->mo?->station?->lines; 
+            }
+
             $groupAlias = $user?->auth_user?->group_alias ?? 'Staqo';
             $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
             $data = [
@@ -276,7 +283,8 @@ class ErpProductionSlipController extends Controller
                 'startingBundleNo' => $startingBundleNo,
                 'editableBundle' => $editableBundle,
                 'redirect_url' => $redirect_url,
-                'machines' => $machines
+                'machines' => $machines,
+                'stationLines' => $stationLines
             ];
 
             return view('productionSlip.create_edit', $data);  
@@ -458,7 +466,10 @@ class ErpProductionSlipController extends Controller
                                 'rejected_qty' => isset($request -> item_rejected_qty[$itemKey]) ? $request -> item_rejected_qty[$itemKey] : null,
                                 'wip_qty' => isset($request -> item_wip_qty[$itemKey]) ? $request -> item_wip_qty[$itemKey] : null,
                                 'machine_id' => isset($request -> machine_id[$itemKey]) ? $request -> machine_id[$itemKey] : [],
+                                'station_line_id' => isset($request -> line[$itemKey]) ? $request -> line[$itemKey] : null,
                                 'cycle_count' => isset($request -> cycle_count[$itemKey]) ? $request -> cycle_count[$itemKey] : null,
+                                'station_line_id' => isset($request -> station_line_id[$itemKey]) ? $request -> station_line_id[$itemKey] : null,
+                                'supervisor_name' => isset($request -> supervisor_name[$itemKey]) ? $request -> supervisor_name[$itemKey] : null,
                             ]);
                         }
                     }
@@ -493,6 +504,8 @@ class ErpProductionSlipController extends Controller
                             'wip_qty' => $itemDataValue['wip_qty'] ?? 0,
                             'machine_id' => $itemDataValue['machine_id'] ?? [],
                             'cycle_count' => $itemDataValue['cycle_count'] ?? null,
+                            'station_line_id' => $itemDataValue['station_line_id'] ?? null,
+                            'supervisor_name' => $itemDataValue['supervisor_name'] ?? null,
                         ];
                         if (isset($request -> pslip_item_id[$itemDataKey])) {
                             $pslipItemExit = ErpPslipItem::where('id', $request -> pslip_item_id[$itemDataKey])
@@ -655,7 +668,8 @@ class ErpProductionSlipController extends Controller
                                         ]);
                                     }
                                 }
-                                if ($itemQtyBundleWise != $psItem -> qty) {
+                                $checkQty = floatval($psItem -> accepted_qty) + floatval($psItem->subprime_qty);
+                                if ($itemQtyBundleWise != $checkQty) {
                                     DB::rollBack();
                                     return response() -> json([
                                         'message' => 'Item No. ' . ($itemDataKey + 1) . ' has exceeded bundle qty',
@@ -1045,16 +1059,17 @@ class ErpProductionSlipController extends Controller
                 ->where('status', ConstantHelper::ACTIVE)
                 ->get(); 
             }
+            $stationLines = $order[0]?->mo?->station?->lines ?? collect();
             $consumptions = MoBomMapping::whereIn('mo_product_id',$docIds)->orderBy('mo_product_id')->get();
             $consHtml = view('productionSlip.partials.process-consumtion', ['consumptions' => $consumptions])->render();
             $user = Helper::getAuthenticatedUser();
             $groupAlias = $user->group?->alias ?? 'Staqo';
             $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
 
-            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo, 'machines' => $machines, 'isWipQty' => $isWipQty])->render();
+            $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo, 'machines' => $machines, 'isWipQty' => $isWipQty, 'stationLines' => $stationLines])->render();
             return response() -> json([
                 'message' => 'Data found',
-                'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml, 'is_machine' => $machines->count() > 0 ? true : false],
+                'data' => ['html' => $html, 'mo' => $mo, 'consHtml' => $consHtml, 'is_machine' => $machines->count() > 0 ? true : false, 'stationLines' => $stationLines],
                 'status' => 200
             ]);
         } catch(Exception $ex) {
