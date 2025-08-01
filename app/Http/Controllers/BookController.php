@@ -431,9 +431,13 @@ class BookController extends Controller
                 {
                         foreach ($request->gl_param_ids as $orgServiceParamKey => $orgServiceParamId)
                         {
-                            if ($request->gl_param_names[$orgServiceParamKey] === ServiceParametersHelper::GL_POSTING_SERIES_PARAM) {
+                            if ($request->gl_param_names[$orgServiceParamKey] === ServiceParametersHelper::GL_POSTING_SERIES_PARAM || $request->gl_param_names[$orgServiceParamKey] === ServiceParametersHelper::CONTRA_POSTING_SERIES_PARAM) {
                                 $financialBookCode = isset($request->gl_params[$orgServiceParamKey]) ? $request->gl_params[$orgServiceParamKey][0] : null;
                                 $financialBook = Book::withDefaultGroupCompanyOrg() -> where('book_code', $financialBookCode) -> where('manual_entry', 0) -> first();
+                            }
+                            else if ($request->gl_param_names[$orgServiceParamKey] === ServiceParametersHelper::CONTRA_POSTING_SERIES_PARAM) {
+                                $financialBookCode = isset($request->gl_params[$orgServiceParamKey]) ? $request->gl_params[$orgServiceParamKey][0] : null;
+                                $financialBook = Book::withDefaultGroupCompanyOrg() -> where('book_code', $financialBookCode) -> first();
                             }
                             OrganizationBookParameter::create([
                                 'book_id' => $insert->id,
@@ -737,7 +741,59 @@ class BookController extends Controller
                         $bookParam->param_array_html = $htmlData;
 
                     }
-                } else {
+                }
+                else if ($bookParam->parameter_name === ServiceParametersHelper::CONTRA_POSTING_SERIES_PARAM) {
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
+                    if (isset($orgServiceParam)) {
+                        $selectOptions = "";
+
+                        $financialServiceAlias = ServiceParametersHelper::getFinancialServiceAlias($serviceAlias);
+
+                        $financialService = Service::where('alias', $financialServiceAlias) -> first();
+
+                        $applicableSeries = Helper::getContraBooks();
+                        foreach ($applicableSeries as $singleSeries) {
+                            $referencedBookIds = OrganizationBookParameter::where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)
+                                -> whereJsonContains('parameter_value', $singleSeries -> id) -> where('book_id', "!=", $book -> id) -> first();
+                            if (!isset($referencedBookIds)) {
+                                $label = strtoupper($singleSeries->book_code);
+                                $value = $singleSeries->id;
+                                if (in_array($value, $bookParam->parameter_value)) {
+                                    $selectOptions .= "<option value = '$value' selected >$label</option>";
+                                } else {
+                                    $selectOptions .= "<option value = '$value' >$label</option>";
+                                }
+                            }
+                        }
+                        $paramLabel = ServiceParametersHelper::SERVICE_PARAMETERS[$orgServiceParam->parameter_name];
+
+                        $paramName = $orgServiceParam->parameter_name;
+                        $paramId = $orgServiceParam->service_param_id;
+                        $headerId = $paramName . "_header";
+                        $htmlData = "
+                        <div class='row align-items-center mb-1' id = '$headerId'>
+                            <div class='col-md-3'>
+                                <label class='form-label'>$paramLabel</label>
+                            </div>
+                            <div class='col-md-5'>
+                                <input type = 'hidden' value = '$paramName' name = 'gl_param_names[]' />
+                                <input type = 'hidden' value = '$paramId' name = 'gl_param_ids[]' />
+                                <select
+                                    class='form-select mw-100 select2 referenceService'
+                                    placeholder = 'Select Series'
+                                    name = 'gl_params[$bookParamKey][]'
+                                    id = '$paramName'
+                                    >
+                                    $selectOptions
+                                </select>
+                            </div>
+                        </div>
+                        ";
+                        $bookParam->param_array_html = $htmlData;
+
+                    }
+                } 
+                else {
                     $label = ServiceParametersHelper::SERVICE_PARAMETERS[$bookParam->parameter_name];
                     $selectOptions = "";
                     $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->latest()->first();
@@ -1185,6 +1241,48 @@ class BookController extends Controller
 
                         $applicableSeries = Book::withDefaultGroupCompanyOrg() -> where('manual_entry', 0) -> where('service_id', $financialService -> id) -> get();
                         $allBookCodes = [];
+                        foreach ($applicableSeries as $book) {
+                            $optionLabel = ($book -> book_code);
+                            $selectOptions .= "<option value = '$optionLabel' >$optionLabel</option>";
+                            array_push($allBookCodes, $book -> book_code);
+                        }
+                        if (!in_array($request -> book_code, $allBookCodes) && $request -> book_code)
+                        {
+                            $labelValue = $request -> book_code;
+                            $selectOptions .= "<option value = '$labelValue' selected>$labelValue</option>";
+                        }
+                        $paramName = $orgServiceParam->parameter_name;
+                        $paramId = $orgServiceParam->service_param_id;
+                        $headerId = $paramName . "_header";
+
+                        $htmlData = "
+                        <div class='row align-items-center mb-1' id = '$headerId'>
+                            <div class='col-md-3'>
+                                <label class='form-label'>$label</label>
+                            </div>
+                            <div class='col-md-5'>
+                                <input type = 'hidden' value = '$paramName' name = 'gl_param_names[]' />
+                                <input type = 'hidden' value = '$paramId' name = 'gl_param_ids[]' />
+                                <select
+                                    class='form-select mw-100 select2'
+                                    id='$paramName'
+                                    name = 'gl_params[$orgServiceParamKey][]'
+                                    >
+                                    $selectOptions
+                                </select>
+                            </div>
+                        </div>
+                        ";
+                        $currentGlParam = $htmlData;
+                    }else if ($orgServiceParam->parameter_name === ServiceParametersHelper::CONTRA_POSTING_SERIES_PARAM) {
+                        $label = ServiceParametersHelper::SERVICE_PARAMETERS[$orgServiceParam->parameter_name];
+                        $selectOptions = "";
+                        $financialServiceAlias = ServiceParametersHelper::getFinancialServiceAlias($organizationService -> service -> alias);
+                        $financialService = Service::where('alias', $financialServiceAlias) -> first();
+
+                        $applicableSeries = Helper::getContraBooks();
+                        $allBookCodes = [];
+                        
                         foreach ($applicableSeries as $book) {
                             $optionLabel = ($book -> book_code);
                             $selectOptions .= "<option value = '$optionLabel' >$optionLabel</option>";

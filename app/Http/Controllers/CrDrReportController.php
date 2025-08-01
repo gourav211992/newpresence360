@@ -2541,7 +2541,7 @@ class CrDrReportController extends Controller
     $reportedLedgers = [];
 
     $flattened = collect($data)->flatMap(function ($voucher) use ($orgs,$type, &$validationErrors, &$reportedLedgers) {
-        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers,$orgs,$request) {
+        return collect($voucher)->map(function ($item) use ($type, &$validationErrors, &$reportedLedgers,$orgs) {
             $ledger = Ledger::with([ 'vendor' => function ($query) use ($orgs,$type) {
         $query->when(function () use ($type) {
             return $type === ConstantHelper::PAYMENTS_SERVICE_ALIAS;
