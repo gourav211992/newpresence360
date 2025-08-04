@@ -730,69 +730,8 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal"
                                 aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            <div class="row">
-
-                                <div class="col-md-3">
-                                    <div class="mb-1">
-                                        <label class="form-label">Series <span class="text-danger">*</span></label>
-                                        <input id = "voucher_book_code" class="form-control" disabled="">
-                                        <input type="hidden" class="form-control" name="data" id="ldata">
-                                        <input type="hidden" class="form-control" name="doc" id="doc">
-                                        <input type="hidden" class="form-control" name="loan_data" id="loan_data">
-                                        <input type="hidden" class="form-control" name="remakrs" id="remakrs">
-                                    </div>
-                                </div>
-
-                                <div class="col-md-3">
-                                    <div class="mb-1">
-                                        <label class="form-label">Voucher No <span class="text-danger">*</span></label>
-                                        <input id = "voucher_doc_no" class="form-control" disabled="" value="">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-1">
-                                        <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
-                                        <input id = "voucher_date" class="form-control" disabled="" value="">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="mb-1">
-                                        <label class="form-label">Currency <span class="text-danger">*</span></label>
-                                        <input id = "voucher_currency" class="form-control" disabled=""
-                                            value="">
-                                    </div>
-                                </div>
-
-                                <div class="col-md-12">
-
-
-                                    <div class="table-responsive">
-                                        <table
-                                            class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-                                            <thead>
-                                                <tr>
-                                                    <th>Type</th>
-                                                    <th>Group</th>
-                                                    <th>Leadger Code</th>
-                                                    <th>Leadger Name</th>
-                                                    <th>Cost Center</th>
-                                                    <th class="text-end">Debit</th>
-                                                    <th class="text-end">Credit</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id = "posting-table">
-
-
-                                            </tbody>
-
-
-                                        </table>
-                                    </div>
-                                </div>
-
-
-                            </div>
+                        <div class="modal-body" id="posting">
+                            
                         </div>
                         <div class="modal-footer text-end">
                             <button onclick = "postVoucher(this);" id = "posting_button" type = "button"
@@ -1095,7 +1034,62 @@
                         return;
                     }
                     const voucherEntries = data.data.data;
-                    var voucherEntriesHTML = ``;
+                    let voucher_no = voucherEntries.document_number;
+                    
+                   
+
+
+                    var voucherEntriesHTML = `<div class="row">
+
+                                <div class="col-md-2">
+                                    <div class="mb-1">
+                                        <label class="form-label">Series <span class="text-danger">*</span></label>
+                                        <input id = "voucher_book_code" class="form-control" value="${voucherEntries.book_code}" disabled="">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="mb-1">
+                                        <label class="form-label">Voucher No <span class="text-danger">*</span></label>
+                                        <input id = "voucher_doc_no" class="form-control" disabled="" value="${voucher_no}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-1">
+                                        <label class="form-label">Voucher Date <span class="text-danger">*</span></label>
+                                        <input id = "voucher_date" class="form-control" disabled="" value="${moment(voucherEntries.document_date).format('D/M/Y')}">
+                                    </div>
+                                </div>
+                                 <div class="col-md-2">
+                                    <div class="mb-1">
+                                        <label class="form-label">Organization <span class="text-danger">*</span></label>
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-1">
+                                        <label class="form-label">Currency <span class="text-danger">*</span></label>
+                                        <input id = "voucher_currency" class="form-control" value="${voucherEntries.currency_code}" disabled=""
+                                            value="">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <div class="table-responsive">
+                                        <table
+                                            class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+                                            <thead>
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Group</th>
+                                                    <th>Leadger Code</th>
+                                                    <th>Leadger Name</th>
+                                                    <th>Cost Center</th>
+                                                    <th class="text-end">Debit</th>
+                                                    <th class="text-end">Credit</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id = "posting-table">`;
                     Object.keys(voucherEntries.ledgers).forEach((voucher) => {
                         voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
                             voucherEntriesHTML += `
@@ -1117,13 +1111,17 @@
                 <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
                 <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
+                      </tbody>
+
+
+                                        </table>
+                                    </div>
+                                </div>
+
+
+                            </div>
             `;
-                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
-                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
-                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format(
-                        'D/M/Y');
-                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
-                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
+                    document.getElementById('posting').innerHTML = voucherEntriesHTML;
                     if (type === "posted") {
                         document.getElementById('posting_button').style.display = 'none';
                     } else {
@@ -1975,71 +1973,131 @@
         }
 
         function proceedWithVoucher(type = "not_posted") {
-            resetPostVoucher();
+    resetPostVoucher();
 
-            const apiURL = "{{ route('paymentVouchers.getPostingDetails') }}";
-            const remarks = $("#remarks").val();
-            $.ajax({
-                url: apiURL + "?book_id=" + "{{ $data->book_id }}" + "&document_id=" + "{{ $data->id }}" +
-                    "&remarks=" + remarks + "&type={{ $data->document_type }}",
-                type: "GET",
-                dataType: "json",
-                success: function(data) {
-                    if (!data.data.status) {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.data.message,
-                            icon: 'error',
-                        });
-                        return;
-                    }
-                    const voucherEntries = data.data.data;
-                    var voucherEntriesHTML = ``;
-                    Object.keys(voucherEntries.ledgers).forEach((voucher) => {
-                        voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
-                            voucherEntriesHTML += `
-                    <tr>
-                    <td>${voucher}</td>
-                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
-                    <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
-                    <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
-                    <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
-                    <td class="text-end indian-number">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
-                    <td class="text-end indian-number">${voucherDetail.credit_amount > 0 ? parseFloat(voucherDetail.credit_amount).toFixed(2) : ''}</td>
-					</tr>
-                    `
-                        });
-                    });
-                    voucherEntriesHTML += `
-            <tr>
-                <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
-                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
-                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
-			</tr>
-            `;
-                    document.getElementById('posting-table').innerHTML = voucherEntriesHTML;
-                    document.getElementById('voucher_doc_no').value = voucherEntries.document_number;
-                    document.getElementById('voucher_date').value = moment(voucherEntries.document_date).format(
-                        'D/M/Y');
-                    document.getElementById('voucher_book_code').value = voucherEntries.book_code;
-                    document.getElementById('voucher_currency').value = voucherEntries.currency_code;
-                    if (type === "posted") {
-                        document.getElementById('posting_button').style.display = 'none';
-                    } else {
-                        document.getElementById('posting_button').style.removeProperty('display');
-                    }
-                    $('#postvoucher').modal('show');
+    const apiURL = "{{ route('paymentVouchers.getPostingDetails') }}";
+    const remarks = $("#remarks").val();
+    let rtype= "get";
+    if(type=="posted")
+    rtype="view";
+
+
+    $.ajax({
+        
+        
+
+        url: apiURL + "?book_id=" + "{{ $data->book_id }}" + "&document_id=" + "{{ $data->id }}" +
+            "&remarks=" + remarks + "&type="+rtype,
+        type: "GET",
+        dataType: "json",
+        success: function(datas) {
+            if (datas.status !== "success" || !Array.isArray(datas.data)) {
+                Swal.fire("Error!", "Invalid response format.", "error");
+                return;
+            }
+
+            // Loop through each voucher in the array
+            datas.data.forEach((voucherWrapper) => {
+                if (!voucherWrapper || voucherWrapper.status === false) {
+                    Swal.fire("Error!", voucherWrapper?.message || "Unknown error occurred", "error");
+                    return;
                 }
-            });
 
+                const voucherEntries = voucherWrapper.data;
+
+                let voucherEntriesHTML = `
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label class="form-label">Series</label>
+                            <input class="form-control" value="${voucherEntries.book_code}" disabled>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Voucher No</label>
+                            <input class="form-control" value="${voucherEntries.document_number}" disabled>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Voucher Date</label>
+                            <input class="form-control" value="${moment(voucherEntries.document_date).format('D/M/Y')}" disabled>
+                        </div>
+                         <div class="col-md-3">
+                                    <div class="mb-1">
+                                        <label class="form-label">Organization <span class="text-danger">*</span></label>
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                    </div>
+                                </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Currency</label>
+                            <input class="form-control" value="${voucherEntries.currency_code}" disabled>
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Group</th>
+                                            <th>Ledger Code</th>
+                                            <th>Ledger Name</th>
+                                            <th>Cost Center</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Credit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+
+                Object.keys(voucherEntries.ledgers).forEach((typeKey) => {
+                    voucherEntries.ledgers[typeKey].forEach((entry) => {
+                        voucherEntriesHTML += `
+                            <tr>
+                                <td>${typeKey}</td>
+                                <td>${entry.ledger_group_code || ''}</td>
+                                <td>${entry.ledger_code || ''}</td>
+                                <td>${entry.ledger_name || ''}</td>
+                                <td>${entry.cost_name || ''}</td>
+                                <td class="text-end">${entry.debit_amount > 0 ? parseFloat(entry.debit_amount).toFixed(2) : ''}</td>
+                                <td class="text-end">${entry.credit_amount > 0 ? parseFloat(entry.credit_amount).toFixed(2) : ''}</td>
+                            </tr>`;
+                    });
+                });
+
+                voucherEntriesHTML += `
+                    <tr>
+                        <td colspan="5" class="text-end fw-bold">Total</td>
+                        <td class="text-end fw-bold">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td class="text-end fw-bold">${voucherEntries.total_credit.toFixed(2)}</td>
+                    </tr>
+                    </tbody>
+                </table>
+                </div>
+                </div>
+                </div>`;
+
+                // Append to modal container (supports multiple vouchers if needed)
+                $('#posting').append(voucherEntriesHTML);
+                $('#posting').append('<hr class="my-4">');
+
+                if (type === "posted") {
+                    $('#posting_button').hide();
+                } else {
+                    $('#posting_button').show();
+                }
+
+                $('#postvoucher').modal('show');
+            });
+        },
+        error: function(xhr, status, error) {
+            Swal.fire("Error!", "Failed to load voucher data.", "error");
         }
+    });
+}
+
 
         function resetPostVoucher() {
-            document.getElementById('voucher_doc_no').value = '';
-            document.getElementById('voucher_date').value = '';
-            document.getElementById('voucher_book_code').value = '';
-            document.getElementById('voucher_currency').value = '';
-            document.getElementById('posting-table').innerHTML = '';
+            // document.getElementById('voucher_doc_no').value = '';
+            // document.getElementById('voucher_date').value = '';
+            // document.getElementById('voucher_book_code').value = '';
+            // document.getElementById('voucher_currency').value = '';
+            document.getElementById('posting').innerHTML = '';
             document.getElementById('posting_button').style.display = 'none';
         }
 

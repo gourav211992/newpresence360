@@ -908,7 +908,7 @@ class PaymentVoucherController extends Controller
     public function getPostingDetails(Request $request)
     {
         try {
-            $data = FinancialPostingHelper::financeVoucherPosting((int) $request->book_id ?? 0, (int) $request->document_id ?? 0, $doc_type ?? 'get');
+            $data = FinancialPostingHelper::financeVoucherPosting((int) $request->book_id ?? 0, (int) $request->document_id ?? 0, $request->type ?? 'get');
 
             return response()->json([
                 'status' => 'success',
