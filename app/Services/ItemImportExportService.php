@@ -389,15 +389,15 @@ class ItemImportExportService
                     $errors[] = "Attribute group not found: {$attribute['name']}";
                     continue;
                 }
-                if (!isset($attribute['value']) || $attribute['value'] === '') {
-                    $errors[] = "Attribute value missing for group: {$attribute['name']}";
-                    continue;
-                }
-                $attributeValues = explode(',', $attribute['value']);
-                foreach ($attributeValues as $value) {
-                    $attributeObj = $this->getAttributeByName($value, $attributeGroup, $errors);
-                    if (!$attributeObj) {
-                        $errors[] = "Attribute not found: {$value} in group {$attribute['name']}";
+               
+               if (!empty($attribute['value']) && is_string($attribute['value'])) {
+                    $attributeValues = array_filter(array_map('trim', explode(',', $attribute['value'])));
+
+                    foreach ($attributeValues as $value) {
+                        $attributeObj = $this->getAttributeByName($value, $attributeGroup, $errors);
+                        if (!$attributeObj) {
+                            $errors[] = "Attribute not found: {$value} in group {$attribute['name']}";
+                        }
                     }
                 }
             }

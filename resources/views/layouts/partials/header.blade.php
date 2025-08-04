@@ -211,7 +211,7 @@
                                     Approval</a>
                                 <a class="dropdown-item" href="#"><i class="me-50" data-feather="tool"></i>
                                     Setting</a>
-                                <a class="dropdown-item" href="{{ env("AUTH_URL", "") }}/logout" ><i
+                                <a class="dropdown-item" href="{{ env("AUTH_URL", "") }}logout" ><i
                                         class="me-50" data-feather="power"></i> Logout</a>
 
                                 <!-- <form id="logout-form" action="{{ route('logout') }}" method="POST"

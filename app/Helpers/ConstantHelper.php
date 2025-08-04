@@ -1098,4 +1098,5 @@ class ConstantHelper
     const EXCEL_BORDER_COLOR_BLACK = 'FF000000';
 
     const EXCEL_COLUMN_WIDTH_DEFAULT = 15;
+    const POST_DELIVERY = 'post delivery';
 }

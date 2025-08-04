@@ -1227,6 +1227,7 @@ class InventoryHelper
             $adjustedQty = 0;
             $reservedQty = 0;
             $message = '';
+            $itemCode = $invoiceLedger->item_code;
             if(!is_null($issueQty) && ($issueQty > $inventoryUomQty)){
                 $balanceQty = $issueQty - $inventoryUomQty;
                 $response = self::updateIssueStockForLessQty($invoiceLedger, $balanceQty, $documentItemLocation);
@@ -1234,9 +1235,23 @@ class InventoryHelper
                 $message = $response['message'];
                 $status = $response['status'];
                 $stockLedger = $response['stockLedger'];
-            } else {
-                // $balanceQty = $inventoryUomQty - $issueQty;
+            } else {                
                 $balanceQty = $inventoryUomQty;
+                if ($issueQty > 0) {
+                    if ($issueQty == $inventoryUomQty) {
+                        return [
+                            'status' => 'success',
+                            'message' => 'old and upcoming qty is equal',
+                            'is_equal' => 1,
+                            'stockLedger' => $invoiceLedger
+                        ];
+                    }
+
+                    if ($issueQty < $inventoryUomQty) {
+                        $balanceQty -= $issueQty;
+                    }
+                }
+                
                 $approvedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                     ->whereIn('document_status', ['approved','posted','approval_not_required'])
                     ->where('item_id', $invoiceLedger->item_id)
@@ -1250,9 +1265,9 @@ class InventoryHelper
                     ->orderBy('document_date')
                     ->orderBy('id');
 
-                    if (isset($invoiceLedger -> station_id) && $invoiceLedger -> station_id) {
-                        $approvedStockLedger = $approvedStockLedger -> where('station_id', $invoiceLedger -> station_id);
-                    }
+                if (isset($invoiceLedger -> station_id) && $invoiceLedger -> station_id) {
+                    $approvedStockLedger = $approvedStockLedger -> where('station_id', $invoiceLedger -> station_id);
+                }
                 if (isset($invoiceLedger -> wip_station_id) && $invoiceLedger -> wip_station_id && $invoiceLedger -> stock_type === self::STOCK_TYPE_WIP) {
                     $approvedStockLedger = $approvedStockLedger -> where('wip_station_id', $invoiceLedger -> wip_station_id);
                 }
@@ -1275,8 +1290,11 @@ class InventoryHelper
                 $approvedStockLedger = $approvedStockLedger->get();
                 if ($approvedStockLedger->isNotEmpty()) {
                     $availableQty = $approvedStockLedger->sum('receipt_qty');
-                    if ($availableQty < (float) $inventoryUomQty) {
-                        $message = "Available stock is less than the issue quantity. Available: $availableQty, Requested: $inventoryUomQty";
+                    $requestedQty = $invoiceLedger -> issue_qty;
+                    if ($availableQty < (float)$requestedQty) {
+                        $altUomAvlQty = ItemHelper::convertToAltUom($invoiceLedger -> item_id, $documentItemLocation ?-> uom_id ?? 0, (float) $availableQty);
+                        $requestedAltUomQty = ItemHelper::convertToAltUom($invoiceLedger -> item_id, $documentItemLocation ?-> uom_id ?? 0, (float) $invoiceLedger -> issue_qty);
+                        $message = "Available stock is less than the issue quantity for item - $itemCode. Available: $altUomAvlQty, Requested: $requestedAltUomQty";
                         $status = 'error';
                         $stockLedger = null;
                     } else{
@@ -1399,7 +1417,7 @@ class InventoryHelper
                         $stockLedger = $stockLedger ?? null;
                     }
                 } else{
-                    $message = "This item does not have approved stocks, Please approve the mrn first.";
+                    $message = "The item - $itemCode does not have approved stocks, Please approve the mrn first.";
                     $status = 'error';
                     $stockLedger = null;
                 }
@@ -1498,7 +1516,7 @@ class InventoryHelper
             $utilizedStockLedger = StockLedger::withDefaultGroupCompanyOrg()
                 ->where('utilized_id', $invoiceLedger->id)
                 ->whereNotNull('receipt_qty')
-                ->whereNull('hold_qty')
+                ->where('hold_qty', '<=' , '0')
                 ->orderBy('document_date', 'DESC')
                 ->get();
 

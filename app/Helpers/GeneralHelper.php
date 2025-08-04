@@ -123,6 +123,8 @@ class GeneralHelper
             $type = 'user';
         } elseif (Auth::guard('web2')->check()) {
             $type = 'employee';
+        } else {
+            $type = request() -> user() ?-> authenticable_type;
         }
 
         return $type;

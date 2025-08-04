@@ -2,7 +2,7 @@
 window.pageData = {
     csrf_token : "{!! csrf_token() !!}",
     order: {!! json_encode(isset($order) ? $order : null) !!},
-    editOrder: {{ (isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? 'false' : 'true' }},
+    editOrder: {{ (isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? 'true' : 'false' }},
     revNoQuery: {{ isset(request()->revisionNumber) ? 'true' : 'false' }},
     orderId: {!! json_encode(isset($order) ? $order -> id : null) !!},
     Stock_store : {!! json_encode(App\Helpers\ConstantHelper::STOCKK) !!},

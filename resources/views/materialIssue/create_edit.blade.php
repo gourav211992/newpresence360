@@ -402,7 +402,7 @@
     <div class="col-md-2 mb-2 sub_loc_transfer location_transfer to_sub_store_dependent {{$order -> to_sub_store_id ? '' : 'd-none'}}">
         <label class="form-label" id="to_store_header_label">To Store<span class="text-danger">*</span></label>
         <select class="form-select disable_on_edit" name="sub_store_to_id" id="sub_store_to_id_input" oninput = "headerSubStoreChange(this, 'to')">
-            <option value = "{{$order -> sub_store_id}}" >{{$order -> to_sub_store ?-> name}}</option>
+            <option value = "{{$order -> to_sub_store_id}}" >{{$order -> to_sub_store ?-> name}}</option>
         </select>
     </div>
 
@@ -921,7 +921,7 @@
     let requesterTypeParam = "{{isset($order) ? $order -> requester_type : 'Department'}}";
     let redirect = "{{$redirect_url}}";
 </script>
-@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue"])
+@include('PL.common-js-route',["order" => isset($order) ? $order : null, "route_prefix" => "material.issue", 'buttons' => isset($buttons) ? $buttons : null])
 <script src="{{ asset("assets\\js\\modules\\pl\\common-script.js") }}"></script>
 <script type="text/javascript" src="{{asset('assets/js/modules/pull-popup-datatable.js')}}"></script>
 <script>

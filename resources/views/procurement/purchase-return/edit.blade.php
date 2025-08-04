@@ -67,7 +67,7 @@
                                     <button type="button" id="reject-button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x-circle"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Reject</button>
                                 @endif
                                 @if($buttons['post'])
-                                    @if(!$eInvoice['ewb_no'])
+                                    @if($eInvoice && !$eInvoice['ewb_no'])
                                         <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#">
                                             <i data-feather="check-circle"></i> Direct Eway Bill
                                         </a>
@@ -1020,7 +1020,7 @@
                 localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
             }
         };
-        
+
         let header_id = @json($mrn->mrn_header_id);
         let details_ids = @json($detailsIds);
         const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
@@ -1627,7 +1627,7 @@
             getItemDetail(currentTr);
         });
 
-        // Get Item Detail 
+        // Get Item Detail
         function getItemDetail(currentTr, type=null) {
             const getVal = (selector) => {
                 let el = $(currentTr).find(selector);
@@ -2335,7 +2335,7 @@
             // dataAttributes = JSON.parse(dataAttributes);
             // dataAttributes.
         });
-        
+
         setTimeout(() => {
             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
                 let currentIndex = index + 1;
@@ -2740,7 +2740,7 @@
             asnProcess(processData, 'mrn-process');
         });
 
-        // Clear GRN Process 
+        // Clear GRN Process
         $(document).on('click', '.clearMrnFilter', (e) => {
             $("#item_name_input_qt").val('');
             $("#item_id_qt_val").val('');
@@ -2814,13 +2814,13 @@
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
                     // console.log(vendor?.id, modelType, order.id);
-                    
+
                     vendorOnChange(vendor?.id, modelType, order.id);
 
                     const getSelectedIdsFn = getSelectedMrnIDS;
                     const hiddenFieldName = 'mrn_item_ids';
                     const localStorageKey = 'selectedMrnIds';
-                    
+
                     const newIds = getSelectedIdsFn().ids;
                     const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
                     const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
@@ -2828,7 +2828,7 @@
                     $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
 
                     $(".module_type").val(modelType);
-                    
+
                     if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                         $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
                     } else {

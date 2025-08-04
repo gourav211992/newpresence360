@@ -189,6 +189,7 @@ class FinancialPostingHelper
 
     public static function financeVoucherPosting(int $bookId, int $documentId, string $type, bool $onApproval = false)
     {
+        $contra_entries = [];
         //Check Book
         $book = Book::find($bookId);
         if (!isset($book)) {
@@ -365,15 +366,35 @@ class FinancialPostingHelper
                 );
             }
         } else if ($serviceAlias === ConstantHelper::PAYMENTS_SERVICE_ALIAS) {
-            $entries = self::paymentInvoiceVoucherDetails($documentId, '');
-            $contra = self::contraVoucherDetails($documentId, '');
-            if (!$entries['status']) {
-                return array(
-                    'status' => false,
-                    'message' => $entries['message'],
-                    'data' => []
-                );
+            $pay = self::paymentInvoiceVoucherDetails($documentId, '');
+            $entries = self::contraVoucherDetails($documentId, '');
+            if (!empty($entries)) {
+                $entries['voucher'] = $pay;
+                foreach ($entries as $entry) {
+                    if (isset($entry['status']) && !$entry['status']) {
+                        return array(
+                            'status' => false,
+                            'message' => $entry['message'],
+                            'data' => []
+                        );
+                    }
+                }
+
+            } else {
+                $entries = $pay;
+                if (isset($entries['status']) && !$entries['status'])
+                    return array(
+                        'status' => false,
+                        'message' => $entries['message'],
+                        'data' => []
+                    );
+
             }
+
+
+
+
+
         } else if ($serviceAlias === ConstantHelper::LOAN_DISBURSEMENT) {
             $entries = self::disinvoiceVoucherDetails($documentId, $type);
             if (!$entries['status']) {
@@ -450,9 +471,8 @@ class FinancialPostingHelper
                         'data' => []
                     );
                 }
-            }
-            else{
-                 $entries = self::writeOffVoucherDetails($documentId, $type);
+            } else {
+                $entries = self::writeOffVoucherDetails($documentId, $type);
                 if (!$entries['status']) {
                     return array(
                         'status' => false,
@@ -524,7 +544,10 @@ class FinancialPostingHelper
         if ($type === 'post') {
             return self::postVoucher($entries['data']);
         } else {
-            return $entries;
+            if (!empty($contra_entries))
+                return ['contra_entries' => $contra_entries, 'entries' => $entries];
+            else
+                return $entries;
         }
     }
 
@@ -549,14 +572,14 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Voucher found',
             'data' => array(
-                'book_code' => $voucher->series?->book_code,
-                'currency_code' => $voucher->currency_code,
-                'document_date' => $voucher->document_date,
-                'document_number' => $voucher->voucher_no,
-                'ledgers' => $entries,
-                'total_debit' => $totalDebit,
-                'total_credit' => $totalCredit
-            )
+                    'book_code' => $voucher->series?->book_code,
+                    'currency_code' => $voucher->currency_code,
+                    'document_date' => $voucher->document_date,
+                    'document_number' => $voucher->voucher_no,
+                    'ledgers' => $entries,
+                    'total_debit' => $totalDebit,
+                    'total_credit' => $totalCredit
+                )
         );
     }
 
@@ -983,7 +1006,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingSalesLedger) > 0) {
-                $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] +=  $salesCreditAmount;
+                $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] += $salesCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::SALES_ACCOUNT], [
                     'ledger_id' => $salesAccountLedgerId,
@@ -1212,16 +1235,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function leaseInvoiceVoucherDetails(int $documentId, string $type)
@@ -1293,7 +1316,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingSalesLedger) > 0) {
-                $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] +=  $salesCreditAmount;
+                $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] += $salesCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::SALES_ACCOUNT], [
                     'ledger_id' => $salesAccountLedgerId,
@@ -1522,16 +1545,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -1603,7 +1626,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingSalesLedger) > 0) {
-                $postingArray[self::SALES_ACCOUNT][0]['debit_amount'] +=  $salesDebitAmount;
+                $postingArray[self::SALES_ACCOUNT][0]['debit_amount'] += $salesDebitAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::SALES_ACCOUNT], [
                     'ledger_id' => $salesAccountLedgerId,
@@ -1854,16 +1877,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function srdnVoucherDetails(int $documentId, int $invoiceToFollow)
@@ -1938,8 +1961,8 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingCogsLedger) > 0) {
-                $postingArray[self::COGS_ACCOUNT][0]['credit_amount'] +=  $cogsCreditAmount;
-                $postingArray[self::COGS_ACCOUNT][0]['credit_amount_org'] +=  $orgCurrencyCost;
+                $postingArray[self::COGS_ACCOUNT][0]['credit_amount'] += $cogsCreditAmount;
+                $postingArray[self::COGS_ACCOUNT][0]['credit_amount_org'] += $orgCurrencyCost;
             } else { //Assign a new ledger
                 array_push($postingArray[self::COGS_ACCOUNT], [
                     'ledger_id' => $cogsLedgerId,
@@ -1971,8 +1994,8 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] +=  $stockDebitAmount;
-                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount_org'] +=  $orgCurrencyCost;
+                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] += $stockDebitAmount;
+                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount_org'] += $orgCurrencyCost;
             } else { //Assign a new ledger
                 array_push($postingArray[self::STOCK_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
@@ -2033,7 +2056,7 @@ class FinancialPostingHelper
                 });
                 //Ledger found
                 if (count($existingSalesLedger) > 0) {
-                    $postingArray[self::SALES_ACCOUNT][0]['debit_amount'] +=  $salesDebitAmount;
+                    $postingArray[self::SALES_ACCOUNT][0]['debit_amount'] += $salesDebitAmount;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::SALES_ACCOUNT], [
                         'ledger_id' => $salesAccountLedgerId,
@@ -2302,16 +2325,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function productionSlipVoucherDetails(int $documentId, string $type)
@@ -2353,7 +2376,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingwipLedger) > 0) {
-                $postingArray[self::WIP_ACCOUNT][0]['credit_amount'] +=  $itemValue;
+                $postingArray[self::WIP_ACCOUNT][0]['credit_amount'] += $itemValue;
             } else { //Assign a new ledger
                 array_push($postingArray[self::WIP_ACCOUNT], [
                     'ledger_id' => $wipLedgerId,
@@ -2383,7 +2406,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] +=  $itemValue;
+                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] += $itemValue;
             } else { //Assign a new ledger
                 array_push($postingArray[self::STOCK_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
@@ -2466,16 +2489,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -2686,16 +2709,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->created_at,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $booksdata?->book_code,
-                'document_number' => $document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->created_at,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $booksdata?->book_code,
+                    'document_number' => $document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -2881,16 +2904,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->created_at,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $booksdata?->book_code,
-                'document_number' => $document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->created_at,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $booksdata?->book_code,
+                    'document_number' => $document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -3100,16 +3123,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->created_at,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $booksdata?->book_code,
-                'document_number' => $document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->created_at,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $booksdata?->book_code,
+                    'document_number' => $document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -3293,16 +3316,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->created_at,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $booksdata?->book_code,
-                'document_number' => $document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->created_at,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $booksdata?->book_code,
+                    'document_number' => $document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function depVoucherDetails(int $documentId, string $type)
@@ -3334,9 +3357,9 @@ class FinancialPostingHelper
         foreach ($asset_details as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $asset = FixedAssetRegistration::find((int)$docItem->asset_id);
+            $asset = FixedAssetRegistration::find((int) $docItem->asset_id);
             //$asset->updateTotalDep();
-            $docValue = (float)$docItem->dep_amount;
+            $docValue = (float) $docItem->dep_amount;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;
             $assetsLedgerGroupId = $asset->ledger_group_id;
@@ -3430,7 +3453,7 @@ class FinancialPostingHelper
             }
         }
         // Balance does not match
-        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+        if (trim((string) $totalDebitAmount) != trim((string) $totalCreditAmount)) {
             return array(
                 'status' => false,
                 'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
@@ -3486,16 +3509,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function fixedAssetVoucherDetails(int $documentId, string $type)
@@ -3518,7 +3541,7 @@ class FinancialPostingHelper
             self::VENDOR_ACCOUNT => [],
         );
         $ledgerErrorStatus = null;
-        $assetValue  = $document->current_value;
+        $assetValue = $document->current_value;
         $totalValue = $assetValue + $totaltaxes;
 
 
@@ -3612,7 +3635,7 @@ class FinancialPostingHelper
             }
         }
         // Balance does not match
-        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+        if (trim((string) $totalDebitAmount) != trim((string) $totalCreditAmount)) {
             return array(
                 'status' => false,
                 'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
@@ -3669,16 +3692,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -3702,7 +3725,7 @@ class FinancialPostingHelper
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
-        $totalValue  = 0;
+        $totalValue = 0;
         $asset_details = json_decode($document->asset_details);
         foreach ($asset_details as $docItemKey => $docItem) {
             $asset = FixedAssetSub::find($docItem->sub_asset_id);
@@ -3789,7 +3812,7 @@ class FinancialPostingHelper
             }
         }
         // Balance does not match
-        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+        if (trim((string) $totalDebitAmount) != trim((string) $totalCreditAmount)) {
             return array(
                 'status' => false,
                 'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
@@ -3846,16 +3869,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function impVoucherDetails(int $documentId, string $type)
@@ -3878,7 +3901,7 @@ class FinancialPostingHelper
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
-        $totalValue  = 0;
+        $totalValue = 0;
         $asset_details = json_decode($document->asset_details);
         foreach ($asset_details as $docItemKey => $docItem) {
             $asset = FixedAssetSub::find($docItem->sub_asset_id);
@@ -3965,7 +3988,7 @@ class FinancialPostingHelper
             }
         }
         // Balance does not match
-        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+        if (trim((string) $totalDebitAmount) != trim((string) $totalCreditAmount)) {
             return array(
                 'status' => false,
                 'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
@@ -4022,16 +4045,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function writeOffVoucherDetails(int $documentId, string $type)
@@ -4054,7 +4077,7 @@ class FinancialPostingHelper
 
         //Status to check if all ledger entries were properly set
         $ledgerErrorStatus = null;
-        $totalValue  = 0;
+        $totalValue = 0;
         $asset_details = json_decode($document->asset_details);
         foreach ($asset_details as $docItemKey => $docItem) {
             $asset = FixedAssetSub::find($docItem->sub_asset_id);
@@ -4141,7 +4164,7 @@ class FinancialPostingHelper
             }
         }
         // Balance does not match
-        if (trim((string)$totalDebitAmount) != trim((string)$totalCreditAmount)) {
+        if (trim((string) $totalDebitAmount) != trim((string) $totalCreditAmount)) {
             return array(
                 'status' => false,
                 'message' => self::ERROR_PREFIX . 'Credit Amount does not match Debit Amount',
@@ -4198,16 +4221,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -4240,7 +4263,7 @@ class FinancialPostingHelper
         foreach ($asset_details as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $asset = FixedAssetRegistration::find((int)$docItem->asset_id);
+            $asset = FixedAssetRegistration::find((int) $docItem->asset_id);
             $docValue = $docItem->currentvalue;
             $assetsCreditAmount = $docValue;
             $assetsLedgerId = $asset->ledger_id;
@@ -4275,8 +4298,8 @@ class FinancialPostingHelper
             //Ledger found
             if (count($existingAssetsLedger) > 0) {
                 $existingIndex = array_key_first($existingAssetsLedger);
-                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount_org'] +=  $assetsCreditAmount;
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount'] += $assetsCreditAmount;
+                $postingArray[self::OLD_ASSET][$existingIndex]['credit_amount_org'] += $assetsCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::OLD_ASSET], [
                     'ledger_id' => $assetsLedgerId,
@@ -4299,8 +4322,8 @@ class FinancialPostingHelper
             //Ledger found
             if (count($existingdepLedger) > 0) {
                 $existingIndex = array_key_first($existingdepLedger);
-                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] +=  $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] += $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] += $assetsCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::NEW_ASSET], [
                     'ledger_id' => $depLedgerId,
@@ -4386,16 +4409,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function fixedAssetSplitVoucherDetails(int $documentId, string $type)
@@ -4417,7 +4440,7 @@ class FinancialPostingHelper
         //Assign Credit and Debit amount for tally check
         $totalCreditAmount = 0;
         $totalDebitAmount = 0;
-        $assetsAmount = (float)$document->current_value;
+        $assetsAmount = (float) $document->current_value;
 
 
         //Status to check if all ledger entries were properly set
@@ -4442,7 +4465,7 @@ class FinancialPostingHelper
         ]);
         $asset_details = json_decode($document->sub_assets);
         foreach ($asset_details as $docItemKey => $docItem) {
-            $docValue = (float)$docItem->current_value;
+            $docValue = (float) $docItem->current_value;
             $assetsCreditAmount = $docValue;
             $newLedgerId = $docItem->ledger;
             $newLedgerGroupId = $docItem->ledger_group;
@@ -4469,8 +4492,8 @@ class FinancialPostingHelper
             //Ledger found
             if (count($existingLedger) > 0) {
                 $existingIndex = array_key_first($existingLedger);
-                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] +=  $assetsCreditAmount;
-                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] +=  $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount'] += $assetsCreditAmount;
+                $postingArray[self::NEW_ASSET][$existingIndex]['debit_amount_org'] += $assetsCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::NEW_ASSET], [
                     'ledger_id' => $newLedgerId,
@@ -4560,16 +4583,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => Book::find($glPostingBookId)?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => Book::find($glPostingBookId)?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -4631,8 +4654,8 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingCogsLedger) > 0) {
-                $postingArray[self::COGS_ACCOUNT][0]['debit_amount'] +=  $cogsDebitAmount;
-                $postingArray[self::COGS_ACCOUNT][0]['debit_amount_org'] +=  $orgCurrencyCost;
+                $postingArray[self::COGS_ACCOUNT][0]['debit_amount'] += $cogsDebitAmount;
+                $postingArray[self::COGS_ACCOUNT][0]['debit_amount_org'] += $orgCurrencyCost;
             } else { //Assign a new ledger
                 array_push($postingArray[self::COGS_ACCOUNT], [
                     'ledger_id' => $cogsLedgerId,
@@ -4664,8 +4687,8 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::STOCK_ACCOUNT][0]['credit_amount'] +=  $stockCreditAmount;
-                $postingArray[self::STOCK_ACCOUNT][0]['credit_amount_org'] +=  $orgCurrencyCost;
+                $postingArray[self::STOCK_ACCOUNT][0]['credit_amount'] += $stockCreditAmount;
+                $postingArray[self::STOCK_ACCOUNT][0]['credit_amount_org'] += $orgCurrencyCost;
             } else { //Assign a new ledger
                 array_push($postingArray[self::STOCK_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
@@ -4726,7 +4749,7 @@ class FinancialPostingHelper
                 });
                 //Ledger found
                 if (count($existingSalesLedger) > 0) {
-                    $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] +=  $salesCreditAmount;
+                    $postingArray[self::SALES_ACCOUNT][0]['credit_amount'] += $salesCreditAmount;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::SALES_ACCOUNT], [
                         'ledger_id' => $salesAccountLedgerId,
@@ -4956,16 +4979,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -5048,7 +5071,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] +=  $stockDebitAmount;
+                $postingArray[self::STOCK_ACCOUNT][0]['debit_amount'] += $stockDebitAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::STOCK_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
@@ -5081,7 +5104,7 @@ class FinancialPostingHelper
                 });
                 //Ledger found
                 if (count($existingstockLedger) > 0) {
-                    $postingArray[self::PR_ACCOUNT][0]['debit_amount'] +=  $rejectedValue;
+                    $postingArray[self::PR_ACCOUNT][0]['debit_amount'] += $rejectedValue;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::PR_ACCOUNT], [
                         'ledger_id' => $stockLedgerId,
@@ -5113,7 +5136,7 @@ class FinancialPostingHelper
                 });
                 //Ledger found
                 if (count($existingGrirLedger) > 0) {
-                    $postingArray[self::GRIR_ACCOUNT][0]['credit_amount'] +=  $grirCreditAmount;
+                    $postingArray[self::GRIR_ACCOUNT][0]['credit_amount'] += $grirCreditAmount;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::GRIR_ACCOUNT], [
                         'ledger_id' => $grirLedgerId,
@@ -5351,16 +5374,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -5409,7 +5432,7 @@ class FinancialPostingHelper
 
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::WIP_ACCOUNT][0]['debit_amount'] +=  $WipDebitAccount;
+                $postingArray[self::WIP_ACCOUNT][0]['debit_amount'] += $WipDebitAccount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::WIP_ACCOUNT], [
                     'ledger_id' => $wipLedgerId,
@@ -5528,16 +5551,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -5622,7 +5645,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingGrirLedger) > 0) {
-                $postingArray[self::GRIR_ACCOUNT][0]['debit_amount'] +=  $grirCreditAmount;
+                $postingArray[self::GRIR_ACCOUNT][0]['debit_amount'] += $grirCreditAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::GRIR_ACCOUNT], [
                     'ledger_id' => $grirLedgerId,
@@ -5656,10 +5679,10 @@ class FinancialPostingHelper
                 //Ledger found
                 if (count($existingstockLedger) > 0) {
                     if ($varianceAmount > 0) {
-                        $postingArray[self::PV_ACCOUNT][0]['debit_amount'] +=  $varianceAmount;
+                        $postingArray[self::PV_ACCOUNT][0]['debit_amount'] += $varianceAmount;
                     }
                     if ($varianceAmount < 0) {
-                        $postingArray[self::PV_ACCOUNT][0]['credit_amount'] +=  abs($varianceAmount);
+                        $postingArray[self::PV_ACCOUNT][0]['credit_amount'] += abs($varianceAmount);
                     }
                 } else { //Assign a new ledger
                     if ($varianceAmount > 0) {
@@ -5908,16 +5931,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -5995,7 +6018,7 @@ class FinancialPostingHelper
             });
             //Ledger found
             if (count($existingstockLedger) > 0) {
-                $postingArray[self::SERVICE_ACCOUNT][0]['debit_amount'] +=  $stockDebitAmount;
+                $postingArray[self::SERVICE_ACCOUNT][0]['debit_amount'] += $stockDebitAmount;
             } else { //Assign a new ledger
                 array_push($postingArray[self::SERVICE_ACCOUNT], [
                     'ledger_id' => $stockLedgerId,
@@ -6245,16 +6268,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -6304,23 +6327,23 @@ class FinancialPostingHelper
         }
         $cost = CostCenter::find($document?->cost_center_id);
         $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
-                        $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
-                            return array(
-                                'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
-                                'data' => []
-                            );
-                        }
+        $exists = in_array($cost?->id, $ids);
 
-                    
+        if (!$exists && $cost != null) {
+            return array(
+                'status' => false,
+                'message' => $cost->name . ' not Mapped with header location',
+                'data' => []
+            );
+        }
+
+
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
             'ledger_id' => $vocuherdata->ledger_id,
             'ledger_group_id' => $vocuherdata->ledger_group_id,
             'ledger_code' => $BankLedger?->code,
             'cost_center_id' => $document?->cost_center_id,
-            'cost_name'=>  $cost->name??"-",
+            'cost_name' => $cost->name ?? "-",
             'ledger_name' => $BankLedger?->name,
             'ledger_group_code' => $BankLedgerGroup?->name,
             'debit_amount' => $vocuherdata->amount,
@@ -6350,26 +6373,26 @@ class FinancialPostingHelper
                             ->where('ledger_parent_id', $vendor->ledger_group_id)
                             ->where('debit_amt_org', '>', 0)
                             ->first();
-                             $cost = CostCenter::find($item?->cost_center_id);
-                              $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                        $cost = CostCenter::find($item?->cost_center_id);
+                        $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
                         $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
+
+                        if (!$exists && $cost != null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
+                                'message' => $cost->name . ' not Mapped with header location',
                                 'data' => []
                             );
                         }
 
-                    
+
                         $newEntry = [
                             'ledger_id' => $VendorLedgerId,
                             'ledger_group_id' => $VendorLedgerGroupId,
                             'ledger_code' => $VendorLedger?->code,
                             'ledger_name' => $VendorLedger?->name,
                             'cost_center_id' => $item?->cost_center_id,
-                            'cost_name'=>$cost->name??"-",
+                            'cost_name' => $cost->name ?? "-",
                             'ledger_group_code' => $VendorLedgerGroup?->name,
                             'credit_amount' => $invoice->amount,
                             'debit_amount' => 0,
@@ -6410,18 +6433,18 @@ class FinancialPostingHelper
                         );
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
-                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
-                        $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
-                            return array(
-                                'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
-                                'data' => []
-                            );
-                        }
+                    $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                    $exists = in_array($cost?->id, $ids);
 
-                    
+                    if (!$exists && $cost != null) {
+                        return array(
+                            'status' => false,
+                            'message' => $cost->name . ' not Mapped with header location',
+                            'data' => []
+                        );
+                    }
+
+
 
                     array_push($postingArray[self::VENDOR_ACCOUNT], [
                         'ledger_id' => $VendorLedgerId,
@@ -6429,7 +6452,7 @@ class FinancialPostingHelper
                         'ledger_code' => $VendorLedger?->code,
                         'ledger_name' => $VendorLedger?->name,
                         'cost_center_id' => $document?->cost_center_id,
-                        'cost_name'=>$cost->name??"-",
+                        'cost_name' => $cost->name ?? "-",
                         'ledger_group_code' => $VendorLedgerGroup?->name,
                         'credit_amount' => $vendor->currentAmount,
                         'debit_amount' => 0,
@@ -6523,16 +6546,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document?->voucher_no,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document?->voucher_no,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function PsvVoucherDetails(int $documentId, string $remarks)
@@ -6596,7 +6619,7 @@ class FinancialPostingHelper
                 'ledger_code' => $BankLedger?->code,
                 'ledger_name' => $BankLedger?->name,
                 'ledger_group_code' => $BankLedgerGroup?->name,
-                'debit_amount' =>  $debAmount,
+                'debit_amount' => $debAmount,
                 'credit_amount' => $credAmount
             ]);
 
@@ -6762,16 +6785,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document?->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document?->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -6892,23 +6915,23 @@ class FinancialPostingHelper
         }
         $cost = CostCenter::find($document?->cost_center_id);
         $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
-                        $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
-                            return array(
-                                'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
-                                'data' => []
-                            );
-    }
-       
+        $exists = in_array($cost?->id, $ids);
 
-               
+        if (!$exists && $cost != null) {
+            return array(
+                'status' => false,
+                'message' => $cost->name . ' not Mapped with header location',
+                'data' => []
+            );
+        }
+
+
+
         array_push($postingArray[self::PAYMENT_ACCOUNT], [
             'ledger_id' => $vocuherdata->ledger_id,
             'ledger_group_id' => $vocuherdata->ledger_group_id,
             'cost_center_id' => $document?->cost_center_id,
-            'cost_name'=>$cost->name??"-",
+            'cost_name' => $cost->name ?? "-",
             'ledger_code' => $BankLedger?->code,
             'ledger_name' => $BankLedger?->name,
             'ledger_group_code' => $BankLedgerGroup?->name,
@@ -6939,27 +6962,27 @@ class FinancialPostingHelper
                             ->where('ledger_parent_id', $vendor->ledger_group_id)
                             ->where('credit_amt_org', '>', 0)
                             ->first();
-                    
-                    $cost = CostCenter::find($item?->cost_center_id);
-                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+
+                        $cost = CostCenter::find($item?->cost_center_id);
+                        $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
                         $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
+
+                        if (!$exists && $cost != null) {
                             return array(
                                 'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
+                                'message' => $cost->name . ' not Mapped with header location',
                                 'data' => []
                             );
                         }
-                    
 
-                  $newEntry = [
+
+                        $newEntry = [
                             'ledger_id' => $VendorLedgerId,
                             'ledger_group_id' => $VendorLedgerGroupId,
                             'ledger_code' => $VendorLedger?->code,
                             'ledger_name' => $VendorLedger?->name,
                             'cost_center_id' => $item?->cost_center_id,
-                            'cost_name'=>$cost->name??"-",
+                            'cost_name' => $cost->name ?? "-",
                             'ledger_group_code' => $VendorLedgerGroup?->name,
                             'credit_amount' => 0,
                             'debit_amount' => $invoice->amount,
@@ -7001,18 +7024,18 @@ class FinancialPostingHelper
                         );
                     }
                     $cost = CostCenter::find($document?->cost_center_id);
-                     $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
-                        $exists = in_array($cost?->id, $ids);
-                        
-                        if (!$exists && $cost!=null) {
-                            return array(
-                                'status' => false,
-                                'message' => $cost->name.' not Mapped with header location',
-                                'data' => []
-                            );
-                        }
+                    $ids = array_column(Helper::getActiveCostCenters($document->location), 'id');
+                    $exists = in_array($cost?->id, $ids);
 
-                    
+                    if (!$exists && $cost != null) {
+                        return array(
+                            'status' => false,
+                            'message' => $cost->name . ' not Mapped with header location',
+                            'data' => []
+                        );
+                    }
+
+
 
                     array_push($postingArray[self::VENDOR_ACCOUNT], [
                         'ledger_id' => $VendorLedgerId,
@@ -7020,12 +7043,12 @@ class FinancialPostingHelper
                         'ledger_code' => $VendorLedger?->code,
                         'ledger_name' => $VendorLedger?->name,
                         'cost_center_id' => $document?->cost_center_id,
-                        'cost_name'=>$cost->name??"-",
+                        'cost_name' => $cost->name ?? "-",
                         'ledger_group_code' => $VendorLedgerGroup?->name,
                         'credit_amount' => 0,
                         'debit_amount' => $vendor->currentAmount,
                     ]);
-}
+                }
             }
         }
 
@@ -7109,16 +7132,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document?->voucher_no,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document?->voucher_no,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
     public static function contraVoucherDetails(int $documentId, string $remarks)
@@ -7141,33 +7164,42 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        
-        $totalCreditAmount = 0;
-        $totalDebitAmount = 0;
+
+
 
 
         $ledgerErrorStatus = null;
-        $vouchersArray=[];
-        foreach($vendors as $vendor){
+        $vouchersArray = [];
+        foreach ($vendors as $vendor) {
+
             $partyOrg = $vendor->party->organization;
-            if($partyOrg->id != $organization->id){
-                $sameOrgPosting = self::sameOrgPosting($partyOrg,$organization,$vendor);
-                if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false) 
+            if ($partyOrg->id != $organization->id) {
+                $sameOrgPosting = self::sameOrgPosting($partyOrg, $organization, $vendor);
+                if (isset($sameOrgPosting['status']) && $sameOrgPosting['status'] === false)
                     return array(
                         'status' => false,
                         'message' => $sameOrgPosting['message'],
                         'data' => []
                     );
 
-               $otherOrgPosting= self::otherOrgPosting($partyOrg,$organization,$vendor);
-                if (isset($otherOrgPosting['status']) && $otherOrgPosting['status'] === false) 
+                $otherOrgPosting = self::otherOrgPosting($partyOrg, $organization, $vendor);
+                if (isset($otherOrgPosting['status']) && $otherOrgPosting['status'] === false)
                     return array(
                         'status' => false,
                         'message' => $otherOrgPosting['message'],
                         'data' => []
                     );
-                $vouchersArray[$organization->id]=$sameOrgPosting;
-                $vouchersArray[$partyOrg->id]= $otherOrgPosting;
+                if (!empty($vouchersArray[$organization->id]))
+                    $vouchersArray[$organization->id] = array_merge($vouchersArray[$organization->id], $sameOrgPosting);
+                else
+                    $vouchersArray[$organization->id] = $sameOrgPosting;
+
+
+                if (!empty($vouchersArray[$partyOrg->id]))
+                    $vouchersArray[$partyOrg->id] = array_merge($vouchersArray[$partyOrg->id], $otherOrgPosting);
+                else
+                    $vouchersArray[$partyOrg->id] = $otherOrgPosting;
+
             }
         }
         //Check if All Legders exists and posting is properly set
@@ -7178,84 +7210,102 @@ class FinancialPostingHelper
                 'data' => []
             );
         }
-        if(empty($vouchersArray))
-        return [];
+        if (empty($vouchersArray))
+            return [];
 
         foreach ($vouchersArray as $orgID => $postingArray) {
-         $organization = Organization::find($orgID);   
-        //Check debit and credit tally
-        foreach ($postingArray as $postAccount) {
-            foreach ($postAccount as $postingValue) {
+            $totalCreditAmount = 0;
+            $totalDebitAmount = 0;
 
-                $totalDebitAmount += $postingValue['debit_amount'];
-                $totalCreditAmount += $postingValue['credit_amount'];
+            $organization = Organization::find($orgID);
+            //Check debit and credit tally
+            foreach ($postingArray as $postAccount) {
+                foreach ($postAccount as $postingValue) {
+                    $totalDebitAmount += $postingValue['debit_amount'];
+                    $totalCreditAmount += $postingValue['credit_amount'];
+                }
             }
-        }
-        $currency = Currency::find($document->currency_id);
 
-        $userData = Helper::userCheck();
+            $currency = Currency::find($document->currency_id);
 
-        $book = Book::find($document->book_id);
-        $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::GL_POSTING_SERIES_PARAM)->first();
-        if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
-            $glPostingBookId = $glPostingBookParam->parameter_value[0];
-        } else {
-            return array(
-                'status' => false,
-                'message' => self::ERROR_PREFIX . 'Financial Book Code is not specified',
-                'data' => []
+            $userData = Helper::userCheck();
+
+            $book = Book::find($document->book_id);
+            $glPostingBookParam = OrganizationBookParameter::where('book_id', $book->id)->where('parameter_name', ServiceParametersHelper::CONTRA_POSTING_SERIES_PARAM)->first();
+            if (isset($glPostingBookParam) && isset($glPostingBookParam->parameter_value[0])) {
+                $glPostingBookId = $glPostingBookParam->parameter_value[0];
+            } else {
+                return array(
+                    'status' => false,
+                    'message' => self::ERROR_PREFIX . 'Contra Book Code is not specified',
+                    'data' => []
+                );
+            }
+            $doc = Helper::generateContraDocNumber($glPostingBookId, $document->document_date, $organization->id);
+            if (!isset($doc))
+                return array(
+                    'status' => false,
+                    'message' => "Invalid Contra Book",
+                    'data' => []
+                );
+            $book = Book::find($glPostingBookId);
+
+
+            $voucherHeader = [
+                'voucher_no' => $doc['document_number'],
+                'doc_number_type' => $doc['type'],
+                'doc_reset_pattern' => $doc['reset_pattern'],
+                'doc_prefix' => $doc['prefix'],
+                'doc_suffix' => $doc['suffix'],
+                'doc_no' => $doc['doc_no'],
+                'document_date' => $document->document_date,
+                'book_id' => $glPostingBookId,
+                'date' => $document->document_date,
+                'amount' => $totalCreditAmount,
+                'location' => $document->location ?? null,
+                'currency_id' => $document->currency_id,
+                'currency_code' => $document->currencyCode,
+                'org_currency_id' => $document->org_currency_id,
+                'org_currency_code' => $document->org_currency_code,
+                'org_currency_exg_rate' => $document->org_currency_exg_rate,
+                'comp_currency_id' => $document->comp_currency_id, // Missing comma added here
+                'comp_currency_code' => $document->comp_currency_code,
+                'comp_currency_exg_rate' => $document->comp_currency_exg_rate,
+                'group_currency_id' => $document->group_currency_id,
+                'group_currency_code' => $document->group_currency_code,
+                'group_currency_exg_rate' => $document->group_currency_exg_rate,
+                'reference_service' => $book?->service?->alias,
+                'reference_doc_id' => $document->id,
+                'group_id' => $organization->group_id,
+                'company_id' => $organization->company_id,
+                'organization_id' => $organization->id,
+                'voucherable_type' => $userData['user_type'],
+                'voucherable_id' => $userData['user_id'],
+                'approvalStatus' => ConstantHelper::APPROVED,
+                'document_status' => ConstantHelper::APPROVED,
+                'approvalLevel' => $document->approval_level,
+                'remarks' => $remarks,
+            ];
+
+            $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
+
+            $vouchers[$orgID][] = array(
+                'status' => true,
+                'message' => 'Posting Details found',
+                'data' => [
+                        'voucher_header' => $voucherHeader,
+                        'voucher_details' => $voucherDetails,
+                        'document_date' => $document->document_date,
+                        'ledgers' => $postingArray,
+                        'total_debit' => $totalDebitAmount,
+                        'total_credit' => $totalCreditAmount,
+                        'book_code' => $book?->book_code,
+                        'document_number' => $doc['document_number'],
+                        'currency_code' => $currency?->short_name
+                    ]
             );
         }
-        $voucherHeader = [
-            'voucher_no' => $document->voucher_no,
-            'document_date' => $document->document_date,
-            'book_id' => $glPostingBookId,
-            'date' => $document->document_date,
-            'amount' => $totalCreditAmount,
-            'location' => $document->location ?? null,
-            'currency_id' => $document->currency_id,
-            'currency_code' => $document->currencyCode,
-            'org_currency_id' => $document->org_currency_id,
-            'org_currency_code' => $document->org_currency_code,
-            'org_currency_exg_rate' => $document->org_currency_exg_rate,
-            'comp_currency_id' => $document->comp_currency_id, // Missing comma added here
-            'comp_currency_code' => $document->comp_currency_code,
-            'comp_currency_exg_rate' => $document->comp_currency_exg_rate,
-            'group_currency_id' => $document->group_currency_id,
-            'group_currency_code' => $document->group_currency_code,
-            'group_currency_exg_rate' => $document->group_currency_exg_rate,
-            'reference_service' => $book?->service?->alias,
-            'reference_doc_id' => $document->id,
-            'group_id' => $organization->group_id,
-            'company_id' => $organization->company_id,
-            'organization_id' => $organization->id,
-            'voucherable_type' => $userData['user_type'],
-            'voucherable_id' => $userData['user_id'],
-            'approvalStatus' => ConstantHelper::APPROVED,
-            'document_status' => ConstantHelper::APPROVED,
-            'approvalLevel' => $document->approval_level,
-            'remarks' => $remarks,
-        ];
-
-        $voucherDetails = self::generateInvoiceDetailsArray($postingArray, $voucherHeader, $document);
-
-        $vouchers[$orgID]= array(
-            'status' => true,
-            'message' => 'Posting Details found',
-            'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document?->voucher_no,
-                'currency_code' => $currency?->short_name
-            ]
-        );
-    }
-    return $vouchers;
+        return $vouchers;
     }
 
     public static function paymentVoucherPosting(int $bookId, int $documentId, string $type, string $remarks)
@@ -7407,7 +7457,7 @@ class FinancialPostingHelper
                 //Ledger found
                 //Ledger found
                 if (count($existingstockLedger) > 0) {
-                    $postingArray[self::PR_ACCOUNT][0]['credit_amount'] +=  $stockDebitAmount;
+                    $postingArray[self::PR_ACCOUNT][0]['credit_amount'] += $stockDebitAmount;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::PR_ACCOUNT], [
                         'ledger_id' => $stockLedgerId,
@@ -7437,7 +7487,7 @@ class FinancialPostingHelper
                 });
                 //Ledger found
                 if (count($existingstockLedger) > 0) {
-                    $postingArray[self::STOCK_ACCOUNT][0]['credit_amount'] +=  $stockDebitAmount;
+                    $postingArray[self::STOCK_ACCOUNT][0]['credit_amount'] += $stockDebitAmount;
                 } else { //Assign a new ledger
                     array_push($postingArray[self::STOCK_ACCOUNT], [
                         'ledger_id' => $stockLedgerId,
@@ -7673,16 +7723,16 @@ class FinancialPostingHelper
             'status' => true,
             'message' => 'Posting Details found',
             'data' => [
-                'voucher_header' => $voucherHeader,
-                'voucher_details' => $voucherDetails,
-                'document_date' => $document->document_date,
-                'ledgers' => $postingArray,
-                'total_debit' => $totalDebitAmount,
-                'total_credit' => $totalCreditAmount,
-                'book_code' => $book?->book_code,
-                'document_number' => $document->document_number,
-                'currency_code' => $currency?->short_name
-            ]
+                    'voucher_header' => $voucherHeader,
+                    'voucher_details' => $voucherDetails,
+                    'document_date' => $document->document_date,
+                    'ledgers' => $postingArray,
+                    'total_debit' => $totalDebitAmount,
+                    'total_credit' => $totalCreditAmount,
+                    'book_code' => $book?->book_code,
+                    'document_number' => $document->document_number,
+                    'currency_code' => $currency?->short_name
+                ]
         );
     }
 
@@ -7780,139 +7830,141 @@ class FinancialPostingHelper
         }
         return $voucherDetails;
     }
-    public static function sameOrgPosting($partyOrg,$organization,$vendor){
-                 $postingArray = array(
-                    self::CONTRA => [],
-                    self::VENDOR_ACCOUNT => [],
-                );
-                $orgVendor = Vendor::where('enter_company_org_id',$partyOrg->id)
-                ->where('company_name',$partyOrg->name)->first();
+    public static function sameOrgPosting($partyOrg, $organization, $vendor)
+    {
+        $postingArray = array(
+            self::CONTRA => [],
+            self::VENDOR_ACCOUNT => [],
+        );
+        $orgVendor = Vendor::where('enter_company_org_id', $partyOrg->id)
+            ->where('company_name', $partyOrg->name)->first();
 
-                if (empty($orgVendor)) 
-                return array(
-                    'status' => false,
-                    'message' => $vendor->party->organization->name.' Vendor not found in '.$organization->name,
-                    'data' => []
-                );
-                
-                $contraLedgerId = $orgVendor->contra_ledger_id;
-                if (empty($contraLedgerId)) 
-                return array(
-                    'status' => false,
-                    'message' => $vendor->party->organization->name.' Contra Ledger not found in '.$organization->name,
-                    'data' => []
-                );
-                $contraLedgerGroupId = $orgVendor->contraLedger->group() ??null;
-                if (empty($contraLedgerGroupId)) 
-                return array(
-                    'status' => false,
-                    'message' => $vendor->party->organization->name.' Contra Ledger Group not found in '.$organization->name,
-                    'data' => []
-                );
-                $contraLedger = Ledger::find($contraLedgerId);
-                $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
-                if (!isset($contraLedger) || !isset($contraLedgerGroup)) 
-                    return array(
-                        'status' => false,
-                        'message' => 'Contra Ledger not setup',
-                        'data' => []
-                    );
-                    array_push($postingArray[self::CONTRA], [
-                    'ledger_id' => $contraLedger->id,
-                    'ledger_group_id' => $contraLedgerGroup->id,
-                    'ledger_code' => $contraLedger?->code,
-                    'ledger_name' => $contraLedger?->name,
-                    'ledger_group_code' => $contraLedgerGroup?->name,
-                    'debit_amount' => 0,
-                    'credit_amount' => $vendor->orgAmount,
-                ]);
+        if (empty($orgVendor))
+            return array(
+                'status' => false,
+                'message' => $vendor->party->organization->name . ' Vendor not found in ' . $organization->name,
+                'data' => []
+            );
 
-                $vendorLedger = Ledger::find($vendor->ledger_id);
-                $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
-                if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) 
-                    return array(
-                        'status' => false,
-                        'message' => 'Vendor Ledger not setup',
-                        'data' => []
-                    );
-                    array_push($postingArray[self::VENDOR_ACCOUNT], [
-                    'ledger_id' => $vendorLedger->id,
-                    'ledger_group_id' => $vendorLedgerGroup->id,
-                    'ledger_code' => $vendorLedger?->code,
-                    'ledger_name' => $vendorLedger?->name,
-                    'ledger_group_code' => $vendorLedgerGroup?->name,
-                    'debit_amount' => $vendor->orgAmount,
-                    'credit_amount' => 0,
-                ]);
-                return $postingArray;
+        $contraLedgerId = $orgVendor->contra_ledger_id;
+        if (empty($contraLedgerId))
+            return array(
+                'status' => false,
+                'message' => $vendor->party->organization->name . ' Contra Ledger not found in ' . $organization->name,
+                'data' => []
+            );
+        $contraLedgerGroupId = $orgVendor->contraLedger->group() ?? null;
+        if (empty($contraLedgerGroupId))
+            return array(
+                'status' => false,
+                'message' => $vendor->party->organization->name . ' Contra Ledger Group not found in ' . $organization->name,
+                'data' => []
+            );
+        $contraLedger = Ledger::find($contraLedgerId);
+        $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
+        if (!isset($contraLedger) || !isset($contraLedgerGroup))
+            return array(
+                'status' => false,
+                'message' => 'Contra Ledger not setup',
+                'data' => []
+            );
+        array_push($postingArray[self::CONTRA], [
+            'ledger_id' => $contraLedger->id,
+            'ledger_group_id' => $contraLedgerGroup->id,
+            'ledger_code' => $contraLedger?->code,
+            'ledger_name' => $contraLedger?->name,
+            'ledger_group_code' => $contraLedgerGroup?->name,
+            'debit_amount' => 0,
+            'credit_amount' => $vendor->orgAmount,
+        ]);
+
+        $vendorLedger = Ledger::find($vendor->ledger_id);
+        $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup))
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger not setup',
+                'data' => []
+            );
+        array_push($postingArray[self::VENDOR_ACCOUNT], [
+            'ledger_id' => $vendorLedger->id,
+            'ledger_group_id' => $vendorLedgerGroup->id,
+            'ledger_code' => $vendorLedger?->code,
+            'ledger_name' => $vendorLedger?->name,
+            'ledger_group_code' => $vendorLedgerGroup?->name,
+            'debit_amount' => $vendor->orgAmount,
+            'credit_amount' => 0,
+        ]);
+        return $postingArray;
     }
-    public static function otherOrgPosting($partyOrg,$organization,$vendor){
-                 $postingArray = array(
-                    self::CONTRA => [],
-                    self::VENDOR_ACCOUNT => [],
-                );
-                $orgVendor = Vendor::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                ->where('organization_id',$partyOrg->id)
-                ->where('enter_company_org_id',$organization->id)
-                ->where('company_name',$organization->name)->first();
+    public static function otherOrgPosting($partyOrg, $organization, $vendor)
+    {
+        $postingArray = array(
+            self::CONTRA => [],
+            self::VENDOR_ACCOUNT => [],
+        );
+        $orgVendor = Vendor::withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
+            ->where('organization_id', $partyOrg->id)
+            ->where('enter_company_org_id', $organization->id)
+            ->where('company_name', $organization->name)->first();
 
-                if (empty($orgVendor)) 
-                return array(
-                    'status' => false,
-                    'message' => $organization->name.' Vendor not found in '.$vendor->party->organization->name,
-                    'data' => []
-                );
-                
-                $contraLedgerId = $orgVendor->contra_ledger_id;
-                if (empty($contraLedgerId)) 
-                return array(
-                    'status' => false,
-                    'message' => $organization->name.' Contra Ledger not found in '.$vendor->party->organization->name,
-                    'data' => []
-                );
-                $contraLedgerGroupId = $orgVendor->contraLedger->group() ??null;
-                if (empty($contraLedgerGroupId)) 
-                return array(
-                    'status' => false,
-                    'message' => $organization->name.' Contra Ledger Group not found in '.$vendor->party->organization->name,
-                    'data' => []
-                );
-                
-                $contraLedger = Ledger::find($contraLedgerId);
-                $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
-                if (!isset($contraLedger) || !isset($contraLedgerGroup)) 
-                    return array(
-                        'status' => false,
-                        'message' => 'Contra Ledger not setup',
-                        'data' => []
-                    );
-                    array_push($postingArray[self::CONTRA], [
-                    'ledger_id' => $contraLedger->id,
-                    'ledger_group_id' => $contraLedgerGroup->id,
-                    'ledger_code' => $contraLedger?->code,
-                    'ledger_name' => $contraLedger?->name,
-                    'ledger_group_code' => $contraLedgerGroup?->name,
-                    'debit_amount' => $vendor->orgAmount,
-                    'credit_amount' => 0,
-                ]);
+        if (empty($orgVendor))
+            return array(
+                'status' => false,
+                'message' => $organization->name . ' Vendor not found in ' . $vendor->party->organization->name,
+                'data' => []
+            );
 
-                $vendorLedger = Ledger::find($vendor->ledger_id);
-                $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
-                if (!isset($vendorLedger) || !isset($vendorLedgerGroup)) 
-                    return array(
-                        'status' => false,
-                        'message' => 'Vendor Ledger not setup',
-                        'data' => []
-                    );
-                    array_push($postingArray[self::VENDOR_ACCOUNT], [
-                    'ledger_id' => $vendorLedger->id,
-                    'ledger_group_id' => $vendorLedgerGroup->id,
-                    'ledger_code' => $vendorLedger?->code,
-                    'ledger_name' => $vendorLedger?->name,
-                    'ledger_group_code' => $vendorLedgerGroup?->name,
-                    'debit_amount' => 0,
-                    'credit_amount' => $vendor->orgAmount,
-                ]);
-                return $postingArray;
+        $contraLedgerId = $orgVendor->contra_ledger_id;
+        if (empty($contraLedgerId))
+            return array(
+                'status' => false,
+                'message' => $organization->name . ' Contra Ledger not found in ' . $vendor->party->organization->name,
+                'data' => []
+            );
+        $contraLedgerGroupId = $orgVendor->contraLedger->group() ?? null;
+        if (empty($contraLedgerGroupId))
+            return array(
+                'status' => false,
+                'message' => $organization->name . ' Contra Ledger Group not found in ' . $vendor->party->organization->name,
+                'data' => []
+            );
+
+        $contraLedger = Ledger::find($contraLedgerId);
+        $contraLedgerGroup = Group::find($contraLedgerGroupId[0]?->id);
+        if (!isset($contraLedger) || !isset($contraLedgerGroup))
+            return array(
+                'status' => false,
+                'message' => 'Contra Ledger not setup',
+                'data' => []
+            );
+        array_push($postingArray[self::CONTRA], [
+            'ledger_id' => $contraLedger->id,
+            'ledger_group_id' => $contraLedgerGroup->id,
+            'ledger_code' => $contraLedger?->code,
+            'ledger_name' => $contraLedger?->name,
+            'ledger_group_code' => $contraLedgerGroup?->name,
+            'debit_amount' => $vendor->orgAmount,
+            'credit_amount' => 0,
+        ]);
+
+        $vendorLedger = Ledger::find($vendor->ledger_id);
+        $vendorLedgerGroup = Group::find($vendor->ledger_group_id);
+        if (!isset($vendorLedger) || !isset($vendorLedgerGroup))
+            return array(
+                'status' => false,
+                'message' => 'Vendor Ledger not setup',
+                'data' => []
+            );
+        array_push($postingArray[self::VENDOR_ACCOUNT], [
+            'ledger_id' => $vendorLedger->id,
+            'ledger_group_id' => $vendorLedgerGroup->id,
+            'ledger_code' => $vendorLedger?->code,
+            'ledger_name' => $vendorLedger?->name,
+            'ledger_group_code' => $vendorLedgerGroup?->name,
+            'debit_amount' => 0,
+            'credit_amount' => $vendor->orgAmount,
+        ]);
+        return $postingArray;
     }
 }

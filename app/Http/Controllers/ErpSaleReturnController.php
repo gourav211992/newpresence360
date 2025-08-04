@@ -876,11 +876,11 @@ class ErpSaleReturnController extends Controller
                             $itemTax += ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
                             if($taxDetail['applicability_type']=="collection")
                             {
-                                $totalTax -= $itemTax;
+                                $totalTax += $itemTax;
                             }
                             else
                             {
-                                $totalTax += $itemTax;
+                                $totalTax -= $itemTax;
                             }
                         }
                     }

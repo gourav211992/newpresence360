@@ -869,11 +869,11 @@ class ErpSaleOrderController extends Controller
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
                                 if($taxDetail['applicability_type']=="collection")
                                 {
-                                    $totalTax -= $itemTax;
+                                    $totalTax += $itemTax;
                                 }
                                 else
                                 {
-                                    $totalTax += $itemTax;
+                                    $totalTax -= $itemTax;
                                 }
                             }
                         }
@@ -1859,9 +1859,9 @@ class ErpSaleOrderController extends Controller
     public function generatePdf(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
-        $pathUrl = route('sale.order.index');
+        $pathUrl = "sales-order";
         if ($request -> document_type === ConstantHelper::SQ_SERVICE_ALIAS) {
-            $pathUrl = route('sale.quotation.index');
+            $pathUrl = 'sales-quotation';
         }
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -1885,7 +1885,7 @@ class ErpSaleOrderController extends Controller
                         $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
                     }
                 ]);
-            }) -> bookViewAccess($pathUrl) -> withDefaultGroupCompanyOrg() -> withDraftListingLogic() -> where('id', $id)
+            }) -> bookViewAccess($pathUrl) -> withDraftListingLogic() -> where('id', $id)
             ->firstOrFail();
             $pdfFile = $request -> type == 'grouped' ? "pdf.sales-document-attribute-wise" : "pdf.sales-document";
             $maxAttributeCount = 0;

@@ -1,6 +1,6 @@
 const order = window.pageData.order;
-const editOrder = window.pageData.editOrder === 'true';  // Convert string to boolean
-const revNoQuery = window.pageData.revNoQuery === 'true';
+const editOrder = window.pageData.editOrder;  // Convert string to boolean
+const revNoQuery = window.pageData.revNoQuery;
 const orderId = window.pageData.orderId;
 const ShopFloor = window.pageData.Shop_store;
 const Stockk = window.pageData.Stock_store;
