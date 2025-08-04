@@ -46,7 +46,10 @@ use PDF;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Department;
+use App\Models\ErpPaymentTerm;
+use App\Models\ErpPoPaymentTerm;
 use App\Models\ErpStore;
+use App\Models\PaymentTermDetail;
 use App\Models\PurchaseIndent;
 use App\Models\State;
 
@@ -462,6 +465,7 @@ class PoController extends Controller
             $po->total_discount_value = 0.00;
             $po->total_tax_value = 0.00;
             $po->total_expense_value = 0.00;
+            $po->credit_days = $request->credit_days;
             $po->save();
 
             if (in_array(ucfirst(strtolower($poTypeParam)), ['Goods'])) {
@@ -944,6 +948,8 @@ class PoController extends Controller
             if($po->document_status == ConstantHelper::APPROVED) {
                 $redirectUrl = url(request()->route('type') . '/' . $po->id . '/pdf');
             }
+            // Save Po Payment Terms
+            self::savePoPaymentTerm($request->payment_term_id, $po->id, $request->credit_days);
 
             DB::commit();
             return response()->json([
@@ -1083,7 +1089,7 @@ class PoController extends Controller
             $po->department_id = $request->department_id;
             $po->store_id = $request->store_id;
             $po->document_date = $request->document_date ?? $po->document_date; 
-
+            $po->credit_days = $request->credit_days;
             $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';
             $po->po_type = $poTypeParam;
 
@@ -1648,6 +1654,9 @@ class PoController extends Controller
             if($po->document_status == ConstantHelper::APPROVED) {
                 $redirectUrl = url(request()->route('type') . '/' . $po->id . '/pdf');
             }
+
+            // Save Po Payment Terms
+            $this->savePoPaymentTerm($request->payment_term_id, $po->id, $request->credit_days);
 
             DB::commit();
             return response()->json([
@@ -3048,5 +3057,30 @@ class PoController extends Controller
             ->rawColumns(['item_attributes','status'])
             ->make(true);
             return $datatables;
+    }
+
+    private function savePoPaymentTerm($paymentTermId, $poId, $creditDays){
+        $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+        
+        if ($paymentTermDetails->isEmpty()) {
+            return;
+        }
+
+        foreach($paymentTermDetails as $paymentTermDetail){
+            $poPaymentTerm = ErpPoPaymentTerm::firstOrNew([
+                'po_header_id' => $poId,
+                'payment_term_id' => $paymentTermDetail->payment_term_id,
+                'payment_term_detail_id' => $paymentTermDetail->id,
+                'trigger_type' => $paymentTermDetail->trigger_type,
+            ]);
+
+            $poPaymentTerm->po_header_id = $poId;
+            $poPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
+            $poPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
+            $poPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? $creditDays : 0;
+            $poPaymentTerm->percent = $paymentTermDetail->percent;
+            $poPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
+            $poPaymentTerm->save();
+        }
     }
 }

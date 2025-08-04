@@ -49,12 +49,13 @@
                                 <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
                                     @php
                                         if($order->document_type == "si"){
-                                            $options=['Tax Invoice'];
+                                            $options=['Tax Invoice', 'Tax Invoice Attribute Grouped'];
                                         }
                                         elseif($order->document_type == "si-dnote")
                                         {
                                             $options = [
                                                 'Tax Invoice',
+                                                'Tax Invoice Attribute Grouped',
                                                 'Delivery Note',
                                             ];
                                         }
@@ -65,7 +66,7 @@
                                     @endphp
                                     @foreach ($options as $key)
                                         <li>
-                                            <a class="dropdown-item" href="{{ route('sale.invoice.generate-pdf', [$order->id, $key]) }}" target="_blank">{{ $key }}</a>
+                                            <a class="dropdown-item" href="{{ route('sale.invoice.generate-pdf', [$order->id, $key, 'type' => str_contains($key, 'Attribute Grouped') ? 'grouped' : '']) }}" target="_blank">{{ $key }}</a>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -3672,7 +3673,7 @@
                                 var headerStoreId = $("#store_id_input").val();
                                 var headerStoreCode = $("#store_id_input").attr("data-name");
                                 
-                                mainTableItem.innerHTML += `
+                                var newProcessedRow = `
                                 <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');">
                                     <td class="customernewsection-form">
                                     <div class="form-check form-check-primary custom-checkbox">
@@ -3717,7 +3718,7 @@
                                         </td>
                                         
                                         <td><input ${disableQty ? 'readonly' : ''} type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "${item?.balance_qty}"/></td>
-                                        <td><input ${disableQty ? 'readonly' : ''} type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
+                                        <td><input readonly type="text" id = "item_rate_${currentOrderIndexVal}" name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" ${amountMax} value = "${item?.rate}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "${(item?.balance_qty ? item?.balance_qty : 0) * (item?.rate ? item?.rate : 0)}" /></td>
                                         <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "${item?.header_discount_amount}" ></input>
                                         <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "${item?.header_expense_amount}"></input>
@@ -3745,6 +3746,7 @@
 
                                                                         </tr>
                                 `;
+                                mainTableItem.insertAdjacentHTML('beforeend', newProcessedRow);
                                 initializeAutocomplete1("items_dropdown_" + currentOrderIndexVal, currentOrderIndexVal);
                                 renderIcons();
                                 const totalValue = item.item_discount_amount;
@@ -3791,96 +3793,6 @@
 
                                 });
                             }
-                            // else {
-
-                            //     currentOrder.items.forEach((item, itemIndex) => {
-                            //         const avl_qty = Math.min(item.balance_qty, item.stock_qty);
-                            //         item.balance_qty = avl_qty;
-                            //         const itemRemarks = item.remarks ? item.remarks : '';
-                            //     mainTableItem.innerHTML += `
-                            //     <tr id = "item_row_${currentOrderIndexVal}" class = "item_header_rows" onclick = "onItemClick('${currentOrderIndexVal}');">
-                            //         <td class="customernewsection-form">
-                            //         <div class="form-check form-check-primary custom-checkbox">
-                            //             <input type="checkbox" class="form-check-input item_row_checks" id="Email">
-                            //             <label class="form-check-label" for="Email"></label>
-                            //         </div>
-                            //                                                 </td>
-                            //         <td class="poprod-decpt">
-
-                            //             <input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${item?.id}" name = "quotation_item_ids[]"/>
-
-                            //             <input type = "hidden" id = "qt_type_id_${currentOrderIndexVal}" value = "${currentOrder.document_type}" name = "quotation_item_type[]"/>
-
-                            //             <input type = "hidden" id = "qt_book_id_${currentOrderIndexVal}" value = "${currentOrder?.book_id}" />
-                            //             <input type = "hidden" id = "qt_book_code_${currentOrderIndexVal}" value = "${currentOrder?.book_code}" />
-
-                            //             <input type = "hidden" id = "qt_document_no_${currentOrderIndexVal}" value = "${currentOrder?.document_number}" />
-                            //             <input type = "hidden" id = "qt_document_date_${currentOrderIndexVal}" value = "${currentOrder?.document_date}" />
-
-                            //             <input type = "hidden" id = "qt_id_${currentOrderIndexVal}" value = "${currentOrder?.document_number}" />
-
-                            //         <input readonly type="text" id = "items_dropdown_${currentOrderIndexVal}" name="item_code[]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code ui-autocomplete-input" autocomplete="off" data-name="${item?.item?.item_name}" data-code="${item?.item?.item_code}" data-id="${item?.item?.id}" hsn_code = "${item?.item?.hsn?.code}" item-name = "${item?.item?.item_name}" specs = '${JSON.stringify(item?.item?.specifications)}' attribute-array = '${JSON.stringify(item?.item_attributes_array)}'  value = "${item?.item?.item_code}" >
-                            //         <input type = "hidden" name = "item_id[]" id = "items_dropdown_${currentOrderIndexVal}_value" value = "${item?.item_id}"></input>
-                            //                                                 </td>
-                            //                                                 <td class="poprod-decpt">
-                            //         <button id = "attribute_button_${currentOrderIndexVal}" ${item?.item_attributes_array?.length > 0 ? '' : 'disabled'} type = "button" data-bs-toggle="modal" onclick = "setItemAttributes('items_dropdown_${currentOrderIndexVal}', '${currentOrderIndexVal}');" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-                            //         <input type = "hidden" name = "attribute_value_${currentOrderIndexVal}" />
-                            //         </td>
-                            //                                                 <td>
-                            //         <select class="form-select" name = "uom_id[]" id = "uom_dropdown_${currentOrderIndexVal}">
-
-                            //         </select>
-                            //             </td>
-                            //             <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[]" oninput = "changeItemQty(this, '${currentOrderIndexVal}');" value = "${item.balance_qty}" max = "${item?.balance_qty}" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
-                            //             <td><input type="text" id = "item_rate_${currentOrderIndexVal}" ${docType === 'dnote' ? 'readonly' : ''} name = "item_rate[]" oninput = "changeItemRate(this, '${currentOrderIndexVal}');" value = "0.00" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
-                            //             <td><input type="text" id = "item_value_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_values_input" value = "0.00" /></td>
-                            //             <input type = "hidden" id = "header_discount_${currentOrderIndexVal}" value = "0.00" ></input>
-                            //             <input type = "hidden" id = "header_expense_${currentOrderIndexVal}" value = "0.00"></input>
-                            //         <td>
-                            //         <div class="position-relative d-flex align-items-center">
-                            //             <input type="text" id = "item_discount_${currentOrderIndexVal}" disabled class="form-control mw-100 text-end item_discounts_input" style="width: 70px" value = "0.00"/>
-                            //             <div class="ms-50">
-                            //                 <button type = "button" onclick = "onDiscountClick('item_value_${currentOrderIndexVal}', '${currentOrderIndexVal}')" data-bs-toggle="modal" data-bs-target="#discount" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Discount</button>
-                            //             </div>
-                            //         </div>
-                            //         </td>
-                            //             <input type="hidden" id = "item_tax_${currentOrderIndexVal}" value = "0.00" class="form-control mw-100 text-end item_taxes_input" style="width: 70px" />
-                            //             <td><input type="text" id = "value_after_discount_${currentOrderIndexVal}" value = "0.00" disabled class="form-control mw-100 text-end item_val_after_discounts_input" /></td>
-                            //             <input type = "hidden" id = "value_after_header_discount_${currentOrderIndexVal}" class = "item_val_after_header_discounts_input" value = "0" ></input>
-                            //             <input type="hidden" id = "item_total_${currentOrderIndexVal}" value = "0.00" disabled class="form-control mw-100 text-end item_totals_input" />
-                            //         <td>
-                            //             <div class="d-flex">
-                            //                 <div ${docType === 'dnote' || docType === 'sinvdnote' ? '' : 'style = "display:none;"'} class="me-50 cursor-pointer item_store_locations" data-bs-toggle="modal" data-bs-target="#location" onclick = "openStoreLocationModal(${currentOrderIndexVal})" data-stores = '[]' id = 'data_stores_${currentOrderIndexVal}'>    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Store Location" class="text-primary"><i data-feather="map-pin"></i></span></div>
-                            //                 <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_${currentOrderIndexVal}');">        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                            //         </div>
-                            //         </td>
-                            //         <input type="hidden" id = "item_remarks_${currentOrderIndexVal}" name = "item_remarks[]" value = "${itemRemarks}"/>
-
-                            //                                             </tr>
-                            //     `;
-                            //     initializeAutocomplete1("items_dropdown_" + currentOrderIndexVal, currentOrderIndexVal);
-                            //     renderIcons();
-                            //     const totalValue = 0;
-                            //     document.getElementById('discount_main_table').setAttribute('total-value', totalValue);
-                            //     document.getElementById('discount_main_table').setAttribute('item-row', 'item_value_' + currentOrderIndexVal);
-                            //     document.getElementById('discount_main_table').setAttribute('item-row-index', currentOrderIndexVal);
-
-                            //     var itemUomsHTML = ``;
-                            //     console.log(item.item.uom, item.item.alternate_uoms, "UOM");
-                            //     if (item.item.uom && item.item.uom.id) {
-                            //         itemUomsHTML += `<option value = '${item.item.uom.id}' ${item.item.uom.id == item.uom_id ? "selected" : ""}>${item.item.uom.alias}</option>`;
-                            //     }
-                            //     item.item.alternate_uoms.forEach(singleUom => {
-                            //         if (singleUom.is_selling) {
-                            //             itemUomsHTML += `<option value = '${singleUom.uom.id}' ${singleUom.uom.id == item.uom_id ? "selected" : ""} >${singleUom.uom?.alias}</option>`;
-                            //         }
-                            //     });
-                            //     document.getElementById('uom_dropdown_' + currentOrderIndexVal).innerHTML = itemUomsHTML;
-                            //     // getStoresData(currentOrderIndexVal, null, false);
-                            //     currentOrderIndexVal += 1;
-
-                            //     });
-                            // }
                         //Order Discount
                         currentOrder.discount_ted.forEach((orderDiscount, orderDiscountIndex) => {
                             document.getElementById('new_order_discount_name').value = orderDiscount.ted_name;

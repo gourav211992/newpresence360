@@ -58,7 +58,8 @@ class PurchaseOrder extends Model
         'group_currency_exg_rate',
         'gate_entry_required',
         'supp_invoice_required',
-        'partial_delivery'
+        'partial_delivery',
+        'credit_days'
     ];
 
     public static function boot()

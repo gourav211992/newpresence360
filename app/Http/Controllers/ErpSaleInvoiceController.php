@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Helpers\GstInvoiceHelper;
+use App\Helpers\MasterIndiaHelper;
 use App\Helpers\TransactionReportHelper;
 use App\Jobs\SendEmailJob;
 use App\Models\AttributeGroup;
@@ -1032,11 +1033,11 @@ class ErpSaleInvoiceController extends Controller
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
                                 if($taxDetail['applicability_type']=="collection")
                                 {
-                                    $totalTax -= $itemTax;
+                                    $totalTax += $itemTax;
                                 }
                                 else
                                 {
-                                    $totalTax += $itemTax;
+                                    $totalTax -= $itemTax;
                                 }
                             }
                         }
@@ -2328,13 +2329,87 @@ class ErpSaleInvoiceController extends Controller
             }]);
         })
         -> find($id);
+        $pdfFile = "pdf.sales-document";
+        if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
+        ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
+        {
+            $pdfFile = 'pdf.sales-invoice-pdf';
+        } else {
+            $pdfFile = "pdf.sales-document";
+        }
+        if($pattern && $pattern=="Delivery Note"){
+            $pdfFile = "pdf.delivery-note";
+        }
+        $maxAttributeCount = 0;
+        $allAttributeValues = [];
+        $orderItems = $order -> items;
+        if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
+        ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
+        {
+            $pdfFile = $request -> type == 'grouped' ? "pdf.sales-invoice-attribute-grouped" : "pdf.sales-invoice-document";
+            $maxAttributeCount = 0;
+            $allAttributeValues = [];
+            $siItemAttributes = ErpInvoiceItemAttribute::where('sale_invoice_id', $order -> id)
+                -> select('attribute_name') -> distinct() -> get() -> pluck('attribute_name') -> toArray();
+
+            $orderItems = ErpInvoiceItem::where('sale_invoice_id', $order->id)
+            ->select(
+                'item_id', 'item_code', 'item_name', 'hsn_id', 'hsn_code', 'uom_id', 'rate',
+                DB::raw('SUM(order_qty) AS order_qty'),
+                DB::raw('SUM(item_discount_amount) AS item_discount_amount'),
+                DB::raw('SUM(header_discount_amount) AS header_discount_amount'),
+                DB::raw('SUM(tax_amount) AS tax_amount'),
+                DB::raw('COUNT(id) AS attribute_count')
+            )
+            ->groupBy('item_id', 'item_code', 'item_name', 'hsn_id', 'hsn_code', 'uom_id', 'rate')
+            ->get();
+
+            if (count($siItemAttributes) == 1 && $request -> type == 'grouped' && count($order -> items) > count($orderItems)) {
+                $pdfFile = "pdf.sales-invoice-attribute-grouped";
+    
+                foreach ($orderItems as $orderItem) {
+                    if ($orderItem -> attribute_count > $maxAttributeCount) {
+                        $maxAttributeCount = $orderItem -> attribute_count;
+                    }
+                    $siItems = ErpInvoiceItem::where('sale_invoice_id', $order -> id)
+                     -> where('item_id', $orderItem -> item_id) -> where('uom_id', $orderItem -> uom_id)
+                     -> where('rate', $orderItem -> rate) -> with('tax_ted') -> get();
+                    foreach ($siItems as $siItem) {
+                        $itemAttributeVal = implode(" ", $siItem -> attributes -> pluck('attribute_value') -> toArray());
+                        if (!in_array($itemAttributeVal, $allAttributeValues)) {
+                            array_push($allAttributeValues, $itemAttributeVal);
+                        }
+                        $quantity = $siItem -> order_qty;
+                        if (isset($orderItem -> attribute_wise_qty)) {
+                            $previousArray = $orderItem -> attribute_wise_qty;
+                            array_push($previousArray, [
+                                'attribute_value' => $itemAttributeVal,
+                                'qty' => $quantity
+                            ]);
+                            $orderItem -> attribute_wise_qty = $previousArray;
+                            $previousTaxTed = $orderItem -> tax_ted;
+                            $previousTaxTed = $previousTaxTed -> concat($siItem -> tax_ted);
+                            $orderItem -> tax_ted = $previousTaxTed;
+                        } else {
+                            $orderItem -> attribute_wise_qty = [[
+                                'attribute_value' => $itemAttributeVal,
+                                'qty' => $quantity
+                            ]];
+                            $orderItem -> tax_ted = $siItem -> tax_ted;
+                        }
+                    }
+                }
+            } else {
+                $pdfFile = "pdf.sales-document";
+                $orderItems = $order -> items;
+            }
+        }
 
         $shippingAddress = $order->shipping_address_details;
         $billingAddress = $order->billing_address_details;
 
         $type = ConstantHelper::SERVICE_LABEL[$order->document_type];
-        $maxAttributeCount = 0;
-        $allAttributeValues = [];
+        
        
         $totalItemValue = $order->total_item_value ?? 0.00;
         $totalDiscount = $order->total_discount_value ?? 0.00;
@@ -2347,49 +2422,40 @@ class ErpSaleInvoiceController extends Controller
         // Path to your image (ensure the file exists and is accessible)
         $imagePath = public_path('assets/css/midc-logo.jpg'); // Store the image in the public directory
         $approvedBy = Helper::getDocStatusUser(get_class($order), $order -> id, $order -> document_status);
-        $orderItems = $order->items;
-        foreach ($orderItems as $orderItem) {
-            if ($orderItem -> attribute_count > $maxAttributeCount) {
-                $maxAttributeCount = $orderItem -> attribute_count;
-            }
-            $soItems = ErpSoItem::where('sale_order_id', $order -> id)
-             -> where('item_id', $orderItem -> item_id) -> where('uom_id', $orderItem -> uom_id)
-             -> where('rate', $orderItem -> rate) -> with('tax_ted') -> get();
-            foreach ($soItems as $soItem) {
-                $itemAttributeVal = implode(" ", $soItem -> attributes -> pluck('attribute_value') -> toArray());
-                if (!in_array($itemAttributeVal, $allAttributeValues)) {
-                    array_push($allAttributeValues, $itemAttributeVal);
-                }
-                $quantity = $soItem -> order_qty;
-                if (isset($orderItem -> attribute_wise_qty)) {
-                    $previousArray = $orderItem -> attribute_wise_qty;
-                    array_push($previousArray, [
-                        'attribute_value' => $itemAttributeVal,
-                        'qty' => $quantity
-                    ]);
-                    $orderItem -> attribute_wise_qty = $previousArray;
-                    $previousTaxTed = $orderItem -> tax_ted;
-                    $previousTaxTed = $previousTaxTed -> concat($soItem -> tax_ted);
-                    $orderItem -> tax_ted = $previousTaxTed;
-                } else {
-                    $orderItem -> attribute_wise_qty = [[
-                        'attribute_value' => $itemAttributeVal,
-                        'qty' => $quantity
-                    ]];
-                    $orderItem -> tax_ted = $soItem -> tax_ted;
-                }
-            }
-        }
-        if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
-        ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
-        {
-            $pdfFile = 'pdf.sales-invoice-pdf';
-        } else {
-            $pdfFile = "pdf.sales-document";
-        }
-        if($pattern && $pattern=="Delivery Note"){
-            $pdfFile = "pdf.delivery-note";
-        }
+        // $orderItems = $order->items;
+        // foreach ($orderItems as $orderItem) {
+        //     if ($orderItem -> attribute_count > $maxAttributeCount) {
+        //         $maxAttributeCount = $orderItem -> attribute_count;
+        //     }
+        //     $soItems = ErpSoItem::where('sale_order_id', $order -> id)
+        //      -> where('item_id', $orderItem -> item_id) -> where('uom_id', $orderItem -> uom_id)
+        //      -> where('rate', $orderItem -> rate) -> with('tax_ted') -> get();
+        //     foreach ($soItems as $soItem) {
+        //         $itemAttributeVal = implode(" ", $soItem -> attributes -> pluck('attribute_value') -> toArray());
+        //         if (!in_array($itemAttributeVal, $allAttributeValues)) {
+        //             array_push($allAttributeValues, $itemAttributeVal);
+        //         }
+        //         $quantity = $soItem -> order_qty;
+        //         if (isset($orderItem -> attribute_wise_qty)) {
+        //             $previousArray = $orderItem -> attribute_wise_qty;
+        //             array_push($previousArray, [
+        //                 'attribute_value' => $itemAttributeVal,
+        //                 'qty' => $quantity
+        //             ]);
+        //             $orderItem -> attribute_wise_qty = $previousArray;
+        //             $previousTaxTed = $orderItem -> tax_ted;
+        //             $previousTaxTed = $previousTaxTed -> concat($soItem -> tax_ted);
+        //             $orderItem -> tax_ted = $previousTaxTed;
+        //         } else {
+        //             $orderItem -> attribute_wise_qty = [[
+        //                 'attribute_value' => $itemAttributeVal,
+        //                 'qty' => $quantity
+        //             ]];
+        //             $orderItem -> tax_ted = $soItem -> tax_ted;
+        //         }
+        //     }
+        // }
+        
         $eInvoice = $order->irnDetail()->first();
         $qrCodeBase64 = null;
         if (isset($eInvoice)) {
@@ -2405,6 +2471,7 @@ class ErpSaleInvoiceController extends Controller
                 'pattern' => $pattern,
                 'type' => $pattern,
                 'order' => $order,
+                'orderItems' => $orderItems,
                 'user' => $user,
                 'shippingAddress' => $shippingAddress,
                 'organization' => $organization,
@@ -2421,7 +2488,7 @@ class ErpSaleInvoiceController extends Controller
                 'approvedBy' => $approvedBy,
                 'items' => $orderItems,
                 'maxAttributeCount' => $maxAttributeCount,
-                'attributeName' => null,
+                'attributeName' => isset($siItemAttributes) && count($siItemAttributes) ? $siItemAttributes[0] : null,
                 'qrCodeBase64' => $qrCodeBase64,
                 'allAttributeValues' => $allAttributeValues,
                 'billingAddress' => $billingAddress,
@@ -2720,6 +2787,87 @@ class ErpSaleInvoiceController extends Controller
             ]);
         } catch(Exception $ex) {
             throw new ApiGenericException($ex -> getMessage());
+        }
+    }
+    public function generateEInvoiceNew(Request $request)
+    {
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'vehicle_no' => [
+                    'required',
+                    'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
+                ],
+                'transporter_mode' => 'required|integer',
+                "transporter_name" => [
+                   "required",
+                   'string'
+                ],
+            ],
+            [
+                'vehicle_no.required' => 'Vehicle number is required.',
+                'vehicle_no.regex' => 'Vehicle number format is invalid. Example: MH12AB1234.',
+                'transporter_mode.required' => 'Transporter mode is required.',
+                'transporter_mode.integer' => 'Transporter mode must be an integer.',
+                'transporter_name.required' => 'Transporter name is required.',
+                'transporter_name.string' => 'Transporter name must be a string.',
+            ]
+        );
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->messages()->first(),
+            ], 422);
+        }
+        $id = $request -> id;
+        try{
+            $documentHeader = ErpSaleInvoice::find($id);
+            $documentHeader = SaleModuleHelper::updateEInvoiceDataFromHelper($documentHeader);
+            $documentDetails = ErpInvoiceItem::where('sale_invoice_id', $id)->get();
+            // $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
+
+            $shippingAddress = $documentHeader->billing_address_details;
+            $storeAddress = $documentHeader->location_address_details;
+
+            // $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($documentHeader -> vendor_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'vendor');
+            // if ($gstInvoiceType === EInvoiceHelper::B2B_INVOICE_TYPE) {
+            //     $data = EInvoiceHelper::saveGstIn($documentHeader);
+            $gstInvoiceType = MasterIndiaHelper::getGstInvoiceType($documentHeader -> customer_id, $shippingAddress -> country_id, $storeAddress -> country_id, 'customer');
+            if ($gstInvoiceType === MasterIndiaHelper::B2B_INVOICE_TYPE) {
+                $data = MasterIndiaHelper::saveGstIn($documentHeader);
+                if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error' => 'error',
+                        'message' => $data['message'],
+                    ], 500);
+                } else{
+                    $transportationMode = EwayBillMaster::find($request->transporter_mode);
+
+                    $documentHeader->transporter_name=$request->transporter_name;
+                    $documentHeader->transportation_mode=$transportationMode?->description ?? null;
+                    $documentHeader->eway_bill_master_id=$transportationMode?->id ?? null;
+                    $documentHeader->vehicle_no=$request->vehicle_no;
+
+                    $documentHeader->e_invoice_status = ConstantHelper::GENERATED;
+                    $documentHeader->save();
+                    
+                    return response() -> json([
+                        'status' => 'success',
+                        'results' => $data,
+                        'message' => 'E-Invoice generated succesfully',
+                    ]);
+                }
+            } else{
+                return response()->json([
+                    'error' => 'error',
+                    'message' => 'Not valid for '.$gstInvoiceType,
+                ], 500);
+            }
+
+        } catch(Exception $ex) {
+            throw new ApiGenericException($ex -> getLine());
         }
     }
     public function EInvoiceMail(Request $request)

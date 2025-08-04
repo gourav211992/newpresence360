@@ -429,17 +429,16 @@
                                                                    {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>
-<<<<<<< HEAD
                                                                    @endif
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="machineName">Machine</th>
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="cycleCount">Cycle Count</th>
                                                                    <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodLine">Line</th>
                                                                    <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodSupervisor">Supervisor</th>
-=======
                                                                    @endif --}}
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="machineName">Machine</th>
                                                                    <th class="{{$machines->isNotEmpty() ? '' : 'd-none'}}" id="cycleCount">Cycle Count</th>
->>>>>>> 25ec3e8f291bf39ad3baf993076f92f6a2735099
+                                                                   <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodLine">Line</th>
+                                                                   <th class="{{$stationLines->count() ? '' : 'd-none'}}" id="prodSupervisor">Supervisor</th>
                                                                    <th>Action</th>
                                                                  </tr>
                                                                </thead>

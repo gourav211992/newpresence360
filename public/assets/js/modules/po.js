@@ -5,42 +5,41 @@ $(document).on('click', '.summaryTaxBtn', (e) => {
 
 /*Approve modal*/
 $(document).on('click', '#approved-button', (e) => {
-   let actionType = 'approve';
-   $("#approveModal").find("#action_type").val(actionType);
-   $("#approveModal #popupTitle").text("Approve Application");
-   $("#approveModal").modal('show');
+    let actionType = 'approve';
+    $("#approveModal").find("#action_type").val(actionType);
+    $("#approveModal #popupTitle").text("Approve Application");
+    $("#approveModal").modal('show');
 });
 
 /*Reject modal*/
 $(document).on('click', '#reject-button', (e) => {
-   let actionType = 'reject';
-   $("#approveModal #popupTitle").text("Reject Application");
-   $("#approveModal").find("#action_type").val(actionType);
-   $("#approveModal").modal('show');
+    let actionType = 'reject';
+    $("#approveModal #popupTitle").text("Reject Application");
+    $("#approveModal").find("#action_type").val(actionType);
+    $("#approveModal").modal('show');
 });
 
 /*Get tax Summary*/
-function getTaxSummary()
-{
+function getTaxSummary() {
     let taxSummary = {};
-    $("#itemTable [id*='row_']").each(function(index, row) {
+    $("#itemTable [id*='row_']").each(function (index, row) {
         row = $(row);
         let rowCount = Number(row.attr('data-index')) || 1;
         let qty = Number(row.find('[name*="[qty]"]').val());
         let rate = Number(row.find('[name*="[rate]"]').val());
         let itemDisc = Number(row.find('[name*="[discount_amount]"]').val());
-        let itemHeaderDisc = Number(row.find('[name*="[discount_amount_header]"]').val());        
+        let itemHeaderDisc = Number(row.find('[name*="[discount_amount_header]"]').val());
         let totalItemDisc = itemDisc + itemHeaderDisc;
         let totalItemValue = qty * rate;
         let totalItemValueAfterDisc = totalItemValue - totalItemDisc;
         let processedTaxTypes = {};
         if (totalItemValueAfterDisc) {
-            row.find('[name*="[t_type]"]').each(function(taxIndex, TaxRow) {
+            row.find('[name*="[t_type]"]').each(function (taxIndex, TaxRow) {
                 // Get tax type, percentage, and value for each tax row
-                let tType = $(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_type]"]`).val();
-                let tPerc = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_perc]"]`).val());
-                let tValue = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex+1}][t_value]"]`).val());
-                let dynamicKey = `${tType}_${tPerc}`;                
+                let tType = $(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex + 1}][t_type]"]`).val();
+                let tPerc = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex + 1}][t_perc]"]`).val());
+                let tValue = Number($(TaxRow).closest('td').find(`[name*="components[${rowCount}][taxes][${taxIndex + 1}][t_value]"]`).val());
+                let dynamicKey = `${tType}_${tPerc}`;
                 if (taxSummary[dynamicKey]) {
                     taxSummary[dynamicKey].totalTaxValue += tValue;
                 } else {
@@ -62,7 +61,7 @@ function getTaxSummary()
     let rowCount = 1;
     for (let key in taxSummary) {
         let summary = taxSummary[key];
-        let amount = Number(summary.totalTaxableAmount).toFixed(); 
+        let amount = Number(summary.totalTaxableAmount).toFixed();
         taxSummaryHtml += `<tr>
         <td>${rowCount}</td>
         <td>${summary.taxType}</td>
@@ -78,37 +77,37 @@ function getTaxSummary()
 
 /*Tbl row highlight*/
 $(document).on('click', '.mrntableselectexcel tr', (e) => {
-   $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
+    $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
 });
 
-$(document).on('keydown', function(e) {
- if (e.which == 38) {
-   /*bottom to top*/
-   $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
- } else if (e.which == 40) {
-   /*top to bottom*/
-   $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
- }
- // if($('.trselected').length) {
- //   $('html, body').scrollTop($('.trselected').offset().top - 200); 
- // }
+$(document).on('keydown', function (e) {
+    if (e.which == 38) {
+        /*bottom to top*/
+        $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
+    } else if (e.which == 40) {
+        /*top to bottom*/
+        $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+    }
+    // if($('.trselected').length) {
+    //   $('html, body').scrollTop($('.trselected').offset().top - 200); 
+    // }
 });
 
 /*Check box check and uncheck*/
-$(document).on('change','#itemTable > thead .form-check-input',(e) => {
+$(document).on('change', '#itemTable > thead .form-check-input', (e) => {
     if (e.target.checked) {
-        $("#itemTable > tbody .form-check-input").each(function(){
-            $(this).prop('checked',true);
+        $("#itemTable > tbody .form-check-input").each(function () {
+            $(this).prop('checked', true);
         });
     } else {
-        $("#itemTable > tbody .form-check-input").each(function(){
-            $(this).prop('checked',false);
+        $("#itemTable > tbody .form-check-input").each(function () {
+            $(this).prop('checked', false);
         });
     }
 });
 
-$(document).on('change','#itemTable > tbody .form-check-input',(e) => {
-    if(!$("#itemTable > tbody .form-check-input:not(:checked)").length) {
+$(document).on('change', '#itemTable > tbody .form-check-input', (e) => {
+    if (!$("#itemTable > tbody .form-check-input:not(:checked)").length) {
         $('#itemTable > thead .form-check-input').prop('checked', true);
     } else {
         $('#itemTable > thead .form-check-input').prop('checked', false);
@@ -129,21 +128,21 @@ $(document).on('click', '.addDiscountBtn', (e) => {
     $("#new_item_dis_name_select").val('');
     $("#new_item_discount_id").val('');
     $("#new_item_dis_name").val('');
-    $("#new_item_dis_perc").val('').prop('readonly',false);
-    $("#new_item_dis_value").val('').prop('readonly',false);
+    $("#new_item_dis_perc").val('').prop('readonly', false);
+    $("#new_item_dis_value").val('').prop('readonly', false);
     let rowCount = e.target.closest('button').getAttribute('data-row-count');
     let tr = '';
     let totalAmnt = 0;
-    $(`[id="row_${rowCount}"]`).find("[name*='[dis_amount]']").each(function(index,item) {
-        let key = index +1;
+    $(`[id="row_${rowCount}"]`).find("[name*='[dis_amount]']").each(function (index, item) {
+        let key = index + 1;
         let id = $(item).closest('tr').find(`[name*='[${key}][id]']`).val();
         let tedId = $(item).closest('tr').find(`[name*='[${key}][ted_id]']`).val();
         let name = $(item).closest('tr').find(`[name*='[${key}][dis_name]']`).val();
         let perc = $(item).closest('tr').find(`[name*='[${key}][dis_perc]']`).val();
         let amnt = Number($(item).val()).toFixed(2);
-        totalAmnt+=Number(amnt);
+        totalAmnt += Number(amnt);
         let tbl_row_count = index + 1;
-         tr += `
+        tr += `
         <tr class="display_discount_row">
             <td>${tbl_row_count}</td>
             <td>${name}
@@ -187,18 +186,18 @@ function setTableCalculation() {
         let qty = $(item).find("[name*='[qty]']").val() || 0;
         let rate = $(item).find("[name*='[rate]']").val() || 0;
         let itemValue = (Number(qty) * Number(rate)) || 0;
-        totalItemValue+=itemValue;
+        totalItemValue += itemValue;
         $(item).find("[name*='[item_value]']").val(itemValue.toFixed(2));
 
         /*Bind Item Discount*/
         let itemDiscount = 0;
         if ($(item).find("[name*='[dis_perc]']").length && itemValue) {
-            $(item).find("[name*='[dis_perc]']").each(function(index, eachItem) {
+            $(item).find("[name*='[dis_perc]']").each(function (index, eachItem) {
                 let hiddenPerc = Number($(`[name="components[${rowCount}][discounts][${index + 1}][hidden_dis_perc]"]`).val()) || 0;
                 let discPerc = hiddenPerc || Number($(eachItem).val());
                 let eachDiscAmount = 0;
                 if (discPerc) {
-                    eachDiscAmount = (itemValue * discPerc) / 100; 
+                    eachDiscAmount = (itemValue * discPerc) / 100;
                 } else {
                     eachDiscAmount = Number($(`[name="components[${rowCount}][discounts][${index + 1}][dis_amount]"]`).val()) || 0;
                 }
@@ -209,33 +208,33 @@ function setTableCalculation() {
         } else if (!itemValue) {
             $(item).find("[name*='[discount_amount]']").val("0.00");
         }
-        totalItemDiscount+=itemDiscount;
+        totalItemDiscount += itemDiscount;
 
         let itemCost = itemValue - itemDiscount;
-        totalItemCost+=itemCost;
+        totalItemCost += itemCost;
         $(item).find("[name*='[item_total_cost]']").val(itemCost.toFixed(2));
         /*Bind Item Discount*/
 
     });
 
     /*Bind table footer*/
-    $("#totalItemValue").attr('amount',totalItemValue).text(totalItemValue.toFixed(2));
-    $("#totalItemDiscount").attr('amount',totalItemDiscount).text(totalItemDiscount.toFixed(2));
-    $("#TotalEachRowAmount").attr('amount',totalItemCost).text(totalItemCost.toFixed(2));
-    /*Bind table footer*/ 
+    $("#totalItemValue").attr('amount', totalItemValue).text(totalItemValue.toFixed(2));
+    $("#totalItemDiscount").attr('amount', totalItemDiscount).text(totalItemDiscount.toFixed(2));
+    $("#TotalEachRowAmount").attr('amount', totalItemCost).text(totalItemCost.toFixed(2));
+    /*Bind table footer*/
 
-    $("#f_sub_total").attr('amount',totalItemValue.toFixed(2)).text(totalItemValue.toFixed(2));
-    $("#f_total_discount").attr('amount',totalItemDiscount.toFixed(2)).text(totalItemDiscount.toFixed(2));
+    $("#f_sub_total").attr('amount', totalItemValue.toFixed(2)).text(totalItemValue.toFixed(2));
+    $("#f_total_discount").attr('amount', totalItemDiscount.toFixed(2)).text(totalItemDiscount.toFixed(2));
 
     /*Bind summary header Discount*/
     let totalAmountAfterItemDis = totalItemCost;
     let disHeaderAmnt = 0;
     if ($(".display_summary_discount_row").find("[name*='[d_perc]']").length && totalAmountAfterItemDis) {
-        $(".display_summary_discount_row").find("[name*='[d_perc]']").each(function(index, eachItem) {
+        $(".display_summary_discount_row").find("[name*='[d_perc]']").each(function (index, eachItem) {
             let eachDiscTypePrice = 0;
             let hiddenPerc = Number($(`[name="disc_summary[${index + 1}][hidden_d_perc]"]`).val()) || 0;
             let itemDiscPerc = hiddenPerc || Number($(eachItem).val());
-            if(itemDiscPerc) {
+            if (itemDiscPerc) {
                 eachDiscTypePrice = (totalAmountAfterItemDis * itemDiscPerc) / 100;
             } else {
                 eachDiscTypePrice = Number($(`[name="disc_summary[${index + 1}][d_amnt]"]`).val()) || 0;
@@ -248,7 +247,7 @@ function setTableCalculation() {
         });
     } else {
         let eachDiscTypePrice = 0;
-        $(".display_summary_discount_row").find("[name*='[d_perc]']").each(function(index) {
+        $(".display_summary_discount_row").find("[name*='[d_perc]']").each(function (index) {
             let oldValue = $(`[name='disc_summary[${index + 1}][d_amnt]']`).val() || 0;
             oldValue = oldValue || eachDiscTypePrice;
             $(`[name="disc_summary[${index + 1}][d_amnt]"]`).closest('td').html(`${eachDiscTypePrice.toFixed(2)}
@@ -259,7 +258,7 @@ function setTableCalculation() {
         disHeaderAmnt += eachDiscTypePrice;
     }
     $("#disSummaryFooter #total").attr('amount', disHeaderAmnt.toFixed(2)).text(disHeaderAmnt.toFixed(2));
-    $("#f_header_discount").attr('amount',disHeaderAmnt.toFixed(2)).text(disHeaderAmnt.toFixed(2));
+    $("#f_header_discount").attr('amount', disHeaderAmnt.toFixed(2)).text(disHeaderAmnt.toFixed(2));
     /*Bind summary header Discount*/
 
     /*Bind header discount item level*/
@@ -267,15 +266,15 @@ function setTableCalculation() {
         let rowCount2 = Number($(item2).attr('data-index'));
         let qty2 = $(item2).find("[name*='[qty]']").val() || 0;
         let rate2 = $(item2).find("[name*='[rate]']").val() || 0;
-        let itemValue2 =  (Number(qty2) * Number (rate2)) || 0;
+        let itemValue2 = (Number(qty2) * Number(rate2)) || 0;
         let itemDisc2 = Number($(item2).find("[name*='[discount_amount]']").val()) || 0;
         let itemHeaderDisc = (itemValue2 - itemDisc2) / (totalItemValue - totalItemDiscount) * disHeaderAmnt;
-        if(itemHeaderDisc) {
+        if (itemHeaderDisc) {
             $(item2).find("[name*='[discount_amount_header]']").val(itemHeaderDisc.toFixed(2));
         } else {
             $(item2).find("[name*='[discount_amount_header]']").val("0.00");
         }
-        totalHeaderDiscount+=itemHeaderDisc;
+        totalHeaderDiscount += itemHeaderDisc;
     })
     /*Bind header discount item level*/
 
@@ -293,10 +292,10 @@ function setTableCalculation() {
 
         let price = itemValue3 - itemDisc3 - itemHeaderDisc;
         if (price > 0 && itemId) {
-            if(isTax) {
+            if (isTax) {
                 let transactionType = 'purchase';
                 let partyCountryId = $("#hidden_country_id").val();
-            let partyStateId = $("#hidden_state_id").val();
+                let partyStateId = $("#hidden_state_id").val();
                 let locationId = $("[name='store_id']").val();
                 let document_date = $("[name='document_date']").val();
                 // Construct the query parameters
@@ -308,7 +307,7 @@ function setTableCalculation() {
                     party_state_id: partyStateId,
                     location_id: locationId,
                     rowCount: rowCount3,
-                    document_date:document_date
+                    document_date: document_date
                 }).toString();
                 let urlWithParams = `${actionUrlTax}?${queryParams}`;
                 let promise = fetch(urlWithParams)
@@ -329,7 +328,7 @@ function setTableCalculation() {
                     .catch(error => {
                         console.error('Fetch error:', error);
                     });
-                taxPromises.push(promise);    
+                taxPromises.push(promise);
             }
         } else {
             $(item3).find("[name*='t_d_id']").remove();
@@ -355,18 +354,18 @@ function setTableCalculation() {
 
             let totalAmountAfterItemDis = itemValue4 - itemDisc4;
             if (isTax) {
-                if($(item4).find("[name*='[t_perc]']").length && totalAmountAfterItemDis) {
+                if ($(item4).find("[name*='[t_perc]']").length && totalAmountAfterItemDis) {
                     let taxAmountRow = 0.00;
-                    $(item4).find("[name*='[t_perc]']").each(function(index,eachItem) {
+                    $(item4).find("[name*='[t_perc]']").each(function (index, eachItem) {
                         let eachTaxTypePrice = 0;
                         let taxPercTax = Number($(eachItem).val());
-                        if(taxPercTax) {
-                            eachTaxTypePrice = ((totalAmountAfterItemDis - Number(itemHeaderDisc)) * taxPercTax) / 100; 
-                            $(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
+                        if (taxPercTax) {
+                            eachTaxTypePrice = ((totalAmountAfterItemDis - Number(itemHeaderDisc)) * taxPercTax) / 100;
+                            $(item4).find(`[name="components[${rowCount4}][taxes][${index + 1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
                         } else {
-                            $(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
+                            $(item4).find(`[name="components[${rowCount4}][taxes][${index + 1}][t_value]"]`).val(eachTaxTypePrice.toFixed(2));
                         }
-                        if($(item4).find(`[name="components[${rowCount4}][taxes][${index+1}][applicability_type]"]`).val() == 'collection') {
+                        if ($(item4).find(`[name="components[${rowCount4}][taxes][${index + 1}][applicability_type]"]`).val() == 'collection') {
                             taxAmountRow += eachTaxTypePrice;
                         } else {
                             taxAmountRow -= eachTaxTypePrice;
@@ -377,81 +376,81 @@ function setTableCalculation() {
             }
         });
 
-        totalAfterBothDisc = Number(totalItemValue || 0)-Number(totalItemDiscount || 0)-Number(totalHeaderDiscount || 0);
-        totalAfterTax = Number(totalItemValue || 0)-Number(totalItemDiscount || 0)-Number(totalHeaderDiscount || 0)+Number(totalTax || 0);
+        totalAfterBothDisc = Number(totalItemValue || 0) - Number(totalItemDiscount || 0) - Number(totalHeaderDiscount || 0);
+        totalAfterTax = Number(totalItemValue || 0) - Number(totalItemDiscount || 0) - Number(totalHeaderDiscount || 0) + Number(totalTax || 0);
 
-        $("#f_taxable_value").attr('amount',totalAfterBothDisc.toFixed(2)).text(totalAfterBothDisc.toFixed(2));
+        $("#f_taxable_value").attr('amount', totalAfterBothDisc.toFixed(2)).text(totalAfterBothDisc.toFixed(2));
         if (totalAfterBothDisc < 0) {
             $("#f_taxable_value").attr('style', 'color: #dc3545 !important;');
         } else {
             $("#f_taxable_value").attr('style', 'color: inherit;');
-        }        
-        $("#f_tax").attr('amount',totalTax.toFixed(2)).text(totalTax.toFixed(2));
-        
+        }
+        $("#f_tax").attr('amount', totalTax.toFixed(2)).text(totalTax.toFixed(2));
+
         if (totalTax < 0) {
             // $("#f_tax").attr('style', 'color: #dc3545 !important;');
             let taxAbs = Number($("#f_tax").attr('amount'));
-            $("#f_tax").attr('amount',Math.abs(taxAbs)).text(Math.abs(taxAbs));
+            $("#f_tax").attr('amount', Math.abs(taxAbs)).text(Math.abs(taxAbs));
         } else {
             $("#f_tax").attr('style', 'color: inherit;');
-        }  
+        }
 
-        $("#f_total_after_tax").attr('amount',totalAfterTax.toFixed(2)).text(totalAfterTax.toFixed(2));
+        $("#f_total_after_tax").attr('amount', totalAfterTax.toFixed(2)).text(totalAfterTax.toFixed(2));
 
         if (totalAfterTax < 0) {
             $("#f_total_after_tax").attr('style', 'color: #dc3545 !important;');
         } else {
             $("#f_total_after_tax").attr('style', 'color: inherit;');
-        } 
+        }
 
         /*Bind header Expenses*/
-        if($(".display_summary_exp_row").find("[name*='[e_perc]']").length && totalAfterTax) {
-            $(".display_summary_exp_row").find("[name*='[e_perc]']").each(function(index,eachItem) {
+        if ($(".display_summary_exp_row").find("[name*='[e_perc]']").length && totalAfterTax) {
+            $(".display_summary_exp_row").find("[name*='[e_perc]']").each(function (index, eachItem) {
                 let eachExpTypePrice = 0;
-                let hiddenPerc = Number($(`[name="exp_summary[${index+1}][hidden_e_perc]"]`).val()) || 0; 
+                let hiddenPerc = Number($(`[name="exp_summary[${index + 1}][hidden_e_perc]"]`).val()) || 0;
                 let expDiscPerc = hiddenPerc || Number($(eachItem).val());
-                if(expDiscPerc) {
-                    eachExpTypePrice = (totalAfterTax * expDiscPerc) / 100; 
+                if (expDiscPerc) {
+                    eachExpTypePrice = (totalAfterTax * expDiscPerc) / 100;
                     // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                    $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
+                    $(`[name="exp_summary[${index + 1}][e_amnt]"]`).closest('td').html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][e_amnt]">
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index + 1}][e_amnt]">
                     `);
                 } else {
-                    eachExpTypePrice = Number($(`[name="exp_summary[${index+1}][e_amnt]"]`).val()) || 0; 
+                    eachExpTypePrice = Number($(`[name="exp_summary[${index + 1}][e_amnt]"]`).val()) || 0;
                 }
                 totalHeaderExp += eachExpTypePrice;
             });
         } else {
-           $(".display_summary_exp_row").find("[name*='[e_perc]']").each(function(index,eachItem) {
+            $(".display_summary_exp_row").find("[name*='[e_perc]']").each(function (index, eachItem) {
                 let eachExpTypePrice = 0;
                 // let expDiscPerc = Number($(eachItem).val());
                 // $(`[name="exp_summary[${index+1}][e_amnt]"]`).val(eachExpTypePrice.toFixed(2));
-                $(`[name="exp_summary[${index+1}][e_amnt]"]`).closest('td').html(`
+                $(`[name="exp_summary[${index + 1}][e_amnt]"]`).closest('td').html(`
                     ${eachExpTypePrice.toFixed(2)}
-                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index+1}][e_amnt]">
+                    <input type="hidden" value="${eachExpTypePrice.toFixed(2)}" name="exp_summary[${index + 1}][e_amnt]">
                     `);
                 totalHeaderExp += eachExpTypePrice;
             });
         }
-        $("#expSummaryFooter #total").attr('amount',totalHeaderExp.toFixed(2)).text(totalHeaderExp.toFixed(2));
+        $("#expSummaryFooter #total").attr('amount', totalHeaderExp.toFixed(2)).text(totalHeaderExp.toFixed(2));
         $("#f_exp").text(totalHeaderExp.toFixed(2));
 
         if (totalHeaderExp < 0) {
             $("#f_exp").attr('style', 'color: #dc3545 !important;');
         } else {
             $("#f_exp").attr('style', 'color: inherit;');
-        } 
+        }
 
         /*Bind header Expenses*/
         grandTotal = totalAfterTax + totalHeaderExp;
-        $("#f_total_after_exp").attr('amount',grandTotal.toFixed(2)).text(grandTotal.toFixed(2));
-        
+        $("#f_total_after_exp").attr('amount', grandTotal.toFixed(2)).text(grandTotal.toFixed(2));
+
         if (grandTotal < 0) {
             $("#f_total_after_exp").attr('style', 'color: #dc3545 !important;');
         } else {
             $("#f_total_after_exp").attr('style', 'color: inherit;');
-        } 
+        }
 
         /*Bind header exp item level*/
         let total_net_total = 0;
@@ -459,13 +458,13 @@ function setTableCalculation() {
             let rowCount5 = Number($(item5).attr('data-index'));
             let qty5 = $(item5).find("[name*='[qty]']").val() || 0;
             let rate5 = $(item5).find("[name*='[rate]']").val() || 0;
-            let itemValue5 =  (Number(qty5) * Number (rate5)) || 0;
+            let itemValue5 = (Number(qty5) * Number(rate5)) || 0;
             let itemDisc5 = Number($(item5).find("[name*='[discount_amount]']").val()) || 0;
             let itemHeaderDisc5 = Number($(item5).find("[name*='[discount_amount_header]']").val()) || 0;
             let itemTax5 = 0;
-            if($(item5).find("[name*='[t_value]']").length) {
-                $(item5).find("[name*='[t_value]']").each(function(indexing, iteming){
-                    itemTax5+= Number($(iteming).val()) || 0;
+            if ($(item5).find("[name*='[t_value]']").length) {
+                $(item5).find("[name*='[t_value]']").each(function (indexing, iteming) {
+                    itemTax5 += Number($(iteming).val()) || 0;
                 })
             }
             total_net_total += itemValue5 - itemDisc5 - itemHeaderDisc5 + itemTax5;
@@ -477,16 +476,16 @@ function setTableCalculation() {
             let rowCount6 = Number($(item6).attr('data-index'));
             let qty6 = $(item6).find("[name*='[qty]']").val() || 0;
             let rate6 = $(item6).find("[name*='[rate]']").val() || 0;
-            let itemValue6 =  (Number(qty6) * Number (rate6)) || 0;
+            let itemValue6 = (Number(qty6) * Number(rate6)) || 0;
             let itemDisc6 = Number($(item6).find("[name*='[discount_amount]']").val()) || 0;
             let itemHeaderDisc6 = Number($(item6).find("[name*='[discount_amount_header]']").val()) || 0;
             let itemTax6 = 0;
-            if($(item6).find("[name*='[t_value]']").length) {
-                $(item6).find("[name*='[t_value]']").each(function(indexing, iteming){
-                    itemTax6+= Number($(iteming).val()) || 0;
+            if ($(item6).find("[name*='[t_value]']").length) {
+                $(item6).find("[name*='[t_value]']").each(function (indexing, iteming) {
+                    itemTax6 += Number($(iteming).val()) || 0;
                 })
             }
-            if(totalHeaderExp) {
+            if (totalHeaderExp) {
                 each_net_value = itemValue6 - itemDisc6 - itemHeaderDisc6 + itemTax6;
                 exp_header_amnt_item = each_net_value / total_net_total * totalHeaderExp;
                 $(item6).find("[name*='[exp_amount_header]']").val(exp_header_amnt_item.toFixed(2));
@@ -499,12 +498,12 @@ function setTableCalculation() {
     updateTotalAfterExchangeRate();
 }
 /*Edit mode table calculation filled*/
-if($("#itemTable .mrntableselectexcel tr").length) {
-   setTimeout(()=> {
-      $("[name*='component_item_name[1]']").trigger('focus');
-      $("[name*='component_item_name[1]']").trigger('blur');
-      setTableCalculation();
-   },100);
+if ($("#itemTable .mrntableselectexcel tr").length) {
+    setTimeout(() => {
+        $("[name*='component_item_name[1]']").trigger('focus');
+        $("[name*='component_item_name[1]']").trigger('blur');
+        setTableCalculation();
+    }, 100);
 }
 /*itemDiscountSubmit*/
 $(document).on('click', '.itemDiscountSubmit', (e) => {
@@ -514,33 +513,33 @@ $(document).on('click', '.itemDiscountSubmit', (e) => {
 $(document).on('click', '.deleteItemDiscountRow', (e) => {
     let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
     let id = Number(e.target.closest('a').getAttribute('data-id')) || 0;
-    if(!id) {
+    if (!id) {
         e.target.closest('tr').remove();
         let hiddenDis = '';
         let totalAmnt = 0;
-        $(".display_discount_row").each(function(index,item) {
-            let id = $(item).find('[name*="[item_d_id]"]').val(); 
+        $(".display_discount_row").each(function (index, item) {
+            let id = $(item).find('[name*="[item_d_id]"]').val();
             let name = $(item).find('[name*="[item_d_name]"]').val();
             let perc = $(item).find('[name*="[item_d_perc]"]').val();
             let amnt = $(item).find('[name*="[item_d_amnt]"]').val();
-            totalAmnt+=Number(amnt);
-            hiddenDis+= `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index+1}][id]">
-            <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index+1}][dis_name]">
-            <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index+1}][dis_perc]">
-            <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index+1}][dis_amount]">`;
+            totalAmnt += Number(amnt);
+            hiddenDis += `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index + 1}][id]">
+            <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index + 1}][dis_name]">
+            <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index + 1}][dis_perc]">
+            <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index + 1}][dis_amount]">`;
         });
         $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
         $(`[id*='row_${rowCount}']`).find("[name*='[discounts]'").remove();
         $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-        $("#disItemFooter #total").attr('amount',totalAmnt).text(totalAmnt.toFixed(2));
+        $("#disItemFooter #total").attr('amount', totalAmnt).text(totalAmnt.toFixed(2));
     }
     setTableCalculation();
 });
 // addDeliveryScheduleBtn
 $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');
-    let qty = Number($("#itemTable #row_"+rowCount).find("[name*='[qty]']").val());
-    if(!qty) {
+    let qty = Number($("#itemTable #row_" + rowCount).find("[name*='[qty]']").val());
+    if (!qty) {
         Swal.fire({
             title: 'Error!',
             text: 'Please enter quanity then you can add delivery schedule.',
@@ -552,8 +551,8 @@ $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
     let rowHtml = '';
     let curDate = new Date().toISOString().split('T')[0];
     let minDate = $("[name='document_date']").val() ?? curDate;
-    if(!$("#itemTable #row_"+rowCount).find("[name*='[d_qty]']").length) {        
-    let rowHtml = `<tr class="display_delivery_row">
+    if (!$("#itemTable #row_" + rowCount).find("[name*='[d_qty]']").length) {
+        let rowHtml = `<tr class="display_delivery_row">
                         <td>1</td>
                         <td>
                             <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
@@ -565,45 +564,44 @@ $(document).on('click', '.addDeliveryScheduleBtn', (e) => {
                         <a data-row-count="${rowCount}" data-index="1" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
                        </td>
                     </tr>`;
-    $("#deliveryScheduleModal").find('.display_delivery_row').remove();
-    $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
+        $("#deliveryScheduleModal").find('.display_delivery_row').remove();
+        $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
     } else {
-        if($("#itemTable #row_"+rowCount).find("[name*=d_qty]").length) {
+        if ($("#itemTable #row_" + rowCount).find("[name*=d_qty]").length) {
             $(".display_delivery_row").remove();
         } else {
             $('.display_delivery_row').not(':first').remove();
             $(".display_delivery_row").find("[name*=d_qty]").val('');
         }
-        $("#itemTable #row_"+rowCount).find("[name*=d_qty]").each(function(index,item){
-            let id =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][id]']`).val();
-            let dQty =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_qty]']`).val();
-            let dDate =  $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index+1}][d_date]']`).val();
-            rowHtml+= `<tr class="display_delivery_row">
-                        <td>${index+1}</td>
+        $("#itemTable #row_" + rowCount).find("[name*=d_qty]").each(function (index, item) {
+            let id = $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index + 1}][id]']`).val();
+            let dQty = $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index + 1}][d_qty]']`).val();
+            let dDate = $(item).closest('td').find(`[name='components[${rowCount}][delivery][${index + 1}][d_date]']`).val();
+            rowHtml += `<tr class="display_delivery_row">
+                        <td>${index + 1}</td>
                         <td>
                             <input type="hidden" name="row_count" value="${rowCount}" id="row_count">
-                            <input type="number" value="${dQty}" name="components[${rowCount}][delivery][${index+1}][d_qty]" class="form-control mw-100" />
+                            <input type="number" value="${dQty}" name="components[${rowCount}][delivery][${index + 1}][d_qty]" class="form-control mw-100" />
                         </td>
                         <td>
-                            <input type="date" min="${minDate}" name="components[${rowCount}][delivery][${index+1}][d_date]" value="${dDate}" class="form-control mw-100" /></td>
+                            <input type="date" min="${minDate}" name="components[${rowCount}][delivery][${index + 1}][d_date]" value="${dDate}" class="form-control mw-100" /></td>
                         <td>
-                        <a data-id="${id}" data-row-count="${rowCount}" data-index="${index+1}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
+                        <a data-id="${id}" data-row-count="${rowCount}" data-index="${index + 1}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
                        </td>
                     </tr>`;
 
         });
     }
     $("#deliveryScheduleTable").find('#deliveryFooter').before(rowHtml);
-    $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty',qty);
+    $("#deliveryScheduleTable").find('#deliveryFooter #total').attr('qty', qty);
     $("#deliveryScheduleModal").modal('show');
     totalScheduleQty();
 });
 
 /*Total delivery schedule qty*/
-function totalScheduleQty()
-{
+function totalScheduleQty() {
     let total = 0.00;
-    $("#deliveryScheduleTable [name*='[d_qty]']").each(function(index, item) {
+    $("#deliveryScheduleTable [name*='[d_qty]']").each(function (index, item) {
         total += Number($(item).val());
     });
     $("#deliveryFooter #total").text(total.toFixed(2));
@@ -616,10 +614,10 @@ $(document).on('click', '.addTaxItemRow', (e) => {
     // let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
     let rowCount = $("tr.trselected").attr('data-index');
     let qty = 0.00;
-    $("#deliveryScheduleTable [name*='[d_qty]']").each(function(index, item) {
+    $("#deliveryScheduleTable [name*='[d_qty]']").each(function (index, item) {
         qty = qty + Number($(item).val());
     });
-    if(!qty && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
+    if (!qty && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
         Swal.fire({
             title: 'Error!',
             text: 'Please enter quanity then you can add new row.',
@@ -627,7 +625,7 @@ $(document).on('click', '.addTaxItemRow', (e) => {
         });
         return false;
     }
-    if(!$("#deliveryScheduleTable [name*='[d_qty]']:last").val() && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
+    if (!$("#deliveryScheduleTable [name*='[d_qty]']:last").val() && $("#deliveryScheduleTable [name*='[d_qty]']").length) {
         Swal.fire({
             title: 'Error!',
             text: 'Please enter quanity then you can add new row.',
@@ -644,7 +642,7 @@ $(document).on('click', '.addTaxItemRow', (e) => {
         });
         return false;
     }
-    if(qty != itemQty) {        
+    if (qty != itemQty) {
         let tblRowCount = $('#deliveryScheduleModal .display_delivery_row').length + 1;
         let rowHtml = `<tr class="display_delivery_row">
                             <td>${tblRowCount}</td>
@@ -658,7 +656,7 @@ $(document).on('click', '.addTaxItemRow', (e) => {
                             <a data-row-count="${rowCount}" data-index="${tblRowCount}" href="javascript:;" class="text-danger deleteItemDeliveryRow"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></a>
                            </td>
                         </tr>`;
-        if($("#deliveryScheduleModal").find('.display_delivery_row:last').length) {
+        if ($("#deliveryScheduleModal").find('.display_delivery_row:last').length) {
             $("#deliveryScheduleModal").find('.display_delivery_row:last').after(rowHtml);
         } else {
             $("#deliveryScheduleModal").find('#deliveryFooter').before(rowHtml);
@@ -694,20 +692,20 @@ $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
         });
         return false;
     }
-    let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();    
+    let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
     let hiddenHtml = '';
-    $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
-        let dQty =  $(item).find("[name*='d_qty']").val();
+    $("#deliveryScheduleTable .display_delivery_row").each(function (index, item) {
+        let dQty = $(item).find("[name*='d_qty']").val();
         let dDate = $(item).find("[name*='d_date']").val();
-        hiddenHtml+=`<input type="hidden" value="${dQty}" name="components[${rowCount}][delivery][${index+1}][d_qty]"/>
-                     <input type="hidden" value="${dDate}" name="components[${rowCount}][delivery][${index+1}][d_date]" />`;
+        hiddenHtml += `<input type="hidden" value="${dQty}" name="components[${rowCount}][delivery][${index + 1}][d_qty]"/>
+                     <input type="hidden" value="${dDate}" name="components[${rowCount}][delivery][${index + 1}][d_date]" />`;
 
     });
-    $("#itemTable #row_"+rowCount).find("[name*='d_qty']").remove();
-    $("#itemTable #row_"+rowCount).find("[name*='d_date']").remove();
+    $("#itemTable #row_" + rowCount).find("[name*='d_qty']").remove();
+    $("#itemTable #row_" + rowCount).find("[name*='d_date']").remove();
     // $("#itemTable #row_"+rowCount).find("[name*='t_value']").remove();
-   $("#itemTable #row_"+rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
-   $("#deliveryScheduleModal").modal('hide');
+    $("#itemTable #row_" + rowCount).find(".addDeliveryScheduleBtn").before(hiddenHtml);
+    $("#deliveryScheduleModal").modal('hide');
 });
 
 /*Remove delivery row*/
@@ -715,28 +713,28 @@ $(document).on('click', '.deleteItemDeliveryRow', (e) => {
     let id = $(e.target).closest('a').attr('data-id') || 0;
     let rowIndex = e.target.getAttribute('data-row-index');
     let rowCount = e.target.getAttribute('data-row-count');
-    if (!Number(id)) {        
+    if (!Number(id)) {
         $(e.target).closest('tr').remove();
         setTimeout(() => {
             let rowCount = $(".display_delivery_row").find('#row_count').val();
-            $('.display_delivery_row').each(function(index, item) {
-                let a = `components[${rowCount}][delivery][${index+1}][d_qty]`;
-                let b = `components[${rowCount}][delivery][${index+1}][d_date]`;
+            $('.display_delivery_row').each(function (index, item) {
+                let a = `components[${rowCount}][delivery][${index + 1}][d_qty]`;
+                let b = `components[${rowCount}][delivery][${index + 1}][d_date]`;
                 $(item).find("[name*='[d_qty]']").prop('name', a);
                 $(item).find("[name*='[d_date]']").prop('name', b);
-                $(item).find("td:first").text(index+1);
+                $(item).find("td:first").text(index + 1);
             });
             $(`[name*='components[${rowCount}][delivery][${rowIndex}]']`).remove();
             $(".display_delivery_row").find('#row_count').val(rowCount);
             totalScheduleQty();
-        },0);
+        }, 0);
     }
 });
 /*Delivery qty on input*/
 $(document).on('change input', '.display_delivery_row [name*="d_qty"]', (e) => {
     let itemQty = Number($('#deliveryScheduleModal #deliveryFooter #total').attr('qty'));
     let inputQty = 0;
-    $('.display_delivery_row [name*="d_qty"]').each(function(index, item) {
+    $('.display_delivery_row [name*="d_qty"]').each(function (index, item) {
         inputQty = inputQty + Number($(item).val());
         let remainingQty = itemQty - (inputQty - Number($(e.target).val()));
         if (Number($(e.target).val()) > remainingQty) {
@@ -754,8 +752,8 @@ $(document).on('change input', '.display_delivery_row [name*="d_qty"]', (e) => {
 $(document).on('click', '.addRemarkBtn', (e) => {
     let rowCount = e.target.closest('div').getAttribute('data-row-count');
     $("#itemRemarkModal #row_count").val(rowCount);
-    let remarkValue = $("#itemTable #row_"+rowCount).find("[name*='remark']");
-    if(!remarkValue.length) {
+    let remarkValue = $("#itemTable #row_" + rowCount).find("[name*='remark']");
+    if (!remarkValue.length) {
         $("#itemRemarkModal textarea").val('');
     } else {
         $("#itemRemarkModal textarea").val(remarkValue.val());
@@ -765,21 +763,20 @@ $(document).on('click', '.addRemarkBtn', (e) => {
 /*Submit item remark modal*/
 $(document).on('click', '.itemRemarkSubmit', (e) => {
     let rowCount = $("#itemRemarkModal #row_count").val();
-    let remarkValue = $("#itemTable #row_"+rowCount).find("[name*='remark']");
-     let textValue = $("#itemRemarkModal").find("textarea").val();
-    if(!remarkValue.length) {
+    let remarkValue = $("#itemTable #row_" + rowCount).find("[name*='remark']");
+    let textValue = $("#itemRemarkModal").find("textarea").val();
+    if (!remarkValue.length) {
         rowHidden = `<input type="hidden" value="${textValue}" name="components[${rowCount}][remark]" />`;
-        $("#itemTable #row_"+rowCount).find('.addRemarkBtn').after(rowHidden);
-        
-    } else{
-        $("#itemTable #row_"+rowCount).find("[name*='remark']").val(textValue);
+        $("#itemTable #row_" + rowCount).find('.addRemarkBtn').after(rowHidden);
+
+    } else {
+        $("#itemTable #row_" + rowCount).find("[name*='remark']").val(textValue);
     }
     $("#itemRemarkModal").modal('hide');
 });
-function summaryDisTotal()
-{
+function summaryDisTotal() {
     let total = 0.00;
-    $(".display_summary_discount_row [name*='[d_amnt]']").each(function(index, item) {
+    $(".display_summary_discount_row [name*='[d_amnt]']").each(function (index, item) {
         total += Number($(item).val()) || 0;
     });
     $("#disSummaryFooter #total").attr('amount', total.toFixed(2)).text(total.toFixed(2));
@@ -787,7 +784,7 @@ function summaryDisTotal()
 /*Open summary discount modal*/
 $(document).on('click', '.summaryDisBtn', (e) => {
     e.stopPropagation();
-    if(!Number($(`[name*="[item_value]"]`).val())) {
+    if (!Number($(`[name*="[item_value]"]`).val())) {
         Swal.fire({
             title: 'Error!',
             text: 'Please first enter qty & rate in table.',
@@ -807,7 +804,7 @@ $(document).on('click', '.summaryDiscountSubmit', (e) => {
 /*delete summary discount row*/
 $(document).on('click', '.deleteSummaryDiscountRow', (e) => {
     let trId = $(e.target).closest('tr').find('[name*="[d_id]"]').val();
-    if(!trId) {
+    if (!trId) {
         $(e.target).closest('tr').remove();
         summaryDisTotal();
         setTableCalculation();
@@ -821,7 +818,7 @@ $(document).on('click', '.deleteSummaryDiscountRow', (e) => {
 /*Open summary expen modal*/
 $(document).on('click', '.summaryExpBtn', (e) => {
     e.stopPropagation();
-    if(!Number($(`[name*="[item_value]"]`).val())) {
+    if (!Number($(`[name*="[item_value]"]`).val())) {
         Swal.fire({
             title: 'Error!',
             text: 'Please first enter qty & rate in table.',
@@ -836,7 +833,7 @@ $(document).on('click', '.summaryExpBtn', (e) => {
 /*delete summary exp row*/
 $(document).on('click', '.deleteExpRow', (e) => {
     let trId = $(e.target).closest('tr').find('[name*="[e_id]"]').val();
-    if(!trId) {
+    if (!trId) {
         $(e.target).closest('tr').remove();
         summaryExpTotal();
     }
@@ -847,10 +844,9 @@ $(document).on('click', '.summaryExpSubmit', (e) => {
     // setTableCalculation();
     return false;
 });
-function summaryExpTotal()
-{
+function summaryExpTotal() {
     let total = 0.00;
-    $(".display_summary_exp_row [name*='e_amnt']").each(function(index, item) {
+    $(".display_summary_exp_row [name*='e_amnt']").each(function (index, item) {
         total = total + Number($(item).val());
     });
     $("#expSummaryFooter #total").attr('amount', total);
@@ -860,38 +856,35 @@ $(document).on('input change', '#itemTable input', (e) => {
     setTableCalculation();
 });
 /*Check filled all basic detail*/
-function checkBasicFilledDetail()
-{
+function checkBasicFilledDetail() {
     let filled = false;
     let bookId = $("#book_id").val() || '';
     let documentNumber = $("#document_number").val() || '';
     let documentDate = $("[name='document_date']").val() || '';
     // let referenceNumber = $("[name='reference_number']").val() || '';
-    if(bookId && documentNumber && documentDate/* && referenceNumber*/) {
+    if (bookId && documentNumber && documentDate/* && referenceNumber*/) {
         filled = true;
     }
     return filled;
 }
 /*Check filled vendor detail*/
-function checkVendorFilledDetail()
-{
+function checkVendorFilledDetail() {
     let filled = false;
     let vName = $("#vendor_name").val();
     let vCurrency = $("[name='currency_id']").val();
     let vPaymentTerm = $("[name='payment_term_id']").val();
     let shippingId = $("#vendor_address_id").val();
     let billingId = $("#billing_address_id").val();
-    if(vName && vCurrency && vPaymentTerm && shippingId && billingId) {
+    if (vName && vCurrency && vPaymentTerm && shippingId && billingId) {
         filled = true;
     }
     return filled;
-} 
+}
 /*Check filled component*/
-function checkComponentRowExist()
-{
+function checkComponentRowExist() {
     let filled = false;
     let rowCount = $("#itemTable [id*='row_']").length;
-    if(rowCount) {
+    if (rowCount) {
         filled = true;
     }
     return filled;
@@ -910,7 +903,7 @@ function checkComponentRowExist()
 //             e.preventDefault();
 //             e.stopPropagation();
 //         });
-        
+
 //         $('#item_section :input').prop('disabled', true);
 //         $('#item_section').on('click', function(e) {
 //             e.preventDefault();
@@ -933,7 +926,7 @@ function checkComponentRowExist()
 // }
 
 $('#attribute').on('hidden.bs.modal', function () {
-   let rowCount = $("[id*=row_].trselected").attr('data-index');
+    let rowCount = $("[id*=row_].trselected").attr('data-index');
     if ($(`[name="components[${rowCount}][qty]"]`).is('[readonly]')) {
         $(`[name="components[${rowCount}][rate]"]`).trigger('focus');
     } else {
@@ -942,7 +935,7 @@ $('#attribute').on('hidden.bs.modal', function () {
 });
 /*Vendor change update field*/
 $(document).on('blur', '#vendor_name', (e) => {
-    if(!e.target.value) {
+    if (!e.target.value) {
         $("#vendor_id").val('');
         $("#vendor_code").val('');
         $("#vendor_address_id").val('');
@@ -956,7 +949,7 @@ $(document).on('blur', '#vendor_name', (e) => {
         $(".billing_detail").text('-');
     }
 });
-$(document).on('input', '.qty-input', function() {
+$(document).on('input', '.qty-input', function () {
     const maxAmount = Number($(this).attr('maxAmount')) || 0;
     if (Number(this.value) > maxAmount) {
         Swal.fire({
@@ -968,17 +961,17 @@ $(document).on('input', '.qty-input', function() {
     }
 });
 //Disable form submit on enter button
-document.querySelector("form").addEventListener("keydown", function(event) {
+document.querySelector("form").addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
         event.preventDefault();
     }
 });
-$("input[type='text']").on("keydown", function(event) {
+$("input[type='text']").on("keydown", function (event) {
     if (event.key === "Enter") {
         event.preventDefault();
     }
 });
-$("input[type='number']").on("keydown", function(event) {
+$("input[type='number']").on("keydown", function (event) {
     if (event.key === "Enter") {
         event.preventDefault();
     }
@@ -992,12 +985,12 @@ $(document).on('click', '#add_new_item_dis', (e) => {
     const new_item_dis_perc = (Number($("#new_item_dis_perc").val()) || 0).toFixed(2);
     const new_item_dis_value = (Number($("#new_item_dis_value").val()) || 0).toFixed(2);
     let item_dis = 0;
-    $(`.display_discount_row`).find('[name*="[item_d_amnt]"]').each(function(index,item) {
-        item_dis+=parseFloat($(item).val() || 0);
+    $(`.display_discount_row`).find('[name*="[item_d_amnt]"]').each(function (index, item) {
+        item_dis += parseFloat($(item).val() || 0);
     });
-    let _total_head_dis_all = item_dis +  parseFloat(new_item_dis_value);
+    let _total_head_dis_all = item_dis + parseFloat(new_item_dis_value);
     let totalCost = parseFloat($(`[name*='components[${rowCount}][item_value]']`).val()) || 0;
-    if(_total_head_dis_all > totalCost) {
+    if (_total_head_dis_all > totalCost) {
         Swal.fire({
             title: 'Error!',
             text: 'You can not give total discount more then total cost.',
@@ -1027,47 +1020,47 @@ $(document).on('click', '#add_new_item_dis', (e) => {
             </a>
         </td>
     </tr>`
-    if(!$(".display_discount_row").length) {
+    if (!$(".display_discount_row").length) {
         $("#eachRowDiscountTable #disItemFooter").before(tr);
     } else {
         $(".display_discount_row:last").after(tr);
     }
-    $("#new_item_dis_name_select").val('');  
-    $("#new_item_discount_id").val('');  
-    $("#new_item_dis_name").val('');  
-    $("#new_item_dis_perc").val('').prop('readonly',false);  
-    $("#new_item_dis_value").val('').prop('readonly',false);
+    $("#new_item_dis_name_select").val('');
+    $("#new_item_discount_id").val('');
+    $("#new_item_dis_name").val('');
+    $("#new_item_dis_perc").val('').prop('readonly', false);
+    $("#new_item_dis_value").val('').prop('readonly', false);
     let total_head_dis = 0;
-    $("[name*='[item_d_amnt]']").each(function(index,item) {
-        total_head_dis+=Number($(item).val());
+    $("[name*='[item_d_amnt]']").each(function (index, item) {
+        total_head_dis += Number($(item).val());
     });
     $("#disItemFooter #total").text(total_head_dis.toFixed(2));
     $(`[id*='row_${rowCount}']`).find("[name*='[discounts]'").remove();
     let hiddenDis = '';
     let totalAmnt = 0;
-    $(".display_discount_row").each(function(index,item) {
-        let id = $(item).find('[name*="[item_d_id]"]').val(); 
-        let tedId = $(item).find('[name*="[ted_d_id]"]').val(); 
+    $(".display_discount_row").each(function (index, item) {
+        let id = $(item).find('[name*="[item_d_id]"]').val();
+        let tedId = $(item).find('[name*="[ted_d_id]"]').val();
         let name = $(item).find('[name*="[item_d_name]"]').val();
         let perc = $(item).find('[name*="[item_d_perc]"]').val();
         let amnt = $(item).find('[name*="[item_d_amnt]"]').val();
-        totalAmnt+=Number(amnt);
-        hiddenDis+= `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index+1}][id]">
-        <input type="hidden" value="${tedId}" name="components[${rowCount}][discounts][${index+1}][ted_id]">
-        <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index+1}][dis_name]">
-        <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index+1}][dis_perc]">
-        <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index+1}][dis_amount]">`;
+        totalAmnt += Number(amnt);
+        hiddenDis += `<input type="hidden" value="${id}" name="components[${rowCount}][discounts][${index + 1}][id]">
+        <input type="hidden" value="${tedId}" name="components[${rowCount}][discounts][${index + 1}][ted_id]">
+        <input type="hidden" value="${name}" name="components[${rowCount}][discounts][${index + 1}][dis_name]">
+        <input type="hidden" value="${perc}" name="components[${rowCount}][discounts][${index + 1}][dis_perc]">
+        <input type="hidden" value="${amnt}" name="components[${rowCount}][discounts][${index + 1}][dis_amount]">`;
     });
     $(`[name*="components[${rowCount}][discount_amount]"]`).val(totalAmnt);
     $(`[name*="components[${rowCount}][discount_amount]"]`).after(hiddenDis);
-    setTableCalculation();  
+    setTableCalculation();
 });
 /*Header discount perc change*/
 $(document).on('keyup', '#new_item_dis_perc', (e) => {
     e.preventDefault();
     let rowCount = $("#disItemFooter #row_count").val();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
     let percAmount = 0;
     let totalCost = 0
@@ -1080,8 +1073,8 @@ $(document).on('keyup', '#new_item_dis_perc', (e) => {
         input.val(value);
     } else if (value > 100) {
         let _total_perc = 0;
-        $(`.display_discount_row`).find('[name*="[item_d_perc]"]').each(function(index,item) {
-            _total_perc+=parseFloat($(item).val() || 0);
+        $(`.display_discount_row`).find('[name*="[item_d_perc]"]').each(function (index, item) {
+            _total_perc += parseFloat($(item).val() || 0);
         });
         value = 100 - _total_perc;
         input.val(value);
@@ -1091,7 +1084,7 @@ $(document).on('keyup', '#new_item_dis_perc', (e) => {
                 text: 'You cannot add more than 100%.',
                 icon: 'error',
             });
-        },0);
+        }, 0);
     }
     totalCost = parseFloat($(`[name*='components[${rowCount}][item_value]']`).val()) || 0;
     percAmount = parseFloat((totalCost * value) / 100);
@@ -1102,9 +1095,9 @@ $(document).on('keyup', '#new_item_dis_perc', (e) => {
 $(document).on('keyup', '#new_item_dis_value', (e) => {
     e.preventDefault();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
-    $("#new_item_dis_perc").prop('readonly', Boolean(value)).val('');    
+    $("#new_item_dis_perc").prop('readonly', Boolean(value)).val('');
     return false;
 });
 /*Add New Summary Discount*/
@@ -1115,12 +1108,12 @@ $(document).on('click', '#add_new_head_dis', (e) => {
     const new_dis_perc = (Number($("#new_dis_perc").val()) || 0).toFixed(2);
     const new_dis_value = (Number($("#new_dis_value").val()) || 0).toFixed(2);
     let _total_head_dis = 0;
-    $("[name*='[d_amnt]']").each(function(index,item) {
-        _total_head_dis+=Number($(item).val());
+    $("[name*='[d_amnt]']").each(function (index, item) {
+        _total_head_dis += Number($(item).val());
     });
     let totalCost = parseFloat($("#TotalEachRowAmount").attr('amount')) || 0;
     let _total_head_dis_all = _total_head_dis + Number(new_dis_value);
-    if(_total_head_dis_all > totalCost) {
+    if (_total_head_dis_all > totalCost) {
         Swal.fire({
             title: 'Error!',
             text: 'You can not give total discount more then total cost.',
@@ -1150,33 +1143,33 @@ $(document).on('click', '#add_new_head_dis', (e) => {
             </a>
         </td>
     </tr>`
-    if(!$(".display_summary_discount_row").length) {
+    if (!$(".display_summary_discount_row").length) {
         $("#summaryDiscountTable #disSummaryFooter").before(tr);
     } else {
         $(".display_summary_discount_row:last").after(tr);
     }
-    $("#new_discount_id").val('');  
-    $("#new_dis_name_select").val('');  
-    $("#new_dis_name").val('');  
-    $("#new_dis_perc").val('').prop('readonly',false);  
-    $("#new_dis_value").val('').prop('readonly',false);
+    $("#new_discount_id").val('');
+    $("#new_dis_name_select").val('');
+    $("#new_dis_name").val('');
+    $("#new_dis_perc").val('').prop('readonly', false);
+    $("#new_dis_value").val('').prop('readonly', false);
     let total_head_dis = 0;
-    $("[name*='[d_amnt]']").each(function(index,item) {
-        total_head_dis+=Number($(item).val());
+    $("[name*='[d_amnt]']").each(function (index, item) {
+        total_head_dis += Number($(item).val());
     });
-    if(total_head_dis) {
+    if (total_head_dis) {
         $('#f_header_discount_hidden').removeClass('d-none');
     } else {
         $('#f_header_discount_hidden').addClass('d-none');
     }
     $("#disSummaryFooter #total").text(total_head_dis.toFixed(2));
-    setTableCalculation();  
+    setTableCalculation();
 });
 /*Header discount perc change*/
 $(document).on('keyup', '#new_dis_perc', (e) => {
     e.preventDefault();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
     let percAmount = 0;
     let totalCost = 0
@@ -1189,8 +1182,8 @@ $(document).on('keyup', '#new_dis_perc', (e) => {
         input.val(value);
     } else if (value > 100) {
         let _total_perc = 0;
-        $("[name*='[d_perc]']").each(function(index,item) {
-            _total_perc+=Number($(item).val());
+        $("[name*='[d_perc]']").each(function (index, item) {
+            _total_perc += Number($(item).val());
         });
         value = 100 - _total_perc;
         input.val(value);
@@ -1209,9 +1202,9 @@ $(document).on('keyup', '#new_dis_perc', (e) => {
 $(document).on('keyup', '#new_dis_value', (e) => {
     e.preventDefault();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
-    $("#new_dis_perc").prop('readonly', Boolean(value)).val('');    
+    $("#new_dis_perc").prop('readonly', Boolean(value)).val('');
     return false;
 });
 /*Add New Summary Discount*/
@@ -1222,12 +1215,12 @@ $(document).on('click', '#add_new_head_exp', (e) => {
     const new_exp_perc = (Number($("#new_exp_perc").val()) || 0).toFixed(2);
     const new_exp_value = (Number($("#new_exp_value").val()) || 0).toFixed(2);
     let _total_head_exp = 0;
-    $("[name*='[e_amnt]']").each(function(index,item) {
-        _total_head_exp+=Number($(item).val());
+    $("[name*='[e_amnt]']").each(function (index, item) {
+        _total_head_exp += Number($(item).val());
     });
     let totalCost = parseFloat($("#f_total_after_tax").attr('amount')) || 0;
     let _total_head_exp_all = _total_head_exp + Number(new_exp_value);
-    if(_total_head_exp_all > totalCost) {
+    if (_total_head_exp_all > totalCost) {
         Swal.fire({
             title: 'Error!',
             text: 'You can not give total exp more then after tax value.',
@@ -1257,28 +1250,28 @@ $(document).on('click', '#add_new_head_exp', (e) => {
             </a>
         </td>
     </tr>`
-    if(!$(".display_summary_exp_row").length) {
+    if (!$(".display_summary_exp_row").length) {
         $("#summaryExpTable #expSummaryFooter").before(tr);
     } else {
         $(".display_summary_exp_row:last").after(tr);
     }
-    $("#new_exp_name_select").val('');  
-    $("#new_exp_id").val('');  
-    $("#new_exp_name").val('');  
-    $("#new_exp_perc").val('').prop('readonly',false);  
-    $("#new_exp_value").val('').prop('readonly',false);
+    $("#new_exp_name_select").val('');
+    $("#new_exp_id").val('');
+    $("#new_exp_name").val('');
+    $("#new_exp_perc").val('').prop('readonly', false);
+    $("#new_exp_value").val('').prop('readonly', false);
     let total_head_exp = 0;
-    $("[name*='[e_amnt]']").each(function(index,item) {
-        total_head_exp+=Number($(item).val());
+    $("[name*='[e_amnt]']").each(function (index, item) {
+        total_head_exp += Number($(item).val());
     });
     $("#expSummaryFooter #total").text(total_head_exp.toFixed(2));
-    setTableCalculation();  
+    setTableCalculation();
 });
 /*Header discount perc change*/
 $(document).on('keyup', '#new_exp_perc', (e) => {
     e.preventDefault();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
     let percAmount = 0;
     let totalCost = 0
@@ -1291,8 +1284,8 @@ $(document).on('keyup', '#new_exp_perc', (e) => {
         input.val(value);
     } else if (value > 100) {
         let _total_perc = 0;
-        $("[name*='[e_perc]']").each(function(index,item) {
-            _total_perc+=Number($(item).val());
+        $("[name*='[e_perc]']").each(function (index, item) {
+            _total_perc += Number($(item).val());
         });
         value = 100 - _total_perc;
         input.val(value);
@@ -1311,38 +1304,38 @@ $(document).on('keyup', '#new_exp_perc', (e) => {
 $(document).on('keyup', '#new_exp_value', (e) => {
     e.preventDefault();
     let input = $(e.target);
-    input.prop('readonly',false);
+    input.prop('readonly', false);
     let value = parseFloat(input.val());
-    $("#new_exp_perc").prop('readonly', Boolean(value)).val('');    
+    $("#new_exp_perc").prop('readonly', Boolean(value)).val('');
     return false;
 });
 /*Qty enabled and disabled*/
-function qtyEnabledDisabled() {    
-    $("tr[id*='row_']").each(function(index,item) {
+function qtyEnabledDisabled() {
+    $("tr[id*='row_']").each(function (index, item) {
         let qtyDisabled = false;
-        if($(item).find("[name*='[attr_name]']").length) {
+        if ($(item).find("[name*='[attr_name]']").length) {
             $(item).find("[name*='[attr_name]']").each(function () {
                 if ($(this).val().trim() === "") {
                     qtyDisabled = true;
                 }
             });
-            $(item).find("[name*='[qty]']").attr('readonly',Boolean(qtyDisabled));
-            if(qtyDisabled) {
+            $(item).find("[name*='[qty]']").attr('readonly', Boolean(qtyDisabled));
+            if (qtyDisabled) {
                 $(item).find("[name*='[qty]']").val('');
             }
         } else {
-            $(item).find("[name*='[qty]']").attr('readonly',false);
+            $(item).find("[name*='[qty]']").attr('readonly', false);
         }
     });
 }
 qtyEnabledDisabled();
 setTimeout(() => {
-    if($("tr[id*='row_']").length) {
+    if ($("tr[id*='row_']").length) {
         setTableCalculation();
     }
-},0);
-$(document).on('blur','[name*="component_item_name"]',(e) => {
-    if(!e.target.value) {
+}, 0);
+$(document).on('blur', '[name*="component_item_name"]', (e) => {
+    if (!e.target.value) {
         $(e.target).closest('tr').find('[name*="[item_name]"]').val('');
         $(e.target).closest('tr').find('[name*="[item_id]"]').val('');
     }
@@ -1381,7 +1374,7 @@ function validateItems(inputEle, itemChange = false) {
             icon: 'error',
         });
         $(inputEle).val('');
-        if(itemChange) {
+        if (itemChange) {
             $(inputEle).closest('tr').find("input[name*='[item_name]']").val('');
             $(inputEle).closest('tr').find("[name*='[uom_id]']").empty();
         }
@@ -1400,13 +1393,13 @@ function hasDuplicateObjects(arr) {
 }
 // UOM on change bind rate
 function handleRowChange(tr) {
-    console.log(tr,'tr');
+    console.log(tr, 'tr');
     getItemCostPrice(tr);
     setTableCalculation();
 }
 // Debounced handler for select/input changes
 let debounceTimer;
-$(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', function(e){
+$(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', function (e) {
     clearTimeout(debounceTimer);
     const tr = $(e.target).closest('tr');
     debounceTimer = setTimeout(() => {
@@ -1414,18 +1407,18 @@ $(document).on('input', 'select[name*="[uom_id]"], input[name*="[qty]"]', functi
     }, 300);
 });
 // Handle attribute button click
-$('.submitAttributeBtn').on('click', function(e) {
+$('.submitAttributeBtn').on('click', function (e) {
     let currentTr = $(e.target).closest('tr');
     let row = $('#attribute tbody tr');
     let rowCount = row.find('input[name^="row_count"]').val();
-    let tr = $('#row_'+rowCount);
+    let tr = $('#row_' + rowCount);
     console.log(tr);
     handleRowChange(tr);
 });
 $(document).on('change', "select[name='store_id']", (e) => {
     let vendorName = $("#vendor_name").attr("data-name");
     let vendorId = $("#vendor_id").val() || '';
-    if(vendorId) {
+    if (vendorId) {
         const item = { label: vendorName, value: vendorName, id: vendorId };
         $('#vendor_name')
             .val(item.label)
@@ -1434,14 +1427,13 @@ $(document).on('change', "select[name='store_id']", (e) => {
         $("#vendor_name").val(vendorId).trigger('change');
     }
 });
-function getLocation(locationId = '')
-{
-    let actionUrl = getLocationUrl+'?location_id='+locationId;
+function getLocation(locationId = '') {
+    let actionUrl = getLocationUrl + '?location_id=' + locationId;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
-            if(data.status == 200) {
+            if (data.status == 200) {
                 let options = '';
-                data.data.locations.forEach(function(location) {
+                data.data.locations.forEach(function (location) {
                     let selected = location.id == locationId ? 'selected' : '';
                     options += `<option value="${location.id}" ${selected}>${location.store_name}</option>`;
                 });
@@ -1461,17 +1453,17 @@ function getLocation(locationId = '')
 function initializeAutocompleteVendor(selector, type) {
     $(selector).autocomplete({
         minLength: 0,
-        source: function(request, response) {
+        source: function (request, response) {
             $.ajax({
                 url: '/search',
                 method: 'GET',
                 dataType: 'json',
                 data: {
                     q: request.term,
-                    type:'vendor_list'
+                    type: 'vendor_list'
                 },
-                success: function(data) {
-                    response($.map(data, function(item) {
+                success: function (data) {
+                    response($.map(data, function (item) {
                         return {
                             id: item.id,
                             label: item.company_name,
@@ -1479,24 +1471,24 @@ function initializeAutocompleteVendor(selector, type) {
                         };
                     }));
                 },
-                error: function(xhr) {
+                error: function (xhr) {
                     console.error('Error fetching customer data:', xhr.responseText);
                 }
             });
         },
-        select: function(event, ui) {
+        select: function (event, ui) {
             var itemId = ui.item.id;
             vendorOnChange(itemId);
             $(".editAddressBtn").removeClass('d-none');
             return false;
         },
-        change: function(event, ui) {
+        change: function (event, ui) {
             if (!ui.item) {
                 $(this).val("");
                 clearVendorData();
             }
         }
-    }).focus(function() {
+    }).focus(function () {
         if (this.value === "") {
             $(this).autocomplete("search", "");
             clearVendorData();
@@ -1509,8 +1501,7 @@ function initializeAutocompleteVendor(selector, type) {
     });
 }
 initializeAutocompleteVendor("#vendor_name");
-function clearVendorData() 
-{
+function clearVendorData() {
     $("#vendor_name").val('');
     $("#vendor_id").val('');
     $("#vendor_code").val('');
@@ -1533,7 +1524,7 @@ function vendorOnChange(vendorId) {
     let actionUrl = `${getAddressOnVendorChangeUrl}?id=${vendorId}&store_id=${store_id}`;
     fetch(actionUrl).then(response => {
         return response.json().then(data => {
-            if(data.data?.currency_exchange?.status == false) {
+            if (data.data?.currency_exchange?.status == false) {
                 clearVendorData();
                 Swal.fire({
                     title: 'Error!',
@@ -1541,9 +1532,16 @@ function vendorOnChange(vendorId) {
                     icon: 'error',
                 });
                 return false;
-            }                    
-            if(data.status == 200) {
+            }
+            if (data.status == 200) {
                 $("#vendor_name").val(data?.data?.vendor?.company_name);
+                $("#credit_days").val(data?.data?.vendor?.credit_days ?? 0);
+                // Credit days editable check
+                if (data?.data?.vendor?.credit_days_editable) {
+                    $("#credit_days").prop("readonly", false);
+                } else {
+                    $("#credit_days").prop("readonly", true);
+                }
                 $("#vendor_id").val(data?.data?.vendor?.id);
                 $("#vendor_code").val(data?.data?.vendor?.vendor_code);
                 let curOption = `<option value="${data?.data?.currency?.id}">${data?.data?.currency?.name}</option>`;
@@ -1567,7 +1565,7 @@ function vendorOnChange(vendorId) {
                     $("#exchangeDiv").toggleClass('d-none', !isDifferentCurrency);
                 }
             } else {
-                if(data.data.error_message) {
+                if (data.data.error_message) {
                     clearVendorData();
                     Swal.fire({
                         title: 'Error!',

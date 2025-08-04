@@ -497,7 +497,7 @@ class VendorController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to create record',
-                    'error' => $e->getMessage(),
+                    'error' => $e->getMessage() . "-" . $e->getFile() . "-" . $e -> getLine(),
                 ], 500);
             }
         }
@@ -903,7 +903,7 @@ class VendorController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to update record',
-                    'error' => $e->getMessage(),
+                    'error' => $e->getMessage() . "-" . $e->getFile() . "-" . $e -> getLine(),
                 ], 500);
             }
         }
