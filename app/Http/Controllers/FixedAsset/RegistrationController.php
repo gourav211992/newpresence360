@@ -119,7 +119,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
@@ -228,7 +228,7 @@ class RegistrationController extends Controller
                 $asset->save();
             }
             if ($request->has('prefix') && $request->prefix != "")
-            FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
+                FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
 
             DB::commit();
             return redirect()->route("finance.fixed-asset.registration.index")->with('success', 'Asset created successfully!');
@@ -250,8 +250,9 @@ class RegistrationController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+        $data = FixedAssetRegistration::findorFail($id);
         $currNumber = $r->has('revisionNumber');
-        if ($currNumber) {
+        if ($currNumber && $data->revision_number!=$r->revisionNumber) {
             $currNumber = $r->revisionNumber;
             $data = FixedAssetRegistrationHistory::where('source_id', $id)
                 ->where('revision_number', $currNumber)->first();
@@ -271,7 +272,7 @@ class RegistrationController extends Controller
         $buttons = Helper::actionButtonDisplay(
             $data->book_id,
             $data->document_status,
-            $data->id,
+            $id,
             $data->current_value,
             $data->approval_level,
             $data->created_by ?? 0,
@@ -279,12 +280,6 @@ class RegistrationController extends Controller
             $revision_number
         );
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
-
-
-        // if ($data->depreciations->count() != 0)
-        //$buttons['amend'] = true;
-
-
         $group_name = ConstantHelper::FIXED_ASSETS;
         $group = Helper::getGroupsQuery()->where('name', $group_name)->first();
         $allChildIds = $group->getAllChildIds();
@@ -293,7 +288,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
@@ -311,9 +306,7 @@ class RegistrationController extends Controller
         } else {
             $revNo = $data->revision_number;
         }
-
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
-
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->current_value,$data->created_by);
 
         $locations = InventoryHelper::getAccessibleLocations();
 
@@ -380,7 +373,7 @@ class RegistrationController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
@@ -416,8 +409,19 @@ class RegistrationController extends Controller
         $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
         $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
         $locations = InventoryHelper::getAccessibleLocations();
-
-        return view('fixed-asset.registration.edit', compact('locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
+        $userType = Helper::userCheck();
+        $revision_number = $data->revision_number;
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $id,
+            $data->current_value,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
+        return view('fixed-asset.registration.edit', compact('buttons', 'locations', 'sub_assets', 'series', 'data', 'ledgers', 'categories', 'it_categories', 'grns', 'vendors', 'currencies', 'grn_details', 'financialEndDate', 'dep_type', 'dep_method', 'dep_percentage', 'financialStartDate'));
     }
 
     /**
@@ -464,6 +468,26 @@ class RegistrationController extends Controller
 
         // Update the asset
         try {
+            if ($request->action_type == "amendment") {
+                $revisionData = [
+                    [
+                        "model_type" => "header",
+                        "model_name" => "FixedAssetRegistration",
+                        "relation_column" => "",
+                    ],
+                    [
+                        "model_type" => "sub_detail",
+                        "model_name" => "FixedAssetSub",
+                        "relation_column" => "parent_id",
+                    ],
+                ];
+                Helper::documentAmendment($revisionData, $id);
+                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $request->amend_remarks, $request->file('amend_attachment'), $asset->approval_level, 'amendment', 0, get_class($asset));
+                $data['revision_number'] = $asset->revision_number + 1;
+                $data['revision_date']=now();
+            }
+            
+            
             $asset->update($data);
             if ($asset->document_status != ConstantHelper::DRAFT) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
@@ -472,7 +496,7 @@ class RegistrationController extends Controller
             }
             FixedAssetSub::regenerateSubAssets($asset->id, $asset->asset_code, $asset->quantity, $asset->current_value, $asset->salvage_value);
             if ($request->has('prefix') && $request->prefix != "")
-            FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
+                FixedAssetSetup::updatePrefix($asset->id, $request->prefix);
             DB::commit();
             return redirect()->route("finance.fixed-asset.registration.index")->with('success', 'Asset updated successfully!');
         } catch (\Exception $e) {
@@ -608,7 +632,7 @@ class RegistrationController extends Controller
             $docId = $doc->id;
             $docValue = $doc->current_value;
             $remarks = $request->remarks;
-            $attachments = $request->file('attachments');
+            $attachments = $request->file('attachment');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
@@ -631,6 +655,7 @@ class RegistrationController extends Controller
             ], 500);
         }
     }
+
     public function amendment(Request $request, $id)
     {
         $asset_id = FixedAssetRegistration::find($id);
@@ -641,6 +666,7 @@ class RegistrationController extends Controller
                 "status" => 404,
             ]);
         }
+
 
         $revisionData = [
             [

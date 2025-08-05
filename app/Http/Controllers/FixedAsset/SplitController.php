@@ -69,7 +69,7 @@ class SplitController extends Controller
         $ledgers = FixedAssetSplit::pluck('ledger_id')->unique();
         $ledgers = Ledger::whereIn('id', $ledgers)->get();
 
-        return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers',));
+        return view('fixed-asset.split.index', compact('data', 'assetCodes', 'ledgers', ));
     }
 
     /**
@@ -97,7 +97,7 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
@@ -108,10 +108,10 @@ class SplitController extends Controller
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
         $locations = InventoryHelper::getAccessibleLocations();
-        $groups = Group::whereIn('id',$allChildIds)->get();
+        $groups = Group::whereIn('id', $allChildIds)->get();
 
 
-        return view('fixed-asset.split.create', compact('groups','locations', 'series', 'assets', 'categories', 'new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.split.create', compact('groups', 'locations', 'series', 'assets', 'categories', 'new_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
@@ -180,16 +180,23 @@ class SplitController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+        $data = FixedAssetSplit::with([
+            'subAsset' => function ($query) {
+                $query->withTrashed();
+            }
+        ])->findorFail($id);
 
         $currNumber = $r->has('revisionNumber');
-        if ($currNumber) {
+        if ($currNumber && $data->revision_number != $r->revisionNumber) {
             $currNumber = $r->revisionNumber;
-            $data = FixedAssetSplitHistory::where('source_id',$id)
-            ->where('revision_number',$currNumber)->first();
+            $data = FixedAssetSplitHistory::where('source_id', $id)
+                ->where('revision_number', $currNumber)->first();
         } else {
-            $data = FixedAssetSplit::with(['subAsset' => function ($query) {
-                $query->withTrashed();
-            }])->findorFail($id);
+            $data = FixedAssetSplit::with([
+                'subAsset' => function ($query) {
+                    $query->withTrashed();
+                }
+            ])->findorFail($id);
         }
         $revision_number = $data->revision_number;
         $userType = Helper::userCheck();
@@ -197,18 +204,18 @@ class SplitController extends Controller
         $buttons = Helper::actionButtonDisplay(
             $data->book_id,
             $data->document_status,
-            $data->id,
+            $id,
             $data->current_value,
             $data->approval_level,
             $data->created_by ?? 0,
             $userType['type'],
             $revision_number
         );
-       
+      
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->current_value, $data->created_by);
         $locations = InventoryHelper::getAccessibleLocations();
 
         $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
@@ -221,22 +228,22 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
-            $dep_percentage = $organization->dep_percentage;
-            $dep_type = $organization->dep_type;
-            $dep_method = $organization->dep_method;
-            $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
-            $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
-            $groups = Group::whereIn('id',$allChildIds)->get();
-
-        
-      
+        $dep_percentage = $organization->dep_percentage;
+        $dep_type = $organization->dep_type;
+        $dep_method = $organization->dep_method;
+        $financialEndDate = Helper::getFinancialYear(date('Y-m-d'))['end_date'];
+        $financialStartDate = Helper::getFinancialYear(date('Y-m-d'))['start_date'];
+        $groups = Group::whereIn('id', $allChildIds)->get();
 
 
-        return view('fixed-asset.split.show', compact('groups','ledgers', 'categories', 'locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number', 'dep_percentage', 'dep_method', 'dep_type','financialStartDate','financialEndDate'));
+
+
+
+        return view('fixed-asset.split.show', compact('groups', 'ledgers', 'categories', 'locations', 'data', 'buttons', 'docStatusClass', 'approvalHistory', 'revision_number', 'dep_percentage', 'dep_method', 'dep_type', 'financialStartDate', 'financialEndDate'));
     }
 
     /**
@@ -264,7 +271,7 @@ class SplitController extends Controller
             $query->whereIn('ledger_group_id', $allChildIds)
                 ->orWhere(function ($subQuery) use ($allChildIds) {
                     foreach ($allChildIds as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string)$child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->get();
@@ -275,9 +282,22 @@ class SplitController extends Controller
         $dep_type = $organization->dep_type;
         $dep_method = $organization->dep_method;
         $locations = InventoryHelper::getAccessibleLocations();
-        $groups = Group::whereIn('id',$allChildIds)->get();
+        $groups = Group::whereIn('id', $allChildIds)->get();
+        $revision_number = $data->revision_number;
+        $userType = Helper::userCheck();
 
-        return view('fixed-asset.split.edit', compact('groups','locations', 'data', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $id,
+            $data->current_value,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
+
+        return view('fixed-asset.split.edit', compact('buttons', 'groups', 'locations', 'data', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
     /**
@@ -309,6 +329,19 @@ class SplitController extends Controller
         DB::beginTransaction();
 
         try {
+            if ($request->action_type == "amendment") {
+                $revisionData = [
+                    [
+                        "model_type" => "header",
+                        "model_name" => "FixedAssetSplit",
+                        "relation_column" => "",
+                    ],
+                ];
+                Helper::documentAmendment($revisionData, $id);
+                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $request->amend_remarks, $request->file('amend_attachment'), $asset->approval_level, 'amendment', 0, get_class($asset));
+                $data['revision_number'] = $asset->revision_number + 1;
+                $data['revision_date']=now();
+            }
 
             $asset->update($data);
 
@@ -347,7 +380,7 @@ class SplitController extends Controller
             $docId = $doc->id;
             $docValue = $doc->current_value;
             $remarks = $request->remarks;
-            $attachments = $request->file('attachments');
+            $attachments = $request->file('attachment');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
@@ -373,7 +406,7 @@ class SplitController extends Controller
     public function getPostingDetails(Request $request)
     {
         try {
-            $data = FinancialPostingHelper::financeVoucherPosting((int)$request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
+            $data = FinancialPostingHelper::financeVoucherPosting((int) $request->book_id ?? 0, $request->document_id ?? 0, $request->type ?? 'get');
             return response()->json([
                 'status' => 'success',
                 'data' => $data

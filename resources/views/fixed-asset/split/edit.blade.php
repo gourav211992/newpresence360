@@ -33,7 +33,7 @@
                             <a href="{{ route('finance.fixed-asset.split.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
-                            @if ($data->document_status == 'draft')
+                            @if ($data->document_status == 'draft'  || ($buttons['amend'] && request('amendment') == 1))
                                 <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button"
                                     id="save-draft-btn">
                                     <i data-feather="save"></i> Save as Draft
@@ -73,6 +73,7 @@
                             <input type="hidden" name="doc_no" id="doc_no" value="{{ $data->doc_no }}">
                             <input type="hidden" name="document_status" id="document_status" value="">
                             <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
+                            @include('fixed-asset.partials.amendement-submit-modal')
 
                             <div class="col-12">
 
@@ -308,7 +309,7 @@
                                                                 Value
                                                                 <span class="text-danger">*</span></label>
                                                             <input type="text" id="current_value_asset"
-                                                                value="{{ $data->subAsset->current_value_after_dep }}"
+                                                                value="{{ round($data->subAsset->current_value_after_dep,2) }}"
                                                                 name="current_value_asset" class="form-control" disabled
                                                                 required />
                                                         </div>
@@ -734,6 +735,7 @@
 
 
 @section('scripts')
+ <script src="{{asset('assets/js/fileshandler.js')}}"></script>
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -986,12 +988,17 @@
                 showToast('error', 'Invalid Asset Code.');
                 return false;
             }
-
+            if ($('#action_type').val() === "amendment"){
+                 $('.preloader').hide();
+                $("#amendmentModal").modal('show');
+            }
+            else
             document.getElementById('fixed-asset-split-form').submit();
         });
 
 
-        $('#fixed-asset-split-form').on('submit', function(e) {
+        document.getElementById('submit-btn').addEventListener('click', function (e) {
+        
             $('.preloader').show();
             e.preventDefault(); // Always prevent default first
 
@@ -1029,7 +1036,12 @@
             }
 
             // Submit form manually if validation passes
-            this.submit();
+             if ($('#action_type').val() === "amendment"){
+                 $('.preloader').hide();
+                $("#amendmentModal").modal('show');
+             }
+            else
+            $('#fixed-asset-split-form').submit();
         });
 
 $(document).ready(function() {
@@ -1995,6 +2007,20 @@ $(document).ready(function() {
 
             return allValid;
         }
+        $(document).on('click', '#amendmentBtnSubmit', (e) => {
+            let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
+            if(!remark) {
+                e.preventDefault();
+                $("#amendRemarkError").removeClass("d-none");
+                return false;
+            } else {
+                $("#amendmentModal").modal('hide');
+                $("#amendRemarkError").addClass("d-none");
+                e.preventDefault();
+                $('.preloader').show();
+                $("#fixed-asset-split-form").submit();
+            }
+        });
     </script>
 
     <!-- END: Content-->

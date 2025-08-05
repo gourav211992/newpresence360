@@ -180,8 +180,9 @@ class MergerController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+        $data = FixedAssetMerger::findorFail($id);
         $currNumber = $r->has('revisionNumber');
-        if ($currNumber) {
+        if ($currNumber && $data->revision_number != $r->revisionNumber) {
             $currNumber = $r->revisionNumber;
             $data = FixedAssetMergerHistory::where('source_id',$id)
             ->where('revision_number',$currNumber)->first();
@@ -195,21 +196,21 @@ class MergerController extends Controller
         $buttons = Helper::actionButtonDisplay(
             $data->book_id,
             $data->document_status,
-            $data->id,
+            $id,
             $data->current_value,
             $data->approval_level,
             $data->created_by ?? 0,
             $userType['type'],
             $revision_number
         );
-       
+        
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, $data->current_value, $data->created_by);
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, $data->current_value, $data->created_by);
 
         $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
-$categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
+        $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('id', 'name')->get();
         
         $locations = InventoryHelper::getAccessibleLocations();
         $it_categories = ErpAssetCategory::where('status', 1)
@@ -266,8 +267,22 @@ $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('i
                     $subQuery->where('act_type', 'income_tax');
                 });
             })->get();
+        $revision_number = $data->revision_number;
+
+        $userType = Helper::userCheck();
+
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $id,
+            $data->current_value,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
         
-        return view('fixed-asset.merger.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+        return view('fixed-asset.merger.edit', compact('buttons','locations', 'data', 'assets', 'series', 'assets', 'categories','it_categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
 
@@ -276,6 +291,7 @@ $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('i
      */
     public function update(Request $request, $id)
     {
+        
         $existingAsset = FixedAssetRegistration::where('asset_code', $request->asset_code)->first();
 
             if ($existingAsset) {
@@ -286,11 +302,25 @@ $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('i
         }
         $asset = FixedAssetMerger::findOrFail($id);
         $status = $request->document_status;
+        $data = $request->all();
 
         DB::beginTransaction();
 
         try {
-            $asset->update($request->all());
+            if ($request->action_type == "amendment") {
+                 $revisionData = [
+            [
+                "model_type" => "header",
+                "model_name" => "FixedAssetMerger",
+                "relation_column" => "",
+            ],
+        ];
+                Helper::documentAmendment($revisionData, $id);
+                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $request->amend_remarks, $request->file('amend_attachment'), $asset->approval_level, 'amendment', 0, get_class($asset));
+                $data['revision_number'] = $asset->revision_number + 1;
+                $data['revision_date']=now();
+            }
+            $asset->update($data);
 
             if ($status == ConstantHelper::SUBMITTED) {
                 $doc = Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, "", null, 1, 'submit', 0, get_class($asset));
@@ -326,7 +356,7 @@ $categories = ErpAssetCategory::where('status', 1)->whereHas('setup')->select('i
             $docId = $doc->id;
             $docValue = $doc->current_value;
             $remarks = $request->remarks;
-            $attachments = $request->file('attachments');
+            $attachments = $request->file('attachment');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject

@@ -34,7 +34,8 @@
                             <a href="{{ route('finance.fixed-asset.merger.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
-                            @if ($data->document_status == 'draft')
+                            @if ($data->document_status == 'draft'  || ($buttons['amend'] && request('amendment') == 1))
+                           
                                 <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button"
                                     id="save-draft-btn">
                                     <i data-feather="save"></i> Save as Draft
@@ -66,6 +67,7 @@
                             <input type="hidden" name="doc_no" id="doc_no">
                             <input type="hidden" name="document_status" id="document_status" value="">
                             <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
+                              @include('fixed-asset.partials.amendement-submit-modal')
                             <div class="col-12">
 
 
@@ -633,6 +635,8 @@
 
 
 @section('scripts')
+<script src="{{asset('assets/js/fileshandler.js')}}"></script>
+    
     <script>
         //      $('.select2').each(function () {
         //     $(this).select2();
@@ -790,11 +794,16 @@ $(document).on('keydown', function(e) {
 
 
 
+            if ($('#action_type').val() === "amendment"){
+                 $('.preloader').hide();
+                $("#amendmentModal").modal('show');
+            }
+            else
             document.getElementById('fixed-asset-merger-form').submit();
         });
 
 
-        $('#fixed-asset-merger-form').on('submit', function(e) {
+        document.getElementById('submit-btn').addEventListener('click', function (e) {
             $('.preloader').show();
             e.preventDefault(); // Always prevent default first
 
@@ -840,7 +849,12 @@ $(document).on('keydown', function(e) {
 
 
 
-            this.submit();
+            if ($('#action_type').val() === "amendment"){
+                 $('.preloader').hide();
+                $("#amendmentModal").modal('show');
+             }
+            else
+            $('#fixed-asset-merger-form').submit();
         });
 
         function showToast(icon, title) {
@@ -1690,6 +1704,20 @@ $(document).on('keydown', function(e) {
 
             return allValid;
         }
+          $(document).on('click', '#amendmentBtnSubmit', (e) => {
+            let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
+            if(!remark) {
+                e.preventDefault();
+                $("#amendRemarkError").removeClass("d-none");
+                return false;
+            } else {
+                $("#amendmentModal").modal('hide');
+                $("#amendRemarkError").addClass("d-none");
+                e.preventDefault();
+                $('.preloader').show();
+                $("#fixed-asset-merger-form").submit();
+            }
+        });
         
     </script>
     <!-- END: Content-->
