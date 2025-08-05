@@ -8071,8 +8071,8 @@ class FinancialPostingHelper
             'ledger_code' => $contraLedger?->code,
             'ledger_name' => $contraLedger?->name,
             'ledger_group_code' => $contraLedgerGroup?->name,
-            'debit_amount' => 0,
-            'credit_amount' => $vendor->orgAmount,
+            'debit_amount' => $vendor->orgAmount,
+            'credit_amount' => 0,
         ]);
 
         $vendorLedger = Ledger::find($vendor->ledger_id);
@@ -8089,8 +8089,8 @@ class FinancialPostingHelper
             'ledger_code' => $vendorLedger?->code,
             'ledger_name' => $vendorLedger?->name,
             'ledger_group_code' => $vendorLedgerGroup?->name,
-            'debit_amount' => $vendor->orgAmount,
-            'credit_amount' => 0,
+            'debit_amount' => 0,
+            'credit_amount' => $vendor->orgAmount,
         ]);
         return $postingArray;
     }
@@ -8141,8 +8141,8 @@ class FinancialPostingHelper
             'ledger_code' => $contraLedger?->code,
             'ledger_name' => $contraLedger?->name,
             'ledger_group_code' => $contraLedgerGroup?->name,
-            'debit_amount' => $vendor->orgAmount,
-            'credit_amount' => 0,
+            'debit_amount' => 0,
+            'credit_amount' => $vendor->orgAmount,
         ]);
 
         $vendorLedger = Ledger::find($vendor->ledger_id);
@@ -8159,8 +8159,8 @@ class FinancialPostingHelper
             'ledger_code' => $vendorLedger?->code,
             'ledger_name' => $vendorLedger?->name,
             'ledger_group_code' => $vendorLedgerGroup?->name,
-            'debit_amount' => 0,
-            'credit_amount' => $vendor->orgAmount,
+            'debit_amount' => $vendor->orgAmount,
+            'credit_amount' => 0,
         ]);
         return $postingArray;
     }
