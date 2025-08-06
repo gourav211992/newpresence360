@@ -179,8 +179,9 @@ class RevImpController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
+        $data = FixedAssetRevImp::findorFail($id);
         $currNumber = $r->has('revisionNumber');
-        if ($currNumber) {
+        if ($currNumber && $data->revision_number!=$r->revisionNumber) {
             $currNumber = $r->revisionNumber;
             $data = FixedAssetRevImpHistory::where('source_id',$id)
             ->where('revision_number',$currNumber)->first();
@@ -195,7 +196,7 @@ class RevImpController extends Controller
         $buttons = Helper::actionButtonDisplay(
             $data->book_id,
             $data->document_status,
-            $data->id,
+            $id,
             0,
             $data->approval_level,
             $data->created_by ?? 0,
@@ -205,7 +206,7 @@ class RevImpController extends Controller
 
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$data->document_status] ?? '';
         $revNo = $data->revision_number;
-        $approvalHistory = Helper::getApprovalHistory($data->book_id, $data->id, $revNo, 0, $data->created_by);
+        $approvalHistory = Helper::getApprovalHistory($data->book_id, $id, $revNo, 0, $data->created_by);
 
         $assets = FixedAssetRegistration::whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)->get();
 
@@ -254,8 +255,23 @@ class RevImpController extends Controller
         $dep_method = $organization->dep_method;
         $data = FixedAssetRevImp::find($id);
         $locations = InventoryHelper::getAccessibleLocations();
+        $revision_number = $data->revision_number;
 
-        return view('fixed-asset.revaluation-impairement.edit', compact('locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
+
+        $userType = Helper::userCheck();
+
+        $buttons = Helper::actionButtonDisplay(
+            $data->book_id,
+            $data->document_status,
+            $id,
+            0,
+            $data->approval_level,
+            $data->created_by ?? 0,
+            $userType['type'],
+            $revision_number
+        );
+
+        return view('fixed-asset.revaluation-impairement.edit', compact('buttons','locations', 'data', 'assets', 'series', 'assets', 'categories', 'ledgers', 'financialEndDate', 'financialStartDate', 'dep_percentage', 'dep_type', 'dep_method'));
     }
 
 
@@ -277,6 +293,19 @@ class RevImpController extends Controller
                 $file->move(public_path('documents'), $filename);
                 $additionalData['document'] = $filename;
                 $data = array_merge($request->all(), $additionalData);
+            }
+            if ($request->action_type == "amendment") {
+                $revisionData = [
+                        [
+                            "model_type" => "header",
+                            "model_name" => "FixedAssetRevImp",
+                            "relation_column" => "",
+                        ],
+                ];
+                Helper::documentAmendment($revisionData, $id);
+                Helper::approveDocument($asset->book_id, $asset->id, $asset->revision_number, $request->amend_remarks, $request->file('amend_attachment'), $asset->approval_level, 'amendment', 0, get_class($asset));
+                $data['revision_number'] = $asset->revision_number + 1;
+                $data['revision_date']= now();
             }
 
             
@@ -317,7 +346,7 @@ class RevImpController extends Controller
             $docId = $doc->id;
             $docValue = 0;
             $remarks = $request->remarks;
-            $attachments = $request->file('attachments');
+            $attachments = $request->file('attachment');
             $currentLevel = $doc->approval_level;
             $revisionNumber = $doc->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject

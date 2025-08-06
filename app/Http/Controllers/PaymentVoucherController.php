@@ -102,7 +102,7 @@ class PaymentVoucherController extends Controller
             $docId = $saleOrder->id;
             $docValue = $saleOrder->amount;
             $remarks = $request->remarks;
-            $attachments = $request->file('attachments');
+            $attachments = $request->file('attachment');
             $currentLevel = $saleOrder->approval_level;
             $revisionNumber = $saleOrder->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
@@ -649,7 +649,7 @@ class PaymentVoucherController extends Controller
         $books_t = Helper::getAccessibleServicesFromMenuAlias('vouchers')['services'];
 
 
-        $buttons = Helper::actionButtonDisplay($data->book_id, $data->document_status, $data->id, $data->amount, $data->approvalLevel, $data->user_id, $data->user_type);
+        $buttons = Helper::actionButtonDisplay($data->book_id, $data->document_status, $id, $data->amount, $data->approvalLevel, $data->user_id, $data->user_type);
         if ($data->document_status === ConstantHelper::DRAFT || $data->document_status === ConstantHelper::SUBMITTED)
             $buttons['cancel'] = true;
         else
@@ -720,7 +720,7 @@ class PaymentVoucherController extends Controller
 
         $locations = InventoryHelper::getAccessibleLocations();
         $fyear = Helper::getFinancialYear(date('Y-m-d'));
-        if ($data->document_status == ConstantHelper::DRAFT)
+        if ($data->document_status == ConstantHelper::DRAFT || ($r->amendment==1 && $buttons['amend']))
             return view('paymentVoucher.editPaymentVoucher', compact('cost_centers', 'books_t', 'data', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'locations', 'fyear'));
         else
             return view('paymentVoucher.viewPaymentVoucher', compact('cost_centers', 'data', 'books_t', 'books', 'buttons', 'history', 'banks', 'ledgers', 'currencies', 'orgCurrency', 'revision_number', 'currNumber', 'editUrl', 'indexUrl', 'editUrlString', 'approvalHistory', 'cc_users', 'to_users', 'to_user_mail', 'to_type', 'locations', 'fyear'));
@@ -743,6 +743,18 @@ class PaymentVoucherController extends Controller
 
         try {
             $voucher = PaymentVoucher::find($id);
+            if ($request->action_type == "amendment") {
+                 $revisionData = [
+                ['model_type' => 'header', 'model_name' => 'PaymentVoucher', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'PaymentVoucherDetails', 'relation_column' => 'payment_voucher_id'],
+                ['model_type' => 'sub_detail', 'model_name' => 'VoucherReference', 'relation_column' => 'voucher_details_id']
+                ];
+                Helper::documentAmendment($revisionData, $id);
+                Helper::approveDocument($voucher->book_id, $voucher->id, $voucher->revision_number, $request->amend_remarks, $request->file('amend_attachment'), $voucher->approval_level, 'amendment', 0, get_class($voucher));
+                $voucher->revision_number = $voucher->revision_number + 1;
+                $voucher->revision_date = now();
+                $voucher->save();
+            }
             PaymentVoucherDetails::where('payment_voucher_id', $id)->delete();
             VoucherReference::where('payment_voucher_id', $id)->delete();
 
