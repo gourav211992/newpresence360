@@ -465,6 +465,7 @@ class ConstantHelper
     ];
     //Service Labels
     const SERVICE_LABEL = [
+        self::TI_SERVICE_ALIAS => "Transporter Invoice",
         self::LR_SERVICE_ALIAS => "Lorry Receipt",
         self::SO_SERVICE_ALIAS => "Sales Order",
         self::SI_SERVICE_ALIAS => "Tax Invoice",
@@ -530,6 +531,7 @@ class ConstantHelper
     const PB_SERVICE_ALIAS = 'pb';
     const SO_SERVICE_ALIAS = 'so';
     const LR_SERVICE_ALIAS = 'lr';
+    const TI_SERVICE_ALIAS = 'ti';
     const SQ_SERVICE_ALIAS = 'sq';
     const SI_SERVICE_ALIAS = 'si';
     const SR_SERVICE_ALIAS = 'sr';
@@ -692,6 +694,7 @@ class ConstantHelper
 
     //Service Alias Models Mapping
     const SERVICE_ALIAS_MODELS = [
+        self::TI_SERVICE_ALIAS => 'ErpSaleInvoice',
         self::LR_SERVICE_ALIAS => 'ErpLorryReceipt',
         self::MO_SERVICE_ALIAS => 'MfgOrder',
         self::BOM_SERVICE_ALIAS => 'Bom',

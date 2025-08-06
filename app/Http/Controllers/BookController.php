@@ -7,6 +7,7 @@ use App\Helpers\DynamicFieldHelper;
 use App\Helpers\Helper;
 use App\Helpers\ServiceParametersHelper;
 use App\Models\AuthUser;
+use App\Models\Item;
 use App\Models\BookDynamicField;
 use App\Models\DynamicField;
 use App\Models\DynamicFieldDetail;
@@ -130,6 +131,7 @@ class BookController extends Controller
 
     public function store(Request $request)
     {
+        
         $authUser = Helper::getAuthenticatedUser();
         $org = Organization::find($authUser->organization_id);
         $company = OrganizationCompany::find($org?->company_id);
@@ -409,9 +411,27 @@ class BookController extends Controller
                                             'message' => $seriesName . ' has already been referenced in '. $exists ?-> book -> book_code,
                                             'error' => 'Reference found'
                                         ], 500);
-                                    }
+                                    } 
                                 }
                             }
+                             if ($request->param_names[$orgServiceParamKey] === ServiceParametersHelper::SERVICE_ITEM_PARAM) 
+                            {  
+                              
+                                $paramValues = isset($request->params[$orgServiceParamKey]) ? $request->params[$orgServiceParamKey] : [];
+                                foreach ($paramValues as $paramValue) {
+                                    $exists = OrganizationBookParameter::where('org_service_id', '=', $insert->org_service_id)->where('book_id', '!=', $insert -> id)->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)
+                                    ->whereJsonContains('parameter_value', (string) $paramValue)->first();
+                                    // if ($exists) {
+                                    //     $series = Book::find($paramValue);
+                                    //     $seriesName = isset($series) ? $series->book_code : 'A Book Code';
+                                    //     return response()->json([
+                                    //         'message' => $seriesName . ' has already been referenced in '. $exists ?-> book -> book_code,
+                                    //         'error' => 'Reference found'
+                                    //     ], 500);
+                                    // }
+                                }
+                            }
+                           
                             OrganizationBookParameter::create([
                                 'book_id' => $insert->id,
                                 'group_id' => $organization->group_id,
@@ -639,6 +659,55 @@ class BookController extends Controller
                                     class='form-select mw-100 select2 bookSelect'
                                     multiple
                                     placeholder = 'Select Book'
+                                    name = 'params[$bookParamKey][]'
+                                    >
+                                    $selectOptions
+                                </select>
+                            </div>
+                        </div>
+                        ";
+                        $bookParam->param_array_html = $htmlData;
+
+                    }
+                }else if ($bookParam->parameter_name === ServiceParametersHelper::SERVICE_ITEM_PARAM) {
+                    $orgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)->latest()->first();
+                    $actualOrgServiceParam = OrganizationServiceParameter::where('service_id', $book->org_service->service_id)->where('parameter_name', $bookParam->parameter_name)->first();
+                 
+                    if (isset($orgServiceParam) && isset($actualOrgServiceParam)) {
+                          $selectOptions = "";
+                        // $itemIds = $orgServiceParam -> parameter_value;
+                        $itemIds = $orgServiceParam->service_parameter->applicable_values;
+                        $items = Item::where('type', 'Service')->get();
+                        foreach ($items as $item) {
+                            $label = strtoupper($item->item_name);
+                            $value = $item->id;
+                           
+                            if (in_array($value, $bookParam->parameter_value)) {
+                                $selectOptions .= "<option value = '$value' selected >$label</option>";
+                            } else {
+                                $selectOptions .= "<option value = '$value' >$label</option>";
+                            }
+                        }
+                        if (in_array(0, $itemIds)) {
+                            $selectOptions .= "<option value = '0' selected >Direct</option>";
+                        }
+                        $paramLabel = ServiceParametersHelper::SERVICE_PARAMETERS[$actualOrgServiceParam->parameter_name];
+
+                        $paramName = $actualOrgServiceParam->parameter_name;
+                        $paramId = $actualOrgServiceParam->service_param_id;
+                        $htmlData = "
+                        <div class='row align-items-center mb-1'>
+                            <div class='col-md-3'>
+                                <label class='form-label'>$paramLabel</label>
+                            </div>
+                            <div class='col-md-5'>
+                                <input type = 'hidden' value = '$paramName' name = 'param_names[]' />
+                                <input type = 'hidden' value = '$paramId' name = 'param_ids[]' />
+                                <select
+                                    id = 'service_item'
+                                    class='form-select mw-100 select2 bookSelect'
+                                    
+                                    placeholder = 'Select Item'
                                     name = 'params[$bookParamKey][]'
                                     >
                                     $selectOptions
@@ -1023,6 +1092,23 @@ class BookController extends Controller
                             }
                         }
                     }
+
+                    if ($request->param_names[$bookParamKey] === ServiceParametersHelper::SERVICE_ITEM_PARAM) {
+                        $paramValues = isset($request->params[$bookParamKey]) ? $request->params[$bookParamKey] : [];
+                        foreach ($paramValues as $paramValue) {
+                            $exists = OrganizationBookParameter::where('org_service_id', '=', $update->org_service_id)->where('book_id', '!=', $update -> id)->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)
+                                ->whereJsonContains('parameter_value', (string) $paramValue)->first();
+                               
+                            // if ($exists) {
+                            //     $series = Book::find($paramValue);
+                            //     $seriesName = isset($series) ? $series->book_code : 'A Book Code';
+                            //     return response()->json([
+                            //         'message' => $seriesName . ' has already been referenced in '. $exists ?-> book -> book_code,
+                            //         'error' => 'Reference found'
+                            //     ], 500);
+                            // }
+                        }
+                    }
                     $existingBookParam = OrganizationBookParameter::where('book_id', $update->id)->where('service_param_id', $request->param_ids[$bookParamKey])->first();
                     if (isset($existingBookParam)) {
                         $existingBookParam->parameter_value = isset($request->params[$bookParamKey]) ? $request->params[$bookParamKey] : [];
@@ -1080,11 +1166,13 @@ class BookController extends Controller
             $commonParamsHTML = '';
             $glParamsHTML = '';
             $organizationService = OrganizationService::with('parameters')->find($orgServiceId);
+           
             if (isset($organizationService)) {
                 $masterService = $organizationService -> service;
                 //Common Service
                 foreach ($organizationService->common_parameters as $orgServiceParamKey => &$orgServiceParam) {
                     $currentParamHTML = '';
+                   
                     if ($orgServiceParam->parameter_name === ServiceParametersHelper::REFERENCE_FROM_SERVICE_PARAM) {
                         $selectOptions = "";
                         // $serviceIds = $orgServiceParam -> parameter_value;
@@ -1156,6 +1244,51 @@ class BookController extends Controller
                                     id = 'reference_series_input'
                                     multiple
                                     placeholder = 'Select Book'
+                                    name = 'params[$orgServiceParamKey][]'
+                                    id = '$paramName'
+                                    >
+                                    $selectOptions
+                                </select>
+                            </div>
+                        </div>
+                        ";
+                        // $orgServiceParam->param_array_html = $htmlData;
+                        $currentParamHTML = $htmlData;
+
+                    }else if ($orgServiceParam->parameter_name === ServiceParametersHelper::SERVICE_ITEM_PARAM) {
+                      
+                         $selectOptions = "";
+                        // $itemIds = $orgServiceParam -> parameter_value;
+                        $itemIds = $orgServiceParam->service_parameter->applicable_values;
+                        $items = Item::where('type', 'Service')->get();
+                        foreach ($items as $item) {
+                            $label = strtoupper($item->item_name);
+                            $value = $item->id;
+                            if (in_array($value, $orgServiceParam->parameter_value)) {
+                                $selectOptions .= "<option value = '$value' selected >$label</option>";
+                            } else {
+                                $selectOptions .= "<option value = '$value' >$label</option>";
+                            }
+                        }
+                        if (in_array(0, $itemIds)) {
+                            $selectOptions .= "<option value = '0' selected >Direct</option>";
+                        }
+                        $paramLabel = ServiceParametersHelper::SERVICE_PARAMETERS[$orgServiceParam->parameter_name];
+
+                        $paramName = $orgServiceParam->parameter_name;
+                        $paramId = $orgServiceParam->service_param_id;
+                        $htmlData = "
+                        <div class='row align-items-center mb-1'>
+                            <div class='col-md-3'>
+                                <label class='form-label'>$paramLabel</label>
+                            </div>
+                            <div class='col-md-5'>
+                                <input type = 'hidden' value = '$paramName' name = 'param_names[]' />
+                                <input type = 'hidden' value = '$paramId' name = 'param_ids[]' />
+                                <select
+                                    class='form-select mw-100 select2 referenceService'
+                                    id='service_item'
+                                    placeholder = 'Select Item'
                                     name = 'params[$orgServiceParamKey][]'
                                     id = '$paramName'
                                     >

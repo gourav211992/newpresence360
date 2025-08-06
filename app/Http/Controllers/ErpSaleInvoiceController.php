@@ -103,6 +103,10 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $createRoute = route('sale.leaseInvoice.create');
+        }else if ($pathUrl === 'transporter-invoices') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+            $redirectUrl = route('sale.transporterInvoice.index');
+            $createRoute = route('sale.transporterInvoice.create');
         }
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         request() -> merge(['type' => $orderType]);
@@ -301,7 +305,12 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $locationVisiblity = false;
+        }else if ($parentURL === 'transporter-invoices') {
+            $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+            $redirectUrl = route('sale.transporterInvoice.index');
+            $locationVisiblity = false;
         }
+        
         request() -> merge(['type' => $orderType]);
         $firstService = $servicesBooks['services'][0];
         $user = Helper::getAuthenticatedUser();
@@ -372,7 +381,6 @@ class ErpSaleInvoiceController extends Controller
         }
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $organization = Organization::where('id', $user->organization_id)->first();
-        if (isset($order)) {
             $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl,$order -> book ?-> service ?-> alias);
             foreach ($order -> items as &$siItem) {
                 if ($order -> book ?-> master_service ?-> type != ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
@@ -423,78 +431,80 @@ class ErpSaleInvoiceController extends Controller
                     $siItem -> package = $packingListDetail -> first() -> package_number;
                 }
             }
-        }
-        
-        $revision_number = $order->revision_number;
-        $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
-        $userType = Helper::userCheck();
-        $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
-        $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
-        $request -> merge(['type' => $type]);
-        $books = Helper::getBookSeriesNew($type) -> get();
-        $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
-        $revNo = $order->revision_number;
-        if($request->has('revisionNumber')) {
-            $revNo = intval($request->revisionNumber);
-        } else {
+           
+            $revision_number = $order->revision_number;
+            $totalValue = ($order -> total_item_value - $order -> total_discount_value) + $order -> total_tax_value + $order -> total_expense_value;
+            $userType = Helper::userCheck();
+            $buttons = Helper::actionButtonDisplay($order->book_id,$order->document_status , $order->id, $totalValue, $order->approval_level, $order -> created_by ?? 0, $userType['type'], $revision_number);
+            $type = SaleModuleHelper::getAndReturnInvoiceType($request -> type);
+            $request -> merge(['type' => $type]);
+            $books = Helper::getBookSeriesNew($type) -> get();
+            $countries = Country::select('id AS value', 'name AS label') -> where('status', ConstantHelper::ACTIVE) -> get();
             $revNo = $order->revision_number;
-        }
-        $docValue = $order->total_amount ?? 0;
-        $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
-        $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
-        $typeName = "Sales Invoice";
-        if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-            $typeName = "Delivery Note";
-        } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-            $typeName = "Delivery Note CUM Invoice";
-        } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
-            $typeName = "Lease Invoice";
-        }
-        $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-        $einvoice = $order -> irnDetail() -> first();
-        $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
-            $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS;
-        if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
-            $enableEinvoice = false;
-        }
-        $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
-        $transportationModes = EwayBillMaster::where('status', 'active')
-            ->where('type', '=', 'transportation-mode')
-            ->orderBy('id', 'ASC')
-            ->get();
-        $editTransporterFields = false;
-        if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
-            $editTransporterFields = true;
-        }
-        $dynamicFieldsUI = $order -> dynamicfieldsUi();
-        $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
-        $data = [
-            'user' => $user,
-            'users' => $users,
-            'series' => $books,
-            'order' => $order,
-            'countries' => $countries,
-            'buttons' => $buttons,
-            'approvalHistory' => $approvalHistory,
-            'type' => $type,
-            'editBundle' => $editBundle,
-            'revision_number' => $revision_number,
-            'docStatusClass' => $docStatusClass,
-            'typeName' => $typeName,
-            'stores' => $stores,
-            'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
-            'services' => $servicesBooks['services'],
-            'redirect_url' => $redirect_url,
-            'location_visibility' => $locationVisiblity,
-            'einvoice' => $einvoice,
-            'enableEinvoice' => $enableEinvoice,
-            'subStores' => $subStores,
-            'dynamicFieldsUi' => $dynamicFieldsUI,
-            'transportationModes' => $transportationModes,
-            'current_financial_year' => $selectedfyYear,
-            'editTransporterFields' => $editTransporterFields
-        ];
-        return view('salesInvoice.create_edit', $data);
+            if($request->has('revisionNumber')) {
+                $revNo = intval($request->revisionNumber);
+            } else {
+                $revNo = $order->revision_number;
+            }
+            $docValue = $order->total_amount ?? 0;
+            $approvalHistory = Helper::getApprovalHistory($order->book_id, $order->id, $revNo, $docValue, $order -> created_by);
+            $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$order->document_status] ?? '';
+            $typeName = "Sales Invoice";
+            if ($type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                $typeName = "Delivery Note";
+            } else if ($type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+                $typeName = "Delivery Note CUM Invoice";
+            } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+                $typeName = "Lease Invoice";
+            }else if ($type == ConstantHelper::TI_SERVICE_ALIAS) {
+                $typeName = "Transporter Invoice";
+            }
+            $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+            $einvoice = $order -> irnDetail() -> first();
+            $enableEinvoice = ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS) ||
+                $order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS;
+            if ($order -> gst_invoice_type !== EInvoiceHelper::B2B_INVOICE_TYPE) {
+                $enableEinvoice = false;
+            }
+            $subStores = InventoryHelper::getAccesibleSubLocations($order -> store_id);
+            $transportationModes = EwayBillMaster::where('status', 'active')
+                ->where('type', '=', 'transportation-mode')
+                ->orderBy('id', 'ASC')
+                ->get();
+            $editTransporterFields = false;
+            if (!isset($einvoice -> ewb_no) && $order -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT) {
+                $editTransporterFields = true;
+            }
+            $dynamicFieldsUI = $order -> dynamicfieldsUi();
+            $selectedfyYear = Helper::getFinancialYear($order->document_date ?? Carbon::now()->format('Y-m-d'));
+
+            $data = [
+                'user' => $user,
+                'users' => $users,
+                'series' => $books,
+                'order' => $order,
+                'countries' => $countries,
+                'buttons' => $buttons,
+                'approvalHistory' => $approvalHistory,
+                'type' => $type,
+                'editBundle' => $editBundle,
+                'revision_number' => $revision_number,
+                'docStatusClass' => $docStatusClass,
+                'typeName' => $typeName,
+                'stores' => $stores,
+                'maxFileCount' => isset($order -> mediaFiles) ? (10 - count($order -> media_files)) : 10,
+                'services' => $servicesBooks['services'],
+                'redirect_url' => $redirect_url,
+                'location_visibility' => $locationVisiblity,
+                'einvoice' => $einvoice,
+                'enableEinvoice' => $enableEinvoice,
+                'subStores' => $subStores,
+                'dynamicFieldsUi' => $dynamicFieldsUI,
+                'transportationModes' => $transportationModes,
+                'current_financial_year' => $selectedfyYear,
+                'editTransporterFields' => $editTransporterFields
+            ];
+            return view('salesInvoice.create_edit', $data);
     }
 
     public function store(ErpSaleInvoiceRequest $request)
@@ -1031,14 +1041,14 @@ class ErpSaleInvoiceController extends Controller
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                                if($taxDetail['applicability_type']=="collection")
-                                {
-                                    $totalTax += $itemTax;
-                                }
-                                else
-                                {
-                                    $totalTax -= $itemTax;
-                                }
+                            }
+                            if($taxDetail['applicability_type']=="collection")
+                            {
+                                $totalTax += $itemTax;
+                            }
+                            else
+                            {
+                                $totalTax -= $itemTax;
                             }
                         }
                         //Update or create
@@ -2011,31 +2021,37 @@ class ErpSaleInvoiceController extends Controller
                }
                 $headers = $modelName::with(['discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details']) -> with('customer', function ($sQuery) {
                     $sQuery -> with(['currency', 'payment_terms']);
-                }) -> withWhereHas('items', function ($itemQuery) use($itemIds) {
-                    $itemQuery -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
+                }) -> withWhereHas('items', function ($itemQuery) use($itemIds, $request) {
+                    $itemQuery -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) use($request, $itemIds) {
                         $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-                    }]) -> whereIn('id', $itemIds);
+                    }]) -> when($request -> doc_type !== ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, function ($condQuery) use($itemIds) {
+                        $condQuery ->  whereIn('id', $itemIds);
+                    });
                 }) -> whereIn('id', $request -> order_id) -> get();
                 // $headers = $headers->map(function ($header) use ($currentIds) {
                 //     $header->items = $header->items->whereIn('id', $currentIds);
                 //     return $header;
                 // }) -> values();
                 foreach ($headers as $header) {
-                    if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
-                        $saleOrderItems = $header -> sale_order_items();
-                        // foreach ($saleOrderItems as &$saleOrderItem) {
-                        //     $saleOrderItem -> actual_qty = $saleOrderItem -> order_qty;
-                        // }
-                    }
+                    // if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
+                    //     $saleOrderItems = $header -> sale_order_items();
+                    //     // foreach ($saleOrderItems as &$saleOrderItem) {
+                    //     //     $saleOrderItem -> actual_qty = $saleOrderItem -> order_qty;
+                    //     // }
+                    // }
                     foreach ($header -> items as $orderItemKey => &$orderItem) {
                         $orderItem -> stock_qty = $orderItem -> getStockBalanceQty($request -> store_id ?? 0);
                         $orderItem -> item_attributes_array = $orderItem -> item_attributes_array();
-                        if (isset($saleOrderItems[$orderItemKey])) {
-                            $header -> items[$orderItemKey] = $saleOrderItems[$orderItemKey];
-                            $header -> items[$orderItemKey] -> id = $orderItem -> id;
-                            $header -> items[$orderItemKey] -> item_attributes_array = $orderItem -> item_attributes_array();
-                            $header -> items[$orderItemKey] -> actual_qty = $orderItem -> order_qty;
+                        if ($request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                            $soItem = ErpSoItem::find($orderItem -> so_item_id);
+                            $orderItem -> rate = $soItem -> rate; 
                         }
+                        // if (isset($saleOrderItems[$orderItemKey])) {
+                        //     $header -> items[$orderItemKey] = $saleOrderItems[$orderItemKey];
+                        //     $header -> items[$orderItemKey] -> id = $orderItem -> id;
+                        //     $header -> items[$orderItemKey] -> item_attributes_array = $orderItem -> item_attributes_array();
+                        //     $header -> items[$orderItemKey] -> actual_qty = $orderItem -> order_qty;
+                        // }
                     }
                 }
             } else {
@@ -2329,7 +2345,7 @@ class ErpSaleInvoiceController extends Controller
             }]);
         })
         -> find($id);
-        $pdfFile = "pdf.sales-document";
+        $pdfFile = "pdf.sales-invoice-pdf";
         if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
         ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
         {
@@ -2346,7 +2362,7 @@ class ErpSaleInvoiceController extends Controller
         if ($order -> document_type === ConstantHelper::SI_SERVICE_ALIAS || 
         ($order -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS))
         {
-            $pdfFile = $request -> type == 'grouped' ? "pdf.sales-invoice-attribute-grouped" : "pdf.sales-invoice-document";
+            $pdfFile = $request -> type == 'grouped' ? "pdf.sales-invoice-attribute-grouped" : "pdf.sales-invoice-pdf";
             $maxAttributeCount = 0;
             $allAttributeValues = [];
             $siItemAttributes = ErpInvoiceItemAttribute::where('sale_invoice_id', $order -> id)
@@ -2400,7 +2416,7 @@ class ErpSaleInvoiceController extends Controller
                     }
                 }
             } else {
-                $pdfFile = "pdf.sales-document";
+                $pdfFile = "pdf.sales-invoice-pdf";
                 $orderItems = $order -> items;
             }
         }
@@ -2686,7 +2702,7 @@ class ErpSaleInvoiceController extends Controller
         }
     }
 
-    public function generateEInvoice(Request $request)
+    public function generateEInvoiceOld(Request $request)
     {
         $validator = Validator::make(
             $request->all(),
@@ -2789,7 +2805,7 @@ class ErpSaleInvoiceController extends Controller
             throw new ApiGenericException($ex -> getMessage());
         }
     }
-    public function generateEInvoiceNew(Request $request)
+    public function generateEInvoice(Request $request)
     {
         $validator = Validator::make(
             $request->all(),
@@ -2867,7 +2883,7 @@ class ErpSaleInvoiceController extends Controller
             }
 
         } catch(Exception $ex) {
-            throw new ApiGenericException($ex -> getLine());
+            throw new ApiGenericException($ex -> getMessage());
         }
     }
     public function EInvoiceMail(Request $request)

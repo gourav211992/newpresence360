@@ -44,7 +44,9 @@ use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
 use Exception;
 use Illuminate\Http\Request;
+use Log;
 class DocumentApprovalController extends Controller
+
 {
     # Bom Approval
     public function bom(Request $request)
@@ -1156,6 +1158,49 @@ class DocumentApprovalController extends Controller
                 if ($revisionNumber == 0) {
                     $vendor->status = ConstantHelper::ACTIVE;
                 }
+                 // ** START: Call createPartyLedger if conditions are met **
+                    $createVendorLedger = $request->input('create_ledger') && $request->input('create_ledger') == 1;
+                    $hiddenLedgerVendorName = $request->input('hidden_ledger_vendor_name');
+                    $hiddenLedgerVendorCode = $request->input('hidden_ledger_vendor_code');
+                    $ledgerGroupId = $request->input('ledger_group_id');
+              
+                    if ($createVendorLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode) && !empty($ledgerGroupId)) {
+                        try {
+                            $result = Helper::createPartyLedger(
+                                'vendor',
+                                $hiddenLedgerVendorName,
+                                $hiddenLedgerVendorCode,
+                                $ledgerGroupId
+                            );
+                        
+                            if (!$result['success']) {
+                                Log::error('Error creating party ledger: ' . $result['message']);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' => $result['message'], 
+                                    'data' => $vendor,
+                                ], 500);
+                            }
+                            $ledgerId = $result['data']['ledger_id'] ?? null;
+                            $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+                            $vendor->ledger_id = $ledgerId;
+                            $vendor->ledger_group_id = $ledgerGroupId;
+                            $vendor->ledger_group_id = $ledgerGroupId;
+                            $vendor->create_ledger = 0;
+                        } catch (Exception $e) {
+                            Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            DB::rollBack();
+                            return response()->json([
+                                'status' => false,
+                                'message' =>  $e->getMessage(), 
+                                'data' => $vendor,
+                            ], 500);
+                        }
+                    } 
+                // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $vendor->status = $approvalStatus;
             }
@@ -1205,6 +1250,49 @@ class DocumentApprovalController extends Controller
                  if ($revisionNumber == 0) {
                     $customer->status = ConstantHelper::ACTIVE;
                  }
+                    // ** START: Call createPartyLedger if conditions are met **
+                    $createCustomerLedger = $request->input('create_ledger') && $request->input('create_ledger') == 1;
+                    $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
+                    $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
+                    $ledgerGroupId = $request->input('ledger_group_id');
+              
+                    if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
+                        try {
+                            $result = Helper::createPartyLedger(
+                                'customer',
+                                $hiddenLedgerCustomerName,
+                                $hiddenLedgerCustomerCode,
+                                $ledgerGroupId
+                            );
+                        
+                            if (!$result['success']) {
+                                Log::error('Error creating party ledger: ' . $result['message']);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' => $result['message'], 
+                                    'data' => $customer,
+                                ], 500);
+                            }
+                            $ledgerId = $result['data']['ledger_id'] ?? null;
+                            $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+                            $customer->ledger_id = $ledgerId;
+                            $customer->ledger_group_id = $ledgerGroupId;
+                            $customer->ledger_group_id = $ledgerGroupId;
+                            $customer->create_ledger = 0;
+                        } catch (Exception $e) {
+                            Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            DB::rollBack();
+                            return response()->json([
+                                'status' => false,
+                                'message' =>  $e->getMessage(), 
+                                'data' => $customer,
+                            ], 500);
+                        }
+                    } 
+                // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $customer->status = $approvalStatus;
             }

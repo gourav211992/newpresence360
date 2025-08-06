@@ -206,17 +206,13 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 $itemInitials = strtoupper(substr($itemName, 0, 3));
                 $subTypeRaw = $row['sub_type'] ?? null;
                 $subType = $subTypeRaw ? explode(',', $subTypeRaw) : [];
-
+                if (empty($subType)) {
+                    $errorMessages[] = "Sub Type is required.";
+                    $skipRow = true;
+                }
                 if ($itemCodeType === 'Manual') {
                     $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
                 } elseif ($itemCodeType === 'Auto') {
-
-                    if (empty($subType)) {
-                        $errorMessages[] = "Sub Type is required for Item Code generation.";
-                        Log::error("Sub Type is missing for Item Code generation.", ['row' => $row]);
-                        $skipRow = true;
-                    }
-
                     try {
                         if (!$skipRow) { 
                             $subCategory = $this->service->getSubCategory($row['group']);

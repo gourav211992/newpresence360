@@ -10,6 +10,8 @@ use App\Models\Organization;
 
 class DefaultGroupCompanyOrgScope implements Scope
 {
+
+
     public function apply(Builder $builder, Model $model)
     {
         // 🔒 Check model property flag (per model class)
@@ -22,20 +24,21 @@ class DefaultGroupCompanyOrgScope implements Scope
         }
         
         // Apply default scope
+        $tableName = $model->getTable();
         $authUser = Helper::getAuthenticatedUser();
         $authOrganization = Organization::find($authUser -> organization_id);
         $companyId = $authOrganization ?-> company_id;
         $groupId = $authOrganization ?-> group_id;
         $organizationId = $authOrganization ?-> id;
-        $builder->where('group_id', $groupId) // Always compare group ID 
-        ->where(function ($q) use ($companyId) {
+        $builder->where($tableName.'.group_id', $groupId) // Always compare group ID 
+        ->where(function ($q) use ($companyId, $tableName) {
             // Only compare company_id if it is not null in the database
-            $q->whereNull('company_id')
-              ->orWhere('company_id', $companyId);
-        }) ->where(function ($q) use ($organizationId) {
+            $q->whereNull($tableName.'.company_id')
+              ->orWhere($tableName.'.company_id', $companyId);
+        }) ->where(function ($q) use ($organizationId, $tableName) {
             // Only compare organization_id if it is not null in the database
-            $q->whereNull('organization_id')
-              ->orWhere('organization_id', $organizationId);
+            $q->whereNull($tableName.'.organization_id')
+              ->orWhere($tableName.'.organization_id', $organizationId);
         });
     }
 }

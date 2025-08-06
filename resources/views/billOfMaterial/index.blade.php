@@ -9,6 +9,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
    $routeAlias = 'quotation-bom';
 }
 @endphp
+
 <div class="app-content content ">
    <div class="content-overlay"></div>
    <div class="header-navbar-shadow"></div>
@@ -27,8 +28,10 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                <a href="{{url($routeAlias)}}/import" class="btn btn-warning btn-sm mb-50 mb-sm-0">
                   <i data-feather="upload"></i>Import
               </a> 
+            
                <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{url($routeAlias)}}/create"><i data-feather="plus-circle"></i> Add New</a> 
                @endif
+               
                <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'bom']) }}"><i data-feather="bar-chart-2"></i>Report</a>
             </div>
          </div>
@@ -190,7 +193,7 @@ $(document).ready(function() {
     };
     var exportColumns = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]; // Columns to export
     initializeDataTable('.datatables-basic', 
-        "{{ route('bill.of.material.index') }}"+'?type='+'{{$servicesBooks['services'][0]?->alias}}', 
+        "{{ route('bill.of.material.index') }}"+'?type='+'{{@$servicesBooks['services'][0]?->alias}}', 
         columns,
         filters,  // Apply filters
         'Bill Of Material',  // Export title

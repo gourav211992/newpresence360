@@ -752,10 +752,21 @@
                              <label class="form-label">Remarks {{-- <span class="text-danger">*</span> --}}</label>
                              <textarea name="remarks" class="form-control indian-number "></textarea>
                           </div>
-                          <div class="mb-1">
-                             <label class="form-label">Upload Document</label>
-                             <input type="file" id="ap_file" name="attachment[]" multiple class="form-control indian-number " />
-                          </div>
+                            <div class="row">
+                    <div class = "col-md-8">
+                        <div class="mb-1">
+                            <label class="form-label">Upload Document</label>
+                            <input type="file" id="ap_file" name = "attachment[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                        </div>
+                    </div>
+                    <div class = "col-md-4" style = "margin-top:19px;">
+                        <div class = "row" id = "approval_files_preview">
+
+                        </div>
+                    </div>
+                  </div>
+                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
+                  
                        </div>
                     </div>
                  </div>
@@ -791,6 +802,7 @@
 
 
 @section('scripts')
+ <script src="{{asset('assets/js/fileshandler.js')}}"></script>
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -1880,30 +1892,38 @@
 
         $('#ap_file').prop('disabled', false).prop('readonly', false);
         $('#revisionNumber').prop('disabled', false).prop('readonly', false);
+         const amendmentRoute = "{{ route('finance.fixed-asset.split.edit',$data->id) }}";
+       
         
-$(document).on('click', '#amendmentSubmit', (e) => {
-let actionUrl = "{{ route('finance.fixed-asset.split.amendment', $data->id) }}";
-fetch(actionUrl).then(response => {
-    return response.json().then(data => {
-        if (data.status == 200) {
-            Swal.fire({
-                    title: 'Success!',
-                    text: data.message,
-                    icon: 'success'
-                }).then(() => {
-                    window.location.href = "{{ route('finance.fixed-asset.split.edit', $data->id) }}";
-                });
-   
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message,
-                icon: 'error'
-            });
-            $('#amendmentconfirm').modal('hide');
-        }
-    });
-});
+        $(document).on('click', '#amendmentSubmit', (e) => {
+            // let actionUrl = "{{ route('finance.fixed-asset.split.amendment', $data->id) }}";
+            // fetch(actionUrl).then(response => {
+            //     return response.json().then(data => {
+            //         if (data.status == 200) {
+            //             Swal.fire({
+            //                     title: 'Success!',
+            //                     text: data.message,
+            //                     icon: 'success'
+            //                 }).then(() => {
+            //                     window.location.href = "{{ route('finance.fixed-asset.split.edit', $data->id) }}";
+            //                 });
+            
+            //         } else {
+            //             Swal.fire({
+            //                 title: 'Error!',
+            //                 text: data.message,
+            //                 icon: 'error'
+            //             });
+            //             $('#amendmentconfirm').modal('hide');
+            //         }
+            //     });
+            // });
+                e.preventDefault();
+                let url = new URL(amendmentRoute, window.location.origin); // full absolute URL
+                url.searchParams.set('amendment', 1);
+                window.location.href = url.toString(); // or window.location.replace(...)
+
+
 });
 // # Revision Number On Chage
 $(document).on('change', '#revisionNumber', (e) => {

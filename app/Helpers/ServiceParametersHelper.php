@@ -23,6 +23,7 @@ class ServiceParametersHelper
      * Parameters with all Applicable/ Possible Values -
      */
     const REFERENCE_FROM_SERVICE_PARAM = 'reference_from_service';
+    const SERVICE_ITEM_PARAM = 'service_item';
     const REFERENCE_FROM_SERIES_PARAM = 'reference_from_series';
     const BACK_DATE_ALLOW_PARAM = 'back_date_allowed';
     const BACK_DATE_ALLOW_PARAM_VALUES = ['yes', 'no'];
@@ -128,6 +129,7 @@ class ServiceParametersHelper
      */
     const SERVICE_PARAMETERS = [
         self::REFERENCE_FROM_SERVICE_PARAM => 'Reference From', //Applied
+        self::SERVICE_ITEM_PARAM => 'Service Item', //Applied
         self::REFERENCE_FROM_SERIES_PARAM => 'Reference Series', //Applied
         self::ON_ACCOUNT_REQUIRED_PARAM => 'On Account Required?', //Applied
         self::BACK_DATE_ALLOW_PARAM => 'Back Date Allowed?', //Applied
@@ -160,6 +162,7 @@ class ServiceParametersHelper
     ];
     const SERVICE_PARAMETERS_VALUES = [
         self::REFERENCE_FROM_SERVICE_PARAM => [], //Applied
+        self::SERVICE_ITEM_PARAM => [],//Applied
         self::REFERENCE_FROM_SERIES_PARAM => [], //Applied
         self::BACK_DATE_ALLOW_PARAM => self::BACK_DATE_ALLOW_PARAM_VALUES, //Applied
         self::FUTURE_DATE_ALLOW_PARAM => self::FUTURE_DATE_ALLOW_PARAM_VALUES, //Applied
@@ -231,6 +234,59 @@ class ServiceParametersHelper
         //     'is_multiple' => false,
         //     'service_level_visibility' => true
         // ]
+    ];
+
+
+     const TI_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::LR_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::LR_SERVICE_ALIAS], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+          [
+            "name" => self::SERVICE_ITEM_PARAM, 
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => false, 
+            'service_level_visibility' => false, 
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Service'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::TAX_REQUIRED_PARAM,
+            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ]
     ];
     const FIXED_ASSET_SERVICE_PARAMETERS = [
         [
@@ -2287,6 +2343,7 @@ class ServiceParametersHelper
         // ],
     ];
     const APPLICABLE_SERVICE_PARAMETERS = [
+        ConstantHelper::TI_SERVICE_ALIAS => self::TI_SERVICE_PARAMETERS,
         ConstantHelper::SO_SERVICE_ALIAS => self::SO_SERVICE_PARAMETERS,
         ConstantHelper::SQ_SERVICE_ALIAS => self::SQ_SERVICE_PARAMETERS,
         ConstantHelper::SR_SERVICE_ALIAS => self::SR_SERVICE_PARAMETERS,
@@ -2380,6 +2437,16 @@ class ServiceParametersHelper
                     'data' => $parameters
                 ];
             } else if ($parameterName === self::REFERENCE_FROM_SERIES_PARAM) {
+                $books = Book::withDefaultGroupCompanyOrg() -> whereIn('id', $bookParameter -> parameter_value) -> get();
+                foreach ($books as $service) {
+                    array_push($parameters, $service -> book_code);
+                }
+                return [
+                    'status' => true,
+                    'message' => 'Parameter found',
+                    'data' => $parameters
+                ];
+            }else if ($parameterName === self::SERVICE_ITEM_PARAM) {
                 $books = Book::withDefaultGroupCompanyOrg() -> whereIn('id', $bookParameter -> parameter_value) -> get();
                 foreach ($books as $service) {
                     array_push($parameters, $service -> book_code);
@@ -2726,10 +2793,12 @@ class ServiceParametersHelper
     /*Return the series/ book available for pulling -> Only those series which have not been referenced in any book parameter will come*/
     public static function getAvailableReferenceSeries(int $sourceServiceId, array $serviceIds, int $editBookId = 0, bool $pluck = false) : EloquentCollection|array
     {
+      
         //Get all bookIds according to service
         $bookIds =  Book::withDefaultGroupCompanyOrg() -> whereHas('org_service', function ($serviceQuery) use($serviceIds) {
             $serviceQuery -> whereIn('service_id', $serviceIds);
         }) -> get() -> pluck('id') -> toArray();
+         
         $sourceService = Service::find($sourceServiceId);
         $nonReferencedBookIds = [];
         $invoiceServices = [

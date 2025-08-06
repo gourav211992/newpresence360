@@ -57,6 +57,7 @@ use Carbon\Carbon;
 use stdClass;
 use Auth;
 use Exception;
+use Log;
 use Illuminate\Support\Facades\Hash;
 
 
@@ -218,6 +219,11 @@ class VendorController extends Controller
 
         public function create()
         {
+            $urlSegmentAlias = request()->segments()[0];
+            $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+            if (count($servicesBooks['services']) == 0) {
+                return redirect()->route('/');
+            }
             $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
             $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')->get();
             $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
@@ -376,6 +382,51 @@ class VendorController extends Controller
                      if ($revisionNumber == 0) {
                          $vendor->status = ConstantHelper::ACTIVE;
                       }
+                       // ** START: Call createPartyLedger if conditions are met **
+                        $shouldCreateLedger = isset($validatedData['create_ledger']) && $validatedData['create_ledger'] == 1;
+                        $hiddenLedgerVendorName = $validatedData['hidden_ledger_vendor_name'];
+                        $hiddenLedgerVendorCode = $validatedData['hidden_ledger_vendor_code'];
+                        $ledgerId = $validatedData['ledger_id'] ?? null; 
+                        $ledgerGroupId = $request->ledger_group_id?? null; 
+                        if ($shouldCreateLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode) && !empty($ledgerGroupId)) {
+                            try {
+                                $result = Helper::createPartyLedger(
+                                    'vendor',
+                                    $hiddenLedgerVendorName,
+                                    $hiddenLedgerVendorCode,
+                                    $ledgerGroupId 
+                                );
+                              
+                                if (!$result['success']) {
+                                    Log::error('Error creating party ledger: ' . $result['message']);
+                                    DB::rollBack();
+                                    return response()->json([
+                                        'status' => false,
+                                        'message' => $result['message'], 
+                                        'data' => $vendor,
+                                    ], 500);
+                                }
+                                $ledgerId = $result['data']['ledger_id'] ?? null;
+                                $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+
+
+                                $vendor->ledger_id = $ledgerId;
+                                $vendor->ledger_group_id = $ledgerGroupId;
+                                $vendor->create_ledger = 0;
+                            } catch (Exception $e) {
+                                Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' =>  $e->getMessage(), 
+                                    'data' => $vendor,
+                                ], 500);
+                            }
+                        } 
+                        // ** END: Call createPartyLedger if conditions are met **
+
                 } else {
                     $vendor->status = $document_status;
                 }
@@ -497,7 +548,7 @@ class VendorController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to create record',
-                    'error' => $e->getMessage() . "-" . $e->getFile() . "-" . $e -> getLine(),
+                    'error' => $e->getMessage(),
                 ], 500);
             }
         }
@@ -509,6 +560,11 @@ class VendorController extends Controller
 
         public function edit(Request $request,$id)
         {
+            $urlSegmentAlias = request()->segments()[0];
+            $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+            if (count($servicesBooks['services']) == 0) {
+                return redirect()->route('/');
+            }
             if ($request->has('revisionNumber')) {
                 $vendor = VendorHistory::where('source_id', $id)
                     ->where('revision_number', $request->revisionNumber)
@@ -544,9 +600,27 @@ class VendorController extends Controller
             ->where('user_type',ConstantHelper::IAM_VENDOR_USER)
             ->get();
             $books = Helper::getBookSeries($serviceAlias)->get();
-            $ledgerId = $vendor->ledger_id;
-            $ledger = Ledger::find($ledgerId);
-            $ledgerGroups = $ledger ? $ledger->groups() : collect(); 
+            $ledgerGroups = collect();
+            $ledgerId = $vendor->ledger_id ?? null;
+            $createLedger = $request->input('create_ledger');
+            if ($ledgerId) {
+                $ledger = Ledger::find($ledgerId);
+                if ($ledger) {
+                    $ledgerGroups = $ledger->groups();
+                }
+            }
+            if ($ledgerGroups->isEmpty() && $createLedger == 1) {
+                $ledgerGroups = Group::where('status', 1)->get(); 
+            }
+
+            if ($ledgerGroups->isEmpty()) {
+                $defaultGroup = Group::where('name', 'Account Payable')->first();
+
+                if ($defaultGroup) {
+                    $lastLevelGroupIds = $defaultGroup->getAllLastLevelGroupIds();
+                    $ledgerGroups = Group::whereIn('id', $lastLevelGroupIds)->get();
+                }
+            }
             $parentUrl = ConstantHelper::VENDOR_SERVICE_ALIAS;
             $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
             $organization = $user->organization;
@@ -713,7 +787,6 @@ class VendorController extends Controller
 
                 Helper::documentAmendment($revisionData, $vendor->id);
             }
-
              $vendor->update($validatedData);
            // Document approval logic for vendor
             if ($request->input('current_status') === ConstantHelper::SUBMITTED) {
@@ -740,6 +813,48 @@ class VendorController extends Controller
                         } else {
                             $vendor->status = ConstantHelper::ACTIVE;
                         }
+                        // ** START: Call createPartyLedger if conditions are met **
+                        $shouldCreateLedger = isset($validatedData['create_ledger']) && $validatedData['create_ledger'] == 1;
+                        $hiddenLedgerVendorName = $validatedData['hidden_ledger_vendor_name'];
+                        $hiddenLedgerVendorCode = $validatedData['hidden_ledger_vendor_code'];
+                        $ledgerId = $validatedData['ledger_id'] ?? null; 
+                        $ledgerGroupId =$request->ledger_group_id ?? null; 
+                        if ($shouldCreateLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode ) && !empty($ledgerGroupId )) {
+                            try {
+                                $result = Helper::createPartyLedger(
+                                    'vendor',
+                                    $hiddenLedgerVendorName,
+                                    $hiddenLedgerVendorCode,
+                                    $ledgerGroupId
+                                );
+                                if (!$result['success']) {
+                                    Log::error('Error creating party ledger: ' . $result['message']);
+                                    DB::rollBack();
+                                    return response()->json([
+                                        'status' => false,
+                                        'message' => $result['message'], 
+                                        'data' => $vendor,
+                                    ], 500);
+                                }
+                                $ledgerId = $result['data']['ledger_id'] ?? null;
+                                $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+
+                                $vendor->ledger_id = $ledgerId;
+                                $vendor->ledger_group_id = $ledgerGroupId;
+                                $vendor->create_ledger = 0;
+                            } catch (Exception $e) {
+                                Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' =>  $e->getMessage(), 
+                                    'data' => $vendor,
+                                ], 500);
+                            }
+                        } 
+                        // ** END: Call createPartyLedger if conditions are met **
                     } else {
                         $vendor->status = $statusAfterApproval;
                     }
@@ -753,6 +868,48 @@ class VendorController extends Controller
                          if ($revisionNumber == 0) {
                             $vendor->status = ConstantHelper::ACTIVE;
                          }
+                           // ** START: Call createPartyLedger if conditions are met **
+                        $shouldCreateLedger = isset($validatedData['create_ledger']) && $validatedData['create_ledger'] == 1;
+                        $hiddenLedgerVendorName = $validatedData['hidden_ledger_vendor_name'];
+                        $hiddenLedgerVendorCode = $validatedData['hidden_ledger_vendor_code'];
+                        $ledgerId = $validatedData['ledger_id'] ?? null; 
+                        $ledgerGroupId = $validatedData['ledger_group_id'] ?? null; 
+                        if ($shouldCreateLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode)) {
+                            try {
+                                $result = Helper::createPartyLedger(
+                                    'vendor',
+                                    $hiddenLedgerVendorName,
+                                    $hiddenLedgerVendorCode
+                                );
+                          
+                                if (!$result['success']) {
+                                    Log::error('Error creating party ledger: ' . $result['message']);
+                                    DB::rollBack();
+                                    return response()->json([
+                                        'status' => false,
+                                        'message' => $result['message'], 
+                                        'data' => $vendor,
+                                    ], 500);
+                                }
+                                $ledgerId = $result['data']['id'] ?? null;
+                                $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+
+                                $vendor->ledger_id = $ledgerId;
+                                $vendor->ledger_group_id = $ledgerGroupId;
+                                $vendor->create_ledger = 0;
+                            } catch (Exception $e) {
+                                Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' =>  $e->getMessage(), 
+                                    'data' => $vendor,
+                                ], 500);
+                            }
+                        } 
+                        // ** END: Call createPartyLedger if conditions are met **
                     } else {
                         $vendor->status = $document_status;
                     }
@@ -903,7 +1060,7 @@ class VendorController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => 'Failed to update record',
-                    'error' => $e->getMessage() . "-" . $e->getFile() . "-" . $e -> getLine(),
+                    'error' => $e->getMessage(),
                 ], 500);
             }
         }
@@ -943,6 +1100,11 @@ class VendorController extends Controller
     
         public function showImportForm()
         {
+            $urlSegmentAlias = request()->segments()[0];
+            $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+            if (count($servicesBooks['services']) == 0) {
+                return redirect()->route('/');
+            }
             return view('procurement.vendor.import'); 
         }
 
@@ -1282,5 +1444,58 @@ class VendorController extends Controller
         
             return response()->json($response);
         }
-     
+
+       public function getLedgerGroupsByType(Request $request, $ledgerId = null)
+        {
+            $type = strtolower($request->query('type'));
+
+           if (!in_array($type, ['vendor', 'customer'])) {
+                return response()->json(['error' => 'Invalid type provided.'], 400);
+            }
+
+            if ($ledgerId) {
+                $ledger = Ledger::find($ledgerId);
+                if ($ledger) {
+                    $groups = $ledger->group();
+
+                    if ($groups instanceof \Illuminate\Database\Eloquent\Collection) {
+                        $groupItems = $groups->map(fn($group) => [
+                            'id' => $group->id,
+                            'name' => $group->name
+                        ]);
+                    } elseif ($groups) {
+                        $groupItems = collect([
+                            ['id' => $groups->id, 'name' => $groups->name]
+                        ]);
+                    } else {
+                        $groupItems = collect(); 
+                    }
+
+                    return response()->json($groupItems->values());
+                }
+            }
+
+            $defaultGroupName = $type === 'vendor' ? 'Account Payable' : 'Account Receivable';
+
+            $parentGroup = Group::with(['children'])
+                ->where('name', $defaultGroupName)
+                ->first();
+
+            if (!$parentGroup) {
+                return response()->json(['error' => 'Group not found.'], 404);
+            }
+            $lastLevelGroupIds = $parentGroup->getAllLastLevelGroupIds();
+
+             $groups = Group::whereIn('id', $lastLevelGroupIds)
+                  ->where('status', 'active')
+                  ->get();
+
+            $groupItems = $groups->map(fn($group) => [
+                'id' => $group->id,
+                'name' => $group->name
+            ]);
+
+            return response()->json($groupItems->values());
+        }
+
 }

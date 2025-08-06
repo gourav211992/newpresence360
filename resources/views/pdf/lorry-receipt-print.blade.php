@@ -35,31 +35,33 @@
                           </table>
                     </td>
                     <td>
-                       <img src="{{ @$logoPath}}" height="60px" alt="">
+                         @if (isset($orgLogo) && $orgLogo)
+                    <img src="{!! $orgLogo !!}" alt="" height="50px" />
+                    @endif
                     </td>
                 </tr>
             </table>
     
             <table style="width: 100%; font-size: 13px; margin-bottom: 10px; padding-top: 10px;" cellspacing="0" cellpadding="0">
-                <tr>
+                <!-- <tr>
                     <td style=" padding: 5px 5px; font-weight: bold;">
                         Trip No. 
                    </td>
                     <td style=" padding: 5px 5px;">
                          {{ @$lorryReceipt->trip_no ?? '' }}
                     </td>
-                </tr>
+                </tr> -->
     
                  <tr>
                     <td style=" padding: 5px 5px; font-weight: bold;">
-                        G.R.N No.
+                        LR No.
                    </td>
                     <td style=" padding: 5px 5px;">
                        {{ @$lorryReceipt->document_number }}
                     </td>
     
                     <td style=" padding: 5px 5px; font-weight: bold;">
-                        Lorry No.
+                        Vehicle No.
                     </td>
                     <td style=" padding: 5px 5px;">
                         {{ @$lorryReceipt->vehicle->lorry_no ?? '' }}
@@ -181,10 +183,10 @@
                            
                             @if($lorryReceipt->billing_type == 'To Pay')
                             {{ @$lorryReceipt->billing_type }}<br>
-                            <span>(payment will pay by consignee)</span>
+                            <span>(To be paid by Consignee)</span>
                             @else
                            {{ @$lorryReceipt->billing_type }}<br>
-                            <span>(payment will pay by consignor)</span>
+                            <span>(To Be paid By Consignor)</span>
                             @endif
                         </td>
                     </tr>
@@ -198,7 +200,7 @@
                     </td>
                     <td style="padding: 15px 5px; text-align: right; border-bottom: 1px solid #d6d6d6;">
                         <span style="font-weight: bold;">Receipt for:</span> Consignee 
-                        <p style="text-transform: uppercase; font-weight: bold; margin: 0px; padding-top: 5px;">For Gulaty Roadlines </p>
+                        <!-- <p style="text-transform: uppercase; font-weight: bold; margin: 0px; padding-top: 5px;">For Gulaty Roadlines </p> -->
                     </td>
                 </tr>
                 <tr>
@@ -245,8 +247,8 @@
             <td style="padding-top: 5px; vertical-align: top; font-size: 11px;">
                 <div style="margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
                     <p style="margin: 0;"><strong>{{ strtoupper($location->route->name ?? 'N/A') }}</strong></p>
-                    <p style="margin: 0;"><strong>Pickup Freight:</strong> Rs. {{ $location->amount ?? '0' }}/-</p>
-                    <p style="margin: 0;"><strong>GRN Charges:</strong> Rs. {{ $lorryReceipt->lr_charges ?? '0' }}/-</p>
+                    <p style="margin: 0;"><strong>{{ $location->type ?? ' ' }} Freight:</strong> Rs. {{ $location->amount ?? '0' }}/-</p>
+                    <p style="margin: 0;"><strong>No. of Articles:</strong> Rs. {{ $location->no_of_articles ?? '0' }}/-</p>
                 </div>
             </td>
         @endforeach
@@ -266,7 +268,7 @@
                         <span style="font-weight: bold;">Freight from</span> {{ @$lorryReceipt->source->name ?? '' }} <span style="font-weight: bold;">to</span> {{ @$lorryReceipt->destination->name ?? '' }}:Rs {{ @$lorryReceipt->freight_charges ?? '' }}
                     </td>
                       <td colspan="2" style="padding: 15px 5px; border-bottom: 1px solid #d6d6d6;">
-                          <span style="font-weight: bold;">GRN charges</span>:Rs {{ @$lorryReceipt->lr_charges ?? '' }}
+                          <span style="font-weight: bold;">LR charges</span>:Rs {{ @$lorryReceipt->lr_charges ?? '' }}
                       </td>
                       <td style="padding: 15px 5px; border-bottom: 1px solid #d6d6d6;">
                           <span style="font-weight: bold;">Total Freight</span>:Rs {{ number_format((@$lorryReceipt->lr_charges ?? 0) + (@$lorryReceipt->freight_charges ?? 0), 2) }}
@@ -283,7 +285,7 @@
                           <span style="font-weight: bold;">Signature:</span>
                       </td>
                 </tr>
-                <tr>
+                <!-- <tr>
                     <td colspan="5" style="padding: 15px 5px; text-align: center; font-weight: bold;">
                         The Gulati  Group...Velocity Redefined 
                         <p style="margin: 0px; padding-top: 5px;">Visit us at:www.gulatiroadways.com</p>
@@ -294,7 +296,7 @@
                     <td style="padding-top: 5px;">
                         This is copy Receipt
                     </td>
-                </tr>
+                </tr> -->
             </table>
         </div>
        

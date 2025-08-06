@@ -607,6 +607,10 @@ function resetParametersDependentElements(reset = true)
     if (selectionSectionLease) {
         selectionSectionLease.style.display = "none";
     }
+     var selectionSectionLorryReceipt = document.getElementById('lorry_receipt_selection');
+    if (selectionSectionLorryReceipt) {
+        selectionSectionLorryReceipt.style.display = "none";
+    }
     var selectionSectionPlist = document.getElementById('packing_list_selection');
     if (selectionSectionPlist) {
         selectionSectionPlist.style.display = "none";
@@ -924,6 +928,17 @@ function implementBookParameters(paramData)
                         selectionSectionElement.style.display = "";
                     }
                     var selectionPopupElement = document.getElementById('land_lease_selection');
+                    if (selectionPopupElement)
+                    {
+                        selectionPopupElement.style.display = ""
+                    }
+                }
+                 if (selectSingleVal == 'lr') {
+                    var selectionSectionElement = document.getElementById('selection_section');
+                    if (selectionSectionElement) {
+                        selectionSectionElement.style.display = "";
+                    }
+                    var selectionPopupElement = document.getElementById('lorry_receipt_selection');
                     if (selectionPopupElement)
                     {
                         selectionPopupElement.style.display = ""
@@ -1570,7 +1585,15 @@ function onItemClick(itemRowId)
                 detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')
             },
             success: function(data) {
-               
+                if (data.inv_qty && data.inv_uom) {
+                    let inventoryDocElement = document.getElementById('current_item_inventory_details');
+                    if (inventoryDocElement) {
+                        inventoryDocElement.innerHTML = `
+                            <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: ${data.inv_uom}</span>
+                            <span class="badge rounded-pill badge-light-primary"><strong>Qty in ${data.inv_uom}</strong>: ${data.inv_qty}</span>
+                        `;
+                    }
+                }
                 if (data?.item && data?.item?.category && data?.item?.sub_category) {
                     document.getElementById('current_item_cat_hsn').innerHTML = `
                     <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>: <span id = "item_category">${ data?.item?.category?.name}</span></span>
@@ -1646,6 +1669,7 @@ setAttributesUI();
 });
 var currentSelectedItemIndex = null ;
 function setAttributesUI(paramIndex = null) {
+    let editDisable = (order && order?.document_status != 'draft');
     let currentItemIndex = null;
     if (paramIndex != null || paramIndex != undefined) {
         currentItemIndex = paramIndex;
@@ -1666,7 +1690,7 @@ function setAttributesUI(paramIndex = null) {
     if (attributesArray.length == 0) {
         return;
     }
-    let attributeUI = `<div data-bs-toggle="modal" id="attribute_button_${currentItemIndex}" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
+    let attributeUI = `<div data-bs-toggle="modal" id="attribute_button_${currentItemIndex}" onclick = "setItemAttributes('items_dropdown_${currentItemIndex}', ${currentItemIndex}, ${editDisable});" data-bs-target="#attribute" style = "white-space:nowrap; cursor:pointer;">`;
     let maxCharLimit = 15;
     let attrTotalChar = 0;
     let total_selected = 0;

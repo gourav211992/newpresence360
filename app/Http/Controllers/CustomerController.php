@@ -45,6 +45,7 @@ use Carbon\Carbon;
 use stdClass;
 use Exception;
 use Auth;
+use Log;
 
 class CustomerController extends Controller
 {
@@ -375,6 +376,49 @@ class CustomerController extends Controller
                 if ($revisionNumber == 0) {
                   $customer->status = ConstantHelper::ACTIVE;
                 }
+                  // ** START: Call createPartyLedger if conditions are met **
+                    $createCustomerLedger = $request->input('create_ledger') && $request->input('create_ledger') == 1;
+                    $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
+                    $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
+                    $ledgerGroupId = $request->input('ledger_group_id');
+              
+                    if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
+                        try {
+                            $result = Helper::createPartyLedger(
+                                'customer',
+                                $hiddenLedgerCustomerName,
+                                $hiddenLedgerCustomerCode,
+                                $ledgerGroupId
+                            );
+                        
+                            if (!$result['success']) {
+                                Log::error('Error creating party ledger: ' . $result['message']);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' => $result['message'], 
+                                    'data' => $customer,
+                                ], 500);
+                            }
+                            $ledgerId = $result['data']['ledger_id'] ?? null;
+                            $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+                            $customer->ledger_id = $ledgerId;
+                            $customer->ledger_group_id = $ledgerGroupId;
+                            $customer->ledger_group_id = $ledgerGroupId;
+                            $customer->create_ledger = 0;
+                        } catch (Exception $e) {
+                            Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                            DB::rollBack();
+                            return response()->json([
+                                'status' => false,
+                                'message' =>  $e->getMessage(), 
+                                'data' => $customer,
+                            ], 500);
+                        }
+                    } 
+                // ** END: Call createPartyLedger if conditions are met **
             } else {
                 $customer->status = $document_status;
             }
@@ -492,9 +536,27 @@ class CustomerController extends Controller
         $customerTypes = ConstantHelper::CUSTOMER_TYPES;
         $addressTypes = ConstantHelper::ADDRESS_TYPES;
         $countries = Country::where('status', 'active')->get();
-        $ledgerId = $customer->ledger_id;
-        $ledger = Ledger::find($ledgerId);
-        $ledgerGroups = $ledger ? $ledger->groups() : collect(); 
+        $ledgerGroups = collect();
+        $ledgerId = $customer->ledger_id ?? null;
+        $createLedger = $request->input('create_ledger');
+        if ($ledgerId) {
+            $ledger = Ledger::find($ledgerId);
+            if ($ledger) {
+                $ledgerGroups = $ledger->groups();
+            }
+        }
+        if ($ledgerGroups->isEmpty() && $createLedger == 1) {
+            $ledgerGroups = Group::where('status', 1)->get(); 
+        }
+
+        if ($ledgerGroups->isEmpty()) {
+            $defaultGroup = Group::where('name', 'Account Payable')->first();
+
+            if ($defaultGroup) {
+                $lastLevelGroupIds = $defaultGroup->getAllLastLevelGroupIds();
+                $ledgerGroups = Group::whereIn('id', $lastLevelGroupIds)->get();
+            }
+        }
         $parentUrl = ConstantHelper::CUSTOMER_SERVICE_ALIAS;
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         $user = Helper::getAuthenticatedUser();
@@ -680,6 +742,49 @@ class CustomerController extends Controller
                     } else {
                         $customer->status = ConstantHelper::ACTIVE;
                     }
+                     // ** START: Call createPartyLedger if conditions are met **
+                        $createCustomerLedger = $request->input('create_ledger') && $request->input('create_ledger') == 1;
+                        $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
+                        $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
+                        $ledgerGroupId = $request->input('ledger_group_id');
+                
+                        if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
+                            try {
+                                $result = Helper::createPartyLedger(
+                                    'customer',
+                                    $hiddenLedgerCustomerName,
+                                    $hiddenLedgerCustomerCode,
+                                    $ledgerGroupId
+                                );
+                            
+                                if (!$result['success']) {
+                                    Log::error('Error creating party ledger: ' . $result['message']);
+                                    DB::rollBack();
+                                    return response()->json([
+                                        'status' => false,
+                                        'message' => $result['message'], 
+                                        'data' => $customer,
+                                    ], 500);
+                                }
+                                $ledgerId = $result['data']['ledger_id'] ?? null;
+                                $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+                                $customer->ledger_id = $ledgerId;
+                                $customer->ledger_group_id = $ledgerGroupId;
+                                $customer->ledger_group_id = $ledgerGroupId;
+                                $customer->create_ledger = 0;
+                            } catch (Exception $e) {
+                                Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' =>  $e->getMessage(), 
+                                    'data' => $customer,
+                                ], 500);
+                            }
+                        } 
+                    // ** END: Call createPartyLedger if conditions are met **
                 } else {
                     $customer->status = $statusAfterApproval;
                 }
@@ -694,6 +799,49 @@ class CustomerController extends Controller
                      if ($revisionNumber == 0) {
                           $customer->status = ConstantHelper::ACTIVE;
                        }
+                          // ** START: Call createPartyLedger if conditions are met **
+                        $createCustomerLedger = $request->input('create_ledger') && $request->input('create_ledger') == 1;
+                        $hiddenLedgerCustomerName = $request->input('hidden_ledger_customer_name');
+                        $hiddenLedgerCustomerCode = $request->input('hidden_ledger_customer_code');
+                        $ledgerGroupId = $request->input('ledger_group_id');
+                
+                        if ($createCustomerLedger && !empty($hiddenLedgerCustomerName) && !empty($hiddenLedgerCustomerCode) && !empty($ledgerGroupId)) {
+                            try {
+                                $result = Helper::createPartyLedger(
+                                    'customer',
+                                    $hiddenLedgerCustomerName,
+                                    $hiddenLedgerCustomerCode,
+                                    $ledgerGroupId
+                                );
+                            
+                                if (!$result['success']) {
+                                    Log::error('Error creating party ledger: ' . $result['message']);
+                                    DB::rollBack();
+                                    return response()->json([
+                                        'status' => false,
+                                        'message' => $result['message'], 
+                                        'data' => $customer,
+                                    ], 500);
+                                }
+                                $ledgerId = $result['data']['ledger_id'] ?? null;
+                                $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
+                                $customer->ledger_id = $ledgerId;
+                                $customer->ledger_group_id = $ledgerGroupId;
+                                $customer->ledger_group_id = $ledgerGroupId;
+                                $customer->create_ledger = 0;
+                            } catch (Exception $e) {
+                                Log::error('Exception creating party ledger: ' . $e->getMessage(), [
+                                    'trace' => $e->getTraceAsString()
+                                ]);
+                                DB::rollBack();
+                                return response()->json([
+                                    'status' => false,
+                                    'message' =>  $e->getMessage(), 
+                                    'data' => $customer,
+                                ], 500);
+                            }
+                        } 
+                    // ** END: Call createPartyLedger if conditions are met **
                 } else {
                     $customer->status = $document_status;
                 }

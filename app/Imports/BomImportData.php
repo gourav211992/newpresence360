@@ -58,7 +58,7 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wit
                     $errors = [];
                     $productItem = Item::where('item_code', @$row['product_code'])->first();
                     if(!$productItem) {
-                        $errors[] = "Product not found: {$row['product_code']}";
+                        $errors[] = "Product not found: ".@$row['product_code'];
                     }
                     $productAttributes = [];
                     # Need to valid item attribute length
@@ -80,8 +80,8 @@ class BomImportData implements ToCollection, WithHeadingRow, SkipsEmptyRows, Wit
                                 foreach($productItem?->itemAttributes as $itemAttrOne) {
                                     $productAttributes[] = [
                                         'item_attribute_id' => $itemAttrOne?->id,
-                                        'attribute_name_id' => $itemAttrOne?->attribute_group_id,
-                                        'attribute_value_id' => intval($itemAttrOne->attribute_id[0]) ?? 0,
+                                        'attribute_name_id' => @$itemAttrOne?->attribute_group_id,
+                                        'attribute_value_id' => intval(@$itemAttrOne->attribute_id[0]) ?? 0,
                                     ];
                                 }
                             }

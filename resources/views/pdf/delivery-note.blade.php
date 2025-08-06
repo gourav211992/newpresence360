@@ -305,54 +305,55 @@
                 $totalTaxValue = 0.00;
                 $total_bundle = 0;
                 $total_qty = 0;
+                $taxableValue = 0.00;
+                $hsnGroups = [];
             @endphp
             @foreach($order->items as $key => $val)
-                @php
-                    $hsnGroups = [];
-                    $totalTaxPercentage = 0.00;
-                    if ($val->item && $val->item->hsn) {
-                        $hsnCode = $val->item->hsn->code;
-                        $teds = $val->tax_ted;
+               @php
+                $totalTaxPercentage = 0.00;
+                if ($val->item && $val->item->hsn) {
+                    $hsnCode = $val->item->hsn->code;
+                    $teds = $val->tax_ted;
+                    $taxPercentage = 0.00;
+                    foreach ($teds as $ted) {
+                        $taxPercentage += $ted->ted_percentage;
+                        $taxType = $ted->ted_name;
+                        $taxableValue = $ted -> assessment_amount;
+                        $taxTypeAmount = ($taxableValue * $ted->ted_percentage) / 100;
 
-                        $taxableValue = $val->order_qty * $val->rate;
+                        if (!isset($hsnGroups[$hsnCode])) {
+                            $hsnGroups[$hsnCode] = [
+                                'hsn_code' => $hsnCode,
+                                'taxable_rate' => $taxPercentage,
+                                'taxable_value' => 0.00,
+                                'tax_amount' => 0.00,
+                                'tax_group' => $ted->ted_group_code,
+                            ];
+                        }
 
-                        foreach ($teds as $ted) {
-                            $taxPercentage = $ted->ted_percentage;
-                            $taxType = $ted->ted_name;
-                            $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
+                        // Initialize tax type amount if not set
+                        if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
+                            $hsnGroups[$hsnCode][$taxType   . '_amount'] = 0.00;
+                        }
+                        $totalTaxPercentage += $taxPercentage;
+                        $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                    }
+                    $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                    $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;
 
-                            if (!isset($hsnGroups[$hsnCode])) {
-                                $hsnGroups[$hsnCode] = [
-                                    'hsn_code' => $hsnCode,
-                                    'taxable_rate' => 0.00,
-                                    'taxable_value' => 0.00,
-                                    'tax_amount' => 0.00,
-                                    'tax_group' => $ted->ted_group_code,
-                                ];
-                            }
+                }
 
-                            // Initialize tax type amount if not set
-                            if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
-                                $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.00;
-                            }
-                            $totalTaxPercentage += $taxPercentage;
-                            $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
-                            $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
-                            $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                // Now, calculate total tax_amount for each HSN group
+                foreach ($hsnGroups as &$group) {
+                    $taxAmount = 0.00;
+                    foreach ($group as $key => $value) {
+                        if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
+                            $taxAmount += (float)$value;
                         }
                     }
-
-                    // Now, calculate total tax_amount for each HSN group
-                    foreach ($hsnGroups as &$group) {
-                        $taxAmount = 0.00;
-                        foreach ($group as $key => $value) {
-                            if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
-                                $taxAmount += (float)$value;
-                            }
-                        }
-                        $group['tax_amount'] = $taxAmount;
-                    }
-                @endphp
+                    $group['tax_amount'] = $taxAmount;
+                }
+            @endphp
 
 
                 <tr>

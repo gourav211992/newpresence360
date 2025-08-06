@@ -51,6 +51,7 @@ class VendorRequest extends FormRequest
                         ->orWhereNull('organization_id');
                 });
             }
+            
         };
         return [
         # vendor book and supplier user
@@ -124,6 +125,10 @@ class VendorRequest extends FormRequest
             'organization_id' => 'nullable', 
             'ledger_id' => 'nullable|exists:erp_ledgers,id', 
             'ledger_group_id' => 'nullable|exists:erp_groups,id', 
+            'create_ledger' => 'nullable|boolean',
+            'credit_days_editable'=>'nullable|boolean',
+            'hidden_ledger_vendor_name' => 'nullable|string|max:255',
+            'hidden_ledger_vendor_code' => 'nullable|string|max:20',
             'related_party' => 'nullable|string|max:255',
             'contra_ledger_id' => 'nullable|exists:erp_ledgers,id',
             'reld_vendor_id' => 'nullable|exists:erp_vendors,id',
@@ -290,9 +295,9 @@ class VendorRequest extends FormRequest
             'display_name.string' => 'The display name must be a string.',
             'display_name.max' => 'The display name may not be greater than 255 characters.',
             
-            'company_name.required' => 'The company name is required.',
-            'company_name.string' => 'The company name must be a string.',
-            'company_name.max' => 'The company name may not be greater than 255 characters.',
+            'company_name.required' => 'The vendor name is required.',
+            'company_name.string' => 'The vendor name must be a string.',
+            'company_name.max' => 'The vendor name may not be greater than 255 characters.',
             
             // Optional Fields
             'category_id.string' => 'The category ID must be a string.',

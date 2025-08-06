@@ -58,30 +58,36 @@
     <script src="https://js.pusher.com/beams/1.0/push-notifications-cdn.js"></script>
 
     <script defer>
-        var userId = @json(\App\Helpers\Helper::getAuthenticatedUser()->id);
+        @if (session('error'))
+            Swal.fire({
+                title: 'Error!',
+                text: "<?=session('error')?>",
+                icon: 'error',
+            });
+        @endif
 
         Pusher.logToConsole = true; // For debugging, enable Pusher logs
 
         window.addEventListener('DOMContentLoaded', () => {
-    // Pass authenticated user ID from backend to JavaScript
-    var userId = @json(\App\Helpers\Helper::getAuthenticatedUser()->id);
-    var type = @json(get_class(\App\Helpers\Helper::getAuthenticatedUser()));
+        // Pass authenticated user ID from backend to JavaScript
+        var userId = @json(\App\Helpers\Helper::getAuthenticatedUser()->id);
+        var type = @json(get_class(\App\Helpers\Helper::getAuthenticatedUser()));
 
-    window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: '10c23c19df9643f9a945',  // Replace with your actual Pusher key
-    cluster: 'mt1',  // Replace with your actual Pusher cluster
-    encrypted: true
-});
+        window.Echo = new Echo({
+        broadcaster: 'pusher',
+        key: '10c23c19df9643f9a945',  // Replace with your actual Pusher key
+        cluster: 'mt1',  // Replace with your actual Pusher cluster
+        encrypted: true
+    });
 
     // Log Pusher connection state changes (optional for debugging)
     window.Echo.connector.pusher.connection.bind('state_change', (state) => {
-        console.log('Pusher connection state:', state);
+        // console.log('Pusher connection state:', state);
     });
 
      window.Echo.private(`user.${userId}`)
                 .notification((notification) => {
-                    console.log('Notification received:', notification);
+                    // console.log('Notification received:', notification);
 
                     // Prepare the notification HTML
                     let notificationHtml = `

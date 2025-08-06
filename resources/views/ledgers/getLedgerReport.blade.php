@@ -71,7 +71,7 @@
 												</div>
                                                 <div class="col-md-2 mb-2 cost_group">
 													<div class="mb-1 mb-sm-0">
-														<label class="form-label">Cost Group</label>
+														<label class="form-label">Cost Group <span class="text-danger">*</span></label>
 														<select class="form-select select2" id="cost_group_id">
 															<option value="" selected disabled>Select Cost Group</option>
 														</select>
@@ -87,7 +87,7 @@
 												</div>
 												<div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
-														<label class="form-label">Select Ledger</label>
+														<label class="form-label">Select Ledger <span class="text-danger">*</span></label>
 														<select class="form-select select2" id="ledger_id" required>
 															<option value="" disabled selected>Select Ledger</option>
 														</select>
@@ -95,7 +95,7 @@
 												</div>
                                                 <div class="col-md-2 mb-2">
 													<div class="mb-1 mb-sm-0">
-														<label class="form-label">Ledger Group</label>
+														<label class="form-label">Ledger Group <span class="text-danger">*</span></label>
 														<select class="form-select select2" id="ledger_group" required>
 														</select>
 													</div>
@@ -112,8 +112,8 @@
                                                 </div>
 
 												<div class="col-md-2 mb-2">
-													<label class="form-label" for="fp-range">Select Period</label>
-													<input type="text" id="fp-range" required class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" required/>
+													<label class="form-label" for="fp-range">Select Period <span class="text-danger">*</span></label>
+													<input type="text" id="fp-range" class="form-control flatpickr-range bg-white" placeholder="YYYY-MM-DD to YYYY-MM-DD" required/>
 												</div>
 												<div class="col-md-2">
 													<div class="mt-2">
@@ -459,7 +459,7 @@
             costCenter.prop('required', false);
         } else {
             $('.cost_center').show();
-            costCenter.prop('required', true);
+            //costCenter.prop('required', true);
             costCenter.append('<option value="">Select Cost Center</option>');
             filteredCenters.forEach(center => {
                 const isSelected = String(center.id) === String(@json(request('cost_center_id'))) ? 'selected' : '';
