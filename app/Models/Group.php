@@ -72,6 +72,19 @@ class Group extends Model
             });
     }
 
+    public function getAllLastLevelGroupIds(&$lastLevelIds = [])
+    {
+        if ($this->children->isEmpty()) {
+            $lastLevelIds[] = $this->id;
+        } else {
+            foreach ($this->children as $child) {
+                $child->getAllLastLevelGroupIds($lastLevelIds);
+            }
+        }
+
+        return $lastLevelIds;
+    }
+
 
 
     // Optionally, if you want to get all item details related to this group

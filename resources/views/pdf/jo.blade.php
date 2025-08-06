@@ -348,7 +348,7 @@
                     </td>
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
-                        {{ucfirst(@$val?->item?->uom?->name)}}
+                        {{ucfirst(@$val?->uom?->name)}}
                     </td>
 
                     <td
@@ -625,7 +625,7 @@
                         @endif
                     </td>
                     <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
-                        {{ ucfirst($val?->item?->uom?->name ?? '-') }}
+                        {{ ucfirst($val?->uom?->name ?? '-') }}
                     </td>
                 </tr>
                 @endforeach

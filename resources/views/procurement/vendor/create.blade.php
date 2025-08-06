@@ -574,12 +574,26 @@
                                                         </div>
                                                          <!--Start Financial -->
                                                         <div class="tab-pane" id="Financial">
+                                                             <div class="row align-items-center mb-1">
+                                                                    <div class="col-md-2">
+                                                                        <label class="form-label">Create Ledger?</label>
+                                                                    </div>
+                                                                    <div class="col-md-3">
+                                                                        <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                            <input type="hidden" name="create_ledger" value="0">  <!-- Hidden input MUST come first -->
+                                                                            <input type="checkbox" class="form-check-input" id="create_vendor_ledger" name="create_ledger"
+                                                                                value="1">
+                                                                            <label class="form-check-label" for="create_vendor_ledger">Yes</label>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+     
                                                                <div class="row align-items-center mb-1">
                                                                     <div class="col-md-2">
                                                                         <label for="ledger_name" class="form-label">Ledger</label>
                                                                     </div>
                                                                     <div class="col-md-3">
-                                                                        <input type="text" id="ledger_name" name="ledger_name" class="form-control ladger-autocomplete" placeholder="Type to search...">
+                                                                        <input type="text" id="ledger_name" name="ledger_name" class="form-control vendor-ladger-autocomplete" placeholder="Type to search...">
                                                                         <input type="hidden" id="ledger_id" name="ledger_id" class="ladger-id">
                                                                     </div>
                                                                 </div>
@@ -591,7 +605,6 @@
                                                                     <div class="col-md-3">
                                                                         <select id="ledger_group_name" name="ledger_group_id" class="form-control ledger-group-select">
                                                                         </select>
-                                                                    
                                                                     </div>
                                                                 </div>
 
@@ -623,9 +636,16 @@
                                                                     </div>  
                                                                     <div class="col-md-3"> 
                                                                         <input type="number" id="credit_days" name="credit_days" class="form-control numberonly" placeholder="Enter credit days" />
+                                                                       <input type="hidden" name="credit_days_editable" value="0">
+                                                                        <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                            <input type="checkbox" class="form-check-input" id="credit_days_allowed_checkbox" name="credit_days_editable" value="1">
+                                                                            <label class="form-check-label" for="credit_days_allowed_checkbox">Allowed to change</label>
+                                                                        </div>
                                                                     </div> 
                                                                 </div>
-
+                                                                <input type="hidden" id="hidden_ledger_vendor_name" name="hidden_ledger_vendor_name" value="">
+                                                                <input type="hidden" id="hidden_ledger_vendor_code" name="hidden_ledger_vendor_code" value="">
+                                                            
                                                                 <!-- <div class="row align-items-center mb-1">
                                                                     <div class="col-md-2">
                                                                         <label class="form-label">On Account Required?</label>
@@ -2021,6 +2041,182 @@ $(document).ready(function() {
             hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
         });
     });
-    //file-validation-end
+    function initializeAutocomplete(selector, options) {
+        const $input = $(selector);
+        const hiddenFieldSelector = options.hiddenFieldSelector();
+        const $ledgerGroupSelect = $(".ledger-group-select");
+        const $ledgerGroupId = $(".ledger-group-id");
+        const $createLedger = $('#create_vendor_ledger');
+        $input.autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: options.url,
+                    method: 'GET',
+                    data: {
+                        q: request.term,
+                        type: options.type
+                    },
+                   success: function(data) {
+                        let items = [];
+                        if (data.status === false || !Array.isArray(data.data) || data.data.length === 0) {
+                            items = [{
+                                label: data.message || 'No record found.',
+                                value: '',
+                                id: null,
+                                disabled: true
+                            }];
+                        } else {
+                            items = data.data.map(item => ({
+                                label: item[options.labelField],
+                                value: item[options.labelField],
+                                id: item.id,
+                                ...item
+                            }));
+                        }
+
+                        response(items);
+                    },
+                    error: function() {
+                        response([]);
+                    }
+                });
+            },
+            minLength: options.minLength || 0,
+            select: function(event, ui) {
+                if (ui.item && ui.item.id) {
+                    $(hiddenFieldSelector).val(ui.item.id);
+                    if (typeof options.onSelect === 'function') {
+                        options.onSelect(ui.item);
+                    }
+                }
+            },
+            change: function(event, ui) {
+                if (!ui.item) {
+                    $(hiddenFieldSelector).val('');
+                    $ledgerGroupSelect.empty();
+                    $ledgerGroupId.val('');
+                    $createLedger.prop('disabled', false);
+                }
+            },
+            search: function(event, ui) {
+                if (event.originalEvent && event.originalEvent.type === 'focus') {
+                    event.preventDefault();
+                }
+            }
+        }).focus(function() {
+            if (this.value === "") {
+                $(this).autocomplete("search", "");
+            }
+        }).on('input', function() {
+            if ($(this).val().trim() === '') {
+                $(hiddenFieldSelector).val('');
+                $ledgerGroupSelect.empty();
+                $ledgerGroupId.val('');
+                $createLedger.prop('checked', false);
+            }
+        });
+
+        if (typeof options.onInitialize === 'function') {
+            options.onInitialize();
+        }
+    }
+    function updateLedgerGroupDropdownWithType(ledgerId, type) {
+        const $ledgerGroupSelect = $(".ledger-group-select");
+        const $ledgerGroupId = $(".ledger-group-id");
+        $ledgerGroupSelect.empty();
+
+        let url = '';
+        if (ledgerId) {
+            url = `/vendors/ledger/${ledgerId}/groups?type=${encodeURIComponent(type)}`;
+        } else {
+            url = `/vendors/ledgers/group-by-type?type=${encodeURIComponent(type)}`;
+        }
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function(data) {
+                if (Array.isArray(data) && data.length) {
+                    data.forEach(function(group) {
+                        const option = new Option(group.name, group.id);
+                        $ledgerGroupSelect.append(option);
+                    });
+
+                    const preselectedGroupId = $ledgerGroupId.val();
+                    if (preselectedGroupId) {
+                        $ledgerGroupSelect.val(preselectedGroupId).trigger('change');
+                    }
+                } else {
+                    console.warn('No groups found for type:', type);
+                    $ledgerGroupId.val(''); 
+                }
+            },
+            error: function() {
+                $ledgerGroupId.val(''); 
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        const $createLedger = $('#create_vendor_ledger');
+        const $ledgerId = $('#ledger_id');
+        const $ledgerName = $('#ledger_name');
+        const $ledgerGroup = $('.ledger-group-select');
+        const $ledgerGroupId = $(".ledger-group-id");
+        const $hiddenName = $('#hidden_ledger_vendor_name');
+        const $hiddenCode = $('#hidden_ledger_vendor_code');
+
+        function toggleLedgerOption() {
+            const hasLedger = $('.ladger-id').val()?.trim() || $ledgerId.val()?.trim();
+            $createLedger.prop('disabled', !!hasLedger);
+            if (hasLedger) {
+                $createLedger.prop('checked', false);
+            }
+        }
+        
+        toggleLedgerOption();
+        const ledgerCheckInterval = setInterval(toggleLedgerOption, 500);
+
+        $createLedger.change(function () {
+            if ($(this).is(':checked')) {
+                $hiddenName.val($('input[name="company_name"]').val());
+                $hiddenCode.val($('input[name="vendor_code"]').val());
+                $ledgerName.prop('disabled', true).val('');
+                updateLedgerGroupDropdownWithType(null, 'vendor');
+            } else {
+                $hiddenName.val('');
+                $hiddenCode.val('');
+                $ledgerName.prop('disabled', false);
+                $ledgerGroup.empty(); 
+                $ledgerGroupId.val('');
+            }
+        });
+
+        $ledgerGroup.on('change', function() {
+            $ledgerGroupId.val($(this).val());
+        });
+
+        initializeAutocomplete(".vendor-ladger-autocomplete", {
+                url: '/search',
+                type: 'vendorLadger',
+                labelField: 'name',
+                hiddenFieldSelector: function() { return '.ladger-id'; },
+                minLength: 0,
+                additionalFields: ['description'],
+                onSelect: function(selectedItem) {
+                    if (selectedItem && selectedItem.id) {
+                        updateLedgerGroupDropdownWithType(selectedItem.id, 'vendor');
+                        toggleLedgerOption(); 
+                    }
+                },
+                onInitialize: function() {
+                    const ledgerId = $('.ladger-id').val();
+                    if (ledgerId) {
+                        updateLedgerGroupDropdownWithType(ledgerId, 'vendor');
+                    }
+                    toggleLedgerOption(); 
+                }
+            });
+    });
 </script>
 @endsection

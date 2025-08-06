@@ -400,6 +400,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-vendor-code');
         Route::get('/check-gst', 'checkGst')->name('check-gst');
         Route::get('/search', 'getVendor')->name('vendors.search');
+        Route::get('/ledger/{ledgerId}/groups', 'getLedgerGroupsByType')->name('ledgers.group.by.ledger');
+        Route::get('/ledgers/group-by-type', 'getLedgerGroupsByType')->name('ledgers.group.default');
         Route::get('/import', 'showImportForm')->name('vendors.import');
         Route::post('/import', 'import')->name('vendors.import.post');
         Route::get('export-successful-vendors', 'exportSuccessfulVendors')->name('vendors.export.successful');
@@ -2101,12 +2103,14 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/lease-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.leaseInvoice.index');
     Route::get('/delivery-note', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNote.index');
     Route::get('/delivery-note-cum-invoice', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNoteCumInvoice.index');
+    Route::get('/transporter-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.transporterInvoice.index');
 
 
     Route::get('/sale-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.invoice.create');
     Route::get('/lease-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.leaseInvoice.create');
     Route::get('/delivery-note/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNote.create');
     Route::get('/delivery-note-cum-invoice/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNoteCumInvoice.create');
+    Route::get('/transporter-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.transporterInvoice.create');
 
     Route::post('/sale-invoices/store', [ErpSaleInvoiceController::class, 'store'])->name('sale.invoice.store');
 

@@ -583,7 +583,7 @@
                                                                         <input type="hidden" name = "item_sub_store_to[{{$orderItemIndex}}]" id = "item_sub_store_to_{{$orderItemIndex}}" value = "{{$orderItem -> to_sub_store_id}}"/>
 
                                                                         <input type="hidden" value = "{{$order -> from_station_id}}" name = "item_station_from[{{$orderItemIndex}}]" id = "item_station_from_{{$orderItemIndex}}" />
-                                                                        <input type="hidden" value = "{{$order -> to_staiton_id}}" name = "item_station_to[{{$orderItemIndex}}]" id = "item_station_to_{{$orderItemIndex}}" />
+                                                                        <input type="hidden" value = "{{$order -> to_station_id}}" name = "item_station_to[{{$orderItemIndex}}]" id = "item_station_to_{{$orderItemIndex}}" />
 
                                                                         <input type = "hidden" value = "{{$orderItem -> to_store_id}}" name = "item_store_to[{{$orderItemIndex}}]" />
                                                                         <input type = "hidden" value = "{{$orderItem -> from_store_id}}" name = "item_store_from[{{$orderItemIndex}}]" />

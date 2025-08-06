@@ -782,12 +782,24 @@
                                                         </div>
                                                           <!-- Financial Start -->
                                                         <div class="tab-pane" id="Financial">
+                                                           <div class="row align-items-center mb-1">
+                                                                <div class="col-md-2">
+                                                                    <label class="form-label">Create Ledger?</label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                        <input type="hidden" name="create_ledger" value="0"> 
+                                                                        <input type="checkbox" class="form-check-input" id="create_vendor_ledger" name="create_ledger" value="1" {{ isset($vendor) && $vendor->create_ledger == 1 ? 'checked' : '' }}>
+                                                                        <label class="form-check-label" for="create_vendor_ledger">Yes</label>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
                                                                     <label for="ledger_name" class="form-label">Ledger</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="text" id="ledger_name" name="ledger_name" class="form-control ladger-autocomplete" value="{{ $vendor->ledger->name ?? '' }}" placeholder="Type to search...">
+                                                                    <input type="text" id="ledger_name" name="ledger_name" class="form-control vendor-ladger-autocomplete"  value="{{ $vendor->ledger->name ?? '' }}">
                                                                     <input type="hidden" id="ledger_id" name="ledger_id" class="ladger-id"  value="{{($vendor->ledger_id ?? '') }}">
                                                                 </div>
                                                             </div>
@@ -796,7 +808,7 @@
                                                                     <label for="ledger_group_name" class="form-label">Ledger Group</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <select id="ledger_group_select" name="ledger_group_id" class="form-control ledger-group-select">
+                                                                    <select id="ledger_group_name" name="ledger_group_id"  class="form-control ledger-group-select">
                                                                         @foreach($ledgerGroups as $group)
                                                                             <option value="{{ $group->id }}" 
                                                                                 {{ isset($vendor) && $vendor->ledger_group_id == $group->id ? 'selected' : '' }}>
@@ -835,8 +847,16 @@
                                                                 </div>  
                                                                 <div class="col-md-3"> 
                                                                     <input type="number" id="credit_days" name="credit_days" value="{{ $vendor->credit_days ?? '' }}" class="form-control" placeholder="Enter credit days" min="0" />
+                                                                    <input type="hidden" name="credit_days_editable" value="0">
+                                                                    <div class="form-check form-check-primary mt-25 custom-checkbox">
+                                                                        <input type="checkbox" class="form-check-input" id="credit_days_allowed_checkbox" name="credit_days_allowed" value="1" {{ isset($vendor) && $vendor->credit_days_editable == 1 ? 'checked' : '' }}>
+                                                                        <label class="form-check-label" for="credit_days_allowed_checkbox">Allowed to Change</label>
+                                                                    </div>
                                                                 </div> 
                                                             </div>
+                            
+                                                             <input type="hidden" id="hidden_ledger_vendor_name" name="hidden_ledger_vendor_name" value="">
+                                                             <input type="hidden" id="hidden_ledger_vendor_code" name="hidden_ledger_vendor_code" value="">
 
                                                             <!-- <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
@@ -2666,7 +2686,12 @@ $(document).ready(function() {
         var redirectUrl = $(this).data('redirect');
         var data = new FormData($(this)[0]);
         data.append('status', $('#status_hidden_input').val());
+        data.append('ledger_group_id', $('#ledger_group_name').val());
+        data.append('hidden_ledger_vendor_name', $('#hidden_ledger_vendor_name').val());
+        data.append('hidden_ledger_vendor_code', $('#hidden_ledger_vendor_code').val());
+        data.append('create_ledger', $('#create_vendor_ledger').is(':checked') ? 1 : 0);
 
+        const $ledgerGroupId = $(".ledger-group-id");
         var formObj = $(this);
     
         $.ajax({
@@ -2819,6 +2844,19 @@ $(document).ready(function() {
         if (amendDeleteBtn) {
             amendDeleteBtn.style.setProperty('display', 'inline-block', 'important');
         }
+        // Also check ledger existence and disable create ledger checkbox accordingly
+        const ledgerId = document.getElementById('ledger_id')?.value || '';
+        const createLedgerCheckbox = document.getElementById('create_vendor_ledger');
+
+        if (createLedgerCheckbox) {
+            if (ledgerId.trim() !== '') {
+                createLedgerCheckbox.disabled = true;
+                createLedgerCheckbox.checked = false;
+            } else {
+                createLedgerCheckbox.disabled = false;
+            }
+        }
+
     }
     function amendConfirm()
 {
@@ -2848,7 +2886,6 @@ $(document).ready(function() {
             height: 14
         });
     }
-
 
 }
 
@@ -2961,5 +2998,185 @@ $(document).ready(function() {
         });
     });
 // approval-end
+    function initializeAutocomplete(selector, options) {
+        const $input = $(selector);
+        const hiddenFieldSelector = options.hiddenFieldSelector();
+        const $ledgerGroupSelect = $(".ledger-group-select");
+        const $ledgerGroupId = $(".ledger-group-id");
+        const $createLedger = $('#create_vendor_ledger');
+        $input.autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: options.url,
+                    method: 'GET',
+                    data: {
+                        q: request.term,
+                        type: options.type
+                    },
+                   success: function(data) {
+                        let items = [];
+                        if (data.status === false || !Array.isArray(data.data) || data.data.length === 0) {
+                            items = [{
+                                label: data.message || 'No record found.',
+                                value: '',
+                                id: null,
+                                disabled: true
+                            }];
+                        } else {
+                            items = data.data.map(item => ({
+                                label: item[options.labelField],
+                                value: item[options.labelField],
+                                id: item.id,
+                                ...item
+                            }));
+                        }
+
+                        response(items);
+                    },
+                    error: function() {
+                        response([]);
+                    }
+                });
+            },
+            minLength: options.minLength || 0,
+            select: function(event, ui) {
+                if (ui.item && ui.item.id) {
+                    $(hiddenFieldSelector).val(ui.item.id);
+                    if (typeof options.onSelect === 'function') {
+                        options.onSelect(ui.item);
+                    }
+                }
+            },
+            change: function(event, ui) {
+                if (!ui.item) {
+                    $(hiddenFieldSelector).val('');
+                    $ledgerGroupSelect.empty();
+                    $ledgerGroupId.val('');
+                    $createLedger.prop('disabled', false);
+                }
+            },
+            search: function(event, ui) {
+                if (event.originalEvent && event.originalEvent.type === 'focus') {
+                    event.preventDefault();
+                }
+            }
+        }).focus(function() {
+            if (this.value === "") {
+                $(this).autocomplete("search", "");
+            }
+        }).on('input', function() {
+            if ($(this).val().trim() === '') {
+                $(hiddenFieldSelector).val('');
+                $ledgerGroupSelect.empty();
+                $ledgerGroupId.val('');
+                $createLedger.prop('disabled', false);
+            }
+        });
+
+        if (typeof options.onInitialize === 'function') {
+            options.onInitialize();
+        }
+    }
+    function updateLedgerGroupDropdownWithType(ledgerId, type) {
+        const $ledgerGroupSelect = $(".ledger-group-select");
+        const $ledgerGroupId = $(".ledger-group-id");
+        $ledgerGroupSelect.empty();
+
+        let url = '';
+        if (ledgerId) {
+            url = `/vendors/ledger/${ledgerId}/groups?type=${encodeURIComponent(type)}`;
+        } else {
+            url = `/vendors/ledgers/group-by-type?type=${encodeURIComponent(type)}`;
+        }
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            success: function(data) {
+                if (Array.isArray(data) && data.length) {
+                    data.forEach(function(group) {
+                        const option = new Option(group.name, group.id);
+                        $ledgerGroupSelect.append(option);
+                    });
+
+                    const preselectedGroupId = $ledgerGroupId.val();
+                    if (preselectedGroupId) {
+                        $ledgerGroupSelect.val(preselectedGroupId).trigger('change');
+                    }
+                } else {
+                    console.warn('No groups found for type:', type);
+                    $ledgerGroupId.val(''); 
+                }
+            },
+            error: function() {
+                $ledgerGroupId.val(''); 
+            }
+        });
+    }
+
+    $(document).ready(function () {
+        const $createLedger = $('#create_vendor_ledger');
+        const $ledgerId = $('#ledger_id');
+        const $ledgerName = $('#ledger_name');
+        const $ledgerGroup = $('.ledger-group-select');
+        const $ledgerGroupId = $(".ledger-group-id");
+        const $hiddenName = $('#hidden_ledger_vendor_name');
+        const $hiddenCode = $('#hidden_ledger_vendor_code');
+        function toggleLedgerOption() {
+            const hasLedger = $('.ladger-id').val()?.trim() || $ledgerId.val()?.trim();
+            $createLedger.prop('disabled', !!hasLedger);
+
+            if (hasLedger) {
+                $createLedger.prop('checked', false);
+            }
+        }
+        
+        function handleCreateLedgerChange() {
+            if ($createLedger.is(':checked')) {
+                $hiddenName.val($('input[name="company_name"]').val());
+                $hiddenCode.val($('input[name="vendor_code"]').val());
+                $ledgerName.prop('disabled', true).val('');
+                updateLedgerGroupDropdownWithType(null, 'vendor');
+            } else {
+                $hiddenName.val('');
+                $hiddenCode.val('');
+                $ledgerName.prop('disabled', false);
+                $ledgerGroup.empty();
+                $ledgerGroupId.val('');
+            }
+        }
+
+        $createLedger.change(handleCreateLedgerChange);
+
+        $ledgerGroup.on('change', function () {
+            $ledgerGroupId.val($(this).val());
+        });
+
+        initializeAutocomplete(".vendor-ladger-autocomplete", {
+            url: '/search',
+            type: 'vendorLadger',
+            labelField: 'name',
+            hiddenFieldSelector: () => '.ladger-id',
+            minLength: 0,
+            additionalFields: ['description'],
+            onSelect: function (selectedItem) {
+                if (selectedItem?.id) {
+                    updateLedgerGroupDropdownWithType(selectedItem.id, 'vendor');
+                    toggleLedgerOption();
+                }
+            },
+            onInitialize: function () {
+                const ledgerId = $('.ladger-id').val();
+                if (ledgerId) {
+                    updateLedgerGroupDropdownWithType(ledgerId, 'vendor');
+                }
+            }
+        });
+
+        if (status === 'submitted') {
+            handleCreateLedgerChange();
+        }
+        
+    });
 </script>
 @endsection

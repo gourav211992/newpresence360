@@ -467,10 +467,11 @@ class MasterIndiaHelper
         $documentNumber = $documentHeader->book_code .'-'. $documentHeader->document_number;
 
         $organization = Organization::where('id', $user->organization_id)->first();
-        $organizationAddress = Address::with(['city', 'state', 'country'])
-            ->where('addressable_id', $user->organization_id)
-            ->where('addressable_type', Organization::class)
-            ->first();
+        // $organizationAddress = Address::with(['city', 'state', 'country'])
+        //     ->where('addressable_id', $user->organization_id)
+        //     ->where('addressable_type', Organization::class)
+        //     ->first();
+        $organizationAddress = $documentHeader?->location_address_details;
         $buyerAddress = $documentHeader?->location_address_details;
         $sellerBillingAddress = $documentHeader->latestBillingAddress();
         $sellerStateCode = self::getStateCode($organizationAddress->state_id);
@@ -493,10 +494,13 @@ class MasterIndiaHelper
             "gstin" => $organization?->gst_number,
             "legal_name" => $organization->name,
             "trade_name" => null,
-            "address1" => $organizationAddress->line_1,
-            "address2" => $organizationAddress->line_2,
+            // "address1" => $organizationAddress->line_1,
+            "address1" => $organizationAddress->address,
+            // "address2" => $organizationAddress->line_2,
+            "address2" => $organizationAddress->address,
             "location" => $organizationAddress?->city?->name,
-            "pincode" => $organizationAddress->postal_code,
+            // "pincode" => $organizationAddress->postal_code,
+            "pincode" => $organizationAddress->pincode,
             "state_code" => $sellerStateCode->name,
             "phone_number" => $organizationAddress->phone,
             "email" => $organization?->email
@@ -518,10 +522,13 @@ class MasterIndiaHelper
 
         $dispatchDetails = (object) [
             "company_name" => $documentHeader?->erpStore?->store_name,
-            "address1" => $organizationAddress->line_1,
-            "address2" => $organizationAddress->line_2,
+            // "address1" => $organizationAddress->line_1,
+            "address1" => $organizationAddress->address,
+            // "address2" => $organizationAddress->line_2,
+            "address2" => $organizationAddress->address,
             "location" => $organizationAddress?->city?->name,
-            "pincode" => $organizationAddress->postal_code,
+            // "pincode" => $organizationAddress->postal_code,
+            "pincode" => $organizationAddress->pincode,
             "state_code" => $sellerStateCode->name,
         ];
 

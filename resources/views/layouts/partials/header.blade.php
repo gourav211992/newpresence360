@@ -7,7 +7,7 @@
                     <div class="bookmark-wrapper d-flex align-items-center">
                         <ul class="nav navbar-nav headerlogo">
                             @if (isset($orgLogo))
-                                <li> <img src="{{$orgLogo}}" /></li>
+                                <li> <img src="{{ $orgLogo ? $orgLogo : url('/img/thepresence360_logo.svg')}}" alt="Logo"/></li>
                             @endif
                         </ul>
                         <ul class="nav navbar-nav left-baricontop">

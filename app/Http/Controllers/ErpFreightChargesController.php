@@ -70,6 +70,7 @@ class ErpFreightChargesController extends Controller
         $selectedIndexes = $request->input('row_checkbox', []);
         $insertAll = empty($selectedIndexes);
         $savedCount = 0;
+        
 
         foreach ($request->freight_charges as $index => $charge) {
             if ($insertAll || in_array($index, $selectedIndexes)) {

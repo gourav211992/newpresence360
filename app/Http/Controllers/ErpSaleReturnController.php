@@ -874,14 +874,14 @@ class ErpSaleReturnController extends Controller
                     if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {
                             $itemTax += ((double) $taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                            if($taxDetail['applicability_type']=="collection")
-                            {
-                                $totalTax += $itemTax;
-                            }
-                            else
-                            {
-                                $totalTax -= $itemTax;
-                            }
+                        }
+                        if($taxDetail['applicability_type']=="collection")
+                        {
+                            $totalTax += $itemTax;
+                        }
+                        else
+                        {
+                            $totalTax -= $itemTax;
                         }
                     }
                     // dd($itemDataValue);

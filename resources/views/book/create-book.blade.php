@@ -668,6 +668,7 @@
             $('#book-form').on('submit', function(e) {
                 // Enable only selected options for each select element
                 $('.userSelect').find('option:selected').prop('disabled', false);
+                $('.levelCompanySelect').prop('disabled', false);
                 $('.amendmentUserSelect').find('option:selected').prop('disabled', false);
                 $('.bookSelect').find('option:selected').prop('disabled', false);
                 $('.referenceService').find('option:selected').prop('disabled', false);
@@ -744,65 +745,135 @@
             initializeDynamicFieldDropdown();
         });
 
-        $(document).on('click', '.remove-item', function() {
-            $(this).parent().parent().remove();
+        $(document).on('click', '.remove-item', function () {
+            const $row = $(this).closest('tr');
+            const companyId = $row.find('.companySelect').val();
+            $row.remove();
+            updateDisabledEnabledUserSelect('Pattern', companyId)
         });
 
-        $(document).on('click', '.remove-item', function() {
-            $(this).parent().parent().remove();
+
+        $(document).on('change', '.companySelect', function() {
+            company_id = $(this).val() || [];
+            updateDisabledEnabledUserSelect('Pattern', company_id)
         });
 
-        function updateOrganizationDropdown($currentRow) {
-            let organizations = [];
-            const $companySelect = $currentRow.find('.companySelect');
-            const id = $companySelect.attr('data-id');
-            const company_id = $companySelect.val();
+        $(document).on('change', '.organizations', function() {
+            $(document).ready(function () {
+                $('.companySelect').each(function () {
+                    const companyId = $(this).val();
+                    if (companyId) {
+                        updateDisabledEnabledUserSelect('Pattern', companyId);
+                    }
+                });
+            });
+        });
 
-            // Get the organizations for the selected company
-            $.each(companies, function (key, value) {
-                if (value['id'] == company_id) {
-                    organizations = value['organizations'];
+        function updateDisabledEnabledUserSelect(type, companyId = null) {
+            if (type === 'Amendment') {
+                $('.amendmentUserSelect option').prop('disabled', false);
+                const orgUserMap = {};
+
+                $('.amendmentUserSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.amendment_organizations').val();
+                    const selectedValues = $(this).val() || [];
+
+                    if (orgId) {
+                        if (!orgUserMap[orgId]) {
+                            orgUserMap[orgId] = new Set();
+                        }
+                        selectedValues.forEach(val => orgUserMap[orgId].add(val));
+                    }
+                });
+
+                $('.amendmentUserSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.amendment_organizations').val();
+                    const currentSelected = $(this).val() || [];
+
+                    if (orgId && orgUserMap[orgId]) {
+                        const selectedSet = orgUserMap[orgId];
+                        selectedSet.forEach(val => {
+                            if (!currentSelected.includes(val)) {
+                                $(this).find('option[value="' + val + '"]').prop('disabled', true);
+                            }
+                        });
+                    }
+                });
+            } else if(type === 'Approval') {
+                $('.userSelect option').prop('disabled', false);
+                const orgUserMap = {};
+
+                $('.userSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.level_organizations').val();
+                    const selectedValues = $(this).val() || [];
+
+                    if (orgId) {
+                        if (!orgUserMap[orgId]) {
+                            orgUserMap[orgId] = new Set();
+                        }
+                        selectedValues.forEach(val => orgUserMap[orgId].add(val));
+                    }
+                });
+
+                $('.userSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.level_organizations').val();
+                    const currentSelected = $(this).val() || [];
+
+                    if (orgId && orgUserMap[orgId]) {
+                        const selectedSet = orgUserMap[orgId];
+                        selectedSet.forEach(val => {
+                            if (!currentSelected.includes(val)) {
+                                $(this).find('option[value="' + val + '"]').prop('disabled', true);
+                            }
+                        });
+                    }
+                });
+            }
+            else{
+               const selectedOrgIds = [];
+                $('.organizations').each(function () {
+                    const row = $(this).closest('tr');
+                    const cmpId = row.find('.companySelect').val();
+                    const orgId = $(this).val();
+
+                    if (cmpId === companyId && orgId) {
+                        selectedOrgIds.push({
+                            id: $(this).attr('id'),
+                            value: orgId
+                        });
+                    }
+                });
+
+            const companyData = companies.find(c => c.id == companyId);
+            const orgs = companyData ? companyData.organizations : [];
+
+            $('.organizations').each(function () {
+                const $select = $(this);
+                const row = $select.closest('tr');
+                const cmpId = row.find('.companySelect').val();
+                const selectId = $select.attr('id');
+                const currentVal = $select.val();
+
+                if (cmpId === companyId) {
+                    $select.html("<option disabled selected value=''>Select Unit</option>");
+
+                    orgs.forEach(org => {
+                        const isDisabled = selectedOrgIds.some(sel => sel.value === org.id.toString() && sel.id !== selectId)
+                            ? 'disabled' : '';
+                        const isSelected = currentVal === org.id.toString() ? 'selected' : '';
+
+                        $select.append(`<option value="${org.id}" ${isDisabled} ${isSelected}>${org.name}</option>`);
+                    });
                 }
             });
 
-            // Collect all previously selected organization IDs from earlier rows
-            const selectedOrgIds = [];
-            $currentRow.prevAll('tr').each(function () {
-                const prevOrgId = $(this).find('[name="organization_id[]"]').val();
-                if (prevOrgId) {
-                    selectedOrgIds.push(prevOrgId.toString());
-                }
-            });
-
-            const $orgDropdown = $(`#organization_id${id}`);
-            $orgDropdown.html("").append("<option disabled selected value=''>Select Unit</option>");
-
-            $.each(organizations, function (key, value) {
-                const isDisabled = selectedOrgIds.includes(value['id'].toString());
-                $orgDropdown.append(`<option value="${value['id']}" ${isDisabled ? 'disabled' : ''}>${value['name']}</option>`);
-            });
-
-            // Auto-select if only one option is available
-            const availableOptions = $orgDropdown.find('option:not(:disabled)').not(':first');
-            if (availableOptions.length === 1) {
-                availableOptions.prop('selected', true);
             }
         }
 
-        $(document).on('change', '.companySelect', function () {
-                const $currentRow = $(this).closest('tr');
-                updateOrganizationDropdown($currentRow);
-            });
-
-        // Also run once on page load for all existing rows
-        $(document).ready(function () {
-            $('#item-details-body tr').each(function () {
-                const $companySelect = $(this).find('.companySelect');
-                if ($companySelect.val()) {
-                    updateOrganizationDropdown($(this));
-                }
-            });
-        });
 
         $(document).on('change', '.levelCompanySelect', function() {
             var organizations = [];
@@ -814,11 +885,13 @@
                 }
             });
 
-            $("#level_organization_id" + id).html("");
-            $("#level_organization_id" + id).append("<option disabled selected value=''>Select Unit</option>");
+            // Clear and repopulate ONLY the current row's organization dropdown
+            const $orgDropdown = $(this).closest('tr').find('.level_organizations');
+            $orgDropdown.html("");
+            $orgDropdown.append("<option disabled selected value=''>Select Unit</option>");
+
             $.each(organizations, function(key, value) {
-                $("#level_organization_id" + id).append("<option value='" + value['id'] + "'>" + value[
-                    'name'] + "</option>");
+                $orgDropdown.append("<option value='" + value['id'] + "'>" + value['name'] + "</option>");
             });
         });
 
@@ -846,7 +919,7 @@
                             userElement.innerHTML = innerHTMLVal;
                         }
                     }
-                    $('.userSelect').trigger('change'); // CHange for reloading selected and deselected users
+                    updateDisabledEnabledUserSelect('Approval')
                 },
                 error: function(xhr) {
                     console.error('Error fetching org services data:', xhr.responseText);
@@ -856,6 +929,16 @@
         });
 
         $(document).ready(function() {
+            updateDisabledEnabledUserSelect('Approval')
+            updateDisabledEnabledUserSelect('Amendment')
+            $(document).ready(function () {
+                $('.companySelect').each(function () {
+                    const companyId = $(this).val();
+                    if (companyId) {
+                        updateDisabledEnabledUserSelect('Pattern', companyId);
+                    }
+                });
+            });
             $(".select2").select2({
                 placeholder: "Select an option"
             });
@@ -917,15 +1000,7 @@
         });
 
         $(document).on('change', '.userSelect', function() {
-            $('.userSelect').find('option').filter(function() {
-                return $(this).val() !== "";
-            }).prop('disabled', false);
-            $('.userSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.userSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
-                });
-            });
+            updateDisabledEnabledUserSelect('Approval')
         });
 
         function disableSelectedMultiOptionsForBooks()
@@ -944,13 +1019,7 @@
         });
 
         $(document).on('change', '.amendmentUserSelect', function() {
-            $('.amendmentUserSelect').find('option').prop('disabled', false);
-            $('.amendmentUserSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.amendmentUserSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
-                });
-            });
+            updateDisabledEnabledUserSelect('Amendment')
         });
 
         $(document).ready(function() {
@@ -1221,6 +1290,8 @@ $(document).on('click', '.delete-row', function (e) {
     e.preventDefault();
     $(this).closest('tr').remove();
     updateRowNumbers();
+    updateDisabledEnabledUserSelect('Amendment')
+    updateDisabledEnabledUserSelect('Approval')
 });
 
 // Remove row on click of trash icon and update row numbers
@@ -1247,6 +1318,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
                     userElement.innerHTML = innerHTMLVal;
                 }
             }
+            updateDisabledEnabledUserSelect('Amendment')
         },
         error: function(xhr) {
             console.error('Error fetching org services data:', xhr.responseText);

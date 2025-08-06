@@ -62,7 +62,7 @@
                                         else if ($order->document_type == "dnote"){
                                             $options = ['Delivery Note'];
                                         }
-
+                                        
                                     @endphp
                                     @foreach ($options as $key)
                                         <li>
@@ -285,7 +285,7 @@
                                                                 Land Lease
                                                             </button>
                                                             </div>
-
+                                                        
                                             </div>
                                     </div>
 
@@ -1086,6 +1086,103 @@
 		</div>
 	</div>
 
+        <div class="modal fade text-start" id="pullPopUp" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
+			<div class="modal-content">
+                <div class="modal-header">
+                    <div class="col-md-9">
+                        <h4 class="modal-title fw-bolder text-dark namefont-sizenewmodal" id="header_pull_label">Select Document</h4>
+                        <p class="mb-0">Select from the below list</p>
+                    </div>
+                    <div class="text-end col-md-3 text-end">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal"><i data-feather="x-circle"></i> Cancel</button>
+                        <button type="button" class="ml-1 btn btn-primary btn-sm" onclick="processOrder('lr');" data-bs-dismiss="modal"><i data-feather="check-circle"></i> Process</button>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>        
+				<div class="modal-body">
+					 <div class="row">
+
+                     <div class="col">
+                            <div class="mb-1">
+                            <label class="form-label">Customer Name <span class="text-danger">*</span></label>
+                                <input type="text" id="customer_code_input_lr" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "customer_id_lr_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Series <span class="text-danger">*</span></label>
+                                <input type="text" id="book_code_input_lr" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "book_id_lr_val"></input>
+                            </div>
+                        </div>
+                         
+                         
+                         <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Document No. <span class="text-danger">*</span></label>
+                                <input type="text" id="document_no_input_lr" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "document_id_lr_val"></input>
+                            </div>
+                        </div>
+
+                        <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Source. <span class="text-danger">*</span></label>
+                                <input type="text" id="source_input_lr" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "source_id_lr_val"></input>
+                            </div>
+                        </div>
+
+
+                         <!-- <div class="col">
+                            <div class="mb-1">
+                                <label class="form-label">Item Name <span class="text-danger">*</span></label>
+                                <input type="text" id="item_name_input_lr" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
+                                <input type = "hidden" id = "item_id_lr_val"></input>
+                            </div>
+                        </div> -->
+                        <div class="col mb-1">
+                            <label class="form-label">&nbsp;</label><br />
+                            <button onclick="clearFilters('lr');" type="button" class="btn btn-danger btn-sm"><i
+                                    data-feather="trash"></i> Clear</button>
+                        </div>
+
+						 <div class="col-md-12">
+							<div class="table-responsive">
+                                <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="lorry_receipt_table">
+                                    <input type = "hidden" id = "lorry_receipt_table_value" value = "lr"> 
+									<thead>
+										 <tr>
+											<th>
+												<!-- <div class="form-check form-check-inline me-0">
+                                                    <input class="form-check-input" type="checkbox" id="checkAllSOElement" onchange="checkAllSO(this);">
+                                                </div> -->
+											</th>  
+											<th>Series</th>
+											<th>Doc No.</th>
+											<th>Doc Date</th>
+                                            <th>Currency</th>
+                                            <th>Customer Name</th>
+											<th>Source</th>
+											<th>Destination</th>
+											<th>Weight</th> 
+											<th>Freight Charges</th> 
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+								</table>
+							</div>
+						</div>
+					 </div>
+				</div>
+			</div>
+		</div>
+	</div>
+
     <div class="modal fade text-start" id="pullPopUpDn" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
 			<div class="modal-content">
@@ -1144,7 +1241,7 @@
 						 <div class="col-md-12">
 							<div class="table-responsive">
                                 <table class="dataTables_scroll datatables-basic table-sm table-bordered table myrequesttablecbox pomrnheadtffotsticky" id="dnote_invoice_table">
-                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote">
+                                    <input type = "hidden" id = "dnote_invoice_table_value" value = "dnote"> 
 									<thead>
 										 <tr>
 											<th>
@@ -3874,10 +3971,7 @@
                 }
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const itemId = row?.id;
-                let isEnabled = true;
-                if (type == 'so' || type == "pl") {
-                    isEnabled = Number(row.avl_stock.replace(/,/g, '')) > 0;
-                }
+                const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist'].includes(type);
                 return `<div class="form-check form-check-inline me-0">
                     <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
                         ${isEnabled ? '' : 'disabled'}
@@ -3898,6 +3992,23 @@
 
         const getColumns = () => {
             if (type === 'land-lease') {
+                return [
+                    checkboxColumn(),
+                    { data: 'header.series.book_code', name: 'book_code' },
+                    { data: 'header.document_no', name: 'document_no' },
+                    { data: 'header.document_date', name: 'document_date', render: d => moment(d).format('D/M/Y') },
+                    { data: 'header.customer.company_name', name: 'company_name' },
+                    { data: 'header.plots[0].land.name', name: 'land_name' },
+                    {
+                        data: 'header.plots',
+                        name: 'plot_names',
+                        render: plots => plots?.map(p => p?.plot?.plot_name).join(', ') || 'N/A'
+                    },
+                    { data: 'type', name: 'type' },
+                    { data: 'installment_cost', name: 'installment_cost' },
+                    { data: 'due_date', name: 'due_date', render: d => moment(d).format('D/M/Y') }
+                ];
+            } else if (type === 'lr') {
                 return [
                     checkboxColumn(),
                     { data: 'header.series.book_code', name: 'book_code' },
@@ -3971,6 +4082,8 @@
             tableSelector = "#dnote_invoice_table";
         } else {
             tableSelector = "#so_invoice_table";
+        } else if (type === "lr")  {
+            tableSelector = "#lorry_receipt_table";
         }
 
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))
@@ -3997,6 +4110,11 @@
             filters.book_id = $("#book_id_qt_val_land");
             filters.item_id = $("#item_id_qt_val");
             filters.document_id = $("#document_id_qt_val_land");
+        } else if (type === 'lr') {
+            filters.customer_id = $("#customer_id_lr_val");
+            filters.book_id = $("#book_id_lr_val");
+            filters.item_id = $("#item_id_qt_val");
+            filters.document_id = $("#document_id_lr_val");
         } else {
             filters.customer_id = $("#customer_id_qt_val");
             filters.book_id = $("#book_id_qt_val");
@@ -4114,7 +4232,12 @@
             initializeAutocompleteQt("document_no_input_qt_land", "document_id_qt_val_land", "land_lease_document", "document_number", "document_number");
             initializeAutocompleteQt("land_parcel_input_qt_land", "land_parcel_id_qt_val_land", "land_lease_parcel", "name", "name");
             initializeAutocompleteQt("land_plot_input_qt_land", "land_plot_id_qt_val_land", "land_lease_plots", "plot_name", "plot_name");
-        } else if (type === 'plist') {
+        } else if (type === 'lr') {
+            openPullType = "lr";
+            initializeAutocompleteQt("book_code_input_lr", "book_id_lr_val", "book_lr", "book_code", "book_name");
+            initializeAutocompleteQt("document_no_input_lr", "document_id_lr_val", "lr_document", "document_number");
+            initializeAutocompleteQt("source_input_lr", "source_id_lr_val", "lr_source", "name", "name");
+        }  else if (type === 'plist') {
             openPullType = "plist";
             initializeAutocompleteQt("book_code_input_plist", "book_id_plist_val", "book_plist", "book_code", "book_name");
             initializeAutocompleteQt("document_no_input_plist", "document_id_plist_val", "plist_document", "document_number");

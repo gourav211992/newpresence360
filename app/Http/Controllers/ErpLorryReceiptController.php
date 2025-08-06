@@ -750,7 +750,7 @@ public function destroy($id)
         ->where('addressable_type', Organization::class)
         ->first();
 
-    $logoPath = public_path('img/lorry/Gulati.png');
+    $imagePath = public_path('assets/css/midc-logo.jpg');
     $locationPathFirst = public_path('img/lorry/green-loc.png');
     $locationPathSecond = public_path('img/lorry/loca-red.jpg');
 
@@ -758,7 +758,7 @@ public function destroy($id)
         'lorryReceipt' => $lorryReceipt,
         'organization' => $organization,
         'organizationAddress' => $organizationAddress,
-        'logoPath' => $logoPath,
+        'imagePath' => $imagePath,
         'locationPathFirst' => $locationPathFirst,
         'locationPathSecond' => $locationPathSecond,
     ]);

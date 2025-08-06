@@ -474,7 +474,7 @@
                                                                                         @if(isset($workflowGroup->employees))
                                                                                         @foreach ($workflowGroup ?-> employees as $user)
                                                                                             <option
-                                                                                                value="{{ $user->id }}|{{ $user->type }}"
+                                                                                                value="{{ $user->id }}"
                                                                                                 data-fixed = "{{(isset($users) && in_array($user->id, $users) && !$workflowGroup -> allow_change) ? 'true' : 'false'}}"
                                                                                                 @if (isset($users) && in_array($user->id, $users)) selected  @endif>
                                                                                                 {{ $user->name . " (" . $user->email . ")" }}
@@ -602,7 +602,7 @@
                                                                                     </option>
                                                                                     @foreach ($people as $user)
                                                                                         <option
-                                                                                            value="{{ $user->id }}|{{ $user->type }}">
+                                                                                            value="{{ $user->id }}">
                                                                                             {{ $user->name }}</option>
                                                                                     @endforeach
                                                                                 </select>
@@ -728,7 +728,7 @@
                                                                                             <option disabled value="">Select Approver</option>
                                                                                             @foreach ($amendment -> employees as $user)
                                                                                                 <option
-                                                                                                    value="{{ $user->id }}|{{ $user->type }}"
+                                                                                                    value="{{ $user->id }}"
                                                                                                     @if (isset($amendUsers) && in_array($user->id, $amendUsers)) selected @endif>
                                                                                                     {{  $user->name . " (" . $user->email . ")" }}
                                                                                                 </option>
@@ -796,7 +796,7 @@
                                                                                     <select class="form-select mw-100 select2 amendmentUserSelect" name="amendment_user[0][]" multiple id = "amend_users_1">
                                                                                         <option disabled value="">Select Approver</option>
                                                                                         @foreach($people as $user)
-                                                                                            <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
+                                                                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
                                                                                         @endforeach
                                                                                     </select>
                                                                                 </td>
@@ -1017,76 +1017,29 @@
             getDynamicFields(document.getElementById('dynamic_fields_input'));
         });
 
-        $(document).on('click', '.remove-item', function() {
-            $(this).parent().parent().remove();
+        $(document).on('click', '.remove-item', function () {
+            const $row = $(this).closest('tr');
+            const companyId = $row.find('.companySelect').val();
+            $row.remove();
+            updateDisabledEnabledUserSelect('Pattern', companyId)
         });
 
-function updateOrganizationDropdown($currentRow) {
-    let organizations = [];
-    const $companySelect = $currentRow.find('.companySelect');
-    const id = $companySelect.attr('data-id');
-    const company_id = $companySelect.val();
 
-    // Get the currently selected org ID from the row
-    const $orgDropdown = $currentRow.find('[name="organization_id[]"]');
-    const currentOrgId = $orgDropdown.val();
-
-    // Get the organizations for the selected company
-    $.each(companies, function (key, company) {
-        if (company['id'] == company_id) {
-            organizations = company['organizations'];
-        }
-    });
-
-    // Collect all previously selected org IDs from earlier rows
-    const selectedOrgIds = [];
-    $currentRow.prevAll('tr').each(function () {
-        const prevOrgId = $(this).find('[name="organization_id[]"]').val();
-        if (prevOrgId) {
-            selectedOrgIds.push(prevOrgId.toString());
-        }
-    });
-
-    // Clear and rebuild the org dropdown
-    $orgDropdown.html("").append("<option disabled value=''>Select Unit</option>");
-
-    $.each(organizations, function (key, org) {
-        const orgIdStr = org['id'].toString();
-        const isSelected = orgIdStr === currentOrgId;
-        const isDisabled = selectedOrgIds.includes(orgIdStr) && !isSelected;
-
-        $orgDropdown.append(`
-            <option value="${org['id']}"
-                ${isSelected ? 'selected' : ''}
-                ${isDisabled ? 'disabled' : ''}>
-                ${org['name']}
-            </option>
-        `);
-    });
-
-    // If no value is selected and only one available, auto-select it
-    const availableOptions = $orgDropdown.find('option:not([disabled]):not(:first)');
-    if (!currentOrgId && availableOptions.length === 1) {
-        availableOptions.prop('selected', true);
-    }
-}
-
-
-        $(document).on('change', '.companySelect', function () {
-                const $currentRow = $(this).closest('tr');
-                updateOrganizationDropdown($currentRow);
-            });
-
-        // Also run once on page load for all existing rows
-        $(document).ready(function () {
-            $('#item-details-body tr').each(function () {
-                const $companySelect = $(this).find('.companySelect');
-                if ($companySelect.val()) {
-                    updateOrganizationDropdown($(this));
-                }
-            });
+        $(document).on('change', '.companySelect', function() {
+            company_id = $(this).val() || [];
+            updateDisabledEnabledUserSelect('Pattern', company_id)
         });
 
+        $(document).on('change', '.organizations', function() {
+            $(document).ready(function () {
+                $('.companySelect').each(function () {
+                    const companyId = $(this).val();
+                    if (companyId) {
+                        updateDisabledEnabledUserSelect('Pattern', companyId);
+                    }
+                });
+            });
+        });
 
         $(document).on('change', '.levelCompanySelect', function() {
             var organizations = [];
@@ -1131,6 +1084,7 @@ function updateOrganizationDropdown($currentRow) {
                             userElement.innerHTML = innerHTMLVal;
                         }
                     }
+                    updateDisabledEnabledUserSelect('Approval');
                 },
                 error: function(xhr) {
                     console.error('Error fetching org services data:', xhr.responseText);
@@ -1139,25 +1093,121 @@ function updateOrganizationDropdown($currentRow) {
 
         });
 
-        $(document).on('change', '.userSelect', function() {
-            $('.userSelect').find('option').prop('disabled', false);
-            $('.userSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.userSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
-                });
-            });
+        $(document).on('change', '.userSelect', function () {
+            updateDisabledEnabledUserSelect('Approval')
         });
 
+
+
+
         $(document).on('change', '.amendmentUserSelect', function() {
-            $('.amendmentUserSelect').find('option').prop('disabled', false);
-            $('.amendmentUserSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.amendmentUserSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
-                });
-            });
+            updateDisabledEnabledUserSelect('Amendment')
         });
+
+        function updateDisabledEnabledUserSelect(type, companyId = null) {
+            if (type === 'Amendment') {
+                $('.amendmentUserSelect option').prop('disabled', false);
+                const orgUserMap = {};
+
+                $('.amendmentUserSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.amendment_organizations').val();
+                    const selectedValues = $(this).val() || [];
+
+                    if (orgId) {
+                        if (!orgUserMap[orgId]) {
+                            orgUserMap[orgId] = new Set();
+                        }
+                        selectedValues.forEach(val => orgUserMap[orgId].add(val));
+                    }
+                });
+
+                $('.amendmentUserSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.amendment_organizations').val();
+                    const currentSelected = $(this).val() || [];
+
+                    if (orgId && orgUserMap[orgId]) {
+                        const selectedSet = orgUserMap[orgId];
+                        selectedSet.forEach(val => {
+                            if (!currentSelected.includes(val)) {
+                                $(this).find('option[value="' + val + '"]').prop('disabled', true);
+                            }
+                        });
+                    }
+                });
+            } else if(type === 'Approval') {
+                $('.userSelect option').prop('disabled', false);
+                const orgUserMap = {};
+
+                $('.userSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.level_organizations').val();
+                    const selectedValues = $(this).val() || [];
+
+                    if (orgId) {
+                        if (!orgUserMap[orgId]) {
+                            orgUserMap[orgId] = new Set();
+                        }
+                        selectedValues.forEach(val => orgUserMap[orgId].add(val));
+                    }
+                });
+
+                $('.userSelect').each(function () {
+                    const currentRow = $(this).closest('tr');
+                    const orgId = currentRow.find('.level_organizations').val();
+                    const currentSelected = $(this).val() || [];
+
+                    if (orgId && orgUserMap[orgId]) {
+                        const selectedSet = orgUserMap[orgId];
+                        selectedSet.forEach(val => {
+                            if (!currentSelected.includes(val)) {
+                                $(this).find('option[value="' + val + '"]').prop('disabled', true);
+                            }
+                        });
+                    }
+                });
+            }
+            else{
+               const selectedOrgIds = [];
+                $('.organizations').each(function () {
+                    const row = $(this).closest('tr');
+                    const cmpId = row.find('.companySelect').val();
+                    const orgId = $(this).val();
+
+                    if (cmpId === companyId && orgId) {
+                        selectedOrgIds.push({
+                            id: $(this).attr('id'),
+                            value: orgId
+                        });
+                    }
+                });
+
+            const companyData = companies.find(c => c.id == companyId);
+            const orgs = companyData ? companyData.organizations : [];
+
+            $('.organizations').each(function () {
+                const $select = $(this);
+                const row = $select.closest('tr');
+                const cmpId = row.find('.companySelect').val();
+                const selectId = $select.attr('id');
+                const currentVal = $select.val();
+
+                if (cmpId === companyId) {
+                    $select.html("<option disabled selected value=''>Select Unit</option>");
+
+                    orgs.forEach(org => {
+                        const isDisabled = selectedOrgIds.some(sel => sel.value === org.id.toString() && sel.id !== selectId)
+                            ? 'disabled' : '';
+                        const isSelected = currentVal === org.id.toString() ? 'selected' : '';
+
+                        $select.append(`<option value="${org.id}" ${isDisabled} ${isSelected}>${org.name}</option>`);
+                    });
+                }
+            });
+
+            }
+        }
 
         $(document).ready(function() {
             const book = @json($book);
@@ -1170,17 +1220,15 @@ function updateOrganizationDropdown($currentRow) {
                 showOrDisableGlParamTab();
             }
 
-            $('.userSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.userSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
-                });
-            });
+            updateDisabledEnabledUserSelect('Amendment')
+            updateDisabledEnabledUserSelect('Approval')
 
-            $('.amendmentUserSelect').each(function() {
-                var selectedValues= $(this).val();
-                $.each(selectedValues, function(index, value) {
-                    $('.amendmentUserSelect').not(this).find('option[value="'+value+'"]').prop('disabled', true);
+            $(document).ready(function () {
+                $('.companySelect').each(function () {
+                    const companyId = $(this).val();
+                    if (companyId) {
+                        updateDisabledEnabledUserSelect('Pattern', companyId);
+                    }
                 });
             });
 
@@ -1287,7 +1335,7 @@ function updateOrganizationDropdown($currentRow) {
                         <tr class="${levelCounter}">
                             <td>&nbsp; <input class="d-none" type="text" value="${levelCounter}" name="level[]"></td>
                             <td>
-                                <select class="form-select mw-100 select2 levelCompanySelect" id = "company_select_${levelCounter}" data-id="${levelCounter}" name="level_company_id[]" >
+                                <select class="form-select mw-100 select2 levelCompanySelect" id = "company_select_${levelCounter}" data-id="${levelCounter}" name="level_company_id[${levelCounter - 1}]" >
                                     <option disabled selected value="">Select Company</option>
                                     @foreach ($companies as $company)
                                         <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -1295,7 +1343,7 @@ function updateOrganizationDropdown($currentRow) {
                                 </select>
                             </td>
                             <td>
-                                <select class="form-select mw-100 select2 level_organizations" user-select-id = "${levelCounter - 1}_0" name="level_organization_id[]" id="level_organization_id${levelCounter}" >
+                                <select class="form-select mw-100 select2 level_organizations" user-select-id = "${levelCounter - 1}_0" name="level_organization_id[${levelCounter - 1}]" id="level_organization_id${levelCounter}" >
                                 </select>
                             </td>
                                 <td>
@@ -1304,7 +1352,7 @@ function updateOrganizationDropdown($currentRow) {
                                         <option disabled  value="">Select Approver
                                         </option>
                                         @foreach ($people as $user)
-                                        <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
+                                        <option value="{{ $user->id }}">{{ $user->name }}</option>
                                         @endforeach
                                     </select>
                             </td>
@@ -1365,7 +1413,7 @@ function updateOrganizationDropdown($currentRow) {
                         <select class="form-select mw-100 select2 userSelect" data-id="${level}" name="user[${level - 1}][${rowCount}][]" id="user_select_${rowCount}_${level}" multiple>
                             <option disabled value="">Select Approver</option>
                             @foreach ($people as $user)
-                                <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
+                                <option value="{{ $user->id }}">{{ $user->name }}</option>
                             @endforeach
                         </select>
                     </td>
@@ -1478,7 +1526,7 @@ $(document).on('click', '.amendment_plus', function (e) {
             <input type="text" value="0" name="amendment_min[]" {{ $serviceType === 'master' ? 'readonly' : '' }}
              class="form-control mw-100">
               </td>
-
+              <td>
               <div class="customernewsection-form">
                 <div class="demo-inline-spacing">
                     <input type="hidden" name="approval_req[]" class="rights-value" value="no">
@@ -1491,7 +1539,8 @@ $(document).on('click', '.amendment_plus', function (e) {
                         <label class="form-check-label fw-bolder" for="app_req_no_${amendment_count}">No</label>
                     </div>
                 </div>
-            </div>
+                </div>
+                </td>
 
             <td class = "center-align-content">
                 <a href="#" class="text-primary amendment_plus"><i data-feather="plus-square"></i></a>
@@ -1513,12 +1562,18 @@ $(document).on('click', '.amendment_plus', function (e) {
     updateRowNumbers();
 });
 
-// Remove row on click of trash icon and update row numbers
 $(document).on('click', '.delete-row', function (e) {
     e.preventDefault();
-    $(this).closest('tr').remove();
+
+    const $currentRow = $(this).closest('tr');
+    const $companyId = $currentRow.find('.companySelect').val();
+
+    $currentRow.remove();
     updateRowNumbers();
+    updateDisabledEnabledUserSelect('Amendment');
+    updateDisabledEnabledUserSelect('Approval');
 });
+
 
 // Function to update row numbers
 function updateRowNumbers() {
@@ -1555,6 +1610,7 @@ $(document).on('input', '.amendment_organizations', function (e) {
                     userElement.innerHTML = innerHTMLVal;
                 }
             }
+            updateDisabledEnabledUserSelect('Amendment')
         },
         error: function(xhr) {
             console.error('Error fetching org services data:', xhr.responseText);

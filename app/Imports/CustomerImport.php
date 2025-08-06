@@ -141,6 +141,12 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithChunkReading
                     \Log::warning("Non-numeric TDS WEF date encountered: " . $tdsWefDate);
                 }
             }
+            $gstApplicable = ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0;
+            $gstinNo = $row['gstin_no'] ?? null;
+
+            if ($gstApplicable === 0) {
+                $gstinNo = null;
+            }
             $uploadedCustomer = UploadCustomerMaster::create([
                 'company_name' => $row['customer_name'] ?? null,
                 'customer_initial' => $customerInitials ?? null,
@@ -169,8 +175,8 @@ class CustomerImport implements ToCollection, WithHeadingRow, WithChunkReading
                 'ledger_group' => $row['ledger_group'] ?? null,
                 'credit_limit' => $row['credit_limit'] ?? null,
                 'credit_days' => $row['credit_days'] ?? null,
-                'gst_applicable' => ($row['gst_registered'] ?? 'N') === 'Y' ? 1 : 0,
-                'gstin_no' => $row['gstin_no'] ?? null,
+                'gst_applicable' => $gstApplicable,
+                'gstin_no' => $gstinNo,
                 'tds_applicable' => ($row['tds_applicable'] ?? 'N') === 'Y' ? 1 : 0,
                 'wef_date' => $tdsWefDatee ?? null,
                 'tds_certificate_no' => $row['tds_certificate_no'] ?? null,

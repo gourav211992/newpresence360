@@ -116,7 +116,7 @@ class ErpInvoiceItem extends Model
             $attributesArray = array();
             $attribute_ids = [];
             if ($attribute -> all_checked) {
-                $attribute_ids = ErpAttribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
+                $attribute_ids = Attribute::where('attribute_group_id', $attribute -> attribute_group_id) -> get() -> pluck('id') -> toArray();
             } else {
                 $attribute_ids = $attribute -> attribute_id ? json_decode($attribute -> attribute_id) : [];
             }
@@ -124,7 +124,7 @@ class ErpInvoiceItem extends Model
            $attribute -> short_name = $attribute->group?->short_name;
 
             foreach (isset($attribute_ids) ? $attribute_ids : [] as $attributeValue) {
-                    $attributeValueData = ErpAttribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
+                    $attributeValueData = Attribute::where('id', $attributeValue) -> select('id', 'value') -> where('status', 'active') -> first();
                     if (isset($attributeValueData))
                     {
                         $isSelected = ErpInvoiceItemAttribute::where('invoice_item_id', $this -> getAttribute('id')) -> where('item_attribute_id', $attribute -> id) -> where('attribute_value', $attributeValueData -> value) -> first();

@@ -37,15 +37,16 @@ class BomImportController extends Controller
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = request()->segments()[0] == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
+        
         if (count($servicesBooks['services']) == 0) {
-            return redirect()->back();
+            return redirect()->back()->with('error', 'Service book not found.');
         }
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
         $books = $books->filter(function ($book) {
             return optional($book->patterns->first())->series_numbering === 'Auto';
         });
         if (count($books) == 0) {
-            return redirect()->back();
+            return redirect()->back()->with('error', 'Book series not found.');
         }
         $routeAlias = $servicesBooks['services'][0]?->alias ?? null;
         if ($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS) {

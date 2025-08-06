@@ -261,6 +261,7 @@
         @endif
 
         @php
+            $totalExp = 0.00;
             $taxBracket = [];
             $totalCGSTValue = 0.00;
             $totalSGSTValue = 0.00;
@@ -326,26 +327,27 @@
                 $totalSGSTValue = 0.00;
                 $totalIGSTValue = 0.00;
                 $totalTaxValue = 0.00;
+                $hsnGroups = [];
+                $totalTax = 0.00;
+
             @endphp
             @foreach($order->items as $key => $val)
             @php
-                $hsnGroups = [];
                 $totalTaxPercentage = 0.00;
                 if ($val->item && $val->item->hsn) {
                     $hsnCode = $val->item->hsn->code;
                     $teds = $val->tax_ted;
-
-                    $taxableValue = $val->order_qty * $val->rate;
-
+                    $taxPercentage = 0.00;
                     foreach ($teds as $ted) {
-                        $taxPercentage = $ted->ted_percentage;
+                        $taxPercentage += $ted->ted_percentage;
                         $taxType = $ted->ted_name;
-                        $taxTypeAmount = ($taxableValue * $taxPercentage) / 100;
+                        $taxableValue = $ted -> assessment_amount;
+                        $taxTypeAmount = ($taxableValue * $ted->ted_percentage) / 100;
 
                         if (!isset($hsnGroups[$hsnCode])) {
                             $hsnGroups[$hsnCode] = [
                                 'hsn_code' => $hsnCode,
-                                'taxable_rate' => 0.00,
+                                'taxable_rate' => $taxPercentage,
                                 'taxable_value' => 0.00,
                                 'tax_amount' => 0.00,
                                 'tax_group' => $ted->ted_group_code,
@@ -354,13 +356,14 @@
 
                         // Initialize tax type amount if not set
                         if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
-                            $hsnGroups[$hsnCode][$taxType . '_amount'] = 0.00;
+                            $hsnGroups[$hsnCode][$taxType   . '_amount'] = 0.00;
                         }
                         $totalTaxPercentage += $taxPercentage;
-                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
-                        $hsnGroups[$hsnCode]['taxable_rate'] += $taxPercentage;
                         $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
                     }
+                    $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                    $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;
+
                 }
 
                 // Now, calculate total tax_amount for each HSN group
@@ -477,6 +480,7 @@
                             $totalCGSTValue += $val->cgst_value['value'];
                             $totalSGSTValue += $val->sgst_value['value'];
                             $totalIGSTValue += $val->igst_value['value'];
+                            $totalTax += $totalTaxAmount; 
                             $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
                         @endphp
                         {{$totalTaxAmount}}
@@ -559,10 +563,13 @@
                                     <b>Total After Tax:</b>
                                 </td>
                                 <td style="text-align: right; padding-top: 3px;">
-                                    {{ number_format($totalAfterTax, 2)}}
+                                    {{ number_format($totalTaxAmount + $totalTaxableValue, 2)}}
                                 </td>
                             </tr>
                             @foreach($order->expense_ted as $key => $expense)
+                                @php
+                                    $totalExp += $expense -> ted_amount;
+                                @endphp
                                 <tr>
                                     <td style="text-align: right; padding-top: 3px;">
                                         <b>{{ucFirst($expense->ted_name)}} :</b>
@@ -578,7 +585,7 @@
                                 <b>Total Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format($totalAmount, 2) }}
+                                    {{ number_format($totalTax + $totalTaxableValue + $totalExp, 2)}}
                             </td>
                         </tr>
                     </table>

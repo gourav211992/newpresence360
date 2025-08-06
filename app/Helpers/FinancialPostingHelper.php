@@ -1034,7 +1034,7 @@ class FinancialPostingHelper
             );
         }
         //Create log
-        $userData = Helper::userCheck();
+        $userData = Helper::getAuthenticatedUser();
 
         $referenceModelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$voucher->reference_service]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$voucher->reference_service] : null;
         if ($referenceModelName) {
@@ -1052,8 +1052,8 @@ class FinancialPostingHelper
                 $docApproval->approval_date = now();
                 $docApproval->revision_number = $referenceDoc->revision_number ?? 0;
                 $docApproval->remarks = null;
-                $docApproval->user_id = $userData['user_id'];
-                $user_type = $userData['type'];
+                $docApproval->user_id = $userData -> auth_user_id;
+                $user_type = $userData -> authenticable_type;
                 $docApproval->user_type = $user_type;
                 $docApproval->save();
             }
@@ -1089,7 +1089,7 @@ class FinancialPostingHelper
             );
         }
         //Create log
-        $userData = Helper::userCheck();
+        $user = Helper::getAuthenticatedUser();
 
         $referenceModelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$voucher->reference_service]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$voucher->reference_service] : null;
         if ($referenceModelName) {
@@ -1107,8 +1107,8 @@ class FinancialPostingHelper
                 $docApproval->approval_date = now();
                 $docApproval->revision_number = $referenceDoc->revision_number ?? 0;
                 $docApproval->remarks = null;
-                $docApproval->user_id = $userData['user_id'];
-                $user_type = $userData['type'];
+                $docApproval->user_id = $user -> auth_user_id;
+                $user_type = $user -> authenticable_type;
                 $docApproval->user_type = $user_type;
                 $docApproval->save();
             }

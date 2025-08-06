@@ -548,38 +548,53 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
 <script>
 
-const customerList = [
-    @foreach($customers as $customer)
-        {
-            label: "{{ addslashes($customer->company_name) }}",
-            value: "{{ addslashes($customer->company_name) }}",
-            id: {{ $customer->id }}
-        },
-    @endforeach
-];
+    const customerList = [
+        @foreach($customers as $customer)
+            {
+                label: "{{ addslashes($customer->company_name) }}",
+                value: "{{ addslashes($customer->company_name) }}",
+                id: {{ $customer->id }}
+            },
+        @endforeach
+    ];
 
-$(document).ready(function () {
-      // Customer Autocomplete
-    $(document).on('focus', '.customer-autocomplete', function () {
-        const $input = $(this);
-        if (!$input.data('ui-autocomplete')) {
-            $input.autocomplete({
-                source: customerList,
-                minLength: 0,
-                select: function (event, ui) {
-                    const $row = $input.closest('tr');
-                    $input.val(ui.item.label);
-                    $row.find('.customer-id').val(ui.item.id);
-                    return false;
-                }
-            }).focus(function () {
-                $(this).autocomplete('search', '');
-            });
-        }
+    $(document).ready(function () {
+
+        // Initialize autocomplete on focus
+        $(document).on('focus', '.customer-autocomplete', function () {
+            const $input = $(this);
+
+            // Only initialize once
+            if (!$input.data('ui-autocomplete')) {
+                $input.autocomplete({
+                    source: customerList,
+                    minLength: 0,
+                    select: function (event, ui) {
+                        const $row = $input.closest('tr');
+                        $input.val(ui.item.label);
+                        $row.find('.customer-id').val(ui.item.id);
+                        return false;
+                    }
+                }).focus(function () {
+                    $(this).autocomplete('search', '');
+                });
+            }
+        });
+
+        // Clear customer ID if input is changed manually
+        $(document).on('input', '.customer-autocomplete', function () {
+            const $input = $(this);
+            const $row = $input.closest('tr');
+            const currentVal = $input.val().trim();
+
+            const matchedCustomer = customerList.find(c => c.label === currentVal);
+
+            if (!matchedCustomer) {
+                $row.find('.customer-id').val('');
+            }
+        });
+
     });
-});
-    
 </script>
-
 
 @endsection

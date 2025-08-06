@@ -43,6 +43,7 @@ class SaleModuleHelper
     const SALES_INVOICE_DN_TYPE = "dnote";
     const SALES_INVOICE_DN_CUM_INV_TYPE = "si-dnote";
     const SALES_INVOICE_LEASE_TYPE = "lease-invoice";
+    const SALES_INVOICE_TRANSPORTER_TYPE = "transporter-invoice";
     const ORDER_TYPE_DEFAULT = "Order";
     const ORDER_TYPE_JOB_WORK = "Job Work";
     const ORDER_TYPE_SUB_CONTRACTING = "Sub Contracting";
@@ -59,6 +60,7 @@ class SaleModuleHelper
     }
     public static function getAndReturnInvoiceType(string $type) : string
     {
+        
         $invoiceType = isset($type) && in_array($type, ConstantHelper::SALE_INVOICE_DOC_TYPES) ? $type : ConstantHelper::SI_SERVICE_ALIAS;
         return $invoiceType;
     }
@@ -86,6 +88,8 @@ class SaleModuleHelper
             return "Delivery Note CUM Invoice";
         } else if ($type === self::SALES_INVOICE_LEASE_TYPE) {
             return "Lease Invoice";
+        }else if ($type === self::SALES_INVOICE_TRANSPORTER_TYPE) {
+            return "Transporter Invoice";
         } else {
             return "";
         }
@@ -201,7 +205,9 @@ class SaleModuleHelper
             return [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS];
         } else if ($type === self::SALES_INVOICE_LEASE_TYPE) {
             return [ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS];
-        } else {
+        } else if ($type === self::SALES_INVOICE_TRANSPORTER_TYPE) {
+            return [ConstantHelper::TI_SERVICE_ALIAS];
+        }else {
             return [];
         }
     }

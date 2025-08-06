@@ -377,6 +377,65 @@ class AutocompleteController extends Controller
                                          ->get(['id', 'code', 'name']);
                 }
             }
+            elseif ($type === 'customerLadger' || $type === 'vendorLadger') {
+                $groupName = $type === 'customerLadger' ? 'Account Receivable' : 'Account Payable';
+                
+                $query = Ledger::where('status', 1);
+
+                $group = Group::where('name', $groupName)->first();
+                if ($group) {
+                    $lastLevelGroupIds = $group->getAllLastLevelGroupIds();
+                    $stringGroupIds = array_map('strval', $lastLevelGroupIds);
+
+                    $query->where(function($q2) use ($stringGroupIds) {
+                        foreach ($stringGroupIds as $id) {
+                            $q2->orWhereJsonContains('ledger_group_id', $id);
+                        }
+                    });
+                } else {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Group not found.',
+                        'data' => []
+                    ]);
+                }
+
+                $results = $query->where(function($query) use ($term) {
+                                        $query->where('code', 'LIKE', "%{$term}%")
+                                            ->orWhere('name', 'LIKE', "%{$term}%");
+                                    })
+                                    ->get(['id', 'code', 'name']);
+
+                if ($results->isEmpty()) {
+                    $fallbackQuery = Ledger::where('status', 1);
+
+                    if ($group) {
+                        $lastLevelGroupIds = $group->getAllLastLevelGroupIds();
+                        $stringGroupIds = array_map('strval', $lastLevelGroupIds);
+
+                        $fallbackQuery->where(function($q2) use ($stringGroupIds) {
+                            foreach ($stringGroupIds as $id) {
+                                $q2->orWhereJsonContains('ledger_group_id', $id);
+                            }
+                        });
+                    }
+
+                    $results = $fallbackQuery->limit(10)->get(['id', 'code', 'name']);
+                }
+
+                if ($results->isEmpty()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'No record found.',
+                        'data' => []
+                    ]);
+                }
+
+                return response()->json([
+                    'status' => true,
+                    'data' => $results
+                ]);
+            }
 
             elseif ($type === 'header_item') {
                 $type = ['WIP/Semi Finished', 'Finished Goods'];

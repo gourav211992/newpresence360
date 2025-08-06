@@ -867,14 +867,14 @@ class ErpSaleOrderController extends Controller
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
-                                if($taxDetail['applicability_type']=="collection")
-                                {
-                                    $totalTax += $itemTax;
-                                }
-                                else
-                                {
-                                    $totalTax -= $itemTax;
-                                }
+                            }
+                            if($taxDetail['applicability_type']=="collection")
+                            {
+                                $totalTax += $itemTax;
+                            }
+                            else
+                            {
+                                $totalTax -= $itemTax;
                             }
                         }
                         //Check if update or create
@@ -980,6 +980,7 @@ class ErpSaleOrderController extends Controller
                                         $jobWorkItem = ErpSoJobWorkItem::updateOrCreate([
                                             'sale_order_id' => $saleOrder -> id,
                                             'so_item_id' => $soItem -> id,
+                                            'jo_id' => $joBomMapping -> jo_id,
                                             'bom_detail_id' => $joBomMapping -> bom_detail_id,
                                             'station_id' => $joBomMapping -> station_id,
                                             'rm_type' => $joBomMapping -> rm_type,
