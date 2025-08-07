@@ -13,6 +13,7 @@ class AlternateItemHistory extends Model
 
     protected $fillable = [
         'source_id', 
+        'alt_item_id',
         'item_id',
         'item_code', 
         'item_name'

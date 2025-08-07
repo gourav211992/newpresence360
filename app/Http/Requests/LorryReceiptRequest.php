@@ -36,14 +36,14 @@ class LorryReceiptRequest extends FormRequest
             'document_number'    => 'required|string|max:255',
             'document_date'      => 'required|date|before_or_equal:today',
             'location'           => 'required|exists:erp_stores,id',
-            'cost_center_id'     => 'required|exists:erp_cost_centers,id',
+            'cost_center_id'     => 'nullable|exists:erp_cost_centers,id',
 
             'source_id'        => 'required|numeric|exists:erp_logistics_route_masters,id',
             'destination_id'   => 'required|numeric|exists:erp_logistics_route_masters,id',
             'customer_id'      => 'required|numeric|exists:erp_customers,id',
             'consignee_id'     => 'required|numeric|exists:erp_customers,id',
-            'vehicle_type_name'=> 'required',
-            'vehicle_type_id'  => 'required|numeric|exists:erp_vehicle_types,id',
+            // 'vehicle_number'   => 'required',
+            'vehicle_number_id'=> 'required|numeric|exists:erp_vehicles,id',
             'distances'        => 'required','numeric', 'regex:/^\d{1,4}(\.\d{1,2})?$/',
             'freight_charge'   => 'required|numeric|min:0',
             'driver_id'        => 'required|numeric|exists:erp_drivers,id',
@@ -101,8 +101,8 @@ class LorryReceiptRequest extends FormRequest
             'consignee_id.required' => 'The consignee is required.',
             'consignee_id.exists' => 'The selected consignee is invalid.',
 
-            'vehicle_type_name.required' => 'The vehicle type is required.',
-            'vehicle_type_name.exists' => 'The selected vehicle type is invalid.',
+            'vehicle_number_id.required' => 'The vehicle number is required.',
+            'vehicle_number_id.exists' => 'The selected vehicle number is invalid.',
 
             'distances.required' => 'The distance is required.',
             'distances.numeric' => 'The distance must be a number.',
@@ -170,26 +170,48 @@ class LorryReceiptRequest extends FormRequest
         ];
     }
 
-      public function withValidator(Validator $validator)
+public function withValidator(Validator $validator)
 {
     $validator->after(function ($validator) {
-        if (
-            $this->input('source_id') &&
-            $this->input('destination_id') &&
-            $this->input('source_id') == $this->input('destination_id')
-        ) {
+        $sourceId = $this->input('source_id');
+        $destinationId = $this->input('destination_id');
+        $customerId = $this->input('customer_id');
+        $consigneeId = $this->input('consignee_id');
+
+        if ($sourceId && $destinationId && $sourceId == $destinationId) {
             $validator->errors()->add('destination_id', 'Source and destination location cannot be the same.');
         }
 
-        $locations = collect($this->input('locations', []))
-            ->pluck('location_id')
-            ->filter();
+        if ($customerId && $consigneeId && $customerId == $consigneeId) {
+            $validator->errors()->add('consignee_id', 'Consignor and Consignee cannot be the same.');
+        }
 
-        $duplicates = $locations->duplicates();
+        $locationInputs = collect($this->input('locations', []));
+        $locationIds = $locationInputs->pluck('location_id')->filter();
 
-        foreach ($duplicates as $index => $value) {
-            $validator->errors()->add("locations.$index.location_id", 'Duplicate locations are not allowed.');
+        // Detect duplicate location IDs
+        $duplicateIds = $locationIds->duplicates()->all();
+
+        foreach ($locationInputs as $index => $location) {
+            $locId = $location['location_id'] ?? null;
+
+            // Source match
+            if ($sourceId && $locId == $sourceId) {
+                $validator->errors()->add("locations.$index.location_id", 'Pickup/Drop-off location must be different from the source location.');
+            }
+
+            // Destination match
+            if ($destinationId && $locId == $destinationId) {
+                $validator->errors()->add("locations.$index.location_id", 'Pickup/Drop-off location must be different from the destination location.');
+            }
+
+            // Duplicate location ID
+            if (in_array($locId, $duplicateIds)) {
+                $validator->errors()->add("locations.$index.location_id", 'Duplicate locations are not allowed.');
+            }
         }
     });
 }
+
+
 }

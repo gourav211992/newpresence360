@@ -130,7 +130,7 @@ class InventoryReportController extends Controller
             ->whereNull('utilized_id')
             ->where('transaction_type', 'receipt');
 
-        $query->with(['item', 'item.category', 'item.subCategory', 'location', 'store', 'station', 'wipStation']);
+        $query->with(['item', 'item.category', 'item.subCategory', 'location', 'store', 'station', 'wipStation', 'inventoryUom']);
 
         // Item filters
         $query->whereHas('item', function($q) use ($itemId, $categoryId, $subCategoryId, $mCategoryId, $mSubCategoryId) {
@@ -210,8 +210,8 @@ class InventoryReportController extends Controller
                 ['approved', 'approval_not_required', 'posted']
             )
             ->selectRaw('SUM(CASE WHEN document_status NOT IN (?, ?, ?) THEN org_currency_cost ELSE 0 END) as unconfirmed_stock_value',
-            ['approved', 'approval_not_required', 'posted']
-        );
+            ['approved', 'approval_not_required', 'posted'])
+            ->groupBy(['inventory_uom_id']);
         $now = Carbon::now();
         if ($day1Check) {
             $tenDaysAgo = $now->copy()->subDays($day1Check)->format('Y-m-d');
@@ -302,7 +302,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation', 'inventoryUom']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -406,7 +406,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type', 'inventory_uom_id']);
 
         if (!$hasFilters) {
             $records = [];
@@ -440,7 +440,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation', 'inventoryUom']);
         $bookTypes = StockLedger::distinct()->pluck('book_type');
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
@@ -508,7 +508,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type', 'inventory_uom_id']);
 
         // If no valid filters were applied, return an empty JSON response
         if (!$hasFilters) {
@@ -547,7 +547,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation', 'inventoryUom']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -634,7 +634,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type', 'inventory_uom_id']);
 
         $records = $query->get()->toArray();
         $subStoreLocType = ConstantHelper::ERP_SUB_STORE_LOCATION_TYPES;
@@ -660,7 +660,7 @@ class InventoryReportController extends Controller
             ->get();
         $query = StockLedger::query()
                 ->withDefaultGroupCompanyOrg()
-                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation']);
+                ->with(['book', 'item', 'location', 'store', 'so', 'station', 'wipStation', 'inventoryUom']);
         $items = Item::orderBy('id', 'ASC')
                 ->withDefaultGroupCompanyOrg()
                 ->get();
@@ -728,7 +728,7 @@ class InventoryReportController extends Controller
             SUM(CASE WHEN transaction_type = "issue" THEN issue_qty ELSE 0 END) as issue_qty,
             SUM(CASE WHEN transaction_type = "receipt" THEN org_currency_cost ELSE 0 END) as receipt_org_currency_cost,
             SUM(CASE WHEN transaction_type = "issue" THEN org_currency_cost ELSE 0 END) as issue_org_currency_cost')
-            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type']);
+            ->groupBy(['document_header_id', 'document_detail_id', 'book_type', 'transaction_type', 'lot_number', 'stock_type', 'inventory_uom_id']);
 
         $records = $query->get();
         // $records->each(function ($item) {

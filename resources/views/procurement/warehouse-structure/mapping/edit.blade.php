@@ -195,9 +195,9 @@
                                                                             for="Email"></label>
                                                                     </div>
                                                                 </th>
-                                                                <th width="300">Structure Name</th>
-                                                                <th width="100">Storage Point</th>
-                                                                <th width="100">Parent</th>
+                                                                <th width="100">Structure Name</th>
+                                                                <th width="50">Storage Point</th>
+                                                                <th width="350">Parent</th>
                                                                 {{-- <th width="200">Hierarchy</th> --}}
                                                                 <th width="100">Max Weight (Kg)</th>
                                                                 <th width="100">Max Volume (CUM)</th>
@@ -207,15 +207,6 @@
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
                                                             @foreach ($whDetails as $key => $val)
-                                                                @php
-                                                                    $record = $val->first();
-                                                                    $groupIndex = $loop->iteration;
-                                                                    $selectedParentIds = $val
-                                                                        ->pluck('parent_id')
-                                                                        ->unique()
-                                                                        ->filter()
-                                                                        ->toArray();
-                                                                @endphp
                                                                 <tr data-index="{{ $loop->iteration }}">
                                                                     <td class="customernewsection-form">
                                                                         <div
@@ -226,19 +217,14 @@
                                                                                 for="Email"></label>
                                                                         </div>
                                                                     </td>
-                                                                    @foreach ($val as $item)
-                                                                        <input type="hidden"
-                                                                            name="details[{{ $loop->iteration }}][detail_ids][]"
-                                                                            value="{{ $item->id }}">
-                                                                    @endforeach
                                                                     <td>
                                                                         <input type="hidden"
                                                                             name="details[{{ $loop->iteration }}][detail_id]"
-                                                                            value="{{ $record->id }}">
+                                                                            value="{{ $val->id }}">
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
-                                                                            name="details[{{ $loop->iteration }}][name]"
-                                                                            value="{{ $record->name }}">
+                                                                            name="details[{{ $loop->iteration }}][name]" readonly
+                                                                            value="{{ $val->name }}">
                                                                     </td>
                                                                     <td>
                                                                         <div
@@ -247,7 +233,7 @@
                                                                                 type="checkbox"
                                                                                 name="details[{{ $loop->iteration }}][storage_point]"
                                                                                 id="storage_point"
-                                                                                {{ $record->is_storage_point ? 'checked' : '' }}
+                                                                                {{ $val->is_storage_point ? 'checked' : '' }}
                                                                                 {{ $isLastLevel === 1 ? 'disabled' : '' }}>
                                                                             <label class="form-check-label"
                                                                                 for="storage_point"></label>
@@ -256,51 +242,56 @@
                                                                     <td>
                                                                         <input type="hidden"
                                                                             name="details[{{ $loop->iteration }}][is_first_level]"
-                                                                            value="{{ $record->is_first_level }}">
+                                                                            value="{{ $val->is_first_level }}">
                                                                         <input type="hidden"
                                                                             name="details[{{ $loop->iteration }}][is_last_level]"
-                                                                            value="{{ $record->is_last_level }}">
+                                                                            value="{{ $val->is_last_level }}">
                                                                         @if (!empty($parentDetails))
                                                                             <select
-                                                                                name="details[{{ $groupIndex }}][parent_id][]"
-                                                                                class="select2" multiple>
-                                                                                @foreach ($parentDetails as $parent)
-                                                                                    <option value="{{ $parent->id }}"
-                                                                                        {{ in_array($parent->id, $selectedParentIds) ? 'selected' : '' }}>
-                                                                                        {{ $parent->name }}
+                                                                                class="form-select mw-100 text-center parent-dropdown parent_id"
+                                                                                name="details[{{ $loop->iteration }}][parent_id]">
+                                                                                @foreach ($parentDetails as $parentDetail)
+                                                                                    <option
+                                                                                        value="{{ $parentDetail->id }}"
+                                                                                        {{ $parentDetail->id == $val->parent_id ? 'selected' : '' }}>
+                                                                                        <strong>
+                                                                                            {{ str_replace('-', ' > ', $parentDetail?->heirarchy_name) }}
+                                                                                        </strong>
                                                                                     </option>
                                                                                 @endforeach
                                                                             </select>
                                                                         @endif
                                                                     </td>
                                                                     {{-- <td class="parent-hierarchy">
-                                                                    @php
-                                                                        $whDetail = \App\Models\WhDetail::find($record->parent_id);
-                                                                    @endphp
+                                                                        @php
+                                                                            $whDetail = \App\Models\WhDetail::find(
+                                                                                $val->parent_id,
+                                                                            );
+                                                                        @endphp
 
-                                                                    @if ($whDetail)
-                                                                        {!! $whDetail->parent_names !!}
-                                                                    @endif
-                                                                </td> --}}
+                                                                        @if ($whDetail)
+                                                                            {!! $whDetail->parent_names !!}
+                                                                        @endif
+                                                                    </td> --}}
                                                                     <td>
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_weight]"
-                                                                            value="{{ number_format($record->max_weight, 2) }}"
-                                                                            {{ $record->is_storage_point !== 1 ? 'readonly' : '' }}>
+                                                                            value="{{ number_format($val->max_weight, 2) }}"
+                                                                            {{ $val->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>
                                                                         <input type="text" placeholder="Enter"
                                                                             class="form-control mw-100 mb-25"
                                                                             name="details[{{ $loop->iteration }}][max_volume]"
-                                                                            value="{{ number_format($record->max_volume, 2) }}"
-                                                                            {{ $record->is_storage_point !== 1 ? 'readonly' : '' }}>
+                                                                            value="{{ number_format($val->max_volume, 2) }}"
+                                                                            {{ $val->is_storage_point !== 1 ? 'readonly' : '' }}>
                                                                     </td>
                                                                     <td>
-                                                                        {{ number_format($record->current_weight, 2) }}
+                                                                        {{ number_format($val->current_weight, 2) }}
                                                                     </td>
                                                                     <td>
-                                                                        {{ number_format($record->current_volume, 2) }}
+                                                                        {{ number_format($val->current_volume, 2) }}
                                                                     </td>
                                                                 </tr>
                                                             @endforeach

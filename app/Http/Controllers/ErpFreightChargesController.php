@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ErpVehicle;
 use Illuminate\Http\Request;
 use App\Models\AuthUser;
 use App\Helpers\Helper; 
@@ -148,10 +149,22 @@ class ErpFreightChargesController extends Controller
     {
         $sourceId = $request->source_id;
         $destinationId = $request->destination_id;
+        $vehicleId = $request->vehicle_id;
+        $customerId = $request->customer_id;
 
-        $freightCharge = ErpFreightCharge::where('source_route_id', $sourceId)
-            ->where('destination_route_id', $destinationId)
-            ->first();
+        $vehicle = ErpVehicle::find($vehicleId);
+        
+
+       $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicle, $customerId) {
+            $query->where('source_route_id', $sourceId)
+                ->where('destination_route_id', $destinationId)
+                ->where('vehicle_type_id', $vehicle->vehicle_type_id)
+                ->where(function ($q) use ($customerId) {
+                    $q->where('customer_id', $customerId)
+                    ->orWhereNull('customer_id');
+                });
+        })->first();
+
 
         if (!$freightCharge) {
             return response()->json(['message' => 'No freight charge found.'], 404);

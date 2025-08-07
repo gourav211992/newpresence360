@@ -40,6 +40,7 @@ use App\Mail\ImportComplete;
 use Illuminate\Support\Facades\Mail;
 use App\Models\FixedAssetSetup;
 use App\Models\OrganizationGroup;
+use App\Traits\DataTableExportable;
 use Auth;
 use stdClass;
 use Exception;
@@ -47,6 +48,7 @@ use Exception;
 
 class ItemController extends Controller
 {
+    use DataTableExportable;
     protected $commonService;
     protected $itemImportExportService;
 
@@ -66,7 +68,9 @@ class ItemController extends Controller
         if (request()->ajax()) {
             $query = Item::with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
                 ->orderBy('id', 'desc');
-                
+            $search = request('search_value');
+          
+
             if ($status = request(key: 'status')) {
                 $query->where('status', $status);
             }
@@ -74,10 +78,19 @@ class ItemController extends Controller
             if ($hsnId = request(key: 'hsn_id')) {
                 $query->where('hsn_id', $hsnId);
             }
-            if ($subtypeId = request('sub_type_id')) {
-                $query->whereHas('subTypes', function ($query) use ($subtypeId) {
-                    $query->where('sub_type_id', $subtypeId);
-                });
+      
+           if ($subtypeId = request('sub_type_id')) {
+                if ($subtypeId === 'traded_item') {
+                    $query->where('is_traded_item', 1);
+                } elseif ($subtypeId === 'asset') {
+                    $query->where('is_asset', 1);
+                } else {
+                    $query->whereHas('subTypes', function ($query) use ($subtypeId) {
+                        $query->whereHas('subType', function ($q) use ($subtypeId) {
+                            $q->where('id', $subtypeId);
+                        });
+                    });
+                }
             }
             if ($categoryId = request('subcategory_id')) {
                 $query->where('subcategory_id', $categoryId);
@@ -153,9 +166,31 @@ class ItemController extends Controller
                     </div>
                 ";
             })
+           ->filter(function ($q) use ($search) {
+                if ($search) {
+                    $q->where(function ($q) use ($search) {
+                        $q->where('item_code', 'LIKE', "%{$search}%")
+                            ->orWhere('item_name', 'LIKE', "%{$search}%")
+                            ->orWhere('type', 'LIKE', "%{$search}%")
+                            ->orWhereHas('uom', fn($subQ) => $subQ->where('name', 'LIKE', "%{$search}%"))
+                            ->orWhereHas('hsn', fn($subQ) => $subQ->where('code', 'LIKE', "%{$search}%"))
+                            ->orWhereHas('subCategory', fn($subQ) => $subQ->where('name', 'LIKE', "%{$search}%"))
+                            ->orWhereHas('subTypes', function ($subQ) use ($search) {
+                                $subQ->whereHas('subType', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
+                            });
+                            
+                        $searchLower = strtolower($search);
+                        if (str_contains($searchLower, 'traded')) {
+                            $q->orWhere('is_traded_item', 1);
+                        }
+                        if (str_contains($searchLower, 'asset')) {
+                            $q->orWhere('is_asset', 1);
+                        }
+                    });
+                }
+            })
             ->rawColumns(['status'])
             ->make(true);
-
         }
         $subtypes = SubType::where('status', 'active')->get();
         $hsns = Hsn::where('status', ConstantHelper::ACTIVE)
@@ -170,10 +205,90 @@ class ItemController extends Controller
     
         return view('procurement.item.index', compact('hsns', 'categories', 'types','subtypes'));
     }
+
+    public function export(Request $request)
+    {
+        $search = $request->search_value ?? '';
+        $query = Item::with([
+            'uom', 'hsn', 'category', 'subCategory', 'auth_user', 'group', 'company', 'organization',
+            'itemAttributes.attributeGroup', 'specifications.group', 'alternateUOMs.uom',
+            'costCurrency', 'sellCurrency'
+        ]);
+        // Apply existing filters
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+        if ($request->filled('hsn_id')) {
+            $query->where('hsn_id', $request->input('hsn_id'));
+        }
+        if ($subtypeId = request('sub_type_id')) {
+            if ($subtypeId === 'traded_item') {
+                $query->where('is_traded_item', 1);
+            } elseif ($subtypeId === 'asset') {
+                $query->where('is_asset', 1);
+            } else {
+                $query->whereHas('subTypes', function ($query) use ($subtypeId) {
+                    $query->whereHas('subType', function ($q) use ($subtypeId) {
+                        $q->where('id', $subtypeId);
+                    });
+                });
+            }
+        }
+        if ($request->filled('subcategory_id')) {
+            $query->where('subcategory_id', $request->input('subcategory_id'));
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->input('type'));
+        }
+
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('item_code', 'LIKE', "%{$search}%")
+                    ->orWhere('item_name', 'LIKE', "%{$search}%")
+                    ->orWhere('type', 'LIKE', "%{$search}%")
+                    ->orWhereHas('uom', function($subQ) use ($search) {
+                        $subQ->where('name', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('hsn', function($subQ) use ($search) {
+                        $subQ->where('code', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('subCategory', function($subQ) use ($search) {
+                        $subQ->where('name', 'LIKE', "%{$search}%");
+                    })
+                    ->orWhereHas('subTypes', function($subQ) use ($search) {
+                        $subQ->whereHas('subType', function($subTypeQ) use ($search) {
+                            $subTypeQ->where('name', 'LIKE', "%{$search}%");
+                        });
+                    });
+                $searchLower = strtolower($search);
+
+                if (strpos($searchLower, 'traded item') !== false && strpos($searchLower, 'asset') !== false) {
+                    $q->orWhere(function ($inner) {
+                        $inner->where('is_traded_item', 1)
+                            ->orWhere('is_asset', 1);
+                    });
+                } elseif (strpos($searchLower, 'traded item') !== false) {
+                    $q->orWhere('is_traded_item', 1);
+                } elseif (strpos($searchLower, 'asset') !== false) {
+                    $q->orWhere('is_asset', 1);
+                }
+            });
+        }
+
+        $exportType = $request->input('export_type', 'excel');
+        $title = 'Items Export';
+
+        return $this->exportDataTable($request, $query, new Item(), $exportType, $title);
+    }
     
 
     public function create()
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
@@ -440,6 +555,7 @@ class ItemController extends Controller
                 if (isset($alternateItemData['item_code']) && !empty($alternateItemData['item_code']) &&
                     isset($alternateItemData['item_name']) && !empty($alternateItemData['item_name'])) {
                     $item->alternateItems()->create([
+                        'alt_item_id' => $alternateItemData['alt_item_id'],
                         'item_code' => $alternateItemData['item_code'],
                         'item_name' => $alternateItemData['item_name'],
                     ]);
@@ -480,6 +596,11 @@ class ItemController extends Controller
     }
     public function showImportForm()
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         return view('procurement.item.import');
     }
     public function import(Request $request)
@@ -589,6 +710,11 @@ class ItemController extends Controller
 
     public function edit(Request $request,$id)
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         if ($request->has('revisionNumber')) {
             $item = ItemHistory::with(['subTypes.subType'])
                 ->where('source_id', $id)
@@ -1028,12 +1154,14 @@ class ItemController extends Controller
                 isset($altItemData['item_name']) && !empty($altItemData['item_name'])) {
                 if (isset($altItemData['id']) && in_array($altItemData['id'], $existingAlternateItems)) {
                     $item->alternateItems()->where('id', $altItemData['id'])->update([
+                        'alt_item_id'  => $altItemData['alt_item_id'],
                         'item_name' => $altItemData['item_name'], 
                         'item_code' => $altItemData['item_code'], 
                     ]);
                     $newAlternateItems[] = $altItemData['id'];
                 } else {
                     $newAltItem = $item->alternateItems()->create([
+                        'alt_item_id'  => $altItemData['alt_item_id'], 
                         'item_name' => $altItemData['item_name'],
                         'item_code' => $altItemData['item_code'], 
                     ]);

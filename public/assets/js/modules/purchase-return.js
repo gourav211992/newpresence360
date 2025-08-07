@@ -181,7 +181,7 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
         } else {
             $itemValue.val('');
         }
-        
+
         if (result.status !== 200 && result.message) {
             Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
             return false;
@@ -1321,7 +1321,7 @@ function getSubStores(storeId, returnType, selectedSubStoreId = null) {
                     options += `<option value="${location.id}" ${isSelected}>${location.name}</option>`;
                 });
                 $subStore.html(options);
-            
+
                 if (selectedSubStoreId) {
                     $subStore.val(selectedSubStoreId).trigger('change');
                 } else if (response.data.length) {
@@ -1508,13 +1508,13 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
     let $lastRow = $(`${tableSelector} > tbody > tr`).last();
     let $input = $lastRow.find(inputSelector);
 
-    if ($input.length) {
-        $input.focus().autocomplete('search', '');
-        $input[0].scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        });
-    }
+    // if ($input.length) {
+    //     $input.focus().autocomplete('search', '');
+    //     $input[0].scrollIntoView({
+    //         behavior: 'smooth',
+    //         block: 'center',
+    //         inline: 'nearest'
+    //     });
+    // }
 }
 

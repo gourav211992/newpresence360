@@ -539,6 +539,7 @@
                                                                     <th max-width="180px">Attributes</th>
                                                                     <th>UOM</th>
                                                                     <th class="text-end">Required Qty</th>
+                                                                    <th class="text-end">Consumed Qty</th>
                                                                     @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                         {{-- <th class="text-end">Rate</th>
                                                                         <th class="text-end">Value</th> --}}
@@ -1538,6 +1539,10 @@
 
         function updateQty(element, index) {
             const totalProduced = parseFloat($("#item_qty_" + index).val()) || 0;
+            // console.log(element, totalProduced);
+            
+            $("#consumption_qty_" + index).val(totalProduced);
+
             let acceptedQty = parseFloat($("#item_accepted_qty_" + index).val()) || 0;
             let subPrimedQty = parseFloat($("#item_sub_prime_qty_" + index).val()) || 0;
             const changedType = element.name.includes('accepted')

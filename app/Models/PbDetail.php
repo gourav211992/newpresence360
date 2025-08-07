@@ -74,6 +74,11 @@ class PbDetail extends Model
         return $this->belongsTo(PbHeader::class, 'header_id');
     }
 
+    public function mrnDetail()
+    {
+        return $this->belongsTo(MrnDetail::class, 'mrn_detail_id');
+    }
+
     public function so()
     {
         return $this->belongsTo(ErpSaleOrder::class, 'so_id');

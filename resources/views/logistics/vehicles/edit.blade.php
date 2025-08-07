@@ -45,7 +45,7 @@
                                         <div class="col-md-9"> 
                                             <div class="row align-items-center mb-1">
                                                 <div class="col-md-2"> 
-                                                    <label class="form-label">Transporter Name <span class="text-danger">*</span></label>  
+                                                    <label class="form-label">Organization Name <span class="text-danger">*</span></label>  
                                                 </div>  
                                                 <div class="col-md-4"> 
                                                     <select name="transporter_id" class="form-select select2">

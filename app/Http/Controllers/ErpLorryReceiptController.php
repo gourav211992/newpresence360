@@ -13,7 +13,7 @@ use App\Http\Requests\LorryReceiptRequest;
 use App\Models\ErpLogisticsMultiFixedPricing;
 use App\Models\ErpLogisticsMultiFixedLocation;
 use App\Models\ErpLogisticsMultiPointPricing;
-use App\Models\ErpVehicleType;
+use App\Models\ErpVehicle;
 use App\Models\ErpLogisticLRMedia;
 use App\Models\ErpLorryReceiptHistory;
 use App\Models\ErpLorryReceipt;
@@ -51,7 +51,7 @@ class ErpLorryReceiptController extends Controller
     $organization = Organization::find($user->organization_id);
 
     $drivers = ErpDriver::where('organization_id', $organization->id)->where('status', 'active')->get();
-    $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $vehicles = ErpVehicle::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
    
 
     if ($request->ajax()) {
@@ -59,7 +59,7 @@ class ErpLorryReceiptController extends Controller
                 'source', 
                 'destination', 
                 'driver', 
-                'vehicleType', 
+                'vehicle', 
                 'consignor', 
                 'consignee', 
                 'auth_user'
@@ -102,7 +102,7 @@ class ErpLorryReceiptController extends Controller
             ->addColumn('source_name', fn($row) => $row->source->name ?? '-')
             ->addColumn('destination_name', fn($row) => $row->destination->name ?? '-')
             ->addColumn('driver_name', fn($row) => $row->driver->name ?? '-')
-            ->addColumn('vehicle_type', fn($row) => $row->vehicleType->name ?? '-')
+            ->addColumn('vehicle_no', fn($row) => $row->vehicle->lorry_no ?? '-')
             
             ->editColumn('created_by', function ($row) {
                     $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
@@ -137,7 +137,7 @@ class ErpLorryReceiptController extends Controller
             ->make(true);
     }
 
-    return view('logistics.lorry-receipt.index', compact('drivers', 'vehicleTypes'));
+    return view('logistics.lorry-receipt.index', compact('drivers', 'vehicles'));
 }
 
     
@@ -166,12 +166,12 @@ class ErpLorryReceiptController extends Controller
         $customers = Customer::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $drivers = ErpDriver::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $locations = InventoryHelper::getAccessibleLocations();
-        $vehicleTypes = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status','active')->get();
+        $vehicleNumbers = ErpVehicle::withDefaultGroupCompanyOrg()->where('status','active')->get();
         $routeMasters = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status','active')->get();
        
      
 
-        return view('logistics.lorry-receipt.create', compact('series', 'routeMasters','customers', 'drivers', 'vehicleTypes', 'locations','lorryCharges'));
+        return view('logistics.lorry-receipt.create', compact('series', 'routeMasters','customers', 'drivers', 'vehicleNumbers', 'locations','lorryCharges'));
     }
 
 
@@ -196,7 +196,7 @@ public function edit(Request $request, $id)
             'consignor',
             'consignee',
             'driver',
-            'vehicleType',
+            'vehicle',
             'locations.route',
             'mediaAttachments'
         ])
@@ -210,7 +210,7 @@ public function edit(Request $request, $id)
                 'consignor',
                 'consignee',
                 'driver',
-                'vehicleType',
+                'vehicle',
                 'locations.route',
                 'mediaAttachments'
             ])->findOrFail($id);
@@ -225,7 +225,7 @@ public function edit(Request $request, $id)
             'consignor',
             'consignee',
             'driver',
-            'vehicleType',
+            'vehicle',
             'locations.route',
             'mediaAttachments'
         ])->where('id', $id)->withDefaultGroupCompanyOrg()->firstOrFail();
@@ -250,7 +250,7 @@ public function edit(Request $request, $id)
     $customers      = Customer::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $drivers        = ErpDriver::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
     $locations      = InventoryHelper::getAccessibleLocations();
-    $vehicleTypes   = ErpVehicleType::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
+    $vehicleNumbers = ErpVehicle::withDefaultGroupCompanyOrg()->where('status','active')->get();
     $userType       = Helper::userCheck();
     $routeMasters   = ErpRouteMaster::withDefaultGroupCompanyOrg()->where('status', 'active')->get();
 
@@ -284,7 +284,7 @@ public function edit(Request $request, $id)
         'buttons',
         'customers',
         'drivers',
-        'vehicleTypes',
+        'vehicleNumbers',
         'locations',
         'lorryCharges',
         'revision_number',
@@ -371,7 +371,7 @@ public function edit(Request $request, $id)
             $lr->destination_id    = $request->destination_id;
             $lr->consignor_id      = $request->customer_id;
             $lr->consignee_id      = $request->consignee_id;
-            $lr->vehicle_type_id   = $request->vehicle_type_id;
+            $lr->vehicle_id        = $request->vehicle_number_id;
             $lr->distance          = $request->distance;
             $lr->freight_charges   = $request->freight_charges;
             $lr->driver_id         = $request->driver_id;
@@ -467,7 +467,7 @@ public function edit(Request $request, $id)
         $lr->destination_id    = $request->destination_id;
         $lr->consignor_id      = $request->customer_id;
         $lr->consignee_id      = $request->consignee_id;
-        $lr->vehicle_type_id   = $request->vehicle_type_id;
+        $lr->vehicle_id        = $request->vehicle_number_id;
         $lr->distance          = $request->distance;
         $lr->freight_charges   = $request->freight_charges;
         $lr->driver_id         = $request->driver_id;

@@ -30,6 +30,9 @@
                         <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('warehouse-mapping.create') }}">
                             <i data-feather="plus-circle"></i> Add New
                         </a>
+                        <a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{ route('warehouse-multiple-mapping.create') }}">
+                            <i data-feather="plus-circle"></i> Add Multiple
+                        </a>
                     </div>
                 </div>
             </div>
@@ -65,101 +68,145 @@
 @endsection
 
 @section('scripts')
-<script>
-$(document).ready(function() {
-    var dt_basic_table = $('.datatables-basic');
+    <script>
+        $(document).ready(function() {
+            var dt_basic_table = $('.datatables-basic');
 
-    function renderData(data) {
-        return data ? data : '';
-    }
-    if (dt_basic_table.length) {
-        var dt_basic = dt_basic_table.DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: "{{ route('warehouse-mapping.index') }}",
-                type: 'GET'
-            },
-            columns: [
-                { data: 'DT_RowIndex', orderable: false, searchable: false },
-                { data: 'store', render: renderData },
-                { data: 'sub_store', render: renderData },
-                { data: 'wh_level', render: renderData },
-                { data: 'names', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-                    $(td).addClass('no-wrap');
-                    }
-                },
-                { data: 'status', orderable: false },
-                { data: 'action', orderable: false, searchable: false }
-            ],
-            order: [[0, 'asc']],
-            lengthMenu: [7, 10, 25, 50, 75, 100],
-            dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-            buttons: [
-                {
-                    extend: 'collection',
-                    className: 'btn btn-outline-secondary dropdown-toggle',
-                    text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + ' Export',
-                    buttons: [
-                        {
-                            extend: 'print',
-                            text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + ' Print',
-                            className: 'dropdown-item',
-                            title: 'Warehouse Structure',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7] }
+            function renderData(data) {
+                return data ? data : '';
+            }
+            if (dt_basic_table.length) {
+                var dt_basic = dt_basic_table.DataTable({
+                    processing: true,
+                    serverSide: true,
+                    ajax: {
+                        url: "{{ route('warehouse-mapping.index') }}",
+                        type: 'GET'
+                    },
+                    columns: [{
+                            data: 'DT_RowIndex',
+                            orderable: false,
+                            searchable: false
                         },
                         {
-                            extend: 'csv',
-                            text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + ' CSV',
-                            className: 'dropdown-item',
-                            title: 'Warehouse Structure',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7] }
+                            data: 'store',
+                            render: renderData
                         },
                         {
-                            extend: 'excel',
-                            text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + ' Excel',
-                            className: 'dropdown-item',
-                            title: 'Warehouse Structure',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7] }
+                            data: 'sub_store',
+                            render: renderData
                         },
                         {
-                            extend: 'pdf',
-                            text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + ' PDF',
-                            className: 'dropdown-item',
-                            title: 'Warehouse Structure',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7] }
+                            data: 'wh_level',
+                            render: renderData
                         },
                         {
-                            extend: 'copy',
-                            text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + ' Copy',
-                            className: 'dropdown-item',
-                            title: 'Warehouse Structure',
-                            exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6,7] }
+                            data: 'names',
+                            render: renderData,
+                            createdCell: function(td, cellData, rowData, row, col) {
+                                $(td).addClass('no-wrap');
+                            }
+                        },
+                        {
+                            data: 'status',
+                            orderable: false
+                        },
+                        {
+                            data: 'action',
+                            orderable: false,
+                            searchable: false
                         }
                     ],
-                    init: function(api, node, config) {
-                        $(node).removeClass('btn-secondary');
-                        $(node).parent().removeClass('btn-group');
-                        setTimeout(function() {
-                            $(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
-                        }, 50);
+                    order: [
+                        [0, 'asc']
+                    ],
+                    lengthMenu: [7, 10, 25, 50, 75, 100],
+                    dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+                    buttons: [{
+                        extend: 'collection',
+                        className: 'btn btn-outline-secondary dropdown-toggle',
+                        text: feather.icons['share'].toSvg({
+                            class: 'font-small-4 mr-50'
+                        }) + ' Export',
+                        buttons: [{
+                                extend: 'print',
+                                text: feather.icons['printer'].toSvg({
+                                    class: 'font-small-4 mr-50'
+                                }) + ' Print',
+                                className: 'dropdown-item',
+                                title: 'Warehouse Structure',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                }
+                            },
+                            {
+                                extend: 'csv',
+                                text: feather.icons['file-text'].toSvg({
+                                    class: 'font-small-4 mr-50'
+                                }) + ' CSV',
+                                className: 'dropdown-item',
+                                title: 'Warehouse Structure',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                }
+                            },
+                            {
+                                extend: 'excel',
+                                text: feather.icons['file'].toSvg({
+                                    class: 'font-small-4 mr-50'
+                                }) + ' Excel',
+                                className: 'dropdown-item',
+                                title: 'Warehouse Structure',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                }
+                            },
+                            {
+                                extend: 'pdf',
+                                text: feather.icons['clipboard'].toSvg({
+                                    class: 'font-small-4 mr-50'
+                                }) + ' PDF',
+                                className: 'dropdown-item',
+                                title: 'Warehouse Structure',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                }
+                            },
+                            {
+                                extend: 'copy',
+                                text: feather.icons['copy'].toSvg({
+                                    class: 'font-small-4 mr-50'
+                                }) + ' Copy',
+                                className: 'dropdown-item',
+                                title: 'Warehouse Structure',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5, 6, 7]
+                                }
+                            }
+                        ],
+                        init: function(api, node, config) {
+                            $(node).removeClass('btn-secondary');
+                            $(node).parent().removeClass('btn-group');
+                            setTimeout(function() {
+                                $(node).closest('.dt-buttons').removeClass('btn-group')
+                                    .addClass('d-inline-flex');
+                            }, 50);
+                        }
+                    }],
+                    language: {
+                        paginate: {
+                            previous: '&nbsp;',
+                            next: '&nbsp;'
+                        }
+                    },
+                    search: {
+                        caseInsensitive: true
+                    },
+                    drawCallback: function() {
+                        feather.replace();
                     }
-                }
-            ],
-            language: {
-                paginate: {
-                    previous: '&nbsp;',
-                    next: '&nbsp;'
-                }
-            },
-            search: {
-                caseInsensitive: true
-            },
-            drawCallback: function() {
-                feather.replace();
+                });
             }
         });
-    }
-});
-</script>
+    </script>
 @endsection

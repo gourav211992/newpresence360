@@ -125,6 +125,7 @@
                                             <th class="no-wrap">Location</th>
                                             <th class="no-wrap">Store</th>
                                             <th class="no-wrap">Station</th>
+                                            <th class="no-wrap">UOM</th>
                                             <th class="no-wrap">Stock Type</th>
                                             <th class="no-wrap">SO No</th>
                                             <th class="no-wrap">LOT No</th>
@@ -511,6 +512,7 @@
                         `<td class="no-wrap">${report?.location?.store_name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.store?.name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.station?.name ?? ""}</td>`,
+                        `<td class="no-wrap">${report?.inventory_uom?.name ?? ""}</td>`,
                         `<td class="no-wrap">${report?.stock_type === "R" ? "Regular" : report?.stock_type === "W" ? "WIP" : ""}</td>`,
                         `<td class="no-wrap">${report?.so?.book_code ?? ""}-${report?.so?.document_number ?? ""}</td>`,
                         `<td class="no-wrap">${report?.lot_number ?? ""}</td>`,
@@ -555,6 +557,7 @@
                 // Add the total receipt quantity  and issue qunatity total
                 const totalQtyRow = document.createElement("tr");
                 totalQtyRow.innerHTML = `
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>

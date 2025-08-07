@@ -13,17 +13,25 @@ use Illuminate\Support\Facades\Route;
 | be assigned to the "web" middleware group with "whm" prefix. Make something great!
 |
 */
+// Route::controller(IndexController::class)->group(function () {
+//     Route::get('/dashboard', 'userDashboard')->name('whm.user-dashboard');
+// });
 
 Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
     Route::controller(IndexController::class)->group(function () {
         Route::get('/stores', 'stores')->name('whm.stores');
+        Route::get('/sub-stores', 'subStores')->name('whm.sub-stores');
+        Route::get('/items', 'items')->name('whm.items');
+        Route::get('/items-attributes', 'getItemAttributes')->name('whm.items-attributes');
+        Route::get('/get-structure-mapping', 'getStructureMapping')->name('whm.get-structure-mapping');
         Route::get('/get-jobs', 'getJobs')->name('whm.get-jobs');//Testing
         Route::get('/get-unique-codes', 'getUniqueCodes')->name('whm.get-unique-codes');//Testing
         Route::get('/get-configuration', 'getConfiguration')->name('whm.get-configuration');//Testing
-        Route::get('/sub-stores', 'subStores')->name('whm.sub-stores');
         Route::get('/storage-points', 'storagePoints')->name('whm.storage-points');
         Route::get('/storage-point/detail', 'storagePointDetail')->name('whm.storage-point.detail');
         Route::get('/track-packet', 'trackPacket')->name('whm.track-packet');
+        Route::get('/storage-point/packets', 'getStoragePointPackets')->name('whm.storage-packets');
+        Route::get('/dashboard', 'userDashboard')->name('whm.user-dashboard');
     });
 
     Route::controller(UnloadingTaskController::class)->group(function () {
@@ -70,6 +78,12 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/bin/items', 'index')->name('whm.bin.items');
         Route::post('/bin/transfer', 'binTransfer')->name('whm.bin.transfer');
         Route::post('/bin/scan-packets', 'scanPackets')->name('whm.bin.scan-packets');
+    });
+
+    Route::controller(StockLookoutController::class)->group(function () {
+        Route::get('/stock', 'index')->name('whm.stock.index');
+        Route::get('/stock/item', 'item')->name('whm.stock.item');
+        Route::get('/stock/get-filtered-items', 'getFilteredItems')->name('whm.stock.get-filtered-items');
     });
     
     

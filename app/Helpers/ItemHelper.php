@@ -43,6 +43,8 @@ class ItemHelper
         //Check Item Sub Type
         $subType = self::getItemSubType($item->id);
         $subTypeStatus = false;
+        //Traded Item Sub Type 
+        $tradedItem = $item -> is_traded_item;
         if(in_array($subType, ['Finished Goods', 'WIP/Semi Finished'])) {
             $subTypeStatus = true;
         }
@@ -71,13 +73,24 @@ class ItemHelper
         })
         ->get();
         if (!isset($itemBoms) || count($itemBoms) == 0) {
-            return array(
-                'status' => 'bom_not_exists',
-                'bom_id' => null,
-                'message' => 'BOM does not exist',
-                'sub_type' => $subType,
-                'customizable' => null
-            );
+            //If Traded Item, then ignore
+            if ($tradedItem) {
+                return array(
+                    'status' => 'bom_not_required',
+                    'bom_id' => null,
+                    'message' => 'BOM not required',
+                    'sub_type' => $subType,
+                    'customizable' => null
+                );
+            } else {
+                return array(
+                    'status' => 'bom_not_exists',
+                    'bom_id' => null,
+                    'message' => 'BOM does not exist',
+                    'sub_type' => $subType,
+                    'customizable' => null
+                );
+            } 
         }
         $matchedBomId = $itemBoms[0]->id ?? null;
         //Check if all atributes are selected
@@ -117,9 +130,9 @@ class ItemHelper
         }
         $matchedBom = $matchedBomId ? Bom::find($matchedBomId) : null;
         return array(
-            'status' => $matchedBomId ? 'bom_exists' : 'bom_not_exists',
+            'status' => $matchedBomId ? 'bom_exists' : ($tradedItem ? 'bom_not_required' : 'bom_not_exists'),
             'bom_id' => $matchedBomId,
-            'message' => $matchedBomId ? 'Bom exist' : 'BOM does not exist',
+            'message' => $matchedBomId ? 'Bom exist' : ($tradedItem ? 'bom_not_required' : 'BOM does not exist'),
             'sub_type' => $subType,
             'customizable' => $matchedBom ? $matchedBom -> customizable : null
         );

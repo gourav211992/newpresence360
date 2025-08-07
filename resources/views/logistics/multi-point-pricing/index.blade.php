@@ -93,7 +93,7 @@
                                                 </th>
                                                 <th >Source <span class="text-danger">*</span></th>
                                                 <th>Free Point <span class="text-danger">*</span></th>
-                                                <th >Rate <span class="text-danger">*</span></th>
+                                                <th >Rate per point <span class="text-danger">*</span></th>
                                                 <th>Customer</th>
                                              </tr>
                                           </thead>

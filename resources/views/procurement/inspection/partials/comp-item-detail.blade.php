@@ -66,7 +66,7 @@
         </span>
     </td>
 </tr>
-@if($totalStockData)
+<!-- @if($totalStockData)
     <tr>
         <td class="poprod-decpt">
             <span class="badge rounded-pill badge-light-primary">
@@ -77,7 +77,7 @@
             </span>
         </td>
     </tr>
-@endif
+@endif -->
 @if($mrn)
     <tr>
         <td class="poprod-decpt">

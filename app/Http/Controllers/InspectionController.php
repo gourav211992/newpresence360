@@ -271,6 +271,7 @@ class InspectionController extends Controller
             $inspection->ship_to = $request->shipping_id;
             $inspection->billing_address = $request->billing_address;
             $inspection->shipping_address = $request->shipping_address;
+            $inspection->reference_type = $request->reference_type;
             $inspection->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
@@ -707,24 +708,35 @@ class InspectionController extends Controller
             ->orderBy('id', 'DESC')
             ->get();
 
+        $headerIds = $pb->mrn_header_id ?? null;
+        $headerIds = $headerIds ? (array) $headerIds : [];
+
+        $detailsIds = collect($pb->items ?? [])
+            ->pluck('mrn_detail_id')
+            ->filter()
+            ->values()
+            ->all();
+
         return view($view, [
-            'mrn' => $inspection,
             'user' => $user,
+            'users' => $users,
             'books' => $books,
+            'mrn' => $inspection,
             'buttons' => $buttons,
             'vendors' => $vendors,
             'eInvoice' => $eInvoice,
+            'headerIds'=> $headerIds,
+            'erpStores' => $erpStores,
             'locations' => $locations,
             'orgAddress'=> $orgAddress,
+            'detailsIds'=> $detailsIds,
+            'subStoreCount' => $subStoreCount,
             'totalItemValue' => $totalItemValue,
             'docStatusClass' => $docStatusClass,
             'deliveryAddress'=> $deliveryAddress,
             'revision_number' => $revision_number,
             'approvalHistory' => $approvalHistory,
             'transportationModes' => $transportationModes,
-            'users' => $users,
-            'subStoreCount' => $subStoreCount,
-            'erpStores' => $erpStores
         ]);
     }
 
@@ -765,19 +777,18 @@ class InspectionController extends Controller
                 $this->amendmentSubmit($request, $id);
             }
 
-            $keys = ['deletedInspectionItemIds'];
+            $keys = ['deletedMrnItemIds'];
             $deletedData = [];
 
             foreach ($keys as $key) {
                 $deletedData[$key] = json_decode($request->input($key, '[]'), true);
             }
-
-            if (count($deletedData['deletedInspectionItemIds'])) {
-                $inspectionItems = InspectionDetail::whereIn('id', $deletedData['deletedInspectionItemIds'])->get();
+            if (count($deletedData['deletedMrnItemIds'])) {
+                $inspectionItems = InspectionDetail::whereIn('id', $deletedData['deletedMrnItemIds'])->get();
                 # all ted remove item level
                 foreach ($inspectionItems as $inspectionItem) {
                     $mrnDetail = MrnDetail::find($inspectionItem->mrn_detail_id);
-                    $mrnDetail->inspection_qty += $inspectionItem->order_qty;
+                    $mrnDetail->inspection_qty -= (float) $inspectionItem->order_qty;
                     $mrnDetail->save();
                     # all attr remove
                     $inspectionItem->attributes()->delete();
@@ -858,24 +869,35 @@ class InspectionController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
+                    if (isset($component['inspection_item_id']) && $component['inspection_item_id']) {
+                        $inspectionDetail = InspectionDetail::find($component['inspection_item_id']);
+                    }
+                    if ($inspection->mrn_header_id) {
+                        $reference_type = 'mrn';
+                    }
+
+                    // Validate Inspection CheckList
                     $checklistValidation = self::validateInspectionCheckList($component);
                     if ($checklistValidation) {
                         \DB::rollBack();
                         return $checklistValidation; // ❗ Stop further processing
                     }
-                    $validateQty = self::validateQuantityBackend($component, 'mrn');
+
+                    // Validate Quantity Backend
+                    $validateQty = self::validateQuantityBackend($component, $reference_type);
                     if ($validateQty['status'] === 'error') {
                         \DB::rollBack();
                         return response()->json([
                             'message' => $validateQty['message']
                         ], 422);
                     }
+
                     if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
                         $mrnDetail = MrnDetail::find($component['mrn_detail_id']);
                         $mrn_detail_id = $mrnDetail->id ?? null;
                         $mrnHeaderId = $component['mrn_header_id'];
                         if ($mrnDetail) {
-                            $orderQty = floatval($mrnDetail->order_qty);
+                            $orderQty = floatval(@$mrnDetail->order_qty) ?? 0.00;
                             $componentQty = floatval($component['order_qty']);
                             $qtyDifference = $componentQty - $orderQty;
                             if($qtyDifference) {
@@ -1021,11 +1043,13 @@ class InspectionController extends Controller
                     }
                 }
             } else {
-                DB::rollBack();
-                return response()->json([
-                    'message' => 'Please add atleast one row in component table.',
-                    'error' => "",
-                ], 422);
+                if($request->document_status == ConstantHelper::SUBMITTED) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Please add atleast one row in component table.',
+                        'error' => "",
+                    ], 422);
+                } else{}
             }
 
             /*Store currency data*/
@@ -1517,11 +1541,11 @@ class InspectionController extends Controller
     {
         $inputData = [
             'item_id'            => $component['item_id'] ?? null,
-            'mrn_header_id'      => $component['mrn_header_id'],
-            'mrn_detail_id'      => $component['mrn_detail_id'],
-            'inspection_item_id' => $component['inspection_item_id'],
-            'qty'                => $component['order_qty'],
-            'type'               => $refType,
+            'mrn_header_id'      => $component['mrn_header_id'] ?? null,
+            'mrn_detail_id'      => $component['mrn_detail_id'] ?? null,
+            'inspection_item_id' => $component['inspection_item_id'] ?? null,
+            'qty'                => $component['order_qty'] ?? null,
+            'type'               => $refType ?? '',
         ];
 
         $checkService = new InspectionCheckAndUpdateService();
@@ -1800,9 +1824,20 @@ class InspectionController extends Controller
         $itemSearch = $request->item_search ?? null;
         $soId= $request->so_id ?? null;
         $mrnItems = null;
+        $storeId = $request->header_store_id ?? null;
+        $subStoreId = $request->sub_store_id ?? null;
+        $itemSearch = $request->item_search ?? null;
+        $detailsIds = $request->details_ids ?? '';
+        $headerId = $request->header_id ?? '';
         
+        if (is_string($detailsIds)) {
+            $detailsIds = array_filter(explode(',', $detailsIds));
+        }
+
+        $decoded = urldecode(urldecode($request->selected_mrn_ids));
+        $selected_mrn_ids = json_decode($decoded, true) ?? [];
+
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        $selected_mrn_ids = json_decode($request->selected_mrn_ids) ?? [];
         $selectColumn = ['id','mrn_header_id','so_id','item_id','item_code','item_name','uom_id','uom_code','order_qty','inspection_qty','remark'];
         $mrnItems = MrnDetail::select($selectColumn)
                     ->where('is_inspection', 1)
@@ -1838,6 +1873,23 @@ class InspectionController extends Controller
                     }
                     $query->whereRaw('order_qty > inspection_qty');
                 });
+
+        if ($request->type === 'create' && count($selected_mrn_ids)) {
+            $mrnItems->whereNotIn('erp_mrn_details.id', $selected_mrn_ids);
+        } elseif ($request->type === 'edit') {
+            if (!empty($headerIds)) {
+                $mrnItems->whereIn('erp_mrn_details.mrn_header_id', $headerIds);
+            }
+
+            if (!empty($detailsIds)) {
+                $mrnItems->whereNotIn('erp_mrn_details.id', $detailsIds);
+            }
+
+            if (!empty($selected_po_ids)) {
+                $mrnItems->whereNotIn('erp_mrn_details.id', $selected_po_ids);
+            }
+        }
+
         return $mrnItems;
     }
 

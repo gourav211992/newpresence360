@@ -1,6 +1,6 @@
 @foreach($mrnItems as $key => $item)
     @php
-        $rowCount = $key + 1;
+        $rowCount = $tableRowCount + $key + 1;
         $qty = ($item->accepted_qty ?? 0.00) - ($item->pr_qty ?? 0.00);
         $ItemTotalValue = ($qty*$item->rate) - ($item->discount_amount + $item->header_discount_amount);
         $ItemRate = $ItemTotalValue/$qty;

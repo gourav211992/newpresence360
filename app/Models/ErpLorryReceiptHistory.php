@@ -40,6 +40,7 @@ class ErpLorryReceiptHistory extends Model
         'destination_id',
         'consignor_id',
         'consignee_id',
+        'vehicle_id',
         'vehicle_type_id',
         'distance',
         'freight_charges',

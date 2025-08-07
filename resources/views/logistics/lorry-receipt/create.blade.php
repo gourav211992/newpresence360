@@ -114,8 +114,7 @@
                                                         </div>  
 
                                                         <div class="col-md-5"> 
-                                                           <select class="form-select select2" name="location" id="locationId">
-                                                                <option value="">Select Location</option>
+                                                           <select class="form-select" name="location" id="locationId">
                                                                 @foreach($locations as $location)
                                                                     <option value="{{ $location->id }}">{{ $location->store_name }}</option>
                                                                 @endforeach
@@ -124,15 +123,16 @@
                                                         </div> 
                                                      </div>  
 
-                                                     <div class="row align-items-center mb-1">
+                                                     <div class="row align-items-center mb-1" id="cost_center_wrapper">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Cost Center <span class="text-danger">*</span></label>  
                                                         </div>  
 
                                                         <div class="col-md-5"> 
-                                                          <select name="cost_center_id" id="cost_center_id" class="form-select select2">
+                                                          <select name="cost_center_id" id="cost_center_id" class="form-select">
                                                             <option value="">Select Cost Center</option>
                                                         </select>
+                                                            <span id="cost_center_error" style="color: red; display: none;">Please select a cost center.</span>
 
                                                         </div> 
                                                      </div>
@@ -284,13 +284,13 @@
 
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label" for="vehicle">Vehicle <span class="text-danger">*</span></label>
+                                                            <label class="form-label" for="vehicle">Vehicle No<span class="text-danger">*</span></label>
                                                              <input type="text"
-                                                                        name="vehicle_type_name"
-                                                                        class="form-control mw-100 vehicle-type-autocomplete"
-                                                                        placeholder="Select Vehicle"  id="vehicle_type_name"/>
+                                                                        name="vehicle_number"
+                                                                        class="form-control mw-100 vehicle-number-autocomplete"
+                                                                        placeholder="Select Vehicle"  id="vehicle_number"/>
                                                                     <input type="hidden"
-                                                                        name="vehicle_type_id" class="vehicle-type-id" />
+                                                                        name="vehicle_number_id" class="vehicle-number-id" />
                                                         </div>
                                                     </div>
 
@@ -668,11 +668,22 @@
     $(document).on('change', '#lr_charges', function () {
     calculateTotals();
    });
-    function setStatusAndSubmit(status) {
-    
-        document.getElementById('statusInput').value = status;
+   function setStatusAndSubmit(status) {
+    document.getElementById('statusInput').value = status;
+
+    if ($('#cost_center_wrapper').is(':visible')) {
+        const costCenterVal = $('#cost_center_id').val();
+
+        if (!costCenterVal) {
+            $('#cost_center_error').show();
+            $('#cost_center_id').addClass('is-invalid');
+            return; 
+        } else {
+            $('#cost_center_error').hide();
+            $('#cost_center_id').removeClass('is-invalid');
+        }
     }
-      // Select/Deselect All
+}
     document.getElementById('checkAll').addEventListener('change', function () {
         document.querySelectorAll('.rowCheckbox').forEach(cb => cb.checked = this.checked);
     });
@@ -1080,37 +1091,39 @@ $(document).on('focus', '.driver-autocomplete', function () {
     }
 });
 
-    
-    //vehicle types
-    const vehicleTypes = [
-   @if($vehicleTypes->isNotEmpty())
-    @foreach($vehicleTypes as $vt)
-        {
-            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            id: {{ $vt->id }}
-        }@if(!$loop->last),@endif
-    @endforeach
-@else
-    null
-@endif
-];
+ </script>   
 
-   $(document).on('focus', '.vehicle-type-autocomplete', function () {
-    if (!$(this).data('ui-autocomplete')) {
-        $(this).autocomplete({
-            source: vehicleTypes,
-            minLength: 0,
-            select: function (event, ui) {
-                $(this).val(ui.item.label);
-                $(this).closest('tr').find('.vehicle-type-id').val(ui.item.id);
-                return false;
-            }
-        }).focus(function () {
-            $(this).autocomplete('search', '');
-        });
-    }
+@if($vehicleNumbers->isNotEmpty())
+<script>
+const vehicleNumbers = [
+    @foreach($vehicleNumbers as $vn)
+        {
+            label: "{{ $vn->lorry_no }} ({{ $vn->vehicleType->name ?? '' }})",
+            value: "{{ $vn->lorry_no }} ({{ $vn->vehicleType->name ?? '' }})",
+            id: {{ $vn->id }}
+        }{{ !$loop->last ? ',' : '' }}
+    @endforeach
+];
+</script>
+@endif
+
+<script>
+
+$('.vehicle-number-autocomplete').each(function () {
+    $(this).autocomplete({
+        source: vehicleNumbers,
+        minLength: 0,
+        select: function (event, ui) {
+            $(this).val(ui.item.label);
+            $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
+            return false;
+        }
+    }).focus(function () {
+        $(this).autocomplete('search', '');
+    });
 });
+
+
 </script>
 <script>
     // Make it globally accessible
@@ -1118,6 +1131,8 @@ $(document).on('focus', '.driver-autocomplete', function () {
     function fetchFreightCharge() {
         const sourceId = $('input[name="source_id"]').val();
         const destinationId = $('input[name="destination_id"]').val();
+        const vehicleId = $('input[name="vehicle_number_id"]').val();
+        const customerId = $('input[name="customer_id"]').val();
 
         if (!sourceId || !destinationId) return;
 
@@ -1126,11 +1141,11 @@ $(document).on('focus', '.driver-autocomplete', function () {
             method: 'GET',
             data: {
                 source_id: sourceId,
-                destination_id: destinationId
+                destination_id: destinationId,
+                vehicle_id:vehicleId,
+                customer_id:customerId
             },
             success: function (response) {
-                $('#vehicle_type_name').val(response.vehicle_type_name).prop('disabled', true);
-                $('.vehicle-type-id').val(response.vehicle_type_id);
                 $('#distance').val(response.distance).prop('disabled', true);
                 $('#freight_charges').val(response.freight_charges).prop('disabled', true);
                 $('#distanceInput').val(response.distance);
@@ -1143,21 +1158,27 @@ $(document).on('focus', '.driver-autocomplete', function () {
                 $('#routeDestination').text(response.destination_name);
             },
             error: function () {
-                $('#vehicle_type_name, #vehicle_type_id, #distance, #freight_charges').val('').prop('disabled', false);
+                $('#distance, #freight_charges').val('').prop('disabled', false);
             }
         });
     }
+$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]').on('blur', function () {
+    const sourceId = $('input[name="source_id"]').val();
+    const destId = $('input[name="destination_id"]').val();
+    const vehicleId = $('input[name="vehicle_number_id"]').val();
+    const custId = $('input[name="customer_id"]').val();
 
-    $(document).ready(function () {
-        $('input[name="source_name"], input[name="destination_name"]').on('blur', function () {
-            const sourceId = $('input[name="source_id"]').val();
-            const destId = $('input[name="destination_id"]').val();
+    console.log('sourceId:', sourceId);
+    console.log('destId:', destId);
+    console.log('vehicleId:', vehicleId);
+    console.log('custId:', custId);
 
-            if (sourceId && destId) {
-                fetchFreightCharge();
-            }
-        });
-    });
+    if (sourceId && destId && vehicleId && custId) {
+        fetchFreightCharge();
+    }
+});
+
+
 
     // ✅ This will now work globally:
     $(document).on('change', 'input[name*="[weight]"], input[name*="[no_of_articles]"]', function () {
@@ -1168,23 +1189,27 @@ $(document).on('focus', '.driver-autocomplete', function () {
 
 <script>
 $(document).ready(function () {
-    $('#locationId').on('change', function () {
-        var locationId = $(this).val();
-
-        // Reset the cost center dropdown
+    function loadCostCenters(locationId) {
+        // Reset and hide initially
         $('#cost_center_id').html('<option value="">Select Cost Center</option>');
+        $('#cost_center_wrapper').hide();
+        $('#cost_center_id').prop('required', false);
 
         if (locationId) {
             $.ajax({
-                url: '/get-cost-centers-by-location/' + locationId, 
+                url: '/get-cost-centers-by-location/' + locationId,
                 type: 'GET',
                 success: function (response) {
-                    if (response.success) {
+                    if (response.success && response.data.length > 0) {
                         $.each(response.data, function (key, center) {
                             $('#cost_center_id').append(
                                 `<option value="${center.id}">${center.name}</option>`
                             );
                         });
+
+                        $('#cost_center_wrapper').show();
+                        $('#cost_center_id').prop('required', true);
+                        $('#cost_center_error').hide();
                     }
                 },
                 error: function () {
@@ -1192,8 +1217,25 @@ $(document).ready(function () {
                 }
             });
         }
+    }
+
+    // On change
+    $('#locationId').on('change', function () {
+        const locationId = $(this).val();
+        loadCostCenters(locationId);
     });
+
+    // On page load: check if any location is already selected
+    const initialLocationId = $('#locationId').val();
+    if (initialLocationId) {
+        loadCostCenters(initialLocationId);
+    } else {
+        $('#cost_center_wrapper').hide();
+        $('#cost_center_id').prop('required', false);
+         $('#cost_center_error').hide();
+    }
 });
+
 
 
 // location on focus

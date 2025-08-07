@@ -1096,10 +1096,16 @@ class PurchaseReturnController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
+                    if (isset($component['detail_id']) && $component['detail_id']) {
+                        $pbDetail = PRDetail::find($component['detail_id'] ?? null);
+                    }
+                    if ($pb->mrn_header_id) {
+                        $reference_type = 'mrn';
+                    }
                     if (isset($component['mrn_detail_id']) && $component['mrn_detail_id']) {
                         $mrnDetail = MrnDetail::find($component['mrn_detail_id']);
                         $mrn_detail_id = $mrnDetail->id ?? null;
-                        $validateQty = self::validateQuantityBackend($component, 'mrn', $pb->qty_return_type, $pb->mrn_header_id);
+                        $validateQty = self::validateQuantityBackend($component, $reference_type, $pb->qty_return_type, $pb->mrn_header_id);
                         if ($validateQty['status'] === 'error') {
                             \DB::rollBack();
                             return response()->json([
@@ -1108,9 +1114,21 @@ class PurchaseReturnController extends Controller
                         }
                         if ($mrnDetail) {
                             if($pb->qty_return_type == 'accepted'){
-                                $mrnDetail->pr_qty += floatval($component['accepted_qty']);
+                                $orderQty = floatval(@$mrnDetail->accepted_qty) ?? 0.00;
+                                $componentQty = floatval($component['accepted_qty']);
+                                $qtyDifference = $componentQty - $orderQty;
+                                if($qtyDifference) {
+                                    $mrnDetail->pr_qty += $qtyDifference;
+                                }
+                                // $mrnDetail->pr_qty += floatval($component['accepted_qty']);
                             } else{
-                                $mrnDetail->pr_rejected_qty += floatval($component['accepted_qty']);
+                                $orderQty = floatval(@$mrnDetail->pr_rejected_qty) ?? 0.00;
+                                $componentQty = floatval($component['accepted_qty']);
+                                $qtyDifference = $componentQty - $orderQty;
+                                if($qtyDifference) {
+                                    $mrnDetail->pr_rejected_qty += $qtyDifference;
+                                }
+                                // $mrnDetail->pr_rejected_qty += floatval($component['accepted_qty']);
                             }
                             $mrnDetail->save();
                         }

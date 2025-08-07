@@ -29,7 +29,7 @@
     </style>
 @endsection
 @section('content')
-    <form class="ajax-input-form" method="POST" action="{{ route('purchase-bill.store') }}" data-redirect="/purchase-bills" enctype="multipart/form-data">
+    <form class="ajax-input-form" method="POST" action="{{ route('purchase-bill.store') }}" data-module="pb" data-redirect="/purchase-bills" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
         @csrf
         <div class="app-content content ">
@@ -59,12 +59,10 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
-                                    <i data-feather='save'></i> Save as Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
-                                    <i data-feather="check-circle"></i> Submit
-                                </button>
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
+                                    name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
+                                    value="submitted"><i data-feather="check-circle"></i> Submit</button>
                             </div>
                         </div>
                     </div>
@@ -146,7 +144,7 @@
                                                         </label>
                                                     </div>
                                                     <div class="col-md-5 action-button">
-                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 poSelect">
+                                                        <button type="button" class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
                                                             <i data-feather="plus-square"></i>
                                                             Outstanding GRN
                                                         </button>
@@ -582,13 +580,21 @@
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("purchase-bill.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("purchase-bill.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-bill.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
+        let currentProcessType = null;
+        let tableRowCount = 0;
         let selectedCostCenterId = "";
+        window.onload = function () {
+            localStorage.removeItem('selectedMrnIds');
+            currentProcessType = null;
+        };
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -695,11 +701,11 @@
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
-                if(reference_from_service.includes('d')) {
-                    $("#addNewItemBtn").removeClass('d-none');
-                } else {
-                    $("#addNewItemBtn").addClass('d-none');
-                }
+                // if(reference_from_service.includes('d')) {
+                //     $("#addNewItemBtn").removeClass('d-none');
+                // } else {
+                //     $("#addNewItemBtn").addClass('d-none');
+                // }
             } else {
                 Swal.fire({
                     title: 'Error!',
@@ -1039,7 +1045,7 @@
             }
             if(!$("tr[id*='row_']").length) {
                 $("#itemTable > thead .form-check-input").prop('checked',false);
-                $(".poSelect").prop('disabled',false);
+                $(".mrnSelect").prop('disabled',false);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
             }
@@ -1345,27 +1351,44 @@
             $("#attribute").modal('hide');
         });
 
-        /*Open Po model*/
-        $(document).on('click', '.poSelect', (e) => {
-            $("#poModal").modal('show');
-            getMaterialReceiptRequest();
-            getMaterialReceipts();
+        /*Open GRN model*/
+        let mrnOrderTable;
+        $(document).on('click', '.mrnSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
+            $("#mrnModal").modal('show');
+            currentProcessType = 'mrn';
+            openMrnRequest();
+            const tableSelector = '#mrnModal .mrn-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
+            getMrn();
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    mrnOrderTable = $(tableSelector).DataTable();
+                    mrnOrderTable.ajax.reload();
+                }
+                // Re-initialize DataTable
+            }
         });
 
-        /*searchPiBtn*/
-        $(document).on('click', '.searchPoBtn', (e) => {
-            getMaterialReceipts();
-        });
+        function getSelectedMrnTypes()
+        {
+            let moduleTypes = [];
+            $('.mrn_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
+        }
 
-        function getMaterialReceiptRequest()
+        function openMrnRequest()
         {
             initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
-            initializeAutocompleteQt("book_code_input_qt", "book_id_qt_val", "book_mrn", "book_code", "");
             initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "mrn_document_qt", "document_number", "");
-            initializeAutocompleteQt("item_name_input_qt", "item_id_qt_val", "goods_item_list", "item_code", "item_name");
+            initializeAutocompleteQt("so_no_input_qt", "so_qt_val", "so_qt", "book_code", "document_number");
         }
+
         function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
         {
+            let modalType = '#mrnModal';
             $("#" + selector).autocomplete({
                 source: function(request, response) {
                     $.ajax({
@@ -1377,13 +1400,27 @@
                             type: typeVal,
                             vendor_id : $("#vendor_id_qt_val").val(),
                             header_book_id : $("#book_id").val(),
+                            store_id : $("#store_id").val() || '',
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
                                 return {
                                     id: item.id,
-                                    label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
-                                    code: item[labelKey1] || '',
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
                                 };
                             }));
                         },
@@ -1392,92 +1429,173 @@
                         }
                     });
                 },
-                appendTo : '#poModal',
+                appendTo : modalType,
                 minLength: 0,
                 select: function(event, ui) {
                     var $input = $(this);
                     $input.val(ui.item.label);
                     $("#" + selectorSibling).val(ui.item.id);
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     return false;
                 },
                 change: function(event, ui) {
                     if (!ui.item) {
                         $(this).val("");
                         $("#" + selectorSibling).val("");
+                        $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     }
                 }
             }).focus(function() {
                 if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
                     $(this).autocomplete("search", "");
                 }
-            });
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                }
+            })
         }
 
-        window.onload = function () {
-            localStorage.removeItem('selectedMrnIds');
-        };
+        function renderData(data) {
+            return data ? data : '';
+        }
 
-        function getMaterialReceipts()
+        function getDynamicParams() {
+            let document_date = '',
+                header_book_id = '',
+                series_id = '',
+                document_number = '',
+                item_id = '',
+                vendor_id = '',
+                store_id = '',
+                so_id = '',
+                item_search = '',
+                selected_mrn_ids = '';
+
+            if(currentProcessType === 'mrn')
+            {
+                let selectedMrnIds = localStorage.getItem('selectedMrnIds') ?? '[]';
+                selectedMrnIds = JSON.parse(selectedMrnIds);
+                selectedMrnIds = encodeURIComponent(JSON.stringify(selectedMrnIds));
+                document_date = $("[name ='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#document_id_qt_val").val() || '',
+                item_id = $("#item_id_qt_val").val() || '',
+                vendor_id = $("#vendor_id_qt_val").val(),
+                store_id = $(".header_store_id").val() || '',
+                sub_store_id = $(".sub_store").val() || '',
+                return_type = $(".return_type").val() || '',
+                so_id = $("#po_so_qt_val").val() || '',
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                selected_mrn_ids = encodeURIComponent(selectedMrnIds)
+            }
+            return {
+                so_id: so_id,
+                type: 'create',
+                item_id: item_id,
+                store_id: store_id,
+                series_id: series_id,
+                vendor_id: vendor_id,
+                return_type: return_type,
+                item_search: item_search,
+                sub_store_id: sub_store_id,
+                document_date: document_date,
+                header_book_id: header_book_id,
+                document_number: document_number,
+                selected_mrn_ids: selected_mrn_ids
+            };
+        }
+
+        function getMrn()
         {
-            let selectedMrnIds = localStorage.getItem('selectedMrnIds') ?? '[]';
-            selectedMrnIds = JSON.parse(selectedMrnIds);
-            selectedMrnIds = encodeURIComponent(JSON.stringify(selectedMrnIds));
-
-            let header_book_id = $("#book_id").val() || '';
-            let series_id = $("#book_id_qt_val").val() || '';
-            let document_number = $("#document_no_input_qt").val() || '';
-            let store_id = $("#header_store_id").val() || '';
-            let item_id = $("#item_id_qt_val").val() || '';
-            let vendor_id = $("#vendor_id_qt_val").val() || '';
-            let type = '{{ request()->route("type") }}';
-            let actionUrl = '{{ route("purchase-bill.get.mrn", ["type" => ":type"]) }}'.replace(':type', type);
-            let fullUrl = `${actionUrl}?series_id=${encodeURIComponent(series_id)}
-            &document_number=${encodeURIComponent(document_number)}
-            &item_id=${encodeURIComponent(item_id)}
-            &vendor_id=${encodeURIComponent(vendor_id)}
-            &store_id=${encodeURIComponent(store_id)}
-            &selected_mrn_ids=${selectedMrnIds}
-            &header_book_id=${encodeURIComponent(header_book_id)}`;
-            fetch(fullUrl).then(response => {
-                return response.json().then(data => {
-                    $(".po-order-detail #poDataTable").empty().append(data.data.pis);
-                });
-            });
+            const ajaxUrl = '{{ route("purchase-bill.get.mrn", ["type" => "create"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+                { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+                { data: 'lot_number', name: 'lot_number', render: renderData, orderable: false, searchable: false},
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'pb_qty', name: 'pb_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'amount', name: 'amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#mrnModal .mrn-order-detail',
+                ajaxUrl,
+                columns,
+            );
         }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
 
         /*Checkbox for po/si item list*/
-        $(document).on('change','.po-order-detail > thead .form-check-input',(e) => {
-        if (e.target.checked) {
-            $(".po-order-detail > tbody .form-check-input").each(function(){
-                $(this).prop('checked',true);
-            });
-        } else {
-            $(".po-order-detail > tbody .form-check-input").each(function(){
-                $(this).prop('checked',false);
-            });
-        }
-        });
-        $(document).on('change','.po-order-detail > tbody .form-check-input',(e) => {
-            if(!$(".po-order-detail > tbody .form-check-input:not(:checked)").length) {
-                $('.po-order-detail > thead .form-check-input').prop('checked', true);
+        $(document).on('change','.mrn-order-detail > thead .form-check-input',(e) => {
+            if (e.target.checked) {
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',true);
+                });
             } else {
-                $('.po-order-detail > thead .form-check-input').prop('checked', false);
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',false);
+                });
             }
         });
 
-        function getSelectedPoIDS()
+        function getSelectedMrnIDS()
         {
             let ids = [];
-            $('.po_item_checkbox:checked').each(function() {
+            let referenceNos = [];
+
+            $('.mrn_item_checkbox:checked').each(function() {
                 ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
             });
-            return ids;
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
         }
 
-        $(document).on('click', '.poProcess', (e) => {
-            let ids = getSelectedPoIDS();
+        $(document).on('click', '.mrnProcess', (e) => {
+            let result = getSelectedMrnIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            let idsLength = ids.length;
+            currentProcessType = 'mrn';
+            let header_store_id = $(".header_store_id").val();
+
             if (!ids.length) {
-                $("#poModal").modal('hide');
+                $("#mrnModal").modal('hide');
                 Swal.fire({
                     title: 'Error!',
                     text: 'Please select at least one one mrn',
@@ -1485,6 +1603,18 @@
                 });
                 return false;
             }
+
+            let moduleTypes = getSelectedMrnTypes();
+            $("[name='mrn_item_ids']").val(ids);
+            $("#addNewItemBtn").hide();
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('mrn');
 
             // for component item code
             function initializeAutocomplete2(selector, type) {
@@ -1555,29 +1685,16 @@
                             }
                         }
                         $input.closest('tr').find('[name*=uom_id]').append(uomOption);
-
-                        let price = 0;
-                        let transactionType = 'collection';
-                        let partyCountryId = $("#hidden_country_id").val();
-                        let partyStateId = $("#hidden_state_id").val();
-                        let rowCount = Number($($input).closest('tr').attr('data-index'));
-                        let queryParams = new URLSearchParams({
-                            price: price,
-                            item_id: itemId,
-                            transaction_type: transactionType,
-                            party_country_id: partyCountryId,
-                            party_state_id: partyStateId,
-                            rowCount : rowCount
-                        }).toString();
-                        // taxHidden(queryParams);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
                         setTimeout(() => {
                             if(ui.item.is_attr) {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
                             } else {
                                 $input.closest('tr').find('.attributeBtn').trigger('click');
-                                $input.closest('tr').find('[name*="[qty]"]').val('').focus();
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
                             }
                         }, 100);
+                        getItemDetail($input.closest('tr'), currentProcessType);
                         getItemCostPrice($input.closest('tr'));
                         return false;
                     },
@@ -1595,143 +1712,26 @@
                     }
                 });
             }
-            ids = JSON.stringify(ids);
-            let type = '{{ request()->route("type") }}'; // Dynamically fetch the `type` from the current route
-            let actionUrl = '{{ route("purchase-bill.process.mrn-item") }}'
-            .replace(':type', type) + '?ids=' + ids;
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if(data.status == 200) {
-                        vendorOnChange(data?.data?.vendor?.id, 'mrn', data?.data?.mrnData?.id);
-                        let vendor = data?.data?.vendor || '';
-                        let finalDiscounts = data?.data?.finalDiscounts;
-                        let finalExpenses = data?.data?.finalExpenses;
-                        let supplier_invoice_no = data?.data?.mrnData?.supplier_invoice_no;
-                        let supplier_invoice_date = data?.data?.mrnData?.supplier_invoice_date;
-                        selectedCostCenterId = data?.data?.mrnData?.cost_center_id;
 
-                        $('.supplier_invoice_no').val(supplier_invoice_no);
-                        $('.supplier_invoice_date').val(supplier_invoice_date);
-
-                        $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-                        initializeAutocomplete2(".comp_item_code");
-                        $("#poModal").modal('hide');
-                        // $(".poSelect").prop('disabled',true);
-                        $("select[name='currency_id']").prop('disabled', true);
-                        $("select[name='payment_term_id']").prop('disabled', true);
-                        $("#vendor_name").prop('readonly',true);
-                        $(".editAddressBtn").addClass('d-none');
-                        // $(".header_store_id").prop('disabled', true);
-
-                        let newIds = getSelectedPoIDS();
-                        let existingIds = localStorage.getItem('selectedMrnIds');
-                        if (existingIds) {
-                            existingIds = JSON.parse(existingIds);
-                            const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-                            localStorage.setItem('selectedMrnIds', JSON.stringify(mergedIds));
-                        } else {
-                            localStorage.setItem('selectedMrnIds', JSON.stringify(newIds));
-                        }
-
-                        let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedMrnIds'));
-                        $("[name='mrn_item_ids']").val(existingIdsUpdate.join(','));
-
-                        let locationId = $("[name='header_store_id']").val();
-                        getLocation(locationId);
-                        getCostCenters(locationId, true);
-
-                        if(finalDiscounts.length) {
-                            let rows = '';
-                            finalDiscounts.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+= `<tr class="display_summary_discount_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-                                            <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`
-                            });
-
-                            $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
-                            $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-                            $("#f_header_discount_hidden").removeClass('d-none');
-                        } else {
-                            $("#f_header_discount_hidden").addClass('d-none');
-                        }
-
-                        if(finalExpenses.length) {
-                            let rows = '';
-                            finalExpenses.forEach(function(item,index) {
-                                index = index + 1;
-                                rows+=`<tr class="display_summary_exp_row">
-                                        <td>${index}</td>
-                                        <td>${item.ted_name}
-                                            <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-                                            <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-                                            <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-                                        </td>
-                                        <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
-                                            <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
-                                            <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
-                                        </td>
-                                        <td class="text-end">
-                                        <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-                                        </td>
-                                        <td>
-                                            <a href="javascript:;" class="text-danger deleteExpRow">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-                                            </a>
-                                        </td>
-                                    </tr>`;
-
-                            });
-                            $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-                            $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-                        }
-                        initializeAutocomplete2(".comp_item_code");
-                        focusAndScrollToLastRowInput();
-                        setTimeout(() => {
-                            setTableCalculation();
-                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-                                let currentIndex = index + 1;
-                                setAttributesUIHelper(currentIndex,"#itemTable");
-                            });
-                        },500);
-                    }
-                    if(data.status == 422) {
-                        $(".editAddressBtn").removeClass('d-none');
-                        $("#vendor_name").val('').prop('readonly',false);
-                        $("#vendor_id").val('');
-                        $("#vendor_code").val('');
-                        $("#hidden_state_id").val('');
-                        $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
-                        $(".shipping_detail").text('-');
-                        $(".billing_detail").text('-');
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error',
-                        });
-                        return false;
-                    }
-                });
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let groupItems = [];
+            $('tr[data-group-item]').each(function () {
+                let groupItemData = $(this).data('group-item');
+                groupItems.push(groupItemData);
             });
+
+            groupItems = JSON.stringify(groupItems);
+            let current_row_count = $("tbody tr[id*='row_']").length;
+            let processData = {
+                ids: ids,
+                type: 'mrn',
+                referenceNo: referenceNo,
+                store_id: header_store_id,
+                module_type: moduleTypes,
+            };
+
+            asnProcess(processData, 'mrn-process');
         });
 
         function initializeAutocompleteTED(selector, idSelector, nameSelector, type, percentageVal) {
@@ -1834,6 +1834,231 @@
                         });
                     }
                 });
+            });
+        }
+
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+            $("td.dynamic-colspan").attr("colspan", 9);
+            $("td.dynamic-summary-colspan").attr("colspan", 7);
+        })
+
+        // Clear GRN Process
+        $(document).on('click', '.clearMrnFilter', (e) => {
+            $("#item_name_input_qt").val('');
+            $("#item_id_qt_val").val('');
+            $("#vendor_code_input_qt").val('');
+            $("#vendor_id_qt_val").val('');
+            $("#book_code_input_qt").val('');
+            $("#book_id_qt_val").val('');
+            $("#document_no_input_qt").val('');
+            $("#document_id_qt_val").val('');
+            $("#so_no_input_qt").val('');
+            $("#so_qt_val").val('');
+            $("#item_name_search").val('');
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
+
+        $(document).on("autocompletechange autocompleteselect", "#store", function (event, ui) {
+            let storeId = ui?.item?.id || '';
+            initializeAutocompleteQt("sub_store", "sub_store_id", "sub_store", "name", "");
+        });
+
+        // GRN Process
+        function asnProcess(asnData, moduleProcess) {
+            const current_row_count = $("tbody tr[id*='row_']").length;
+
+            const ids = JSON.stringify(asnData.ids);
+            const moduleTypes = JSON.stringify(asnData.module_type);
+            const moduleType = asnData.module_type?.[0] ?? 'mrn';
+            const processType = asnData.type;
+            const process_store_id = asnData.store_id;
+            let idsLength = ids.length;
+
+            const currencyId = $("[name='currency_id']").val();
+            const transactionDate = $("[name='document_date']").val();
+            const type = $("meta[name='route-type']").attr("content"); // blade->meta
+
+            const baseRoute = '{{ route("purchase-bill.process.mrn-item") }}';
+            const actionUrl = baseRoute
+                .replace(':type', type)
+                + '?ids=' + encodeURIComponent(ids)
+                + '&moduleTypes=' + moduleTypes
+                + '&store_id=' + process_store_id
+                + '&tableRowCount=' + tableRowCount
+                + '&currency_id=' + encodeURIComponent(currencyId)
+                + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&current_row_count=' + current_row_count;
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 200) return handleProcessError(data.message);
+
+                    const {
+                        vendor,
+                        pos,
+                        mrnHeader,
+                        moduleType,
+                        finalDiscounts,
+                        finalExpenses,
+                        subStoreCount
+                    } = data.data;
+
+                    const modelType = 'mrn';
+                    const order = data.data.mrnHeader;
+                    $("#reference_type_input").val(modelType);
+                    // console.log(vendor?.id, modelType, order.id);
+
+                    vendorOnChange(vendor?.id, modelType, order.id);
+
+                    const getSelectedIdsFn = getSelectedMrnIDS;
+                    const hiddenFieldName = 'mrn_item_ids';
+                    const localStorageKey = 'selectedMrnIds';
+
+                    const newIds = getSelectedIdsFn().ids;
+                    const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                    localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
+                    $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
+
+                    $(".module_type").val(modelType);
+
+                    if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                        $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
+                    } else {
+                        $("#itemTable .mrntableselectexcel").empty().append(pos);
+                    }
+                    initializeAutocomplete2(".comp_item_code");
+                    $("#mrnModal").modal('hide');
+                    focusAndScrollToLastRowInput();
+                    itemCodeEnabledDisabled();
+
+                    // UI Locks
+                    $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
+                    $("#vendor_name").prop('readonly', true);
+                    $("select[name='book_id'], select[name='return_type'], select[name='header_store_id'], select[name='sub_store_id']").prop('disabled', true);
+                    $(".editAddressBtn").addClass('d-none');
+                    let locationId = $("[name='header_store_id']").val();
+                    getCostCenters(locationId, true);
+
+                    if(finalDiscounts.length) {
+                        let rows = '';
+                        finalDiscounts.forEach(function(item,index) {
+                            index = index + 1;
+                            rows+= `<tr class="display_summary_discount_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
+                                        <input type="hidden" value="" name="disc_summary[${index}][d_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
+                                    </td>
+                                    <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                        <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
+                                        <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
+                                    </td>
+                                    <td class="text-end">
+                                    <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </a>
+                                    </td>
+                                </tr>`
+                        });
+
+                        $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                        $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
+                        $("#f_header_discount_hidden").removeClass('d-none');
+                    } else {
+                        $("#f_header_discount_hidden").addClass('d-none');
+                    }
+
+                    if(finalExpenses.length) {
+                        let rows = '';
+                        finalExpenses.forEach(function(item,index) {
+                            index = index + 1;
+                            rows+=`<tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                        <input type="hidden" value="" name="exp_summary[${index}][e_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                    </td>
+                                    <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                        <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
+                                        <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
+                                    </td>
+                                    <td class="text-end">
+                                    <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </a>
+                                    </td>
+                                </tr>`;
+                        });
+                        $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
+                        $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                    }
+
+                    // General details
+                    console.log('moduleType', moduleType);
+                    if (mrnHeader) {
+                        $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
+                        $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
+                        $("[name='eway_bill_no']").val(mrnHeader.eway_bill_no);
+                        $("[name='transporter_name']").val(mrnHeader.transporter_name);
+                        $("[name='vehicle_no']").val(mrnHeader.vehicle_no);
+                    } else {
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                    }
+
+                    $("#reference_type_input").val(modelType);
+
+                    setTimeout(() => {
+                        setTableCalculation();
+                        if(idsLength > 1)
+                        {
+                            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                if(tableRowCount>0)
+                                {
+                                    currentIndex = tableRowCount + 1;
+                                }
+                                let currentIndex = index + 1;
+                                setAttributesUIHelper(currentIndex,"#itemTable");
+                            });
+                        }
+                        currentIndex = tableRowCount + 1;
+                        setAttributesUIHelper(currentIndex,"#itemTable");
+                    },500);
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An unexpected error occurred while processing Purchase Return.',
+                        icon: 'error'
+                    });
+                });
+        }
+
+        function handleProcessError(message = 'Invalid data') {
+            // console.log('message', message);
+            $(".editAddressBtn").removeClass('d-none');
+            $("#vendor_name").val('').prop('readonly', false);
+            $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
+            $("select[name='book_id'], select[name='return_type'], select[name='header_store_id'], select[name='sub_store_id']").prop('readonly', false);
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $(".shipping_detail, .billing_detail").text('-');
+            $("#reference_from").removeClass('d-none');
+            $('.asn_process').prop('disabled', false);
+            $("#reference_type_input").val('');
+            Swal.fire({
+                title: 'Error!',
+                text: message,
+                icon: 'error'
             });
         }
     </script>

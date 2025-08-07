@@ -52,6 +52,8 @@ class CommonHelper
     const RECEIPT = 'receipt';
     const ISSUE = 'issue';
     const PUTAWAY = 'putaway';
+    const UNLOADING = 'unloading';
+
     const PICKING = 'picking';
     const DISPATCH = 'dispatch';
     const UNLOADING_REQUIRED = 'unloading_required';

@@ -136,7 +136,7 @@ $(document).on("click", ".addNewItemBtn", (e) => {
     }
 
     let parentDetails = [];
-    // let parentHeirarchy = [];
+    let parentHeirarchy = [];
     let is_last_level = 0;
     let is_first_level = 0;
 
@@ -152,20 +152,17 @@ $(document).on("click", ".addNewItemBtn", (e) => {
                 parentDetails = Array.isArray(data.parentDetails)
                     ? data.parentDetails
                     : [];
-
-                localStorage.setItem(
-                    "parentDetails",
-                    JSON.stringify(parentDetails)
-                );
-
-                // parentHeirarchy = Array.isArray(data.parentHeirarchy)
-                //     ? data.parentHeirarchy
-                //     : [];
+                parentHeirarchy = Array.isArray(data.parentHeirarchy)
+                    ? data.parentHeirarchy
+                    : [];
 
                 // Generate options from the response data
-                let parentOptions = `<option value="">Select Parent</option>`;
+                let parentOptions = ``;
                 parentDetails.forEach((parent) => {
-                    parentOptions += `<option value="${parent.id}">${parent.name}</option>`;
+                    const displayName = parent.heirarchy_name
+                        ? parent.heirarchy_name.replace(/-/g, " > ")
+                        : parent.name;
+                    parentOptions += `<option value="${parent.id}">${displayName}</option>`;
                 });
 
                 let currentWV = "";
@@ -191,9 +188,7 @@ $(document).on("click", ".addNewItemBtn", (e) => {
                         <td>
                             <div class="form-check form-check-primary custom-checkbox">
                                 <input class="form-check-input" type="checkbox" ${
-                                    is_last_level === 1
-                                        ? "checked disabled"
-                                        : ""
+                                    is_last_level === 1 ? "checked" : ""
                                 }>
                                 <label class="form-check-label"></label>
                             </div>
@@ -202,7 +197,7 @@ $(document).on("click", ".addNewItemBtn", (e) => {
                             <div>
                                 <input type="hidden" class="is_first_level" value="${is_first_level}">
                                 <input type="hidden" class="is_last_level" value="${is_last_level}">
-                                <select class="form-select mw-100 mb-25 parent-dropdown select2 parent_id" multiple name="parent_id[]">
+                                <select class="form-select text-center mw-100 mb-25 parent-dropdown parent_id" name="parent_id">
                                     ${parentOptions}
                                 </select>
                             </div>
@@ -211,9 +206,6 @@ $(document).on("click", ".addNewItemBtn", (e) => {
                         <td><input type="text" class="form-control max_volume mw-100 mb-25" placeholder="Enter" /></td>
                         ${currentWV}
                     </tr>`;
-                $(".select2").select2();
-
-                // <td class="parent-hierarchy"></td>
 
                 $(".mrntableselectexcel").append(rowHtml);
             } else {
@@ -266,7 +258,8 @@ $(document).on("click", ".addNewItemBtn", (e) => {
             .attr("name", `details[${levelCounter + 1}][is_last_level]`);
         $(this)
             .find("select.parent_id")
-            .attr("name", `details[${levelCounter + 1}][parent_id][]`);
+            .attr("name", `details[${levelCounter + 1}][parent_id]`);
+
         // Update 'name' for max_weight and max_volume inputs
         $(this)
             .find("input.max_weight")
@@ -276,62 +269,7 @@ $(document).on("click", ".addNewItemBtn", (e) => {
             .attr("name", `details[${levelCounter + 1}][max_volume]`);
     });
 
-    $(".mrntableselectexcel").on("input", "input[name*='[name]']", function () {
-        let input = $(this);
-        let name = input.val().trim();
-        let currentRow = input.closest("tr");
-        let currentParentDropdown = currentRow.find(".parent-dropdown");
-
-        let allNames = $("input[name*='[name]']")
-            .map(function () {
-                return $(this).val().trim();
-            })
-            .get();
-
-        if (allNames.filter((n) => n === name).length > 1) {
-            if (!currentParentDropdown.data("original-options")) {
-                currentParentDropdown.data(
-                    "original-options",
-                    currentParentDropdown.html()
-                );
-            }
-
-            currentParentDropdown.html(
-                currentParentDropdown.data("original-options")
-            );
-
-            let currentSelected = currentParentDropdown.val();
-            let selectedInOtherRows = $(".parent-dropdown")
-                .map(function () {
-                    return this !== currentParentDropdown[0]
-                        ? parseInt($(this).val())
-                        : null;
-                })
-                .get()
-                .filter(Boolean);
-
-            currentParentDropdown.find("option").each(function () {
-                let optionVal = parseInt($(this).val());
-                if (
-                    optionVal &&
-                    selectedInOtherRows.includes(optionVal) &&
-                    optionVal != currentSelected
-                ) {
-                    $(this).remove();
-                }
-            });
-
-            currentParentDropdown.val(currentSelected).trigger("change");
-        } else {
-            if (currentParentDropdown.data("original-options")) {
-                currentParentDropdown.html(
-                    currentParentDropdown.data("original-options")
-                );
-                currentParentDropdown.trigger("change");
-            }
-        }
-    });
-
+    // Listen for change event on the storage_point checkbox
     $(".mrntableselectexcel").on(
         "change",
         "input[type='checkbox']",
@@ -353,14 +291,12 @@ $(document).on("click", ".addNewItemBtn", (e) => {
             }
         }
     );
-
-    $(".select2").select2();
 });
 
-// $(document).on('change', '.parent-dropdown', function() {
+// $(document).on("change", ".parent-dropdown", function () {
 //     let selectedId = $(this).val();
-//     let $row = $(this).closest('tr');
-//     console.log('selectedId', selectedId);
+//     let $row = $(this).closest("tr");
+//     console.log("selectedId", selectedId);
 
 //     if (selectedId) {
 //         $.ajax({
@@ -372,19 +308,18 @@ $(document).on("click", ".addNewItemBtn", (e) => {
 //                     // 🚀 Auto-select first option if available and trigger change
 //                     if (response.data.length > 0) {
 //                         // $('.parent-hierarchy').html(response.data);
-//                         $row.find('.parent-hierarchy').html(response.data);
+//                         $row.find(".parent-hierarchy").html(response.data);
 //                         // Its changing all the parent hierarchy
-
-//                     } else{
+//                     } else {
 //                         // $('.parent-hierarchy').empty();
-//                         $row.find('.parent-hierarchy').empty();
+//                         $row.find(".parent-hierarchy").empty();
 //                     }
 //                 }
-//             }
+//             },
 //         });
-//     } else{
+//     } else {
 //         // $('.parent-hierarchy').empty();
-//         $row.find('.parent-hierarchy').empty();
+//         $row.find(".parent-hierarchy").empty();
 //     }
 // });
 
@@ -501,5 +436,3 @@ $(document).on("click", ".deleteBtn", (e) => {
         }
     });
 });
-
-$(".select2").select2();

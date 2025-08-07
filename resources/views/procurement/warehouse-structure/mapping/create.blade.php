@@ -174,7 +174,7 @@
                                                             <th width="300">Structure Name</th>
                                                             <th width="100">Storage Point</th>
                                                             <th width="100">Parent</th>
-                                                            {{-- <th width="200">Hierarchy</th> --}}
+                                                            <th width="200">Hierarchy</th>
                                                             <th width="100">Max Weight (Kg)</th>
                                                             <th width="100">Max Volume (CUM)</th>
                                                         </tr>

@@ -193,6 +193,12 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
+                                            <input type="checkbox" class="form-check-input" id="uom" checked="">
+                                            <label class="form-check-label" for="uom">UOM</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-check-secondary">
                                             <input type="checkbox" class="form-check-input autoTriggerChangeApply" id="stock_types" checked="">
                                             <label class="form-check-label" for="stock_types">Stock Type</label>
                                         </div>

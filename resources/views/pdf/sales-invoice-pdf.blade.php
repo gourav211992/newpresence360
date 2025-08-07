@@ -42,82 +42,48 @@
                     Original for Recipient
                 </td> -->
             </tr>
+            <tr>
+                <td></td>
+                <td style="text-align: center; vertical-align: bottom; font-size: 12px;">
+                    @php
+                        $addressParts = array_filter([
+                            $organizationAddress->line_1 ?? null,
+                            $organizationAddress->line_2 ?? null,
+                            $organizationAddress->line_3 ?? null,
+                            $organizationAddress->city->name ?? null,
+                            $organizationAddress->state->name ?? null
+                        ]);
+
+                        $countryPincode = array_filter([
+                            $organizationAddress->country->name ?? null,
+                            $organizationAddress->pincode ?? null
+                        ]);
+
+                        $gstinEmail = [];
+
+                        if (!empty($organization->gst_number)) {
+                            $gstinEmail[] = 'GSTIN: ' . $organization->gst_number;
+                        }
+
+                        if (!empty($organization->email)) {
+                            $gstinEmail[] = 'Email: ' . $organization->email;
+                        }
+                    @endphp
+
+                    {{ implode(', ', $addressParts) }}<br>
+                    {{ implode(', ', $countryPincode) }} . STATE CODE : {{ @$organizationAddress?->state?->state_code }}
+                    @if(count($gstinEmail))
+                        <br>{{ implode(', ', $gstinEmail) }}
+                    @endif
+                </td>
+            </tr>
         </table>
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
-                <td  style="border: 1px solid #000; padding: 3px; width: 30%; vertical-align: top;">
+                <td  style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 30%; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px;">
-                                SELLER:
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 10px;" colspan="3">
-                                <span style="font-weight: 900; vertical-align: top; padding-top:10px"> 
-                                    {{ Str::ucfirst(@$organization->name) }} 
-                                </span>                                
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 10px;">ADDRESS:</td>
-                            <td style="padding-top: 10px;" colspan="2">
-                            {{@$organizationAddress->line_1}}, {{@$organizationAddress->line_2}}, {{@$organizationAddress->line_3}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>CITY:</td>
-                            <td colspan="2">
-                                {{ @$organizationAddress?->city?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">STATE:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$organizationAddress?->state?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                STATE CODE: 
-                            </td>
-                            <td style="padding-top: 3px; font-weight: 700;">
-                                {{ @$organizationAddress?->state?->state_code }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">COUNTRY:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$organizationAddress?->country?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PINCODE:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$organizationAddress->pincode }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PHONE:</td>
-                            <td style="padding-top: 3px;" colspan="2">
-                                {{ @$organization->phone }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">EMAIL:</td>
-                            <td style="padding-top: 3px;" colspan="2">
-                                {{ @$organization->email }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px; padding-bottom: 10px;">GSTIN NO</td>
-                            <td colspan="2" style="padding-top: 3px; font-weight: 700; padding-bottom: 10px">
-                            {{ @$organization->gst_number }}
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px; border-top: #000 thin solid">PICK UP:
+                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px; ">BILL TO:
                             </td>
                         </tr>
                         <tr>
@@ -274,15 +240,14 @@
 
 
                 </td>
-                <td style="border: 1px solid #000; padding: 3px;  vertical-align: top;" >
+                <td style="border: 1px solid #000; border-bottom: none; padding: 3px;  vertical-align: top;" >
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
 
-                    <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px;">BILL TO:
+                        <tr>
+                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px;">SHIP TO:
                             </td>
                         </tr>
-
-                    <tr>
+                        <tr>
                             <td colspan="2" style="font-weight: 900; vertical-align: top; padding-top:10px">
                                 {{ Str::ucfirst(@$order?->vendor?->company_name) }}
                             </td>
@@ -344,57 +309,6 @@
                             {{ @$order->vendor?->compliances?->gstin_no }}
                             </td>
                         </tr>
-
-                        <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px; border-top: #000 thin solid">SHIP TO:
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td colspan="2" style="font-weight: 900; vertical-align: top; padding-top:10px;">
-                                {{ Str::ucfirst(@$order?->vendor?->company_name) }}
-                            </td>
-                        </tr>
-                        
-                        <tr>
-                            <td style="padding-top: 10px;">ADDRESS:</td>
-                            <td style="padding-top: 10px;" colspan="2">
-                            {{@$shippingAddress->address}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>CITY:</td>
-                            <td colspan="2">
-                                {{ @$shippingAddress?->city?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">STATE:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$shippingAddress?->state?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                STATE CODE: 
-                            </td>
-                            <td style="padding-top: 3px; font-weight: 700;">
-                                {{ @$shippingAddress?->state?->state_code }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">COUNTRY:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$shippingAddress?->country?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PINCODE:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$shippingAddress->pincode }}
-                            </td>
-                        </tr>
-                        
                     </table> 
                 </td>
             </tr>
@@ -412,11 +326,11 @@
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td
-                    style="padding: 6px; border: 1px solid #000; border-top: none; background: #80808070; text-align: center; font-weight: bold;">
+                    style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold;">
                     #
                 </td>
                 <td
-                    style="font-weight: bold; width: 31.80%; padding: 6px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
+                    style="font-weight: bold; width: 31.80%; padding: 6px; border: 1px solid #000; border-left: none; background: #80808070; text-align: center;">
                     <div style="">Item</div>
                 </td>
                 <td

@@ -249,7 +249,13 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     ]);
                     continue; 
                 }
+                $itemType = ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods');
 
+                if ($itemType === 'Service') {
+                    $attributes = [];
+                    $alternateUoms = [];
+                } 
+                
                 $uploadedItem = UploadItemMaster::create([
                     'item_name' => $row['item_name'] ?? null,
                     'item_code' => $itemCode,
@@ -261,7 +267,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'cost_price_currency' => $row['cost_price_currency'] ?? null,
                     'sell_price' => $row['sale_price'] ?? null,
                     'sell_price_currency' => $row['sell_price_currency'] ?? null,
-                    'type' => ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods'),
+                    'type' => $itemType,
                     'status' => 'Processed',
                     'group_id' => $validatedData['group_id'],
                     'company_id' => $validatedData['company_id'],

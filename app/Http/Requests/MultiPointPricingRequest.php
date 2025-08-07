@@ -3,16 +3,16 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class MultiPointPricingRequest extends FormRequest
 {
-    
     public function authorize(): bool
     {
         return true;
     }
 
-     public function rules(): array
+    public function rules(): array
     {
         return [
             'multi_point' => ['required', 'array', 'min:1'],
@@ -20,7 +20,6 @@ class MultiPointPricingRequest extends FormRequest
             'multi_point.*.free_point' => ['required', 'numeric', 'min:0'],
             'multi_point.*.amount' => ['required', 'numeric', 'min:0'],
             'multi_point.*.customer_id' => ['nullable', 'exists:erp_customers,id'],
-            
         ];
     }
 
@@ -28,7 +27,7 @@ class MultiPointPricingRequest extends FormRequest
     {
         return [
             'multi_point.required' => 'At least one freight charge entry is required.',
-            'multi_point.*.source_route_id.required' => 'The source Location is required.',
+            'multi_point.*.source_route_id.required' => 'The source location is required.',
             'multi_point.*.source_route_id.exists' => 'The selected source location is invalid.',
             'multi_point.*.free_point.required' => 'The free point is required.',
             'multi_point.*.free_point.numeric' => 'Free point must be a number.',
@@ -39,5 +38,60 @@ class MultiPointPricingRequest extends FormRequest
             'multi_point.*.customer_id.exists' => 'The selected customer is invalid.',
         ];
     }
+    public function withValidator($validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $seenSourceOnly = [];
+            $seenSourceWithCustomer = [];
+            $seenDbKeys = [];
+
+            foreach ($this->multi_point as $index => $entry) {
+                $id = $entry['id'] ?? null;
+                $source = $entry['source_route_id'] ?? null;
+                $customer = $entry['customer_id'] ?? null;
+
+                if (!$source) {
+                    continue;
+                }
+
+                if ($customer === null) {
+                    if (in_array($source, $seenSourceOnly)) {
+                        continue; 
+                    }
+                    $seenSourceOnly[] = $source;
+                } else {
+                    $key = $source . '_' . $customer;
+                    if (in_array($key, $seenSourceWithCustomer)) {
+                        continue;
+                    }
+                    $seenSourceWithCustomer[] = $key;
+                }
+
+                $dbKey = $source . '-' . ($customer ?? 'null');
+                if (in_array($dbKey, $seenDbKeys)) {
+                    continue;
+                }
+
+                $query = \DB::table('erp_logistics_mp_pricing')
+                    ->where('source_route_id', $source);
+
+                if (is_null($customer)) {
+                    $query->whereNull('customer_id');
+                } else {
+                    $query->where('customer_id', $customer);
+                }
+
+                if ($id) {
+                    $query->where('id', '!=', $id); 
+                }
+
+                if ($query->exists()) {
+                    $validator->errors()->add("multi_point.$index.customer_id", 'Duplicate multi-point pricing entry.');
+                    $seenDbKeys[] = $dbKey; 
+                }
+            }
+        });
+    }
+
 
 }

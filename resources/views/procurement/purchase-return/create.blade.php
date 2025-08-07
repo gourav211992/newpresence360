@@ -61,12 +61,10 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
-                                    <i data-feather='save'></i> Save as Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
-                                    <i data-feather="check-circle"></i> Submit
-                                </button>
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
+                                    name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
+                                    value="submitted"><i data-feather="check-circle"></i> Submit</button>
                             </div>
                         </div>
                     </div>
@@ -653,12 +651,12 @@
     @include('procurement.purchase-return.partials.tax-detail-modal')
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("purchase-return.tax.calculation")}}';
         var qtyChangeUrl = '{{ route("purchase-return.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-return.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
@@ -1315,7 +1313,7 @@
             getItemDetail(currentTr);
         });
 
-        // Get Item Detail 
+        // Get Item Detail
         function getItemDetail(currentTr, type=null) {
             const getVal = (selector) => {
                 let el = $(currentTr).find(selector);
@@ -1944,7 +1942,7 @@
             $("td.dynamic-summary-colspan").attr("colspan", 7);
         })
 
-        // Clear GRN Process 
+        // Clear GRN Process
         $(document).on('click', '.clearMrnFilter', (e) => {
             $("#item_name_input_qt").val('');
             $("#item_id_qt_val").val('');
@@ -2018,13 +2016,13 @@
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
                     // console.log(vendor?.id, modelType, order.id);
-                    
+
                     vendorOnChange(vendor?.id, modelType, order.id);
 
                     const getSelectedIdsFn = getSelectedMrnIDS;
                     const hiddenFieldName = 'mrn_item_ids';
                     const localStorageKey = 'selectedMrnIds';
-                    
+
                     const newIds = getSelectedIdsFn().ids;
                     const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
                     const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
@@ -2032,7 +2030,7 @@
                     $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
 
                     $(".module_type").val(modelType);
-                    
+
                     if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                         $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
                     } else {
@@ -2113,7 +2111,6 @@
                     }
 
                     // General details
-                    console.log('moduleType', moduleType);
                     if (mrnHeader) {
                         $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
                         $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);

@@ -27,7 +27,7 @@
     </td>
 </tr>
 @endif
-@if(isset($item))
+@if(isset($item->itemAttributes))
     @if($item?->itemAttributes->count() > 0)
     <tr> 
         <td class="poprod-decpt">

@@ -31,6 +31,32 @@
         .pass-label {
             font-weight: 500;
         }
+
+        #inspectionChecklistModal .table-responsive {
+            overflow-y: auto;
+            max-height: 300px; /* Set the height of the scrollable body */
+            position: relative;
+        }
+
+        #inspectionChecklistModal .po-order-detail {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #inspectionChecklistModal .po-order-detail thead {
+            position: sticky;
+            top: 0; /* Stick the header to the top of the table container */
+            background-color: white; /* Optional: Make sure header has a background */
+            z-index: 1; /* Ensure the header stays above the body content */
+        }
+        #inspectionChecklistModal .po-order-detail th {
+            background-color: #f8f9fa; /* Optional: Background for the header */
+            text-align: left;
+            padding: 8px;
+        }
+        #inspectionChecklistModal .po-order-detail td {
+            padding: 8px;
+        }
     </style>
 @endsection
 @section('content')
@@ -65,10 +91,10 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
                                     <i data-feather='save'></i> Save as Draft
                                 </button>
-                                <button type="button" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
                                     <i data-feather="check-circle"></i> Submit
                                 </button>
                             </div>
@@ -175,6 +201,11 @@
                                                             Outstanding GRN
                                                         </button>
                                                         <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
+                                                    </div>
+                                                    <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                        <div class="col-md-5">
+                                                            <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -526,13 +557,13 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
-    <script type="text/javascript">
-        let actionUrlTax = '{{route("inspection.tax.calculation")}}';
-        var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
+<script type="text/javascript">
+    let actionUrlTax = '{{route("inspection.tax.calculation")}}';
+    var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
     </script>    
-    <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         window.onload = function () {
@@ -863,7 +894,6 @@
                     }, 100);
 
                     getItemDetail(closestTr);
-                    getItemCostPrice($input.closest('tr'));
                     return false;
                 },
                 change: function(event, ui) {
@@ -1290,7 +1320,6 @@
                     mrnOrderTable = $(tableSelector).DataTable();
                     mrnOrderTable.ajax.reload();
                 }
-                // Re-initialize DataTable
             }
         });
 
@@ -1411,22 +1440,25 @@
                 item_id = $("#item_id_qt_val").val() || '',
                 vendor_id = $("#vendor_id_qt_val").val(),
                 store_id = $(".header_store_id").val() || '',
+                sub_store_id = $(".sub_store").val() || '',
                 so_id = $("#po_so_qt_val").val() || '',
                 item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
                 selected_mrn_ids = encodeURIComponent(selectedMrnIds)
             }
             return {
-                    document_date: document_date,
-                    header_book_id: header_book_id,
-                    series_id: series_id,
-                    document_number: document_number,
-                    item_id: item_id,
-                    vendor_id: vendor_id,
-                    store_id: store_id,
-                    so_id: so_id,
-                    item_search: item_search,
-                    selected_mrn_ids: selected_mrn_ids
-                };
+                so_id: so_id,
+                type: 'create',
+                item_id: item_id,
+                store_id: store_id,
+                series_id: series_id,
+                vendor_id: vendor_id,
+                item_search: item_search,
+                sub_store_id: sub_store_id,
+                document_date: document_date,
+                header_book_id: header_book_id,
+                document_number: document_number,
+                selected_mrn_ids: selected_mrn_ids
+            };
         }
 
         function getMrn()
@@ -1603,7 +1635,6 @@
                             }
                         }, 100);
                         getItemDetail($input.closest('tr'), currentProcessType);
-                        getItemCostPrice($input.closest('tr'));
                         return false;
                     },
                     change: function(event, ui) {
@@ -1784,6 +1815,7 @@
                     const modelType = 'mrn';
                     const order = data.data.mrnHeader;
                     // console.log(vendor?.id, modelType, order.id);
+                    $("#reference_type_input").val(modelType);
                     
                     vendorOnChange(vendor?.id, modelType, order.id);
 
@@ -1798,7 +1830,6 @@
                     $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
 
                     $(".module_type").val(modelType);
-                    
                     $("#itemTable .mrntableselectexcel").append(pos);
                     initializeAutocomplete2(".comp_item_code");
                     $("#mrnModal").modal('hide');
@@ -1810,7 +1841,7 @@
 
                     // Supplier details
                     
-                    if (moduleType === 'mrn' && mrnHeader) {
+                    if (mrnHeader) {
                         $("[name='gate_entry_no']").val(mrnHeader.gate_entry_no);
                         $("[name='gate_entry_date']").val(mrnHeader.gate_entry_date);
                         $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
@@ -1822,9 +1853,9 @@
                     } else {
                         $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='consignment_no'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
                     }
+                    $("#reference_type_input").val(modelType);
 
                     setTimeout(() => {
-                        
                         if(idsLength > 1)
                         {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
@@ -1858,6 +1889,7 @@
             $(".shipping_detail, .billing_detail").text('-');
             $("#reference_from").removeClass('d-none');
             $('.asn_process').prop('disabled', false);
+            $("#reference_type_input").val('');
 
             Swal.fire({
                 title: 'Error!',

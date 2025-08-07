@@ -13,6 +13,7 @@ class AlternateItem extends Model
     use HasFactory,SoftDeletes,Deletable;
     protected $table = 'erp_alternate_items';
     protected $fillable = [
+        'alt_item_id',
         'item_id',
         'item_code',
         'item_name',

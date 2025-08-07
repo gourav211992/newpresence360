@@ -69,16 +69,15 @@ class WhmJob
     private function generateUniqueQRCodes($header, $job, $namespace, $detail, $type)
     {
         $attributes = $this->getAttributes($detail);
+        $qty = intval($detail->inventory_uom_qty);
 
         // Check if this is ErpInvoiceItem and has pl_item_id
         if ($namespace === \App\Models\ErpInvoiceItem::class && isset($detail->pl_item_id) && $detail->pl_item_id) {
-            $qty = intval($detail->order_qty);
+            // $qty = intval($detail->order_qty);
             $existingQRCodes = $this->getPickingQr($detail->plItem, $qty);
             $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::ISSUE);
             return; // exit after copying
         }
-
-        $qty = intval($detail->accepted_qty);
 
         // Check if this is MrnDetail and has gate_entry_detail_id
         if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
