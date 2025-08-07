@@ -465,10 +465,10 @@
         e.preventDefault();
          if($('#income_tax').is(':checked'))
         $('input[name="prefix"]').val('');
-        if($('#prefix-feedback').text().trim()!="" && $('#company').is(':checked')){
-            showToast('error','Prefix already taken');
-            return;
-        }
+        if (($('#prefix-feedback').text().trim()) != "" && $('#company').is(':checked')) {
+    showToast('error', 'Prefix already taken');
+    return;
+}
         $('.preloader').show();
          
         this.submit();

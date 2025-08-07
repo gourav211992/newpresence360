@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Facades\Cookie;
 use App\Models\AmendmentWorkflow;
 use App\Models\ApprovalWorkflow;
 use App\Models\FixedAssetRegistration;
@@ -183,8 +184,8 @@ class Helper
         $financialYear = ErpFinancialYear::where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
+        if ($financialYear!=null) {
 
-        if (isset($financialYear)) {
             $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
             $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
             $authorized = true;
@@ -212,7 +213,7 @@ class Helper
                 'authorized' => $authorized,
             ];
         } else {
-            return null;
+             abort(redirect()->route('/')->with('error', 'Financial year not found'));
         }
     }
 
