@@ -7494,7 +7494,7 @@ class FinancialPostingHelper
                     'ledgers' => $postingArray,
                     'total_debit' => $totalDebitAmount,
                     'total_credit' => $totalCreditAmount,
-                    'book_code' => $book?->book_code,
+                    'book_code' => $gl_book?->book_code,
                     'org' => $organization?->name,
                     'org_id' => $organization?->id,
                     'document_number' => $doc['document_number'],

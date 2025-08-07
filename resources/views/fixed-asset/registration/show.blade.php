@@ -189,10 +189,15 @@
                                                     <div class="col-md-5">
                                                         <select id="location" class="form-select" disabled
                                                             name="location_id" required>
+                                                            @if($data->location_id==null)
+                                                            <option value=""></option>
+                                                            @else
                                                             @foreach ($locations as $location)
                                                                 <option value="{{ $location->id }}" {{$data->location_id==$location->id?"selected":""}}>
-                                                                    {{ $location->store_name }}</option>
+                                                                    {{ $location->store_name }}
+                                                                </option>
                                                             @endforeach
+                                                            @endif
                                                         </select>
                                                     </div>
 
@@ -487,7 +492,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row customernewsection-form" @if($buttons['reference']) hidden @endif> 
+                                <div class="row customernewsection-form" @if($buttons['reference'] && $data->reference_series!="mrn") hidden @endif> 
                                     <div class="col-md-12">
                                         <div class="card quation-card">
                                             <div class="card-header newheader">
