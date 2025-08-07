@@ -1,73 +1,14 @@
 <?php
 
-use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
-use App\Helpers\Inventory\StockReservation;
-use App\Http\Controllers\ErpMaintenanceTypeController;
-use App\Http\Controllers\ErpDefectTypeController;
-use App\Http\Controllers\ErpMachineController;
-use App\Http\Controllers\ErpDriverController;
-use App\Http\Controllers\ErpVehicleController;
-use App\Http\Controllers\ErpVehicleTypeController;
-use App\Http\Controllers\ErpFreightChargesController;
-use App\Http\Controllers\ErpMultiPointPricingController;
-use App\Http\Controllers\ErpMultiPointFixedController;
-use App\Http\Controllers\ErpRouteMasterController;
-use App\Http\Controllers\ErpLorryReceiptController;
-use App\Http\Controllers\ErpPlController;
-use App\Http\Controllers\ErpPSVController;
-use App\Http\Controllers\OverheadMasterController;
-use App\Http\Controllers\SaleOrderImportController;
-use App\Http\Controllers\TDSReportController;
-use App\Http\Controllers\DPRTemplateController;
-use App\Http\Controllers\CashflowReportController;
-use App\Http\Controllers\EinvoicePdfController;
-use App\Http\Controllers\DocumentDriveController;
-use App\Http\Controllers\ErpDprMasterController;
-use App\Http\Controllers\ErpMaterialIssueController;
-use App\Http\Controllers\ErpMaterialReturnController;
-use App\Http\Controllers\ErpRCController;
-use App\Http\Controllers\ErpTransporterRequestController;
-use App\Http\Controllers\ErpTransportersController;
-use App\Http\Controllers\ErpProductionSlipController;
-use App\Http\Controllers\OrganizationServiceController;
-use App\Http\Controllers\LoanProgress\AppraisalController;
-use App\Http\Controllers\LoanProgress\ApprovalController;
-use App\Http\Controllers\LoanProgress\AssessmentController;
-use App\Http\Controllers\LoanProgress\LegalDocumentationController;
-use App\Http\Controllers\LoanProgress\ProcessingFeeController;
-use App\Http\Controllers\PWOController;
-use App\Http\Controllers\ErpPublicOutreachAndCommunicationController;
-use App\Http\Controllers\SubStoreController;
-use App\Http\Controllers\refined_index\IndexController;
-use App\Http\Controllers\UserSignatureController;
-use App\Http\Controllers\FixedAsset\MergerController;
-use App\Http\Controllers\FixedAsset\RevImpController;
-use App\Http\Controllers\CrDrReportController;
-use App\Http\Controllers\FixedAsset\SetupController;
-use App\Http\Controllers\FixedAsset\DepreciationController;
-use App\Http\Controllers\FixedAsset\ITDepreciationController;
-use App\Http\Controllers\FixedAsset\SplitController;
-use Illuminate\Support\Facades\Broadcast;
-use App\Http\Controllers\AssetCategoryController;
-use App\Http\Controllers\LoanProgress\SanctionLetterController;
-use App\Http\Controllers\ServiceController;
+use App\Helpers\ConstantHelper;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HsnController;
 use App\Http\Controllers\MrnController;
-use App\Http\Controllers\LoanManagement\LoanDisbursementController;
-use App\Http\Controllers\LoanManagement\LoanRecoveryController;
-use App\Http\Controllers\LoanManagement\LoanSettlementController;
-use App\Http\Controllers\FileTrackingController;
-use App\Http\Controllers\FixedAsset\RegistrationController;
-use App\Http\Controllers\FixedAsset\IssueTransferController;
-use App\Http\Controllers\FixedAsset\InsuranceController;
-use App\Http\Controllers\FixedAsset\MaintenanceController;
-use App\Http\Controllers\ComplaintManagementController;
-use App\Http\Controllers\Stakeholder\StakeholderController;
-use App\Http\Controllers\FeedbackProcessController;
+use App\Http\Controllers\PWOController;
 use App\Http\Controllers\TaxController;
+use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BankController;
 use App\Http\Controllers\BookController;
@@ -76,105 +17,165 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\LandController;
 use App\Http\Controllers\LoanController;
-use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\UnitController;
-use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ErpPlController;
+use App\Http\Controllers\ErpRCController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\StoreController;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\ErpBinController;
+use App\Http\Controllers\ErpPSVController;
 use App\Http\Controllers\VendorController;
+use App\Helpers\Inventory\StockReservation;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\ErpRackController;
+use App\Http\Controllers\PutAwayController;
+use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StationController;
-use App\Http\Controllers\StationGroupController;
 use App\Http\Controllers\TestingController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\BookTypeController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\StockAccountController;
-use App\Http\Controllers\CogsAccountController;
-use App\Http\Controllers\GrAccountController;
-use App\Http\Controllers\WipAccountController;
-use App\Http\Controllers\SalesAccountController;
-use App\Http\Controllers\PriceVarianceAccountController;
-use App\Http\Controllers\PurchaseReturnAccountController;
-use App\Http\Controllers\ServiceAccountController;
-use App\Http\Controllers\PhysicalStockAccountController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ErpShelfController;
 use App\Http\Controllers\ErpStoreController;
+use App\Http\Controllers\SubStoreController;
 use App\Http\Controllers\AttributeController;
+use App\Http\Controllers\ErpDriverController;
+use App\Http\Controllers\GateEntryController;
+use App\Http\Controllers\GrAccountController;
 use App\Http\Controllers\IssueTypeController;
+use App\Http\Controllers\TDSReportController;
 use App\Http\Controllers\AmendementController;
+use App\Http\Controllers\CrDrReportController;
+use App\Http\Controllers\ErpMachineController;
+use App\Http\Controllers\ErpVehicleController;
+use App\Http\Controllers\InspectionController;
 use App\Http\Controllers\ProfitLossController;
+use App\Http\Controllers\WipAccountController;
+use App\Http\Controllers\CogsAccountController;
+use App\Http\Controllers\DPRTemplateController;
+use App\Http\Controllers\EinvoicePdfController;
+use App\Http\Controllers\JobOrder\JoController;
+use App\Http\Controllers\PackingListController;
 use App\Http\Controllers\PaymentTermController;
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\BalanceSheetController;
+use App\Http\Controllers\DynamicFieldController;
+use App\Http\Controllers\ErpDprMasterController;
+use App\Http\Controllers\ErpEquipmentController;
 use App\Http\Controllers\ErpSaleOrderController;
 use App\Http\Controllers\ExchangeRateController;
+use App\Http\Controllers\FileTrackingController;
+use App\Http\Controllers\Finance\GstrController;
 use App\Http\Controllers\Ledger\GroupController;
+use App\Http\Controllers\PurchaseBillController;
+use App\Http\Controllers\SalesAccountController;
+use App\Http\Controllers\StationGroupController;
+use App\Http\Controllers\StockAccountController;
 use App\Http\Controllers\TrialBalanceController;
+use App\Http\Controllers\AssetCategoryController;
+use App\Http\Controllers\DefectTrackerController;
+use App\Http\Controllers\DocumentDriveController;
+use App\Http\Controllers\ErpDefectTypeController;
+use App\Http\Controllers\ErpSaleReturnController;
+use App\Http\Controllers\ExpenseAdviseController;
+use App\Http\Controllers\ExpenseMasterController;
+use App\Http\Controllers\GstValidationController;
 use App\Http\Controllers\Land\LandPlotController;
 use App\Http\Controllers\Ledger\LedgerController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\UserSignatureController;
+use App\Http\Controllers\CashflowReportController;
+use App\Http\Controllers\DiscountMasterController;
+use App\Http\Controllers\ErpMaintananceController;
+use App\Http\Controllers\ErpRouteMasterController;
 use App\Http\Controllers\ErpSaleInvoiceController;
-use App\Http\Controllers\ErpSaleReturnController;
+use App\Http\Controllers\ErpVehicleTypeController;
+use App\Http\Controllers\OverheadMasterController;
 use App\Http\Controllers\PaymentVoucherController;
 use App\Http\Controllers\ProductSectionController;
+use App\Http\Controllers\PurchaseReturnController;
+use App\Http\Controllers\ServiceAccountController;
 use App\Http\Controllers\ApprovalProcessController;
+use App\Http\Controllers\CloseFy\CloseFyController;
+use App\Http\Controllers\EInvoiceServiceController;
+use App\Http\Controllers\ErpLorryReceiptController;
+use App\Http\Controllers\ErpTransportersController;
+use App\Http\Controllers\FeedbackProcessController;
+use App\Http\Controllers\InventoryReportController;
 use App\Http\Controllers\Land\LandParcelController;
 use App\Http\Controllers\Land\LandReportController;
 use App\Http\Controllers\MaterialReceiptController;
+use App\Http\Controllers\ProductionRouteController;
+use App\Http\Controllers\SaleOrderImportController;
 use App\Http\Controllers\DocumentApprovalController;
+use App\Http\Controllers\ErpMaterialIssueController;
+use App\Http\Controllers\FixedAsset\SetupController;
+use App\Http\Controllers\FixedAsset\SplitController;
 use App\Http\Controllers\Land\Lease\LeaseController;
 use App\Http\Controllers\PurchaseOrder\PoController;
-use App\Http\Controllers\JobOrder\JoController;
+use App\Http\Controllers\WarehouseMappingController;
+use App\Http\Controllers\ErpFreightChargesController;
+use App\Http\Controllers\ErpMaterialReturnController;
+use App\Http\Controllers\ErpProductionSlipController;
+use App\Http\Controllers\FixedAsset\MergerController;
+use App\Http\Controllers\FixedAsset\RevImpController;
 use App\Http\Controllers\HomeLoan\HomeLoanController;
 use App\Http\Controllers\PurchaseIndent\PiController;
 use App\Http\Controllers\TermLoan\TermLoanController;
-use App\Http\Controllers\ExpenseAdviseController;
-use App\Http\Controllers\VehicleLoan\VehicleLoanController;
 use App\Http\Controllers\TermsAndConditionController;
-use App\Http\Controllers\InventoryReportController;
 use App\Http\Controllers\BillOfMaterial\BomController;
-use App\Http\Controllers\BillOfMaterial\BomImportController;
-use App\Http\Controllers\CostCenter\CostGroupController;
-use App\Http\Controllers\ProductSpecificationController;
-use App\Http\Controllers\DynamicFieldController;
+use App\Http\Controllers\ErpMaintenanceTypeController;
+use App\Http\Controllers\ErpMultiPointFixedController;
+use App\Http\Controllers\WarehouseStructureController;
+use App\Http\Controllers\ComplaintManagementController;
 use App\Http\Controllers\InspectionChecklistController;
+use App\Http\Controllers\OrganizationServiceController;
+use App\Http\Controllers\refined_index\IndexController;
+use App\Http\Controllers\CostCenter\CostGroupController;
+use App\Http\Controllers\ErpMultiPointPricingController;
+use App\Http\Controllers\FixedAsset\InsuranceController;
+use App\Http\Controllers\PhysicalStockAccountController;
+use App\Http\Controllers\PriceVarianceAccountController;
+use App\Http\Controllers\ProductSpecificationController;
+use App\Http\Controllers\WarehouseItemMappingController;
 use App\Http\Controllers\CostCenter\CostCenterController;
+use App\Http\Controllers\ErpTransporterRequestController;
+use App\Http\Controllers\LoanProgress\ApprovalController;
+use App\Http\Controllers\ManufacturingOrder\MoController;
+use App\Http\Controllers\PurchaseReturnAccountController;
+use App\Http\Controllers\WarehouseMultiMappingController;
+use App\Http\Controllers\FixedAsset\MaintenanceController;
+use App\Http\Controllers\LoanProgress\AppraisalController;
+use App\Http\Controllers\FixedAsset\DepreciationController;
+use App\Http\Controllers\FixedAsset\RegistrationController;
+use App\Http\Controllers\LoanProgress\AssessmentController;
+
+use App\Http\Controllers\Stakeholder\StakeholderController;
+use App\Http\Controllers\VehicleLoan\VehicleLoanController;
+use App\Http\Controllers\BillOfMaterial\BomImportController;
+use App\Http\Controllers\FixedAsset\IssueTransferController;
+use App\Http\Controllers\Report\TransactionReportController;
+use App\Http\Controllers\FixedAsset\ITDepreciationController;
 use App\Http\Controllers\LoanManagement\LoanReportController;
-use App\Http\Controllers\LoanManagement\LoanDisbursementReportController;
-use App\Http\Controllers\LoanManagement\LoanRepaymentReportController;
 use App\Http\Controllers\Notification\NotificationController;
+use App\Http\Controllers\LoanProgress\ProcessingFeeController;
+use App\Http\Controllers\LoanManagement\LoanRecoveryController;
+use App\Http\Controllers\LoanProgress\SanctionLetterController;
 use App\Http\Controllers\LoanManagement\LoanDashboardController;
 use App\Http\Controllers\LoanManagement\LoanManagementController;
+use App\Http\Controllers\LoanManagement\LoanSettlementController;
+use App\Http\Controllers\LoanManagement\LoanDisbursementController;
 use App\Http\Controllers\LoanManagement\LoanInterestRateController;
+use App\Http\Controllers\LoanProgress\LegalDocumentationController;
+use App\Http\Controllers\ErpPublicOutreachAndCommunicationController;
 use App\Http\Controllers\LoanManagement\LoanFinancialSetupController;
 use App\Http\Controllers\PurchaseOrder\PurchaseOrderReportController;
-
-use App\Http\Controllers\PurchaseBillController;
-use App\Http\Controllers\DiscountMasterController;
-use App\Http\Controllers\ExpenseMasterController;
-use App\Http\Controllers\GateEntryController;
-use App\Http\Controllers\PurchaseReturnController;
-use App\Http\Controllers\ProductionRouteController;
-use App\Http\Controllers\ManufacturingOrder\MoController;
-use App\Http\Controllers\EInvoiceServiceController;
-use App\Http\Controllers\GstValidationController;
-use App\Http\Controllers\Finance\GstrController;
-use App\Http\Controllers\WarehouseStructureController;
-use App\Http\Controllers\WarehouseMappingController;
-use App\Http\Controllers\WarehouseItemMappingController;
-use App\Http\Controllers\InspectionController;
-use App\Http\Controllers\PutAwayController;
-use App\Http\Controllers\ErpEquipmentController;
-use App\Http\Controllers\ErpMaintananceController;
-use App\Http\Controllers\CloseFy\CloseFyController;
-use App\Http\Controllers\Report\TransactionReportController;
-use App\Http\Controllers\PackingListController;
-use App\Http\Controllers\DefectTrackerController;
+use App\Http\Controllers\LoanManagement\LoanRepaymentReportController;
+use App\Http\Controllers\LoanManagement\LoanDisbursementReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -653,6 +654,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('items')->controller(ItemController::class)->group(function () {
         Route::get('get-cost','getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
+        Route::get('/export', 'export')->name('item.export');
         Route::get('/create', 'create')->name('item.create');
         Route::post('/', 'store')->name('item.store');
         Route::post('/revoke', 'revoke')->name('item.revoke');
@@ -1623,6 +1625,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
             Route::get('/order/report', 'purchaseBillReport')->name('order.report');
+            Route::get('/validate-quantity', 'validateQuantity')->name('get.validate-quantity');
 
             /*Remove data*/
             Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
@@ -1938,6 +1941,20 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/delete-details', 'deleteDetails')->name('delete-details');
     });
 
+    // Warehouse Multiple Mapping Routes
+    Route::prefix('warehouse-multiple-mappings')
+    ->name('warehouse-multiple-mapping.')
+    ->controller(WarehouseMultiMappingController::class)
+    ->group(function () {
+        Route::get('/create', 'create')->name('create');
+        Route::post('/', 'store')->name('store');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/update/{id}', 'update')->name('update');
+        Route::get('/levels', 'getLevels')->name('get.levels');
+        Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
+        Route::get('/get-parents', 'getParents')->name('get.parents');
+    });
+
     // Warehouse Item Mapping Routes
     Route::prefix('warehouse-item-mappings')
     ->name('warehouse-item-mapping.')
@@ -2010,7 +2027,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/create', 'create')->name('maintenance-inspection-checklists.create');
         Route::get('/{id}/edit', 'edit')->name('maintenance-inspection-checklists.edit');
     });
-    
+
     Route::prefix('stations')->controller(StationController::class)->group(function () {
         Route::get('/', 'index')->name('stations.index');
         Route::get('/create', 'create')->name('stations.create');
@@ -2578,7 +2595,7 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.registration.update',
         'destroy' => 'finance.fixed-asset.registration.destroy',
     ]);
-    
+
     Route::get('fixed-asset/registration/amendment/{id}', [RegistrationController::class, 'amendment'])->name('finance.fixed-asset.registration.amendment');
     Route::post('fixed-asset/registration/approval', [RegistrationController::class, 'documentApproval'])->name('finance.fixed-asset.registration.approval');
     Route::get('fixed-asset/sub_asset', [RegistrationController::class, 'subAsset'])->name('finance.fixed-asset.sub_asset');
@@ -2641,7 +2658,7 @@ Route::middleware(['user.auth'])->group(function () {
     ]);
     Route::post('/setup/generate-prefix', [SetupController::class,'generate_prefix'])->name('generate-setup-prefix');
     Route::post('/setup/check-prefix', [SetupController::class,'checkPrefix'])->name('setup-check-prefix');
-    
+
     Route::get('fixed-asset/depreciation/posting/get', [DepreciationController::class, 'getPostingDetails'])->name('finance.fixed-asset.depreciation.posting.get');
     Route::post('fixed-asset/depreciation/post', [DepreciationController::class, 'postInvoice'])->name('finance.fixed-asset.depreciation.post');
     Route::get('fixed-asset/depreciation/assets', [DepreciationController::class, 'getAssets'])->name('finance.fixed-asset.depreciation.assets');
@@ -2883,8 +2900,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
         Route::post('/approve', [ErpEquipmentController::class, 'documentApproval'])->name('equipment.approval');
         Route::get('amend/{id}', [ErpEquipmentController::class, 'amendment'])->name('equipment.amendment');
-    
-    
+
+
     });
 
      Route::prefix('maintenance')->group(function () {
@@ -2896,13 +2913,17 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintenance.update');
         Route::post('/approve', [ErpMaintananceController::class, 'documentApproval'])->name('maintenance.approval');
         Route::get('amend/{id}', [ErpMaintananceController::class, 'amendment'])->name('maintenance.amendment');
-      
+
     });
 
     Route::prefix('defect-tracker')->group(function () {
         Route::get('/', [DefectTrackerController::class, 'index'])->name('defect-tracker.index');
         Route::post('/update/{id}', [DefectTrackerController::class, 'update'])->name('defect-tracker.update');
     });
+
+    // generate IRN
+    Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
+
 
     //For testing purpose -> Stock reservation case , please ignore, will remove
     // Route::get('issue-receive-pl', function () {
@@ -2919,12 +2940,6 @@ Route::middleware(['user.auth'])->group(function () {
 });
 
 
-// generate IRN
-
-
-
-
-Route::post('/validate-gst', [GstValidationController::class, 'validateGstNumber']);
 
 Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
         Route::get('/', 'index')->name('maintenance-types.index');

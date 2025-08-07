@@ -87,6 +87,8 @@
                                         @foreach($subtypes as $subtype)
                                             <option value="{{ $subtype->id }}">{{ $subtype->name }}</option>
                                         @endforeach
+                                        <option value="traded_item">Traded Item</option>
+                                        <option value="asset">Asset</option>   
                                     </select>
                                 </div>
                                 <div class="mb-1">
@@ -133,12 +135,43 @@
     <!-- END: Content-->
 @endsection
 @section('scripts')
+<script type="text/javascript" src="{{asset('assets/js/modules/common-datatable2.js')}}"></script>
 <script>
 $(document).ready(function() {
     var dt_basic_table = $('.datatables-basic');
-
     function renderData(data) {
-        return data ? data : 'N/A';  
+        return data ? data : 'N/A';
+    }
+    function exportData(type) {
+         let searchValue = $('.dataTables_filter input').val();
+        let params = {
+            export_type: type,
+            status: $('#filter-status').val(),
+            hsn_id: $('#filter-hsn').val(),
+            sub_type_id: $('#filter-sub-type').val(),
+            subcategory_id: $('#filter-category').val(),
+            type: $('#filter-type').val(),
+            search_value: searchValue 
+        };
+
+        let url = '/items/export?' + $.param(params);
+
+        if (type === 'excel' || type === 'csv' || type === 'pdf') {
+            window.location = url;
+        } else if (type === 'print') {
+            $.get(url, function(html){
+                var printWindow = window.open('', '_blank');
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.print();
+            });
+        } else if (type === 'copy') {
+            $.get(url, function(data){
+                navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(function() {
+                    alert('Copied to clipboard!');
+                });
+            });
+        }
     }
 
     if (dt_basic_table.length) {
@@ -148,16 +181,16 @@ $(document).ready(function() {
             scrollX: true,
             ajax: {
                 url: "{{ route('item.index') }}",
-              
                 data: function(d) {
-                    d.status = $('#filter-status').val(); 
-                    d.hsn_id = $('#filter-hsn').val(); 
+                    d.status = $('#filter-status').val();
+                    d.hsn_id = $('#filter-hsn').val();
                     d.sub_type_id = $('#filter-sub-type').val();
-                    d.subcategory_id = $('#filter-category').val(); 
-                    d.type = $('#filter-type').val(); 
+                    d.subcategory_id = $('#filter-category').val();
+                    d.type = $('#filter-type').val();
+                    d.search_value = $('.dataTables_filter input').val();
                 }
             },
-            "createdRow": function( row, data, dataIndex ) {
+            createdRow: function(row, data, dataIndex) {
                 $(row).find('td').addClass('text-nowrap');
             },
             columns: [
@@ -165,29 +198,25 @@ $(document).ready(function() {
                 { data: 'item_code', name: 'item_code', render: renderData },
                 { data: 'item_name', name: 'item_name', render: renderData },
                 { data: 'uom', name: 'uom.name', render: renderData },
-                { data: 'hsn.code', name: 'hsn.code', render: renderData }, 
+                { data: 'hsn.code', name: 'hsn.code', render: renderData },
                 { data: 'type', name: 'type', render: renderData },
                 { data: 'subtypes', name: 'subtypes', render: renderData },
-                { data: 'subCategoryName', name: 'subCategoryName', render: renderData },  
-                { data: 'created_at', name: 'created_at', render: function(data) {
-                 return data ? data : 'N/A'; 
-                }},
+                { data: 'subCategoryName', name: 'subCategoryName', render: renderData },
+                { data: 'created_at', name: 'created_at', render: renderData },
                 {
-                    data: 'created_by', 
-                    name: 'created_by', 
+                    data: 'created_by',
+                    name: 'created_by',
                     render: function(data, type, row) {
                         return row.auth_user ? row.auth_user.name : 'N/A';
                     }
                 },
-                { data: 'updated_at', name: 'updated_at', render: function(data) {
-                    return data ?data  : 'N/A'; 
-                }},
-              {
-                data: 'status',
-                name: 'status',
-                orderable: false,
-                searchable: false
-              }
+                { data: 'updated_at', name: 'updated_at', render: renderData },
+                {
+                    data: 'status',
+                    name: 'status',
+                    orderable: false,
+                    searchable: false
+                }
             ],
             dom: '<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             buttons: [
@@ -196,11 +225,11 @@ $(document).ready(function() {
                     className: 'btn btn-outline-secondary dropdown-toggle',
                     text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + ' Export',
                     buttons: [
-                        { extend: 'print', text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + ' Print', className: 'dropdown-item', title: 'Items', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11] }},
-                        { extend: 'csv', text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + ' CSV', className: 'dropdown-item', title: 'Items', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11] }},
-                        { extend: 'excel', text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + ' Excel', className: 'dropdown-item', title: 'Items', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11] }},
-                        { extend: 'pdf', text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + ' PDF', className: 'dropdown-item', title: 'Items', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11] }},
-                        { extend: 'copy', text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + ' Copy', className: 'dropdown-item', title: 'Items', exportOptions: { columns: [0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11] }},
+                        { text: 'Print', className: 'dropdown-item', action: function() { exportData('print'); } },
+                        { text: 'CSV', className: 'dropdown-item', action: function() { exportData('csv'); } },
+                        { text: 'Excel', className: 'dropdown-item', action: function() { exportData('excel'); } },
+                        { text: 'PDF', className: 'dropdown-item', action: function() { exportData('pdf'); } },
+                        { text: 'Copy', className: 'dropdown-item', action: function() { exportData('copy'); } }
                     ],
                     init: function(api, node, config) {
                         $(node).removeClass('btn-secondary').parent().removeClass('btn-group');
@@ -211,43 +240,46 @@ $(document).ready(function() {
                 }
             ],
             drawCallback: function() {
-                feather.replace(); 
+                feather.replace();
             },
             language: {
                 paginate: { previous: '&nbsp;', next: '&nbsp;' }
             },
             search: { caseInsensitive: true }
-            
         });
     }
+
     $('#reset-filters').on('click', function() {
-            $('#filter-status').val('');
-            $('#filter-hsn').val('');
-            $('#filter-sub-type').val('');
-            $('#filter-category').val('');
-            $('#filter-type').val('');
-            dt_basic_table.DataTable().ajax.reload(); 
-    });
-    $('.apply-filter').on('click', function() {
-        dt_basic_table.DataTable().ajax.reload(); 
-        $('#filter').modal('hide'); 
-    });
-});
-function handleRowSelection(tableSelector) {
-    $(tableSelector).on('click', 'tbody tr', function () {
-        $(tableSelector).find('tr').removeClass('trselected');
-        $(this).addClass('trselected');
+        $('#filter-status').val('');
+        $('#filter-hsn').val('');
+        $('#filter-sub-type').val('');
+        $('#filter-category').val('');
+        $('#filter-type').val('');
+        dt_basic_table.DataTable().ajax.reload();
     });
 
-    $(document).on('keydown', function (e) {
-        const $selected = $(tableSelector).find('.trselected');
-        if (e.which == 38) {  
-            $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
-        } else if (e.which == 40) { 
-            $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
-        }
+    $('.apply-filter').on('click', function() {
+        dt_basic_table.DataTable().ajax.reload();
+        $('#filter').modal('hide');
     });
-}
-handleRowSelection('.datatables-basic');
+
+    function handleRowSelection(tableSelector) {
+        $(tableSelector).on('click', 'tbody tr', function () {
+            $(tableSelector).find('tr').removeClass('trselected');
+            $(this).addClass('trselected');
+        });
+
+        $(document).on('keydown', function (e) {
+            const $selected = $(tableSelector).find('.trselected');
+            if (e.which == 38) {
+                $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
+            } else if (e.which == 40) {
+                $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
+            }
+        });
+    }
+    handleRowSelection('.datatables-basic');
+});
 </script>
+
 @endsection

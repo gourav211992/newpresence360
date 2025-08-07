@@ -1109,7 +1109,6 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{ route('gate-entry.tax.calculation') }}';
         var qtyChangeUrl = '{{ route("gate-entry.get.validate-quantity") }}';

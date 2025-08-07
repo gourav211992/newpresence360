@@ -668,7 +668,8 @@
                                                                   
                                                                         @foreach($item->alternateItems as $index => $alternateItem)
                                                                             <tr data-id="{{ $alternateItem->id }}">
-                                                                            <input type="hidden" name="alternateItems[{{ $index }}][id]" value="{{ $alternateItem->id }}">
+                                                                                <input type="hidden" name="alternateItems[{{ $index }}][id]" value="{{ $alternateItem->id }}">
+                                                                                <input type="hidden" name="alternateItems[{{ $index }}][alt_item_id]" value="{{ $alternateItem->alt_item_id ?? '' }}">
                                                                                 <td>{{ $index + 1 }}</td>
                                                                                 <td>
                                                                                     <input type="hidden" name="alternateItems[{{ $index }}][item_code]" value="{{ $alternateItem->item_code ??'' }}" />
@@ -701,19 +702,19 @@
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Min Stocking Level</label>
-                                                                    <input type="text" class="form-control numberonly" name="min_stocking_level" value="{{ $item->min_stocking_level ?? '' }}" />
+                                                                    <input type="text" class="form-control numberonly" name="min_stocking_level" value="{{ isset($item->min_stocking_level) ? (int) $item->min_stocking_level : '' }}" />
                                                                 </div>
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Max Stocking Level</label>
-                                                                    <input type="text" class="form-control numberonly" name="max_stocking_level" value="{{ $item->max_stocking_level ?? '' }}" />
+                                                                    <input type="text" class="form-control numberonly" name="max_stocking_level"value="{{ isset($item->max_stocking_level) ? (int) $item->max_stocking_level : '' }}" />
                                                                 </div>
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Reorder Level</label>
-                                                                    <input type="text" class="form-control numberonly" name="reorder_level" value="{{ $item->reorder_level ?? '' }}" />
+                                                                    <input type="text" class="form-control numberonly" name="reorder_level" value="{{ isset($item->reorder_level) ? (int) $item->reorder_level : '' }}" />
                                                                 </div>
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Minimum Order Qty</label>
-                                                                    <input type="text" class="form-control numberonly" name="minimum_order_qty" value="{{ $item->minimum_order_qty ?? '' }}" />
+                                                                    <input type="text" class="form-control numberonly" name="minimum_order_qty" value="{{ isset($item->minimum_order_qty) ? (int) $item->minimum_order_qty : '' }}" />
                                                                 </div>
                                                                 <div class="col-md-3 mb-1">
                                                                     <label class="form-label">Lead Days</label>
@@ -2293,7 +2294,7 @@
                     '<td>' + itemName + '</td>' +
                     '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_code]" value="' + itemCode + '" />' +
                     '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_name]" value="' + itemName + '" />' +
-                    '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_id]" value="' + itemId + '" />' +
+                    '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][alt_item_id]" value="' + itemId + '" />' +
                     '<td><a href="#" class="text-danger remove-item"><i data-feather="trash-2" class="me-50"></i></a></td>' +
                     '</tr>';
 
@@ -2356,7 +2357,7 @@
                     $(this).find('td').eq(0).text(index + 1);
                     $(this).find('input[name^="alternateItems["][name$="[item_code]"]').attr('name', 'alternateItems[' + index + '][item_code]');
                     $(this).find('input[name^="alternateItems["][name$="[item_name]"]').attr('name', 'alternateItems[' + index + '][item_name]');
-                    $(this).find('input[name^="alternateItems["][name$="[item_id]"]').attr('name', 'alternateItems[' + index + '][item_id]');
+                    $(this).find('input[name^="alternateItems["][name$="[alt_item_id]"]').attr('name', 'alternateItems[' + index + '][alt_item_id]');
                 });
             }
             itemCounter = $('#itemTable tbody tr').length + 1;
@@ -2398,8 +2399,10 @@
             }
             $('a[href="#UOM"]').removeClass('d-none').css('display', '');
             $('a[href="#Details"]').removeClass('d-none').css('display', '');
+            $('a[href="#Attributes"]').removeClass('d-none').css('display', '');
             $('#UOM').removeClass('d-none').css('display', '');
             $('#Details').removeClass('d-none').css('display', '');
+            $('#Attributes').removeClass('d-none').css('display', '');
         }
 
         function updateCheckboxStatesForService() {
@@ -2408,8 +2411,23 @@
             $('input[name="is_asset"]').prop('checked', false).prop('disabled', true);
             $('a[href="#UOM"]').addClass('d-none');
             $('a[href="#Details"]').addClass('d-none');
+            $('a[href="#Attributes"]').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Details').addClass('d-none');
+            $('#Attributes').addClass('d-none');
+            ['#UOM', '#Details', '#Attributes'].forEach(function (selector) {
+                $(selector).addClass('d-none').find('input, select, textarea').each(function () {
+                    const $input = $(this);
+                    $input.is(':checkbox') || $input.is(':radio') 
+                        ? $input.prop('checked', false) : $input.val('');
+                });
+            });
+            $('#item_code_label').text('Service Code');
+            $('#item_name_label').text('Service Type');
+            $('#item_initial_label').text('Service Initial');
+            $('input[name="service_type"]').prop('checked', false);
+            $('input[name="service_type"][value="non-stock"]').prop('checked', true);
+            $('input[name="service_type"][value="stock"]').prop('disabled', true); 
         }
         function handleCheckboxChange() {
             const selectedType = typeRadios.filter(':checked').val();
@@ -2575,7 +2593,7 @@
                 if (hasFinishedGoods) return 'FG';
                 if (hasWIP) return 'SF';
                 if (hasExpense) return 'EX';
-                if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS'; // Prioritize Asset if both are checked
+                if (hasAsset && hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
                 if (hasAsset && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'AS';
                 if (hasTradedItem && !hasRawMaterial && !hasFinishedGoods && !hasWIP && !hasExpense) return 'TR';
             return '';
@@ -2735,16 +2753,19 @@
 
   // asset-checkbox
    $(document).ready(function () {
-        function toggleAssetTab() {
+       function toggleAssetTab() {
             if ($('#assetCheckbox').is(':checked')) {
                 $('#assetTabLink').show();
             } else {
+                $('#asset_category').val('').trigger('change');
+                $('#expected_life').val('');
+                $('select[name="maintenance_schedule"]').val('').trigger('change');
+                
                 $('#assetTabLink').removeClass('active');
                 $('#Assets').removeClass('active show');
                 $('#assetTabLink').hide();
             }
         }
-
         toggleAssetTab();
 
         $('#assetCheckbox').change(function () {
@@ -2962,6 +2983,7 @@
 
    function enableAmendmentFields() {
      const isItemReferenced = @json($isItemReferenced);
+     const currentType = @json($item->type); 
         const fieldsToDisable = [
             'item_code',
             'uom_id',
@@ -2997,6 +3019,14 @@
             });
         }
 
+       if (currentType === 'Service') {
+            ['sub_types[]', 'is_traded_item', 'is_asset'].forEach(name => {
+                document.querySelectorAll(`[name="${name}"]`).forEach(field => {
+                    field.disabled = true;
+                    field.readOnly = true;
+                });
+            });
+        }
         const checkbox = document.getElementById('customSwitch3');
         if (checkbox) {
             checkbox.disabled = false;
@@ -3015,9 +3045,9 @@
                 'cursor': 'not-allowed'
             });
         }
-        const tradedCheckbox = document.getElementById('tradedItemCheckbox');
+       const tradedCheckbox = document.getElementById('tradedItemCheckbox');
         if (tradedCheckbox) {
-            tradedCheckbox.disabled = false;
+            tradedCheckbox.disabled = (currentType === 'Service');
         }
     }
 
@@ -3158,13 +3188,11 @@
         const hiddenInput = document.getElementById('status_hidden_input');
 
         if (switchInput && hiddenInput) {
-            // सिर्फ जब user manually switch करेगा, तभी value set होगी
             switchInput.addEventListener('change', function () {
                 hiddenInput.value = this.checked ? 'active' : 'inactive';
             });
         }
     });
-
  //approval-end
 </script>
 @endsection

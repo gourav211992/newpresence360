@@ -124,6 +124,11 @@ class StockLedger extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function inventoryUom()
+    {
+        return $this->belongsTo(Unit::class, 'inventory_uom_id');
+    }
+
     public function item_attributes_array()
     {
         $attributes = $this->attributes()->where('stock_ledger_id', $this->id)->where('item_id', $this->item_id)->whereNull('deleted_at')->get();

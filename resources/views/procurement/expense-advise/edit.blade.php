@@ -971,12 +971,12 @@
     </div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{ asset('assets/js/modules/common-attr-ui.js') }}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{ route('expense-adv.tax.calculation') }}';
         var qtyChangeUrl = '{{ route("expense-adv.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{ asset('assets/js/modules/common-attr-ui.js') }}"></script>
     <script type="text/javascript" src="{{ asset('assets/js/modules/expense-advise.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>

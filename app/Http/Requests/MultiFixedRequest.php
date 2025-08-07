@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use Illuminate\Support\Facades\DB;
 use Illuminate\Contracts\Validation\Validator;
 class MultiFixedRequest extends FormRequest
 {
@@ -55,27 +55,73 @@ class MultiFixedRequest extends FormRequest
         ];
     }
 
-   public function withValidator(Validator $validator)
+public function withValidator(Validator $validator)
 {
     $validator->after(function ($validator) {
-        if (
-            $this->input('source_route_id') &&
-            $this->input('destination_route_id') &&
-            $this->input('source_route_id') == $this->input('destination_route_id')
-        ) {
-            $validator->errors()->add('destination_route_id', 'Source and destination location cannot be the same.');
+        $sourceId = $this->input('source_route_id');
+        $destinationId = $this->input('destination_route_id');
+        $vehicleTypeIds = $this->input('vehicle_type_id', []);
+        $customerId = $this->input('customer_id');
+        $locations = collect($this->input('multi_fixed_pricing', []));
+        $currentId = $this->route('id'); 
+
+       
+        if ($sourceId && $destinationId && $sourceId == $destinationId) {
+            $validator->errors()->add('destination_route_id', 'Source and destination cannot be the same.');
         }
 
-        $locations = collect($this->input('multi_fixed_pricing', []))
-            ->pluck('location_route_id')
-            ->filter();
+  
+        $locationIds = $locations->pluck('location_route_id')->filter()->values();
+        $duplicates = $locationIds->duplicates();
 
-        $duplicates = $locations->duplicates();
+        foreach ($locations as $index => $item) {
+            $locationId = $item['location_route_id'] ?? null;
+            if (!$locationId) continue;
 
-        foreach ($duplicates as $index => $value) {
-            $validator->errors()->add("multi_fixed_pricing.$index.location_route_id", 'Duplicate locations are not allowed.');
+            if ($duplicates->contains($locationId)) {
+                $validator->errors()->add("multi_fixed_pricing.$index.location_route_id", 'Duplicate location not allowed.');
+            }
+
+            if ($locationId == $sourceId) {
+                $validator->errors()->add("multi_fixed_pricing.$index.location_route_id", 'Location cannot be the same as source.');
+            }
+
+            if ($locationId == $destinationId) {
+                $validator->errors()->add("multi_fixed_pricing.$index.location_route_id", 'Location cannot be the same as destination.');
+            }
         }
+
+        // ✅ Validate uniqueness in DB
+        $vehicleTypeIds = array_map('intval', $this->input('vehicle_type_id', []));
+        $customerId = $this->input('customer_id');
+        $currentId = $this->route('id');
+
+        foreach ($vehicleTypeIds as $vehicleTypeId) {
+            $query = DB::table('erp_logistics_mf_pricing')
+                ->where('source_route_id', $sourceId)
+                ->where('destination_route_id', $destinationId)
+                ->whereRaw('JSON_CONTAINS(vehicle_type_id, ?)', [json_encode((string) $vehicleTypeId)])
+                ->when($customerId, function ($q) use ($customerId) {
+                    $q->where(function ($q2) use ($customerId) {
+                        $q2->whereNull('customer_id')->orWhere('customer_id', $customerId);
+                    });
+                }, function ($q) {
+                    $q->whereNull('customer_id');
+                })
+                ->when($currentId, fn($q) => $q->where('id', '!=', $currentId));
+
+            if ($query->exists()) {
+                $validator->errors()->add('customer_id', 'Duplicate multi-fixed pricing entry.');
+                break;
+            }
+        }
+
+
+
     });
 }
+
+
+
 
 }

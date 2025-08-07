@@ -18,6 +18,7 @@ use App\Models\EwayBillMaster;
 use App\Models\PackingListDetail;
 use App\Models\PackingListItem;
 use App\Services\Sales\PullDocService;
+use DateTime;
 use Dompdf\Dompdf;
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\DynamicFieldHelper;
@@ -360,6 +361,9 @@ class ErpSaleInvoiceController extends Controller
         } else if ($parentUrl === 'lease-invoices') {
             $locationVisiblity = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
+        } else if ($parentUrl === 'transporter-invoices') {
+            $locationVisiblity = false;
+            $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
         }
         request() -> merge(['type' => $orderType]);
         $user = Helper::getAuthenticatedUser();
@@ -2042,16 +2046,12 @@ class ErpSaleInvoiceController extends Controller
                     foreach ($header -> items as $orderItemKey => &$orderItem) {
                         $orderItem -> stock_qty = $orderItem -> getStockBalanceQty($request -> store_id ?? 0);
                         $orderItem -> item_attributes_array = $orderItem -> item_attributes_array();
-                        if ($request -> doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                            $soItem = ErpSoItem::find($orderItem -> so_item_id);
-                            $orderItem -> rate = $soItem -> rate; 
+                        if (isset($saleOrderItems[$orderItemKey])) {
+                            $header -> items[$orderItemKey] = $saleOrderItems[$orderItemKey];
+                            $header -> items[$orderItemKey] -> id = $orderItem -> id;
+                            $header -> items[$orderItemKey] -> item_attributes_array = $orderItem -> item_attributes_array();
+                            $header -> items[$orderItemKey] -> actual_qty = $orderItem -> order_qty;
                         }
-                        // if (isset($saleOrderItems[$orderItemKey])) {
-                        //     $header -> items[$orderItemKey] = $saleOrderItems[$orderItemKey];
-                        //     $header -> items[$orderItemKey] -> id = $orderItem -> id;
-                        //     $header -> items[$orderItemKey] -> item_attributes_array = $orderItem -> item_attributes_array();
-                        //     $header -> items[$orderItemKey] -> actual_qty = $orderItem -> order_qty;
-                        // }
                     }
                 }
             } else {
@@ -2702,109 +2702,6 @@ class ErpSaleInvoiceController extends Controller
         }
     }
 
-    public function generateEInvoiceOld(Request $request)
-    {
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'vehicle_no' => [
-                    'required',
-                    'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
-                ],
-                'transporter_mode' => 'required|integer',
-                "transporter_name" => [
-                   "required",
-                   'string'
-                ],
-            ],
-            [
-                'vehicle_no.required' => 'Vehicle number is required.',
-                'vehicle_no.regex' => 'Vehicle number format is invalid. Example: MH12AB1234.',
-                'transporter_mode.required' => 'Transporter mode is required.',
-                'transporter_mode.integer' => 'Transporter mode must be an integer.',
-                'transporter_name.required' => 'Transporter name is required.',
-                'transporter_name.string' => 'Transporter name must be a string.',
-            ]
-        );
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $validator->messages()->first(),
-            ], 422);
-        }
-        $id = $request -> id;
-        try{
-            $documentHeader = ErpSaleInvoice::find($id);
-            $documentHeader = SaleModuleHelper::updateEInvoiceDataFromHelper($documentHeader);
-            $documentDetails = ErpInvoiceItem::where('sale_invoice_id', $id)->get();
-            $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
-
-            if(!$generateInvoice['Status']){
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Error: ". @$generateInvoice['ErrorDetails'][0]['ErrorCode'].' -'.$generateInvoice['ErrorDetails'][0]['ErrorMessage'],
-                ], 422);
-            }
-
-            $documentHeader->irnDetail()->create([
-                'ack_no' => $generateInvoice['AckNo'],
-                'ack_date' => $generateInvoice['AckDt'],
-                'irn_number' => $generateInvoice['Irn'],
-                'signed_invoice' => $generateInvoice['SignedInvoice'],
-                'signed_qr_code' => $generateInvoice['SignedQRCode'],
-                'ewb_no' => $generateInvoice['EwbNo'],
-                'ewb_date' => $generateInvoice['EwbDt'],
-                'ewb_valid_till' => $generateInvoice['EwbValidTill'],
-                'status' => $generateInvoice['Status'],
-                'remarks' => $generateInvoice['Remarks']
-            ]);
-            $transportationMode = EwayBillMaster::find($request->transporter_mode);
-
-            $documentHeader->transporter_name=$request->transporter_name;
-            $documentHeader->transportation_mode=$transportationMode?->description ?? null;
-            $documentHeader->eway_bill_master_id=$transportationMode?->id ?? null;
-            $documentHeader->vehicle_no=$request->vehicle_no;
-
-            $documentHeader->e_invoice_status = ConstantHelper::GENERATED;
-            $documentHeader->save();
-            //Generate Eway Bill
-            if ($documentHeader -> total_amount > EInvoiceHelper::EWAY_BILL_MIN_AMOUNT_LIMIT)
-            {
-                $data = EInvoiceHelper::generateEwayBill($documentHeader);
-                if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
-                    return response()->json([
-                        'status' => 'error',
-                        'error' => 'error',
-                        'message' => 'E-Invoice generated successfully and ' . $data['message'],
-                        'redirect' => true
-                    ], 500);
-                } else{
-                    $eInvoice = $documentHeader->irnDetail()->first();
-                    $eInvoice->ewb_no = $data['EwbNo'];
-                    $eInvoice->ewb_date = date('Y-m-d H:i:s', strtotime($data['EwbDt']));
-                    $eInvoice->ewb_valid_till = date('Y-m-d H:i:s', strtotime($data['EwbValidTill']));
-                    $eInvoice->save();
-
-                    $documentHeader -> is_ewb_generated = 1;
-                    $documentHeader -> save();
-
-                    return response() -> json([
-                        'status' => 'success',
-                        'results' => $data,
-                        'message' => 'E-Invoice and E-Way Bill generated succesfully',
-                    ]);
-                }
-            }
-            return response() -> json([
-                'status' => 'success',
-                'results' => $generateInvoice,
-                'message' => 'E-Invoice generated succesfully',
-            ]);
-        } catch(Exception $ex) {
-            throw new ApiGenericException($ex -> getMessage());
-        }
-    }
     public function generateEInvoice(Request $request)
     {
         $validator = Validator::make(
@@ -3099,8 +2996,6 @@ class ErpSaleInvoiceController extends Controller
                 'message' => $validator->messages()->first(),
             ], 422);
         }
-        $user = Helper::getAuthenticatedUser();
-
         try{
             $documentHeader = ErpSaleInvoice::find($request->id);
             $transportationMode = EwayBillMaster::find($request->transporter_mode);
@@ -3108,19 +3003,40 @@ class ErpSaleInvoiceController extends Controller
             $documentHeader->transportation_mode=$transportationMode?->description ?? null;
             $documentHeader->eway_bill_master_id=$transportationMode?->id ?? null;
             $documentHeader->vehicle_no=$request->vehicle_no;
-            $data = EInvoiceHelper::generateEwayBill($documentHeader);
-            if (isset($data) && (isset($data['status']) && ($data['status'] == 'error'))) {
+            $data = MasterIndiaHelper::generateEwayBill($documentHeader);
+            if (isset($data) && (isset($data['results']) && ($data['results']['status'] != 'Success'))) {
                 return response()->json([
                     'status' => 'error',
                     'error' => 'error',
-                    'message' => $data['message'],
+                    'message' => $data['results'],
                 ], 500);
             } else{
-                $eInvoice = $documentHeader->irnDetail()->first();
-                $eInvoice->ewb_no = $data['EwbNo'];
-                $eInvoice->ewb_date = date('Y-m-d H:i:s', strtotime($data['EwbDt']));
-                $eInvoice->ewb_valid_till = date('Y-m-d H:i:s', strtotime($data['EwbValidTill']));
-                $eInvoice->save();
+                $message = $data['results']['message'];
+                //Get all the required data
+                $originalEwbDate = $message['ewayBillDate'];
+                $originalValidUpto = $message['validUpto'];
+                $ewbDateObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalEwbDate);
+                $validUptoObj = DateTime::createFromFormat('d/m/Y h:i:s A', $originalValidUpto);
+                $ewb_date = $ewbDateObj ? $ewbDateObj->format('Y-m-d H:i:s') : null;
+                $ewb_valid_till = $validUptoObj ? $validUptoObj->format('Y-m-d H:i:s') : null;
+
+                $eInvoice = $documentHeader?->irnDetail()?->first();
+                if ($eInvoice) {
+                    $eInvoice->ewb_no = $message['ewayBillNo'];
+                    $eInvoice->ewb_date = $ewb_date;
+                    $eInvoice->ewb_valid_till = $ewb_valid_till;
+                    $eInvoice->status = $data['results']['status'];
+                    $eInvoice->type = "Direct Eway Bill";
+                    $eInvoice->save();
+                } else {
+                    $documentHeader->irnDetail()->create([
+                        'ewb_no' => $message['ewayBillNo'],
+                        'ewb_date' => $ewb_date,
+                        'ewb_valid_till' => $ewb_valid_till,
+                        'status' => $data['results']['status'],
+                        'type' => 'Direct Eway Bill'
+                    ]);
+                }
 
                 $documentHeader -> is_ewb_generated = 1;
                 $documentHeader -> save();

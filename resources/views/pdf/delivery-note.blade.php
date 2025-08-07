@@ -309,7 +309,17 @@
                 $hsnGroups = [];
             @endphp
             @foreach($order->items as $key => $val)
-               @php
+                @php
+                $bundles = $val->bundles ?? [];
+                $bundleCount = count($bundles);
+                $rowspan = $bundleCount > 1 ? $bundleCount : 1;
+
+                $total_bundle += $bundleCount > 1 ? $bundleCount : 1;
+                $total_qty += @$val->order_qty;
+
+                $style = "vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;";
+                $style .= $bundleCount == 0 ? " border-right: 1px solid #000;" : " border-right: none;";
+                $style .= " text-align: right;";
                 $totalTaxPercentage = 0.00;
                 if ($val->item && $val->item->hsn) {
                     $hsnCode = $val->item->hsn->code;
@@ -357,11 +367,11 @@
 
 
                 <tr>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
+                    <td rowspan="{{isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}"
                         style="width:5%; vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
                         {{ (int)$key + 1 }}
                     </td>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
+                    <td rowspan="{{ isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}"
                         style="width:40%;vertical-align: middle; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;">
                         <b> {{ isset($val->customer_item_name) ? @$val -> customer_item_name : @$val -> item_name }}</b><br>
                         {{ isset($val->customer_item_code) ? @$val -> customer_item_code : @$val -> item_code }}<br />
@@ -395,58 +405,52 @@
                     </td>
                     @php
                         $style = "vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;";
-                        $style .= count(@$val->bundles) == 0 
-                            ? " border-right: 1px solid #000;" 
-                            : " border-right: none;";
+                        $style .= " border-right: 1px solid #000;" ;
                         $style .= " text-align: right;";
                         $total_bundle += count(@$val->bundles) > 1 ? count(@$val->bundles) : 1;
-                        $total_qty += @$val->order_qty;
                     @endphp
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
+                    <td rowspan="{{ isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}"
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{ @$val->hsn_code }}
                     </td>
                     
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
+                    <td rowspan="{{ isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}"
                         style="text-align:center; vertical-align: middle; padding:10px 3px;  border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
                         {{@$val->uom->name}}
                     </td>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
+                    <td rowspan="{{ isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}" style="{{ $style }}">
                         {{ @$val->order_qty }}
                     </td>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
-                        {{ number_format(@$val->rate,4) }}
+                    <td rowspan="{{ $rowspan }}" style="{{ $style }}">
+                        {{ number_format(@$val->rate, 4) }}
                     </td>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}" style="{{ $style }}">
-                        {{ number_format(@$val->order_qty * @$val->rate,2) }}
+                    <td rowspan="{{ $rowspan }}" style="{{ $style }}">
+                        {{ number_format(@$val->order_qty * @$val->rate, 2) }}
                     </td>
-                    <td rowspan="{{ count($val->bundles) ? count($val->bundles) + 1 : 1 }}"
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{count(@$val->bundles) > 0 ? count(@$val->bundles) : 1}}
-                    </td>                        
-                @if(count($val->bundles))
-                </tr>
+                    <td rowspan="{{ $rowspan }}" style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                        {{ $bundleCount > 0 ? $bundleCount : 1 }}
+                    </td>
 
-                    <!-- <tr>
-                        <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: center;" colspan = "5">Bundle Break Down</td>
-                    </tr>     -->
-                    @foreach($val->bundles as $qty)
-                        <tr @if($loop->last) style="border-bottom: 1px solid #000;" @endif>
-                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: right;" >{{ count($val->bundles)>1 ? $qty->bundle_no : "" }}</td>
-                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; border-left: none; text-align: right;">{{ count($val->bundles) > 1 ? $qty->qty : "" }}</td>
-                        </tr>
-                    @endforeach
-                @else
-                    <td
-                        style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
-                        {{ count(@$val->bundles)>1 ? count(@$val->bundles) : "" }}<br>
-                    </td>
-                    <td
-                        style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
-                        {{ count(@$val->bundles)>1 ? @$val->order_qty : ""}}
-                    </td>
-                </tr>
-                @endif
+                    @if($bundleCount)
+                        @php $first = true; @endphp
+                        @foreach($bundles as $qty)
+                            @if(!$first)
+                                </tr><tr>
+                            @endif
+                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; text-align: right;">
+                                {{ $bundleCount > 1 ? $qty->bundle_no : '' }}
+                            </td>
+                            <td style="vertical-align: middle; padding:3px 3px; border: 1px solid #000; border-left: none; text-align: right;">
+                                {{ $bundleCount > 1 ? $qty->qty : '' }}
+                            </td>
+                            @php $first = false; @endphp
+                        @endforeach
+                    @else
+                        <td style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;"></td>
+                        <td style="vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;">
+                            {{ @$val->order_qty }}
+                        </td>
+                    @endif
             @endforeach
             <tr>
                 <td colspan="4"

@@ -35,6 +35,9 @@
 @endsection
 
 @section('content')
+ <script src="{{asset('assets/js/fileshandler.js')}}"></script>
+
+
 <script>
             const locationCostCentersMap = @json($cost_centers);
 </script>
@@ -769,10 +772,20 @@
                                             <label class="form-label">Remarks <span class="text-danger">*</span></label>
                                             <textarea name="remarks" class="form-control"></textarea>
                                         </div>
-                                        <div class="mb-1">
-                                            <label class="form-label">Upload Document</label>
-                                            <input type="file" multiple class="form-control" />
-                                        </div>
+                                         <div class="row">
+                    <div class = "col-md-8">
+                        <div class="mb-1">
+                            <label class="form-label">Upload Document</label>
+                            <input type="file" id="ap_file" name = "attachment[]" multiple class="form-control cannot_disable" onchange = "addFiles(this, 'approval_files_preview');" max_file_count = "2"/>
+                        </div>
+                    </div>
+                    <div class = "col-md-4" style = "margin-top:19px;">
+                        <div class = "row" id = "approval_files_preview">
+
+                        </div>
+                    </div>
+                  </div>
+                  <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1409,13 +1422,14 @@
             }).get();
             $('.settleTotal').text(formatIndianNumber(settleSum));
         }
+        const baseEditUrl = "{{ route($editUrlString, $data->id) }}";
 
         $(function() {
             $('#inlineCheckbox1').click(function() {
                 $('.vouchers').prop('checked', this.checked);
                 selectAllVouchers();
             });
-            const baseEditUrl = "{{ route($editUrlString, $data->id) }}";
+            
 
             $("#revisionNumber").on("change", function() {
                 const selectedRevision = $(this).val();
@@ -1423,27 +1437,34 @@
                 window.open(fullUrl, "_blank");
             });
         });
+      
 
         $(document).on('click', '#amendmentSubmit', (e) => {
-            let actionUrl = "{{ route('paymentVouchers.amendment', $data->id) }}";
-            fetch(actionUrl).then(response => {
-                return response.json().then(data => {
-                    if (data.status == 200) {
-                        Swal.fire({
-                            title: 'Success!',
-                            text: data.message,
-                            icon: 'success'
-                        });
-                    } else {
-                        Swal.fire({
-                            title: 'Error!',
-                            text: data.message,
-                            icon: 'error'
-                        });
-                    }
-                    location.reload();
-                });
-            });
+            // let actionUrl = "{{ route('paymentVouchers.amendment', $data->id) }}";
+            // fetch(actionUrl).then(response => {
+            //     return response.json().then(data => {
+            //         if (data.status == 200) {
+            //             Swal.fire({
+            //                 title: 'Success!',
+            //                 text: data.message,
+            //                 icon: 'success'
+            //             });
+            //         } else {
+            //             Swal.fire({
+            //                 title: 'Error!',
+            //                 text: data.message,
+            //                 icon: 'error'
+            //             });
+            //         }
+            //         location.reload();
+            //     });
+            // });
+            e.preventDefault();
+            $('#amendmentconfirm').modal('hide');
+            $('.preloader').show();
+                let url = new URL(baseEditUrl, window.location.origin); // full absolute URL
+                url.searchParams.set('amendment', 1);
+                window.location.href = url.toString(); 
         });
 
         function check_amount() {

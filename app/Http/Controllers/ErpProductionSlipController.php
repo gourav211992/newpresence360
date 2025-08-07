@@ -259,8 +259,11 @@ class ErpProductionSlipController extends Controller
                 ->where('status', ConstantHelper::ACTIVE)
                 ->get(); 
             }
+
             $stationLines = collect();
-            if($doc?->mo) {
+
+            //  if($doc?->mo) {
+            if($doc?->mo?->station?->lines) {
                 $stationLines = $doc?->mo?->station?->lines; 
             }
 
@@ -295,6 +298,8 @@ class ErpProductionSlipController extends Controller
 
     public function store(PslipRequest $request)
     {
+        $consuptions = $request->cons;
+        // dd($request->all());
         try {
             //Reindex
             $request -> item_qty =  array_values($request -> item_qty ?? []);
@@ -528,13 +533,18 @@ class ErpProductionSlipController extends Controller
                         //     }
                         // })        
                         // ->get();
-                        $bomDetails = MoBomMapping::where('mo_product_id', $psItem->mo_product_id)->get();
-                        foreach ($bomDetails as $bomDetail) {   
+                        // $bomDetails = MoBomMapping::where('mo_product_id', $psItem->mo_product_id)->get();
+                        // foreach ($bomDetails as $bomDetailKey => $bomDetail) {  
+                        foreach ($consuptions as $consuption) {  
+                            $bomDetail = MoBomMapping::find($consuption['mo_bom_cons_id']);
+
                             $pslipBomMapping = PslipBomConsumption::where('pslip_id', $productionSlip?->id)
                                 ->where('pslip_item_id', $psItem?->id)
                                 ->where('bom_detail_id', $bomDetail->bom_detail_id)
                                 ->where('station_id', $bomDetail->station_id)
                                 ->first() ?? new PslipBomConsumption;
+
+
                             $previousConsumption = $pslipBomMapping->exists ? $pslipBomMapping->consumption_qty : 0;
                             $newConsumption = floatval($bomDetail->bom_qty) * floatval($itemDataValue['qty']);
 
@@ -550,8 +560,9 @@ class ErpProductionSlipController extends Controller
                             $pslipBomMapping->attributes = $bomDetail->attributes;
                             $pslipBomMapping->uom_id = $bomDetail->uom_id;
                             $pslipBomMapping->qty = $bomDetail->bom_qty;
-                            $pslipBomMapping->consumption_qty = floatval($bomDetail->bom_qty)*floatval($itemDataValue['qty']);
-                            $pslipBomMapping->inventory_uom_qty = floatval($bomDetail->bom_qty)*floatval($itemDataValue['qty']);
+                            $pslipBomMapping->required_qty = floatval($bomDetail->bom_qty)*floatval($itemDataValue['qty']);
+                            $pslipBomMapping->consumption_qty = floatval($consuption['consumption_qty']);
+                            $pslipBomMapping->inventory_uom_qty = floatval($consuption['consumption_qty']);
                             $pslipBomMapping->station_id = $bomDetail->station_id;
                             $pslipBomMapping->section_id = $bomDetail->section_id;
                             $pslipBomMapping->sub_section_id = $bomDetail->sub_section_id;

@@ -20,7 +20,9 @@ class TrackingResource extends JsonResource
             "packet_id"=> $this->item_uid,
             "action_at"=> $this->action_at ? CommonHelper::dateTimeFormat($this->action_at) : NULL,
             "action_by"=> optional($this->actionBy)->name,
-            "job_type"=> $this->job_type ? ucfirst($this->job_type) : NULL
+            "job_type"=> $this->job_type ? ucfirst($this->job_type) : NULL,
+            "status"=> $this->status,
+            "storagePoint"=> $this->storagePoint
         ];
     }
 }

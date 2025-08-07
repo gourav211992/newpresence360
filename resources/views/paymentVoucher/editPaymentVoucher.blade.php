@@ -9,6 +9,7 @@
 @endsection
 
 @section('content')
+<script src="{{asset('assets/js/fileshandler.js')}}"></script>
 <script>
         const locationCostCentersMap = @json($cost_centers);
 </script>
@@ -45,6 +46,7 @@
                     value="{{ $data->group_currency_exg_rate }}">
 
                 <input type="hidden" name="document_type" id="document_type" value="{{ $data->document_type }}">
+                @include('fixed-asset.partials.amendement-submit-modal')
 
             <div class="content-header pocreate-sticky">
                 <div class="row">
@@ -67,7 +69,7 @@
                                 <a href="{{ $indexUrl }}" class="btn btn-secondary btn-sm"><i
                                         data-feather="arrow-left-circle"></i> Back</a>
                                 @if(isset($fyear) && $fyear['authorized'])
-                                    @if ($buttons['draft'])
+                                    @if ($buttons['draft'] || (request('amendment')==1 && $buttons['amend']))
                                         <a type="button" onclick = "submitForm('draft');"
                                             class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" id="draft"
                                             name="action" value="draft"><i data-feather='save'></i> Save as Draft</a>
@@ -76,12 +78,12 @@
                                     <a id = "cancelButton" type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0"><i data-feather='x-circle'></i> Cancel</a>
                                     @endif
 
-                                    @if ($buttons['submit'])
+                                    @if ($buttons['submit'] || (request('amendment')==1 && $buttons['amend']))
                                         <a type="button" onclick = "submitForm('submitted');"
                                             class="btn btn-primary btn-sm" id="submitted" name="action"
                                             value="submitted"><i data-feather="check-circle"></i> Submit</a>
                                     @endif
-                                    @if ($buttons['approve'])
+                                    {{-- @if ($buttons['approve'])
                                         <button type="button" id="reject-button" data-bs-toggle="modal"
                                             data-bs-target="#approveModal" onclick = "setReject();"
                                             class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="x-circle"></i>  Reject</button>
@@ -101,13 +103,13 @@
                                         <button onclick = "onPostVoucherOpen();" type = "button"
                                             class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="check-circle"></i>
                                              Post</button>
-                                    @endif
+                                    @endif --}}
                                 @endif
-                                @if ($buttons['voucher'])
+                                {{-- @if ($buttons['voucher'])
                                         <button type="button" onclick="onPostVoucherOpen('posted');"
                                             class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="file-text"></i>
                                              Voucher</button>
-                                    @endif
+                                    @endif --}}
 
 
                                 <input id="submitButton" type="submit" value="Submit" class="hidden" />
@@ -1566,11 +1568,10 @@ function check_amount() {
                 $('#ledger_id').prop('required', true);
             }
             //$('#reference_no').trigger('input');
-
-            @if (!$buttons['draft'] || !$fyear['authorized'])
-$('#voucherForm').find('input, select, textarea').prop('disabled', true);
-$('#revisionNumber').prop('disabled', false);
-@endif
+            @if (!($buttons['draft'] || ($buttons['amend'] && request('amendment')==1) || $fyear['authorized']))
+                    $('#voucherForm').find('input, select, textarea').prop('disabled', true);
+                    $('#revisionNumber').prop('disabled', false);
+            @endif
             bind();
 
             if (orgCurrency != "") {
@@ -1902,7 +1903,12 @@ $('#revisionNumber').prop('disabled', false);
                 return false;
             }
             else
+            {
+            if ($('#action_type').val() === "amendment")
+                $("#amendmentModal").modal('show');
+            else
             $('#submitButton').click();
+        }
 
         }
 
@@ -2478,6 +2484,19 @@ function showToast(icon, title) {
                         }
                     });
                 }, 500);
+            }
+        });
+        $(document).on('click', '#amendmentBtnSubmit', (e) => {
+            let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
+            if(!remark) {
+                e.preventDefault();
+                $("#amendRemarkError").removeClass("d-none");
+                return false;
+            } else {
+                $("#amendmentModal").modal('hide');
+                $("#amendRemarkError").addClass("d-none");
+                e.preventDefault();
+               $('#submitButton').click();
             }
         });
     </script>

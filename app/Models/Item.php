@@ -8,9 +8,12 @@ use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Deletable;
 use App\Helpers\ConstantHelper;
+use Illuminate\Support\Facades\Schema;
+use App\Interfaces\Exportable; 
 
 
-class Item extends Model
+
+class Item extends Model implements Exportable
 {
     use HasFactory,SoftDeletes,Deletable,DefaultGroupCompanyOrg;
 
@@ -70,6 +73,7 @@ class Item extends Model
         'approver_level', 
         'revision_number',
         'revision_date',
+        'created_at',
         'created_by'
     ];
 
@@ -79,6 +83,12 @@ class Item extends Model
     {
         return $this->belongsTo(Unit::class, 'uom_id');
     }
+
+     public function storageUom()
+    {
+        return $this->belongsTo(Unit::class, 'storage_uom_id');
+    }
+    
     
     public function alternateUOMs()
     {
@@ -125,11 +135,12 @@ class Item extends Model
 
     public function costCurrency()
     {
-        return $this->belongsTo(Currency::class, );
+        return $this->belongsTo(Currency::class, 'cost_price_currency_id');
     }
+
     public function sellCurrency()
     {
-        return $this->belongsTo(Currency::class, );
+        return $this->belongsTo(Currency::class, 'sell_price_currency_id');
     }
 
     public function approvedCustomers()
@@ -203,6 +214,12 @@ class Item extends Model
     {
         return $this->belongsTo(InspectionChecklist::class, 'inspection_checklist_id');
     }
+
+     public function assetCategory()
+    {
+        return $this->belongsTo(ErpAssetCategory::class,'asset_category_id');
+    }
+
 
     public function item_attributes_array(array $arr = [])
     {
@@ -322,6 +339,81 @@ class Item extends Model
         }
     
         return '';
+    }
+
+       // Corrected function to get all table columns.  Use the model's table name.
+    public static function getAllTableColumns()
+    {
+        return Schema::getColumnListing((new self())->getTable());
+    }
+
+
+   public function getExportColumns()
+    {
+        $columns = [];
+        $columns['Sub Types'] = 'sub_types_list';
+        $columns['UOM'] = 'uom.name';
+        $columns['Storage UOM'] = 'storageUom.name';
+        $columns['HSN'] = 'hsn.code';
+        $columns['Category'] = 'subCategory.name';
+        $columns['Asset Category'] = 'assetCategory.name';
+        $columns['Cost Currency'] = 'costCurrency.short_name';
+        $columns['Sell Currency'] = 'sellCurrency.short_name';
+        $columns['Group'] = 'group.name';
+        $columns['Company'] = 'company.name';
+        $columns['Organization'] = 'organization.name';
+       
+
+        // 2. Table columns
+       $skipColumns = [
+            'unit_id','hsn_id','category_id','subcategory_id','uom_id','storage_uom_id',
+            'inspection_checklist_id','asset_category_id','cost_price_currency_id','sell_price_currency_id',
+            'book_id','book_code','group_id','company_id','organization_id','created_by','min_stocking_level',
+            'max_stocking_level','reorder_level','minimum_order_qty','lead_days','safety_days','shelf_life_days',
+            'po_positive_tolerance','po_negative_tolerance','so_positive_tolerance','so_negative_tolerance',
+            'approver_level','revision_number','revision_date','is_serial_no','is_batch_no','is_expiry','
+            is_inspection','is_traded_item','is_asset','storage_uom_conversion','is_inspection',
+            'storage_uom_count','storage_weight','storage_volume','item_initial','item_code_type','item_remark',
+            'service_type','document_status','storage_type',
+       ];
+
+    
+        foreach ($this->getFillable() as $column) {
+            if (in_array($column, $skipColumns)) continue;
+            $columns[ucwords(str_replace('_', ' ', $column))] = $column;
+        }
+
+        $columns['Created By'] = 'auth_user.name';
+       // 3.Attributes 
+        for ($i = 1; $i <= 5; $i++) {
+            $columns["Attribute {$i} Group Name"] = "attribute_{$i}_group_name";
+            $columns["Attribute {$i} Attribute Name"] = "attribute_{$i}_attribute_name";
+            $columns["Attribute {$i} All Checked"] = "attribute_{$i}_all_checked";
+        }
+
+        // 4. Specifications
+        $columns["Product Specification Group"] = "product_specification_group";
+
+        for ($i = 1; $i <= 10; $i++) {
+            $columns["Specification {$i} Name"] = "specification_{$i}_name";
+            $columns["Specification {$i} Value"] = "specification_{$i}_value";
+        }
+
+        // 5. Alternate UOMs
+        for ($i = 1; $i <= 5; $i++) {
+            $columns["Alternate UOM {$i} UOM"] = "alternate_uom_{$i}_uom";
+            $columns["Alternate UOM {$i} Conversion To Inventory"] = "alternate_uom_{$i}_conversion";
+            $columns["Alternate UOM {$i} Cost Price"] = "alternate_uom_{$i}_cost_price";
+            $columns["Alternate UOM {$i} Sell Price"] = "alternate_uom_{$i}_sell_price";
+            $columns["Alternate UOM {$i} Usage"] = "alternate_uom_{$i}_usage";
+        }
+
+        return $columns;
+    }
+
+    public function getExportFileName(): string
+    {
+        return 'items';
     }
 
 }

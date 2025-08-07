@@ -9,19 +9,13 @@ use App\Models\ErpStore;
 use App\Models\WhDetail;
 use App\Models\ErpSubStore;
 use App\Models\WhStructure;
-use App\Models\Organization;
 use Illuminate\Http\Request;
 use App\Helpers\ConstantHelper;
-use Illuminate\Validation\Rule;
 use App\Models\ErpSubStoreParent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\WhMappingRequest;
-use App\Models\UserOrganizationMapping;
 use Yajra\DataTables\Facades\DataTables;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Auth as FacadesAuth;
 
 class WarehouseMappingController extends Controller
 {
@@ -33,7 +27,12 @@ class WarehouseMappingController extends Controller
             $records = WhDetail::with('whLevel')
                 ->groupBy('sub_store_id', 'wh_level_id');
 
+            // Log the query for debugging
+            DB::enableQueryLog();
             $records = $records->get();
+            Log::info('Query Log:', DB::getQueryLog());
+            DB::disableQueryLog();
+
             return DataTables::of($records)
                 ->addIndexColumn()
                 ->addColumn('store', function ($row) {
@@ -62,23 +61,28 @@ class WarehouseMappingController extends Controller
                     return '';
                 })
                 ->addColumn('status', function ($pr) {
-                    return '<span class="badge rounded-pill badge-light-' . ($pr->status == ConstantHelper::ACTIVE ? 'success' : 'danger') . '">'
+                    return '<span class="badge rounded-pill badge-light-' . ($pr->status == 'active' ? 'success' : 'danger') . '">'
                         . ucfirst($pr->status) . '</span>';
                 })
                 ->addColumn('action', function ($pr) {
+                    $editMultipleUrl = route('warehouse-multiple-mapping.edit', $pr->store_id) . '?sub_store=' . $pr->sub_store_id . '&wh_level=' . $pr->wh_level_id;
                     $editUrl = route('warehouse-mapping.edit', $pr->store_id) . '?sub_store=' . $pr->sub_store_id . '&wh_level=' . $pr->wh_level_id;
-                    $deleteUrl = route('warehouse-mapping.delete', $pr->id);
+                    // $deleteUrl = route('warehouse-mapping.delete', $pr->id);
                     return '<div class="dropdown">
-                        <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-                            <i data-feather="more-vertical"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end">
-                            <a class="dropdown-item" href="' . $editUrl . '">
-                                <i data-feather="edit-3" class="me-50"></i>
-                                <span>Edit</span>
-                            </a>
-                        </div>
-                    </div>';
+                                <button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
+                                    <i data-feather="more-vertical"></i>
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end">
+                                    <a class="dropdown-item" href="' . $editUrl . '">
+                                        <i data-feather="edit-3" class="me-50"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                    <a class="dropdown-item" href="' . $editMultipleUrl . '">
+                                        <i data-feather="edit-3" class="me-50"></i>
+                                        <span>Edit Multiple</span>
+                                    </a>
+                                </div>
+                            </div>';
                 })
                 ->rawColumns(['names', 'status', 'action'])
                 ->make(true);
@@ -102,73 +106,35 @@ class WarehouseMappingController extends Controller
 
     public function store(WhMappingRequest $request)
     {
-        $baseRules = [
-            'level_id' => 'required|exists:erp_wh_levels,id',
-            'details' => 'required|array|min:1',
-            'details.*.name' => 'required|string|max:255',
-            'details.*.parent_id' => 'nullable|array',
-            'details.*.parent_id.*' => 'nullable|exists:erp_wh_details,id',
-            'details.*.is_first_level' => 'nullable|boolean',
-            'details.*.is_last_level' => 'nullable|boolean',
-            'details.*.max_weight' => 'nullable|numeric|min:0',
-            'details.*.max_volume' => 'nullable|numeric|min:0',
-        ];
-
-        $whLevel = WhLevel::find($request->level_id);
-        $validator = Validator::make($request->all(), $baseRules);
-
-        $validator->after(function ($validator) use ($request, $whLevel) {
-            if (!$whLevel || !$request->has('details')) return;
-            foreach ($request->input('details') as $index => $detail) {
-                $parentIds = $detail['parent_id'] ?? [null];
-
-                foreach ($parentIds as $parentId) {
-                    $parentName = optional(WhDetail::find($parentId))->name;
-                    $heirarchyName = $detail['name'] . '-' . ($parentName ?? '');
-
-                    $duplicateExists = WhDetail::where('wh_level_id', $whLevel->id)
-                        ->where('store_id', $whLevel->store_id)
-                        ->where('sub_store_id', $whLevel->sub_store_id)
-                        ->where('heirarchy_name', $heirarchyName)
-                        ->exists();
-
-                    if ($duplicateExists) {
-                        $validator->errors()->add("details.$index.name", "Duplicate hierarchy name: '{$heirarchyName}' already exists.");
-                    }
-                }
-            }
-        });
-
-        $validator->validate();
+        $user = Helper::getAuthenticatedUser();
         DB::beginTransaction();
-
         try {
-            foreach ($request->input('details') as $detail) {
-                $parentIds = $detail['parent_id'] ?? [null];
-
-                foreach ($parentIds as $parentId) {
-                    $parentName = optional(WhDetail::find($parentId))->name;
-                    $heirarchyName = $detail['name'] . '-' . ($parentName ?? '');
+            $whLevel = WhLevel::find($request->all()['level_id']);
+            // dd($request->details);
+            // Detail Save
+            if (isset($request->details)) {
+                $previousLevel = null;
+                foreach ($request->details as $l_key => $detail) {
+                    $storagePoint = (isset($detail['storage_point']) && ($detail['storage_point'] == 'on')) ? 1 : 0;
 
                     $whDetail = new WhDetail();
                     $whDetail->wh_level_id = $whLevel->id;
                     $whDetail->store_id = $whLevel->store_id;
                     $whDetail->sub_store_id = $whLevel->sub_store_id;
-                    $whDetail->name = $detail['name'];
-                    $whDetail->heirarchy_name = $heirarchyName;
-                    $whDetail->is_storage_point = isset($detail['storage_point']) && $detail['storage_point'] === 'on' ? 1 : 0;
-                    $whDetail->parent_id = $parentId;
-                    $whDetail->is_first_level = $detail['is_first_level'] ?? 0;
-                    $whDetail->is_last_level = $detail['is_last_level'] ?? 0;
+                    $whDetail->name = $detail['name'] ?? null;
+                    $whDetail->is_storage_point = $storagePoint;
+                    $whDetail->parent_id = $detail['parent_id'] ?? null;
+                    $whDetail->is_first_level = $detail['is_first_level'] ?? null;
+                    $whDetail->is_last_level = $detail['is_last_level'] ?? null;
                     $whDetail->max_weight = $detail['max_weight'] ?? null;
                     $whDetail->max_volume = $detail['max_volume'] ?? null;
-                    $whDetail->status = ConstantHelper::ACTIVE;
+                    $whDetail->status = 'active';
                     $whDetail->save();
 
-                    if ($whDetail->is_storage_point) {
-                        $randomSuffix = strtoupper(Str::random(rand(6, 8)));
-                        $prefix = strtoupper(str_replace(' ', '-', $whDetail->name));
-                        $whDetail->storage_number = "{$prefix}-{$randomSuffix}";
+                    if ($whDetail->is_storage_point == 1) {
+                        $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                        $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) . '-' . $randomNumber;
+                        $whDetail->storage_number = $storageNumber;
                         $whDetail->save();
                     }
                 }
@@ -176,13 +142,13 @@ class WarehouseMappingController extends Controller
 
             DB::commit();
             return response()->json([
-                'message' => 'Warehouse mapping saved successfully.',
-                'level' => $whLevel->id,
-            ], 201);
+                'message' => 'Record created successfully',
+                'data' => $whLevel
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'An error occurred while saving the warehouse mapping.',
+                'message' => 'Error occurred while creating the record.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -195,15 +161,10 @@ class WarehouseMappingController extends Controller
         $parentDetails = array();
         $isLastLevel = 0;
 
-        $whDetails = WhDetail::with(['whLevel', 'parent'])
-            ->where('store_id', $id)
+        $whDetails = WhDetail::with(['whLevel', 'parent'])->where('store_id', $id)
             ->where('sub_store_id', $request->sub_store)
             ->where('wh_level_id', $request->wh_level)
-            ->get()
-            ->groupBy(function ($item) {
-                return $item->name . '|' . $item->is_storage_point;
-            });
-
+            ->get();
         $level = WhLevel::where('store_id', $id)
             ->where('sub_store_id', $request->sub_store)
             ->where('id', $request->wh_level)
@@ -230,70 +191,63 @@ class WarehouseMappingController extends Controller
 
     public function update(WhMappingRequest $request, $id)
     {
-        $level = WhLevel::where('store_id', $id)
-            ->where('sub_store_id', $request->sub_store)
-            ->where('id', $request->wh_level)
-            ->first();
-
+        $user = Helper::getAuthenticatedUser();
         DB::beginTransaction();
         try {
-            $existingDetailIds = WhDetail::where('store_id', $id)
+            $level = WhLevel::where('store_id', $id)
                 ->where('sub_store_id', $request->sub_store)
-                ->where('wh_level_id', $request->wh_level)
-                ->pluck('id')
-                ->toArray();
+                ->where('id', $request->wh_level)
+                ->first();
+            // Detail Save
+            if (isset($request->details)) {
+                $previousLevel = null;
+                $existingDetailIds = WhDetail::where('store_id', $id)
+                    ->where('sub_store_id', $request->sub_store)
+                    ->where('wh_level_id', $request->wh_level)
+                    ->pluck('id')->toArray();
+                $updatedDetailIds = [];
+                foreach ($request->details as $l_key => $detail) {
+                    $whDetailId = $detail['detail_id'] ?? null;
+                    $whDetail = WhDetail::find($whDetailId) ?? new WhDetail;
+                    $storagePoint = (isset($detail['storage_point']) && ($detail['storage_point'] == 'on')) ? 1 : 0;
 
-            $updatedDetailIds = [];
-            foreach ($request->input('details') as $detail) {
-                $parentIds = $detail['parent_id'] ?? [null];
-                foreach ($parentIds as $parentId) {
-                    $matchedDetail = WhDetail::where('store_id', $id)
-                        ->where('sub_store_id', $request->sub_store)
-                        ->where('wh_level_id', $request->wh_level)
-                        ->where('name', $detail['name'])
-                        ->where('parent_id', $parentId)
-                        ->first();
-
-                    $whDetail = $matchedDetail ?? new WhDetail();
-
-                    $whDetail->wh_level_id = $level->id;
+                    $whDetail->wh_level_id = $request->wh_level;
                     $whDetail->store_id = $id;
                     $whDetail->sub_store_id = $request->sub_store;
-                    $whDetail->name = $detail['name'];
-                    $whDetail->parent_id = $parentId;
-                    $whDetail->heirarchy_name = $detail['name'] . '-' . optional(WhDetail::find($parentId))->name;
-                    $whDetail->is_storage_point = !empty($detail['storage_point']) ? 1 : 0;
-                    $whDetail->is_first_level = $detail['is_first_level'] ?? 0;
-                    $whDetail->is_last_level = $detail['is_last_level'] ?? 0;
+                    $whDetail->name = $detail['name'] ?? null;
+                    $whDetail->is_storage_point = $storagePoint;
+                    $whDetail->parent_id = $detail['parent_id'] ?? null;
+                    $whDetail->is_first_level = $detail['is_first_level'] ?? null;
+                    $whDetail->is_last_level = $detail['is_last_level'] ?? null;
                     $whDetail->max_weight = $detail['max_weight'] ?? null;
                     $whDetail->max_volume = $detail['max_volume'] ?? null;
-                    $whDetail->status = ConstantHelper::ACTIVE;
+                    $whDetail->status = 'active';
                     $whDetail->save();
 
-                    if (!$whDetail->storage_number && $whDetail->is_storage_point) {
-                        $suffix = strtoupper(Str::random(rand(6, 8)));
-                        $prefix = strtoupper(str_replace(' ', '-', $whDetail->name));
-                        $whDetail->storage_number = "{$prefix}-{$suffix}";
+                    $updatedDetailIds[] = $whDetail->id; // ✅ Add updated ID to prevent deletion
+
+                    if (!$whDetail->storage_number && ($whDetail->is_storage_point == 1)) {
+                        $randomNumber = strtoupper(Str::random(rand(6, 8)));
+                        $storageNumber = strtoupper(str_replace(' ', '-', $whDetail?->name)) . '-' . $randomNumber;
+                        $whDetail->storage_number = $storageNumber;
                         $whDetail->save();
                     }
-
-                    $updatedDetailIds[] = $whDetail->id;
                 }
-            }
 
-            $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
-            WhDetail::whereIn('id', $detailsToDelete)->forceDelete();
+                // ✅ Delete details that are no longer present in the request
+                $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
+                WhDetail::whereIn('id', $detailsToDelete)->forceDelete();
+            }
 
             DB::commit();
             return response()->json([
-                'message' => 'Warehouse mapping updated successfully.',
-                'data' => $level,
+                'message' => 'Record updated successfully',
+                'data' => $level
             ]);
         } catch (\Exception $e) {
-
             DB::rollBack();
             return response()->json([
-                'message' => 'Error occurred while updating the record.',
+                'message' => 'Error occurred while creating the record.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -312,7 +266,7 @@ class WarehouseMappingController extends Controller
         $user = Helper::getAuthenticatedUser();
         $stores = ErpSubStoreParent::withDefaultGroupCompanyOrg()
             ->with(['sub_store' => function ($query) {
-                $query->where('status', ConstantHelper::ACTIVE);
+                $query->where('status', 'active');
             }])
             ->get();
 
@@ -374,7 +328,7 @@ class WarehouseMappingController extends Controller
                 ->whereHas('parents', function ($query) {
                     $query->withDefaultGroupCompanyOrg();
                 })
-                ->where('status', ConstantHelper::ACTIVE)
+                ->where('status', 'active')
                 ->get();
 
 

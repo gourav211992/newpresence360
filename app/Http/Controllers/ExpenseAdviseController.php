@@ -2407,19 +2407,29 @@ class ExpenseAdviseController extends Controller
         $vendorId = $request->vendor_id ?? null;
         $headerBookId = $request->header_book_id ?? null;
         $itemSearch = $request->item_search ?? null;
-        $headerIds = $request->header_ids ?? '';
-        $detailsIds = $request->details_ids ?? '';
-
-        if (is_string($headerIds)) {
-            $headerIds = array_filter(explode(',', $headerIds));
-        }
-
-        if (is_string($detailsIds)) {
-            $detailsIds = array_filter(explode(',', $detailsIds));
-        }
 
         $decoded = urldecode(urldecode($request->selected_po_ids));
         $selected_po_ids = json_decode($decoded, true) ?? [];
+
+        $keys = [
+            'header_ids', 'details_ids',
+        ];
+
+        foreach ($keys as $key) {
+            $$key = $request->$key ?? null;
+
+            if (is_string($$key)) {
+                $decoded = urldecode(urldecode($$key));
+
+                if (strpos($decoded, ',') !== false) {
+                    $$key = array_filter(explode(',', $decoded));
+                } else {
+                    $$key = strlen($decoded) ? [$decoded] : [];
+                }
+            } elseif (!is_array($$key)) {
+                $$key = [];
+            }
+        }
 
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
 
@@ -2472,12 +2482,12 @@ class ExpenseAdviseController extends Controller
         if ($request->type === 'create' && count($selected_po_ids)) {
             $poItems->whereNotIn('erp_po_items.id', $selected_po_ids);
         } elseif ($request->type === 'edit') {
-            if (!empty($headerIds)) {
-                $poItems->whereIn('erp_purchase_orders.id', $headerIds);
+            if (!empty($header_ids)) {
+                $poItems->whereIn('erp_purchase_orders.id', $header_ids);
             }
 
-            if (!empty($detailsIds)) {
-                $poItems->whereNotIn('erp_po_items.id', $detailsIds);
+            if (!empty($details_ids)) {
+                $poItems->whereNotIn('erp_po_items.id', $details_ids);
             }
 
             if (!empty($selected_po_ids)) {

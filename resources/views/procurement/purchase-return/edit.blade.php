@@ -981,13 +981,13 @@
 	</div>
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("purchase-return.tax.calculation")}}';
         var qtyChangeUrl = '{{ route("purchase-return.get.validate-quantity") }}';
     </script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/purchase-return.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/purchase-return.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         let tableRowCount = $('.mrntableselectexcel tr').length;
@@ -2964,6 +2964,5 @@
                 icon: 'error'
             });
         }
-
     </script>
 @endsection

@@ -303,12 +303,12 @@
                                     </div>
                                     <div class="col-md-3">
                                        <div class="mb-1">
-                                          <label class="form-label" for="vehicle">Vehicle <span class="text-danger">*</span></label>
-                                          <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-type-autocomplete editable-field"
-                                             placeholder="Select Vehicle" id="vehicle_type_name"
-                                             value="{{ old('vehicle_type_name', @$lr->vehicleType->name ?? '') }}" />
-                                          <input type="hidden" name="vehicle_type_id" class="vehicle-type-id editable-field"
-                                             value="{{ old('vehicle_type_id', @$lr->vehicle_type_id) }}" id="vehicle_type_id"/>
+                                          <label class="form-label" for="vehicle">Vehicle No.<span class="text-danger">*</span></label>
+                                          <input type="text" name="vehicle_type_name" class="form-control mw-100 vehicle-number-autocomplete editable-field"
+                                             placeholder="Select Vehicle" id="vehicle_number"
+                                             value="{{ old('vehicle_number', @$lr->vehicle->lorry_no ?? '') }}" />
+                                          <input type="hidden" name="vehicle_number_id" class="vehicle-number-id editable-field"
+                                             value="{{ old('vehicle_number_id', @$lr->vehicle_id) }}" id="vehicle_number_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -1365,38 +1365,39 @@ $(document).on('focus', '.driver-autocomplete', function () {
     }
 });
 
-    
-    //vehicle types
-    const vehicleTypes = [
-   @if($vehicleTypes->isNotEmpty())
-    @foreach($vehicleTypes as $vt)
-        {
-            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            id: {{ $vt->id }}
-        }@if(!$loop->last),@endif
-    @endforeach
-@else
-    null
-@endif
-];
+</script>   
 
-   $(document).on('focus', '.vehicle-type-autocomplete', function () {
-    if (!$(this).data('ui-autocomplete')) {
-        $(this).autocomplete({
-            source: vehicleTypes,
-            minLength: 0,
-            select: function (event, ui) {
-                $(this).val(ui.item.label);
-                $(this).closest('tr').find('.vehicle-type-id').val(ui.item.id);
-                 $('#vehicle_type_id').val(ui.item.id);
-                return false;
-            }
-        }).focus(function () {
-            $(this).autocomplete('search', '');
-        });
-    }
+@if($vehicleNumbers->isNotEmpty())
+<script>
+const vehicleNumbers = [
+    @foreach($vehicleNumbers as $vn)
+        {
+            label: "{{ $vn->lorry_no }} ({{ $vn->vehicleType->name ?? '' }})",
+            value: "{{ $vn->lorry_no }} ({{ $vn->vehicleType->name ?? '' }})",
+            id: {{ $vn->id }}
+        }{{ !$loop->last ? ',' : '' }}
+    @endforeach
+];
+</script>
+@endif
+
+<script>
+
+$('.vehicle-number-autocomplete').each(function () {
+    $(this).autocomplete({
+        source: vehicleNumbers,
+        minLength: 0,
+        select: function (event, ui) {
+            $(this).val(ui.item.label);
+            $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
+            return false;
+        }
+    }).focus(function () {
+        $(this).autocomplete('search', '');
+    });
 });
+
+
 </script>
 <script>
 
@@ -1405,7 +1406,10 @@ $(document).on('focus', '.driver-autocomplete', function () {
  function fetchFreightCharge() {
     const sourceId = $('input[name="source_id"]').val();
     const destinationId = $('input[name="destination_id"]').val();
-    const formStatus = getFormStatus();
+    const vehicleId = $('input[name="vehicle_number_id"]').val();
+    const customerId = $('input[name="customer_id"]').val();
+    const formStatus = $('input[name="document_status"]').val();
+    
 
     if (!sourceId || !destinationId) return;
 
@@ -1413,12 +1417,12 @@ $(document).on('focus', '.driver-autocomplete', function () {
         url: '/freight-charge-details',
         method: 'GET',
         data: {
-            source_id: sourceId,
-            destination_id: destinationId
+                source_id: sourceId,
+                destination_id: destinationId,
+                vehicle_id:vehicleId,
+                customer_id:customerId
         },
         success: function (response) {
-            $('#vehicle_type_name').val(response.vehicle_type_name);
-            $('.vehicle-type-id').val(response.vehicle_type_id);
             $('#distance').val(response.distance);
             $('#distanceInput').val(response.distance);
             $('#freight_charges').val(response.freight_charges);
@@ -1449,6 +1453,21 @@ $(document).on('focus', '.driver-autocomplete', function () {
     });
 }
 
+$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]').on('blur', function () {
+    const sourceId = $('input[name="source_id"]').val();
+    const destId = $('input[name="destination_id"]').val();
+    const vehicleId = $('input[name="vehicle_number_id"]').val();
+    const custId = $('input[name="customer_id"]').val();
+
+    console.log('sourceId:', sourceId);
+    console.log('destId:', destId);
+    console.log('vehicleId:', vehicleId);
+    console.log('custId:', custId);
+
+    if (sourceId && destId && vehicleId && custId) {
+        fetchFreightCharge();
+    }
+});
 
     $(document).on('change', 'input[name*="[weight]"], input[name*="[no_of_articles]"]', function () {
         updateRouteDetailsUI(); 

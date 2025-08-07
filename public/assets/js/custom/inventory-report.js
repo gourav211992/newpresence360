@@ -78,13 +78,13 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         .filter((index) => index !== -1); // Ensure valid indices
     // Ensure the Index (0), Action (10) and Action (11) columns are always visible
     if (!visibleColumnIndices.includes(0)) visibleColumnIndices.unshift(0); // Index column
-    if (!visibleColumnIndices.includes(10)) visibleColumnIndices.push(10); // Confirmed Stock columns
-    if (!visibleColumnIndices.includes(11)) visibleColumnIndices.push(11);
+    if (!visibleColumnIndices.includes(11)) visibleColumnIndices.push(11); // Confirmed Stock columns
     if (!visibleColumnIndices.includes(12)) visibleColumnIndices.push(12);
-    if (!visibleColumnIndices.includes(13)) visibleColumnIndices.push(13); // Unconfirmed Stock columns
-    if (!visibleColumnIndices.includes(14)) visibleColumnIndices.push(14);
+    if (!visibleColumnIndices.includes(13)) visibleColumnIndices.push(13);
+    if (!visibleColumnIndices.includes(14)) visibleColumnIndices.push(14); // Unconfirmed Stock columns
     if (!visibleColumnIndices.includes(15)) visibleColumnIndices.push(15);
     if (!visibleColumnIndices.includes(16)) visibleColumnIndices.push(16);
+    if (!visibleColumnIndices.includes(17)) visibleColumnIndices.push(17);
 
     // Define table headers corresponding to the columns
     const day_1 = $('#day1').val();
@@ -102,6 +102,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         `<th>Location</th>`, // Store
         `<th>Store</th>`,
         `<th>Station</th>`, // Shelf
+        `<th>UOM</th>`, // UOM
         `<th>Stock Type</th>`, // Bin
         `<th class='text-end'>Confirmed<br> Stock</th> `, // Confirmed Stock Quantity
         `<th class='text-end'>Cost</th>`, // Confirmed Stock Cost
@@ -221,6 +222,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             `<td class='no-wrap'>${report?.location?.store_name ?? ""}</td>`, // Store
             `<td class='no-wrap'>${report?.store?.name ?? ""}</td>`, // Rack
             `<td class='no-wrap'>${report?.station?.name ?? ""}</td>`, // Station
+            `<td class='no-wrap'>${report?.inventory_uom?.name ?? ""}</td>`, // UOM
             `<td class='no-wrap'>
                 ${stockType === "R" ? "Regular" : stockType === "W" ? "WIP" : ""}
             </td>`, // Stock Type
@@ -423,20 +425,21 @@ function getColumnIndexById(columnId) {
         "store": 6,
         "sub_location": 7,
         "station": 8,
-        "stock_types": 9,
-        "confirmed-stock-qty": 10,
-        "confirmed-stock-cost": 11,
-        "confirmed-stock-value": 12,
-        "unconfirmed-stock-qty": 13,
-        "unconfirmed-stock-cost": 14,
-        "unconfirmed-stock-value": 15,
-        "hold_qty": 16,
-        "day1_visibility": 17,
-        "day2_visibility": 18,
-        "day3_visibility": 19,
-        "day4_visibility": 20,
-        "day5_visibility": 21,
-        "day6_visibility": 22,
+        "uom": 9,
+        "stock_types": 10,
+        "confirmed-stock-qty": 11,
+        "confirmed-stock-cost": 12,
+        "confirmed-stock-value": 13,
+        "unconfirmed-stock-qty": 14,
+        "unconfirmed-stock-cost": 15,
+        "unconfirmed-stock-value": 16,
+        "hold_qty": 17,
+        "day1_visibility": 18,
+        "day2_visibility": 19,
+        "day3_visibility": 20,
+        "day4_visibility": 21,
+        "day5_visibility": 22,
+        "day6_visibility": 23,
     };
     // console.clear();
 

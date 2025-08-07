@@ -120,7 +120,7 @@ $(document).on('change', '[name*="comp_attribute"]', (e) => {
     $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(e.target.value);
     // closestTr = $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).closest('tr');
     // getItemDetail(closestTr);
-    qtyEnabledDisabled();
+    // qtyEnabledDisabled();
     setSelectedAttribute(rowCount);
 });
 
@@ -182,40 +182,65 @@ $(document).on('focus', '.checkNegativeVal', function(e) {
 });
 
 /*qty on change*/
-$(document).on('change',"[name*='accepted_qty']",(e) => {
-    let tr = e.target.closest('tr');
-    let qty = e.target;
-    checkDuplicateObjects(qty);
-    let dataIndex = $(e.target).closest('tr').attr('data-index');
-    let itemId = $(e.target).closest('tr').find('[name*=item_id]').val();
-    let acceptedQuantity = $(e.target).closest('tr').find("[name*='accepted_qty']");
-    let itemCost = $(e.target).closest('tr').find("[name*='rate']");
-    let mrnDetailId = $(e.target).closest('tr').find("[name*='mrn_detail_id']").val();
-    let pbDetailId = $(e.target).closest('tr').find("[name*='pb_detail_id']").val();
-    let itemValue = $(e.target).closest('tr').find("[name*='basic_value']");
-    if(mrnDetailId || pbDetailId){
-        let actionUrl = '/purchase-bills/validate-quantity?item_id='+itemId+'&mrnDetailId='+mrnDetailId+'&pbDetailId='+pbDetailId+'&qty='+acceptedQuantity.val();
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if(data.data.error_message) {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: data.data.error_message,
-                        icon: 'error',
-                    });
-                    return false;
-                }
-            });
-        });
-    }
-    let aq = parseFloat(acceptedQuantity.val());
-    acceptedQuantity.val(aq.toFixed(2));
+$(document).on('change', "[name*='accepted_qty']", async function (e) {
+    const $tr = $(e.target).closest('tr');
+    const $qtyInput = $(e.target);
+    const orderQty = parseFloat($qtyInput.val()) || 0;
 
-    if (Number(itemCost.val())) {
-        let totalItemValue = parseFloat(acceptedQuantity.val()) * parseFloat(itemCost.val());
-        itemValue.val(totalItemValue.toFixed(2));
-    } else {
-        itemValue.val('');
+    const $itemCost = $tr.find("[name*='rate']");
+    const $itemValue = $tr.find("[name*='basic_value']");
+    const dataIndex = $tr.attr('data-index');
+    const itemId = $tr.find("[name*='item_id']").val();
+
+    $qtyInput.val(orderQty.toFixed(2));
+    checkDuplicateObjects($qtyInput);
+
+    if (orderQty <= 0) {
+        Swal.fire({ title: 'Error!', text: 'Qty. cannot be zero.', icon: 'error' });
+        $qtyInput.val(orderQty.toFixed(2));
+        return;
+    }
+
+    const getVal = (selector) => {
+        const el = $tr.find(selector);
+        return el.length ? el.val() : '';
+    };
+
+    const data = {};
+    const safeSet = (key, val) => { if (val) data[key] = val; };
+
+    safeSet('item_id', itemId);
+    safeSet('mrn_header_id', getVal("[name*='[mrn_header_id]']"));
+    safeSet('mrn_detail_id', getVal("[name*='[mrn_detail_id]']"));
+    safeSet('detail_id', getVal("[name*='[detail_id]']"));
+    safeSet('qty', orderQty.toFixed(2));
+    safeSet('type', currentProcessType);
+
+    try {
+        const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());
+        const result = await response.json();
+
+        const resultQty = parseFloat(result.order_qty) || 0;
+        const finalQty = resultQty.toFixed(2);
+        $qtyInput.val(finalQty);
+        let acceptedQty = resultQty;
+
+        if (Number($itemCost.val())) {
+            let totalValue = parseFloat(acceptedQty) * parseFloat($itemCost.val());
+            $itemValue.val(totalValue.toFixed(2));
+        } else {
+            $itemValue.val('');
+        }
+
+        if (result.status !== 200 && result.message) {
+            Swal.fire({ title: 'Error!', text: result.message, icon: 'error' });
+            return false;
+        }
+        getItemDetail($tr);
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire({ title: 'Error!', text: 'Quantity validation failed.', icon: 'error' });
     }
 });
 
@@ -1234,25 +1259,25 @@ $(document).on('keyup', '#new_exp_value', (e) => {
 });
 
 /*Qty enabled and disabled*/
-function qtyEnabledDisabled() {
-    $("tr[id*='row_']").each(function(index,item) {
-        let qtyDisabled = false;
-        if($(item).find("[name*='[attr_name]']").length) {
-            $(item).find("[name*='[attr_name]']").each(function () {
-                if ($(this).val().trim() === "") {
-                    qtyDisabled = true;
-                }
-            });
-            $(item).find("[name*='[accepted_qty]']").attr('readonly',Boolean(qtyDisabled));
-            if(qtyDisabled) {
-                $(item).find("[name*='[accepted_qty]']").val('');
-            }
-        } else {
-            $(item).find("[name*='[accepted_qty]']").attr('readonly',false);
-        }
-    });
-}
-qtyEnabledDisabled();
+// function qtyEnabledDisabled() {
+//     $("tr[id*='row_']").each(function(index,item) {
+//         let qtyDisabled = false;
+//         if($(item).find("[name*='[attr_name]']").length) {
+//             $(item).find("[name*='[attr_name]']").each(function () {
+//                 if ($(this).val().trim() === "") {
+//                     qtyDisabled = true;
+//                 }
+//             });
+//             $(item).find("[name*='[accepted_qty]']").attr('readonly',Boolean(qtyDisabled));
+//             if(qtyDisabled) {
+//                 $(item).find("[name*='[accepted_qty]']").val('');
+//             }
+//         } else {
+//             $(item).find("[name*='[accepted_qty]']").attr('readonly',false);
+//         }
+//     });
+// }
+// qtyEnabledDisabled();
 
 setTimeout(() => {
     if($("tr[id*='row_']").length) {
@@ -1356,7 +1381,7 @@ function initAttributeAutocomplete(context = document) {
                 const attrGroupId = $input.data('attr-group-id');
                 $input.val(ui.item.label);
                 $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val(ui.item.id);
-                qtyEnabledDisabled();
+                // qtyEnabledDisabled();
                 setSelectedAttribute(rowCount);
                 const itemId = $("#attribute tbody tr").find('[name*="[item_id]"]').val();
                 const itemAttributes = [];
@@ -1385,7 +1410,7 @@ function initAttributeAutocomplete(context = document) {
                 const rowCount = row.find('[name*="row_count"]').val();
                 const attrGroupId = $input.data('attr-group-id');
                 $(`[name="components[${rowCount}][attr_group_id][${attrGroupId}][attr_name]"]`).val('');
-                qtyEnabledDisabled();
+                // qtyEnabledDisabled();
             }
         });
     });
@@ -1396,12 +1421,11 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
     let $lastRow = $(`${tableSelector} > tbody > tr`).last();
     let $input = $lastRow.find(inputSelector);
 
-    if ($input.length) {
-        $input.focus().autocomplete('search', '');
-        $input[0].scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        });
-    }
+}
+
+/*Item Code enabled and disabled*/
+function itemCodeEnabledDisabled() {
+    $("tr[id*='row_']").each(function() {
+        $(this).find("input[type='text'][name^='component_item_name']").attr('readonly', true);
+    });
 }

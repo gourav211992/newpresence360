@@ -28,6 +28,10 @@
             <input type="hidden" id = "item_bom_qty_{{$pwoBomConsIndex}}" value = "{{$consumption->bom_qty}}" name = "cons[{{$pwoBomConsIndex}}][item_bom_qty]"/>
         </td>
         <td>
+            <input type="text" id = "consumption_qty_{{$pwoBomConsIndex}}" data-bom-qty="{{$consumption->bom_qty}}" data-mo-product-id="{{$consumption->mo_product_id}}" value = "{{$consumption->consumption_qty}}" name = "cons[{{$pwoBomConsIndex}}][consumption_qty]" class="form-control mw-100 text-end"/>
+            {{-- <input type="hidden" id = "item_bom_qty_{{$pwoBomConsIndex}}" value = "{{$consumption->bom_qty}}" name = "cons[{{$pwoBomConsIndex}}][item_bom_consumption_qty]"/> --}}
+        </td>
+        <td>
             <input type="text" id = "item_avl_qty_{{$pwoBomConsIndex}}" value = "{{$consumption->avl_stock}}" name = "cons[{{$pwoBomConsIndex}}][item_avl_qty]"  class="form-control mw-100 text-end" readonly/>
         </td>
         {{-- <input type="hidden" id="mo_product_id_{{$pwoBomConsIndex}}" name = "mo_product_id[{{$pwoBomConsIndex}}]"  value="{{$consumption?->mo_product_id}}">

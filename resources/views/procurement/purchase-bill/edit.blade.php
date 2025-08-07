@@ -140,14 +140,28 @@
                                                         </select>
                                                     </div>
                                                 </div>
-                                                <!-- <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label">Reference No </label>
+                                                @if (($mrn->document_status == 'draft' || $mrn->document_status == 'rejected'))
+                                                    <div class="row align-items-center mb-1 d-none" id="reference_from">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">
+                                                                Reference From
+                                                            </label>
+                                                        </div>
+                                                        <div class="col-md-5 action-button">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mb-0 mrnSelect">
+                                                                <i data-feather="plus-square"></i>
+                                                                Outstanding GRN
+                                                            </button>
+                                                            <input type="hidden" name="module_type" id="module_type" class="module_type" value="mrn">
+                                                        </div>
                                                     </div>
-                                                    <div class="col-md-5">
-                                                        <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
+                                                    <div class="row align-items-center mb-1" id="referenceNoDiv" style="display: none;">
+                                                        <div class="col-md-5">
+                                                            <input type="hidden" name="reference_type" class="form-control reference_type" id="reference_type_input" readonly>
+                                                            <input type="hidden" name="mrn_header_id" class="form-control" value="{{ $mrn->mrn_header_id }}">
+                                                        </div>
                                                     </div>
-                                                </div> -->
+                                                @endif
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
@@ -171,15 +185,15 @@
                                                             <input type="hidden" value="{{@$mrn->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" value="{{@$mrn->vendor_code}}" id="vendor_code" name="vendor_code" />
                                                             @if($mrn->latestShippingAddress() || $mrn->latestBillingAddress())
-                                                                <input type="hidden" value="{{$mrn->latestShippingAddress()}}" id="shipping_id" name="shipping_id" />
+                                                                <input type="hidden" value="{{$mrn->latestBillingAddress()}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->latestBillingAddress()->id}}" name="billing_id" />
                                                                 <input type="hidden" value="{{$mrn->latestBillingAddress()->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
                                                                 <input type="hidden" value="{{$mrn->latestBillingAddress()->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @else
                                                                 <input type="hidden" value="{{$mrn->ship_to}}" id="shipping_id" name="shipping_id" />
                                                                 <input type="hidden" id="billing_id" value="{{$mrn->billing_to}}" name="billing_id" />
-                                                                <input type="hidden" value="{{$mrn?->billingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
-                                                                <input type="hidden" value="{{$mrn?->billingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
+                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->state?->id}}" id="hidden_state_id" name="hidden_state_id" />
+                                                                <input type="hidden" value="{{$mrn?->shippingAddress?->country?->id}}" id="hidden_country_id" name="hidden_country_id" />
                                                             @endif
                                                         </div>
                                                     </div>
@@ -209,9 +223,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                            {{$mrn->latestBillingAddress()->display_address}}
+                                                                        {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                            {{$mrn->bill_address?->display_address}}
+                                                                        {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -489,6 +503,10 @@
                 </div>
             </div>
         </div>
+        {{-- Outstanding MRN Modal --}}
+        @include('procurement.purchase-bill.partials.outstanding-mrn-modal')
+        {{-- Item Locations --}}
+        {{-- @include('procurement.purchase-bill.partials.item-location-modal') --}}
         {{-- Discount summary modal --}}
         @include('procurement.purchase-bill.partials.summary-disc-modal')
         {{-- Add expenses modal--}}
@@ -789,18 +807,53 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         var actionUrlTax = '{{route("purchase-bill.tax.calculation")}}';
+        var qtyChangeUrl = '{{ route("purchase-bill.get.validate-quantity") }}';
     </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/purchase-bill.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
-        const selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
+        let tableRowCount = $('.mrntableselectexcel tr').length;
+        let currentProcessType = @json($mrn->reference_type);
+        window.onload = () => {
+            let mrnHeaderId = @json($mrn->mrn_header_id);
+            if(mrnHeaderId)
+            {
+                currentProcessType = 'mrn';
+            }
+            $("#reference_type_input").val(currentProcessType);
+            if(currentProcessType === null)
+            {
+                $(".mrnSelect").hide();
+                // $("#addNewItemBtn").show();
+            }
+            else{
+                if (currentProcessType === 'mrn') {
+                    $(".mrnSelect").show();
+                    $("#addNewItemBtn").hide();
+
+                }
+            }
+
+            ['selectedMrnIds'].forEach(key => localStorage.removeItem(key));
+
+            let ids = @json($detailsIds);
+
+            if (['mrn'].includes(currentProcessType)) {
+                localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
+            }
+            itemCodeEnabledDisabled()
+        };
+        let selectedCostCenterId = "{{ $mrn->cost_center_id ?? '' }}";
         /*Clear local storage*/
         setTimeout(() => {
             localStorage.removeItem('deletedItemDiscTedIds');
             localStorage.removeItem('deletedHeaderDiscTedIds');
             localStorage.removeItem('deletedHeaderExpTedIds');
-            localStorage.removeItem('deletedPbItemIds');
+            localStorage.removeItem('deletedMrnItemIds');
         },0);
+        let header_ids = @json($headerIds);
+        let details_ids = @json($detailsIds);
         @if($buttons['amend'] && intval(request('amendment') ?? 0))
 
         @else
@@ -931,11 +984,11 @@
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
-                if(reference_from_service.includes('d')) {
-                    $("#addNewItemBtn").removeClass('d-none');
-                } else {
-                    $("#addNewItemBtn").addClass('d-none');
-                }
+                // if(reference_from_service.includes('d')) {
+                //     $("#addNewItemBtn").removeClass('d-none');
+                // } else {
+                //     $("#addNewItemBtn").addClass('d-none');
+                // }
             } else {
                 Swal.fire({
                     title: 'Error!',
@@ -1368,49 +1421,50 @@
             getItemDetail(currentTr);
         });
 
-        function getItemDetail(currentTr) {
-            let pName = $(currentTr).find("[name*='component_item_name']").val();
-            let itemId = $(currentTr).find("[name*='item_id']").val();
-            let mrnHeaderId = $(currentTr).find("[name*='mrn_header_id']").val();
-            let mrnDetailId = $(currentTr).find("[name*='mrn_detail_id']").val();
-            let remark = '';
-            if($(currentTr).find("[name*='remark']")) {
-                remark = $(currentTr).find("[name*='remark']").val() || '';
-            }
+        function getItemDetail(currentTr, type=null) {
+            const getVal = (selector) => {
+                let el = $(currentTr).find(selector);
+                return el.length ? el.val() : '';
+            };
 
-            if (itemId) {
-                let selectedAttr = [];
-                $(currentTr).find("[name*='attr_name']").each(function(index, item) {
-                    if($(item).val()) {
-                        selectedAttr.push($(item).val());
+            let itemId = getVal("[name*='[item_id]']");
+            if (!itemId) return;
+
+            let selectedAttr = [];
+            $(currentTr).find("[name*='[attr_name]']").each(function () {
+                const val = $(this).val();
+                if (val) selectedAttr.push(val);
+            });
+            let store_id = $('.header_store_id').val();
+            let sub_store_id = $('.sub_store').val();
+            let return_type = $('.return_type').val();
+
+            let data = {
+                item_id: itemId,
+                mrn_header_id: getVal("[name*='[mrn_header_id]']"),
+                mrn_detail_id: getVal("[name*='[mrn_detail_id]']"),
+                header_id: getVal("[name*='[header_id]']"),
+                detail_id: getVal("[name*='[detail_id]']"),
+                so_detail_id: getVal("[name*='[so_detail_id]']"),
+                header_store_id: store_id,
+                return_type: return_type,
+                remark: getVal("[name*='[remark]']"),
+                uom_id: getVal("[name*='[uom_id]']"),
+                qty: getVal("[name*='[order_qty]']"),
+                selectedAttr: JSON.stringify(selectedAttr),
+                type: currentProcessType,
+            };
+
+            let actionUrl = '{{ route('purchase-bill.get.itemdetail') }}?' + new URLSearchParams(data).toString();
+
+            fetch(actionUrl).then(response => {
+                return response.json().then(data => {
+                    if(data.status == 200) {
+                        // Update the modal or display section
+                        $("#itemDetailDisplay").html(data.data.html);
                     }
                 });
-                let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
-                let qtyElement = $(currentTr).find("[name*='[accepted_qty]']");  // Get the jQuery object, not the value
-                let qty = qtyElement.val() || '';  // Get the value of the accepted_qty input
-
-                let headerId = $(currentTr).find("[name*='header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='detail_id']").val() ?? '';
-
-                let actionUrl = '{{route("purchase-bill.get.itemdetail")}}' +
-                    '?item_id=' + itemId +
-                    '&mrn_header_id=' + mrnHeaderId +
-                    '&mrn_detail_id=' + mrnDetailId +
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
-                    '&remark=' + remark +
-                    '&uom_id=' + uomId +
-                    '&qty=' + qty +
-                    '&headerId=' + headerId +
-                    '&detailId=' + detailId;
-
-                fetch(actionUrl).then(response => {
-                    return response.json().then(data => {
-                        if (data.status == 200) {
-                            $("#itemDetailDisplay").html(data.data.html);
-                        }
-                    });
-                });
-            }
+            });
         }
 
         // Event listener for Edit Address button click
@@ -1570,6 +1624,7 @@
         $(document).on('click','#deleteConfirm', (e) => {
             let ids = e.target.getAttribute('data-ids');
             ids = JSON.parse(ids);
+            console.log('ids--->>', ids);
             localStorage.setItem('deletedMrnItemIds', JSON.stringify(ids));
             $("#deleteComponentModal").modal('hide');
 
@@ -1580,6 +1635,9 @@
             }
             setTableCalculation();
             if(!$("#itemTable [id*=row_]").length) {
+                $(".mrnSelect").show();
+                // $("#addNewItemBtn").show();
+                $("#reference_type_input").val('');
                 $("th .form-check-input").prop('checked',false);
                 $('#vendor_name').prop('readonly',false);
                 $("#editBillingAddressBtn").show();
@@ -2024,5 +2082,613 @@
             });
 
         },100);
+
+        /* Open GRN Model */
+        let mrnOrderTable;
+        $(document).on('click', '.mrnSelect', (e) => {
+            tableRowCount = $('.mrntableselectexcel tr').length;
+            $("#mrnModal").modal('show');
+            currentProcessType = 'mrn';
+            openMrnRequest();
+            const tableSelector = '#mrnModal .mrn-order-detail';
+            $(tableSelector).DataTable().clear().destroy();
+            getMrn();
+            if ($(tableSelector).length) {
+                if ($.fn.DataTable.isDataTable(tableSelector)) {
+                    mrnOrderTable = $(tableSelector).DataTable();
+                    mrnOrderTable.ajax.reload();
+                }
+                // Re-initialize DataTable
+            }
+        });
+
+        function getSelectedMrnTypes()
+        {
+            let moduleTypes = [];
+            $('.mrn_item_checkbox:checked').each(function() {
+                moduleTypes.push($(this).attr('data-module')); // Corrected: Get attribute value instead of setting it
+            });
+            return moduleTypes;
+        }
+
+        function openMrnRequest()
+        {
+            initializeAutocompleteQt("vendor_code_input_qt", "vendor_id_qt_val", "vendor_list", "vendor_code", "company_name");
+            initializeAutocompleteQt("document_no_input_qt", "document_id_qt_val", "mrn_document_qt", "document_number", "");
+            initializeAutocompleteQt("so_no_input_qt", "so_qt_val", "so_qt", "book_code", "document_number");
+        }
+
+        function initializeAutocompleteQt(selector, selectorSibling, typeVal, labelKey1, labelKey2 = "")
+        {
+            let modalType = '#mrnModal';
+            $("#" + selector).autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type: typeVal,
+                            vendor_id : $("#vendor_id_qt_val").val(),
+                            header_book_id : $("#book_id").val(),
+                            store_id : $("#store_id").val() || '',
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                // return {
+                                //     id: item.id,
+                                //     label: `${item[labelKey1]} ${labelKey2 ? (item[labelKey2] ? '(' + item[labelKey2] + ')' : '') : ''}`,
+                                //     code: item[labelKey1] || '',
+                                // };
+                                let label = '';
+
+                                if ('document_number' in item && 'book_code' in item) {
+                                    label = `${item.book_code}-${item.document_number}`;
+                                } else if ('company_name' in item) {
+                                    label = item.company_name;
+                                }
+
+                                return {
+                                    id: item.id,
+                                    label: label,
+                                    code: item.book_code || item.vendor_code || '',
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                appendTo : modalType,
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    $input.val(ui.item.label);
+                    $("#" + selectorSibling).val(ui.item.id);
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $("#" + selectorSibling).val("");
+                        $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                    $(this).autocomplete("search", "");
+                }
+            }).blur(function() {
+                if (this.value === "") {
+                    $("#" + selectorSibling).val("");
+                    $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+                }
+            })
+        }
+
+        function renderData(data) {
+            return data ? data : '';
+        }
+
+        function getDynamicParams() {
+            let document_date = '',
+                header_book_id = '',
+                series_id = '',
+                document_number = '',
+                item_id = '',
+                vendor_id = '',
+                store_id = '',
+                so_id = '',
+                item_search = '',
+                selected_mrn_ids = '';
+
+            if(currentProcessType === 'mrn')
+            {
+                let selectedMrnIds = localStorage.getItem('selectedMrnIds') ?? '[]';
+                selectedMrnIds = JSON.parse(selectedMrnIds);
+                selectedMrnIds = encodeURIComponent(JSON.stringify(selectedMrnIds));
+                document_date = $("[name ='document_date']").val() || '',
+                header_book_id = $("#book_id").val() || '',
+                series_id = $("#book_id_qt_val").val() || '',
+                document_number = $("#document_id_qt_val").val() || '',
+                item_id = $("#item_id_qt_val").val() || '',
+                vendor_id = $("#vendor_id_qt_val").val(),
+                store_id = $(".header_store_id").val() || '',
+                return_type = $(".return_type").val() || '',
+                so_id = $("#po_so_qt_val").val() || '',
+                item_search = $("#item_name_search").length ? $("#item_name_search").val() : '';
+                selected_mrn_ids = encodeURIComponent(selectedMrnIds)
+            }
+            return {
+                so_id: so_id,
+                type: 'edit',
+                item_id: item_id,
+                store_id: store_id,
+                series_id: series_id,
+                vendor_id: vendor_id,
+                return_type: return_type,
+                item_search: item_search,
+                document_date: document_date,
+                header_book_id: header_book_id,
+                document_number: document_number,
+                selected_mrn_ids: selected_mrn_ids,
+                header_ids: encodeURIComponent(header_ids),
+                details_ids: encodeURIComponent(details_ids),
+            };
+        }
+
+        function getMrn()
+        {
+            const ajaxUrl = '{{ route("purchase-bill.get.mrn", ["type" => "edit"]) }}';
+            var columns = [];
+            columns = [
+                { data: 'id',visible: false, orderable: true, searchable: false},
+                { data: 'select_checkbox', name: 'select_checkbox', orderable: false, searchable: false},
+                { data: 'vendor', name: 'vendor', render: renderData, orderable: false, searchable: false},
+                { data: 'doc_no', name: 'doc_no', render: renderData, orderable: false, searchable: false },
+                { data: 'doc_date', name: 'doc_date', render: renderData, orderable: false, searchable: false },
+                { data: 'lot_number', name: 'lot_number', render: renderData, orderable: false, searchable: false},
+                { data: 'item_code', name: 'item_code', render: renderData, orderable: false, searchable: false },
+                { data: 'item_name', name: 'item_name', render: renderData, orderable: false, searchable: false },
+                { data: 'attributes', name: 'attributes', render: renderData, orderable: false, searchable: false },
+                { data: 'order_qty', name: 'order_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'pb_qty', name: 'pb_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'balance_qty', name: 'balance_qty', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'rate', name: 'rate', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+                { data: 'amount', name: 'amount', render: renderData, orderable: false, searchable: false, createdCell: function(td, cellData, rowData, row, col) {
+                        $(td).addClass('text-end');
+                    }
+                },
+            ];
+            initializeDataTableCustom('#mrnModal .mrn-order-detail',
+                ajaxUrl,
+                columns,
+            );
+        }
+
+        $(document).on('keyup', '#item_name_search', (e) => {
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
+
+        /*Checkbox for po/si item list*/
+        $(document).on('change','.mrn-order-detail > thead .form-check-input',(e) => {
+            if (e.target.checked) {
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',true);
+                });
+            } else {
+                $(".mrn-order-detail > tbody .form-check-input").each(function(){
+                    $(this).prop('checked',false);
+                });
+            }
+        });
+
+        function getSelectedMrnIDS()
+        {
+            let ids = [];
+            let referenceNos = [];
+
+            $('.mrn_item_checkbox:checked').each(function() {
+                ids.push($(this).val());
+                referenceNo = $(this).siblings("input[type='hidden'][name='reference_no']").val();
+                if (referenceNo) {
+                    referenceNos.push(referenceNo);
+                }
+            });
+            return {
+                ids: ids,
+                referenceNos: referenceNos
+            };
+        }
+
+        $(document).on('click', '.mrnProcess', (e) => {
+            let result = getSelectedMrnIDS();
+            let ids = result.ids;
+            let referenceNo = result.referenceNos[0];
+            let idsLength = ids.length;
+            currentProcessType = 'mrn';
+            let header_store_id = $(".header_store_id").val();
+
+            if (!ids.length) {
+                $("#mrnModal").modal('hide');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Please select at least one one mrn',
+                    icon: 'error',
+                });
+                return false;
+            }
+
+            let moduleTypes = getSelectedMrnTypes();
+            $("[name='mrn_item_ids']").val(ids);
+            $("#addNewItemBtn").hide();
+            if (referenceNo) {
+                $("#referenceNoDiv").show();
+                $("#reference_number_input").val(referenceNo);
+            } else {
+                $("#referenceNoDiv").hide();
+                $("#reference_number_input").val('');
+            }
+            $("#reference_type_input").val('mrn');
+
+            // for component item code
+            function initializeAutocomplete2(selector, type) {
+                $(selector).autocomplete({
+                    minLength: 0,
+                    source: function(request, response) {
+                        let selectedAllItemIds = [];
+                        $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                            if(Number($(item).find('[name*="[item_id]"]').val())) {
+                                selectedAllItemIds.push(Number($(item).find('[name*="[item_id]"]').val()));
+                            }
+                        });
+                        $.ajax({
+                            url: '/search',
+                            method: 'GET',
+                            dataType: 'json',
+                            data: {
+                                q: request.term,
+                                type:'goods_item_list',
+                                selectedAllItemIds : JSON.stringify(selectedAllItemIds)
+                            },
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        id: item.id,
+                                        label: `${item.item_name} (${item.item_code})`,
+                                        code: item.item_code || '',
+                                        item_id: item.id,
+                                        item_name:item.item_name,
+                                        uom_name:item.uom?.name,
+                                        uom_id:item.uom_id,
+                                        hsn_id:item.hsn?.id,
+                                        hsn_code:item.hsn?.code,
+                                        alternate_u_o_ms:item.alternate_u_o_ms,
+                                        is_attr:item.item_attributes_count,
+                                    };
+                                }));
+                            },
+                            error: function(xhr) {
+                                console.error('Error fetching customer data:', xhr.responseText);
+                            }
+                        });
+                    },
+                    select: function(event, ui) {
+                        let $input = $(this);
+                        let itemCode = ui.item.code;
+                        let itemName = ui.item.value;
+                        let itemN = ui.item.item_name;
+                        let itemId = ui.item.item_id;
+                        let uomId = ui.item.uom_id;
+                        let uomName = ui.item.uom_name;
+                        let hsnId = ui.item.hsn_id;
+                        let hsnCode = ui.item.hsn_code;
+                        $input.attr('data-name', itemName);
+                        $input.attr('data-code', itemCode);
+                        $input.attr('data-id', itemId);
+                        $input.closest('tr').find('[name*="[item_id]"]').val(itemId);
+                        $input.closest('tr').find('[name*=item_code]').val(itemCode);
+                        $input.closest('tr').find('[name*=item_name]').val(itemN);
+                        $input.closest('tr').find('[name*=hsn_id]').val(hsnId);
+                        $input.closest('tr').find('[name*=hsn_code]').val(hsnCode);
+                        $input.closest('tr').find("td[id*='itemAttribute_']").html(defautAttrBtn);
+                        $input.val(itemCode);
+                        let uomOption = `<option value=${uomId}>${uomName}</option>`;
+                        if(ui.item?.alternate_u_o_ms) {
+                            for(let alterItem of ui.item.alternate_u_o_ms) {
+                            uomOption += `<option value="${alterItem.uom_id}" ${alterItem.is_purchasing ? 'selected' : ''}>${alterItem.uom?.name}</option>`;
+                            }
+                        }
+                        $input.closest('tr').find('[name*=uom_id]').append(uomOption);
+                        $input.closest('tr').find("input[name*='attr_group_id']").remove();
+                        setTimeout(() => {
+                            if(ui.item.is_attr) {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                            } else {
+                                $input.closest('tr').find('.attributeBtn').trigger('click');
+                                $input.closest('tr').find('[name*="[order_qty]"]').val('').focus();
+                            }
+                        }, 100);
+                        getItemDetail($input.closest('tr'), currentProcessType);
+                        getItemCostPrice($input.closest('tr'));
+                        return false;
+                    },
+                    change: function(event, ui) {
+                        if (!ui.item) {
+                            $(this).val("");
+                                // $('#itemId').val('');
+                            $(this).attr('data-name', '');
+                            $(this).attr('data-code', '');
+                        }
+                    }
+                }).focus(function() {
+                    if (this.value === "") {
+                        $(this).autocomplete("search", "");
+                    }
+                });
+            }
+
+            let currencyId = $("select[name='currency_id']").val();
+            let transactionDate = $("input[name='document_date']").val() || '';
+            let groupItems = [];
+            $('tr[data-group-item]').each(function () {
+                let groupItemData = $(this).data('group-item');
+                groupItems.push(groupItemData);
+            });
+
+            groupItems = JSON.stringify(groupItems);
+            let current_row_count = $("tbody tr[id*='row_']").length;
+            let processData = {
+                ids: ids,
+                type: 'mrn',
+                referenceNo: referenceNo,
+                store_id: header_store_id,
+                module_type: moduleTypes,
+            };
+
+            asnProcess(processData, 'mrn-process');
+        });
+
+        // Clear GRN Process
+        $(document).on('click', '.clearMrnFilter', (e) => {
+            $("#item_name_input_qt").val('');
+            $("#item_id_qt_val").val('');
+            $("#vendor_code_input_qt").val('');
+            $("#vendor_id_qt_val").val('');
+            $("#book_code_input_qt").val('');
+            $("#book_id_qt_val").val('');
+            $("#document_no_input_qt").val('');
+            $("#document_id_qt_val").val('');
+            $("#so_no_input_qt").val('');
+            $("#so_qt_val").val('');
+            $("#item_name_search").val('');
+            $('#mrnModal .mrn-order-detail').DataTable().ajax.reload();
+        });
+
+        $(document).on("autocompletechange autocompleteselect", "#store", function (event, ui) {
+            let storeId = ui?.item?.id || '';
+            initializeAutocompleteQt("sub_store", "sub_store_id", "sub_store", "name", "");
+        });
+
+        // GRN Process
+        function asnProcess(asnData, moduleProcess) {
+            const current_row_count = $("tbody tr[id*='row_']").length;
+
+            const ids = JSON.stringify(asnData.ids);
+            const moduleTypes = JSON.stringify(asnData.module_type);
+            const moduleType = asnData.module_type?.[0] ?? 'mrn';
+            const processType = asnData.type;
+            const process_store_id = asnData.store_id;
+            let idsLength = ids.length;
+
+            const currencyId = $("[name='currency_id']").val();
+            const transactionDate = $("[name='document_date']").val();
+            const type = $("meta[name='route-type']").attr("content"); // blade->meta
+
+            const baseRoute = '{{ route("purchase-bill.process.mrn-item") }}';
+            const actionUrl = baseRoute
+                .replace(':type', type)
+                + '?ids=' + encodeURIComponent(ids)
+                + '&moduleTypes=' + moduleTypes
+                + '&store_id=' + process_store_id
+                + '&tableRowCount=' + tableRowCount
+                + '&currency_id=' + encodeURIComponent(currencyId)
+                + '&d_date=' + encodeURIComponent(transactionDate)
+                + '&current_row_count=' + current_row_count;
+
+            fetch(actionUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 200) return handleProcessError(data.message);
+
+                    const {
+                        vendor,
+                        pos,
+                        mrnHeader,
+                        moduleType,
+                        finalDiscounts,
+                        finalExpenses,
+                        subStoreCount
+                    } = data.data;
+
+                    const modelType = 'mrn';
+                    const order = data.data.mrnHeader;
+                    $("#reference_type_input").val(modelType);
+                    // console.log(vendor?.id, modelType, order.id);
+
+                    vendorOnChange(vendor?.id, modelType, order.id);
+
+                    const getSelectedIdsFn = getSelectedMrnIDS;
+                    const hiddenFieldName = 'mrn_item_ids';
+                    const localStorageKey = 'selectedMrnIds';
+
+                    const newIds = getSelectedIdsFn().ids;
+                    const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
+                    const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
+                    localStorage.setItem(localStorageKey, JSON.stringify(mergedIds));
+                    $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
+
+                    $(".module_type").val(modelType);
+
+                    if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
+                        $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
+                    } else {
+                        $("#itemTable .mrntableselectexcel").empty().append(pos);
+                    }
+                    initializeAutocomplete2(".comp_item_code");
+                    $("#mrnModal").modal('hide');
+                    focusAndScrollToLastRowInput();
+                    itemCodeEnabledDisabled();
+
+                    // UI Locks
+                    $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
+                    $("#vendor_name").prop('readonly', true);
+                    $("select[name='book_id'], select[name='return_type'], select[name='header_store_id'], select[name='sub_store_id']").prop('disabled', true);
+                    $(".editAddressBtn").addClass('d-none');
+                    let locationId = $("[name='header_store_id']").val();
+                    getCostCenters(locationId, true);
+
+                    if(finalDiscounts.length) {
+                        let rows = '';
+                        finalDiscounts.forEach(function(item,index) {
+                            index = index + 1;
+                            rows+= `<tr class="display_summary_discount_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
+                                        <input type="hidden" value="" name="disc_summary[${index}][d_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
+                                    </td>
+                                    <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                        <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="disc_summary[${index}][d_perc]">
+                                        <input type="hidden" value="${item.ted_percentage}" name="disc_summary[${index}][hidden_d_perc]">
+                                    </td>
+                                    <td class="text-end">
+                                    <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </a>
+                                    </td>
+                                </tr>`
+                        });
+
+                        $("#summaryDiscountTable tbody").find('.display_summary_discount_row').remove();
+                        $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
+                        $("#f_header_discount_hidden").removeClass('d-none');
+                    } else {
+                        $("#f_header_discount_hidden").addClass('d-none');
+                    }
+
+                    if(finalExpenses.length) {
+                        let rows = '';
+                        finalExpenses.forEach(function(item,index) {
+                            index = index + 1;
+                            rows+=`<tr class="display_summary_exp_row">
+                                    <td>${index}</td>
+                                    <td>${item.ted_name}
+                                        <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
+                                        <input type="hidden" value="" name="exp_summary[${index}][e_id]">
+                                        <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
+                                    </td>
+                                    <td class="text-end">${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}
+                                        <input type="hidden" value="${typeof item.ted_percentage === "number" ? '0' : item.ted_percentage}" name="exp_summary[${index}][e_perc]">
+                                        <input type="hidden" value="${item.ted_percentage}" name="exp_summary[${index}][hidden_e_perc]">
+                                    </td>
+                                    <td class="text-end">
+                                    <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
+                                    </td>
+                                    <td>
+                                        <a href="javascript:;" class="text-danger deleteExpRow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                        </a>
+                                    </td>
+                                </tr>`;
+                        });
+                        $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
+                        $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
+                    }
+
+                    // General details
+                    console.log('moduleType', moduleType);
+                    if (mrnHeader) {
+                        $("[name='supplier_invoice_no']").val(mrnHeader.supplier_invoice_no);
+                        $("[name='supplier_invoice_date']").val(mrnHeader.supplier_invoice_date);
+                        $("[name='eway_bill_no']").val(mrnHeader.eway_bill_no);
+                        $("[name='transporter_name']").val(mrnHeader.transporter_name);
+                        $("[name='vehicle_no']").val(mrnHeader.vehicle_no);
+                    } else {
+                        $("[name='supplier_invoice_no'], [name='supplier_invoice_date'], [name='eway_bill_no'], [name='transporter_name'], [name='vehicle_no']").val('');
+                    }
+
+                    $("#reference_type_input").val(modelType);
+
+                    // setTimeout(() => {
+                    //     setTableCalculation();
+                    //     if(idsLength > 1)
+                    //     {
+                    //         $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                    //             if(tableRowCount>0)
+                    //             {
+                    //                 currentIndex = tableRowCount + 1;
+                    //             }
+                    //             let currentIndex = index + 1;
+                    //             setAttributesUIHelper(currentIndex,"#itemTable");
+                    //         });
+                    //     }
+                    //     currentIndex = tableRowCount + 1;
+                    //     setAttributesUIHelper(currentIndex,"#itemTable");
+                    // },500);
+                    setTimeout(() => {
+                        setTableCalculation();
+                        $("#itemTable .mrntableselectexcel tr").each((index, item) => {
+                            setAttributesUIHelper(index + 1, "#itemTable");
+                        });
+                    }, 500);
+                })
+                .catch(() => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'An unexpected error occurred while processing Purchase Return.',
+                        icon: 'error'
+                    });
+                });
+        }
+
+        function handleProcessError(message = 'Invalid data') {
+            // console.log('message', message);
+            $(".editAddressBtn").removeClass('d-none');
+            $("#vendor_name").val('').prop('readonly', false);
+            $("#vendor_id, #vendor_code, #hidden_state_id, #hidden_country_id").val('');
+            $("select[name='book_id'], select[name='return_type'], select[name='header_store_id'], select[name='sub_store_id']").prop('readonly', false);
+            $("select[name='currency_id'], select[name='payment_term_id']").prop('readonly', false).html('<option value="">Select</option>');
+            $(".shipping_detail, .billing_detail").text('-');
+            $("#reference_from").removeClass('d-none');
+            $('.asn_process').prop('disabled', false);
+            $("#reference_type_input").val('');
+            Swal.fire({
+                title: 'Error!',
+                text: message,
+                icon: 'error'
+            });
+        }
     </script>
 @endsection

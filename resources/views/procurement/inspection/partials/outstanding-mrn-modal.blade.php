@@ -53,7 +53,7 @@
 										<th class="d-none">ID</th>
 										<th>
 											<div class="form-check form-check-inline me-0">
-												<input class="form-check-input" type="checkbox" name="mrnodetail" id="inlineCheckbox1">
+												<input class="form-check-input" type="checkbox" name="mrndetail" id="inlineCheckbox1">
 											</div> 
 										</th>
                                         <th>SUPPLIER NAME</th>

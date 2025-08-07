@@ -29,6 +29,7 @@
                             <a href="{{ route('finance.fixed-asset.revaluation-impairement.index') }}"> <button
                                     class="btn btn-secondary btn-sm"><i data-feather="arrow-left-circle"></i> Back</button>
                             </a>
+                             @if ($data->document_status == 'draft' || ($buttons['amend'] && request('amendment') == 1))
                             <button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
                                 <i data-feather="save"></i> Save as Draft
                             </button>
@@ -37,6 +38,7 @@
                                 class="btn btn-primary btn-sm" id="submit-btn">
                                 <i data-feather="check-circle"></i> Submit
                             </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -57,6 +59,7 @@
                             <input type="hidden" name="asset_details" id="asset_details">
                             <input type="hidden" name="document_status" id="document_status" value="">
                             <input type="hidden" name="dep_type" id="depreciation_type" value="{{ $dep_type }}">
+                             @include('fixed-asset.partials.amendement-submit-modal')
                             <div class="col-12">
 
 
@@ -112,7 +115,7 @@
                                                                 <div class="form-check form-check-primary mt-25">
                                                                     <input type="radio" id="Writeoff" name="document_type" value="writeoff" class="form-check-input"
                                                                         {{ $selectedType === 'writeoff' ? 'checked' : '' }}>
-                                                                    <label class="form-check-label fw-bolder" for="Impairement">Writeoff</label>
+                                                                    <label class="form-check-label fw-bolder" for="Writeoff">Writeoff</label>
                                                                 </div>  
                                                             </div>
                                                         </div>
@@ -446,6 +449,7 @@
 
 
 @section('scripts')
+  <script src="{{asset('assets/js/fileshandler.js')}}"></script>
     <script>
         $(window).on('load', function() {
             if (feather) {
@@ -458,18 +462,29 @@
 
 
 
-        $(".mrntableselectexcel tr").click(function() {
+       $(document).on('click', '.mrntableselectexcel tr', function() {
             $(this).addClass('trselected').siblings().removeClass('trselected');
-            value = $(this).find('td:first').html();
         });
 
+        // Keyboard navigation for up/down arrow keys
         $(document).on('keydown', function(e) {
-            if (e.which == 38) {
-                $('.trselected').prev('tr').addClass('trselected').siblings().removeClass('trselected');
-            } else if (e.which == 40) {
-                $('.trselected').next('tr').addClass('trselected').siblings().removeClass('trselected');
+            var $selected = $('.trselected');
+
+            if (e.which === 38) { // Up arrow
+                $selected.prev('tr').addClass('trselected').siblings().removeClass('trselected');
+            } else if (e.which === 40) { // Down arrow
+                $selected.next('tr').addClass('trselected').siblings().removeClass('trselected');
             }
-            $('.mrntableselectexcel').scrollTop($('.trselected').offset().top - 40);
+
+            // Scroll to the selected row inside scrollable container
+            var $container = $('.mrntableselectexcel');
+            var $newSelected = $('.trselected');
+
+            if ($newSelected.length && $container.length && $newSelected.offset()) {
+                var containerOffset = $container.offset().top;
+                var selectedOffset = $newSelected.offset().top;
+                $container.scrollTop($container.scrollTop() + (selectedOffset - containerOffset - 40));
+            }
         });
 
         $('#add_new_sub_asset').on('click', function() {
@@ -542,22 +557,37 @@
         });
         $('#book_id').trigger('change');
         document.getElementById('save-draft-btn').addEventListener('click', function() {
-            $('.preloader').show();
             document.getElementById('document_status').value = 'draft';
             updateJsonData();
             if (validateRevaluationAmounts()) {
+                if ($('#action_type').val() === "amendment")
+                    { 
+                        $("#amendmentModal").modal('show');
+
+                    }
+                else{
+                    $('.preloader').show();
                 document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+            }
             }
         });
 
 
-        $('#fixed-asset-revaluation-impairement-form').on('submit', function(e) {
+        document.getElementById('submit-btn').addEventListener('click', function(e) {
             e.preventDefault();
-            $('.preloader').show();
+            
             document.getElementById('document_status').value = 'submitted';
             updateJsonData();
             if (validateRevaluationAmounts()) {
-                this.submit();
+                if ($('#action_type').val() === "amendment")
+                        {
+                            $("#amendmentModal").modal('show');
+
+                        }
+                else{
+                    $('.preloader').show();
+                document.getElementById('fixed-asset-revaluation-impairement-form').submit();
+            }
             }
         });
 
@@ -1197,6 +1227,20 @@
             });
         }
         loadLocation('{{$data->location_id??""}}');
+        $(document).on('click', '#amendmentBtnSubmit', (e) => {
+            let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
+            if(!remark) {
+                e.preventDefault();
+                $("#amendRemarkError").removeClass("d-none");
+                return false;
+            } else {
+                $("#amendmentModal").modal('hide');
+                $("#amendRemarkError").addClass("d-none");
+                e.preventDefault();
+                $('.preloader').show();
+                $("#fixed-asset-revaluation-impairement-form").submit();
+            }
+        });
 
 
 

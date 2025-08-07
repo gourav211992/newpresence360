@@ -85,12 +85,10 @@
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
                                 </button>
-                                <button type="button" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button" id="save-draft-button" name="action" value="draft">
-                                    <i data-feather='save'></i> Save as Draft
-                                </button>
-                                <button type="button" class="btn btn-primary btn-sm submit-button" id="submit-button" name="action" value="submitted">
-                                    <i data-feather="check-circle"></i> Submit
-                                </button>
+                                <button type="submit" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button"
+                                    name="action" value="draft"><i data-feather='save'></i> Save as Draft</button>
+                                <button type="submit" class="btn btn-primary btn-sm submit-button" name="action"
+                                    value="submitted"><i data-feather="check-circle"></i> Submit</button>
                             </div>
                         </div>
                     </div>
@@ -704,7 +702,6 @@
     @include('procurement.gate-entry.partials.tax-detail-modal')
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript">
         let actionUrlTax = '{{route("gate-entry.tax.calculation")}}';
         var qtyChangeUrl = '{{ route("gate-entry.get.validate-quantity") }}';

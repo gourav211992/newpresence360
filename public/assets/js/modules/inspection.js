@@ -558,10 +558,10 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
             <input type="hidden" id="checklist_id" value="${checklistId}">
             <input type="hidden" id="checklist_name" value="${checklistName}">
             <div class="table-responsive-md customernewsection-form">
-                <table class="table table-bordered text-center align-middle po-order-detail">
+                <table class="table table-bordered po-order-detail myrequesttablecbox nowrap w-100 text-center align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th width="30%">Parameters</th>
+                            <th width="60%">Parameters</th>
                             <th>Values</th>
                             <th>Result</th>
                         </tr>

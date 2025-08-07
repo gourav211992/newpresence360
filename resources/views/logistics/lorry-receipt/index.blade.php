@@ -46,7 +46,7 @@
                                             <th>Source</th>
                                             <th>Destination</th>
                                             <th>Driver</th>
-                                            <th>Vehicle Type</th>
+                                            <th>Vehicle No.</th>
                                             <th>Status</th>
                                             <th>Created By</th>
                                             <th>Action</th>
@@ -144,7 +144,7 @@ $(document).ready(function () {
                 { data: 'source_name' },
                 { data: 'destination_name' },
                 { data: 'driver_name' },
-                { data: 'vehicle_type' },
+                { data: 'vehicle_no' },
                 { data: 'document_status' },
                 {
                     data: 'created_by', 

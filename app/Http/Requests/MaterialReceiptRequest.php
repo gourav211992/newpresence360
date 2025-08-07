@@ -156,7 +156,7 @@ class MaterialReceiptRequest extends FormRequest
         foreach ($this->input('components', []) as $index => $component) {
             $item_id = $component['item_id'] ?? null;
             $item = Item::find($item_id);
-            $index = $index + 1;
+            // $index = $index + 1;
             if ($item && $item->itemAttributes->count() > 0) {
                 $rules["components.$index.attr_group_id.*.attr_name"] = 'required';
             } else {

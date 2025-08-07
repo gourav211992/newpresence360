@@ -1086,7 +1086,7 @@
 		</div>
 	</div>
 
-        <div class="modal fade text-start" id="pullPopUp" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
+        <div class="modal fade text-start" id="pullPopUpLr" tabindex="-1" aria-labelledby="header_pull_label" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered modal-lg" style="max-width: 1250px">
 			<div class="modal-content">
                 <div class="modal-header">
@@ -4080,10 +4080,10 @@
             tableSelector = "#land_lease_invoice_table";
         } else if (type === "dnote")  {
             tableSelector = "#dnote_invoice_table";
-        } else {
-            tableSelector = "#so_invoice_table";
         } else if (type === "lr")  {
             tableSelector = "#lorry_receipt_table";
+        } else {
+            tableSelector = "#so_invoice_table";
         }
 
         const selectedIds = Array.from(document.getElementsByClassName("item_header_rows"))

@@ -1399,12 +1399,12 @@ function qtyEnabledDisabled() {
                     qtyDisabled = true;
                 }
             });
-            // $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
+            $(item).find("[name*='[order_qty]']").attr('readonly',Boolean(qtyDisabled));
             if(qtyDisabled) {
-                // $(item).find("[name*='[order_qty]']").val('');
+                $(item).find("[name*='[order_qty]']").val('');
             }
         } else {
-            // $(item).find("[name*='[order_qty]']").attr('readonly',false);
+            $(item).find("[name*='[order_qty]']").attr('readonly',false);
         }
     });
 }
@@ -2027,14 +2027,14 @@ function focusAndScrollToLastRowInput(inputSelector = '.comp_item_code', tableSe
     let $lastRow = $(`${tableSelector} > tbody > tr`).last();
     let $input = $lastRow.find(inputSelector);
 
-    if ($input.length) {
-        $input.focus().autocomplete('search', '');
-        $input[0].scrollIntoView({
-            behavior: 'smooth',
-            block: 'center',
-            inline: 'nearest'
-        });
-    }
+    // if ($input.length) {
+    //     $input.focus().autocomplete('search', '');
+    //     $input[0].scrollIntoView({
+    //         behavior: 'smooth',
+    //         block: 'center',
+    //         inline: 'nearest'
+    //     });
+    // }
 }
 
 

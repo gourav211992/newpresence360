@@ -1581,7 +1581,7 @@
                     $(this).find('td').eq(0).text(index + 1);
                     $(this).find('input[name^="alternateItems["][name$="[item_code]"]').attr('name', 'alternateItems[' + index + '][item_code]');
                     $(this).find('input[name^="alternateItems["][name$="[item_name]"]').attr('name', 'alternateItems[' + index + '][item_name]');
-                    $(this).find('input[name^="alternateItems["][name$="[item_id]"]').attr('name', 'alternateItems[' + index + '][item_id]');
+                    $(this).find('input[name^="alternateItems["][name$="[alt_item_id]"]').attr('name', 'alternateItems[' + index + '][alt_item_id]');
                 });
             }
             itemCounter = $('#itemTable tbody tr').length + 1;
@@ -1621,7 +1621,7 @@
                     '<td>' + itemName + '</td>' +
                     '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_code]" value="' + itemCode + '" />' +
                     '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_name]" value="' + itemName + '" />' +
-                    '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][item_id]" value="' + itemId + '" />' +
+                    '<input type="hidden" name="alternateItems[' + (itemCounter - 1) + '][alt_item_id]" value="' + itemId + '" />' +
                     '<td><a href="#" class="text-danger remove-item"><i data-feather="trash-2" class="me-50"></i></a></td>' +
                     '</tr>';
 
@@ -1680,9 +1680,11 @@
                 checkboxes.prop('disabled', false);
             }
             $('a[href="#UOM"]').removeClass('d-none').css('display', '');
-            $('a[href="#Details"]').removeClass('d-none').css('display', '');
+            $('a[href="#Attributes"]').removeClass('d-none').css('display', '');
+            $('a[href="#UOM"]').removeClass('d-none').css('display', '');
             $('#UOM').removeClass('d-none').css('display', '');
             $('#Details').removeClass('d-none').css('display', '');
+            $('#Attributes').removeClass('d-none').css('display', '');
         }
 
         function updateCheckboxStatesForService() {
@@ -1691,8 +1693,19 @@
             $('input[name="is_asset"]').prop('checked', false).prop('disabled', true);
             $('a[href="#UOM"]').addClass('d-none');
             $('a[href="#Details"]').addClass('d-none');
+            $('a[href="#Attributes"]').addClass('d-none');
+            $('a[href="#UOM"]').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Details').addClass('d-none');
+            $('#UOM').addClass('d-none');
+            $('#Attributes').addClass('d-none');
+            ['#UOM', '#Details', '#Attributes'].forEach(function (selector) {
+                $(selector).addClass('d-none').find('input, select, textarea').each(function () {
+                    const $input = $(this);
+                    $input.is(':checkbox') || $input.is(':radio') 
+                        ? $input.prop('checked', false) : $input.val('');
+                });
+            });
         }
         function handleCheckboxChange() {
             const selectedType = typeRadios.filter(':checked').val();
@@ -2049,6 +2062,7 @@ $(document).ready(function() {
             hiddenInput.value = switchInput.checked ? 'active' : 'inactive';
         });
     });
+
   // inspection-end
 </script>
 @endsection

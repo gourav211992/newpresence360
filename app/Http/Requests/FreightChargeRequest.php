@@ -51,62 +51,48 @@ public function withValidator($validator): void
         $seen = [];
 
         foreach ($rows as $index => $row) {
-            $id = $row['id'] ?? null; // <-- existing row ID (null means new row)
+            $id = $row['id'] ?? null;
             $source = $row['source_route_id'] ?? null;
             $destination = $row['destination_route_id'] ?? null;
             $vehicleType = $row['vehicle_type_id'] ?? null;
             $customerId = $row['customer_id'] ?? null;
 
-            // ✅ Skip existing records (only validate new rows)
-            if ($id) {
-                continue;
-            }
-
-            // 1. Source and destination should not be the same
+            // 1. Source and destination must be different
             if ($source && $destination && $source == $destination) {
                 $validator->errors()->add("freight_charges.$index.destination_route_id", 'Source and destination must be different.');
             }
 
-            // 2. Prevent duplicate entries in the same submission
-            $key = implode('-', [
-                $source ?? 'null',
-                $destination ?? 'null',
-                $vehicleType ?? 'null',
-                $customerId ?? 'null'
-            ]);
-
-            if (in_array($key, $seen)) {
-                $validator->errors()->add("freight_charges.$index.customer_id", 'Duplicate entry in form.');
+            // 2. Skip if any required field is missing
+            if (!$source || !$destination || !$vehicleType) {
+                continue;
             }
 
-            $seen[] = $key;
+            // 3. Skip duplicate key check in form itself (as per your instruction)
 
-            // 3. Check against database for new entries only
-            if ($source && $destination && $vehicleType) {
-                $query = DB::table('erp_freight_charges')
-                    ->where('source_route_id', $source)
-                    ->where('destination_route_id', $destination)
-                    ->where('vehicle_type_id', $vehicleType);
+            // 4. Check for duplicate in DB (excluding current record if updating)
+            $query = DB::table('erp_freight_charges')
+                ->where('source_route_id', $source)
+                ->where('destination_route_id', $destination)
+                ->where('vehicle_type_id', $vehicleType);
 
-                if (is_null($customerId)) {
-                    // Without customer — check if any match exists
-                    $exists = $query->exists();
+            if (is_null($customerId)) {
+                $query->whereNull('customer_id');
+            } else {
+                $query->where('customer_id', $customerId);
+            }
 
-                    if ($exists) {
-                        $validator->errors()->add("freight_charges.$index.vehicle_type_id", 'Entry already exists .');
-                    }
-                } else {
-                    // With customer — check exact match
-                    $exists = $query->where('customer_id', $customerId)->exists();
+            if ($id) {
+                $query->where('id', '!=', $id);
+            }
 
-                    if ($exists) {
-                        $validator->errors()->add("freight_charges.$index.customer_id", 'Entry already exists with this customer.');
-                    }
-                }
+            if ($query->exists()) {
+                $validator->errors()->add("freight_charges.$index.customer_id", 'Duplicate freight charge entry.');
             }
         }
     });
 }
+
+
 
 
 

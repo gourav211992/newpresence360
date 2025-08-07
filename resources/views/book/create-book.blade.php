@@ -188,7 +188,7 @@
                                                                     </thead>
                                                                     <tbody id="item-details-body">
                                                                         <tr>
-                                                                            <td>1</td>
+                                                                            <td class="serial-number">1</td>
                                                                             <td>
                                                                                 <select
                                                                                     class="form-select mw-100 select2 companySelect"
@@ -330,7 +330,7 @@
                                                                             </td>
                                                                             <td>
                                                                                 <select
-                                                                                    class="form-select mw-100 select2 userSelect"
+                                                                                    class="form-control mw-100 select2 userSelect"
                                                                                     data-id="1" name="user[0][]"
                                                                                     id = "user_select_0_1"
                                                                                     multiple
@@ -388,12 +388,6 @@
                                                                                         </div>
                                                                                     </div>
                                                                                 </div>
-
-
-                                                                            </td>
-                                                                            <td class = "center-align-content"><a href="#"
-                                                                                    class="text-danger delete-row"><i
-                                                                                        data-feather="trash-2"></i></a>
                                                                             </td>
                                                                             <td class = "center-align-content"><a href="#"
                                                                                     class="text-primary add-row"><i
@@ -426,7 +420,7 @@
                                                                     </thead>
                                                                     <tbody id="tableBody">
                                                                         <tr>
-                                                                            <td>1</td>
+                                                                            <td class="amend-serial">1</td>
                                                                             <td>
                                                                             <select
                                                                                     class="form-select mw-100 select2 AmendmentCompanySelect"
@@ -679,14 +673,14 @@
             // Add new item row
             document.querySelector('.add_number_pattern').addEventListener('click', function(e) {
                 e.preventDefault();
-
                 let rowCount = document.querySelectorAll('#item-details-body tr').length;
+                rowCount++
                 let newRow = `<tr>
-                            <td>${rowCount + 1}</td>
+                            <td class="serial-number"></td>
                             <td>
                             <div class="position-relative">
-                                <select class="form-select mw-100 select2 companySelect" data-id="${rowCount + 1}"
-                                    name="company_id[]" id="company_id${rowCount + 1}"  >
+                                <select class="form-select mw-100 select2 companySelect" data-id="${rowCount}"
+                                    name="company_id[]" id="company_id${rowCount}"  >
                                     <option disabled selected value="">Select Company</option>
                                     @foreach ($companies as $company)
                                         <option value="{{ $company->id }}">{{ $company->name }}</option>
@@ -697,7 +691,7 @@
                             <td>
                             <div class="position-relative">
                                 <select class="form-select mw-100 select2 organizations"
-                                    name="organization_id[]" id="organization_id${rowCount + 1}"  >
+                                    name="organization_id[]" id="organization_id${rowCount}"  >
                                 </select>
                             </div>
                             </td>
@@ -730,7 +724,7 @@
                                     class="form-control mw-100" name="starting_no[]">
                             </td>
 
-                            <td><a href="#" class="text-danger remove-item"><i
+                            <td class = "center-align-content"><a href="#" class="text-danger remove-item"><i
                                         data-feather="trash-2"></i></a></td>
                         </tr>`;
                 document.querySelector('#item-details-body').insertAdjacentHTML('beforeend', newRow);
@@ -741,16 +735,39 @@
                 });
 
                 $('.select2').select2();
+                updateSerialNumbers();
             });
             initializeDynamicFieldDropdown();
         });
 
+        function updateSerialNumbers() {
+            $('#item-details-body tr:visible').each(function (index) {
+                $(this).find('.serial-number').text(index + 1);
+            });
+        }
+
         $(document).on('click', '.remove-item', function () {
             const $row = $(this).closest('tr');
             const companyId = $row.find('.companySelect').val();
-            $row.remove();
+            resetHiddenRow($row)
+            updateSerialNumbers();
             updateDisabledEnabledUserSelect('Pattern', companyId)
         });
+
+        function resetHiddenRow($row) {
+            $row.show();
+            $row.find('input, select, textarea').prop('disabled', false);
+            $row.find('input, select, textarea').each(function () {
+                if (this.tagName === 'SELECT') {
+                    $(this).val('').trigger('change');
+                } else if ($(this).attr('type') === 'radio' || $(this).attr('type') === 'checkbox') {
+                    $(this).val('').prop('checked', false);
+                }  else {
+                    $(this).val('');
+                }
+            });
+            $row.hide();
+        }
 
 
         $(document).on('change', '.companySelect', function() {
@@ -902,7 +919,6 @@
                 userElement.innerHTML = ``;
             }
             var innerHTMLVal = "<option disabled value=''>Select Approver</option>";
-            console.log($(this).attr('user-select-id'), "LOG DATA");
             $.ajax({
                 url: "{{route('book.approval-employees.get')}}",
                 method: 'GET',
@@ -1103,7 +1119,6 @@
                             </div>
                         </td>
                         <td class = "center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
-                        <td class = "center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
                     </tr>`;
                 $('#workflow-body').append(newLevelRow);
                 initializeSelect2();
@@ -1126,68 +1141,75 @@
                 addLevelRow();
                 renumberLevels();
             });
+            const people = @json($people);
 
-            $('#workflow-body').on('click', '.add-row', function(e) {
-            e.preventDefault();
-            let level = $(this).closest('tr').prev('.level-row').data('level');
-            // Get all rows in current level including the one we're adding to
-            let rowsInLevel = $(this).closest('tr').siblings().filter(function() {
-                return $(this).prev('.level-row').data('level') == level;
-            }).add($(this).closest('tr'));
-            let rowCount = rowsInLevel.length;
+            $('#workflow-body').on('click', '.add-row', function (e) {
+                e.preventDefault();
 
-            let newRow = `
-                <tr>
-                    <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
-                    <td>
-                        <select class="form-select mw-100 select2 levelCompanySelect" id="company_select_${level}_${rowCount}"
-                            data-id="${level}" name="level_company_id[]">
-                            <option disabled selected value="">Select Company</option>
-                            @foreach ($companies as $company)
-                                <option value="{{ $company->id }}">{{ $company->name }}</option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-select mw-100 select2 level_organizations" user-select-id="${rowCount}_${level}"
-                            name="level_organization_id[]" id="level_organization_id${level}_${rowCount}">
-                        </select>
-                    </td>
-                    <td>
-                        <select class="form-select mw-100 select2 userSelect" data-id="${level}" name="user[${level - 1}][${rowCount}][]" id="user_select_${rowCount}_${level}" multiple>
-                            <option disabled value="">Select Approver</option>
-                            @foreach ($people as $user)
-                                <option value="{{ $user->id }}|{{ $user->type }}">{{ $user->name }}</option>
-                            @endforeach
-                        </select>
-                    </td>
-                    <td>
-                        <input type="text" value="0" name="min_value[]"
-                            data-id="${level}" class="form-control mw-100 min-value">
-                    </td>
-                    <td class="center-align-content">
-                        <div class="customernewsection-form">
-                            <div class="demo-inline-spacing">
-                                <div class="form-check form-check-primary mt-0 me-1">
-                                    <input type="radio" id="anyone-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="anyone">
-                                    <label class="form-check-label fw-bolder" for="anyone-${level}-${rowCount}">Any One</label>
-                                </div>
-                                <div class="form-check form-check-primary mt-0 me-0">
-                                    <input type="radio" id="all-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="all" checked>
-                                    <label class="form-check-label fw-bolder" for="all-${level}-${rowCount}">All</label>
+                let $currentRow = $(this).closest('tr');
+                let level = $currentRow.prevAll('.level-row').first().data('level');
+
+                // Count all rows after the level-row till next level-row or end
+                let rowsInLevel = $currentRow.prevAll('.level-row').first().nextUntil('.level-row');
+                let rowCount = rowsInLevel.length;
+
+                let companyOptions = `<option disabled selected value="">Select Company</option>`;
+                companies.forEach(company => {
+                    companyOptions += `<option value="${company.id}">${company.name}</option>`;
+                });
+
+                let userOptions = `<option disabled value="">Select Approver</option>`;
+                people.forEach(user => {
+                    userOptions += `<option value="${user.id}|${user.type}">${user.name}</option>`;
+                });
+
+                let newRow = `
+                    <tr>
+                        <td>&nbsp; <input class="d-none" type="text" value="${level}" name="level[]"></td>
+                        <td>
+                            <select class="form-select mw-100 select2 levelCompanySelect" id="company_select_${level}_${rowCount}"
+                                data-id="${level}" name="level_company_id[]">
+                                ${companyOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <select class="form-select mw-100 select2 level_organizations" user-select-id="${rowCount}_${level}"
+                                name="level_organization_id[]" id="level_organization_id${level}_${rowCount}">
+                            </select>
+                        </td>
+                        <td>
+                            <select class="form-select mw-100 select2 userSelect" data-id="${level}"
+                                name="user[${level - 1}][${rowCount}][]" id="user_select_${rowCount}_${level}" multiple>
+                                ${userOptions}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" value="0" name="min_value[]" data-id="${level}" class="form-control mw-100 min-value">
+                        </td>
+                        <td class="center-align-content">
+                            <div class="customernewsection-form">
+                                <div class="demo-inline-spacing">
+                                    <div class="form-check form-check-primary mt-0 me-1">
+                                        <input type="radio" id="anyone-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="anyone">
+                                        <label class="form-check-label fw-bolder" for="anyone-${level}-${rowCount}">Any One</label>
+                                    </div>
+                                    <div class="form-check form-check-primary mt-0 me-0">
+                                        <input type="radio" id="all-${level}-${rowCount}" name="rights[${level - 1}][${rowCount}]" class="form-check-input" value="all" checked>
+                                        <label class="form-check-label fw-bolder" for="all-${level}-${rowCount}">All</label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </td>
-                    <td class="center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
-                    <td class="center-align-content"><a href="#" class="text-primary add-row"><i data-feather="plus-square"></i></a></td>
-                </tr>
-            `;
+                        </td>
+                        <td class="center-align-content"><a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a></td>
+                    </tr>
+                `;
 
-            $(this).closest('tr').after(newRow);
-            initializeSelect2();
-            feather.replace();
-        });
+                $currentRow.after(newRow);
+
+                initializeSelect2();
+                feather.replace();
+            });
+
 
             // delete level row on click
             $(document).on('click', '.delete-level-row', function(e) {
@@ -1211,7 +1233,7 @@
                 // Check if this was the last row in the level
                 if (levelRow.nextAll('tr').not('.level-row').length === 0) {
                     levelRow.remove(); // Remove the level header row
-                    levelCounter = levelCounter - 1;
+                    levelCounter--;
                 }
             });
         });
@@ -1263,10 +1285,9 @@ $(document).on('click', '.amendment_plus', function (e) {
                     </div>
                 </div>
             </div>
-                                                                            </td>
+            </td>
             <td class="center-align-content">
-                <a href="#" class="text-primary amendment_plus"><i data-feather="plus-square"></i></a>
-                <a href="#" class="text-danger delete-row ms-2"><i data-feather="trash-2"></i></a>
+                <a href="#" class="text-danger delete-row"><i data-feather="trash-2"></i></a>
             </td>
         </tr>
     `;
@@ -1288,10 +1309,12 @@ $(document).on('click', '.amendment_plus', function (e) {
 // Remove row on click of trash icon and update row numbers
 $(document).on('click', '.delete-row', function (e) {
     e.preventDefault();
-    $(this).closest('tr').remove();
+    const $row = $(this).closest('tr');
+    resetHiddenRow($row)
     updateRowNumbers();
     updateDisabledEnabledUserSelect('Amendment')
     updateDisabledEnabledUserSelect('Approval')
+    updateDisabledEnabledUserSelect('Pattern', companyId);
 });
 
 // Remove row on click of trash icon and update row numbers

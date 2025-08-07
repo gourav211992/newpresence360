@@ -44,6 +44,7 @@ class MrnDetail extends Model
         'receipt_qty',
         'accepted_qty',
         'purchase_bill_qty',
+        'inspection_qty',
         'pr_qty',
         'rejected_qty',
         'pr_rejected_qty',

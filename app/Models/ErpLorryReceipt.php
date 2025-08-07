@@ -38,6 +38,7 @@ class ErpLorryReceipt extends Model
         'destination_id',
         'consignor_id',
         'consignee_id',
+        'vehicle_id',
         'vehicle_type_id',
         'distance',
         'freight_charges',
@@ -95,10 +96,10 @@ class ErpLorryReceipt extends Model
     }
 
 
-    public function vehicle()
-{
-    return $this->hasOne(ErpVehicle::class, 'vehicle_type_id', 'vehicle_type_id');
-}
+   public function vehicle()
+    {
+        return $this->belongsTo(ErpVehicle::class, 'vehicle_id');
+    }
 
     public function consignor()
     {

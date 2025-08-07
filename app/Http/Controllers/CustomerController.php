@@ -231,6 +231,11 @@ class CustomerController extends Controller
 
     public function create()
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         $organizationTypes = OrganizationType::where('status', ConstantHelper::ACTIVE)->get();
         $currencies = Currency::where('status', ConstantHelper::ACTIVE)->get();
         $paymentTerms = PaymentTerm::where('status', ConstantHelper::ACTIVE)->get();
@@ -510,6 +515,11 @@ class CustomerController extends Controller
 
     public function edit(Request $request,$id)
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         if ($request->has('revisionNumber')) {
             $customer = CustomerHistory::with(['erpOrganizationType', 'salesPerson','subcategory', 'bankInfos', 'notes', 'contacts', 'addresses', 'compliances', 'approvedItems', 'currency', 'paymentTerm', 'ledgerGroup', 'group', 'company', 'organization', 'ledger', 'contraLedger', 'parentdCustomer'])
             ->where('source_id', $id)
@@ -550,7 +560,7 @@ class CustomerController extends Controller
         }
 
         if ($ledgerGroups->isEmpty()) {
-            $defaultGroup = Group::where('name', 'Account Payable')->first();
+            $defaultGroup = Group::where('name', 'Account Receivable')->first();
 
             if ($defaultGroup) {
                 $lastLevelGroupIds = $defaultGroup->getAllLastLevelGroupIds();
@@ -991,6 +1001,11 @@ class CustomerController extends Controller
 
     public function showImportForm()
     {
+        $urlSegmentAlias = request()->segments()[0];
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($urlSegmentAlias);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
         return view('procurement.customer.import'); 
     }
 

@@ -1447,7 +1447,7 @@ class VendorController extends Controller
 
        public function getLedgerGroupsByType(Request $request, $ledgerId = null)
         {
-            $type = strtolower($request->query('type'));
+          $type = strtolower($request->query('type'));
 
            if (!in_array($type, ['vendor', 'customer'])) {
                 return response()->json(['error' => 'Invalid type provided.'], 400);
@@ -1478,17 +1478,16 @@ class VendorController extends Controller
             $defaultGroupName = $type === 'vendor' ? 'Account Payable' : 'Account Receivable';
 
             $parentGroup = Group::with(['children'])
-                ->where('name', $defaultGroupName)
-                ->first();
+              ->where('status', 'active')
+              ->where('name', $defaultGroupName)
+              ->first();
 
             if (!$parentGroup) {
                 return response()->json(['error' => 'Group not found.'], 404);
             }
             $lastLevelGroupIds = $parentGroup->getAllLastLevelGroupIds();
 
-             $groups = Group::whereIn('id', $lastLevelGroupIds)
-                  ->where('status', 'active')
-                  ->get();
+             $groups = Group::whereIn('id', $lastLevelGroupIds)->get();
 
             $groupItems = $groups->map(fn($group) => [
                 'id' => $group->id,
