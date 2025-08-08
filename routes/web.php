@@ -31,6 +31,7 @@ use App\Helpers\Inventory\StockReservation;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\ErpRackController;
 use App\Http\Controllers\PutAwayController;
+use App\Http\Controllers\Plant\MaintBomController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\StationController;
 use App\Http\Controllers\TestingController;
@@ -2952,3 +2953,10 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
     });
+    Route::resource('plant/bom', MaintBomController::class)->names([
+        'index' => 'maint-bom.index',
+        'create' => 'maint-bom.create',
+        'show' => 'maint-bom.show',
+        'edit' => 'maint-bom.edit',
+    ]);
+

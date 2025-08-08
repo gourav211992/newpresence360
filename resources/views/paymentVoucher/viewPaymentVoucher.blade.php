@@ -1059,6 +1059,7 @@
                     
                    
 
+                    var org_name = @json(App\Helpers\Helper::getAuthenticatedUser()?->organization?->name);
 
                     var voucherEntriesHTML = `<div class="row">
 
@@ -1084,7 +1085,7 @@
                                  <div class="col-md-2">
                                     <div class="mb-1">
                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
-                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||org_name}" disabled="">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -2033,6 +2034,7 @@
                 }
 
                 const voucherEntries = voucherWrapper.data;
+                var org_name = @json(App\Helpers\Helper::getAuthenticatedUser()?->organization?->name);
 
                 let voucherEntriesHTML = `
                     <div class="row">
@@ -2057,7 +2059,7 @@
                          <div class="col-md-2">
                                     <div class="mb-1">
                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
-                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||org_name}" disabled="">
                                     </div>
                                         </div>
                             
