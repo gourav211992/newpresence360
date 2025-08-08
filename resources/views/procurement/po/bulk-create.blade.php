@@ -219,16 +219,16 @@
         $(document).on('change', '#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
-                getDocNumberByBookId(bookId);
+                getDocNumberByBookId(bookId, true);
             } else {
                 $("#document_number").val('');
                 $("#book_id").val('');
                 $("#document_number").attr('readonly', false);
             }
-            $('#itemTable').DataTable().ajax.reload();
+            
         });
 
-        function getDocNumberByBookId(bookId) {
+        function getDocNumberByBookId(bookId, reloadPiQuery = false) {
             let document_date = $("[name='document_date']").val();
             let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId + '&document_date=' +
                 document_date;
@@ -246,10 +246,14 @@
                             $("#document_number").attr('readonly', true);
                         }
                         const parameters = data.data.parameters;
+
                         let poType = parameters.goods_or_services || 'Goods';
+                        
                         $("#po_type").val(poType);
                         setServiceParameters(parameters);
-
+                        if (reloadPiQuery) {
+                            $('#itemTable').DataTable().ajax.reload();
+                        }
                     }
                     if (data.status == 404) {
                         $("#book_code").val('');

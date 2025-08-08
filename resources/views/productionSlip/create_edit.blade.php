@@ -422,10 +422,10 @@
                                                                    <th class="text-end">Accepted (A)</th>
                                                                    <th class="text-end" id="subprime_qty_col">Substandard (B)</th>
                                                                    <th class="text-end">Rejected (C)</th>
-                                                                   @if($isWipQty)
-                                                                   <th class="text-end" id="wip_qty_col">WIP Qty</th>
-                                                                   <th class="text-end" id="total_qty_col">Total Qty</th>
-                                                                   @endif
+                                                                   {{-- @if($isWipQty) --}}
+                                                                    <th class="{{ $isWipQty ? 'text-end' : 'd-none text-end'}}" id="wip_qty_col">WIP Qty</th>
+                                                                    <th class="{{ $isWipQty ? 'text-end' : 'd-none text-end'}}" id="total_qty_col">Total Qty</th>
+                                                                   {{-- @endif --}}
                                                                    {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
                                                                     <th class="text-end">Rate</th>
                                                                     <th class="text-end">Value</th>

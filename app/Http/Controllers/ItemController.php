@@ -392,11 +392,20 @@ class ItemController extends Controller
 
     public function store(ItemRequest $request)
     {
+       
       DB::beginTransaction();
      try {
         $user = Helper::getAuthenticatedUser();
         $organization = $user->organization;
         $validatedData = $request->validated();
+
+        $validatedData['is_serial_no']     = $request->input('is_serial_no') === '1' ? 1 : 0;
+        $validatedData['is_batch_no']      = $request->input('is_batch_no') === '1' ? 1 : 0;
+        $validatedData['is_expiry']        = $request->input('is_expiry') === '1' ? 1 : 0;
+        $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
+        $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
+        $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
+
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1; 
         }
@@ -554,11 +563,21 @@ class ItemController extends Controller
             foreach ($request->input('alternateItems') as $alternateItemData) {
                 if (isset($alternateItemData['item_code']) && !empty($alternateItemData['item_code']) &&
                     isset($alternateItemData['item_name']) && !empty($alternateItemData['item_name'])) {
+
                     $item->alternateItems()->create([
                         'alt_item_id' => $alternateItemData['alt_item_id'],
                         'item_code' => $alternateItemData['item_code'],
                         'item_name' => $alternateItemData['item_name'],
                     ]);
+
+                    $altItem = Item::find($alternateItemData['alt_item_id']);
+                    if ($altItem) {
+                        $altItem->alternateItems()->create([
+                            'alt_item_id' => $item->id,
+                            'item_code' => $item->item_code,
+                            'item_name' => $item->name ?? $item->item_name,
+                        ]);
+                    }
                 }
             }
         }
@@ -848,7 +867,14 @@ class ItemController extends Controller
             return response()->json(['error' => 'Item not found'], 404);
         }
         $validatedData = $request->validated();
-        
+
+        $validatedData['is_serial_no']     = $request->input('is_serial_no') === '1' ? 1 : 0;
+        $validatedData['is_batch_no']      = $request->input('is_batch_no') === '1' ? 1 : 0;
+        $validatedData['is_expiry']        = $request->input('is_expiry') === '1' ? 1 : 0;
+        $validatedData['is_inspection']    = $request->input('is_inspection') === '1' ? 1 : 0;
+        $validatedData['is_traded_item']   = $request->input('is_traded_item') === '1' ? 1 : 0;
+        $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
+
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
             $validatedData['storage_uom_conversion'] = 1;
         }
@@ -1145,35 +1171,72 @@ class ItemController extends Controller
             $item->itemAttributes()->delete();
         }
     
-        if ($request->has('alternateItems')) {
+       if ($request->has('alternateItems')) {
             $existingAlternateItems = $item->alternateItems()->pluck('id')->toArray();
-            $newAlternateItems = [];
-      
+            $newAlternateItemIds = [];
+
             foreach ($request->input('alternateItems') as $altItemData) {
-                if (isset($altItemData['item_code']) && !empty($altItemData['item_code']) &&
-                isset($altItemData['item_name']) && !empty($altItemData['item_name'])) {
-                if (isset($altItemData['id']) && in_array($altItemData['id'], $existingAlternateItems)) {
-                    $item->alternateItems()->where('id', $altItemData['id'])->update([
-                        'alt_item_id'  => $altItemData['alt_item_id'],
-                        'item_name' => $altItemData['item_name'], 
-                        'item_code' => $altItemData['item_code'], 
-                    ]);
-                    $newAlternateItems[] = $altItemData['id'];
-                } else {
-                    $newAltItem = $item->alternateItems()->create([
-                        'alt_item_id'  => $altItemData['alt_item_id'], 
-                        'item_name' => $altItemData['item_name'],
-                        'item_code' => $altItemData['item_code'], 
-                    ]);
-                    $newAlternateItems[] = $newAltItem->id;
+                if (
+                    isset($altItemData['item_code']) && !empty($altItemData['item_code']) &&
+                    isset($altItemData['item_name']) && !empty($altItemData['item_name'])
+                ) {
+
+                    if (isset($altItemData['id']) && in_array($altItemData['id'], $existingAlternateItems)) {
+                        $item->alternateItems()->where('id', $altItemData['id'])->update([
+                            'alt_item_id' => $altItemData['alt_item_id'],
+                            'item_code' => $altItemData['item_code'],
+                            'item_name' => $altItemData['item_name'],
+                        ]);
+                        $newAlternateItemIds[] = $altItemData['id'];
+                    } else {
+                        $newAlt = $item->alternateItems()->create([
+                            'alt_item_id' => $altItemData['alt_item_id'],
+                            'item_code' => $altItemData['item_code'],
+                            'item_name' => $altItemData['item_name'],
+                        ]);
+                        $newAlternateItemIds[] = $newAlt->id;
+                    }
+
+                    // --- Reverse mapping: B → A ---
+                    $altItem = Item::find($altItemData['alt_item_id']);
+                    if ($altItem) {
+                        $reverse = $altItem->alternateItems()->where('alt_item_id', $item->id)->first();
+
+                        if ($reverse) {
+                            $reverse->update([
+                                'item_code' => $item->item_code,
+                                'item_name' => $item->item_name ?? $item->name,
+                            ]);
+                        } else {
+                            $altItem->alternateItems()->create([
+                                'alt_item_id' => $item->id,
+                                'item_code' => $item->item_code,
+                                'item_name' => $item->item_name ?? $item->name,
+                            ]);
+                        }
+                    }
                 }
-             }
             }
-            $item->alternateItems()->whereNotIn('id', $newAlternateItems)->delete();
-        }else {
-            $item->alternateItems()->delete();
+
+            $toBeDeleted = $item->alternateItems()->whereNotIn('id', $newAlternateItemIds)->get();
+            foreach ($toBeDeleted as $alt) {
+                $altItem = Item::find($alt->alt_item_id);
+                if ($altItem) {
+                    $altItem->alternateItems()->where('alt_item_id', $item->id)->delete(); 
+                }
+                $alt->delete(); 
+            }
+
+        } else {
+            foreach ($item->alternateItems as $alt) {
+                $altItem = Item::find($alt->alt_item_id);
+                if ($altItem) {
+                    $altItem->alternateItems()->where('alt_item_id', $item->id)->delete();
+                }
+                $alt->delete();
+            }
         }
-    
+
         if ($request->has('item_specifications')) {
             $specifications = $request->input('item_specifications');
             if (!is_array($specifications)) {
@@ -1353,24 +1416,45 @@ class ItemController extends Controller
     }
     
     public function deleteAlternateItem($id)
-    {
-        DB::beginTransaction();
-        try {
-            $alternateItem = AlternateItem::find($id);
-            if ($alternateItem) {
-                $result = $alternateItem->deleteWithReferences();
-                if (!$result['status']) {
-                    DB::rollBack();
-                    return response()->json(['success' => false, 'message' => $result['message']], 400);
+        {
+            DB::beginTransaction();
+
+            try {
+                $alternateItem = AlternateItem::find($id);
+
+                if (!$alternateItem) {
+                    return response()->json(['success' => false, 'message' => 'Alternate item not found'], 404);
                 }
+
+                $itemId = $alternateItem->item_id;
+                $altItemId = $alternateItem->alt_item_id;
+
+                $reverseItem = AlternateItem::where('item_id', $altItemId)
+                    ->where('alt_item_id', $itemId)
+                    ->first();
+
+                if ($reverseItem) {
+                    $result = $reverseItem->deleteWithReferences();
+
+                    if (!$result['status']) {
+                        DB::rollBack();
+                        return response()->json(['success' => false, 'message' => $result['message']], 400);
+                    }
+                }
+
+                $mainResult = $alternateItem->deleteWithReferences();
+                if (!$mainResult['status']) {
+                    DB::rollBack();
+                    return response()->json(['success' => false, 'message' => $mainResult['message']], 400);
+                }
+
                 DB::commit();
                 return response()->json(['success' => true, 'message' => 'Record deleted successfully']);
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
             }
-            return response()->json(['success' => false, 'message' => 'Alternate item not found'], 404);
-        } catch (Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
-        }
     }
 
     public function destroy($id)
@@ -1415,15 +1499,28 @@ class ItemController extends Controller
     public function getItem(Request $request)
     {
         $searchTerm = $request->input('term', ''); 
-        $items = Item::where('item_name', 'like', "%{$searchTerm}%")
-            ->where('status', ConstantHelper::ACTIVE)
-            ->limit(10)
-            ->get(['id', 'item_name', 'item_code']);
-        if ($items->isEmpty()) {
-            $items = Item::where('status', ConstantHelper::ACTIVE)
-                ->limit(10)
-                ->get(['id', 'item_name', 'item_code']);
+        $excludeId = $request->input('exclude_id'); 
+
+        $query = Item::where('status', ConstantHelper::ACTIVE);
+
+        if ($searchTerm) {
+            $query->where('item_name', 'like', "%{$searchTerm}%");
         }
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        $items = $query->limit(10)->get(['id', 'item_name', 'item_code']);
+
+        if ($items->isEmpty()) {
+            $query = Item::where('status', ConstantHelper::ACTIVE);
+            if ($excludeId) {
+                $query->where('id', '!=', $excludeId);
+            }
+            $items = $query->limit(10)->get(['id', 'item_name', 'item_code']);
+        }
+
         $formattedItems = $items->map(function ($item) {
             return [
                 'id' => $item->id,
@@ -1432,7 +1529,7 @@ class ItemController extends Controller
                 'code' => $item->item_code,
             ];
         });
-    
+
         return response()->json($formattedItems);
     }
     

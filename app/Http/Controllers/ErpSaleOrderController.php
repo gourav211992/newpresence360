@@ -1489,6 +1489,13 @@ class ErpSaleOrderController extends Controller
         try {
             $itemAttributes = ErpItemAttribute::with(['group'])->where('item_id', $itemId)->get();
             $item = Item::find($itemId);
+            if (!isset($item)) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Item Not Found'
+            ], 500);
+            }
+            $itemAttributes = ErpItemAttribute::with(['group'])->where('item_id', $itemId)->get();
             foreach ($itemAttributes as $attribute) {
                 $attributesArray = array();
                 $attribute_ids = [];
@@ -2734,6 +2741,36 @@ class ErpSaleOrderController extends Controller
             return response() -> json([
                 'status' => 'exception',
                 'message' => $ex -> getMessage() . $ex -> getFile() . $ex -> getLine()
+            ], 500);
+        }
+    }
+
+    public function getItemSalePrice(Request $request)
+    {
+        try {
+            $itemId = $request -> item_id ?? 0;
+            $uomId = $request -> uom_id ?? 0;
+            $attributes = $request -> attributes_data ?? [];
+            $currencyId = $request -> currency_id;
+            $customerId = $request -> customer_id;
+            $itemQty = 100;
+            $documentDate = $request -> document_date;
+            $type = $request -> price_type;
+            if ($type == 'selling') {
+                $itemPrice = ItemHelper::getItemSalePrice($itemId, $attributes, $uomId, $currencyId, $documentDate, $customerId, $itemQty);
+            } else if ($type == 'cost') {
+                $itemPrice = ItemHelper::getItemCostPrice($itemId, $attributes, $uomId, $currencyId, $documentDate, $customerId, $itemQty);
+            } else {
+                $itemPrice = 0;
+            }
+            return response() -> json([
+                'status' => 'success',
+                'data' => $itemPrice
+            ]);
+        } catch(Exception $ex) {
+            return response() -> json([
+                'status' => 'exception',
+                'message' => $ex -> getMessage()
             ], 500);
         }
     }

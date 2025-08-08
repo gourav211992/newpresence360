@@ -407,7 +407,6 @@
                         $style = "vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none;";
                         $style .= " border-right: 1px solid #000;" ;
                         $style .= " text-align: right;";
-                        $total_bundle += count(@$val->bundles) > 1 ? count(@$val->bundles) : 1;
                     @endphp
                     <td rowspan="{{ isset($val->bundles) && count($val->bundles) > 1 ? count($val->bundles) : 1 }}"
                         style=" vertical-align: middle; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;">
@@ -525,7 +524,25 @@
                 </td>
             </tr>
             
-
+            @if(isset($order->customer_terms))
+                <tr>
+                    <td colspan="2"
+                        style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                        <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                            <tr>
+                                <td style="font-weight: bold; font-size: 13px;"> <b>Terms And Conditions :</b></td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div style="min-height: 80px;">
+                                        {!! @$order->customer_terms !!}
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            @endif
 
             <!--  -->
 
@@ -545,7 +562,7 @@
 
                 </td>
                 <td
-                    style="padding: 3px; border: 1px solid #000; width:70% border-top: none; border-left: none; vertical-align: bottom;">
+                    style="padding: 3px; border: 1px solid #000; width:80% border-top: none; border-left: none; vertical-align: bottom;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="text-align: center; padding-bottom: 20px;">FOR

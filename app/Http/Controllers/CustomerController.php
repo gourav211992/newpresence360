@@ -33,6 +33,7 @@ use App\Models\Organization;
 use App\Models\CustomerItem;
 use App\Models\Contact;
 use App\Models\UploadCustomerMaster;
+use App\Models\ItemDetail;
 use App\Imports\CustomerImport;
 use App\Services\ItemImportExportService;
 use App\Exports\CustomersExport;
@@ -549,10 +550,18 @@ class CustomerController extends Controller
         $ledgerGroups = collect();
         $ledgerId = $customer->ledger_id ?? null;
         $createLedger = $request->input('create_ledger');
+        $isLedgerEditable = true;
         if ($ledgerId) {
             $ledger = Ledger::find($ledgerId);
             if ($ledger) {
                 $ledgerGroups = $ledger->groups();
+                $ledgerGroupId = $customer->ledger_group_id ?? null;
+                $existsInItems = ItemDetail::where('ledger_id', $ledgerId)
+                ->where('ledger_parent_id', $ledgerGroupId)
+                ->exists();
+                if ($existsInItems) {
+                    $isLedgerEditable = false;
+                }
             }
         }
         if ($ledgerGroups->isEmpty() && $createLedger == 1) {
@@ -628,6 +637,7 @@ class CustomerController extends Controller
             'buttons' => $buttons,
             'approvalHistory' => $approvalHistory,
             'docStatusClass' => $docStatusClass,
+            'isLedgerEditable'=>$isLedgerEditable
         ]);
     }
 

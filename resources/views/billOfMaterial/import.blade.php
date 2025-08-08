@@ -11,7 +11,8 @@
                 <div class="content-header pocreate-sticky">
                     <div class="row">
                         @include('layouts.partials.breadcrumb-add-edit', [
-                            'title' => $routeAlias == 'quotation-bom' ? 'Quotation BOM Import' : 'Production BOM Import',
+                            'title' =>
+                                $routeAlias == 'quotation-bom' ? 'Quotation BOM Import' : 'Production BOM Import',
                             'menu' => 'Home',
                             'menu_url' => url('home'),
                             'sub_menu' => 'Import',
@@ -55,16 +56,18 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 d-flex align-items-center justify-content-end">
-                                                    <a href="{{ url($routeAlias) }}/download-sample" class="btn btn-outline-primary waves-effect">
+                                                    <a href="{{ url($routeAlias) }}/download-sample"
+                                                        class="btn btn-outline-primary waves-effect">
                                                         <i class="fas fa-download me-1"></i> Download Sample
                                                     </a>
-                                                    {{-- <a download href="{{asset('templates/Bom_Sample.xlsx')}}" class="btn btn-outline-primary">
-                                                        <i class="fas fa-download me-1"></i> Download Sample
-                                                    </a> --}}
+                                                    <a class="d-none btn btn-outline-danger waves-effect download-error-file-url mx-1"
+                                                        href="#">
+                                                        <i class="fas fa-download me-1"></i> Dowload Error File
+                                                    </a>
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="row">
                                             <div class="col-md-8">
                                                 <div class="">
@@ -110,13 +113,16 @@
                                                                     class="text-danger">*</span></label>
                                                         </div>
                                                         <div class="col-md-5">
-                                                            <input type="file" accept=".xlsx, .xls, .csv" name="attachment" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')">
-                                                            <span class="text-primary small">{{__("(Allowed formats: .xlsx, .xls, .csv)")}}</span>
+                                                            <input type="file" accept=".xlsx, .xls, .csv"
+                                                                name="attachment" class="form-control"
+                                                                onchange = "addFiles(this,'main_bom_file_preview')">
+                                                            <span
+                                                                class="text-primary small">{{ __('(Allowed formats: .xlsx, .xls, .csv)') }}</span>
                                                         </div>
                                                         <div class="col-md-4">
                                                             <div class="row" id="main_bom_file_preview">
                                                             </div>
-                                                        </div> 
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -132,102 +138,102 @@
     </form>
 @endsection
 @section('scripts')
-{{-- <script type="text/javascript" src="{{asset('assets/js/modules/bom.js')}}"></script> --}}
-<script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
-<script type="text/javascript">
-$(function() {
-    setTimeout(() => {
-        if($("#book_id").val()) {
-            $("#book_id").trigger('change');
-        }
-    }, 0);
-    $(document).on('change', '#book_id', (e) => {
-        let bookId = e.target.value;
-        if (bookId) {
-            getDocNumberByBookId(bookId);
-        } else {
-            $("#document_number").val('');
-            $("#book_id").val('');
-            $("#document_number").attr('readonly', false);
-        }
-    });
-
-    function getDocNumberByBookId(bookId) {
-        let document_date = $("[name='document_date']").val();
-        let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
-            '&document_date=' + document_date;
-        fetch(actionUrl).then(response => {
-            return response.json().then(data => {
-                if (data.status == 200) {
-                    $("#book_code").val(data.data.book_code);
-                    if (!data.data.doc.document_number) {
-                        $("#document_number").val('');
-                    }
-                    $("#document_number").val(data.data.doc.document_number);
-                    if (data.data.doc.type == 'Manually') {
-                        $("#document_number").attr('readonly', false);
-                    } else {
-                        $("#document_number").attr('readonly', true);
-                    }
-                    const parameters = data.data.parameters;
-                    setServiceParameters(parameters);
+    {{-- <script type="text/javascript" src="{{asset('assets/js/modules/bom.js')}}"></script> --}}
+    <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
+    <script type="text/javascript">
+        $(function() {
+            setTimeout(() => {
+                if ($("#book_id").val()) {
+                    $("#book_id").trigger('change');
                 }
-                if (data.status == 404) {
-                    $("#book_code").val('');
+            }, 0);
+            $(document).on('change', '#book_id', (e) => {
+                let bookId = e.target.value;
+                if (bookId) {
+                    getDocNumberByBookId(bookId);
+                } else {
                     $("#document_number").val('');
-                    const docDateInput = $("[name='document_date']");
+                    $("#book_id").val('');
+                    $("#document_number").attr('readonly', false);
+                }
+            });
+
+            function getDocNumberByBookId(bookId) {
+                let document_date = $("[name='document_date']").val();
+                let actionUrl = '{{ route('book.get.doc_no_and_parameters') }}' + '?book_id=' + bookId +
+                    '&document_date=' + document_date;
+                fetch(actionUrl).then(response => {
+                    return response.json().then(data => {
+                        if (data.status == 200) {
+                            $("#book_code").val(data.data.book_code);
+                            if (!data.data.doc.document_number) {
+                                $("#document_number").val('');
+                            }
+                            $("#document_number").val(data.data.doc.document_number);
+                            if (data.data.doc.type == 'Manually') {
+                                $("#document_number").attr('readonly', false);
+                            } else {
+                                $("#document_number").attr('readonly', true);
+                            }
+                            const parameters = data.data.parameters;
+                            setServiceParameters(parameters);
+                        }
+                        if (data.status == 404) {
+                            $("#book_code").val('');
+                            $("#document_number").val('');
+                            const docDateInput = $("[name='document_date']");
+                            docDateInput.removeAttr('min');
+                            docDateInput.removeAttr('max');
+                            docDateInput.val(new Date().toISOString().split('T')[0]);
+                            alert(data.message);
+                        }
+                    });
+                });
+            }
+
+            /*Set Service Parameter*/
+            function setServiceParameters(parameters) {
+                /*Date Validation*/
+                const docDateInput = $("[name='document_date']");
+                let isFeature = false;
+                let isPast = false;
+                if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
+                    let futureDate = new Date();
+                    futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/ );
+                    docDateInput.val(futureDate.toISOString().split('T')[0]);
+                    docDateInput.attr("min", new Date().toISOString().split('T')[0]);
+                    isFeature = true;
+                } else {
+                    isFeature = false;
+                    docDateInput.attr("max", new Date().toISOString().split('T')[0]);
+                }
+                if (parameters.back_date_allowed && parameters.back_date_allowed.includes('yes')) {
+                    let backDate = new Date();
+                    backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/ );
+                    docDateInput.val(backDate.toISOString().split('T')[0]);
+                    // docDateInput.attr("max", "");
+                    isPast = true;
+                } else {
+                    isPast = false;
+                    docDateInput.attr("min", new Date().toISOString().split('T')[0]);
+                }
+                /*Date Validation*/
+                if (isFeature && isPast) {
                     docDateInput.removeAttr('min');
                     docDateInput.removeAttr('max');
-                    docDateInput.val(new Date().toISOString().split('T')[0]);
-                    alert(data.message);
                 }
-            });
+                let reference_from_service = parameters.reference_from_service;
+                if (!reference_from_service.length) {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: "Please update first reference from service param.",
+                        icon: 'error',
+                    });
+                    setTimeout(() => {
+                        location.href = "{{ url($routeAlias) }}";
+                    }, 1500);
+                }
+            }
         });
-    }
-
-    /*Set Service Parameter*/
-    function setServiceParameters(parameters) {
-        /*Date Validation*/
-        const docDateInput = $("[name='document_date']");
-        let isFeature = false;
-        let isPast = false;
-        if (parameters.future_date_allowed && parameters.future_date_allowed.includes('yes')) {
-            let futureDate = new Date();
-            futureDate.setDate(futureDate.getDate() /*+ (parameters.future_date_days || 1)*/ );
-            docDateInput.val(futureDate.toISOString().split('T')[0]);
-            docDateInput.attr("min", new Date().toISOString().split('T')[0]);
-            isFeature = true;
-        } else {
-            isFeature = false;
-            docDateInput.attr("max", new Date().toISOString().split('T')[0]);
-        }
-        if (parameters.back_date_allowed && parameters.back_date_allowed.includes('yes')) {
-            let backDate = new Date();
-            backDate.setDate(backDate.getDate() /*- (parameters.back_date_days || 1)*/ );
-            docDateInput.val(backDate.toISOString().split('T')[0]);
-            // docDateInput.attr("max", "");
-            isPast = true;
-        } else {
-            isPast = false;
-            docDateInput.attr("min", new Date().toISOString().split('T')[0]);
-        }
-        /*Date Validation*/
-        if (isFeature && isPast) {
-            docDateInput.removeAttr('min');
-            docDateInput.removeAttr('max');
-        }
-        let reference_from_service = parameters.reference_from_service;
-        if (!reference_from_service.length) {
-            Swal.fire({
-                title: 'Error!',
-                text: "Please update first reference from service param.",
-                icon: 'error',
-            });
-            setTimeout(() => {
-                location.href = "{{ url($routeAlias) }}";
-            }, 1500);
-        }
-    }
-});
-</script>
+    </script>
 @endsection

@@ -9,6 +9,7 @@ use App\Models\ErpMaterialReturnHeader;
 use App\Models\ErpPlHeader;
 use App\Models\ErpProductionSlip;
 use App\Models\ErpRateContract;
+use App\Models\ErpRfqHeader;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpTransporterRequest;
 use App\Models\ErpTransporterRequestBid;
@@ -934,6 +935,42 @@ class DocumentApprovalController extends Controller
                     $approveDocument['message'],
                 ], 500);
             }
+            $doc->approval_level = $approveDocument['nextLevel'];
+            $doc->document_status = $approveDocument['approvalStatus'];
+            $doc->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Document $actionType successfully!",
+                'data' => $doc,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType",
+                'error' => $e->getMessage().$e->getLine().$e->getFile(),
+            ], 500);
+        }
+    }
+    public function rfq(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $doc = ErpRfqHeader::find($request->id);
+            $bookId = $doc->book_id;
+            $docId = $doc->id;
+            $docValue = 0;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $doc->approval_level;
+            $revisionNumber = $doc->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($doc);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();

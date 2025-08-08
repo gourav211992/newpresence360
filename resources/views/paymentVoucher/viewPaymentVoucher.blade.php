@@ -31,6 +31,14 @@
         .settleInput {
             text-align: right;
         }
+        
+.fw-bold {
+  font-weight : bold;
+}
+
+.fw-bolder {
+  font-weight : 600 !important;
+}
     </style>
 @endsection
 
@@ -1051,6 +1059,7 @@
                     
                    
 
+                    var org_name = @json(App\Helpers\Helper::getAuthenticatedUser()?->organization?->name);
 
                     var voucherEntriesHTML = `<div class="row">
 
@@ -1076,7 +1085,7 @@
                                  <div class="col-md-2">
                                     <div class="mb-1">
                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
-                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||org_name}" disabled="">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -1102,13 +1111,13 @@
                                                     <th class="text-end">Credit</th>
                                                 </tr>
                                             </thead>
-                                            <tbody id = "posting-table">`;
+                                            <tbody>`;
                     Object.keys(voucherEntries.ledgers).forEach((voucher) => {
                         voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
                             voucherEntriesHTML += `
                     <tr>
                     <td>${voucher}</td>
-                    <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
+                    <td class="fw-bolder text-dark" style="font-weight : 600 !important;">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                     <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                     <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                     <td>${voucherDetail.cost_name ? voucherDetail.cost_name : ''}</td>
@@ -1120,9 +1129,9 @@
                     });
                     voucherEntriesHTML += `
             <tr>
-                <td colspan="5" class="fw-bolder text-dark text-end">Total</td>
-                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
-                <td class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
+                <td colspan="5" setyle="font-weight : 600 !important;" class="fw-bolder text-dark text-end">Total</td>
+                <td style="font-weight : bold;" class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                <td style="font-weight : bold;"  class="fw-bolder text-dark text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
 			</tr>
                       </tbody>
 
@@ -2025,35 +2034,45 @@
                 }
 
                 const voucherEntries = voucherWrapper.data;
+                var org_name = @json(App\Helpers\Helper::getAuthenticatedUser()?->organization?->name);
 
                 let voucherEntriesHTML = `
                     <div class="row">
-                        <div class="col-md-2">
+                        <div class="col-md-3">
+                             <div class="mb-1">
                             <label class="form-label">Series</label>
                             <input class="form-control" value="${voucherEntries.book_code}" disabled>
+                            </div>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-3">
+                             <div class="mb-1">
                             <label class="form-label">Voucher No</label>
                             <input class="form-control" value="${voucherEntries.document_number}" disabled>
                         </div>
+                            </div>
                         <div class="col-md-2">
+                             <div class="mb-1">
                             <label class="form-label">Voucher Date</label>
                             <input class="form-control" value="${moment(voucherEntries.document_date).format('D/M/Y')}" disabled>
                         </div>
-                         <div class="col-md-3">
+                            </div>
+                         <div class="col-md-2">
                                     <div class="mb-1">
                                         <label class="form-label">Organization <span class="text-danger">*</span></label>
-                                        <input id = "org" class="form-control" value="${voucherEntries.org||11}" disabled="">
+                                        <input id = "org" class="form-control" value="${voucherEntries.org||org_name}" disabled="">
                                     </div>
-                                </div>
+                                        </div>
+                            
                         <div class="col-md-2">
+                             <div class="mb-1">
                             <label class="form-label">Currency</label>
                             <input class="form-control" value="${voucherEntries.currency_code}" disabled>
+                            </div>
                         </div>
-                        <div class="col-md-12 mt-2">
+                        <div class="col-md-12">
                             <div class="table-responsive">
-                                <table class="table table-bordered">
-                                    <thead>
+                               <table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+								     <thead>
                                         <tr>
                                             <th>Type</th>
                                             <th>Group</th>
@@ -2071,21 +2090,21 @@
                         voucherEntriesHTML += `
                             <tr>
                                 <td>${typeKey}</td>
-                                <td>${entry.ledger_group_code || ''}</td>
+                                <td style="font-weight : bold;">${entry.ledger_group_code || ''}</td>
                                 <td>${entry.ledger_code || ''}</td>
                                 <td>${entry.ledger_name || ''}</td>
                                 <td>${entry.cost_name || ''}</td>
-                                <td class="text-end">${entry.debit_amount > 0 ? parseFloat(entry.debit_amount).toFixed(2) : ''}</td>
-                                <td class="text-end">${entry.credit_amount > 0 ? parseFloat(entry.credit_amount).toFixed(2) : ''}</td>
+                                <td class="text-end indian-number">${entry.debit_amount > 0 ? parseFloat(entry.debit_amount).toFixed(2) : ''}</td>
+                                <td class="text-end indian-number">${entry.credit_amount > 0 ? parseFloat(entry.credit_amount).toFixed(2) : ''}</td>
                             </tr>`;
                     });
                 });
-
+     
                 voucherEntriesHTML += `
                     <tr>
-                        <td colspan="5" class="text-end fw-bold">Total</td>
-                        <td class="text-end fw-bold">${voucherEntries.total_debit.toFixed(2)}</td>
-                        <td class="text-end fw-bold">${voucherEntries.total_credit.toFixed(2)}</td>
+                        <td style="font-weight : bold;" colspan="5" class="text-end">Total</td>
+                        <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_debit.toFixed(2)}</td>
+                        <td style="font-weight : bold;" class="text-end indian-number">${voucherEntries.total_credit.toFixed(2)}</td>
                     </tr>
                     </tbody>
                 </table>
@@ -2095,7 +2114,8 @@
 
                 // Append to modal container (supports multiple vouchers if needed)
                 $('#posting').append(voucherEntriesHTML);
-                $('#posting').append('<hr class="my-4">');
+                //$('#posting').append('<hr class="my-4">');
+                $('#posting').append('<br/>');
 
                 if (type === "posted") {
                     $('#posting_button').hide();

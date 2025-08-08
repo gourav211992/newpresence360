@@ -31,7 +31,7 @@ function initializeBasicDataTable(selector, exportFileName = 'Data_Export', link
                     targets: [0, -1]
                 },
                 {
-                    targets: 8,
+                    targets: '_all', 
                     render: function (data, type, row, meta) {
                         if (type === 'export') {
                             var $node = $('<div>').html(data);

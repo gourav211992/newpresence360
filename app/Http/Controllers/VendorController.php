@@ -45,6 +45,7 @@ use App\Models\VendorPortalUser;
 use App\Models\Book;
 use App\Models\UploadVendorMaster;
 use App\Models\PincodeMaster;
+use App\Models\ItemDetail;
 use App\Imports\VendorImport;
 use App\Services\ItemImportExportService;
 use App\Exports\VendorsExport;
@@ -385,9 +386,12 @@ class VendorController extends Controller
                        // ** START: Call createPartyLedger if conditions are met **
                         $shouldCreateLedger = isset($validatedData['create_ledger']) && $validatedData['create_ledger'] == 1;
                         $hiddenLedgerVendorName = $validatedData['hidden_ledger_vendor_name'];
+                         
                         $hiddenLedgerVendorCode = $validatedData['hidden_ledger_vendor_code'];
+                      
                         $ledgerId = $validatedData['ledger_id'] ?? null; 
                         $ledgerGroupId = $request->ledger_group_id?? null; 
+                          
                         if ($shouldCreateLedger && !empty($hiddenLedgerVendorName) && !empty($hiddenLedgerVendorCode) && !empty($ledgerGroupId)) {
                             try {
                                 $result = Helper::createPartyLedger(
@@ -407,9 +411,8 @@ class VendorController extends Controller
                                     ], 500);
                                 }
                                 $ledgerId = $result['data']['ledger_id'] ?? null;
+                          
                                 $ledgerGroupId = $result['data']['ledger_group_id'] ?? null;
-
-
                                 $vendor->ledger_id = $ledgerId;
                                 $vendor->ledger_group_id = $ledgerGroupId;
                                 $vendor->create_ledger = 0;
@@ -603,10 +606,18 @@ class VendorController extends Controller
             $ledgerGroups = collect();
             $ledgerId = $vendor->ledger_id ?? null;
             $createLedger = $request->input('create_ledger');
+            $isLedgerEditable = true;
             if ($ledgerId) {
                 $ledger = Ledger::find($ledgerId);
                 if ($ledger) {
                     $ledgerGroups = $ledger->groups();
+                    $ledgerGroupId = $vendor->ledger_group_id ?? null;
+                    $existsInItems = ItemDetail::where('ledger_id', $ledgerId)
+                    ->where('ledger_parent_id', $ledgerGroupId)
+                    ->exists();
+                    if ($existsInItems) {
+                        $isLedgerEditable = false;
+                    }
                 }
             }
             if ($ledgerGroups->isEmpty() && $createLedger == 1) {
@@ -690,6 +701,7 @@ class VendorController extends Controller
                 'buttons' => $buttons,
                 'approvalHistory' => $approvalHistory,
                 'docStatusClass' => $docStatusClass,
+                'isLedgerEditable'=>$isLedgerEditable
             ]);
         }
 

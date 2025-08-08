@@ -6,10 +6,12 @@ use App\Helpers\TransactionReport\expenseReportHelper;
 use App\Helpers\TransactionReport\geReportHelper;
 use App\Helpers\TransactionReport\mrnReportHelper;
 use App\Helpers\TransactionReport\pbReportHelper;
+use App\Helpers\TransactionReport\pqReportHelper;
 use App\Helpers\TransactionReport\prReportHelper;
 use App\Helpers\TransactionReport\plReportHelper;
 use App\Helpers\TransactionReport\bomReportHelper;
 use App\Helpers\TransactionReport\moReportHelper;
+use App\Helpers\TransactionReport\rfqReportHelper;
 
 class TransactionReportHelper
 {
@@ -34,6 +36,8 @@ class TransactionReportHelper
         ConstantHelper::PL_SERVICE_ALIAS => 'PL.report',
         ConstantHelper::MO_SERVICE_ALIAS => 'mo.report',
         ConstantHelper::BOM_SERVICE_ALIAS => 'bill.of.material.report',
+        ConstantHelper::RFQ_SERVICE_ALIAS => 'rfq.report',
+        ConstantHelper::PQ_SERVICE_ALIAS => 'pq.report',
     ];
     const INDEX_ROUTES = [
         ConstantHelper::SO_SERVICE_ALIAS => 'sale.order.index',
@@ -47,6 +51,8 @@ class TransactionReportHelper
         ConstantHelper::PL_SERVICE_ALIAS => 'PL.index',
         ConstantHelper::MO_SERVICE_ALIAS => 'mo.index',
         ConstantHelper::BOM_SERVICE_ALIAS => 'bom.index',
+        ConstantHelper::RFQ_SERVICE_ALIAS => 'rfq.index',
+        ConstantHelper::PQ_SERVICE_ALIAS => 'pq.index',
     ];
     const SO_TABLE_HEADERS = [
         [
@@ -2856,6 +2862,8 @@ class TransactionReportHelper
         ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_FILTERS,
         ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_FILTERS,
         ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::BOM_FILTERS,
+        ConstantHelper::RFQ_SERVICE_ALIAS => rfqReportHelper::RFQ_FILTERS,
+        ConstantHelper::PQ_SERVICE_ALIAS => pqReportHelper::PQ_FILTERS,
 
     ];
     public static function initialize(): void
@@ -2878,6 +2886,8 @@ class TransactionReportHelper
             ConstantHelper::PL_SERVICE_ALIAS => plReportHelper::PL_TABLE_HEADERS,
             ConstantHelper::MO_SERVICE_ALIAS => moReportHelper::MO_TABLE_HEADERS,
             ConstantHelper::BOM_SERVICE_ALIAS => bomReportHelper::getBomTableHeaders('bill-of-material'),
+            ConstantHelper::RFQ_SERVICE_ALIAS => rfqReportHelper::RFQ_TABLE_HEADERS,
+            ConstantHelper::PQ_SERVICE_ALIAS => pqReportHelper::PQ_TABLE_HEADERS,
         ];
     }
     const DYNAMIC_FIELDS_SEPERATION_INDEX = [

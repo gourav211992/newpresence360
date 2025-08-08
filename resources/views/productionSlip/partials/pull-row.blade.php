@@ -41,32 +41,32 @@ $currentOrderIndexVal = $index;
 {{-- @endif --}}
 <td><input type="text" id="item_rejected_qty_{{$currentOrderIndexVal}}" name = "item_rejected_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
 @if($isWipQty)
-<td><input type="text" id="item_wip_qty_{{$currentOrderIndexVal}}" name = "item_wip_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = ""/></td>
-<td><input type="text" id="item_total_qty_{{$currentOrderIndexVal}}" name = "item_total_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
+    <td>{{ $isWipQty }}: <input type="text" id="item_wip_qty_{{$currentOrderIndexVal}}" name = "item_wip_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = ""/></td>
+    <td><input type="text" id="item_total_qty_{{$currentOrderIndexVal}}" name = "item_total_qty[{{$currentOrderIndexVal}}]" oninput = "changeItemQty(this, {{$currentOrderIndexVal}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" value = ""/></td>
 @endif
 @if($machines->isNotEmpty())
-<td>
-    <input type="hidden" name="machine_id[{{ $currentOrderIndexVal }}]" value="">
-    <select class="form-select select2"
-        multiple
-        name="machine_id[{{ $currentOrderIndexVal }}][]"
-        data-index="{{ $currentOrderIndexVal }}">
-        @foreach ($machines as $machine)
-            <option value="{{ $machine->id }}"
-                @if ($order->machine_id == $machine->id) selected @endif>
-                {{ $machine->name }}
-            </option>
-        @endforeach
-    </select>
-</td>
-<td>
-    <select class="form-select" name="cycle_count[{{$currentOrderIndexVal}}]">
-        <option value="">Select Cycle Count</option>
-        @for ($i = 1; $i <= 10; $i++)
-            <option value="{{$i}}">{{$i}}</option>
-        @endfor
-    </select>
-</td>
+    <td>
+        <input type="hidden" name="machine_id[{{ $currentOrderIndexVal }}]" value="">
+        <select class="form-select select2"
+            multiple
+            name="machine_id[{{ $currentOrderIndexVal }}][]"
+            data-index="{{ $currentOrderIndexVal }}">
+            @foreach ($machines as $machine)
+                <option value="{{ $machine->id }}"
+                    @if ($order->machine_id == $machine->id) selected @endif>
+                    {{ $machine->name }}
+                </option>
+            @endforeach
+        </select>
+    </td>
+    <td>
+        <select class="form-select" name="cycle_count[{{$currentOrderIndexVal}}]">
+            <option value="">Select Cycle Count</option>
+            @for ($i = 1; $i <= 10; $i++)
+                <option value="{{$i}}">{{$i}}</option>
+            @endfor
+        </select>
+    </td>
 @endif
 @if($stationLines->isNotEmpty())
 <td>

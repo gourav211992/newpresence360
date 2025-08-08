@@ -799,7 +799,7 @@
                                                                     <label for="ledger_name" class="form-label">Ledger</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <input type="text" id="ledger_name" name="ledger_name" class="form-control vendor-ladger-autocomplete"  value="{{ $vendor->ledger->name ?? '' }}">
+                                                                    <input type="text" id="ledger_name" name="ledger_name" class="form-control vendor-ladger-autocomplete"  value="{{ $vendor->ledger->name ?? '' }}" {{ !$isLedgerEditable ? 'readonly' : '' }}>
                                                                     <input type="hidden" id="ledger_id" name="ledger_id" class="ladger-id"  value="{{($vendor->ledger_id ?? '') }}">
                                                                 </div>
                                                             </div>
@@ -808,7 +808,7 @@
                                                                     <label for="ledger_group_name" class="form-label">Ledger Group</label>
                                                                 </div>
                                                                 <div class="col-md-3">
-                                                                    <select id="ledger_group_name" name="ledger_group_id"  class="form-control ledger-group-select">
+                                                                    <select id="ledger_group_name" name="ledger_group_id" {{ !$isLedgerEditable ? 'disabled' : '' }}  class="form-control ledger-group-select" >
                                                                         @foreach($ledgerGroups as $group)
                                                                             <option value="{{ $group->id }}" 
                                                                                 {{ isset($vendor) && $vendor->ledger_group_id == $group->id ? 'selected' : '' }}>
@@ -2822,6 +2822,7 @@ $(document).ready(function() {
         disableAllFieldsAndTabs();
     }
     function enableAmendmentFields() {
+      const isLedgerEditable = @json($isLedgerEditable);
        document.querySelectorAll('input, select, textarea').forEach(el => {
         if (el.getAttribute('name') !== 'vendor_code') {
             el.disabled = false;
@@ -2856,7 +2857,11 @@ $(document).ready(function() {
                 createLedgerCheckbox.disabled = false;
             }
         }
-
+         if (!isLedgerEditable) {
+            document.getElementById('ledger_name')?.setAttribute('readonly', true);
+            document.getElementById('ledger_group_name')?.setAttribute('disabled', true);
+            if (createLedgerCheckbox) createLedgerCheckbox.disabled = true;
+        }
     }
     function amendConfirm()
 {

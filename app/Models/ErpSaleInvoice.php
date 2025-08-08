@@ -75,7 +75,11 @@ class ErpSaleInvoice extends Model
         'total_discount_value',
         'total_tax_value',
         'total_expense_value',
-        'total_amount'
+        'total_amount',
+        'book_terms',
+        'book_terms_id',
+        'customer_terms',
+        'customer_terms_id',
     ];
 
     protected $appends = [
@@ -190,7 +194,7 @@ class ErpSaleInvoice extends Model
     }
     public function createdBy()
     {
-        return $this->belongsTo(Employee::class,'created_by','id');
+        return $this->belongsTo(AuthUser::class,'created_by','id');
     }
     public function book()
     {
@@ -241,5 +245,9 @@ class ErpSaleInvoice extends Model
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpSiDynamicField::class, 'header_id');
+    }
+    public function customerTermDetails()
+    {
+        return $this -> belongsTo(TermsAndCondition::class, 'customer_terms_id');
     }
 }

@@ -32,9 +32,11 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                <div class="form-group breadcrumb-right">
                   <input type="hidden" name="document_status" value="{{$bom->document_status}}" id="document_status">
                   <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0"><i data-feather="arrow-left-circle"></i> Back</button>
-                  @if($buttons['draft'])
+                  
+                  @if($buttons['draft'] || $buttons['amend'] && intval(request('amendment') ?? 0))
                     <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                        data-url="{{ route('bill.of.material.destroy', $bom->id) }}" 
+                        data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] && intval(request('amendment') ?? 0) }}" 
+                        {{-- data-url="{{ route('bill.of.material.destroy', $bom->id, $buttons['amend'] && intval(request('amendment') ?? 0)) }}"  --}}
                         data-redirect="{{ url($routeAlias) }}"
                         data-message="Are you sure you want to delete this record?">
                     <i data-feather="trash-2" class="me-50"></i> Delete

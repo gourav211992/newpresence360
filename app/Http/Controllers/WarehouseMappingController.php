@@ -24,8 +24,8 @@ class WarehouseMappingController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         if ($request->ajax()) {
-            $records = WhDetail::with('whLevel')
-                ->groupBy('sub_store_id', 'wh_level_id');
+            $records = WhDetail::whereHas('store')->with('whLevel')
+                ->groupBy('sub_store_id', 'wh_leveal_id');
 
             // Log the query for debugging
             DB::enableQueryLog();
@@ -161,7 +161,7 @@ class WarehouseMappingController extends Controller
         $parentDetails = array();
         $isLastLevel = 0;
 
-        $whDetails = WhDetail::with(['whLevel', 'parent'])->where('store_id', $id)
+        $whDetails = WhDetail::whereHas('store')->with(['whLevel', 'parent'])->where('store_id', $id)
             ->where('sub_store_id', $request->sub_store)
             ->where('wh_level_id', $request->wh_level)
             ->get();
@@ -480,7 +480,7 @@ class WarehouseMappingController extends Controller
             ->where('id', $request->wh_level)
             ->first();
 
-        $whDetails = WhDetail::with(
+        $whDetails = WhDetail::whereHas('store')->with(
             ['whLevel', 'parent', 'store', 'sub_store']
         )->where('store_id', $id)
             ->where('sub_store_id', $request->sub_store)
@@ -500,7 +500,7 @@ class WarehouseMappingController extends Controller
         $user = Helper::getAuthenticatedUser();
         $status = ConstantHelper::STATUS;
 
-        $whDetails = WhDetail::with(
+        $whDetails = WhDetail::whereHas('store')->with(
             ['whLevel', 'parent', 'store', 'sub_store']
         )->where('store_id', $id)
             ->where('sub_store_id', $request->sub_store)

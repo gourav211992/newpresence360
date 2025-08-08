@@ -161,5 +161,6 @@ class bomReportHelper
             'label_key' => 'store_name',
             'type' => 'auto_complete'
         ],
+        
     ];
 }

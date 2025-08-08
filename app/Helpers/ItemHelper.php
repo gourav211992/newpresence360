@@ -291,6 +291,7 @@ class ItemHelper
         $orgCurrencyId = $orgDetails['org_currency_id'];
 
         $item = Item::find($itemId);
+        $itemQty = $itemQty ?? 0;
 
         if ($partyId) {
             $rateContractQuery = ErpRateContract::where("{$type}_id", $partyId)
@@ -402,6 +403,10 @@ class ItemHelper
 
         if (!$costPriceCurrency) {
             $costPriceCurrency = $orgCurrencyId;
+        }
+
+        if (!$currencyId) {
+            $currencyId = $orgCurrencyId;
         }
 
         $exchangeRate = 1;

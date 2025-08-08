@@ -57,8 +57,11 @@ class AppServiceProvider extends ServiceProvider
                 $orgLogo = Helper::getOrganizationLogo($organizationId);
 
                 //financialyears
+                $c_fyear = "";
                 $fyears = Helper::getFinancialYears();
+                if($fyears!=null)
                 $c_fyear = Helper::getFinancialYear(date('Y-m-d'));
+
 
                 // Pass organization id and mappings
                 $view->with([

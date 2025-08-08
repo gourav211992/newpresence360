@@ -4177,7 +4177,7 @@ document.addEventListener('input', function (e) {
         var item_index = $('#attributes_table_modal').attr('item-index');
         onItemClick(item_index);
         const input = document.getElementById('item_physical_qty_' + item_index);
-        if(!(order && !order.document_status=={{App\Helpers\ConstantHelper::DRAFT}}))
+        if(!(order && !order.document_status=="{{App\Helpers\ConstantHelper::DRAFT}}"))
         {
             getStoresData(item_index, input ? (input.value ?? 0) : 0);
         }

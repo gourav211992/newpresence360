@@ -590,7 +590,7 @@
 
 
                                                                         <td><input type="text" id = "item_qty_{{$orderItemIndex}}" value = "{{$orderItem -> issue_qty}}" name = "item_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, {{$orderItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" max = "{{$orderItem -> max_qty_attribute}}"/></td>
-                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" value = "{{$orderItem -> rate}}" readonly name = "item_rate[{{$orderItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
+                                                                        <td><input type="text" id = "item_rate_{{$orderItemIndex}}" value = "{{$orderItem -> rate}}" name = "item_rate[{{$orderItemIndex}}]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, {{$orderItemIndex}});"/></td>
                                                                         <td><input type="text" id = "item_value_{{$orderItemIndex}}" value = "{{$orderItem -> total_item_amount}}" readonly class="form-control mw-100 text-end item_values_input" /></td>
                                                                         <td>
                                                                         <div class="d-flex">
@@ -1035,7 +1035,7 @@
                 <input type = "hidden" value = "${selectedUserId}" name = "item_user_id[${newIndex}]" id = "item_department_id_input_${newIndex}" />
 
                <td><input type="text" id = "item_qty_${newIndex}" name = "item_qty[${newIndex}]" oninput = "changeItemQty(this, ${newIndex});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
-               <td><input type="text" id = "item_rate_${newIndex}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);"/></td>
+               <td><input type="text" id = "item_rate_${newIndex}" name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" oninput = "changeItemRate(this, ${newIndex});"/></td>
                <td><input type="text" id = "item_value_${newIndex}" readonly class="form-control mw-100 text-end item_values_input" /></td>
                <td>
                <div class="d-flex">
@@ -1176,6 +1176,7 @@
                                     inputQtyBox.readOnly  = false;
                                 }
                             }
+                        changeItemQtyMi(inputQtyBox, itemRowId);
                         }
                     },
                     error: function(xhr) {
@@ -2045,7 +2046,7 @@
                                         <input type = "hidden" value = "${currentOrder?.department_id}" name = "item_user_id[${currentOrderIndexVal}]" id = "item_department_id_input_${currentOrderIndexVal}" />
 
                                         <td><input type="text" id = "item_qty_${currentOrderIndexVal}" name = "item_qty[${currentOrderIndexVal}]" oninput = "changeItemQty(this, ${currentOrderIndexVal});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.mi_balance_qty}" max = "${item?.mi_balance_qty}"/></td>
-                                        <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}"/></td>
+                                        <td><input type="text" id = "item_rate_${currentOrderIndexVal}" readonly name = "item_rate[]" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" value = "${item?.rate}" oninput = "changeItemRate(this, ${currentOrderIndexVal});" /></td>
                                         <td><input type="text" id = "item_value_${currentOrderIndexVal}" readonly class="form-control mw-100 text-end item_values_input" value = "${item?.mi_balance_qty * item?.rate}" /></td>
                                         <td>
                                         <div class="d-flex">
@@ -2209,12 +2210,19 @@ function submitAmend()
 }
 function onHeaderStoreChange(element, type)
 {
-    if (type === 'to')
-    {
-        onHeaderToLocationChange(element);
+    let currentSelectedType = document.getElementById('issue_type_input');
+    if (currentSelectedType.value == 'Location Transfer') {
+        if (type === 'to')
+        {
+            onHeaderToLocationChange(element);
+        } else {
+            onHeaderFromLocationChange(element);
+        }
     } else {
+        onHeaderToLocationChange(element);
         onHeaderFromLocationChange(element);
     }
+    
     enableDisableQtButton();
 }
 
@@ -2936,9 +2944,9 @@ function onHeaderStoreChange(element, type)
                                     if (actualQty > 0) {
                                         valueInput.value = totalValue.toFixed(2);
                                         totalRate = parseFloat(totalValue) / parseFloat(qty ? qty : qtyElement.value);
-                                        rateInput.value = parseFloat(totalRate).toFixed(2);
+                                        // rateInput.value = parseFloat(totalRate).toFixed(2);
                                     } else {
-                                        rateInput.value = 0.00;
+                                        // rateInput.value = 0.00;
                                         valueInput.value = 0.00;
                                     }
                                     // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify(storesArray)));
@@ -2956,14 +2964,14 @@ function onHeaderStoreChange(element, type)
                                     if (callOnClick) {
                                         onItemClick(itemRowId, callOnClick);
                                     }
-                                    rateInput.value = 0.00;
+                                    // rateInput.value = 0.00;
                                     valueInput.value = 0.00;
                                 } else {
                                     // storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
                                     if (callOnClick) {
                                         onItemClick(itemRowId, callOnClick);
                                     }
-                                    rateInput.value = 0.00;
+                                    // rateInput.value = 0.00;
                                     valueInput.value = 0.00;
                                 }
                                 openStoreLocationModal(itemRowId);
@@ -2971,13 +2979,80 @@ function onHeaderStoreChange(element, type)
                             error: function(xhr) {
                                 console.error('Error fetching customer data:', xhr.responseText);
                                 storeElement.setAttribute('data-stores', encodeURIComponent(JSON.stringify([])));
-                                rateInput.value = 0.00;
+                                // rateInput.value = 0.00;
                                 valueInput.value = 0.00;
 
                             }
                         });
             }
         }
+
+        function getAndSetItemRate(itemIndex, type)
+    {
+        let rateInput = document.getElementById('item_rate_' + itemIndex);
+        let itemElement = document.getElementById('items_dropdown_' + itemIndex);
+        if (!itemElement) {
+            return;
+        }
+        let payloadAttributes = [];
+        let attributes = JSON.parse(itemElement.getAttribute('attribute-array'));
+        attributes.forEach(element => {
+            element.values_data.forEach(val => {
+                if (val.selected) {
+                    payloadAttributes.push({
+                        attr_name : element.attribute_group_id,
+                        attr_value : val.id
+                    });
+                }
+            });
+        });
+        let payloadUomId = document.getElementById('uom_dropdown_' + itemIndex).value;
+        let itemId = document.getElementById('items_dropdown_' + itemIndex + '_value').value;
+
+        $.ajax({
+            url: "{{route('current.item.getItemSalePrice')}}",
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                quantity: document.getElementById('item_qty_' + itemIndex).value,
+                item_id: itemId,
+                uom_id : payloadUomId,
+                attributes_data : payloadAttributes,
+                customer_id: $("#customer_id_input").val(),
+                currency_id: $("#currency_dropdown").val(),
+                item_qty : $("#item_qty_" + itemIndex).val(),
+                document_date : $("#order_date_input").val(),
+                price_type : type
+            },
+            success: function(data) {
+                    if (data && data.status == "success") {
+                        rateInput.value = data.data;
+                    }
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+        });
+
+    }
+
+    function changeItemRateMi(element, index)
+    {
+        let itemRate = element.value;
+        let itemQty = document.getElementById('item_qty_' + index).value;
+        let itemVal = Number(itemRate) * Number(itemQty);
+        let itemValElement = document.getElementById('item_value_' + index);
+        itemValElement.value = itemVal.toFixed(2);
+    }
+    function changeItemQtyMi(element, index)
+    {
+        let itemQty = element.value;
+        let itemRate = document.getElementById('item_rate_' + index).value;
+        let itemVal = Number(itemRate) * Number(itemQty);
+        let itemValElement = document.getElementById('item_value_' + index);
+        itemValElement.value = itemVal.toFixed(2);
+    }
+
 </script>
 @endsection
 @endsection

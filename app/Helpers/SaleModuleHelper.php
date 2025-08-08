@@ -85,7 +85,7 @@ class SaleModuleHelper
         } else if ($type === self::SALES_INVOICE_DN_TYPE) {
             return "Delivery Note";
         } else if ($type === self::SALES_INVOICE_DN_CUM_INV_TYPE) {
-            return "Delivery Note CUM Invoice";
+            return "Invoice cum DN";
         } else if ($type === self::SALES_INVOICE_LEASE_TYPE) {
             return "Lease Invoice";
         }else if ($type === self::SALES_INVOICE_TRANSPORTER_TYPE) {

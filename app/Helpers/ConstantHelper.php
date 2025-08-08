@@ -500,6 +500,9 @@ class ConstantHelper
         self::LEASE_INVOICE_SERVICE_ALIAS=>"Lease Invoice",
         self::JOURNAL_VOUCHER => "Journal Voucher",
         self::PRODUCTION_SLIP_SERVICE_ALIAS => "Production Slip",
+        self::RFQ_SERVICE_ALIAS => "Request For Quotation",
+        self::PQ_SERVICE_ALIAS => "Purchase Quotation",
+        self::PQC_SERVICE_ALIAS => "Purchase Quotation Comparison",
         PackingListConstants::SERVICE_ALIAS => "Packing List"];
 
     //Service Alias
@@ -507,6 +510,9 @@ class ConstantHelper
     const BOM_SERVICE_ALIAS = 'bom';
     const PO_SERVICE_ALIAS = 'po';
     const JO_SERVICE_ALIAS = 'jo';
+    const RFQ_SERVICE_ALIAS = 'rfq';
+    const PQ_SERVICE_ALIAS = 'pq';
+    const PQC_SERVICE_ALIAS = 'pqc';
     const SUPPLIER_INVOICE_SERVICE_ALIAS = 'supplier-invoice';
     const PI_SERVICE_ALIAS = 'purchase-indent';
     const MRN_SERVICE_ALIAS = 'mrn';
@@ -803,6 +809,9 @@ class ConstantHelper
         self::RC_SERVICE_ALIAS => 'ErpRateContract',
         self::PSV_SERVICE_ALIAS => 'ErpPsvHeader',
         self::PL_SERVICE_ALIAS => 'ErpPlHeader',
+        self::RFQ_SERVICE_ALIAS => 'ErpRfqHeader',
+        self::PQ_SERVICE_ALIAS => 'ErpPqHeader',
+        self::PQC_SERVICE_ALIAS => 'ErpPqcHeader',
         PackingListConstants::SERVICE_ALIAS => 'PackingList',
         ASNConstant::SERVICE_ALIAS => 'VendorAsn',
     ];

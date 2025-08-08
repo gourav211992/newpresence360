@@ -206,6 +206,26 @@ class Bom extends Model
     
     public function dynamic_fields()
     {
-        return $this -> hasMany(ErpBomDynamicField::class, 'header_id');
+        return $this->hasMany(ErpBomDynamicField::class, 'header_id');
+    }
+
+    public function erpPwoSomappings()
+    {
+        return $this->hasMany(PwoSoMapping::class, 'bom_id');
+    }
+
+    public function erpSoItems()
+    {
+        return $this->hasMany(ErpSoItem::class, 'bom_id');
+    }
+
+    public function erpMoBomMappings()
+    {
+        return $this->hasMany(MoBomMapping::class, 'bom_id');
+    }
+
+    public function erpPslipBomConsumptions()
+    {
+        return $this->hasMany(PslipBomConsumption::class, 'bom_id');
     }
 }

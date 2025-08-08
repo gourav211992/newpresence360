@@ -26,6 +26,7 @@ class Mailer
 	 */
 	public function emailTo($mailbox, $mailer = 'alerts_p360')
 	{
+		Log::info('Mailer::emailTo called', ['MAILBOX' => $mailbox?->toArray()]);
 
 		if (!$mailbox) {
 			return;
