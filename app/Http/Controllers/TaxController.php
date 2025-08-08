@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Models\ErpPqHeader;
+use App\Models\ErpPqHeaderHistory;
 use App\Models\ErpSaleInvoice;
 use App\Models\ErpSaleInvoiceHistory;
 use App\Models\ErpSaleOrder;
@@ -658,11 +660,17 @@ class TaxController extends Controller
                     } else {
                         $document = ErpSaleReturn::find($request -> document_id);
                     }
-                } else if ($alias === ConstantHelper::SI_SERVICE_ALIAS || $alias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+                } else if ($alias === ConstantHelper::SI_SERVICE_ALIAS || $alias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $alias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                     if ($modelType == 'history') {
                         $document = ErpSaleInvoiceHistory::find($request -> document_id);
                     } else {
                         $document = ErpSaleInvoice::find($request -> document_id);
+                    }
+                } else if ($alias === ConstantHelper::PQ_SERVICE_ALIAS) {
+                    if ($modelType == 'history') {
+                        $document = ErpPqHeaderHistory::find($request -> document_id);
+                    } else {
+                        $document = ErpPqHeader::find($request -> document_id);
                     }
                 } else {
                     if ($modelType == 'history') {
@@ -715,7 +723,7 @@ class TaxController extends Controller
                 $upToCountry = $companyCountryId;
                 $upToState = $companyStateId;
             }
-            $taxRequired = SaleModuleHelper::checkTaxApplicability($request -> customer_id ?? 0, $request -> header_book_id ?? 0);
+            $taxRequired = SaleModuleHelper::checkTaxApplicability(isset($request -> customer_id) ? $request -> customer_id : ($request->vendor_id ?? 0) , $request -> header_book_id ?? 0);
             if ($taxRequired)
             {
                 $taxDetails = TaxHelper::calculateTax( $hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);

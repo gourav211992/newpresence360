@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Helpers\ConstantHelper;
 use App\Helpers\ItemHelper;
+use App\Helpers\ServiceParametersHelper;
 use App\Models\ErpItemAttribute;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,13 +33,13 @@ class ErpSaleInvoiceRequest extends FormRequest
             'document_date' => 'required|date',
             'reference_no' => 'nullable|string',
             'customer_id' => 'required|numeric|integer|exists:erp_customers,id',
-            'transporter_name' => 'required|max:255',
-            'vehicle_no' => [
-                'required',
-                'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
-            ],
-            // 'lr_number' => 'required|max:25',
-            'transporter_mode' => 'required|integer',
+            // 'transporter_name' => 'required|max:255',
+            // 'vehicle_no' => [
+            //     'required',
+            //     'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
+            // ],
+            // // 'lr_number' => 'required|max:25',
+            // 'transporter_mode' => 'required|integer',
             'currency_id' => 'required|numeric|integer|exists:mysql_master.currency,id',
             // 'payment_terms_id' => 'required|numeric|integer|exists:erp_payment_terms,id',
             'billing_address' => 'required_without:sale_invoice_id',
@@ -49,7 +50,7 @@ class ErpSaleInvoiceRequest extends FormRequest
             'final_remarks' => 'nullable|string|max:255',
             'customer_phone_no' => 'nullable|string|regex:/^[0-9]{10}$/',
             'customer_email' => 'nullable|email',
-            'customer_gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
+            // 'customer_gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
         ];
     }
 
@@ -68,6 +69,18 @@ class ErpSaleInvoiceRequest extends FormRequest
             if ((count($itemIds) !== count($itemsQty)) || (count($itemIds) !== count($itemRate)))
             {
                 $validator->errors()->add("custom_error", "Please specify all details for each item");
+            }
+            $bookId = $this -> book_id;
+            $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $bookId)['data'];
+            if ($itemType == ConstantHelper::GOODS) {
+                $validator->addRules([
+                    'transporter_name' => 'required|max:255',
+                    'vehicle_no' => [
+                        'required',
+                        'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
+                    ],
+                    'transporter_mode' => 'required|integer',
+                ]);
             }
             foreach ($itemIds as $itemKey => $itemId) {
                 if (!isset($this -> sale_invoice_id)) { //Only for creation

@@ -495,9 +495,9 @@ class MasterIndiaHelper
             "legal_name" => $organization->name,
             "trade_name" => null,
             // "address1" => $organizationAddress->line_1,
-            "address1" => $organizationAddress->address,
+            "address1" => substr($organizationAddress?->address ?? '', 0, 90),
             // "address2" => $organizationAddress->line_2,
-            "address2" => $organizationAddress->address,
+            "address2" => null,
             "location" => $organizationAddress?->city?->name,
             // "pincode" => $organizationAddress->postal_code,
             "pincode" => $organizationAddress->pincode,
@@ -510,7 +510,7 @@ class MasterIndiaHelper
             "gstin" => $documentHeader?->vendor->compliances->gstin_no,
             "legal_name" => $documentHeader?->vendor?->company_name,
             "trade_name" => null,
-            "address1" => $sellerBillingAddress?->address,
+            "address1" => substr($sellerBillingAddress?->address ?? '', 0, 90),
             "address2" => null,
             "location" => $sellerBillingAddress?->city?->name,
             "pincode" => $sellerBillingAddress->pincode,
@@ -523,9 +523,9 @@ class MasterIndiaHelper
         $dispatchDetails = (object) [
             "company_name" => $documentHeader?->erpStore?->store_name,
             // "address1" => $organizationAddress->line_1,
-            "address1" => $organizationAddress->address,
+            "address1" => substr($organizationAddress?->address ?? '', 0, 90),
             // "address2" => $organizationAddress->line_2,
-            "address2" => $organizationAddress->address,
+            "address2" => null,
             "location" => $organizationAddress?->city?->name,
             // "pincode" => $organizationAddress->postal_code,
             "pincode" => $organizationAddress->pincode,
@@ -537,7 +537,7 @@ class MasterIndiaHelper
             "gstin" => $documentHeader?->vendor->compliances->gstin_no,
             "legal_name" => $documentHeader?->vendor?->company_name,
             "trade_name" => null,
-            "address1" => $sellerBillingAddress?->address,
+            "address1" => substr($sellerBillingAddress?->address ?? '', 0, 90),
             "address2" => null,
             "location" => $sellerBillingAddress?->city?->name,
             "pincode" => $sellerBillingAddress->pincode,
@@ -772,7 +772,7 @@ class MasterIndiaHelper
             $documentHeader = $document;
             $documentDetails = $document -> items;
             $generateInvoice = MasterIndiaHelper::generateInvoice($documentHeader, $documentDetails);
-            if (isset($generateInvoice['results']['message']['alert']) && !empty($generateInvoice['results']['message']['alert'])) {
+            if ((isset($generateInvoice['results']) && isset(['results']['message']) && isset(['results']['message']['alert'])) && !empty($generateInvoice['results']['message']['alert'])) {
                 return [
                         'results' => [
                                     'status' => 'Error',
@@ -780,11 +780,19 @@ class MasterIndiaHelper
                                 ]
                         ];
             }
-            if (isset($generateInvoice['results']['errorMessage']) && !empty($generateInvoice['results']['errorMessage'])) {
+            if (isset($generateInvoice['results']) && isset($generateInvoice['results']['errorMessage']) && !empty($generateInvoice['results']['errorMessage'])) {
                 return [
                     'results' => [
                         'status' => 'Error',
                         'message' => $generateInvoice['results']['errorMessage']
+                    ]
+                ];
+            }
+            if (!isset($generateInvoice['results'])) {
+                return [
+                    'results' => [
+                        'status' => 'Error',
+                        'message' => "Cannot access Master India Service. Please check the credentials you're using and try again"
                     ]
                 ];
             }

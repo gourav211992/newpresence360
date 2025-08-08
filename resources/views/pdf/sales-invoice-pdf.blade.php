@@ -24,8 +24,9 @@
 <body>
     <div style="width:700px; font-size: 11px; font-family:Arial;">
     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+            <tr><td colspan="3" style="width:100%; text-align:center; font-size:18px; font-weight: 900;">Tax Invoice</td></tr>
             <tr>
-                <td style="vertical-align: top;">
+                <td style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 30%; vertical-align: top;">
                     @php
                         $data = file_get_contents(isset($orgLogo) && $orgLogo ? $orgLogo : $imagePath);
                         $type = pathinfo($orgLogo, PATHINFO_EXTENSION);
@@ -33,49 +34,96 @@
                     @endphp
                     <img src="{!! $base64 !!}" alt="" height="50px" />
                 </td>
-                <td style="text-align: center; vertical-align: bottom; font-weight: bold; font-size: 18px;">
-                    Tax Invoice
-                    <br>
-                    {{ Str::ucfirst(@$organization->name) }}
-                </td>
-                <!-- <td style="text-align: right; font-weight: bold; font-size: 14px; vertical-align: top;">
-                    Original for Recipient
-                </td> -->
-            </tr>
-            <tr>
-                <td></td>
-                <td style="text-align: center; vertical-align: bottom; font-size: 12px;">
+                <td style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 40%; vertical-align: top; font-size: 10px;">
                     @php
                         $addressParts = array_filter([
-                            $organizationAddress->line_1 ?? null,
-                            $organizationAddress->line_2 ?? null,
-                            $organizationAddress->line_3 ?? null,
-                            $organizationAddress->city->name ?? null,
-                            $organizationAddress->state->name ?? null
+                            $order->location_address_details->address ?? null,
+                            $order->location_address_details->city->name ?? null,
                         ]);
 
                         $countryPincode = array_filter([
-                            $organizationAddress->country->name ?? null,
-                            $organizationAddress->pincode ?? null
+                            $order->location_address_details->state->name ?? null,
+                            $order->location_address_details->country->name ?? null,
+                            $order->location_address_details->pincode ? 'PinCode :'.$order->location_address_details->pincode : null
                         ]);
 
-                        $gstinEmail = [];
-
+                        $gstinPan = [];
+                        $email ='';
+                        $phone ='';
                         if (!empty($organization->gst_number)) {
-                            $gstinEmail[] = 'GSTIN: ' . $organization->gst_number;
+                            $gstinPan[] = 'GSTIN: ' . $organization->gst_number;
                         }
 
+                        if (!empty($organization->pan_number)) {
+                            $gstinPan[] = 'Pan No: ' . $organization->pan_number;
+                        }
                         if (!empty($organization->email)) {
-                            $gstinEmail[] = 'Email: ' . $organization->email;
+                            $email = 'Email: ' . $organization->email;
+                        }
+                        if (!empty($organization->phone)) {
+                            $phone = 'Phone No: ' . $organization->phone;
                         }
                     @endphp
+                    <div style="padding: 5px;">
+                        <div style="font-weight: bold; font-size: 18px; text-align: left;">
+                            {{ @$organization->name }}
+                        </div>
+                    </div>
 
-                    {{ implode(', ', $addressParts) }}<br>
-                    {{ implode(', ', $countryPincode) }} . STATE CODE : {{ @$organizationAddress?->state?->state_code }}
-                    @if(count($gstinEmail))
-                        <br>{{ implode(', ', $gstinEmail) }}
+                    {{ implode(', ', $addressParts) }},<br>
+                    {{ implode(', ', $countryPincode) }} . <b>STATE CODE: {{ @$organizationAddress?->state?->state_code }}</b>
+                    @if($email)
+                        <br>
+                        {{ $email }}
+                    @endif
+                    @if($phone)
+                        {{ $phone }}
+                    @endif
+                    @if(count($gstinPan))
+                    <br>
+                        {{ implode(', ', $gstinPan) }}
                     @endif
                 </td>
+                <td style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 30%; vertical-align: top;">
+                    <b>Invoice No.:</b>
+                    {{ @$order->book_code . '-' . @$order->document_number }}
+                    
+                    @if($order->document_date)
+                    <br>
+                    <b>Invoice Date:</b>
+                    {{ date('d-M-y', strtotime($order->document_date)) }}
+                    <br>
+                    @endif
+                    <b style="font-weight: 900;">Status :</b>
+                    @if($order->document_status == 'submitted')
+                        <span class="status" style="color: #17a2b8 ">
+                            {{ $order->display_status }}
+                        </span>
+                    @elseif($order->document_status == 'draft')
+                        <span style="color: #6c757d">
+                            {{ $order->display_status }}
+                        </span>
+                    @elseif($order->document_status == 'approved' || $order->document_status == "approval_not_required")
+                        <span style="color: #28a745">
+                            Approved
+                        </span>
+                    @elseif($order->document_status == 'rejected')
+                        <span style="color: #dc3545">
+                            {{ $order->display_status }}
+                        </span>
+                    @else
+                        <span style="color: #007bff">
+                            {{ $order->display_status }}
+                        </span>
+                    @endif
+                    <br>
+                    <b>Reference</b> : {{ $order->reference_number }}
+                
+                
+                <!-- <td style="text-align: right; font-weight: bold; font-size: 14px; vertical-align: top;">
+                    Original for Recipient
+                </td> -->
+                
             </tr>
         </table>
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
@@ -83,242 +131,137 @@
                 <td  style="border: 1px solid #000;  border-bottom: none; padding: 3px; width: 30%; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px; ">BILL TO:
+                            <td colspan="1" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px; ">BILL TO:
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top: 10px;" colspan="3">
                                 <span style="font-weight: 900; vertical-align: top; padding-top:10px"> 
-                                    {{ @$order -> erpStore ?-> store_name }} 
+                                    {{ @$order -> customer ?-> company_name }} 
                                 </span>                                
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top: 10px;">ADDRESS:</td>
-                            <td style="padding-top: 10px;" colspan="2">
-                            {{@$order?->location_address_details->address}}
+                            <td style="padding-top: 3px;" colspan="2">
+                            {{@$billingAddress->address}},
+                            {{ @$billingAddress?->city?->name }},<br>
+                            {{ @$billingAddress?->state?->name }},
+                            {{ @$billingAddress?->country?->name }},
+                            PinCode :{{ @$billingAddress->pincode }} <br> <b>STATE CODE: {{ @$billingAddress?->state?->state_code }}</b>
                             </td>
                         </tr>
                         <tr>
-                            <td>CITY:</td>
-                            <td colspan="2">
-                                {{ @$order?->location_address_details?->city?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">STATE:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$order?->location_address_details?->state?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                STATE CODE: 
-                            </td>
-                            <td style="padding-top: 3px; font-weight: 700;">
-                                {{ @$order?->location_address_details?->state?->state_code }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">COUNTRY:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$order?->location_address_details?->country?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PINCODE:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$order?->location_address_details->pincode }}
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                
-                <td style="border: 1px solid #000; padding: 3px; border-left: none; vertical-align: top; width: 35%;">
-                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
-                    <tr>
-                            <td><b>Invoice No.:</b></td>
-                            <td >{{ @$order->book_code . '-' . @$order->document_number }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><b>Invoice Date:</b></td>
-                            @if($order->document_date)
-                                <td >{{ date('d-M-y', strtotime($order->document_date)) }}
-                                </td>
-                            @endif
-                        </tr>
-                        <tr>
-                            <td>
-                                <b style="font-weight: 900;">Status :</b>
-                            </td>
-                            <td>
-                                @if($order->document_status == 'submitted')
-                                    <span class="status" style="color: #17a2b8 ">
-                                        {{ $order->display_status }}
-                                    </span>
-                                @elseif($order->document_status == 'draft')
-                                    <span style="color: #6c757d">
-                                        {{ $order->display_status }}
-                                    </span>
-                                @elseif($order->document_status == 'approved' || $order->document_status == "approval_not_required")
-                                    <span style="color: #28a745">
-                                        Approved
-                                    </span>
-                                @elseif($order->document_status == 'rejected')
-                                    <span style="color: #dc3545">
-                                        {{ $order->display_status }}
-                                    </span>
-                                @else
-                                    <span style="color: #007bff">
-                                        {{ $order->display_status }}
-                                    </span>
+                            <td colspan="3">
+                                @if (@$order->vendor?->phone)
+                                Phone: {{ @$order->vendor?->phone ?? @$order->vendor?->mobile }} ,
+                                @endif
+                                @if (@$order->vendor?->email)
+                                Email: {{ @$order->vendor?->email }}
                                 @endif
                             </td>
                         </tr>
-                        <tr>
-                            <td><b>{{@$order -> document_status!=App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED ? @$order->display_status : "Approved" }} by:</b></td>
-                                <td>{{$approvedBy}}
-                                </td>
-                        </tr>
-                        
-                        <tr>
-                            <td style = "padding-bottom:10px;"><b>Reference:</b></td>
-                            @if($order->reference_number)
-                                <td style = "padding-bottom:10px;">{{ $order->reference_number }}
-                                </td>
-                            @endif
-                        </tr>
 
-                        @if(isset($eInvoice))
+                        @if (@$order->vendor?->compliances?->gstin_no)
                         <tr>
-                            @if($order->transporter_name)
-                                <td style = "padding-bottom:3px;"><b>Transporter Name:</b></td>
-                                <td style = "padding-bottom:3px;">
-                                    {{ $order->transporter_name }}
-                                </td>
-                            @endif
-                        </tr>
-                        <tr>
-                            @if($order->transportation_mode)
-                                <td style = "padding-bottom:3px;"><b>Transport Mode:</b></td>
-                                <td style = "padding-bottom:3px;">
-                                    {{ $order->transportation_mode }}
-                                </td>
-                            @endif
-                        </tr>
-                        <tr>
-                            @if($order->vehicle_no)
-                                <td style = "padding-bottom:3px;"><b>Vehicle No:</b></td>
-                                <td style = "padding-bottom:3px;">
-                                    {{ $order->vehicle_no }}
-                                </td>
-                            @endif
-                        </tr>
-                        <tr>
-                            @if($eInvoice->ewb_no)
-                                <td style = "padding-bottom:3px;"><b>EWB Number:</b></td>
-                                <td style = "padding-bottom:3px;">
-                                    {{ $eInvoice->ewb_no }}
-                                </td>
-                            @endif
+                            <td style="padding-top: 2px; padding-bottom:10px;" colspan="3">
+                                GSTIN: {{ @$order->vendor?->compliances?->gstin_no }}
+                            </td>
                         </tr>
                         @endif
-
-                        <tr style = "border-bottom:1px solid #000;">
-                            <td rowspan = "2">
-                                
+                        @if(@$order->vendor?->compliances?->pan_number)
+                        <tr>
+                            <td style="padding-top: 2px; padding-bottom:10px;" colspan="3">
+                                PAN No: {{ @$order->vendor?->compliances?->pan_number }}
                             </td>
-                            <br/>
                         </tr>
-                         
+                        @endif
                     </table>
-
-                    @if(isset($qrCodeBase64))
-                    <img src="{{ $qrCodeBase64 }}" style = "margin-top:10px" width="100%" alt="QR Code">
-                    @endif
-
-
                 </td>
+                
                 <td style="border: 1px solid #000; border-bottom: none; padding: 3px;  vertical-align: top;" >
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
 
-                        <tr>
-                            <td colspan="3" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px;">SHIP TO:
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" style="font-weight: 900; vertical-align: top; padding-top:10px">
-                                {{ Str::ucfirst(@$order?->vendor?->company_name) }}
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="1" style="font-weight: 900; font-size: 13px; padding-bottom: 3px; padding-top: 10px;">SHIP TO:</td>
+                    </tr>
 
-                        <tr>
-                            <td style="padding-top: 10px;">ADDRESS:</td>
-                            <td style="padding-top: 10px;" colspan="2">
-                            {{@$billingAddress->address}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>CITY:</td>
-                            <td colspan="2">
-                                {{ @$billingAddress?->city?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">STATE:</td>
-                            <td style="padding-top: 3px;">
-                                {{ @$billingAddress?->state?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">
-                                STATE CODE: 
-                            </td>
-                            <td style="padding-top: 3px; font-weight: 700;">
-                                {{ @$billingAddress?->state?->state_code }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">COUNTRY:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$billingAddress?->country?->name }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PINCODE:</td>
-                            <td colspan="2" style="padding-top: 3px;">
-                                {{ @$billingAddress->pincode }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">PHONE:</td>
-                            <td style="padding-top: 3px;" colspan="2">
-                                {{ @$order->vendor?->phone ?? @$order->vendor?->mobile }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px;">EMAIL:</td>
-                            <td style="padding-top: 3px;" colspan="2">
-                                {{ @$order->vendor?->email}}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top: 3px; padding-bottom:10px;">GSTIN NO</td>
-                            <td colspan="2" style="padding-top: 3px; font-weight: 700; padding-bottom:10px;">
-                            {{ @$order->vendor?->compliances?->gstin_no }}
-                            </td>
-                        </tr>
-                    </table> 
-                </td>
+                    <tr>
+                        <td colspan="3" style="padding-top: 10px;">
+                            <span style="font-weight: 900;">
+                                {{ Str::ucfirst(@$order?->vendor?->company_name) }}
+                            </span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="3" style="padding-top: 5px;">
+                            {{ @$shippingAddress->address }}
+                            @if (@$shippingAddress?->city?->name), {{ @$shippingAddress?->city?->name }}, @endif 
+                            <br>
+                            @if (@$shippingAddress?->state?->name) {{ @$shippingAddress?->state?->name }}, @endif
+                            @if (@$shippingAddress?->country?->name) {{ @$shippingAddress?->country?->name }}, @endif
+                            @if (@$shippingAddress?->pincode) PinCode : {{ @$shippingAddress?->pincode }} @endif
+                            <br><b>STATE CODE: {{ @$shippingAddress?->state?->state_code }}</b>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan="3">
+                            @if (@$order->vendor?->phone)
+                            Phone: {{ @$order->vendor?->phone ?? @$order->vendor?->mobile }} ,
+                            @endif
+                            @if (@$order->vendor?->email)
+                            Email: {{ @$order->vendor?->email }}
+                            @endif
+                        </td>
+                    </tr>
+
+                    @if (@$order->vendor?->compliances?->gstin_no)
+                    <tr>
+                        <td style="padding-top: 2px; padding-bottom:10px;" colspan="3">
+                            GSTIN: {{ @$order->vendor?->compliances?->gstin_no }}
+                        </td>
+                    </tr>
+                    @endif
+                    @if(@$order->vendor?->compliances?->pan_number)
+                    <tr>
+                        <td style="padding-top: 2px; padding-bottom:10px;" colspan="3">
+                            PAN No: {{ @$order->vendor?->compliances?->pan_number }}
+                        </td>
+                    </tr>
+                    @endif
+                </table> 
+            </td>
+            <td rowspan="2" style="border: 1px solid #000; border-bottom: none; border-left: none; vertical-align: top; width: 35%; text-align: center;">
+                @if(isset($qrCodeBase64))
+                    <img src="{{ $qrCodeBase64 }}" style="margin-top:10px; display: inline-block;" width="80%" alt="QR Code">
+                @endif
+            </td>
             </tr>
             <tr>
-                @if (isset($einvoice))
-                <td colspan="3" style="border: 1px solid #000; padding: 10px 3px; vertical-align: top; border-top: none; text-align: center;">
-                    IRN : {{ $eInvoice->irn_number }}
+                <td colspan="2" style="border: 1px solid #000; padding: 10px 3px; vertical-align: top; border-bottom: none; text-align: left;">
+                    @if(isset($eInvoice->irn_number))
+                        <b>IRN : </b>{{ $eInvoice->irn_number ?? '' }}<br>
+                    @endif
+                    @if(isset($eInvoice->ack_no))
+                        <b>Acknowledgment No : </b>{{ $eInvoice->ack_no ?? '' }}<br>
+                    @endif
+                    @if(isset($eInvoice->ewb_no))
+                        <b>EWB Number: </b>
+                        {{ $eInvoice->ewb_no ?? '' }}<br>
+                    @endif
+                    @if(isset($order->transportation_mode))
+                        <b>Mode of Transport: </b>
+                        {{ $order->transportation_mode ?? '' }},
+                    @endif
+                    @if(isset($order->transporter_name))
+                        <b>Transporter Name: </b>{{ $order->transporter_name ?? '' }},
+                    @endif
+                    @if(isset($order->vehicle_no))
+                        <b>Vehicle No:  </b>
+                        {{ $order->vehicle_no ?? '' }}
+                    @endif
                 </td>
-                @endif
-                
             </tr>
         </table>
 
@@ -665,13 +608,34 @@
                     </table>
                 </td>
             </tr>
-            
+            @if(isset($order->customer_terms))
+            <tr>
+                <td colspan="2"
+                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; font-size: 13px;"> <b>Terms And Conditions :</b></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="min-height: 80px;">
+                                    {!! @$order->customer_terms !!}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            @endif
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 30%; border-top: none; border-right: none; vertical-align: top;">
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="padding-top: 5px;">Created By : {{@$order->createdBy->name}}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 5px;">Approved By : {{$approvedBy}}</td>
                         </tr>
                         <tr>
                             <td style="padding-top: 5px;">Printed By : {{@$user->name}}

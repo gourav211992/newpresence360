@@ -24,6 +24,7 @@ class PiItem extends Model
         'order_qty',
         'mi_qty',
         'indent_qty',
+        'rfq_qty',
         'inventory_uom_id',
         'inventory_uom_code',
         'inventory_uom_qty',
@@ -37,6 +38,7 @@ class PiItem extends Model
 
     protected $appends = [
         'mi_balance_qty',
+        'rfq_balance_qty',
         'qty'
     ];
 
@@ -156,6 +158,10 @@ class PiItem extends Model
     public function getMiBalanceQtyAttribute()
     {
         return max(($this->indent_qty) - $this->mi_qty, 0);
+    }
+    public function getRfqBalanceQtyAttribute()
+    {
+        return max(($this->indent_qty) - $this->rfq_qty, 0);
     }
 
     # Use For MI

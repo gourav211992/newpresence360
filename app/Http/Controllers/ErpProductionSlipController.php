@@ -171,7 +171,7 @@ class ErpProductionSlipController extends Controller
         $shifts = Shift::where('organization_id',$organizationId)->where("status", ConstantHelper::ACTIVE)->get();
         $machines = collect();
         $stationLines = collect();
-        $groupAlias = $user?->auth_user?->group_alias ?? 'Staqo';
+        $groupAlias = $user?->auth_user?->group_alias ?? '';
         $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
         $data = [
             'user' => $user,
@@ -1067,14 +1067,15 @@ class ErpProductionSlipController extends Controller
             $machines = collect();
             if($productionBom) {
                 $machines = $productionBom?->machines()
-                ->where('status', ConstantHelper::ACTIVE)
-                ->get(); 
+                    ->where('status', ConstantHelper::ACTIVE)
+                    ->get(); 
             }
             $stationLines = $order[0]?->mo?->station?->lines ?? collect();
             $consumptions = MoBomMapping::whereIn('mo_product_id',$docIds)->orderBy('mo_product_id')->get();
             $consHtml = view('productionSlip.partials.process-consumtion', ['consumptions' => $consumptions])->render();
             $user = Helper::getAuthenticatedUser();
-            $groupAlias = $user->group?->alias ?? 'Staqo';
+            // $groupAlias = $user->group?->alias ?? '';
+            $groupAlias = $user?->auth_user?->group_alias ?? '';
             $isWipQty = in_array($groupAlias, Constants::GROUP_PSLIP_WIP_QTY);
 
             $html = view('productionSlip.partials.pull-row', ['orders' => $order, 'stationWise' => $stationWise, 'mo' => $mo, 'machines' => $machines, 'isWipQty' => $isWipQty, 'stationLines' => $stationLines])->render();

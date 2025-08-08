@@ -206,10 +206,13 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                 $itemInitials = strtoupper(substr($itemName, 0, 3));
                 $subTypeRaw = $row['sub_type'] ?? null;
                 $subType = $subTypeRaw ? explode(',', $subTypeRaw) : [];
-                if (empty($subType)) {
-                    $errorMessages[] = "Sub Type is required.";
+                $itemType = ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods');
+
+                if ($itemType === 'Goods' && empty($subType)) {
+                    $errorMessages[] = "Sub Type is required .";
                     $skipRow = true;
                 }
+
                 if ($itemCodeType === 'Manual') {
                     $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
                 } elseif ($itemCodeType === 'Auto') {
@@ -249,13 +252,13 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     ]);
                     continue; 
                 }
-                $itemType = ($row['type'] === 'G') ? 'Goods' : (($row['type'] === 'S') ? 'Service' : 'Goods');
+         
 
                 if ($itemType === 'Service') {
                     $attributes = [];
                     $alternateUoms = [];
                 } 
-                
+
                 $uploadedItem = UploadItemMaster::create([
                     'item_name' => $row['item_name'] ?? null,
                     'item_code' => $itemCode,

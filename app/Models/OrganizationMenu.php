@@ -56,11 +56,11 @@ class OrganizationMenu extends Model
 
             $baseUrl = $baseUrls[$serviceGroupAlias];
             if($serviceGroupAlias == 'hrms') {
-                $baseUrl = $baseUrls[$serviceGroupAlias].$user->organization->alias.'/';
+                $baseUrl = $baseUrls[$serviceGroupAlias]. '/'. $user->organization->alias;
             }
 
             if($serviceGroupAlias == 'hrms_member') {
-                $baseUrl = $baseUrls[$serviceGroupAlias]. 'member/' . $user->organization->alias.'/';
+                $baseUrl = $baseUrls[$serviceGroupAlias] . '/'. 'member/' . $user->organization->alias;
             }
         }
 

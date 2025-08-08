@@ -187,7 +187,7 @@ $(document).on('submit', '.ajax-input-form', function (e) {
         processData: false,
         success: function (res) {
             // Do not enable button while redirecting or showing a success message
-            // submitButton.disabled = true; 
+            // submitButton.disabled = true;
 
             submitButton.innerHTML = submitButtonHtml;
             $('.ajax-validation-error-span').remove();
@@ -211,11 +211,11 @@ $(document).on('submit', '.ajax-input-form', function (e) {
                         const urlWithFirstSlug = path.length > 0 ? `${currentUrl}/${path[0]}` : currentUrl;
                         location.href = urlWithFirstSlug;
                     } else {
-                        location.href = res?.redirect_url;
                         if(res?.redirect_url.includes('bill-of-material/import-error')) {
-                            setTimeout(()=> {
-                                location.href = redirectUrl;
-                            },100);
+                            $('.download-error-file-url').removeClass('d-none');
+                            $('.download-error-file-url').attr('href', res?.redirect_url);
+                        }else{
+                            location.href = res?.redirect_url;
                         }
                     }
                 } else if (redirectUrl) {
@@ -580,7 +580,7 @@ function show_validation_error(msg) {
                     "</span>"
                 );
             }
-            
+
         } else if ($('form [name="' + name + '"]').length > 0) {
             if ($('form [name="' + name + '"]').is('select')) {
                 $('form [name="' + name + '"]').addClass("is-invalid error");
@@ -742,12 +742,12 @@ $(document).ready(function() {
     const status = statusElem ? statusElem.value : null;
     let previousGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
     if (status === 'submitted' || status === 'approved' || status === 'approval_not_required') {
-        disableGstFields(false); 
+        disableGstFields(false);
     } else {
         if (previousGstApplicable === 1) {
-            enableGstFields();  
+            enableGstFields();
         } else {
-            disableGstFields(true); 
+            disableGstFields(true);
         }
     }
 
@@ -759,10 +759,10 @@ $(document).ready(function() {
      $('input[name="compliance[gst_applicable]"]').on('change', function() {
         const currentGstApplicable = $('input[name="compliance[gst_applicable]"]:checked').val() === '1' ? 1 : 0;
          if (currentGstApplicable === 0 && previousGstApplicable === 1) {
-           disableGstFields(true);  
+           disableGstFields(true);
         } else if (currentGstApplicable === 1 && previousGstApplicable === 0) {
             handleGstApplicableChange();
-            enableGstFields(); 
+            enableGstFields();
         }
         previousGstApplicable = currentGstApplicable;
     });

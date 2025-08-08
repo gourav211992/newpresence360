@@ -1914,21 +1914,34 @@ class BomController extends Controller
         return Excel::download(new DynamicExport($exportData1), $title);
     }
     
-    public function destroy($id)
+    public function destroy($id, $isAmedment = false)
     {
         DB::beginTransaction();
         try {
             $bom = Bom::findOrFail($id);
-            if ($bom->document_status !== ConstantHelper::DRAFT) {
+            if (!$isAmedment && $bom->document_status !== ConstantHelper::DRAFT) {
                 return response()->json([
                     'status' => false,
                     'message' => 'Document cannot be deleted unless it is in draft status.',
                 ], 422);
             }
-            if ($bom->revision_number) {
+            // if ($bom->revision_number) {
+            //     return response()->json([
+            //         'status' => false,
+            //         'message' => 'Deletion is not allowed. The document has already been reviewed(amend).',
+            //     ], 422);
+            // }
+
+             // Check dependencies in any related table
+            if (
+                $bom->erpPwoSomappings()->exists() ||
+                $bom->erpSoItems()->exists() ||
+                $bom->erpMoBomMappings()->exists() ||
+                $bom->erpPslipBomConsumptions()->exists()
+            ) {
                 return response()->json([
                     'status' => false,
-                    'message' => 'Deletion is not allowed. The document has already been reviewed(amend).',
+                    'message' => 'Deletion is not allowed. It is referenced in other records.',
                 ], 422);
             }
             // Delete related instructions and their files
@@ -1939,6 +1952,7 @@ class BomController extends Controller
 
             // Clear documents for the BOM itself
             $bom->clearExistingDocuments('bom');
+            
 
             // Delete related data
             $bom->bomOverheadAllItems()->delete();

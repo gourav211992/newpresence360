@@ -276,14 +276,6 @@
                     Total
                 </td>
                 <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center;">
-                    Discount
-                </td>
-                <td
-                    style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; word-wrap: break-word; word-break: break-word; width: 50px;">
-                    Taxable <br> Value
-                </td>
-                <td
                     style="font-weight: bold; padding: 2px; border: 1px solid #000; border-top: none; border-left: none; background: #80808070; text-align: center; word-wrap: break-word; word-break: break-word; width: 50px;">
                     Tax <br>Amnt
                 </td>
@@ -307,7 +299,6 @@
                     <td
                         style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none;word-break: break-word;">
                         <b> {{ @$val?->item?->item_name }}</b><br/>
-
                         @if($val?->attributes->count())
                         @php
                             $html = '';
@@ -326,8 +317,8 @@
                             }
                         @endphp
                             {{$html}}
+                            <br/>
                         @endif
-                        <br/>
                         @if(@$val?->item?->specifications->count())
                             {{-- @foreach(@$val?->item?->specifications as $specification)
                             @endforeach --}}
@@ -336,11 +327,12 @@
                             <br/>
                         @endif
                         Code : {{ @$val->item_code }}<br/>
+                        @if(isset(@$val->sow))Scope Of Work : {{ @$val->sow->item_name }}@endif
                         @if(@$val->remarks)Remarks : {{@$val->remarks}}@endif
                     </td>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: center;word-break: break-word;">
-                        {{ @$val?->hsn?->code }}
+                        {{ @$val?->sow?->hsn?->code }}
                     </td>
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
@@ -362,19 +354,11 @@
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none; text-align: right;word-break: break-word;">
                         {{ $total }}
                     </td>
-                    <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
-                        {{ number_format($val->item_discount_amount + $val->header_discount_amount, 2) }}
-                    </td>
                     @php
                         $total = $val->order_qty * $val->rate;
                         $netValue = $total- $val->item_discount_amount - $val->header_discount_amount;
                         $netValue = number_format($netValue, 2, '.', '');
                     @endphp
-                    <td
-                        style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
-                        {{number_format($netValue,2)}}
-                    </td>
                     @php
                         if (count($val->taxes)) {
                             foreach($val->taxes as $taxs){
@@ -443,14 +427,6 @@
                         </tr>
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
-                                <b>Total Discount:</b>
-                            </td>
-                            <td style="text-align: right; padding-top: 3px;">
-                                {{ number_format(($totalItemDiscount + $totalHeaderDiscount),2) }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="text-align: right; padding-top: 3px;">
                                 <b>Taxable Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
@@ -490,7 +466,7 @@
                         @endforeach
                         <tr>
                             <td style="text-align: right; padding-top: 3px;">
-                                <b>Total JO Value:</b>
+                                <b>Total Value:</b>
                             </td>
                             <td style="text-align: right; padding-top: 3px;">
                                 {{ number_format($totalAmount,2) }}

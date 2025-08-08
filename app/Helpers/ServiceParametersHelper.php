@@ -190,6 +190,8 @@ class ServiceParametersHelper
         self::REQUESTER_TYPE_PARAM => self::REQUESTER_TYPE_VALUES,
         self::SO_TRACKING_REQUIRED => self::SO_TRACKING_REQUIRED_VALUES,
         self::PROCUREMENT_TYPE_PARAM => self::PROCUREMENT_TYPE_VALUES,
+        self::GATE_ENTRY_REQUIRED => self::GATE_ENTRY_REQUIRED_VALUES,
+        self::PARTIAL_DELIVERY_ALLOWED => self::PARTIAL_DELIVERY_ALLOWED_VALUES
     ];
     const SO_SERVICE_PARAMETERS = [
         [
@@ -309,6 +311,130 @@ class ServiceParametersHelper
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
             "applicable_values" => ["0"], //All possible values
+            "default_value" => ["0"], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+
+    ];
+    const RFQ_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::PI_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0"], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+
+    ];
+    const PQ_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::RFQ_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0"], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true, // Whether or not to show this parameter in UI
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::TAX_REQUIRED_PARAM,
+            "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::GOODS_SERVICES_PARAM,
+            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+            "default_value" => ['Goods'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+
+    ];
+    const PQC_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::RFQ_SERVICE_ALIAS], //All possible values
             "default_value" => ["0"], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
@@ -2350,6 +2476,9 @@ class ServiceParametersHelper
         ConstantHelper::PWO_SERVICE_ALIAS => self::PWO_SERVICE_PARAMETERS,
         ConstantHelper::TR_SERVICE_ALIAS => self::TR_SERVICE_PARAMETERS,
         ConstantHelper::RC_SERVICE_ALIAS => self::RC_SERVICE_PARAMETERS,
+        ConstantHelper::RFQ_SERVICE_ALIAS => self::RFQ_SERVICE_PARAMETERS,
+        ConstantHelper::PQ_SERVICE_ALIAS => self::PQ_SERVICE_PARAMETERS,
+        ConstantHelper::PQC_SERVICE_ALIAS => self::PQC_SERVICE_PARAMETERS,
         ConstantHelper::PSV_SERVICE_ALIAS => self::PSV_SERVICE_PARAMETERS,
         ConstantHelper::PL_SERVICE_ALIAS => self::PL_SERVICE_PARAMETERS,
 

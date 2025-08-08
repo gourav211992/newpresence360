@@ -230,12 +230,12 @@
                                                             value="@if ($mrn->reference_type == 'po') {{ $mrn->purchase_order_id }} @elseif($mrn->reference_type == 'jo') {{ $mrn->job_order_id }} @endif">
                                                     </div>
                                                 </div>
-                                                {{-- Approval History Section --}}
+                                            </div>
+                                            {{-- Approval History Section --}}
                                                 @include('partials.approval-history', [
                                                     'document_status' => $mrn->document_status,
                                                     'revision_number' => $revision_number,
                                                 ])
-                                            </div>
                                         </div>
                                     </div>
                                     <div class="row">

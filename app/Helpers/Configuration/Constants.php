@@ -12,6 +12,6 @@ class Constants
         'Shufab OLD',
         'Shufab UAT',
         'Shufab',
-        'Staqo'
+        'Staqo',
     ];
 }

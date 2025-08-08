@@ -2,6 +2,9 @@
 
 use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
+use App\Http\Controllers\ErpPqcController;
+use App\Http\Controllers\ErpPqController;
+use App\Http\Controllers\ErpRFQController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HsnController;
@@ -193,15 +196,6 @@ Route::get('/clear', function () {
     Artisan::call('optimize:clear');
     return "Cleared!";
 });
-Route::get('/assign-menu', function () {
-    $menuName = request() -> menu_name ?? '';
-    $menuAlias = request() -> menu_alias ?? '';
-    $serviceIds = request() -> service_ids ?? '';
-    if ($serviceIds) {
-        $serviceIds = explode(',', $serviceIds);
-    }
-    return Helper::setMenuAccessToEmployee($menuName, $menuAlias, $serviceIds);
-});
 
 Route::get('/lorry-receipt/approve/{id}/{email}', [ErpLorryReceiptController::class, 'approveReceipt'])->name('lorry-receipt.approve');
 
@@ -222,6 +216,20 @@ Route::post('/broadcasting/auth', function (Illuminate\Http\Request $request) {
 
 
 Route::middleware(['user.auth'])->group(function () {
+
+    // ADD INSIDE AUTH MIDDLEWARE AS AUTH USER IS BEING USED INSIDE
+    Route::get('/assign-menu', function () {
+        $menuName = request()->menu_name ?? '';
+        $menuAlias = request()->menu_alias ?? '';
+        $serviceIds = request()->service_ids ?? '';
+        if ($serviceIds) {
+            $serviceIds = explode(',', $serviceIds);
+        }
+        return Helper::setMenuAccessToEmployee($menuName, $menuAlias, $serviceIds);
+    });
+
+
+
     Route::get('/sales-order/create', [ErpSaleOrderController::class, 'create'])->name('sale.order.create');
     Route::get('/sales-quotation/create', [ErpSaleOrderController::class, 'create'])->name('sale.quotation.create');
     Route::post('/sales-order/store', [ErpSaleOrderController::class, 'store'])->name('sale.order.store');
@@ -233,11 +241,13 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/sales-order/quotation', [ErpSaleOrderController::class, 'processQuotation'])->name('sale.order.quotation.get');
     Route::get('/sales-order/quotations/get', [ErpSaleOrderController::class, 'getQuotations'])->name('sale.order.quotation.get.all');
     Route::get('/customer/addresses/{customerId}', [ErpSaleOrderController::class, 'getCustomerAddresses'])->name('get_customer_addresses');
+    Route::get('/vendor/addresses/{vendorId}', [ErpPqController::class, 'getVendorAddresses'])->name('get_vendor_addresses');
     Route::get('/item/attributes/{itemId}', [ErpSaleOrderController::class, 'getItemAttributes'])->name('get_item_attributes');
     Route::get('/customer/address/{id}', [ErpSaleOrderController::class, 'getCustomerAddress'])->name('get_customer_address');
     Route::get('/item/inventory/details', [ErpSaleOrderController::class, 'getItemDetails'])->name('get_item_inventory_details');
     Route::get('/item/store/details', [ErpSaleOrderController::class, 'getItemStoreData'])->name('get_item_store_details');
     Route::post('/address/customers/save', [ErpSaleOrderController::class, 'addAddress'])->name('sales_order.add.address');
+    Route::post('/address/vendor/save', [ErpPqController::class, 'addAddress'])->name('pq.add.address');
     Route::get('/sale-order/generate-pdf/{id}', [ErpSaleOrderController::class, 'generatePdf'])->name('sale.order.generate-pdf');
     Route::get('/sales-order/amend/{id}', [ErpSaleOrderController::class, 'amendmentSubmit'])->name('sale.order.amend');
     Route::get('/sales-order/bom/check', [ErpSaleOrderController::class, 'checkItemBomExists'])->name('sale.order.bom.check');
@@ -248,6 +258,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/sales-order/report/attribute-grouped', [ErpSaleOrderController::class, 'salesOrderReportAttributeGrouped'])->name('sale.order.report.attribute.grouped');
     Route::post('/items/stock-details', [ErpSaleOrderController::class, 'getItemOrgLocationStoreWiseStock'])->name('item.stock.details');
     Route::post('/item/stock-details', [ErpSaleOrderController::class, 'getCurrentItemStock'])->name('current.item.stock.details');
+    Route::post('/item-sale-price', [ErpSaleOrderController::class, 'getItemSalePrice'])->name('current.item.getItemSalePrice');
     Route::get('/sales-invoice/amend/{id}', [ErpSaleInvoiceController::class, 'amendmentSubmit'])->name('sale.invoice.amend');
     Route::get('/sales-invoice/posting/get', [ErpSaleInvoiceController::class, 'getPostingDetails'])->name('sale.invoice.posting.get');
     Route::post('/sales-invoice/post', [ErpSaleInvoiceController::class, 'postInvoice'])->name('sale.invoice.post');
@@ -307,42 +318,42 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/report/pending-payments', [CrDrReportController::class, 'creditorsPendingPayment'])->name('creditor.pending.receipts');
     Route::get('/report/pending-receipts', [CrDrReportController::class, 'debitorsPendingPayment'])->name('debitor.pending.payments');
     Route::post('getInvocies', [CrDrReportController::class, 'getInvocies'])->name('getInvocies');
-    Route::get('/report/import/{type}', [CrDrReportController::class,'showImportForm'])->name('pending.payment.show.import');
-    Route::get('/report/process-import/{type}', [CrDrReportController::class,'importingProgress'])->name('pending.payment.progress.import');
-    Route::post('/report/import', [CrDrReportController::class,'import'])->name('pending.payment.import');
-    Route::post('/report/update-cache', [CrDrReportController::class,'updateCacheData'])->name('pending.payment.update.cache');
+    Route::get('/report/import/{type}', [CrDrReportController::class, 'showImportForm'])->name('pending.payment.show.import');
+    Route::get('/report/process-import/{type}', [CrDrReportController::class, 'importingProgress'])->name('pending.payment.progress.import');
+    Route::post('/report/import', [CrDrReportController::class, 'import'])->name('pending.payment.import');
+    Route::post('/report/update-cache', [CrDrReportController::class, 'updateCacheData'])->name('pending.payment.update.cache');
     Route::post('report/store-cr-dr-row', [CrDrReportController::class, 'storeCrDrRowData'])->name('report.row.data');
-    Route::get('/report/export-successful', [CrDrReportController::class,'exportSuccessfulItems'])->name('pending.payment.export.successful');
-    Route::get('/report/export-failed', [CrDrReportController::class,'exportFailedItems'])->name('pending.payment.export.failed');
+    Route::get('/report/export-successful', [CrDrReportController::class, 'exportSuccessfulItems'])->name('pending.payment.export.successful');
+    Route::get('/report/export-failed', [CrDrReportController::class, 'exportFailedItems'])->name('pending.payment.export.failed');
     Route::get('vouchers/revoke', [VoucherController::class, 'revokeDocument'])->name('voucher.revoke.document');
     Route::get('vouchers/cancel', [VoucherController::class, 'cancelDocument'])->name('voucher.cancel.document');
     Route::resource('ledger-groups', GroupController::class)->except(['show']);
-    Route::get('/search/group', [GroupController::class,'getLedgerGroup'])->name('groups.search');
-    Route::post('/group/generate-prefix', [GroupController::class,'generate_prefix'])->name('generate-group-prefix');
-    Route::post('/group/check-prefix', [GroupController::class,'checkPrefix'])->name('groups-check-prefix');
+    Route::get('/search/group', [GroupController::class, 'getLedgerGroup'])->name('groups.search');
+    Route::post('/group/generate-prefix', [GroupController::class, 'generate_prefix'])->name('generate-group-prefix');
+    Route::post('/group/check-prefix', [GroupController::class, 'checkPrefix'])->name('groups-check-prefix');
     Route::resource('ledgers', LedgerController::class)->except(['show']);
     Route::get('/ledgers/{ledgerId}/groups', [LedgerController::class, 'getLedgerGroups'])->name('ledgers.groups');;
-    Route::get('/search/ledger', [LedgerController::class,'getLedger'])->name('ledger.search');
-    Route::get('/ledger/import', [LedgerController::class,'showImportForm'])->name('ledger.show.import');
-    Route::post('/ledger/import', [LedgerController::class,'import'])->name('ledger.import');
-    Route::get('/ledger/export-successful', [LedgerController::class,'exportSuccessfulItems'])->name('ledgers.export.successful');
-    Route::get('/ledger/export-failed', [LedgerController::class,'exportFailedItems'])->name('ledgers.export.failed');
-    Route::post('/ledger/generate-code', [LedgerController::class,'generateLedgerCode'])->name('generate-ledger-code');
+    Route::get('/search/ledger', [LedgerController::class, 'getLedger'])->name('ledger.search');
+    Route::get('/ledger/import', [LedgerController::class, 'showImportForm'])->name('ledger.show.import');
+    Route::post('/ledger/import', [LedgerController::class, 'import'])->name('ledger.import');
+    Route::get('/ledger/export-successful', [LedgerController::class, 'exportSuccessfulItems'])->name('ledgers.export.successful');
+    Route::get('/ledger/export-failed', [LedgerController::class, 'exportFailedItems'])->name('ledgers.export.failed');
+    Route::post('/ledger/generate-code', [LedgerController::class, 'generateLedgerCode'])->name('generate-ledger-code');
     Route::post('/approveLedger', [LedgerController::class, 'approveVoucher'])->name('approveLedger');
     Route::get('ledgerAmendment/{id}', [LedgerController::class, 'amendment'])->name('ledgers.amendment');
     Route::get('ledger/update_null_data', [LedgerController::class, 'updateNull'])->name('ledgers.update-null-data');
     Route::get('create-party-ledger', [LedgerController::class, 'createPartyLedger'])->name('ledgers.create.party-ledger');
 
     // closefy
-    Route::get('/close-fy', [CloseFyController::class,'index'])->name('close-fy');
-    Route::post('/close-fy', [CloseFyController::class,'closeFy'])->name('post-closefy');
+    Route::get('/close-fy', [CloseFyController::class, 'index'])->name('close-fy');
+    Route::post('/close-fy', [CloseFyController::class, 'closeFy'])->name('post-closefy');
     Route::post('/close-fy/update-authuser', [CloseFyController::class, 'updateFyAuthorizedUser'])->name('close-fy.update-authuser');
     Route::post('/close-fy/delete-authuser', [CloseFyController::class, 'deleteFyAuthorizedUser'])->name('close-fy.delete-authuser');
     Route::post('/close-fy/lock', [CloseFyController::class, 'lockUnlockFy'])->name('close-fy.lock');
-    Route::post('/getFyInitialGroups', [CloseFyController::class,'getFyInitialGroups'])->name('getFyInitialGroups');
+    Route::post('/getFyInitialGroups', [CloseFyController::class, 'getFyInitialGroups'])->name('getFyInitialGroups');
     Route::post('/store-fy-session', [CloseFyController::class, 'storeFySession'])->name('store.fy.session');
     // close month fy
-    Route::get('/close-month-fy', [CloseFyController::class,'monthFyIndex'])->name('close-month-fy');
+    Route::get('/close-month-fy', [CloseFyController::class, 'monthFyIndex'])->name('close-month-fy');
 
 
 
@@ -444,8 +455,8 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/import', 'showImportForm')->name('customers.import');
         Route::post('/import', 'import')->name('customers.import.post');
         Route::post('/revoke', 'revoke')->name('customer.revoke');
-        Route::get('export-successful-customers','exportSuccessfulCustomers')->name('customers.export.successful');;
-        Route::get('export-failed-customers','exportFailedCustomers')->name('customers.export.failed');;
+        Route::get('export-successful-customers', 'exportSuccessfulCustomers')->name('customers.export.successful');;
+        Route::get('export-failed-customers', 'exportFailedCustomers')->name('customers.export.failed');;
         Route::post('/generate-item-code', 'generateCustomerCode')->name('generate-customer-code');
         Route::get('/search', 'getCustomer')->name('customers.search');
         Route::get('/{id}', 'show')->name('customer.show');
@@ -489,80 +500,80 @@ Route::middleware(['user.auth'])->group(function () {
     // Route::get('/pos/report-send/mail', [PurchaseOrderReportController::class, 'sendReportMail'])->name('po.send.report');
 
     Route::prefix('{type}')
-    ->where(['type' => 'purchase-order|supplier-invoice'])
-    ->name('po.')
-    ->controller(PoController::class)
-    ->group(function () {
-        Route::get('revoke-document','revokeDocument')->name('revoke.document');
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('add-item-row', 'addItemRow')->name('item.row');
-        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
-        Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
-        Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
-        Route::get('/get-address', 'getAddress')->name('get.address');
-        Route::get('/edit-address', 'editAddress')->name('edit.address');
-        Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
-        Route::post('/address-save', 'addressSave')->name('address.save');
-        Route::delete('component-delete', 'componentDelete')->name('comp.delete');
-        Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
-        Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
-        Route::get('get-purchase-indent', 'getPi')->name('get.pi');
-        Route::get('get-purchase-indent-bulk', 'getPiBulk')->name('get.pi.bulk');
-        Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
-        Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
-        Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
-        Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
-        Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
-        Route::get('bulk-create', 'bulkCreate')->name('bulk.create');
-        Route::post('bulk-store', 'bulkStore')->name('bulk.store');
-        Route::post('send-mail', 'poMail')->name('poMail');
-        Route::get('report','poReport')->name('report');
-    });
+        ->where(['type' => 'purchase-order|supplier-invoice'])
+        ->name('po.')
+        ->controller(PoController::class)
+        ->group(function () {
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('add-item-row', 'addItemRow')->name('item.row');
+            Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+            Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+            Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+            Route::get('/get-address', 'getAddress')->name('get.address');
+            Route::get('/edit-address', 'editAddress')->name('edit.address');
+            Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+            Route::post('/address-save', 'addressSave')->name('address.save');
+            Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+            Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+            Route::get('get-purchase-indent', 'getPi')->name('get.pi');
+            Route::get('get-purchase-indent-bulk', 'getPiBulk')->name('get.pi.bulk');
+            Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
+            Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+            Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+            Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+            Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
+            Route::get('bulk-create', 'bulkCreate')->name('bulk.create');
+            Route::post('bulk-store', 'bulkStore')->name('bulk.store');
+            Route::post('send-mail', 'poMail')->name('poMail');
+            Route::get('report', 'poReport')->name('report');
+        });
 
     Route::prefix('job-order')
-    ->name('jo.')
-    ->controller(JoController::class)
-    ->group(function () {
-        Route::get('revoke-document','revokeDocument')->name('revoke.document');
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('add-item-row', 'addItemRow')->name('item.row');
-        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
-        Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
-        Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
-        Route::get('/get-address', 'getAddress')->name('get.address');
-        Route::get('/edit-address', 'editAddress')->name('edit.address');
-        Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
-        Route::get('/get-itemdetail2', 'getItemDetail2')->name('get.itemdetail2');
-        Route::post('/address-save', 'addressSave')->name('address.save');
-        Route::delete('component-delete', 'componentDelete')->name('comp.delete');
-        Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
-        Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
-        Route::get('get-purchase-indent', 'getPi')->name('get.pi');
-        Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
-        Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
-        Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
-        Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
-        Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
-        Route::post('send-mail', 'poMail')->name('poMail');
-        Route::get('report','poReport')->name('report');
-        Route::get('check-bom-job','checkBomJob')->name('check.bom.job');
-    });
+        ->name('jo.')
+        ->controller(JoController::class)
+        ->group(function () {
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('add-item-row', 'addItemRow')->name('item.row');
+            Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+            Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+            Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+            Route::get('/get-address', 'getAddress')->name('get.address');
+            Route::get('/edit-address', 'editAddress')->name('edit.address');
+            Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+            Route::get('/get-itemdetail2', 'getItemDetail2')->name('get.itemdetail2');
+            Route::post('/address-save', 'addressSave')->name('address.save');
+            Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+            Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+            Route::get('get-purchase-indent', 'getPi')->name('get.pi');
+            Route::get('process-pi-item', 'processPiItem')->name('process.pi-item');
+            Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+            Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+            Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+            Route::post('short-close-submit', 'shortCloseSubmit')->name('short.close.submit');
+            Route::post('send-mail', 'poMail')->name('poMail');
+            Route::get('report', 'poReport')->name('report');
+            Route::get('check-bom-job', 'checkBomJob')->name('check.bom.job');
+        });
 
     # Manufacturing Order
     Route::prefix('manufacturing-order')
         ->name('mo.')
         ->controller(MoController::class)
         ->group(function () {
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
-            Route::post('close-document','closeDocument')->name('close.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::post('close-document', 'closeDocument')->name('close.document');
             Route::get('/', 'index')->name('index');
             Route::get('create', 'create')->name('create');
             Route::post('store', 'store')->name('store');
@@ -584,8 +595,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
             Route::get('report', 'moReport')->name('report');
             Route::get('get-machine-detail', 'getMachineDetail')->name('get.machine.detail');
-            Route::get('check-bom-inhouse','checkBomInhouse')->name('check.bom.inhouse');
-    });
+            Route::get('check-bom-inhouse', 'checkBomInhouse')->name('check.bom.inhouse');
+        });
 
 
 
@@ -593,7 +604,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('transporter-requests')
         ->name('transporter.')
         ->controller(ErpTransporterRequestController::class)
-        ->group(function(){
+        ->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
             Route::get('/edit/{id}', 'edit')->name('edit');
@@ -607,14 +618,14 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/closeBid', 'closeBid')->name('closeBid');
             Route::post('/reOpenBid', 'reOpenBid')->name('reOpenBid');
             Route::post('/generate_pdf', 'generate_pdf')->name('generate-pdf');
-    });
+        });
 
 
     Route::prefix('purchase-indent')
         ->name('pi.')
         ->controller(PiController::class)
         ->group(function () {
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/', 'index')->name('index');
             Route::get('/create', 'create')->name('create');
             Route::post('/', 'store')->name('store');
@@ -630,9 +641,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('process-so-item', 'processSoItem')->name('process.so-item');
             Route::post('process-so-item-submit', 'processSoItemSubmit')->name('process.so-item.submit');
             Route::get('get-selected-department', 'getSelectedDepartment')->name('get.selected.department');
-            Route::get('report','piReport')->name('report');
-            Route::get('amend','piAmend')->name('amend');
-
+            Route::get('report', 'piReport')->name('report');
+            Route::get('amend', 'piAmend')->name('amend');
         });
     // Route::prefix('pos')->controller(PurchaseOrderReportController::class)->group(function () {
     //     Route::get('/report', 'index')->name('po.report');
@@ -645,23 +655,23 @@ Route::middleware(['user.auth'])->group(function () {
 
     Route::prefix('machine')->controller(ErpMachineController::class)->group(function () {
         Route::get('/', 'index')->name('machine.index');
-        Route::get('/create','create')->name('machine.create');
-        Route::get('/edit/{id}','edit')->name('machine.edit');
+        Route::get('/create', 'create')->name('machine.create');
+        Route::get('/edit/{id}', 'edit')->name('machine.edit');
         Route::post('/store', 'store')->name('machine.store');
         Route::put('/{id}', 'update')->name('machine.update');
-        Route::get('/attribute/values','attributeValues')->name('machine.attribute.values');
+        Route::get('/attribute/values', 'attributeValues')->name('machine.attribute.values');
     });
 
     Route::prefix('items')->controller(ItemController::class)->group(function () {
-        Route::get('get-cost','getItemCost')->name('items.get.cost');
+        Route::get('get-cost', 'getItemCost')->name('items.get.cost');
         Route::get('/', 'index')->name('item.index');
         Route::get('/export', 'export')->name('item.export');
         Route::get('/create', 'create')->name('item.create');
         Route::post('/', 'store')->name('item.store');
         Route::post('/revoke', 'revoke')->name('item.revoke');
-        Route::get('/import','showImportForm')->name('items.show.import');
-        Route::get('export-successful-items','exportSuccessfulItems')->name('items.export.successful');;
-        Route::get('export-failed-items','exportFailedItems')->name('items.export.failed');
+        Route::get('/import', 'showImportForm')->name('items.show.import');
+        Route::get('export-successful-items', 'exportSuccessfulItems')->name('items.export.successful');;
+        Route::get('export-failed-items', 'exportFailedItems')->name('items.export.failed');
         Route::post('/import', 'import')->name('items.import');
         Route::post('/generate-item-code', 'generateItemCode')->name('generate-item-code');
         Route::get('/search', 'getItem')->name('items.search');
@@ -701,7 +711,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/subcategories/{categoryId}', 'getSubcategories')->name('categories.subcategory');
     });
 
-     Route::prefix('equipment-categories')->controller(CategoryController::class)->group(function () {
+    Route::prefix('equipment-categories')->controller(CategoryController::class)->group(function () {
         Route::get('/', 'index')->name('equipment-categories.index');
         Route::get('/create', 'create')->name('equipment-categories.create');
         Route::get('/{id}/edit', 'edit')->name('equipment-categories.edit');
@@ -846,7 +856,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('stock-accounts')->controller(StockAccountController::class)->group(function () {
         Route::get('/', 'index')->name('stock-accounts.index');
         Route::post('/', 'store')->name('stock-accounts.store');
-        Route::get('test-ledger','testLedgerGroupAndLedgerId');
+        Route::get('test-ledger', 'testLedgerGroupAndLedgerId');
         Route::delete('/{id}', 'destroy')->name('stock-accounts.destroy');
         Route::get('organizations/{companyId}', 'getOrganizationsByCompany');
         Route::get('data-by-organization/{organizationId}', 'getDataByOrganization');
@@ -1111,7 +1121,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/save-lease', [LandController::class, 'savelease'])->name('save.lease');
         Route::get('/land/on-lease/edit/{id}', [LandController::class, 'onleaseedit'])->name('land.onleaseedit');
         Route::post('/update-lease', [LandController::class, 'updatelease'])->name('update.lease');
-
     });
 
     Route::get('/finance-ledger-report', [TrialBalanceController::class, 'getLedgerReport'])->name('getLedgerReport');
@@ -1302,7 +1311,7 @@ Route::middleware(['user.auth'])->group(function () {
         ->name('bill.of.material.')
         ->controller(BomController::class)
         ->group(function () {
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/', 'index')->name('index');
             Route::get('create', 'create')->name('create');
             Route::post('store', 'store')->name('store');
@@ -1329,7 +1338,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('check-bom-exist', 'checkBomExist')->name('check.bom.exist');
             Route::get('report', 'bomReport')->name('report');
             Route::get('export/{id}', 'export')->name('export');
-            Route::delete('/{id}', 'destroy')->name('destroy');
+            Route::delete('/{id}/{isAmedment}', 'destroy')->name('destroy');
         });
 
     # Bom Import
@@ -1337,22 +1346,25 @@ Route::middleware(['user.auth'])->group(function () {
         ->name('bill.of.material.')
         ->controller(BomImportController::class)
         ->group(function () {
-            Route::get('import','import')->name('import');
-            Route::post('import-save','importSave')->name('import.save');
-            Route::get('import-error','importError')->name('import.error');
-            Route::get('download-sample','downloadSample')->name('download.sample');
+            Route::get('import', 'import')->name('import');
+            Route::post('import-save', 'importSave')->name('import.save');
+            Route::get('import-error', 'importError')->name('import.error');
+            Route::get('download-sample', 'downloadSample')->name('download.sample');
         });
 
     Route::prefix('quotation-bom')
         ->name('quotation.bom.')
         ->controller(BomImportController::class)
         ->group(function () {
-            Route::get('import','import')->name('import');
-            Route::post('import-save','importSave')->name('import.save');
-            Route::get('import-error','importError')->name('import.error');
-            Route::get('download-sample','downloadSample')->name('download.sample');
+            Route::get('import', 'import')->name('import');
+            Route::post('import-save', 'importSave')->name('import.save');
+            Route::get('import-error', 'importError')->name('import.error');
+            Route::get('download-sample', 'downloadSample')->name('download.sample');
         });
 
+        Route::get('/test-zip', function () {
+    return class_exists('ZipArchive') ? '✅ ZipArchive is enabled' : '❌ ZipArchive NOT found';
+});
     # All type documents approval
     Route::prefix('document-approval')
         ->name('document.approval.')
@@ -1370,6 +1382,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('materialReturn', 'materialReturn')->name('materialReturn');
             Route::post('production-slip', 'productionSlip')->name('productionSlip');
             Route::post('rate-contract', 'rateContract')->name('rateContract');
+            Route::post('rfq', 'rfq')->name('rfq');
             Route::post('packing-list', 'packingList')->name('packingList');
             Route::post('pick-list', 'pickList')->name('pickList');
             Route::post('item', 'item')->name('item');
@@ -1415,10 +1428,10 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('process-so-item', 'processSoItem')->name('process.so-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postMrn')->name('post');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
-            Route::post('/import-item','itemsImport')->name('items.import');
-            Route::get('export-successful-items','exportSuccessfulItems');
-            Route::get('export-failed-items','exportFailedItems');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::post('/import-item', 'itemsImport')->name('items.import');
+            Route::get('export-successful-items', 'exportSuccessfulItems');
+            Route::get('export-failed-items', 'exportFailedItems');
             Route::get('process-import-item', 'processImportItem')->name('process.import-item');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
@@ -1439,52 +1452,52 @@ Route::middleware(['user.auth'])->group(function () {
 
 
     Route::prefix('gate-entries')
-    ->name('gate-entry.')
-    ->controller(GateEntryController::class)
-    ->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('/{id}/view', 'show')->name('show');
-        Route::get('add-item-row', 'addItemRow')->name('item.row');
-        Route::get('po-item-row', 'poItemRows')->name('po-item.row');
-        Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
-        Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
-        Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
-        Route::get('/get-address', 'getAddress')->name('get.address');
-        Route::get('/edit-address', 'editAddress')->name('edit.address');
-        Route::post('/address-save', 'addressSave')->name('address.save');
-        Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
-        Route::post('/get-store-racks', 'getStoreRacks')->name('get.store-racks');
-        Route::post('/get-rack-shelfs', 'getStoreShelfs')->name('get.rack-shelfs');
-        Route::post('/get-shelf-bins', 'getStoreBins')->name('get.shelf-bins');
-        Route::get('/validate-quantity', 'validateQuantity')->name('get.validate-quantity');
-        Route::get('/{id}/logs', 'logs')->name('logs');
-        Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
-        Route::delete('component-delete', 'componentDelete')->name('comp.delete');
-        Route::get('/get-stock-detail', 'getStockDetail')->name('get.stock-detail');
-        Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
-        Route::get('get-purchase-orders', 'getPo')->name('get.po');
-        Route::get('get-job-orders', 'getJo')->name('get.jo');
-        Route::get('process-po-item', 'processPoItem')->name('process.po-item');
-        Route::get('process-jo-item', 'processJoItem')->name('process.jo-item');
-        Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
-        Route::post('/post', 'postMrn')->name('post');
-        Route::get('revoke-document','revokeDocument')->name('revoke.document');
-        Route::get('/report', 'Report')->name('report');
-        Route::get('/report/filter', 'getReportFilter')->name('report.filter');
-        Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
-        Route::get('/order/report', 'gateEntryReport')->name('order.report');
-        Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
-        Route::post('/validate-asn', 'processAsn')->name('validate-asn');
+        ->name('gate-entry.')
+        ->controller(GateEntryController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/{id}/view', 'show')->name('show');
+            Route::get('add-item-row', 'addItemRow')->name('item.row');
+            Route::get('po-item-row', 'poItemRows')->name('po-item.row');
+            Route::get('get-item-attribute', 'getItemAttribute')->name('item.attr');
+            Route::get('add-discount-row', 'addDiscountRow')->name('item.discount.row');
+            Route::get('/tax-calculation', 'taxCalculation')->name('tax.calculation');
+            Route::get('/get-address', 'getAddress')->name('get.address');
+            Route::get('/edit-address', 'editAddress')->name('edit.address');
+            Route::post('/address-save', 'addressSave')->name('address.save');
+            Route::get('/get-itemdetail', 'getItemDetail')->name('get.itemdetail');
+            Route::post('/get-store-racks', 'getStoreRacks')->name('get.store-racks');
+            Route::post('/get-rack-shelfs', 'getStoreShelfs')->name('get.rack-shelfs');
+            Route::post('/get-shelf-bins', 'getStoreBins')->name('get.shelf-bins');
+            Route::get('/validate-quantity', 'validateQuantity')->name('get.validate-quantity');
+            Route::get('/{id}/logs', 'logs')->name('logs');
+            Route::get('/{id}/pdf', 'generatePdf')->name('generate-pdf');
+            Route::delete('component-delete', 'componentDelete')->name('comp.delete');
+            Route::get('/get-stock-detail', 'getStockDetail')->name('get.stock-detail');
+            Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
+            Route::get('get-purchase-orders', 'getPo')->name('get.po');
+            Route::get('get-job-orders', 'getJo')->name('get.jo');
+            Route::get('process-po-item', 'processPoItem')->name('process.po-item');
+            Route::get('process-jo-item', 'processJoItem')->name('process.jo-item');
+            Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
+            Route::post('/post', 'postMrn')->name('post');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::get('/report', 'Report')->name('report');
+            Route::get('/report/filter', 'getReportFilter')->name('report.filter');
+            Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
+            Route::get('/order/report', 'gateEntryReport')->name('order.report');
+            Route::post('/get-selected-item-amount', 'getSelectedItemAmount')->name('get-selected-item-amount');
+            Route::post('/validate-asn', 'processAsn')->name('validate-asn');
 
-        /*Remove data*/
-        Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
-        Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
-        Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
-    });
+            /*Remove data*/
+            Route::delete('remove-dis-item-level', 'removeDisItemLevel')->name('remove.item.dis');
+            Route::delete('remove-dis-header-level', 'removeDisHeaderLevel')->name('remove.header.dis');
+            Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
+        });
 
     # All type documents approval
     Route::prefix('document-approval')
@@ -1495,11 +1508,11 @@ Route::middleware(['user.auth'])->group(function () {
         });
 
     Route::prefix('document-approval')
-    ->name('document.approval.')
-    ->controller(DocumentApprovalController::class)
-    ->group(function () {
-        Route::post('gate-entry', 'gateEntry')->name('gate-entry');
-    });
+        ->name('document.approval.')
+        ->controller(DocumentApprovalController::class)
+        ->group(function () {
+            Route::post('gate-entry', 'gateEntry')->name('gate-entry');
+        });
 
     // # All type documents Amendements
     // Route::prefix('amendement')
@@ -1562,7 +1575,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/process-so-item', 'processSoItem')->name('process.so-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postExpenseAdvise')->name('post');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
@@ -1621,7 +1634,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postPb')->name('post');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
@@ -1679,7 +1692,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postPR')->name('post');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/generate-einvoice', 'generateEInvoice')->name('generate-einvoice');
             Route::get('/generate-ewaybill', 'generateEwayBill')->name('generate-ewaybill');
             Route::get('/report', 'Report')->name('report');
@@ -1693,7 +1706,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
 
             Route::post('send-mail', 'prMail')->name('prMail');
-
         });
 
     Route::prefix('document-approval')
@@ -1701,7 +1713,7 @@ Route::middleware(['user.auth'])->group(function () {
         ->controller(DocumentApprovalController::class)
         ->group(function () {
             Route::post('purchase-return', 'purchaseReturn')->name('purchase-return');
-    });
+        });
 
     // Inspection routes
     Route::prefix('inspection')
@@ -1730,7 +1742,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
             Route::get('get-mrn', 'getMrn')->name('get.mrn');
             Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
@@ -1742,7 +1754,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
 
             Route::post('send-mail', 'prMail')->name('prMail');
-
         });
 
     Route::prefix('document-approval')
@@ -1750,7 +1761,7 @@ Route::middleware(['user.auth'])->group(function () {
         ->controller(DocumentApprovalController::class)
         ->group(function () {
             Route::post('inspection', 'inspection')->name('inspection');
-    });
+        });
 
     // Inspection routes
     Route::prefix('put-away')
@@ -1781,7 +1792,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('process-mrn-item', 'processMrnItem')->name('process.mrn-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
             Route::post('/post', 'postPR')->name('post');
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
             Route::get('/report', 'Report')->name('report');
             Route::get('/report/filter', 'getReportFilter')->name('report.filter');
             Route::post('/add-scheduler', 'addScheduler')->name('add.scheduler');
@@ -1800,7 +1811,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::delete('remove-exp-header-level', 'removeExpHeaderLevel')->name('remove.header.exp');
 
             Route::post('send-mail', 'prMail')->name('prMail');
-
         });
 
     Route::prefix('document-approval')
@@ -1808,7 +1818,7 @@ Route::middleware(['user.auth'])->group(function () {
         ->controller(DocumentApprovalController::class)
         ->group(function () {
             Route::post('put-away', 'putAway')->name('put-away');
-    });
+        });
 
     // Material Request routes
     Route::prefix('material-request')
@@ -1888,91 +1898,89 @@ Route::middleware(['user.auth'])->group(function () {
         Route::delete('/{id}', 'destroy')->name('tax.destroy');
         Route::get('/calculate-tax/sales/{alias}', 'calculateTaxForSalesModule')->name('tax.calculate.sales');
         Route::delete('/tax-detail/{id}', 'deleteTaxDetail')->name('tax-detail.delete');
-
     });
 
     // Production Route Routes
     Route::prefix('production-routes')
-    ->name('production-route.')
-    ->controller(ProductionRouteController::class)
-    ->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('/delete/{id}', 'delete')->name('delete');
-        Route::get('/station', 'getStationData')->name('get-station');
-        Route::get('/get-items', 'getItemAttribute')->name('get-items');
-        Route::get('/get-items-edit', 'getItemAttributeEdit')->name('get-items-edit');
-
-    });
+        ->name('production-route.')
+        ->controller(ProductionRouteController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/delete/{id}', 'delete')->name('delete');
+            Route::get('/station', 'getStationData')->name('get-station');
+            Route::get('/get-items', 'getItemAttribute')->name('get-items');
+            Route::get('/get-items-edit', 'getItemAttributeEdit')->name('get-items-edit');
+        });
 
     // Warehouse Structure Routes
     Route::prefix('warehouse-structures')
-    ->name('warehouse-structure.')
-    ->controller(WarehouseStructureController::class)
-    ->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('/delete/{id}', 'delete')->name('delete');
-        Route::post('/delete-level', 'deleteLevel')->name('delete-level');
-    });
+        ->name('warehouse-structure.')
+        ->controller(WarehouseStructureController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/delete/{id}', 'delete')->name('delete');
+            Route::post('/delete-level', 'deleteLevel')->name('delete-level');
+        });
 
     // Warehouse Mapping Routes
     Route::prefix('warehouse-mappings')
-    ->name('warehouse-mapping.')
-    ->controller(WarehouseMappingController::class)
-    ->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('/delete/{id}', 'delete')->name('delete');
-        Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
-        Route::get('/levels', 'getLevels')->name('get.levels');
-        Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
-        Route::get('/get-parents', 'getParents')->name('get.parents');
-        Route::get('/{id}/print-labels', 'getBarcodes')->name('print-labels');
-        Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
-        Route::post('/delete-details', 'deleteDetails')->name('delete-details');
-    });
+        ->name('warehouse-mapping.')
+        ->controller(WarehouseMappingController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/delete/{id}', 'delete')->name('delete');
+            Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
+            Route::get('/levels', 'getLevels')->name('get.levels');
+            Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
+            Route::get('/get-parents', 'getParents')->name('get.parents');
+            Route::get('/{id}/print-labels', 'getBarcodes')->name('print-labels');
+            Route::get('/{id}/print-barcodes', 'printBarcodes')->name('print-barcodes');
+            Route::post('/delete-details', 'deleteDetails')->name('delete-details');
+        });
 
     // Warehouse Multiple Mapping Routes
     Route::prefix('warehouse-multiple-mappings')
-    ->name('warehouse-multiple-mapping.')
-    ->controller(WarehouseMultiMappingController::class)
-    ->group(function () {
-        Route::get('/create', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        Route::get('/edit/{id}', 'edit')->name('edit');
-        Route::post('/update/{id}', 'update')->name('update');
-        Route::get('/levels', 'getLevels')->name('get.levels');
-        Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
-        Route::get('/get-parents', 'getParents')->name('get.parents');
-    });
+        ->name('warehouse-multiple-mapping.')
+        ->controller(WarehouseMultiMappingController::class)
+        ->group(function () {
+            Route::get('/create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('/edit/{id}', 'edit')->name('edit');
+            Route::post('/update/{id}', 'update')->name('update');
+            Route::get('/levels', 'getLevels')->name('get.levels');
+            Route::get('/level-parents', 'getLevelParents')->name('get.level-parents');
+            Route::get('/get-parents', 'getParents')->name('get.parents');
+        });
 
     // Warehouse Item Mapping Routes
     Route::prefix('warehouse-item-mappings')
-    ->name('warehouse-item-mapping.')
-    ->controller(WarehouseItemMappingController::class)
-    ->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::get('/delete/{id}', 'delete')->name('delete');
-        Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
-        Route::get('/details', 'getDetails')->name('get.details');
-        Route::get('/existing-details', 'getMappingData')->name('get.existing-details');
-        Route::get('/get-sub-categories', 'getSubCategories')->name('get.sub-categories');
-        Route::get('/get-items', 'getItems')->name('get.items');
-        Route::get('/get-structure-details', 'getStructureDetails')->name('get.structure-details');
-        Route::get('/get-childs', 'getChilds')->name('get.childs');
-        Route::post('/delete-details', 'deleteDetails')->name('delete-details');
-    });
+        ->name('warehouse-item-mapping.')
+        ->controller(WarehouseItemMappingController::class)
+        ->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::get('/delete/{id}', 'delete')->name('delete');
+            Route::get('/sub-stores', 'getSubStores')->name('get.sub-stores');
+            Route::get('/details', 'getDetails')->name('get.details');
+            Route::get('/existing-details', 'getMappingData')->name('get.existing-details');
+            Route::get('/get-sub-categories', 'getSubCategories')->name('get.sub-categories');
+            Route::get('/get-items', 'getItems')->name('get.items');
+            Route::get('/get-structure-details', 'getStructureDetails')->name('get.structure-details');
+            Route::get('/get-childs', 'getChilds')->name('get.childs');
+            Route::post('/delete-details', 'deleteDetails')->name('delete-details');
+        });
 
     Route::prefix('product-sections')->controller(ProductSectionController::class)->group(function () {
         Route::get('/', 'index')->name('product-sections.index');
@@ -2039,10 +2047,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::delete('/{id}', 'destroy')->name('stations.destroy');
         Route::delete('/substation/{id}', 'deleteSubstation')->name('substation.delete');
         Route::get('/stocking/get/by-sub-store', 'getStockingStationsOfSubStore')->name('stations.stocking.get.subStore');
-
     });
 
-   Route::prefix('station-groups')->controller(StationGroupController::class)->group(function () {
+    Route::prefix('station-groups')->controller(StationGroupController::class)->group(function () {
         Route::get('/', 'index')->name('station-groups.index');
         Route::get('/create', 'create')->name('station-groups.create');
         Route::post('/', 'store')->name('station-groups.store');
@@ -2185,7 +2192,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/pending-requests', [IndexController::class, 'requests'])->name('riv.requests');
     Route::get('/pending-approvals', [IndexController::class, 'approvals'])->name('riv.approvals');
     Route::get('/pending-postings', [IndexController::class, 'postings'])->name('riv.postings');
-     Route::post('/bulk-approvals', [IndexController::class, 'bulkApprovals'])->name('bulk.approvals');
+    Route::post('/bulk-approvals', [IndexController::class, 'bulkApprovals'])->name('bulk.approvals');
     Route::post('/bulk-postings', [IndexController::class, 'bulkPostings'])->name('bulk.postings');
     Route::post('/bulk-requests', [IndexController::class, 'bulkRequests'])->name('bulk.requests');
 
@@ -2207,8 +2214,8 @@ Route::middleware(['user.auth'])->group(function () {
         ->name('pwo.')
         ->controller(PWOController::class)
         ->group(function () {
-            Route::get('revoke-document','revokeDocument')->name('revoke.document');
-            Route::post('close-document','closeDocument')->name('close.document');
+            Route::get('revoke-document', 'revokeDocument')->name('revoke.document');
+            Route::post('close-document', 'closeDocument')->name('close.document');
             Route::get('/', 'index')->name('index');
             Route::get('create', 'create')->name('create');
             Route::post('store', 'store')->name('store');
@@ -2230,7 +2237,7 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('analyze-so-item', 'analyzeSoItem')->name('analyze.so-item');
             Route::post('process-so-item', 'processSoItem')->name('process.so-item');
             Route::get('get-stock', 'getStock')->name('get.stock');
-    });
+        });
 
     //Material Issue
     Route::get('/material-issue', [ErpMaterialIssueController::class, 'index'])->name('material.issue.index');
@@ -2279,7 +2286,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/psv/import', [ErpPSVController::class, 'import'])->name('psv.import');
     Route::get('/psv/itemList', [ErpPSVController::class, 'itemList'])->name('psv.itemlist');
     Route::get('/psv/getAllItems', [ErpPSVController::class, 'getAllItems'])->name('psv.getAllItems');
-     Route::get('/psv/{id}/pdf', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
+    Route::get('/psv/{id}/pdf', [ErpPSVController::class, 'generatePdf'])->name('psv.generate-pdf');
 
     //PL
     Route::get('/pick-list', [ErpPlController::class, 'index'])->name('PL.index');
@@ -2299,7 +2306,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/pick-list/import', [ErpPlController::class, 'import'])->name('PL.import');
 
 
-     //Driver
+    //Driver
     Route::get('/logistics/driver', [ErpDriverController::class, 'index'])->name('logistics.driver.index');
     Route::get('/logistics/driver/create', [ErpDriverController::class, 'create'])->name('logistics.driver.create');
     Route::post('/logistics/driver/store', [ErpDriverController::class, 'store'])->name('logistics.driver.store');
@@ -2307,7 +2314,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/logistics/driver/edit/{id}', [ErpDriverController::class, 'edit'])->name('logistics.driver.edit');
     Route::delete('/logistics/driver/{id}', [ErpDriverController::class, 'destroy'])->name('logistics.driver.destroy');
 
-      //Vehicle
+    //Vehicle
     Route::get('/logistics/vehicle', [ErpVehicleController::class, 'index'])->name('logistics.vehicle.index');
     Route::get('/logistics/vehicle/create', [ErpVehicleController::class, 'create'])->name('logistics.vehicle.create');
     Route::post('/logistics/vehicle/store', [ErpVehicleController::class, 'store'])->name('logistics.vehicle.store');
@@ -2316,7 +2323,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::delete('/logistics/vehicle/{id}', [ErpVehicleController::class, 'destroy'])->name('logistics.vehicle.destroy');
 
 
-     //Vehicle-Types
+    //Vehicle-Types
     Route::get('/logistics/vehicle-type', [ErpVehicleTypeController::class, 'index'])->name('logistics.vehicle-type.index');
     Route::post('/logistics/vehicle-type/store', [ErpVehicleTypeController::class, 'store'])->name('logistics.vehicle-type.store');
     Route::delete('/logistics/vehicle-type/delete-multiple', [ErpVehicleTypeController::class, 'deleteMultiple'])->name('logistics.vehicle-type.delete-multiple');
@@ -2349,8 +2356,8 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/logistics/route-master', [ErpRouteMasterController::class, 'index'])->name('logistics.route-master.index');
     Route::post('/logistics/route-master/store', [ErpRouteMasterController::class, 'store'])->name('logistics.route-master.store');
     Route::delete('/logistics/route-master/delete-multiple', [ErpRouteMasterController::class, 'deleteMultiple'])->name('logistics.route-master.delete-multiple');
-    Route::get('/logistics/route-master/get-states-by-country', [ErpRouteMasterController::class, 'getStatesByCountry'   ])->name('logistics.route-master.get-states-by-country');
-    Route::get('/logistics/route-master/get-cities-by-state',   [ErpRouteMasterController::class, 'getCitiesByState'   ])->name('logistics.route-master.get-cities-by-state');
+    Route::get('/logistics/route-master/get-states-by-country', [ErpRouteMasterController::class, 'getStatesByCountry'])->name('logistics.route-master.get-states-by-country');
+    Route::get('/logistics/route-master/get-cities-by-state',   [ErpRouteMasterController::class, 'getCitiesByState'])->name('logistics.route-master.get-cities-by-state');
 
     //Lorry Receipt
     Route::get('/logistics/lorry-receipt', [ErpLorryReceiptController::class, 'index'])->name('logistics.lorry-receipt.index');
@@ -2362,22 +2369,22 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/get-cost-centers-by-location/{locationId}', [ErpLorryReceiptController::class, 'getCostCentersByLocation']);
     Route::post('/get-location-pricing', [ErpLorryReceiptController::class, 'getFreePointData']);
     Route::post('/logistics/lorry-receipt/send-mail', [ErpLorryReceiptController::class, 'lorryMail'])->name('logistics.lorry-receipt.lorryMail');
-    Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class,'revoke'])->name('logistics.lorry-receipt.revoke');
+    Route::post('/logistics/lorry-receipt/revoke', [ErpLorryReceiptController::class, 'revoke'])->name('logistics.lorry-receipt.revoke');
     Route::get('/logistics/lorry-receipt/generate-pdf/{id}', [ErpLorryReceiptController::class, 'generatePdf'])->name('logistics.lorry-receipt.generate-pdf');
 
 
-     //Production Slip
-     Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
-     Route::get('/production-slip/create', [ErpProductionSlipController::class, 'create'])->name('production.slip.create');
-     Route::post('/production-slip/store', [ErpProductionSlipController::class, 'store'])->name('production.slip.store');
-     Route::get('/production-slip/edit/{id}', [ErpProductionSlipController::class, 'edit'])->name('production.slip.edit');
-     Route::post('/production-slip/revoke', [ErpProductionSlipController::class, 'revoke'])->name('production.slip.revoke');
-     Route::get('/production-slip/pwo/process/pwo', [ErpProductionSlipController::class, 'processPulledItems'])->name('production.slip.process.items');
-     Route::get('/production-slip/pwo/get/items', [ErpProductionSlipController::class, 'getPwoItemsForPulling'])->name('production.slip.pull.items');
-     #get item detail for the consumption
-     Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
-     Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
-     Route::get('/production-slip/get-substore', [ErpProductionSlipController::class, 'getSubStore'])->name('production.slip.substore');
+    //Production Slip
+    Route::get('/production-slip', [ErpProductionSlipController::class, 'index'])->name('production.slip.index');
+    Route::get('/production-slip/create', [ErpProductionSlipController::class, 'create'])->name('production.slip.create');
+    Route::post('/production-slip/store', [ErpProductionSlipController::class, 'store'])->name('production.slip.store');
+    Route::get('/production-slip/edit/{id}', [ErpProductionSlipController::class, 'edit'])->name('production.slip.edit');
+    Route::post('/production-slip/revoke', [ErpProductionSlipController::class, 'revoke'])->name('production.slip.revoke');
+    Route::get('/production-slip/pwo/process/pwo', [ErpProductionSlipController::class, 'processPulledItems'])->name('production.slip.process.items');
+    Route::get('/production-slip/pwo/get/items', [ErpProductionSlipController::class, 'getPwoItemsForPulling'])->name('production.slip.pull.items');
+    #get item detail for the consumption
+    Route::get('/production-slip/get-item-detail', [ErpProductionSlipController::class, 'getItemDetail'])->name('production.slip.item.detail');
+    Route::get('/production-slip/{id}/pdf', [ErpProductionSlipController::class, 'generatepdf'])->name('production.slip.generate-pdf');
+    Route::get('/production-slip/get-substore', [ErpProductionSlipController::class, 'getSubStore'])->name('production.slip.substore');
 
     Route::prefix('stores')->controller(StoreController::class)->group(function () {
         # Get Store Address Ajax
@@ -2409,7 +2416,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::get('/store/racks-bins', 'getStoreRacksAndBins')->name('store.racksAndBins');
         Route::get('/rack/shelfs', 'getRackShelfs')->name('store.rack.shelfs');
         Route::get('get-sub-store', 'getSubStore')->name('get.sub.store');
-
     });
 
     Route::prefix('sub-stores')->name('subStore.')->controller(SubStoreController::class)->group(function () {
@@ -2469,7 +2475,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::delete('/delete-document', 'deleteDocument')->name('deleteDocument');
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
-
         });
 
     Route::prefix('loan/progress/approval')->controller(ApprovalController::class)
@@ -2486,7 +2491,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
             Route::get('/approval/{id}', 'approval')->name('approval');
             Route::post('/update-approval', 'updateApproval')->name('update-approval');
-
         });
 
     Route::prefix('loan/progress/assessment')->controller(AssessmentController::class)
@@ -2501,7 +2505,6 @@ Route::middleware(['user.auth'])->group(function () {
 
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
-
         });
 
     Route::prefix('loan/progress/legal-documentation')->controller(LegalDocumentationController::class)
@@ -2516,7 +2519,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/loan-legal-document', 'loanLegalDocument')->name('loan-legal-document');
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
-
         });
 
     Route::prefix('loan/progress/processing-fee')->controller(ProcessingFeeController::class)
@@ -2533,7 +2535,6 @@ Route::middleware(['user.auth'])->group(function () {
             Route::post('/loan-invoice/post', 'postInvoice')->name('post');
             Route::post('/loan-return', 'loanReturn')->name('loan-return');
             Route::post('/loan-reject', 'loanReject')->name('loan-reject');
-
         });
 
     Route::prefix('loan/progress/sanction-letter')->controller(SanctionLetterController::class)
@@ -2613,10 +2614,10 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('fixed-asset/export', [RegistrationController::class, 'export'])->name('finance.fixed-asset.export');
     Route::post('fixed-asset/category-search', [RegistrationController::class, 'categorySearch'])->name('finance.fixed-asset.category-search');
     Route::post('fixed-asset/registration/filter', [RegistrationController::class, 'index'])->name('finance.fixed-asset.registration.filter');
-    Route::get('fixed-asset/import', [RegistrationController::class,'showImportForm'])->name('finance.fixed-asset.show.import');
-    Route::post('fixed-asset/import', [RegistrationController::class,'import'])->name('finance.fixed-asset.import');
-    Route::get('fixed-asset/export-successful', [RegistrationController::class,'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
-    Route::get('fixed-asset/export-failed', [RegistrationController::class,'exportFailedItems'])->name('finance.fixed-asset.export.failed');
+    Route::get('fixed-asset/import', [RegistrationController::class, 'showImportForm'])->name('finance.fixed-asset.show.import');
+    Route::post('fixed-asset/import', [RegistrationController::class, 'import'])->name('finance.fixed-asset.import');
+    Route::get('fixed-asset/export-successful', [RegistrationController::class, 'exportSuccessfulItems'])->name('finance.fixed-asset.export.successful');
+    Route::get('fixed-asset/export-failed', [RegistrationController::class, 'exportFailedItems'])->name('finance.fixed-asset.export.failed');
     Route::post('fixed-asset/get-code', [RegistrationController::class, 'generateAssetCode'])->name('finance.fixed-asset.asset-code');
 
 
@@ -2657,8 +2658,8 @@ Route::middleware(['user.auth'])->group(function () {
         'update' => 'finance.fixed-asset.setup.update',
         'destroy' => 'finance.fixed-asset.setup.destroy',
     ]);
-    Route::post('/setup/generate-prefix', [SetupController::class,'generate_prefix'])->name('generate-setup-prefix');
-    Route::post('/setup/check-prefix', [SetupController::class,'checkPrefix'])->name('setup-check-prefix');
+    Route::post('/setup/generate-prefix', [SetupController::class, 'generate_prefix'])->name('generate-setup-prefix');
+    Route::post('/setup/check-prefix', [SetupController::class, 'checkPrefix'])->name('setup-check-prefix');
 
     Route::get('fixed-asset/depreciation/posting/get', [DepreciationController::class, 'getPostingDetails'])->name('finance.fixed-asset.depreciation.posting.get');
     Route::post('fixed-asset/depreciation/post', [DepreciationController::class, 'postInvoice'])->name('finance.fixed-asset.depreciation.post');
@@ -2723,11 +2724,11 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('fixed-asset/rev/amendment/{id}', [RevImpController::class, 'amendment'])->name('finance.fixed-asset.revaluation-impairement.amendment');
 
 
-    Route::resource('asset-category',AssetCategoryController::class);
+    Route::resource('asset-category', AssetCategoryController::class);
 
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
-        Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
+    Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
 
     Route::post('/cashflow/add-scheduler', [CashflowReportController::class, 'addScheduler'])->name('finance.cashflow.add.scheduler');
     Route::get('tds-report', [TDSReportController::class, 'index'])->name('finance.tds');
@@ -2865,7 +2866,6 @@ Route::middleware(['user.auth'])->group(function () {
     Route::prefix('einvoice')->group(function () {
         Route::post('/generate', [EInvoiceServiceController::class, 'generateInvoice']);
         Route::get('/generate-pdf', [EinvoicePdfController::class, 'generateInvoiceQrPdf']);
-
     });
 
     Route::prefix('reports')->controller(TransactionReportController::class)->group(function () {
@@ -2882,6 +2882,46 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/pullable-doc-items', 'getDocumentItems')->name('pullable.doc.items');
         Route::post('/item-details', 'getItemDetails')->name('item.details');
     });
+    Route::prefix('request-for-quotation')->controller(ErpRFQController::class)->name('rfq.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/store', 'store')->name('store');
+        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::post('/mail', 'mail')->name('mail');
+        Route::get('/generate-pdf/{id}', 'generatePdf')->name('generate-pdf');
+        Route::get('/process-item', 'processItems')->name('process.items');
+        Route::post('/get-item', 'getPiItemForPulling')->name('get.items');
+        Route::get('/serach-items', 'serachItems')->name('search.items');
+        Route::get('/report', 'report')->name('report');
+        
+    });
+    
+    Route::prefix('purchase-quotation')->controller(ErpPqController::class)->name('pq.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/store', 'store')->name('store');
+        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::post('/mail', 'mail')->name('mail');
+        Route::get('/generate-pdf/{id}', 'generatePdf')->name('generate-pdf');
+        Route::get('/process-item', 'processItems')->name('process.items');
+        Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
+        Route::get('/serach-items', 'serachItems')->name('search.items');
+        Route::get('/vendors/address/{id}', 'getVendorAddresses')->name('vendor.addresses');
+        
+    });
+    Route::prefix('purchase-quotation-comparison')->controller(ErpPqcController::class)->name('pqc.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/create', 'create')->name('create');
+        Route::get('/edit/{id}', 'edit')->name('edit');
+        Route::post('/store', 'store')->name('store');
+        Route::post('/revoke', 'revoke')->name('revoke');
+        Route::post('/mail', 'mail')->name('mail');
+        Route::get('/process-item', 'processItems')->name('process.items');
+        Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
+        
+    });
 
     Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {
         Route::get('/{version}', 'import')->name('import.index');
@@ -2890,7 +2930,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('item/save/', 'importSaveItem')->name('import.item.save');
         Route::post('/item/store', 'bulkUploadItems')->name('import.item.store');
     });
-
 
     Route::prefix('equipment')->group(function () {
 
@@ -2901,11 +2940,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/update/{id}', [ErpEquipmentController::class, 'update'])->name('equipment.update');
         Route::post('/approve', [ErpEquipmentController::class, 'documentApproval'])->name('equipment.approval');
         Route::get('amend/{id}', [ErpEquipmentController::class, 'amendment'])->name('equipment.amendment');
-
-
     });
 
-     Route::prefix('maintenance')->group(function () {
+    Route::prefix('maintenance')->group(function () {
 
         Route::get('/', [ErpMaintananceController::class, 'index'])->name('maintenance.index');
         Route::get('/create', [ErpMaintananceController::class, 'create'])->name('maintenance.create');
@@ -2914,7 +2951,6 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/update/{id}', [ErpMaintananceController::class, 'update'])->name('maintenance.update');
         Route::post('/approve', [ErpMaintananceController::class, 'documentApproval'])->name('maintenance.approval');
         Route::get('amend/{id}', [ErpMaintananceController::class, 'amendment'])->name('maintenance.amendment');
-
     });
 
     Route::prefix('defect-tracker')->group(function () {
@@ -2943,10 +2979,10 @@ Route::middleware(['user.auth'])->group(function () {
 
 
 Route::prefix('maintenance-types')->controller(ErpMaintenanceTypeController::class)->group(function () {
-        Route::get('/', 'index')->name('maintenance-types.index');
-        Route::post('/', 'store')->name('maintenance-types.store');
-        Route::delete('/', 'delete')->name('maintenance-types.delete');
-    });
+    Route::get('/', 'index')->name('maintenance-types.index');
+    Route::post('/', 'store')->name('maintenance-types.store');
+    Route::delete('/', 'delete')->name('maintenance-types.delete');
+});
 
 Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group(function () {
         Route::get('/', 'index')->name('defect-types.index');

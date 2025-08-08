@@ -52,7 +52,7 @@
             <input type="text" id = "item_rejected_qty_{{$slipItemIndex}}"  value = "{{$slipItem->rejected_qty}}" name = "item_rejected_qty[{{$slipItemIndex}}]" class="form-control mw-100 text-end disabled-input" />
         </td>
         @if($isWipQty)
-        <td><input type="text" id="item_wip_qty_{{$slipItemIndex}}" value = "{{$slipItem->wip_qty}}" name = "item_wip_qty[{{$slipItemIndex}}]" oninput = "changeItemQty(this, {{$slipItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
+        <td>{{ $isWipQty }}: <input type="text" id="item_wip_qty_{{$slipItemIndex}}" value = "{{$slipItem->wip_qty}}" name = "item_wip_qty[{{$slipItemIndex}}]" oninput = "changeItemQty(this, {{$slipItemIndex}});" class="form-control mw-100 text-end" onblur = "setFormattedNumericValue(this);" /></td>
         <td><input type="text" id="item_total_qty_{{$slipItemIndex}}" value = "{{($slipItem->wip_qty + $slipItem->qty)}}" name = "item_total_qty[{{$slipItemIndex}}]" oninput = "changeItemQty(this, {{$slipItemIndex}});" class="form-control mw-100 text-end disabled-input" onblur = "setFormattedNumericValue(this);" /></td>
         @endif
         {{-- @if(in_array($slip->document_status ?? [], ConstantHelper::DOCUMENT_STATUS_APPROVED))
@@ -94,11 +94,10 @@
 
         <td>
         <div class="d-flex">
-                <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$slipItemIndex}}');">        
+            <div class="me-50 cursor-pointer" data-bs-toggle="modal" data-bs-target="#Remarks" onclick = "setItemRemarks('item_remarks_{{$slipItemIndex}}');">        
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="Remarks" class="text-primary"><i data-feather="file-text"></i></span></div>
-                <div class="me-50 cursor-pointer item_bundles" onclick = "renderBundleDetails({{$slipItemIndex}}, true)" id = "item_bundles_{{$slipItemIndex}}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Details" class="text-primary"><i data-feather="package"></i></span>
-
-            </div>
+            <div class="me-50 cursor-pointer item_bundles" onclick = "renderBundleDetails({{$slipItemIndex}}, true)" id = "item_bundles_{{$slipItemIndex}}">    <span data-bs-toggle="tooltip" data-bs-placement="top" title="Details" class="text-primary"><i data-feather="package"></i></span>
+        </div>
         <input type = "hidden" id = "item_remarks_{{$slipItemIndex}}" name = "item_remarks[{{$slipItemIndex}}]" />
         </td>
         <input type="hidden" id="mo_product_id_{{$slipItemIndex}}" name = "mo_product_id[{{$slipItemIndex}}]"  value="{{$slipItem?->mo_product_id}}">

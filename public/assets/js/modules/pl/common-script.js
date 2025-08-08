@@ -858,6 +858,10 @@ function implementBookParameters(paramData)
     var selectedFutureDateOption = paramData.future_date_allowed;
     var invoiceToFollowParam = paramData?.invoice_to_follow;
     var issueTypeParameters = paramData?.issue_type;
+    var itemTypeParam = paramData?.goods_or_services;
+    const generalInfoTab = document.getElementById('general_information_tab');
+    const subStoreCodeInput = document.getElementById('sub_store_code_header');
+
    
     // Reference From
     if (selectedRefFromServiceOption) {
@@ -1046,6 +1050,19 @@ function implementBookParameters(paramData)
         $('#order_date_input').on('input', function() {
             restrictPastDates(this);
         });
+    }
+
+    if (itemTypeParam && itemTypeParam.length > 0) {
+        if (generalInfoTab && subStoreCodeInput) {
+            if (itemTypeParam[0] == "Service") {
+                generalInfoTab.classList.add('d-none');
+                subStoreCodeInput.classList.add('d-none');
+            } else {
+                generalInfoTab.classList.remove('d-none');
+                subStoreCodeInput.classList.remove('d-none');
+
+            }
+        }
     }
 
     //Issue Type
@@ -2036,10 +2053,18 @@ function itemOnChange(selectedElementId, index, routeUrl) // Retrieve element an
 
             onItemClick(index);
 
-            if (typeof checkStockData === 'function') {
-                    checkStockData(index);
-                }
-           
+            // if (typeof checkStockData === 'function') {
+            //     checkStockData(index);
+            // }
+            // if (typeof getAndSetItemRate === 'function') {
+            //     getAndSetItemRate(index);
+            // }
+            if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice') {
+                getAndSetItemRate(index, 'selling');
+            }
+            if (menuAlias == 'material-issue') {
+                getAndSetItemRate(index, 'cost');
+            }
         }).catch(error => {
             console.log("Error : ", error);
         })
@@ -2104,6 +2129,12 @@ function changeAttributeVal(selectedElement, elementId, index)
         }
     });
     elementId.setAttribute('attribute-array', JSON.stringify(attributesJSON));
+    if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice') {
+        getAndSetItemRate(index, 'selling');
+    }
+    if (menuAlias == 'material-issue') {
+        getAndSetItemRate(index, 'cost');
+    }
 }
 
 function setItemRemarks(elementId) {
@@ -2177,6 +2208,9 @@ function changeItemRate(element, index)
     //     }
     // }
     itemRowCalculation(index);
+    if (typeof changeItemRateMi === 'function') {
+        changeItemRateMi(element, index);
+    }
 }
 
 function changeAllItemsTotal() //All items total value
@@ -2249,6 +2283,10 @@ function changeItemQty(element, index)
     }
     itemRowCalculation(index);
     getStoresData(index, element.value);
+    if (typeof changeItemQtyMi === 'function') {
+        changeItemQtyMi(element, index);
+    }
+
 }
 function renderIcons()
 {

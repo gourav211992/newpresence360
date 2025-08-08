@@ -146,7 +146,7 @@ class BookController extends Controller
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[A-Za-z0-9]+(?:_[A-Za-z0-9]+)+$/'
+                'regex:/^[A-Za-z0-9_-]+$/'
             ],
             'book_name' => 'required|string|max:255',
             'status' => 'required|string|in:Active,Inactive',

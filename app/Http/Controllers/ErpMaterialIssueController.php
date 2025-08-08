@@ -1059,12 +1059,12 @@ class ErpMaterialIssueController extends Controller
                                 ->groupBy('document_detail_id')
                                 ->get();
 
-            foreach($stockLedgers as $stockLedger) {
-                $miItem = ErpMiItem::find($stockLedger->document_detail_id);
-                $miItem->rate = floatval($stockLedger->cost) / floatval($miItem->inventory_uom_qty);
-                $miItem->total_item_amount = floatval($stockLedger->cost);
-                $miItem->save();
-            }
+            // foreach($stockLedgers as $stockLedger) {
+            //     $miItem = ErpMiItem::find($stockLedger->document_detail_id);
+            //     $miItem->rate = floatval($stockLedger->cost) / floatval($miItem->inventory_uom_qty);
+            //     $miItem->total_item_amount = floatval($stockLedger->cost);
+            //     $miItem->save();
+            // }
         } else {
             return $issueRecords['message'];
         }
@@ -1185,7 +1185,7 @@ class ErpMaterialIssueController extends Controller
                     ConstantHelper::TYPE_SUBCONTRACTING, 'Sub Contracting' => JoItem::with(['attributes', 'uom', 'jo'])
                         ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $selectedIds) {
                             $referedHeaderId = JobOrder::whereIn('id', $selectedIds)->first()?->header?->id;
-                            $subQuery->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            $subQuery->where('job_order_type', ConstantHelper::TYPE_SUBCONTRACTING)->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
                                 ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
                                 ->when($request->location_id, fn($q) => $q->where('store_id', $request->location_id))
                                 ->when($request->vendor_id, fn($q) => $q->where('vendor_id', $request->vendor_id))
@@ -1200,7 +1200,7 @@ class ErpMaterialIssueController extends Controller
                     ConstantHelper::TYPE_JOB_ORDER => JoProduct::with(['attributes', 'uom', 'jo'])
                         ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $selectedIds) {
                             $referedHeaderId = JobOrder::whereIn('id', $selectedIds)->first()?->header?->id;
-                            $subQuery->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
+                            $subQuery->where('job_order_type', ConstantHelper::TYPE_JOB_ORDER) ->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
                                 ->when($request->store_id, fn($q) => $q->where('store_id', $request->store_id))
                                 ->when($request->location_id, fn($q) => $q->where('store_id', $request->location_id))
                                 ->when($request->vendor_id, fn($q) => $q->where('vendor_id', $request->vendor_id))

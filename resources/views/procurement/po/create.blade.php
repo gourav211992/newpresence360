@@ -1494,7 +1494,8 @@
                 sub_store_id: $("#sub_store_id_po").val() || '',
                 so_id: $("#pi_so_qt_val").val() || '',
                 item_search: $("#item_name_search").val(),
-                selected_pi_ids: encodeURIComponent(selectedPiIds)
+                selected_pi_ids: encodeURIComponent(selectedPiIds),
+                po_type: $("#po_type").val()
             };
         }
 

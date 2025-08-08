@@ -67,8 +67,8 @@ class SendEmailJob implements ShouldQueue
             // $mailBox->mail_from = $this->sender;
             // $mailBox->mail_from_name = $this->sender_name;
             $mailBox->mail_to = $this->receiver;
-            $mailBox->mail_cc = is_array($this->cc) ? implode(',', $this->cc) : ($this->cc ?? ""); ;
-            $mailBox->mail_bcc = is_array($this->bcc) ? implode(',', $this->bcc) : ($this->bcc ?? "");
+            $mailBox->mail_cc = is_array($this->cc) ? implode(',', $this->cc) : ($this->cc ?? null); ;
+            $mailBox->mail_bcc = is_array($this->bcc) ? implode(',', $this->bcc) : ($this->bcc ?? null);
             $mailBox->attachment = is_array($this->attachment) ? json_encode($this->attachment) : ($this->attachment ?? []);
             $mailBox->layout = "emails.template";
             $mailBox->mail_body = json_encode([

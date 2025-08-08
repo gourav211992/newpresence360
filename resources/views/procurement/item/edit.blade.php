@@ -68,6 +68,14 @@
                                                 <i data-feather="trash-2" class="me-50"></i> Delete
                                             </button>
                                         @endif
+                                        @if($buttons['amendDelete'])
+                                        <button type="button" style="display:none;" id="btnAmendDelete" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
+                                                data-url="{{ route('item.destroy', $item->id) }}" 
+                                                data-redirect="{{ route('item.index') }}"
+                                                data-message="Are you sure you want to delete this record?">
+                                                <i data-feather="trash-2" class="me-50"></i> Delete
+                                        </button>
+                                        @endif
                                         @if($buttons['draft'])
                                             <button type="submit" value="draft" class="btn btn-outline-primary btn-sm mb-50 mb-sm-0 submit-button">
                                                 <i data-feather='save'></i> Save as Draft
@@ -2206,6 +2214,7 @@
 <script>
     $(document).ready(function() {
         var itemCounter = $('#itemTable tbody tr').length + 1;
+          const itemId = "{{ isset($item) ? $item->id : null }}"; 
         var addedItems = {};
         function initializeItemAutocomplete(selector) {
             $(selector).autocomplete({
@@ -2215,7 +2224,8 @@
                         method: 'GET',
                         dataType: 'json',
                         data: {
-                            term: request.term
+                             term: request.term,
+                             exclude_id: itemId
                         },
                         success: function(data) {
                             response($.map(data, function(item) {
@@ -2418,8 +2428,13 @@
             ['#UOM', '#Details', '#Attributes'].forEach(function (selector) {
                 $(selector).addClass('d-none').find('input, select, textarea').each(function () {
                     const $input = $(this);
-                    $input.is(':checkbox') || $input.is(':radio') 
-                        ? $input.prop('checked', false) : $input.val('');
+                    if ($input.is(':checkbox') || $input.is(':radio')) {
+                        if ($input.is(':checked')) {
+                            $input.prop('checked', false);
+                        }
+                    } else {
+                        $input.val('');
+                    }
                 });
             });
             $('#item_code_label').text('Service Code');
@@ -3030,6 +3045,11 @@
         const checkbox = document.getElementById('customSwitch3');
         if (checkbox) {
             checkbox.disabled = false;
+        }
+
+        const amendDeleteBtn = document.getElementById('btnAmendDelete');
+        if (amendDeleteBtn) {
+            amendDeleteBtn.style.setProperty('display', 'inline-block', 'important');
         }
 
         let isBomExists = @json($isBomExists);

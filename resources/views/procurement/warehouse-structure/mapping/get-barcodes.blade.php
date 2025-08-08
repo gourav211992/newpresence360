@@ -18,11 +18,11 @@
                                     <button id="printBarcodesBtn" class="btn btn-dark" data-location-id="{{ $level->store_id }}" data-store-id="{{ $level->sub_store_id }}" data-level-id="{{ $level->id }}">
                                         🖨️ Print
                                     </button>
-                                </div> 
-                            </div>  
+                                </div>
+                            </div>
                             <div class="card">
                                 <div class="table-responsive">
-                                    <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                    <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                         <thead>
                                             <tr>
                                                 <th>S.No.</th>
@@ -44,12 +44,12 @@
                                                     </td>
                                                     <td>
                                                         {{ $val?->sub_store?->name }}
-                                                    </td>   
+                                                    </td>
                                                     <td>
                                                         {{ $val?->name }}
                                                     </td>
                                                     <td>
-                                                        {{ $val?->parent?->name }}
+                                                        {{ str_replace('-', ' > ', $val?->heirarchy_name) }}
                                                     </td>
                                                     <td>
                                                         @if($val->storage_number)
@@ -57,7 +57,7 @@
                                                         @endif
                                                     </td>
                                                 </tr>
-                                            @empty 
+                                            @empty
                                                 <tr>
                                                     <td colspan="6">
                                                         No Record Found
