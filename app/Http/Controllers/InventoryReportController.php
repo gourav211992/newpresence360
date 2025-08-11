@@ -326,6 +326,11 @@ class InventoryReportController extends Controller
             $hasFilters = true;
         }
 
+        if ($request->has('doc_no') && !empty($request->doc_no)) {
+            $query->where('document_number', 'like', '%' . $request->doc_no . '%');
+            $hasFilters = true;
+        }
+
         if($request->has('store_id') && !empty($request->store_id)) {
             $query->where('store_id', $request->store_id);
             $hasFilters = true;
@@ -462,6 +467,11 @@ class InventoryReportController extends Controller
             $hasFilters = true;
         }
 
+        if ($request->has('doc_no') && !empty($request->doc_no)) {
+            $query->where('document_number', 'like', '%' . $request->doc_no . '%');
+            $hasFilters = true;
+        }
+
         if ($request->has('store_id') && !empty($request->store_id)) {
             $query->where('store_id', $request->store_id);
         }
@@ -564,6 +574,10 @@ class InventoryReportController extends Controller
         // Conditionally apply filters based on the request parameters
         if($request->has('item') && !empty($request->item)) {
             $query->where('item_id', $request->item);
+        }
+
+        if ($request->has('doc_no') && !empty($request->doc_no)) {
+            $query->where('document_number', 'like', '%' . $request->doc_no . '%');
         }
 
         if($request->has('store_id') && !empty($request->store_id)) {
@@ -676,6 +690,10 @@ class InventoryReportController extends Controller
 
         if ($request->has('item') && !empty($request->item)) {
             $query->where('item_id', $request->item);
+        }
+
+        if ($request->has('doc_no') && !empty($request->doc_no)) {
+            $query->where('document_number', 'like', '%' . $request->doc_no . '%');
         }
 
         if ($request->has('store_id') && !empty($request->store_id)) {

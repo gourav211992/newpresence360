@@ -302,7 +302,7 @@ class ErpPqcController extends Controller
             return $header->items->map(function ($item) use ($header) {
             $pqVendorRates = [];
             foreach ($header->pqs as $pq) {
-                $pqItem = $pq->items->where('item_id', $item->item_id)->first();
+                $pqItem = $pq->items->where('rfq_item_id',$item->id)->first();
                 if ($pqItem) {
                 $vendor = $pq->suppliers;
                 $pqVendorRates[] = [
@@ -319,8 +319,8 @@ class ErpPqcController extends Controller
             }
             $item->pq_vendor_rates = $pqVendorRates;
             return $item;
-            });
         });
+    });
         $itemsData = $rfqItems->map(function ($item) {
             return [
                 'id'                  => $item->id,
@@ -486,7 +486,7 @@ class ErpPqcController extends Controller
                     'error' => "Error",
                 ], 500);
             }
-            $pq = request()->filled('pq_id') ? ErpPqHeader::where('vendor_id',$request->vendor_radio)->where('rfq_id',$request->rfq_id)->get() : collect(); 
+            $pq = request()->filled('pq_id') ? ErpPqHeader::with(['rfq'])->where('vendor_id',$request->vendor_radio)->where('rfq_id',$request->rfq_ids)->first() : null; 
             $store = ErpStore::find($request->store_id ?? null);
             if ($isUpdate) {
                 $pqc = ErpPqcHeader::find($request->pqc_header_id);
@@ -506,10 +506,10 @@ class ErpPqcController extends Controller
                     'instructions' => $request->instructions,
                     'store_id' => $request->store_id,
                     'store_code' => $store->store_code ?? null,
-                    'selected_vendor' => $request->vendor_radio ?? $pqc->selected_vendor,
-                    'selected_pq' => $request->pq_id ?? $pqc->selected_pq,
-                    'vendor_email' => $request->vendor_email ?? $pqc->vendor_email,
-                    'vendor_phone' => $request->vendor_phone_no ?? $pqc->vendor_phone,
+                    'selected_vendor' => $request->vendor_radio ?? ($pqc->selected_vendor ?? null),
+                    'selected_pq' => $request->pq_id ?? ($pqc->selected_pq ?? null),
+                    'vendor_email' => $request->vendor_email ?? ($pqc->vendor_email ?? null),
+                    'vendor_phone' => $request->vendor_phone_no ?? ($pqc->vendor_phone ?? null),
                     'remark' => $request->final_remarks,
                     'updated_by' => $user->auth_user_id,
                 ])->save();
@@ -517,7 +517,7 @@ class ErpPqcController extends Controller
             } else {
                 $pqc = new ErpPqcHeader();
                 $pqc->fill([
-                    'rfq_id' => $pq->rfq->id ?? null,
+                    'rfq_id' => $pq?->rfq?->id ?? null,
                     'organization_id' => $organizationId,
                     'group_id' => $groupId,
                     'company_id' => $companyId,
@@ -553,7 +553,7 @@ class ErpPqcController extends Controller
                     'instructions' => $request->instructions,
                     'remark' => $request->final_remarks ?? null,
                     'selected_vendor' => $request->vendor_radio,
-                    'selected_pq' => $pq->id, // Assigned after save
+                    'selected_pq' => $pq?->id, // Assigned after save
                     'vendor_email' => $request->vendor_email ?? null,
                     'vendor_phone' => $request->vendor_phone_no ?? null,
                     'created_by' => $user->auth_user_id,
@@ -580,8 +580,8 @@ class ErpPqcController extends Controller
                     'error' => ''
                 ], 422);
             }
-            $rfq = ErpRfqHeader::find($pq->rfq->id);
-            $rfq->selected_pq = $pq->id;
+            $rfq = ErpRfqHeader::find($pq?->rfq?->id);
+            $rfq->selected_pq = $pq?->id;
             $rfq->selected_vendor = $pq->vendor_id;
             $rfq->save();
             DB::commit();

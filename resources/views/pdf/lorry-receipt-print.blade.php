@@ -248,7 +248,7 @@
                 <div style="margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
                     <p style="margin: 0;"><strong>{{ strtoupper($location->route->name ?? 'N/A') }}</strong></p>
                     <p style="margin: 0;"><strong>{{ $location->type ?? ' ' }} Freight:</strong> Rs. {{ $location->amount ?? '0' }}/-</p>
-                    <p style="margin: 0;"><strong>No. of Articles:</strong> Rs. {{ $location->no_of_articles ?? '0' }}/-</p>
+                    <p style="margin: 0;"><strong>No. of Articles:</strong> {{ $location->no_of_articles ?? '0' }}/-</p>
                 </div>
             </td>
         @endforeach

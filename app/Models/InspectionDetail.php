@@ -16,44 +16,44 @@ class InspectionDetail extends Model
 
     protected $table = 'erp_insp_details';
     protected $fillable = [
-        'header_id', 
-        'item_id', 
-        'mrn_detail_id', 
-        'mrn_header_id', 
-        'item_code', 
-        'item_name', 
-        'so_id', 
-        'hsn_id', 
-        'hsn_code', 
-        'uom_id', 
-        'uom_code', 
-        'store_id', 
-        'store_code', 
-        'sub_store_id', 
-        'sub_store_code', 
-        'receipt_qty', 
-        'accepted_qty', 
-        'rejected_qty', 
-        'inventory_uom_id', 
-        'inventory_uom_code', 
-        'inventory_uom_qty', 
-        'accepted_inv_uom_id', 
+        'header_id',
+        'item_id',
+        'mrn_detail_id',
+        'mrn_header_id',
+        'item_code',
+        'item_name',
+        'so_id',
+        'hsn_id',
+        'hsn_code',
+        'uom_id',
+        'uom_code',
+        'store_id',
+        'store_code',
+        'sub_store_id',
+        'sub_store_code',
+        'receipt_qty',
+        'accepted_qty',
+        'rejected_qty',
+        'inventory_uom_id',
+        'inventory_uom_code',
+        'inventory_uom_qty',
+        'accepted_inv_uom_id',
         'accepted_inv_uom_code',
-        'accepted_inv_uom_qty', 
+        'accepted_inv_uom_qty',
         'rejected_inv_uom_id',
-        'rejected_inv_uom_code', 
+        'rejected_inv_uom_code',
         'rejected_inv_uom_qty',
-        'rate', 
-        'basic_value', 
-        'discount_percentage', 
-        'discount_amount', 
-        'header_discount_amount', 
-        'net_value', 
-        'tax_value', 
-        'taxable_amount', 
-        'item_exp_amount', 
-        'header_exp_amount', 
-        'total_item_amount', 
+        'rate',
+        'basic_value',
+        'discount_percentage',
+        'discount_amount',
+        'header_discount_amount',
+        'net_value',
+        'tax_value',
+        'taxable_amount',
+        'item_exp_amount',
+        'header_exp_amount',
+        'total_item_amount',
         'remark'
     ];
 
@@ -245,5 +245,45 @@ class InspectionDetail extends Model
     public function checklists()
     {
         return $this->hasMany(InspChecklist::class, 'detail_id');
+    }
+
+    public function item_attributes_array()
+    {
+        $itemId = $this->getAttribute('item_id');
+        if (!$itemId) {
+            return collect([]);
+        }
+        $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+        $processedData = [];
+        $mappingAttributes = InspectionItemAttribute::where('detail_id', $this->getAttribute('id'))
+        ->select(['item_attribute_id as attribute_id', 'attr_value as attribute_value_id'])
+        ->get()
+        ->toArray();
+        foreach ($itemAttributes as $attribute) {
+            $attributeIds = is_array($attribute->attribute_id) ? $attribute->attribute_id : [$attribute->attribute_id];
+            $attribute->group_name = $attribute->group?->name;
+            $valuesData = [];
+            foreach ($attributeIds as $attributeValueId) {
+                $attributeValueData = ErpAttribute::where('id', $attributeValueId)
+                    ->where('status', 'active')
+                    ->select('id', 'value')
+                    ->first();
+                if ($attributeValueData) {
+                    $isSelected = collect($mappingAttributes)->contains(function ($itemAttr) use ($attribute, $attributeValueData) {
+                        return $itemAttr['attribute_id'] == $attribute->id &&
+                            $itemAttr['attribute_value_id'] == $attributeValueData->id;
+                    });
+                    $attributeValueData->selected = $isSelected;
+                    $valuesData[] = $attributeValueData;
+                }
+            }
+            $processedData[] = [
+                'id' => $attribute->id,
+                'group_name' => $attribute->group_name,
+                'values_data' => $valuesData,
+                'attribute_group_id' => $attribute->attribute_group_id,
+            ];
+        }
+        return collect($processedData);
     }
 }

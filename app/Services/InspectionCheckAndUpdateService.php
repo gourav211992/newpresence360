@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Services;
 
 use Illuminate\Http\Request;
@@ -26,7 +26,7 @@ class InspectionCheckAndUpdateService
         $item = Item::find($inputData['item_id']);
         $type = $inputData['type'];
         $inputQty = (float) $inputData['qty'] ?? 0.00;
-        
+
         if (!$item) {
             return self::errorResponse("Item not found.", [
                 'order_qty' => $inputQty
@@ -34,8 +34,8 @@ class InspectionCheckAndUpdateService
         }
 
         // === Case 1: Edit (MRN Detail exists) ===
-        if (!empty($inputData['inspection_item_id'])) {
-            $inspDetail = InspectionDetail::find($inputData['inspection_item_id']);
+        if (!empty($inputData['inspection_dtl_id'])) {
+            $inspDetail = InspectionDetail::find($inputData['inspection_dtl_id']);
             $mrnOrderQty = number_format((float) $inspDetail->order_qty ?? 0.00, 2);
             if (!$inspDetail) {
                 return self::errorResponse("Inspection Item not found.", [
@@ -90,7 +90,7 @@ class InspectionCheckAndUpdateService
         ]);
     }
 
-    // Check Confirmed Stock 
+    // Check Confirmed Stock
     private static function checkConfirmedStock($mrnItem, $inputQty)
     {
         $inventoryUomQty = ItemHelper::convertToBaseUom($mrnItem->item_id, $mrnItem->uom_id, $inputQty);

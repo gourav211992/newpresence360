@@ -97,15 +97,13 @@
                                                             value="{{ old("route_master.$rowIndex.city_id", $route->city_id ?? '') }}">
                                                     </td>
                                                     <td>
-                                                          @php
-                                                            $statusClass = $route->status === 'active' ? 'bg-success text-white' : 'bg-danger text-white';
-                                                        @endphp
-
-                                                        <select name="route_master[{{ $rowIndex }}][status]"
-                                                                class="form-control mw-100 {{ $statusClass }}">
+                                                       <select name="route_master[{{ $rowIndex }}][status]"
+                                                                class="form-control mw-100 route-master-status-select"
+                                                                data-initial="{{ $route->status }}">
                                                             <option value="active" {{ $route->status == 'active' ? 'selected' : '' }}>Active</option>
                                                             <option value="inactive" {{ $route->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                                         </select>
+
                                                     </td>
                                                 </tr>
                                                 @php $rowIndex++; @endphp
@@ -158,6 +156,32 @@
 
 @section('scripts')
 <script>
+
+
+ $(document).ready(function () {
+    function updateStatusColor($select) {
+        const value = $select.val();
+        if (value === 'active') {
+            $select.css({ 'background-color': '#28a745', 'color': '#fff' });
+        } else if (value === 'inactive') {
+            $select.css({ 'background-color': '#dc3545', 'color': '#fff' });
+        }
+    }
+
+    // Initial color set
+    $('.route-master-status-select').each(function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('focus', '.route-master-status-select', function () {
+        $(this).css({ 'background-color': '', 'color': '' });
+    });
+    $(document).on('change', '.route-master-status-select', function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('blur', '.route-master-status-select', function () {
+        updateStatusColor($(this));
+    });
+});
 document.addEventListener('DOMContentLoaded', function () {
  
     document.getElementById('checkAll').addEventListener('change', function () {

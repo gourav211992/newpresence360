@@ -418,7 +418,7 @@ document.addEventListener('input', function (e) {
 
 <script>
 
-    const routeMasters = [
+const routeMasters = [
     @foreach($routeMasters as $rm)
         {
             label: "{{ $rm->name }}",
@@ -433,16 +433,32 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: routeMasters,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(routeMasters, request.term);
+                if (!results.length) {
+                    results.push({
+                        label: 'No matching route found',
+                        value: '',
+                        id: ''
+                    });
+                }
+                response(results);
+            },
             minLength: 0,
             select: function (event, ui) {
+                if (ui.item.id === '') {
+                    event.preventDefault(); // Prevent selection
+                    $input.val('');
+                    $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                    return false;
+                }
+
                 $input.val(ui.item.label);
                 $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
                 return false;
             },
             change: function (event, ui) {
-                if (!ui.item) {
-                    // Text was typed without selecting — reset ID
+                if (!ui.item || ui.item.id === '') {
                     $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
                 }
             }
@@ -452,55 +468,73 @@ $(document).on('focus', '.route-master-autocomplete', function () {
     }
 });
 
-
     //customer autocomplete search code here
- const customerList = [
-        @foreach($customers as $customer)
-            {
-                label: "{{ addslashes($customer->company_name) }}",
-                value: "{{ addslashes($customer->company_name) }}",
-                id: {{ $customer->id }}
-            },
-        @endforeach
-    ];
+   const customerList = [
+    @foreach($customers as $customer)
+        {
+            label: "{{ addslashes($customer->company_name) }}",
+            value: "{{ addslashes($customer->company_name) }}",
+            id: {{ $customer->id }}
+        },
+    @endforeach
+];
 
-    $(document).ready(function () {
+$(document).ready(function () {
 
-        // Initialize autocomplete on focus
-        $(document).on('focus', '.customer-autocomplete', function () {
-            const $input = $(this);
+    // Initialize autocomplete on focus
+    $(document).on('focus', '.customer-autocomplete', function () {
+        const $input = $(this);
 
-            // Only initialize once
-            if (!$input.data('ui-autocomplete')) {
-                $input.autocomplete({
-                    source: customerList,
-                    minLength: 0,
-                    select: function (event, ui) {
-                        const $row = $input.closest('tr');
-                        $input.val(ui.item.label);
-                        $row.find('.customer-id').val(ui.item.id);
+        // Only initialize once
+        if (!$input.data('ui-autocomplete')) {
+            $input.autocomplete({
+                source: function (request, response) {
+                    const results = $.ui.autocomplete.filter(customerList, request.term);
+
+                    if (!results.length) {
+                        results.push({
+                            label: 'No matching customer found',
+                            value: '',
+                            id: null
+                        });
+                    }
+
+                    response(results);
+                },
+                minLength: 0,
+                select: function (event, ui) {
+                    const $row = $input.closest('tr');
+
+                    if (!ui.item.id) {
+                        // Prevent selection if it's the "Not Found" item
+                        event.preventDefault();
                         return false;
                     }
-                }).focus(function () {
-                    $(this).autocomplete('search', '');
-                });
-            }
-        });
 
-        // Clear customer ID if input is changed manually
-        $(document).on('input', '.customer-autocomplete', function () {
-            const $input = $(this);
-            const $row = $input.closest('tr');
-            const currentVal = $input.val().trim();
-
-            const matchedCustomer = customerList.find(c => c.label === currentVal);
-
-            if (!matchedCustomer) {
-                $row.find('.customer-id').val('');
-            }
-        });
-
+                    $input.val(ui.item.label);
+                    $row.find('.customer-id').val(ui.item.id);
+                    return false;
+                }
+            }).focus(function () {
+                $(this).autocomplete('search', '');
+            });
+        }
     });
+
+    // Clear customer ID if input is changed manually
+    $(document).on('input', '.customer-autocomplete', function () {
+        const $input = $(this);
+        const $row = $input.closest('tr');
+        const currentVal = $input.val().trim();
+
+        const matchedCustomer = customerList.find(c => c.label === currentVal);
+
+        if (!matchedCustomer) {
+            $row.find('.customer-id').val('');
+        }
+    });
+
+});
 
 </script>
 

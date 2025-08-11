@@ -987,47 +987,37 @@ document.addEventListener("DOMContentLoaded", function () {
     $('#totalFreightInput').val(total.toFixed(2));
 }
 
+// show location details here
 function updateRouteDetailsUI() {
     const $rows = $('#item-table-body').find('tr');
 
-    // Only update if not already set
-    if (!$('#routeSource').text() || $('#routeSource').text() === 'Not selected') {
-        const source = $('#sourceText').text() || 'Not selected';
-        $('#routeSource').text(source);
-    }
-
-    if (!$('#routeDestination').text() || $('#routeDestination').text() === 'Not selected') {
-        const destination = $('#destinationText').text() || 'Not selected';
-        $('#routeDestination').text(destination);
-    }
+    const source = $('#sourceText').text() || 'Not selected';
+    const destination = $('#destinationText').text() || 'Not selected';
     let totalWeight = 0;
     let totalArticles = 0;
+    let totalPoints = 0;
 
     $rows.each(function () {
         const weight = parseFloat($(this).find('input[name*="[weight]"]').val()) || 0;
         const articles = parseInt($(this).find('input[name*="[no_of_articles]"]').val()) || 0;
         totalWeight += weight;
         totalArticles += articles;
+        totalPoints += 1;
     });
 
+    const $vehicle = $('#vehicle_id option:selected');
+    const vehicleText = $vehicle.length ? $vehicle.text() : $('#routeVehicle').text() || 'Not selected';
+    const vehicleCapacity = $vehicle.length ? $vehicle.data('capacity') : $('#routeCapacity').text() || '--';
+
+    $('#routeSource').text(source);
+    $('#routeDestination').text(destination);
     $('#routeWeight').text(totalWeight);
     $('#routeArticles').text(totalArticles);
-
-    // Set vehicle text only if not already set
-    if (!$('#routeVehicle').text() || $('#routeVehicle').text() === 'Not selected') {
-        const vehicleText = $('#vehicle_id option:selected').text() || 'Not selected';
-        $('#routeVehicle').text(vehicleText);
-    }
-
-    if (!$('#routeCapacity').text() || $('#routeCapacity').text() === '--') {
-        const vehicleCapacity = $('#vehicle_id option:selected').data('capacity') || '--';
-        $('#routeCapacity').text(vehicleCapacity);
-    }
-
-   const activePoints = parseInt($('#activeFreePointGlobal').val() || 0);
-    const existingPoints = parseInt($('#routePoints').text() || 0);
-    $('#routePoints').text(existingPoints + activePoints);
+    $('#routePoints').text(totalPoints);
+    $('#routeVehicle').text(vehicleText);
+    $('#routeCapacity').text(vehicleCapacity);
 }
+
 
 
  let rowIndex = {{ $rowIndex ?? 1 }};
@@ -1106,17 +1096,17 @@ $('#addRowBtn').on('click', function () {
         const currentVal = freightInput.val();
 
         // Only set freight if it's empty or 0
-        if (!currentVal || parseFloat(currentVal) === 0) {
-            if (index < activeFreePoint) {
-                freightInput.val(0);
-            } else {
-                if (fixedAmountGlobal) {
-                    freightInput.val(fixedAmountGlobal);
-                } else {
-                    freightInput.val(freeAmountGlobal);
-                }
-            }
-        }
+        // if (!currentVal || parseFloat(currentVal) === 0) {
+        //     if (index < activeFreePoint) {
+        //         freightInput.val(0);
+        //     } else {
+        //         if (fixedAmountGlobal) {
+        //             freightInput.val(fixedAmountGlobal);
+        //         } else {
+        //             freightInput.val(freeAmountGlobal);
+        //         }
+        //     }
+        // }
 
         // Re-bind on input
         freightInput.off('input').on('input', calculateTotals);
@@ -1164,6 +1154,7 @@ $(document).on('click', '#deleteSelected', function (e) {
             selectedRows.remove();
             applyFreightToRows(selectedRows.length); 
             calculateTotals();
+            updateRouteDetailsUI();
         }
     });
 });
@@ -1243,64 +1234,100 @@ $(document).on('focus', '.route-master-autocomplete', function () {
     const $input = $(this);
 
     if (!$input.data('ui-autocomplete')) {
-      $input.autocomplete({
-    source: routeMasters,
-    minLength: 0,
-    select: function (event, ui) {
-        $input.val(ui.item.label);
+        $input.autocomplete({
+            minLength: 0,
 
-        const type = $input.data('type');
-        if (type === 'source' || type === 'destination') {
-            $(`#${type}IdInput`).val(ui.item.id);
-        }
+            source: function (request, response) {
+                const type = $input.data('type');
+                const searchTerm = request.term.toLowerCase();
+                const sourceId = $('#sourceIdInput').val();
+                const destinationId = $('#destinationIdInput').val();
 
-        if (type === 'location') {
-            const nameAttr = $input.attr('name');
-            const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-            if (match) {
-                const index = match[1];
-                const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                let filtered = $.grep(routeMasters, function (item) {
+                    const match = item.label.toLowerCase().includes(searchTerm);
 
-                $hiddenInput.val(ui.item.id);
-                calculateTotals(); // always fire
-            }
-        }
+                    if (!match) return false;
 
-        return false;
-    },
-    change: function (event, ui) {
-        const type = $input.data('type');
+                    // 🔽 Exclude source & destination only for location field
+                    if (type === 'location') {
+                        if (item.id == sourceId || item.id == destinationId) {
+                            return false;
+                        }
+                    }
 
-        if (ui.item) {
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                    return true;
+                });
 
-                    $hiddenInput.val(ui.item.id);
-                    calculateTotals(); 
+                // 🔄 Optional: show 'No results found' if nothing matches
+                if (filtered.length === 0) {
+                    filtered = [{
+                        label: 'No results found',
+                        value: '',
+                        id: null,
+                        isDummy: true
+                    }];
+                }
+
+                response(filtered);
+            },
+
+            select: function (event, ui) {
+                if (ui.item.isDummy) {
+                    event.preventDefault();
+                    return false;
+                }
+
+                $input.val(ui.item.label);
+
+                const type = $input.data('type');
+                if (type === 'source' || type === 'destination') {
+                    $(`#${type}IdInput`).val(ui.item.id);
+                }
+
+                if (type === 'location') {
+                    const nameAttr = $input.attr('name');
+                    const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                    if (match) {
+                        const index = match[1];
+                        const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                        $hiddenInput.val(ui.item.id);
+                        calculateTotals();
+                    }
+                }
+
+                return false;
+            },
+
+            change: function (event, ui) {
+                const type = $input.data('type');
+
+                if (ui.item && !ui.item.isDummy) {
+                    if (type === 'location') {
+                        const nameAttr = $input.attr('name');
+                        const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                        if (match) {
+                            const index = match[1];
+                            const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                            $hiddenInput.val(ui.item.id);
+                            calculateTotals();
+                        }
+                    }
+                } else {
+                    $input.val('');
+                    if (type === 'location') {
+                        const nameAttr = $input.attr('name');
+                        const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                        if (match) {
+                            const index = match[1];
+                            $(`input[name="locations[${index}][location_id]"]`).val('');
+                            calculateTotals();
+                        }
+                    }
                 }
             }
-        } else {
-            // If user cleared the field
-            $input.val('');
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    $(`input[name="locations[${index}][location_id]"]`).val('');
-                    calculateTotals(); 
-                }
-            }
-        }
-    }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
     }
 });
 
@@ -1322,10 +1349,27 @@ $(document).on('focus', '.customer-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: customerList,
             minLength: 0,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(customerList, request.term);
+
+                if (!results.length) {
+                    results.push({
+                        label: 'No results found',
+                        value: '',
+                        id: ''
+                    });
+                }
+
+                response(results);
+            },
             select: function (event, ui) {
-                const type = $input.data('type'); 
+                if (ui.item.value === '') {
+                    event.preventDefault(); 
+                    return false;
+                }
+
+                const type = $input.data('type');
                 $input.val(ui.item.label);
                 $(`.customer-id[data-type="${type}"]`).val(ui.item.id);
                 return false;
@@ -1352,9 +1396,27 @@ $(document).on('focus', '.driver-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: driverList,
             minLength: 0,
+            source: function (request, response) {
+                const term = $.ui.autocomplete.escapeRegex(request.term);
+                const matcher = new RegExp(term, "i");
+
+                const matches = $.grep(driverList, function (item) {
+                    return matcher.test(item.label);
+                });
+
+                if (matches.length) {
+                    response(matches);
+                } else {
+                    response([{ label: "No results found", value: "", id: "" }]);
+                }
+            },
             select: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault(); 
+                    return false;
+                }
+
                 $input.val(ui.item.label);
                 $input.closest('div').find('.driver-id').val(ui.item.id);
                 return false;
@@ -1364,6 +1426,7 @@ $(document).on('focus', '.driver-autocomplete', function () {
         });
     }
 });
+
 
 </script>   
 
@@ -1385,9 +1448,22 @@ const vehicleNumbers = [
 
 $('.vehicle-number-autocomplete').each(function () {
     $(this).autocomplete({
-        source: vehicleNumbers,
+        source: function (request, response) {
+            const results = $.ui.autocomplete.filter(vehicleNumbers, request.term);
+            if (!results.length) {
+                results.push({
+                    label: 'No results found',
+                    value: '',
+                    id: ''
+                });
+            }
+            response(results);
+        },
         minLength: 0,
         select: function (event, ui) {
+            if (ui.item.value === '') {
+                return false;
+            }
             $(this).val(ui.item.label);
             $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
             return false;
@@ -1396,6 +1472,8 @@ $('.vehicle-number-autocomplete').each(function () {
         $(this).autocomplete('search', '');
     });
 });
+
+
 
 
 </script>

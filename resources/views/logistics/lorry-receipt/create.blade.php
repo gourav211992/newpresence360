@@ -264,7 +264,7 @@
                                                                 data-type="consignor"
                                                                 placeholder="Start typing customer..." />
 
-                                                            <input type="hidden" name="customer_id" class="customer-id" data-type="consignor" />
+                                                            <input type="hidden" name="customer_id" class="customer-id" data-type="consignor" id="customer_id"/>
                                                         </div>
                                                     </div>
 
@@ -278,7 +278,7 @@
                                                                 data-type="consignee"
                                                                 placeholder="Start typing consignee..." />
 
-                                                            <input type="hidden" name="consignee_id" class="customer-id" data-type="consignee" />
+                                                            <input type="hidden" name="consignee_id" class="customer-id" data-type="consignee" id="consignee_id"/>
                                                         </div>
                                                     </div>
 
@@ -290,7 +290,7 @@
                                                                         class="form-control mw-100 vehicle-number-autocomplete"
                                                                         placeholder="Select Vehicle"  id="vehicle_number"/>
                                                                     <input type="hidden"
-                                                                        name="vehicle_number_id" class="vehicle-number-id" />
+                                                                        name="vehicle_number_id" class="vehicle-number-id" id="vehicle_number_id"/>
                                                         </div>
                                                     </div>
 
@@ -559,7 +559,7 @@
                                                                                     </tr>
                                                                                     <tr>
                                                                                         <td class="poprod-decpt">
-                                                                                            <span class="badge rounded-pill badge-light-primary"><strong>Vehicle</strong>: <span id="routeVehicle">--</span></span>
+                                                                                            <span class="badge rounded-pill badge-light-primary"><strong>Vehicle Type</strong>: <span id="routeVehicle">--</span></span>
                                                                                             <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">--</span></span>
                                                                                         </td>
                                                                                     </tr>
@@ -733,16 +733,18 @@ function updateRouteDetailsUI() {
         const articles = parseInt($(this).find('input[name*="[no_of_articles]"]').val()) || 0;
         totalWeight += weight;
         totalArticles += articles;
+        totalPoints += 1;
     });
 
-    const vehicleText = $('#vehicle_id option:selected').text() || 'Not selected';
-    const vehicleCapacity = $('#vehicle_id option:selected').data('capacity') || '--';
+    const $vehicle = $('#vehicle_id option:selected');
+    const vehicleText = $vehicle.length ? $vehicle.text() : $('#routeVehicle').text() || 'Not selected';
+    const vehicleCapacity = $vehicle.length ? $vehicle.data('capacity') : $('#routeCapacity').text() || '--';
 
     $('#routeSource').text(source);
     $('#routeDestination').text(destination);
     $('#routeWeight').text(totalWeight);
     $('#routeArticles').text(totalArticles);
-    $('#routePoints').text(parseInt($('#activeFreePointGlobal').val() || 0)); 
+    $('#routePoints').text(totalPoints);
     $('#routeVehicle').text(vehicleText);
     $('#routeCapacity').text(vehicleCapacity);
 }
@@ -825,17 +827,17 @@ $('#addRowBtn').on('click', function () {
         const currentVal = freightInput.val();
 
         // Only set freight if it's empty or 0
-        if (!currentVal || parseFloat(currentVal) === 0) {
-            if (index < activeFreePoint) {
-                freightInput.val(0);
-            } else {
-                if (fixedAmountGlobal) {
-                    freightInput.val(fixedAmountGlobal);
-                } else {
-                    freightInput.val(freeAmountGlobal);
-                }
-            }
-        }
+        // if (!currentVal || parseFloat(currentVal) === 0) {
+        //     if (index < activeFreePoint) {
+        //         freightInput.val(0);
+        //     } else {
+        //         if (fixedAmountGlobal) {
+        //             freightInput.val(fixedAmountGlobal);
+        //         } else {
+        //             freightInput.val(freeAmountGlobal);
+        //         }
+        //     }
+        // }
 
         // Re-bind on input
         freightInput.off('input').on('input', calculateTotals);
@@ -882,6 +884,7 @@ $(document).on('click', '#deleteSelected', function (e) {
             selectedRows.remove();
             applyFreightToRows(selectedRows.length); 
             calculateTotals();
+            updateRouteDetailsUI();
         }
     });
 });
@@ -963,66 +966,88 @@ $(document).on('focus', '.route-master-autocomplete', function () {
     const $input = $(this);
 
     if (!$input.data('ui-autocomplete')) {
-      $input.autocomplete({
-    source: routeMasters,
-    minLength: 0,
-    select: function (event, ui) {
-        $input.val(ui.item.label);
+        $input.autocomplete({
+            minLength: 0,
+            source: function (request, response) {
+                const type = $input.data('type');
+                const term = $.trim(request.term).toLowerCase();
 
-        const type = $input.data('type');
-        if (type === 'source' || type === 'destination') {
-            $(`#${type}IdInput`).val(ui.item.id);
-        }
+                let filtered = routeMasters;
 
-        if (type === 'location') {
-            const nameAttr = $input.attr('name');
-            const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-            if (match) {
-                const index = match[1];
-                const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                // Exclude selected source/destination from location field
+                if (type === 'location') {
+                    const sourceName = $('input[data-type="source"]').val()?.toLowerCase() || '';
+                    const destinationName = $('input[data-type="destination"]').val()?.toLowerCase() || '';
 
-                $hiddenInput.val(ui.item.id);
-                calculateTotals(); // always fire
-            }
-        }
+                    filtered = routeMasters.filter(item =>
+                        item.label.toLowerCase() !== sourceName &&
+                        item.label.toLowerCase() !== destinationName
+                    );
+                }
 
-        return false;
-    },
-    change: function (event, ui) {
-        const type = $input.data('type');
+                // Match typed term
+                const matches = filtered.filter(item =>
+                    item.label.toLowerCase().includes(term)
+                );
 
-        if (ui.item) {
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                // If no match, return "No results"
+                if (!matches.length) {
+                    response([{ label: 'No results found', value: '', id: null, disabled: true }]);
+                } else {
+                    response(matches);
+                }
+            },
 
-                    $hiddenInput.val(ui.item.id);
-                    calculateTotals(); 
+            select: function (event, ui) {
+                if (ui.item.disabled) {
+                    event.preventDefault();
+                    return false;
+                }
+
+                $input.val(ui.item.label);
+                const type = $input.data('type');
+
+                if (type === 'source' || type === 'destination') {
+                    $(`#${type}IdInput`).val(ui.item.id);
+                }
+
+                if (type === 'location') {
+                    const nameAttr = $input.attr('name');
+                    const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                    if (match) {
+                        const index = match[1];
+                        const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+
+                        $hiddenInput.val(ui.item.id);
+                        calculateTotals();
+                    }
+                }
+
+                return false;
+            },
+
+            change: function (event, ui) {
+                const type = $input.data('type');
+
+                if (!ui.item || ui.item.disabled) {
+                    $input.val('');
+                    if (type === 'location') {
+                        const nameAttr = $input.attr('name');
+                        const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                        if (match) {
+                            const index = match[1];
+                            $(`input[name="locations[${index}][location_id]"]`).val('');
+                            calculateTotals();
+                        }
+                    }
                 }
             }
-        } else {
-            // If user cleared the field
-            $input.val('');
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    $(`input[name="locations[${index}][location_id]"]`).val('');
-                    calculateTotals(); 
-                }
-            }
-        }
-    }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
     }
 });
+
 
 
 //customer autocomplete
@@ -1045,10 +1070,27 @@ $(document).on('focus', '.customer-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: customerList,
             minLength: 0,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(customerList, request.term);
+
+                if (!results.length) {
+                    results.push({
+                        label: 'No results found',
+                        value: '',
+                        id: ''
+                    });
+                }
+
+                response(results);
+            },
             select: function (event, ui) {
-                const type = $input.data('type'); 
+                if (ui.item.value === '') {
+                    event.preventDefault(); // prevent setting input if "No results found"
+                    return false;
+                }
+
+                const type = $input.data('type');
                 $input.val(ui.item.label);
                 $(`.customer-id[data-type="${type}"]`).val(ui.item.id);
                 return false;
@@ -1058,6 +1100,7 @@ $(document).on('focus', '.customer-autocomplete', function () {
         });
     }
 });
+
     //drivers autocomplete
 const driverList = [
     @if($drivers->isNotEmpty())
@@ -1078,9 +1121,27 @@ $(document).on('focus', '.driver-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: driverList,
             minLength: 0,
+            source: function (request, response) {
+                const term = $.ui.autocomplete.escapeRegex(request.term);
+                const matcher = new RegExp(term, "i");
+
+                const matches = $.grep(driverList, function (item) {
+                    return matcher.test(item.label);
+                });
+
+                if (matches.length) {
+                    response(matches);
+                } else {
+                    response([{ label: "No results found", value: "", id: "" }]);
+                }
+            },
             select: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault(); // Prevent selection
+                    return false;
+                }
+
                 $input.val(ui.item.label);
                 $input.closest('div').find('.driver-id').val(ui.item.id);
                 return false;
@@ -1090,6 +1151,7 @@ $(document).on('focus', '.driver-autocomplete', function () {
         });
     }
 });
+
 
  </script>   
 
@@ -1111,9 +1173,22 @@ const vehicleNumbers = [
 
 $('.vehicle-number-autocomplete').each(function () {
     $(this).autocomplete({
-        source: vehicleNumbers,
+        source: function (request, response) {
+            const results = $.ui.autocomplete.filter(vehicleNumbers, request.term);
+            if (!results.length) {
+                results.push({
+                    label: 'No results found',
+                    value: '',
+                    id: ''
+                });
+            }
+            response(results);
+        },
         minLength: 0,
         select: function (event, ui) {
+            if (ui.item.value === '') {
+                return false;
+            }
             $(this).val(ui.item.label);
             $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
             return false;
@@ -1122,6 +1197,7 @@ $('.vehicle-number-autocomplete').each(function () {
         $(this).autocomplete('search', '');
     });
 });
+
 
 
 </script>
@@ -1333,11 +1409,9 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
             } else if (pricing.type === 'exists_in_fixed') {
                 $freightInput.val(parseFloat(pricing.amount));
             } else {
-                // fallback
                 $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
             }
         } else {
-            // No pricing for this location
             $freightInput.val(sourceDefaultAmount > 0 ? sourceDefaultAmount : '');
         }
     };
@@ -1346,7 +1420,7 @@ function applyFreightToRows($specificRow = null, deletedRow = null) {
         const locationId = $targetRow.find('input[name*="[location_id]"]').val()?.trim();
         const $freightInput = $targetRow.find('input[name*="[freight]"]');
 
-        const pricing = pricingCache[locationId]; // assuming pricing was cached
+        const pricing = pricingCache[locationId]; 
 
         if (deletedRow <= activeFreePoint) {
             $freightInput.val(0);
@@ -1493,19 +1567,13 @@ function addFiles(element, previewElementId) {
     const newDt = new DataTransfer();
     fileInputData[inputId].forEach(file => newDt.items.add(file));
     input.files = newDt.files;
-
-    // Refresh preview
     refreshPreviews(previewElementId, inputId);
-
-    // Reinitialize Feather Icons
     feather.replace({ width: 20, height: 20 });
 }
 
 function refreshPreviews(previewElementId, inputId) {
     const previewWrapper = document.getElementById(previewElementId);
     if (!previewWrapper) return;
-
-    // ✅ Remove only previews added via JS (new files), not Blade (existing files)
     const jsPreviews = previewWrapper.querySelectorAll('.file-preview-item');
     jsPreviews.forEach(el => el.remove());
 
@@ -1529,7 +1597,6 @@ document.addEventListener('click', function (e) {
     const isEditMode = deleteIcon.getAttribute('data-edit-flag') === 'true';
 
     if (isEditMode && deleteIcon.hasAttribute('data-id')) {
-        // 🔴 Existing file: remove DOM + store ID in hidden input
         const mediaId = deleteIcon.getAttribute('data-id');
         const removeInput = document.querySelector('input[name="removed_media_ids"]');
 
@@ -1547,8 +1614,6 @@ document.addEventListener('click', function (e) {
             input.value = mediaId;
             document.querySelector('form').appendChild(input);
         }
-
-        // Remove DOM only
         deleteIcon.closest('.image-uplodasection').remove();
         return;
     }
@@ -1560,21 +1625,93 @@ document.addEventListener('click', function (e) {
     const input = document.querySelector(`input[name="${inputId}[]"]`);
 
     if (!fileInputData[inputId]) return;
-
-    // Remove file from array
     fileInputData[inputId].splice(index, 1);
 
-    // Update input.files
     const dt = new DataTransfer();
     fileInputData[inputId].forEach(file => dt.items.add(file));
     input.files = dt.files;
-
-    // ✅ Just remove the preview block
     deleteIcon.closest('.image-uplodasection').remove();
 
     feather.replace({ width: 20, height: 20 });
 });
 </script>
+
+<script>
+    //consignor and consinee not select same js code
+    $(document).ready(function () {
+        $('input[name="consignee_name"]').on('change blur', function () {
+            const consignor = $('input[name="customer_name"]').val().trim().toLowerCase();
+            const consignee = $(this).val().trim().toLowerCase();
+
+            if (consignor && consignee && consignor === consignee) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Same Name Not Allowed',
+                    text: 'Consignor and Consignee cannot be the same.',
+                });
+
+                $(this).val('');
+                $('input[name="consignee_id"]').val('');
+            }
+        });
+
+        $(document).on('autocomplete.select', '.customer-autocomplete', function (e, ui) {
+            const type = $(this).data('type');
+            const selectedName = ui.item.label.trim().toLowerCase();
+
+            const otherName = type === 'consignor'
+                ? $('input[name="consignee_name"]').val().trim().toLowerCase()
+                : $('input[name="customer_name"]').val().trim().toLowerCase();
+
+            if (selectedName && selectedName === otherName) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Same Name Not Allowed',
+                    text: 'Consignor and Consignee cannot be the same.',
+                });
+
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+
+<script>
+    // multipoint filed disable js code
+    $(document).ready(function () {
+        function toggleLocationFields() {
+            const sourceId = $('#sourceIdInput').val();
+            const destinationId = $('#destinationIdInput').val();
+            const vehicleId = $('#vehicle_number_id').val();
+            const customerId = $('#customer_id').val();
+            
+
+            const shouldEnable = sourceId && destinationId && vehicleId && customerId;
+
+            $('#item-table-body :input').prop('disabled', !shouldEnable);
+        }
+
+        toggleLocationFields();
+
+        $(document).on('autocomplete.select', '.route-master-autocomplete', function (e, ui) {
+            const type = $(this).data('type');
+            const hiddenInput = $(this).siblings('.route-master-id');
+
+            if (hiddenInput.length && ui.item?.id) {
+                hiddenInput.val(ui.item.id);
+                $(this).val(ui.item.label);
+                toggleLocationFields();
+            }
+        });
+        setInterval(() => {
+            toggleLocationFields();
+        }, 500);
+    });
+</script>
+
+
+
 
 
 @endsection

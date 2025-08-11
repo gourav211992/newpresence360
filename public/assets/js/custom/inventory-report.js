@@ -148,6 +148,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
         let attributesHTML = ""; // Default value if attributes are not present or invalid
         let storeId = "";
         let subLocationId = "";
+        let stationId = "";
         let stockType = "";
         let shelfId = "";
         let binId = "";
@@ -176,6 +177,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             }
             storeId = $('#store').is(':checked') ? report?.store_id : '';
             subLocationId = $('#sub_location').is(':checked') ? report?.sub_store_id : '';
+            stationId = $('#station').is(':checked') ? report?.station_id : '';
             stockType = $('#stock_types').is(':checked') ? report?.stock_type : '';
             shelfId = $('#shelf').is(':checked') ? report?.shelf_id : '';
             binId = $('#bin').is(':checked') ? report?.bin_id : '';
@@ -200,6 +202,7 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
             <input type="hidden" name="item" value='${report.item_id ? report.item_id : ''}'/>
             <input type="hidden" name="store_id" value='${storeId ? storeId : ''}'/>
             <input type="hidden" name="sub_store_id" value='${subLocationId ? subLocationId : ''}'/>
+            <input type="hidden" name="station_id" value='${storeId ? storeId : ''}'/>
             <input type="hidden" name="shelf_id" value='${shelfId ? shelfId : ''}'/>
             <input type="hidden" name="bin_id" value='${binId ? binId : ''}'/>
             ${hiddenInputs}
@@ -374,6 +377,14 @@ function updateTable(inventory_reports = [], columnVisibility = []) {
                     next: "&nbsp;",
                 },
             },
+        });
+
+        $(dataTableSelector).on("init.dt", function () {
+            // Use `closest()` to always find the correct wrapper
+            $(this).closest('.dataTables_wrapper').attr('style', `
+                width: max-content !important;
+                min-width: 100% !important;
+            `);
         });
     } catch (error) {
         console.error("Error initializing DataTable:", error);

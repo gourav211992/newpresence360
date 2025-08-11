@@ -247,9 +247,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                        {{$mrn->latestBillingAddress()->display_address}}
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                        {{$mrn->bill_address?->display_address}}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -264,7 +264,7 @@
                                                                     <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>
+                                                                    <div class="mrnaddedd-prim org_address">{{$deliveryAddress}}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -412,7 +412,7 @@
                                         <div class="row">
                                             <div class="col-md-12">
                                                 <div class="table-responsive pomrnheadtffotsticky">
-                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad" 
+                                                    <table id="itemTable" class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"
                                                         data-json-key="components_json"
                                                         data-row-selector="tr[id^='row_']">
                                                         <thead>
@@ -569,7 +569,10 @@
             </div>
         </div>
     </div>
-    
+
+    <!-- Approve/Reject Modal -->
+    @include('procurement.inspection.partials.approve-modal', ['id' => $mrn->id])
+
     {{-- Amendment Modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
@@ -627,7 +630,7 @@
                 localStorage.setItem(`selected${currentProcessType.charAt(0).toUpperCase() + currentProcessType.slice(1)}Ids`, JSON.stringify(ids));
             }
         };
-        
+
         let header_id = @json($mrn->mrn_header_id);
         let details_ids = @json($detailsIds);
         /*Clear local storage*/
@@ -704,7 +707,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        
+
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -762,8 +765,7 @@
             if(reference_from_service.length) {
                 let mrn = '{{\App\Helpers\ConstantHelper::MRN_SERVICE_ALIAS}}';
                 if(reference_from_service.includes(mrn)) {
-                    console.log('reference_from_service', reference_from_service, mrn);
-                    $("#reference_from").removeClass('d-none');
+                   $("#reference_from").removeClass('d-none');
                 } else {
                     $("#reference_from").addClass('d-none');
                 }
@@ -1145,7 +1147,7 @@
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 // $(".prSelect").prop('disabled',false);
             }
-            
+
         });
 
         /*Check attrubute*/
@@ -1219,7 +1221,7 @@
                 let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
                 let qty = $(currentTr).find("[name*='[accepted_qty]']").val() || '';
                 let headerId = $(currentTr).find("[name*='inspection_header_id']").val() ?? '';
-                let detailId = $(currentTr).find("[name*='inspection_item_id']").val() ?? '';
+                let detailId = $(currentTr).find("[name*='inspection_dtl_id']").val() ?? '';
                 let actionUrl = '{{route("inspection.get.itemdetail")}}'+'?item_id='+itemId+
                     '&mrn_header_id='+mrnHeaderId+
                     '&mrn_detail_id='+mrnDetailId+
@@ -1408,7 +1410,7 @@
                     $(`.form-check-input[data-id='${id}']`).closest('tr').remove();
                 });
             }
-            
+
             if(!$("#itemTable [id*=row_]").length) {
                 $("th .form-check-input").prop('checked',false);
                 $('#vendor_name').prop('readonly',false);
@@ -1416,7 +1418,7 @@
                 $("#editShippingAddressBtn").show();
             }
         });
-        
+
         /*Amendment modal open*/
         $(document).on('click', '.amendmentBtn', (e) => {
             $("#amendmentconfirm").modal('show');
@@ -1853,7 +1855,7 @@
             asnProcess(processData, 'mrn-process');
         });
 
-        // Clear GRN Process 
+        // Clear GRN Process
         $(document).on('click', '.clearMrnFilter', (e) => {
             $("#item_name_input_qt").val('');
             $("#item_id_qt_val").val('');
@@ -1873,6 +1875,13 @@
             let storeId = ui?.item?.id || '';
             initializeAutocompleteQt("sub_store", "sub_store_id", "sub_store", "name", "");
         });
+
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
 
         // GRN Process
         function asnProcess(asnData, moduleProcess) {
@@ -1923,13 +1932,13 @@
                     const order = data.data.mrnHeader;
                     $("#reference_type_input").val(modelType);
                     // console.log(vendor?.id, modelType, order.id);
-                    
+
                     vendorOnChange(vendor?.id, modelType, order.id);
 
                     const getSelectedIdsFn = getSelectedMrnIDS;
                     const hiddenFieldName = 'mrn_item_ids';
                     const localStorageKey = 'selectedMrnIds';
-                    
+
                     const newIds = getSelectedIdsFn().ids;
                     const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
                     const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
@@ -1937,7 +1946,7 @@
                     $(`[name='${hiddenFieldName}']`).val(mergedIds.join(','));
 
                     $(".module_type").val(modelType);
-                    
+
                     if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
                         $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(pos);
                     } else {
@@ -1945,7 +1954,7 @@
                     }
                     initializeAutocomplete2(".comp_item_code");
                     $("#mrnModal").modal('hide');
-                    
+
                     // UI Locks
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
                     $("#vendor_name").prop('readonly', true);

@@ -33,10 +33,7 @@
 				</div>
 			</div>
             <div class="content-body">
-                 
-                
-				
-				<section id="basic-datatable">
+                <section id="basic-datatable">
                     <div class="row">
                         <div class="col-12">  
 							
@@ -63,6 +60,19 @@
   
 											
 											<div class="row">
+												<form id="fixed-asset-revaluation-impairement-form" method="POST"
+													action="{{ route('finance.fixed-asset.revaluation-impairement.store') }}"
+													enctype="multipart/form-data">
+
+													@csrf
+													<input type="hidden" name="spare_parts" id="spare_parts">
+													<input type="hidden" name="asset_details" id="asset_details">
+													<input type="hidden" name="doc_number_type" id="doc_number_type">
+													<input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+													<input type="hidden" name="doc_prefix" id="doc_prefix">
+													<input type="hidden" name="doc_suffix" id="doc_suffix">
+													<input type="hidden" name="doc_no" id="doc_no">
+													<input type="hidden" name="document_status" id="document_status" value="">
                                                 
                                                 
                                                  <div class="col-md-8"> 
@@ -118,91 +128,13 @@
                                                     </div> 
 
                                                 </div>
-                                                
-                                                
-                                                <div class="col-md-4"> 
-
-                                                    <div class="step-custhomapp bg-light p-1 customerapptimelines customerapptimelinesapprovalpo">
-                                                        <h5 class="mb-2 text-dark border-bottom pb-50 d-flex align-items-center justify-content-between">
-                                                            <strong><i data-feather="arrow-right-circle"></i> Approval History</strong>
-                                                            <strong class="badge rounded-pill badge-light-secondary amendmentselect">Rev. No. 
-                                                                <select class="form-select">
-                                                                    <option>00</option>
-                                                                    <option>01</option>
-                                                                    <option>02</option>
-                                                                    <option>03</option>
-                                                                </select>
-                                                            </strong>
-                                                            
-                                                        </h5>
-                                                        <ul class="timeline ms-50 newdashtimline ">
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepak Kumar</h6> 
-                                                                        <span class="badge rounded-pill badge-light-primary">Amendment</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Aniket Singh</h6> 
-                                                                        <span class="badge rounded-pill badge-light-danger">Rejected</span>
-                                                                    </div>
-                                                                    <h5>(2 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-warning timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deewan Singh</h6>
-                                                                        <span class="badge rounded-pill badge-light-warning">Pending</span>
-                                                                    </div>
-                                                                    <h5>(5 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li>
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-info timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Brijesh Kumar</h6>
-                                                                        <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(10 min ago)</h5>
-                                                                    <p>Description will come here</p> 
-                                                                </div>
-                                                            </li> 
-                                                            <li class="timeline-item">
-                                                                <span class="timeline-point timeline-point-danger timeline-point-indicator"></span>
-                                                                <div class="timeline-event">
-                                                                    <div class="d-flex justify-content-between flex-sm-row flex-column mb-sm-0 mb-1">
-                                                                        <h6>Deepender Singh</h6>
-                                                                       <span class="badge rounded-pill badge-light-success">Approved</span>
-                                                                    </div>
-                                                                    <h5>(5 day ago)</h5>
-                                                                    <p><a href="#"><i data-feather="download"></i></a> Description will come here </p> 
-                                                                </div>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-
-                                                </div>
+											</form>
                                                   
                                     		</div>
  
 								
 								</div>
                             </div>
-							
-							
 							<div class="card">
 								<div class="card-body customernewsection-form"> 
                                                   
@@ -242,7 +174,7 @@
 														  </tr>
 														</thead>
 														<tbody class="mrntableselectexcel">
-															 <tr class="trselected">
+															  <tr class="trselected">
 																 <td class="customernewsection-form">
 																	<div class="form-check form-check-primary custom-checkbox">
 																		<input type="checkbox" class="form-check-input" id="Email">
@@ -260,85 +192,6 @@
 																  </select></td>
 																<td><input type="text" value="10" class="form-control mw-100" /></td>
 															  </tr>
-
-
-															 <tr>
-																 <td class="customernewsection-form">
-																	<div class="form-check form-check-primary custom-checkbox">
-																		<input type="checkbox" class="form-check-input" id="Email">
-																		<label class="form-check-label" for="Email"></label>
-																	</div> 
-																</td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																<td class="poprod-decpt"> 
-																	<button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-																 </td>
-																<td><select class="form-select mw-100">
-																  <option>Select</option>
-																  <option selected>KG</option>
-																  </select></td>
-																<td><input type="text" value="10" class="form-control mw-100" /></td>
-															  </tr>
-
-															<tr>
-																 <td class="customernewsection-form">
-																	<div class="form-check form-check-primary custom-checkbox">
-																		<input type="checkbox" class="form-check-input" id="Email">
-																		<label class="form-check-label" for="Email"></label>
-																	</div> 
-																</td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																<td class="poprod-decpt"> 
-																	<button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-																 </td>
-																<td><select class="form-select mw-100">
-																  <option>Select</option>
-																  <option selected>KG</option>
-																  </select></td>
-																<td><input type="text" value="10" class="form-control mw-100" /></td>
-															  </tr>
-
-															<tr>
-																 <td class="customernewsection-form">
-																	<div class="form-check form-check-primary custom-checkbox">
-																		<input type="checkbox" class="form-check-input" id="Email">
-																		<label class="form-check-label" for="Email"></label>
-																	</div> 
-																</td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																<td class="poprod-decpt"> 
-																	<button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-																 </td>
-																<td><select class="form-select mw-100">
-																  <option>Select</option>
-																  <option selected>KG</option>
-																  </select></td>
-																<td><input type="text" value="10" class="form-control mw-100" /></td>
-															  </tr>
-
-															<tr>
-																 <td class="customernewsection-form">
-																	<div class="form-check form-check-primary custom-checkbox">
-																		<input type="checkbox" class="form-check-input" id="Email">
-																		<label class="form-check-label" for="Email"></label>
-																	</div> 
-																</td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																 <td class="poprod-decpt"><input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct mb-25"  /></td>
-																<td class="poprod-decpt"> 
-																	<button data-bs-toggle="modal" data-bs-target="#attribute" class="btn p-25 btn-sm btn-outline-secondary" style="font-size: 10px">Attributes</button>
-																 </td>
-																<td><select class="form-select mw-100">
-																  <option>Select</option>
-																  <option selected>KG</option>
-																  </select></td>
-																<td><input type="text" value="10" class="form-control mw-100" /></td>
-															  </tr>
-
-
 													 </tbody>
 												   <tfoot>
 

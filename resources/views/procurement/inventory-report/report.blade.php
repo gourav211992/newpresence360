@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('content')
     <!-- BEGIN: Content-->
     <div class="app-content content">
@@ -42,7 +41,7 @@
                                 <div class="customernewsection-form poreportlistview p-1">
                                     <div class="row">
                                         <div class="col-md-2">
-                                            <input type="text" placeholder="Select"
+                                            <input type="text" placeholder="Select Item"
                                             class="form-control mw-100 ledgerselecct inventory_items" id="item"
                                             name="item" />
                                         </div>
@@ -67,6 +66,13 @@
                                             <div class="mb-1 mb-sm-0">
                                                 <select class="form-select mw-100 select2 rack_code" name="store_id" id="store_id">
                                                     <option value="">Select Store</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2 station_id" style="display:none;">
+                                            <div class="mb-1 mb-sm-0">
+                                                <select class="form-select mw-100 select2 station_id" name="station_id" id="station_id">
+                                                    <option value="">Select Station</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -187,7 +193,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <div class="form-check form-check-secondary">
-                                            <input type="checkbox" class="form-check-input" id="station" checked="">
+                                            <input type="checkbox" class="form-check-input autoTriggerChangeApply" id="station" checked="">
                                             <label class="form-check-label" for="station">Station</label>
                                         </div>
                                     </div>
@@ -523,9 +529,39 @@
                 updateFilterAndFetch();
             });
 
+            // $('#store_id').on('change', function() {
+            //     const subStoreId = $(this).val();
+            //     filterData.store_id = subStoreId;
+            //     updateFilterAndFetch();
+            // });
             $('#store_id').on('change', function() {
-                const subStoreId = $(this).val();
-                filterData.store_id = subStoreId;
+                const stationId = $(this).val();
+                filterData.station_id = stationId;
+                if (stationId) {
+                    $('#station_id').val(stationId).select2();
+                    var data = {
+                        sub_store_id: stationId,
+                        // types: subStoreLocType
+
+                    };
+                    $.ajax({
+                        type: 'GET',
+                        data: data,
+                        url: '/stations/stocking/get/by-sub-store',
+                        success: function(data) {
+                            $('#station_id').empty();
+                            $('#station_id').append('<option value="">Select</option>');
+                            $.each(data.data, function(index, item) {
+                                $('#station_id').append('<option value="'+ item.id +'">'+ item.name +'</option>');
+                            });
+                            $('#station_id').trigger('change');
+                        }
+                    });
+                } else {
+                    $('#station_id').empty();
+                    $('#station_id').append('<option value="">Select</option>');
+                    $('#station_id').trigger('change');
+                }
                 updateFilterAndFetch();
             });
 
@@ -604,6 +640,26 @@
                     filterData.sub_location_check = sub_location_check;
                     updateFilterAndFetch();
                     $('.store_id').css('display', 'none');
+                }
+            });
+
+            // Check Uncheck Station
+            $('#station').on('change', function() {
+                let station_check = 0;
+                if ($(this).is(':checked')) {
+                    // Send the parameter when the checkbox is checked
+                    station_check = 1;
+                    filterData.station_check = station_check;
+                    station_check = 1;
+                    filterData.station_check = station_check;
+                    updateFilterAndFetch();
+                    $('.station_id').css('display', 'block');
+                } else {
+                    // Handle the case where the checkbox is unchecked if needed
+                    station_check = 0;
+                    filterData.station_check = station_check;
+                    updateFilterAndFetch();
+                    $('.station_id').css('display', 'none');
                 }
             });
 
@@ -917,6 +973,7 @@
                     formData.displayedHeaders = displayedHeaders;
                     formData.store_id = filterData.location_id;
                     formData.sub_store_id = filterData.store_id;
+                    formData.station_id = filterData.station_id;
                     formData.stock_type = filterData.stock_type;
 
                     $.ajax({

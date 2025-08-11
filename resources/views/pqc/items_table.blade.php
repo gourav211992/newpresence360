@@ -10,7 +10,7 @@
                 </th>
                 <th width="150px">Item Code</th>
                 <th width="240px">Item Name</th>
-                <th>Attributes</th>
+                <th width="70px">Attributes</th>
                 <th width="50px">UOM</th>
                 <th width="100px" class="numeric-alignment">Requested Qty</th>
                  @if(isset($order->selected_vendor) && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
@@ -71,12 +71,12 @@
                         </td>
                         <td><input type="text" id = "item_req_qty_{{$orderItemIndex}}" data-index = '{{$orderItemIndex}}' value='{{ $orderItem->request_qty ?? 0 }}' name = "item_req_qty[{{$orderItemIndex}}]" oninput = "changeItemQty(this, {{$orderItemIndex}});" onchange = "itemQtyChange(this, {{$orderItemIndex}})" class="form-control mw-100 text-end item_qty_input" onblur = "setFormattedNumericValue(this);"/></td>
                         @if(isset($order->selected_vendor) && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
-                            @foreach($order->selectedPq->items as $pq)
+                            @foreach($order->selectedPq->items->where('rfq_item_id',$orderItem->id) as $pq)
                                 <td><input type='hidden' id = 'vendor_rate_{{ $orderItemIndex }}_{{ $pq->id }}' name="item_rate_{{ $orderItemIndex }}" value = '{{ $order -> selectedPQ -> suppliers -> id }}' >{{ $pq->rate}}</td>
                             @endforeach
                         @elseif(isset($orderItem) )
-                        @foreach ($orderItem->pqItems as $pq)
-                            <td><input type='hidden' value = '{{ $pq -> vendor_id }}' >{{ $pq->rate }}</td>
+                        @foreach ($orderItem->pqItems->where('rfq_item_id',$orderItem->id) as $pq)
+                            <td><input type='hidden' value = '{{ $$orderItem->pqItems -> vendor_id }}' >{{ $$orderItem->pqItems->rate }}</td>
                         @endforeach
                         @endif
                     </tr>
@@ -87,12 +87,11 @@
         
         <tfoot>
             <tr class="totalsubheadpodetail"> 
-                <td colspan="5"></td>
-                <td class="text-end" id = "all_items_total_qty">00.00</td>
-                
+                <td colspan="6"></td>
+                <td class="{{isset($order->rfq->pqs) ? '' : 'd-none'}}" colspan="{{ isset($order->rfq->pqs) ? count($order->rfq->pqs) : 0 }}" id="vendor_bottom"> </td>
             </tr>
             
-            <tr valign="top">
+            <tr class="d-none" valign="top">
                 <td colspan="{{2 + count($suppliers)}}" rowspan="10">
                     <table class="table border">
                         <tr>

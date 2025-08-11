@@ -190,7 +190,6 @@
                                             @endif
                                         </div> 
                                     </div>
-                                </div>
                             </div>
                             <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
                                 @if (isset($dynamicFieldsUi))
@@ -211,14 +210,14 @@
                                             <div class="col-md-4">  
                                                 <label class="form-label" id="supplier_list">Supplier(s)<span class="text-danger">*</span></label>  
                                                 <select class="form-select select-2 disable_on_edit except_draft" name="supplier_ids[]" id="supplier_ids_input" multiple>
-                                                    @if(isset($order) && $order->suppliers() && count($order->suppliers()) > 0 && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
-                                                        @foreach ($order->suppliers() as $supplier)
+                                                    @if(isset($order) && $order->vendors() && count($order->vendors()) > 0 && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
+                                                        @foreach ($order->vendors() as $supplier)
                                                             <option value="{{ $supplier->id }}" selected> {{ $supplier->company_name }}</option>
                                                         @endforeach
                                                     @else
                                                         @foreach ($suppliers as $supplier)
                                                             <option value="{{ $supplier->id }}"
-                                                                {{ isset($order) && $order->suppliers()->count() && in_array($supplier->id, $order->suppliers()->pluck('id')->toArray()) ? 'selected' : '' }}
+                                                                {{ isset($order) && $order->vendors()->count() && in_array($supplier->id, $order->vendors()->pluck('id')->toArray()) ? 'selected' : '' }}
                                                                 data-name="{{ $supplier->company_name }}">
                                                                 {{ $supplier->company_name }}
                                                             </option>
@@ -559,8 +558,8 @@
                             <label class="form-label">Email To</label>
                             <input type='hidden' id='mailer_ids' value='' name="email_to_id" class="cannot_disable">
                             <select name="email_to[]" id="mailer_select" class="select2 form-control cannot_disable">
-                                @if(isset($order) && $order->suppliers() && count($order->suppliers()) > 0)
-                                    @foreach ($order->suppliers() as $supplier)
+                                @if(isset($order) && $order->vendors() && count($order->vendors()) > 0)
+                                    @foreach ($order->vendors() as $supplier)
                                         <option value="{{ $supplier->email }}" data-id="{{ $supplier->id }}">{{ $supplier->company_name }}</option>
                                     @endforeach
                                 @else

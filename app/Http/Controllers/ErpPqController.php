@@ -429,7 +429,7 @@ class ErpPqController extends Controller
             
             //Seperate array to store each item calculation
             $itemsData = array();
-            $pqExists = ErpPqHeader::where('rfq_id', $request->rfq_ids)
+            $pqExists = ErpPqHeader::where('rfq_id', $request->rfq_id)
                     ->where('vendor_id', $request->vendor_id)
                     ->exists();
 
@@ -515,9 +515,8 @@ class ErpPqController extends Controller
                     'remarks' => $request->final_remarks,
                 ])->save();
             } else {
-                
                 $pq = ErpPqHeader::create([
-                    'rfq_id' => $request->rfq_ids,
+                    'rfq_id' => $request->rfq_id ?? null,
                     'organization_id' => $organizationId,
                     'group_id' => $groupId,
                     'company_id' => $companyId,
@@ -670,7 +669,8 @@ class ErpPqController extends Controller
                         $inventoryUomQty = ItemHelper::convertToBaseUom($item -> id, $request -> uom_id[$itemKey] ?? 0, isset($request -> item_req_qty[$itemKey]) ? $request -> item_req_qty[$itemKey] : 0);
                         array_push($itemsData, [
                             'pq_header_id' => $pq -> id,
-                            'rfq_id' => isset($request -> rfq_item_ids[$itemKey]) ? json_decode($request -> rfq_item_ids[$itemKey])[0] : null,
+                            'rfq_id' => isset($request -> rfq_id) ? $request -> rfq_id : null,
+                            'rfq_item_id' => isset($request -> rfq_item_ids[$itemKey]) ? json_decode($request -> rfq_item_ids[$itemKey])[0] : null,
                             'item_id' => $item -> id,
                             'item_code' => $item -> item_code,
                             'item_name' => $item -> item_name,
@@ -734,6 +734,7 @@ class ErpPqController extends Controller
                     $itemRowData = [
                         'pq_header_id' => $pq -> id,
                         'rfq_id' => $itemDataValue['rfq_id'],
+                        'rfq_item_id' => $itemDataValue['rfq_item_id'],
                         'item_id' => $itemDataValue['item_id'],
                         'item_code' => $itemDataValue['item_code'],
                         'item_name' => $itemDataValue['item_name'],

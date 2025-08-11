@@ -57,6 +57,10 @@
                                         <input type="text" name="Period" id="Custom" class="form-control flatpickr-input" readonly />
                                     </div>
                                     <div class="mb-2">
+                                        <label class="form-label">Doc No.</label>
+                                        <input type="text" name="doc_no" id="doc_no" placeholder="Document No" class="form-control mw-100" autocomplete="off" value="">
+                                    </div>
+                                    <div class="mb-2">
                                         <label>Item</label>
                                         <input type="text" placeholder="Select" class="form-control ledgerselecct inventory_items" id="item" name="item" />
                                     </div>
@@ -414,6 +418,9 @@
                 const itemId = $('#item').attr('data-id');
                 if (itemId) filterData.item = itemId;
 
+                const docNo = $('#doc_no').val();
+                if (docNo) filterData.doc_no = docNo;
+
                 const storeId = $('#store_id').val();
                 if (storeId) filterData.store_id = storeId;
 
@@ -687,12 +694,16 @@
                     const params = new URLSearchParams();
 
                     let itemValue = $("#item").attr('data-id');
+                    let docNo = $("#doc_no").val();
                     let storeIdValue = $("#store_id").val();
                     let subStoreIdValue = $("#sub_store_id").val();
                     let bookTypeIdValue = $("#book_type_id").val();
                     let typeOfStockIdIdValue = $("#type_of_stock_id").val();
                     let stockTypeValue = $("#stock_type").val();
 
+                    if (docNo && !filterData.hasOwnProperty('doc_no')) {
+                        params.append('doc_no', docNo);
+                    }
                     if (itemValue && !filterData.hasOwnProperty('item')) {
                         params.append('item', itemValue);
                     }

@@ -2460,7 +2460,7 @@ class Helper
         }
 
         // Calculate Gross Profit or Loss
-        $grossProfit = $salesAccount + $directIncome - ($opening + $purchase + $directExpense);
+        $grossProfit = ($salesAccount + $directIncome + $opening) - ($opening + $purchase + $directExpense);
         $grossLoss = 0;
         if ($grossProfit < 0) {
             $grossLoss = abs($grossProfit);

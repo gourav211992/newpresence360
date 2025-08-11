@@ -63,6 +63,11 @@ class ExpenseDetailHistory extends Model
         return $this->belongsTo(ExpenseHeader::class, 'header_id');
     }
 
+    public function expenseHeader()
+    {
+        return $this->belongsTo(ExpenseHeader::class, 'header_id');
+    }
+
     public function headerHistory()
     {
         return $this->belongsTo(ExpenseHeaderHistory::class, 'header_history_id');

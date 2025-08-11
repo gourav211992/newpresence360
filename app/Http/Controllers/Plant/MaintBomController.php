@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Plant;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Helpers\Helper;
 
 class MaintBomController extends Controller
 {
@@ -20,7 +21,17 @@ class MaintBomController extends Controller
      */
     public function create()
     {
-        return view('plant.maint_bom.create');
+        $parentURL = "plant_maint-bom";
+        $series = [];
+
+        $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
+        $firstService = $servicesBooks['services'][0];
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+        
+        return view('plant.maint_bom.create',compact('series'));
     }
 
     /**

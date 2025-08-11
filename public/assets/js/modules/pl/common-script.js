@@ -280,6 +280,11 @@ function disableHeader()
     if (dnButton) {
         dnButton.disabled = true;
     }
+
+    let lrButton = document.getElementById('select_lorry_button');
+    if (lrButton) {
+        lrButton.disabled = true;
+    }
     let piButton = document.getElementById('select_pi_button');
     if (piButton) {
         piButton.disabled = true;
@@ -345,6 +350,10 @@ function enableHeader()
     let dnButton = document.getElementById('select_dn_button');
     if (dnButton) {
         dnButton.disabled = false;
+    }
+    let lrButton = document.getElementById('select_lorry_button');
+    if (lrButton) {
+        lrButton.disabled = false;
     }
     let piButton = document.getElementById('select_pi_button');
     if (piButton) {
@@ -708,6 +717,7 @@ function enableDisableQtButton()
     let joButton = document.getElementById('select_jo_button');
     let piButton = document.getElementById('select_pi_button');
     let dnButton = document.getElementById('select_dn_button');
+    let lrButton = document.getElementById('select_lorry_button');
     let leaseButton = document.getElementById('select_lease_button');
     let orderButton = document.getElementById('select_order_button');
     let plButton = document.getElementById('pl_button');
@@ -735,6 +745,9 @@ function enableDisableQtButton()
         }
         if (dnButton) {
             dnButton.disabled = false;
+        }
+        if (lrButton) {
+            lrButton.disabled = false;
         }
         if (leaseButton) {
             leaseButton.disabled = false;
