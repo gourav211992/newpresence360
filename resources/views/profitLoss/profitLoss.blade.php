@@ -123,7 +123,7 @@
                                                                     </a> Opening Stock
                                                                 </td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="opening">0</td>
+                                                                <td class="text-end sumtot1" id="opening">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none" id="2">
                                                                 <input type="hidden" id="check2">
@@ -218,12 +218,10 @@
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none">
                                                                 <td>
-                                                                    <a href="#" class="trail-open-new-listplus-btn">
-                                                                        <i data-feather='plus-circle'></i>
-                                                                    </a>Closing Stock
+                                                                    Closing Stock
                                                                 </td>
                                                                 <td>&nbsp;</td>
-                                                                <td class="text-end" id="closing">0</td>
+                                                                <td class="text-end sumtot2" id="closing">0</td>
                                                             </tr>
                                                             <tr class="trail-bal-tabl-none semitotalpl">
                                                                 <td>Gross Loss c/o</td>
@@ -608,6 +606,7 @@
                 success: function(data) {
                     $('.preloader').hide();
                     $('#opening').text((data['data']['opening']).toLocaleString('en-IN'));
+                    $('#closing').text((data['data']['opening']).toLocaleString('en-IN'));
                     $('#purchase').text((data['data']['purchase']).toLocaleString('en-IN'));
                     $('#directExpense').text((data['data']['directExpense']).toLocaleString('en-IN'));
                     $('#indirectExpense').text((data['data']['indirectExpense']).toLocaleString('en-IN'));

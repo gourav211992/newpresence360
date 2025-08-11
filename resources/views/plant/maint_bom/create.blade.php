@@ -60,6 +60,19 @@
   
 											
 											<div class="row">
+												<form id="fixed-asset-revaluation-impairement-form" method="POST"
+													action="{{ route('finance.fixed-asset.revaluation-impairement.store') }}"
+													enctype="multipart/form-data">
+
+													@csrf
+													<input type="hidden" name="spare_parts" id="spare_parts">
+													<input type="hidden" name="asset_details" id="asset_details">
+													<input type="hidden" name="doc_number_type" id="doc_number_type">
+													<input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
+													<input type="hidden" name="doc_prefix" id="doc_prefix">
+													<input type="hidden" name="doc_suffix" id="doc_suffix">
+													<input type="hidden" name="doc_no" id="doc_no">
+													<input type="hidden" name="document_status" id="document_status" value="">
                                                 
                                                 
                                                  <div class="col-md-8"> 
@@ -115,14 +128,13 @@
                                                     </div> 
 
                                                 </div>
+											</form>
                                                   
                                     		</div>
  
 								
 								</div>
                             </div>
-							
-							
 							<div class="card">
 								<div class="card-body customernewsection-form"> 
                                                   

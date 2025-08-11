@@ -630,6 +630,7 @@ class ConstantHelper
     const FIXED_ASSET_SPLIT = 'fixed-asset-split';
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
     const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
+    const MAINT_BOM = 'maint-bom';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';
@@ -771,6 +772,7 @@ class ConstantHelper
         self::FIXED_ASSET_SPLIT => 'FixedAssetSplit',
         self::FIXED_ASSET_MERGER => 'FixedAssetMerger',
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
+        self::MAINT_BOM=>'PlantMaintBom',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
