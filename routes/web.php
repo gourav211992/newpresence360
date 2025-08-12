@@ -2727,6 +2727,19 @@ Route::middleware(['user.auth'])->group(function () {
     Route::resource('asset-category', AssetCategoryController::class);
 
 
+    Route::resource('plant/bom', MaintBomController::class)->names([
+        'index' => 'maint-bom.index',
+        'create' => 'maint-bom.create',
+        'store' => 'maint-bom.store',
+        'update' => 'maint-bom.update',
+        'show' => 'maint-bom.show',
+        'edit' => 'maint-bom.edit',
+    ]);
+    Route::get('plant/bom/get-item-attribute', [MaintBomController::class, 'getItemAttribute'])->name('maint-bom.attr');
+    Route::get('plant/search', [MaintBomController::class, 'search'])->name('plant.search');
+    Route::post('plant/bom/approval', [MaintBomController::class, 'documentApproval'])->name('maint-bom.approval');
+    
+
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');
     Route::post('/cashflow/export', [CashflowReportController::class, 'export'])->name('cashflow.export');
 
@@ -2989,10 +3002,6 @@ Route::prefix('defect-types')->controller(ErpDefectTypeController::class)->group
         Route::post('/', 'store')->name('defect-types.store');
         Route::delete('/', 'delete')->name('defect-types.delete');
     });
-    Route::resource('plant/bom', MaintBomController::class)->names([
-        'index' => 'maint-bom.index',
-        'create' => 'maint-bom.create',
-        'show' => 'maint-bom.show',
-        'edit' => 'maint-bom.edit',
-    ]);
+    
+    
 

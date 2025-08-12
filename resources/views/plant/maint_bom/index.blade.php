@@ -23,7 +23,7 @@
                 <div class="content-header-right text-sm-end col-md-7 mb-50 mb-sm-0">
                     <div class="form-group breadcrumb-right">
                         <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter" data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button> 
-						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="bom-add.html"><i data-feather="plus-circle"></i> Add New</a> 
+						<a class="btn btn-primary btn-sm mb-50 mb-sm-0" href="{{route('maint-bom.create')}}"><i data-feather="plus-circle"></i> Add New</a> 
                     </div>
                 </div>
             </div>
@@ -46,32 +46,61 @@
 												<th>Series</th>
 												<th>Doc No.</th>
 												<th>BOM Name</th>
-												<th>Status</th>
-												<th>Action</th>
+												<th class="text-end">Status</th>
 										  </tr>
 											</thead>
 											<tbody>
-												 <tr>
-													<td>1</td>
-													<td class="fw-bolder text-dark">22-07-2025</td>
-													<td>BOM</td>
-													<td>1</td>
-													<td>Spart Part Name</td>
-													<td><span class="badge rounded-pill badge-light-success badgeborder-radius">Approved</span></td>
-													<td class="tableactionnew">
-														<div class="dropdown">
-															<button type="button" class="btn btn-sm dropdown-toggle hide-arrow py-0" data-bs-toggle="dropdown">
-																<i data-feather="more-vertical"></i>
-															</button>
-															<div class="dropdown-menu dropdown-menu-end">
-																<a class="dropdown-item" href="#">
-																	<i data-feather="edit" class="me-50"></i>
-																	<span>View Detail</span>
-																</a>
-															</div>
-														</div>
-													</td>
+												@isset($data)
+                                                @foreach($data as $d)
+                                                    <tr>
+                                                        <td class="text-nowrap">{{ $loop->iteration }}</td>
+                                                        <td class="fw-bolder text-dark text-nowrap">
+                                                            {{ \Carbon\Carbon::parse($d->document_date)->format('d-m-Y') ?? '-' }}
+                                                        </td>
+                                                        <td class="text-nowrap">{{ $d?->book?->book_code ?? '-' }}</td>
+                                                        <td class="text-nowrap">{{ $d->document_number ?? '-' }}</td>
+                                                        <td class="text-nowrap">
+                                                            {{ $d->bom_name ?? '-' }}</td>
+                                                        <td class="tableactionnew">
+                                                            <div class="d-flex align-items-center justify-content-end">
+                                                                @php $statusClasss = App\Helpers\ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$d->document_status??"draft"];  @endphp
+                                                                <span
+                                                                    class='badge rounded-pill {{ $statusClasss }} badgeborder-radius'>
+                                                                    @if ($d->document_status == App\Helpers\ConstantHelper::APPROVAL_NOT_REQUIRED)
+                                                                        Approved
+                                                                    @else
+                                                                        {{ ucfirst($d->document_status) }}
+                                                                    @endif
+                                                                </span>
+
+
+                                                                <div class="dropdown">
+                                                                    <button type="button"
+                                                                        class="btn btn-sm dropdown-toggle hide-arrow p-0"
+                                                                        data-bs-toggle="dropdown">
+                                                                        <i data-feather="more-vertical"></i>
+                                                                    </button>
+                                                                    <div class="dropdown-menu dropdown-menu-end">
+                                                                        @if ($d->document_status == 'draft')
+                                                                            <a class="dropdown-item"
+                                                                                href="{{ route('maint-bom.edit', $d->id) }}">
+                                                                                <i data-feather="edit" class="me-50"></i>
+                                                                                <span>View</span>
+                                                                            </a>
+                                                                        @else
+                                                                            <a class="dropdown-item"
+                                                                                href="{{ route('maint-bom.show', $d->id) }}">
+                                                                                <i data-feather="edit" class="me-50"></i>
+                                                                                <span>View</span>
+                                                                            </a>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
 											  </tr>
+                                              @endforeach
+                                              @endisset
 												 </tbody>
 
 
