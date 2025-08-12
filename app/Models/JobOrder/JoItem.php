@@ -23,6 +23,7 @@ class JoItem extends Model
         'station_id',
         'rm_type',
         'item_id',
+        'service_item_id',
         'item_code',
         'uom_id',
         'qty',
@@ -36,6 +37,7 @@ class JoItem extends Model
         'item' => 'item_id',
         'uom' => 'uom_id',
         'hsn' => 'hsn_id',
+        'sow' => 'service_item_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
     protected $appends = [
@@ -67,6 +69,10 @@ class JoItem extends Model
     public function item()
     {
         return $this->belongsTo(Item::class, 'item_id');
+    }
+    public function sow()
+    {
+        return $this->belongsTo(Item::class, 'service_item_id');
     }
     public function attributes()
     {

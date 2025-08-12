@@ -67,7 +67,7 @@
                                                             <th width="300px">Customer</th>  
                                                         </tr>
                                                     </thead>
-                                                   <tbody class="mrntableselectexcel">
+                                                   <tbody class="mrntableselectexcel" id="freight-charges-table tbody tr">
                                                       @php $rowIndex = count($freightCharges);  @endphp
                                                         @foreach($freightCharges as  $charges)
                                                             <tr>
@@ -648,6 +648,46 @@ $(document).ready(function () {
     });
 
 });
+
+
+function checkDuplicateFreight() {
+    let rows = [];
+    let hasDuplicate = false;
+
+    $('#freight-charges-table tbody tr').each(function () {
+        let source = $(this).find('.route-master-id[data-type="source"]').val();
+        let destination = $(this).find('.route-master-id[data-type="destination"]').val();
+        let vehicleType = $(this).find('.vehicle-type-id').val();
+        let customerId = $(this).find('.customer-id').val() || null;
+
+        if (!source || !destination || !vehicleType) return;
+
+        let key = `${source}-${destination}-${vehicleType}-${customerId}`;
+
+        if (rows.includes(key)) {
+            $(this).find('.customer-id').addClass('is-invalid');
+            $(this).find('.duplicate-error').remove();
+            $(this).find('.customer-id').after('<span class="text-danger duplicate-error">Duplicate freight charge entry.</span>');
+            hasDuplicate = true;
+        } else {
+            rows.push(key);
+            $(this).find('.customer-id').removeClass('is-invalid');
+            $(this).find('.duplicate-error').remove();
+        }
+    });
+
+    return !hasDuplicate;
+}
+
+// 🔹 Trigger on blur/change (manual typing)
+$(document).on('blur change', '.route-master-id, .vehicle-type-id, .customer-id', checkDuplicateFreight);
+
+// 🔹 Trigger after autocomplete selection
+$(document).on('autocompleteselect', '.route-master-id, .vehicle-type-id, .customer-id', function () {
+    setTimeout(checkDuplicateFreight, 50); // delay ensures value is set
+});
+
+
 
 </script>
 

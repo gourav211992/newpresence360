@@ -208,7 +208,7 @@
                                         </div> 
                                         <div class = "row">
                                             <div class="col-md-4">  
-                                                <label class="form-label" id="supplier_list">Supplier(s)<span class="text-danger">*</span></label>  
+                                                <label class="form-label" id="supplier_list">Invited Supplier(s)<span class="text-danger">*</span></label>  
                                                 <select class="form-select select-2 disable_on_edit except_draft" name="supplier_ids[]" id="supplier_ids_input" multiple>
                                                     @if(isset($order) && $order->vendors() && count($order->vendors()) > 0 && $order->document_status != App\Helpers\ConstantHelper::DRAFT)
                                                         @foreach ($order->vendors() as $supplier)

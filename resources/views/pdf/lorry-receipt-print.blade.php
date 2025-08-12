@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docment</title>
+    <title>Document</title>
 </head>
 <body>
     <div style=" width:700px; padding: 10px; font-family:Arial;">
@@ -248,7 +248,7 @@
                 <div style="margin-bottom: 10px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
                     <p style="margin: 0;"><strong>{{ strtoupper($location->route->name ?? 'N/A') }}</strong></p>
                     <p style="margin: 0;"><strong>{{ $location->type ?? ' ' }} Freight:</strong> Rs. {{ $location->amount ?? '0' }}/-</p>
-                    <p style="margin: 0;"><strong>No. of Articles:</strong> {{ $location->no_of_articles ?? '0' }}/-</p>
+                    <p style="margin: 0;"><strong>No. of Articles:</strong> {{ $location->no_of_articles ?? '0' }}</p>
                 </div>
             </td>
         @endforeach

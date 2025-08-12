@@ -20,6 +20,7 @@ use App\Models\Attribute;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\Bom;
+use App\Models\ErpLorryReceipt;
 use App\Models\BomDetail;
 use App\Models\CashCustomerDetail;
 use App\Models\Category;
@@ -1571,6 +1572,38 @@ class ErpSaleOrderController extends Controller
             if (isset($headerId) && isset($detailId)) {
                 $lotNoDetails = InventoryHelper::getIssueTransactionLotNumbers($serviceAlias, $headerId, $detailId, $selectedUom);
             }
+           if ($request->type === ConstantHelper::LR_SERVICE_ALIAS) {
+                $lorryReceiptDetails = ErpLorryReceipt::with([
+                    'locations', 
+                    'source', 
+                    'destination', 
+                    'vehicle'
+                ])
+                    ->whereIn('id', (array) $request->lrId)
+                    ->get();
+
+                      $lrDetails = $lorryReceiptDetails->map(function ($lr) {
+                        $totalArticles = $lr->locations->sum('no_of_articles');
+                        $totalWeight = $lr->locations->sum('weight');
+                        $totalPointCharges = $lr->locations->sum('amount');
+                        $totalPoints = $lr->locations->count();
+
+                        return [
+                            'lr_no' => $lr->document_number ?? '',
+                            'book_code' => $lr->book->book_code,
+                            'document_date' =>Carbon::parse($lr->document_date)->format('d-m-Y') ?? '',
+                            'source' => $lr->source->name ?? '',
+                            'destination' => $lr->destination->name ?? '',
+                            'no_of_article' => $totalArticles,
+                            'total_weight' => $totalWeight,
+                            'points' => $totalPoints,
+                            'freight_charges' => $lr->freight_charges ?? 0,
+                            'points_charges' => $totalPointCharges ?? 0,
+                            'total_charges' => ($lr->freight_charges ?? 0) + ($totalPointCharges ?? 0),
+                        ];
+                    });
+               }
+
             return response()->json([
                 'message' => 'Item details found',
                 'item' => $item,
@@ -1579,8 +1612,9 @@ class ErpSaleOrderController extends Controller
                 'customer_item_details' => $customerItemDetails,
                 'lot_details' => $lotNoDetails,
                 'stocks' => $totalStockData,
+                'lrDetails' => $lrDetails
             ]);
-        } catch (Exception $ex) {
+        } catch (Exception $ex) { 
             return response()->json([
                 'message' => 'Some internal error occured',
                 'error' => $ex->getMessage()

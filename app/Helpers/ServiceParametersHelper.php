@@ -48,6 +48,8 @@ class ServiceParametersHelper
     const TAX_REQUIRED_PARAM_VALUES = ['yes', 'no'];
     const BILL_TO_FOLLOW_PARAM = 'bill_to_follow';
     const BILL_TO_FOLLOW_PARAM_VALUES = ['yes', 'no'];
+    const INSPECTION_REQUIRED_PARAM = 'inspection_required';
+    const INSPECTION_REQUIRED_PARAM_VALUES = ['yes', 'no'];
     const INVOICE_TO_FOLLOW_PARAM = 'invoice_to_follow';
     const INVOICE_TO_FOLLOW_PARAM_VALUES = ['yes', 'no'];
     const BOM_CONSUMPTION_METHOD = 'consumption_method';
@@ -142,6 +144,7 @@ class ServiceParametersHelper
         self::POST_ON_ARROVE_PARAM => 'Post on Approval?',//Applied
         self::TAX_REQUIRED_PARAM => 'Tax Required?',//Applied
         self::BILL_TO_FOLLOW_PARAM => 'Bill To Follow',//Applied
+        self::INSPECTION_REQUIRED_PARAM => 'Inspection Required',//Applied
         self::INVOICE_TO_FOLLOW_PARAM => 'Invoice To Follow?',//Applied
         self::BOM_CONSUMPTION_METHOD => 'Consumption Calculation Method',
         self::BOM_SECTION_REQUIRED => 'Product Section Required?',
@@ -1806,6 +1809,13 @@ class ServiceParametersHelper
             "name" => self::BILL_TO_FOLLOW_PARAM,
             "applicable_values" => self::BILL_TO_FOLLOW_PARAM_VALUES,
             "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::INSPECTION_REQUIRED_PARAM,
+            "applicable_values" => self::INSPECTION_REQUIRED_PARAM_VALUES,
+            "default_value" => ['no'],
             'is_multiple' => false,
             'service_level_visibility' => true
         ]

@@ -154,6 +154,21 @@ class ErpPqController extends Controller
                 ->addColumn('store',function($row){
                     return $row?->store?->store_name??" ";
                 })
+                ->addColumn('rfq',function($row){
+                    return $row?->rfq?->document_number ? $row?->rfq?->book_code.'-'.$row?->rfq?->document_number : " ";
+                })
+                ->addColumn('name',function($row){
+                    return $row?->rfq?->contact_name??" ";
+                })
+                ->addColumn('name',function($row){
+                    return $row?->rfq?->contact_name??" ";
+                })
+                ->addColumn('email',function($row){
+                    return $row?->rfq?->contact_email??" ";
+                })
+                ->addColumn('vendor',function($row){
+                    return $row?->selected_vendor??" ";
+                })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
                 })

@@ -1138,8 +1138,9 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
 
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
+      let sow_id = $(currentTr).find("[name*='[sow_id]']").val();
       let actionUrl = '{{ route("jo.get.itemdetail") }}'
-    + `?item_id=${itemId}&selectedAttr=${encodeURIComponent(JSON.stringify(selectedAttr))}&remark=${remark}&uom_id=${uomId}&qty=${qty}&delivery=${encodeURIComponent(JSON.stringify(selectedDelivery))}&po_item_id=${po_item_id}`;
+    + `?item_id=${itemId}&selectedAttr=${encodeURIComponent(JSON.stringify(selectedAttr))}&remark=${remark}&uom_id=${uomId}&qty=${qty}&sow_id=${sow_id}&delivery=${encodeURIComponent(JSON.stringify(selectedDelivery))}&po_item_id=${po_item_id}`;
       fetch(actionUrl).then(response => {
          return response.json().then(data => {
             if(data.status == 200) {

@@ -90,7 +90,6 @@ public function withValidator(Validator $validator)
 
         foreach ($nameOccurrences as $name => $indexes) {
             if (count($indexes) > 1) {
-                // Duplicate in form — show error only on second+ occurrence
                 foreach (array_slice($indexes, 1) as $duplicateIndex) {
                     $validator->errors()->add(
                         "vehicle_type.{$duplicateIndex}.name",
@@ -99,11 +98,11 @@ public function withValidator(Validator $validator)
                 }
             }
 
-            // Always check the first occurrence in DB
             $firstIndex = $indexes[0];
             $rowId = $vehicleTypes[$firstIndex]['id'] ?? null;
 
             $existsInDb = ErpVehicleType::whereRaw('LOWER(name) = ?', [$name])
+                ->whereNull('deleted_at')
                 ->when($rowId, fn($q) => $q->where('id', '!=', $rowId)) 
                 ->exists();
 

@@ -60,17 +60,17 @@ public function withValidator(Validator $validator)
     $validator->after(function ($validator) {
         $sourceId = $this->input('source_route_id');
         $destinationId = $this->input('destination_route_id');
-        $vehicleTypeIds = $this->input('vehicle_type_id', []);
+        $vehicleTypeIds = array_map('intval', $this->input('vehicle_type_id', []));
         $customerId = $this->input('customer_id');
         $locations = collect($this->input('multi_fixed_pricing', []));
         $currentId = $this->route('id'); 
 
-       
+        // ❌ Source & Destination cannot be same
         if ($sourceId && $destinationId && $sourceId == $destinationId) {
             $validator->errors()->add('destination_route_id', 'Source and destination cannot be the same.');
         }
 
-  
+        // 🔍 Check for duplicate locations inside form
         $locationIds = $locations->pluck('location_route_id')->filter()->values();
         $duplicates = $locationIds->duplicates();
 
@@ -91,35 +91,41 @@ public function withValidator(Validator $validator)
             }
         }
 
-        // ✅ Validate uniqueness in DB
-        $vehicleTypeIds = array_map('intval', $this->input('vehicle_type_id', []));
-        $customerId = $this->input('customer_id');
-        $currentId = $this->route('id');
+        // 📝 Check for duplicate combinations in the form itself
+        $seenKeys = [];
+        foreach ($vehicleTypeIds as $vIndex => $vehicleTypeId) {
+            $key = "{$sourceId}-{$destinationId}-{$vehicleTypeId}-" . ($customerId ?: 'NULL');
+            if (in_array($key, $seenKeys, true)) {
+                $validator->errors()->add('customer_id', 'Duplicate multi-fixed pricing entry in form.');
+                break;
+            }
+            $seenKeys[] = $key;
+        }
 
+        // 📦 Check for duplicates in DB
         foreach ($vehicleTypeIds as $vehicleTypeId) {
             $query = DB::table('erp_logistics_mf_pricing')
                 ->where('source_route_id', $sourceId)
                 ->where('destination_route_id', $destinationId)
+                ->whereNull('deleted_at')
                 ->whereRaw('JSON_CONTAINS(vehicle_type_id, ?)', [json_encode((string) $vehicleTypeId)])
-                ->when($customerId, function ($q) use ($customerId) {
-                    $q->where(function ($q2) use ($customerId) {
-                        $q2->whereNull('customer_id')->orWhere('customer_id', $customerId);
-                    });
-                }, function ($q) {
-                    $q->whereNull('customer_id');
+                ->where(function ($q) use ($customerId) {
+                    if (is_null($customerId)) {
+                        $q->whereNull('customer_id');
+                    } else {
+                        $q->where('customer_id', $customerId);
+                    }
                 })
                 ->when($currentId, fn($q) => $q->where('id', '!=', $currentId));
 
             if ($query->exists()) {
-                $validator->errors()->add('customer_id', 'Duplicate multi-fixed pricing entry.');
+                $validator->errors()->add('customer_id', 'Duplicate multi-fixed pricing entry exists in database.');
                 break;
             }
         }
-
-
-
     });
 }
+
 
 
 

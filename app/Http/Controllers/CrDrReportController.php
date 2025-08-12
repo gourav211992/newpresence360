@@ -1915,7 +1915,7 @@ class CrDrReportController extends Controller
                 ? $ledgerGroupIds
                 : [$ledger->ledger_group_id];
             $data = Voucher::when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($query){
-                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $query->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)->withoutGlobalScope('defaultLocation');
             })
             ->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
@@ -2007,6 +2007,7 @@ class CrDrReportController extends Controller
                         ->withWhereHas('voucherPayRec', function ($query) use ($organizations,$request) {
                             $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
                             $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                            $q->withoutGlobalScope('defaultLocation');
                         });
                             $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
@@ -2032,6 +2033,7 @@ class CrDrReportController extends Controller
                 ->withWhereHas('voucher', function ($query) use($organizations,$request) {
                 $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
                 $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $q->withoutGlobalScope('defaultLocation');
                  });
                   $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);
@@ -2065,6 +2067,7 @@ class CrDrReportController extends Controller
                 ->withWhereHas('voucher', function ($query) use ($organizations,$request) {
                     $query->when($request->type == ConstantHelper::PAYMENTS_SERVICE_ALIAS,function ($q){
                 $q->withoutGlobalScope(DefaultGroupCompanyOrgScope::class);
+                $q->withoutGlobalScope('defaultLocation');
             });
                     $query->when(!empty($organizations), function ($query) use ($organizations) {
                             $query->whereIn('organization_id', $organizations);

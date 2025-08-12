@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Traits\DefaultGroupCompanyOrg;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\Deletable;
+use App\Helpers\Helper;
 use App\Helpers\ConstantHelper;
 use Illuminate\Support\Facades\Schema;
 use App\Interfaces\Exportable; 
@@ -45,6 +46,8 @@ class Item extends Model implements Exportable
         'asset_category_id',
         'expected_life',
         'maintenance_schedule',
+        'brand_name',
+        'model_no',
         'cost_price',
         'cost_price_currency_id',
         'sell_price',
@@ -415,5 +418,28 @@ class Item extends Model implements Exportable
     {
         return 'items';
     }
+
+    // Get Salvage Percentage
+    public function getSalvagePercentage()
+    {
+        $salvagePercentage = FixedAssetSetup::where('act_type', 'company')
+            ->where('asset_category_id', $this->asset_category_id)
+            ->value('salvage_percentage');
+
+        if (!$salvagePercentage) {
+            return 0;
+        }
+
+        return $salvagePercentage;
+    }
+
+    // Get Asset Code
+    public function getAssetCode()
+    {
+        $assetCode = Helper::generateAssetCode($this->asset_category_id);
+        return $assetCode;
+        
+    }
+
 
 }

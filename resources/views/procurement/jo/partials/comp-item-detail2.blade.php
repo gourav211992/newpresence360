@@ -8,6 +8,9 @@
         <span class="badge rounded-pill badge-light-primary"><strong>Category</strong>:  {{$item?->category?->name ?? 'NA'}}</span>
         <span class="badge rounded-pill badge-light-primary"><strong>Sub Category</strong>: {{$item?->subCategory?->name ?? 'NA'}}</span>
         <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: {{$item?->hsn?->code}}</span>
+        @if(isset($serviceItem))
+            <span class="badge rounded-pill badge-light-primary"><strong>Service HSN</strong>: {{$serviceItem?->hsn?->code}}</span>
+        @endif
     </td>
 </tr>
 @if($specifications->count())

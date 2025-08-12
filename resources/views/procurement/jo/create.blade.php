@@ -277,10 +277,11 @@
                                         <th max-width="180px">Attributes</th>
                                         <th>UOM</th>
                                         <th>Qty</th>
+                                        <th  width="240px">Service Item (SOW)</th>
                                         <th>Service Charge</th>
                                         <th>Value</th> 
-                                        <th>Discount</th>
-                                        <th>Total</th> 
+                                        {{--  <th>Discount</th>
+                                        <th>Total</th>--}} 
                                         <th>Delivery Date</th> 
                                         <th width="50px">Action</th>
                                     </tr>
@@ -289,14 +290,15 @@
                                     </tbody>
                                     <tfoot>
                                         <tr class="totalsubheadpodetail"> 
-                                            <td colspan="7"></td>
+                                            <td colspan="8"></td>
                                             <td class="text-end" id="totalItemValue">0.00</td>
-                                            <td class="text-end" id="totalItemDiscount">0.00</td>
-                                            <td class="text-end" id="TotalEachRowAmount">0.00</td>
+                                            {{--  <td class="text-end" id="totalItemDiscount">0.00</td>
+                                            <td class="text-end" id="TotalEachRowAmount">0.00</td>--}}
+                                            <td></td>
                                             <td></td>
                                         </tr>
                                         <tr valign="top">
-                                            <td colspan="8" rowspan="10">
+                                            <td colspan="7" rowspan="10">
                                                 <table class="table border">
                                                     <tbody id="itemDetailDisplay">
                                                     <tr>
@@ -314,13 +316,13 @@
                                                             <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between"><strong>{{$short_title}} Summary</strong>
                                                                 <div class="addmendisexpbtn">
                                                                     <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                    <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
+                                                                    {{--<button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>--}}
                                                                     <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
                                                                 </div>                                   
                                                             </h6>
                                                         </td>
                                                     </tr>
-                                                    <tr class="totalsubheadpodetail"> 
+                                                    {{--<tr class="totalsubheadpodetail"> 
                                                         <td width="55%"><strong>Sub Total</strong></td>  
                                                         <td class="text-end" id="f_sub_total">0.00</td>
                                                     </tr>
@@ -331,7 +333,7 @@
                                                     <tr class="d-none" id="f_header_discount_hidden">
                                                         <td><strong>Header Discount</strong></td>
                                                         <td class="text-end" id="f_header_discount">0.00</td>
-                                                    </tr>
+                                                    </tr>--}}
                                                     <tr class="totalsubheadpodetail">
                                                         <td><strong>Taxable Value</strong></td>  
                                                         <td class="text-end" id="f_taxable_value" amount="">0.00</td>
@@ -962,8 +964,9 @@ $(document).on('input change focus', '#itemTable tr input', (e) => {
       let uomId = $(currentTr).find("[name*='[uom_id]']").val() || '';
       let qty = $(currentTr).find("[name*='[qty]']").val() || '';
       let pi_item_ids = $("[name='pi_item_ids']").val();
+      let sow_id = $(currentTr).find("[name*='[sow_id]']").val();
       let actionUrl = '{{ route("jo.get.itemdetail") }}'
-    + `?item_id=${itemId}&selectedAttr=${encodeURIComponent(JSON.stringify(selectedAttr))}&remark=${remark}&uom_id=${uomId}&qty=${qty}&delivery=${encodeURIComponent(JSON.stringify(selectedDelivery))}&pi_item_ids=${encodeURIComponent(JSON.stringify(pi_item_ids))}`;
+    + `?item_id=${itemId}&selectedAttr=${encodeURIComponent(JSON.stringify(selectedAttr))}&remark=${remark}&uom_id=${uomId}&qty=${qty}&sow_id=${sow_id}&delivery=${encodeURIComponent(JSON.stringify(selectedDelivery))}&pi_item_ids=${encodeURIComponent(JSON.stringify(pi_item_ids))}`;
 
       fetch(actionUrl).then(response => {
          return response.json().then(data => {

@@ -47,6 +47,12 @@
                                                 <th>S.No</th>
                                                 <th>Date</th>
                                                 <th>Series</th>
+                                                <th>RFQ</th>
+                                                <th>Contact<br>Name</th>
+                                                <th>Contact<br>Email</th>
+                                                <th>Contact<br>Phone </th>
+                                                <th>RFQ</th>
+                                                <th>Selected<br>Vendor</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
                                                 <th>Rev No</th>

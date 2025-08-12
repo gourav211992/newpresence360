@@ -43,7 +43,7 @@ class SaleModuleHelper
     const SALES_INVOICE_DN_TYPE = "dnote";
     const SALES_INVOICE_DN_CUM_INV_TYPE = "si-dnote";
     const SALES_INVOICE_LEASE_TYPE = "lease-invoice";
-    const SALES_INVOICE_TRANSPORTER_TYPE = "transporter-invoice";
+    const SALES_INVOICE_TRANSPORTER_TYPE = "ti";
     const ORDER_TYPE_DEFAULT = "Order";
     const ORDER_TYPE_JOB_WORK = "Job Work";
     const ORDER_TYPE_SUB_CONTRACTING = "Sub Contracting";

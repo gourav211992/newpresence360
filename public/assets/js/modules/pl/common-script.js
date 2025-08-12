@@ -1523,12 +1523,13 @@ function onItemClick(itemRowId)
         //assign land plot details
         let parcelName = document.getElementById('land_lease_land_parcel_' + itemRowId)?.value;
         let plotsName = document.getElementById('land_lease_land_plots_' + itemRowId)?.value;
-        
+       
         if (parcelName && plotsName) {
             qtDetails.innerHTML =  qtDetails.innerHTML + `<span class="badge rounded-pill badge-light-primary"><strong>Land Parcel</strong>: ${parcelName}</span><span class="badge rounded-pill badge-light-primary"><strong>Plots</strong>: ${plotsName}</span>`;
         }
 
     }
+        let qtTypeElement = document.getElementById('qt_type_id_' + itemRowId);
         let qtDocumentNo = document.getElementById('qt_document_no_'+ itemRowId);
         let qtBookCode = document.getElementById('qt_book_code_'+ itemRowId);
         let qtDocumentDate = document.getElementById('qt_document_date_'+ itemRowId);
@@ -1536,8 +1537,9 @@ function onItemClick(itemRowId)
         qtDocumentNo = qtDocumentNo?.value ? qtDocumentNo.value : '';
         qtBookCode = qtBookCode?.value ? qtBookCode.value : '';
         qtDocumentDate = qtDocumentDate?.value ? qtDocumentDate.value : '';
+        type = qtTypeElement?.value ? qtTypeElement.value : '';
 
-    if (qtDocumentNo && qtBookCode && qtDocumentDate) {
+    if (qtDocumentNo && qtBookCode && qtDocumentDate && type != 'lr') {
         qtDetailsRow.style.display = "table-row";
         qtDetails.innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Reference From</strong>:<span class="badge rounded-pill badge-light-primary"><strong>Document No: </strong>: ${qtBookCode + "-" + qtDocumentNo}</span><span class="badge rounded-pill badge-light-primary"><strong>Document Date: </strong>: ${qtDocumentDate}</span>`;
     } else {
@@ -1559,27 +1561,29 @@ function onItemClick(itemRowId)
     specs.forEach(spec => {
         specsInnerHTML +=  `<span class="badge rounded-pill badge-light-primary "><strong>${spec.specification_name}</strong>: ${spec.value}</span>`;
     });
-
+    if(type != 'lr'){
     document.getElementById('current_item_attributes').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Attributes</strong>:` + innerHTMLAttributes;
-    if (innerHTMLAttributes) {
+    }
+   
+    if (innerHTMLAttributes && type != 'lr') {
         document.getElementById('current_item_attribute_row').style.display = "table-row";
     } else {
         document.getElementById('current_item_attribute_row').style.display = "none";
     }
     document.getElementById('current_item_specs').innerHTML = `<strong style = "font-size:11px; color : #6a6a6a;">Specifications</strong>:` + specsInnerHTML;
-    if (specsInnerHTML) {
+    if (specsInnerHTML && type != 'lr') {
         document.getElementById('current_item_specs_row').style.display = "table-row";
     } else {
         document.getElementById('current_item_specs_row').style.display = "none";
     }
     const remarks = document.getElementById('item_remarks_' + itemRowId).value;
-    if (specsInnerHTML) {
+    if (specsInnerHTML && type != 'lr') {
         document.getElementById('current_item_specs_row').style.display = "table-row";
     } else {
         document.getElementById('current_item_specs_row').style.display = "none";
     }
     document.getElementById('current_item_description').textContent = remarks;
-    if (remarks) {
+    if (remarks && type != 'lr') {
         document.getElementById('current_item_description_row').style.display = "table-row";
     } else {
         document.getElementById('current_item_description_row').style.display = "none";
@@ -1595,6 +1599,7 @@ function onItemClick(itemRowId)
         });
     });
     }
+    const lrId = document.getElementById('lr_id_' + itemRowId).value || '';
     const itemId = document.getElementById('items_dropdown_'+ itemRowId + '_value').value;
     const uomId = document.getElementById('uom_dropdown_'+ itemRowId ).value;
     const qtyrow = document.getElementById('item_picked_qty_' + itemRowId) ?? document.getElementById('item_qty_' + itemRowId);
@@ -1605,6 +1610,8 @@ function onItemClick(itemRowId)
             dataType: 'json',
             data: {
                 quantity: qtyrow.value,
+                type: type,
+                lrId: lrId,
                 item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
                 uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,
                 selectedAttr : selectedItemAttr,
@@ -1615,6 +1622,34 @@ function onItemClick(itemRowId)
                 detail_id : $("#item_row_" + itemRowId).attr('data-detail-id')
             },
             success: function(data) {
+
+                if (Array.isArray(data?.lrDetails) && data.lrDetails.length > 0) {
+                    let html = '';
+                    data.lrDetails.forEach(lr => {
+                        html += `
+                            <span class="badge rounded-pill badge-light-primary">
+                                <strong>LR No.</strong>: <span>${lr.book_code} ${lr.lr_no} / ${lr.document_date}</span>
+                            </span>
+                            <span class="badge rounded-pill badge-light-primary">
+                                <strong>Source</strong>: <span>${lr.source}</span>
+                            </span>
+                            <span class="badge rounded-pill badge-light-primary">
+                                <strong>Destination</strong>: <span>${lr.destination}</span>
+                            </span>
+                            <span class="badge rounded-pill badge-light-primary">
+                                <strong>Charges</strong>: <span>${lr.total_charges}</span>
+                            </span>
+                        `;
+                    });
+                    document.getElementById('current_item_cat_hsn').innerHTML = html;
+
+                   
+                    document.getElementById('current_item_inventory_details').innerHTML = '';
+                    document.getElementById('current_item_stocks_row').style.display = "none";
+                    document.getElementById('current_item_lot_no_row').style.display = "none";
+
+                    return;
+                }
                 if (data.inv_qty && data.inv_uom) {
                     let inventoryDocElement = document.getElementById('current_item_inventory_details');
                     if (inventoryDocElement) {
@@ -1631,17 +1666,19 @@ function onItemClick(itemRowId)
                     <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: <span id = "current_item_hsn_code">${hsn_code}</span></span>
                     `;
                 }
+
+
                 //Stocks
-                if (data?.stocks) {
+             if (data?.stocks && (data.stocks.confirmedStockAltUom || data.stocks.pendingStockAltUom)) {
                     document.getElementById('current_item_stocks_row').style.display = "table-row";
                     document.getElementById('current_item_stocks').innerHTML = `
-                    <span class="badge rounded-pill badge-light-primary"><strong>Confirmed Stock</strong>: <span id = "item_sub_category">${data?.stocks?.confirmedStockAltUom}</span></span>
-                    <span class="badge rounded-pill badge-light-primary"><strong>Unconfirmed Stock</strong>: <span id = "item_category">${data?.stocks?.pendingStockAltUom}</span></span>
+                        <span class="badge rounded-pill badge-light-primary"><strong>Confirmed Stock</strong>: <span id="item_sub_category">${data?.stocks?.confirmedStockAltUom}</span></span>
+                        <span class="badge rounded-pill badge-light-primary"><strong>Unconfirmed Stock</strong>: <span id="item_category">${data?.stocks?.pendingStockAltUom}</span></span>
                     `;
-                    }
-                    else {
-                        // document.getElementById('current_item_stocks_row').style.display = "none";
-                    }
+                } else {
+                }
+                 
+
 
                     if (data?.lot_details && data.lot_details.length) {
                     document.getElementById('current_item_lot_no_row').style.display = "table-row";

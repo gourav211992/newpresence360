@@ -466,6 +466,7 @@ class JoController extends Controller
                 $totalItemValueAfterDiscount = 0;
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
+                    $serviceItem = Item::find($component['sow_id'] ?? null);
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -495,6 +496,7 @@ class JoController extends Controller
                         'so_id' => $component['so_id'] ?? null,
                         'jo_id' => $po->id,
                         'item_id' => $component['item_id'] ?? null,
+                        'service_item_id' => $component['sow_id'] ?? null,
                         'item_code' => $component['item_code'] ?? null,
                         'hsn_id' => $item?->hsn?->id ?? null,
                         'hsn_code' => $item?->hsn?->code ?? null,
@@ -1107,6 +1109,7 @@ class JoController extends Controller
         $selectedAttr = json_decode($request->selectedAttr,200) ?? [];
         $delivery = json_decode($request->delivery,200) ?? [];
         $item = Item::find($request->item_id ?? null);
+        $serviceItem = Item::find($request->sow_id);
         $poItem = JoProduct::find($request->jo_product_id ?? null);
         $uomId = $request->uom_id ?? null;
         $qty = floatval($request->qty) ?? 0;
@@ -1125,7 +1128,7 @@ class JoController extends Controller
             $piItems = $poItem->pi_item_mappings;
             $poItem->short_bal_qty = $poItem->short_bal_qty;
         }
-        $html = view('procurement.jo.partials.comp-item-detail',compact('item','selectedAttr','remark','uomName','qty','delivery','specifications','piItems','totalPoQnt','poItem'))->render();
+        $html = view('procurement.jo.partials.comp-item-detail',compact('serviceItem','item','selectedAttr','remark','uomName','qty','delivery','specifications','piItems','totalPoQnt','poItem'))->render();
         return response()->json(['data' => ['html' => $html,'po_item' => $poItem], 'status' => 200, 'message' => 'fetched.']);
     }
     # On select row get item detail 2

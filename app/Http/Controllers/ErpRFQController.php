@@ -118,6 +118,10 @@ class ErpRFQController extends Controller
                 }) -> orderByDesc('id');
                 return DataTables::of($docs) ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use($orderType) {
+                    if(isset($row->selected_pq))
+                    {
+                        $row->document_status = ConstantHelper::CLOSED;
+                    }
                     $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->document_status ?? ConstantHelper::DRAFT];    
                     $displayStatus = $row -> display_status;
                     $editRoute = route('rfq.edit', ['id' => $row -> id]); 
@@ -139,13 +143,47 @@ class ErpRFQController extends Controller
                     ";
                 })
                 ->addColumn('book_name', function ($row) {
-                    return $row->book_code ? $row->book_code : 'N/A';
+                    return $row->book_code ? $row->book_code : ' ';
                 })
                 ->editColumn('document_date', function ($row) {
-                    return $row->getFormattedDate('document_date') ?? 'N/A';
+                    return $row->getFormattedDate('document_date') ?? ' ';
                 })
                 ->addColumn('store',function($row){
                     return $row?->store?->store_name??" ";
+                })
+                ->addColumn('vendor', function($row) {
+                    $vendors = $row?->vendors();
+                    if (!$vendors || $vendors->isEmpty()) {
+                        return ' ';
+                    }
+                    $badges = ' ';
+                    $count = 0;
+                    foreach ($vendors as $vendor) {
+                        if ($count < 2) {
+                            $badges .= "<span class='badge rounded-pill badge-light-primary me-25'>{$vendor->company_name}</span>";
+                        }
+                        $count++;
+                    }
+                    if ($count > 2) {
+                        $extra = $count - 2;
+                        $badges .= "<span class='badge rounded-pill badge-light-secondary'>+{$extra} more</span>";
+                    }
+                    return $badges;
+                })
+                ->addColumn('due_date', function ($row) {
+                    return $row->getFormattedDate('due_date') ?? ' ';
+                })
+                ->addColumn('contact_person', function ($row) {
+                    return $row->contact_name ?? ' ';
+                })
+                ->addColumn('email', function ($row) {
+                    return $row->contact_email ?? ' ';
+                })
+                ->addColumn('phone', function ($row) {
+                    return $row->contact_phone ?? ' ';
+                })
+                ->addColumn('quoted', function ($row) {
+                return (string)$row->pqs->count() ?? ' ';
                 })
                 ->editColumn('revision_number', function ($row) {
                     return strval($row->revision_number);
@@ -153,7 +191,7 @@ class ErpRFQController extends Controller
                 ->addColumn('items_count', function ($row) {
                     return $row->items->count();
                 })
-                ->rawColumns(['document_status'])
+                ->rawColumns(['document_status','vendor'])
                 ->make(true);
             }
             catch (Exception $ex) {
@@ -952,7 +990,7 @@ class ErpRFQController extends Controller
         ->map(function ($item) {
             return [
                 'id' => $item->requester()->first()->id ?? null,
-                'name' => $item->requester()->first()->name ?? 'N/A',
+                'name' => $item->requester()->first()->name ?? '',
             ];
         });
         if ($request->ajax()) {

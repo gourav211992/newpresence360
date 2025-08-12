@@ -111,6 +111,7 @@ class ErpSaleInvoiceController extends Controller
             $redirectUrl = route('sale.transporterInvoice.index');
             $createRoute = route('sale.transporterInvoice.create');
         }
+        
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         request() -> merge(['type' => $orderType]);
         $autoCompleteFilters = self::getBasicFilters();
@@ -183,7 +184,10 @@ class ErpSaleInvoiceController extends Controller
                 }
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_LEASE_TYPE) {
                     $editRoute = route('sale.leaseInvoice.edit', ['id' => $row->id]);
-                }      
+                }   
+                 if ($orderType == SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE) {
+                    $editRoute = route('sale.transporterInvoice.edit', ['id' => $row->id]);
+                }   
                 return "
                     <div style='text-align:right;'>
                         <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
@@ -369,6 +373,7 @@ class ErpSaleInvoiceController extends Controller
         } else if ($parentUrl === 'transporter-invoices') {
             $locationVisiblity = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+           
         }
         request() -> merge(['type' => $orderType]);
         $user = Helper::getAuthenticatedUser();
@@ -1260,6 +1265,13 @@ class ErpSaleInvoiceController extends Controller
                                         $soItem -> save();
                                     }
                                 }
+                            } else if ($pullType === ConstantHelper::LR_SERVICE_ALIAS) {
+                                $lorryReceipt = ErpLorryReceipt::find($request -> quotation_item_ids[$itemDataKey]);
+                                if (isset($lorryReceipt)) {
+                                    $soItem -> lr_id = $lorryReceipt ?-> id;
+                                    $soItem -> save();
+                                }
+                               
                             } else if ($pullType === ConstantHelper::PL_SERVICE_ALIAS) {
                                 $plItemDetail = ErpPlItemDetail::find($request -> quotation_item_ids[$itemDataKey]);
                                 if ($plItemDetail) {
@@ -2399,21 +2411,33 @@ class ErpSaleInvoiceController extends Controller
                         ->first();
 
                     $itemIds = optional($orgBookParameter)->parameter_value ?? [];
-                    $singleItem = Item::find(collect($itemIds)->first()); 
-
+                    $singleItem = Item::with('specifications', 'alternateUoms.uom', 'uom', 'hsn')->find(collect($itemIds)->first()); 
+ 
                     $lrIds = $request->lr_ids;
-                    $headers = ErpLorryReceipt::with(['locations', 'source', 'destination', 'consignor' ,'vehicle'])
+                    $headers = ErpLorryReceipt::with(['locations', 'source', 'destination', 'consignor','consignor.currency' ,'vehicle'])
                         ->whereIn('id', $lrIds)
                         ->get();
+                        $locationAmountTotal = 0;
+                        $freightCharges = 0;
+                        $totalFreightWithLocation = 0;
+                        $processOrder = collect([]);
+
 
                             foreach ($headers as $header) {
                                     $header->document_type = "lr";
+                                    $header->book_Id = $header->book_id;
+                                    $header->book_Code = $header->book_code;
+                                    $header->document_Number = $header->document_number;
+                                    $header->document_Date = Carbon::parse($header->document_date)->format('d-m-Y');
+                                    $locationAmountTotal = $header->locations->sum('amount');
+                                    $freightCharges = $header->freight_charges ?? 0;
+                                    $totalFreightWithLocation = $freightCharges + $locationAmountTotal;
 
-                                    if ($singleItem) {
+
+                                if ($singleItem) {
                                         $itemClone = clone $singleItem;
 
                                         $itemClone->discount_ted = [];
-                                        $itemClone->item_attributes_array = $itemClone->item_attributes_array();
                                         $itemClone->balance_qty = 0;
                                         $itemClone->stock_qty = 0;
                                         $itemClone->item_discount_amount = 0;
@@ -2421,33 +2445,52 @@ class ErpSaleInvoiceController extends Controller
                                         $header->items = [$itemClone];
                                     }
 
+                                    
                                     $consignor = $header->consignor;
                                     $consignee = $header->consignee;
                                     $vehicle = $header->vehicle;
+                                    $billing_address_details = $consignor->addresses()->where('type', 'billing')->first();
+                                    $shipping_address_details = $consignor->addresses()->where('type', 'shipping')->first();
 
                                     $header->customer = $consignor;
+                                    $header->customer->currency = $consignor->currency;
+                                    $header->customer->payment_terms = $consignor->paymentTerm;
                                     $header->customer_code = $consignor?->company_name ?? null;
                                     $header->customer_id = $consignor?->id ?? null;
                                     $header->consignee_name = $consignee?->company_name ?? null;
                                     $header->customer_phone_no = $consignor?->phone ?? null;
                                     $header->customer_email = $consignor?->email ?? null;
                                     $header->customer_gstin = $consignor->compliances->gstin_no ?? null;
-                                    $header->billing_address_details = $consignor->addresses->first()?->display_address ?? null;
-                                    $header->shipping_address_details = $consignor?->shipping_address_details ?? null;
+                                    $header->billing_address_details = $billing_address_details ?? null;
+                                    $header->shipping_address_details = $shipping_address_details ?? null;
                                     $header->vehicle_no = $vehicle?->lorry_no ?? null;
+                                    $header->freight_charges = $freightCharges ?? 0;
+                                    $header->location_total_amount = $locationAmountTotal ?? 0;
+                                    $header->total_freight_amount = $totalFreightWithLocation ?? 0;
 
                                     if ($consignor) {
-                                        $header->customer_currency = $consignor->currency->name ?? null;
-                                        $header->customer_payment_terms = $consignor->payment_terms ?? null;
+                                        $header->currency_code = $consignor->currency->short_name ?? null ;
+                                        $header->payment_term_code = $consignor->paymentTerm->name ?? null ;
                                     }
                                 }
 
-                                // ✅ Final array format for frontend
-                                $finalHeaders = $headers->map(function ($header) {
+                                $finalHeaders = $headers->map(function ($header ) use($freightCharges, $locationAmountTotal, $totalFreightWithLocation)  {
                                     return [
-                                        'id' => $header->id,
+                                        'lr_id' => $header->id,
+                                        'freight_charges' => $freightCharges,
+                                        'location_total_amount' => $locationAmountTotal,
+                                        'total_freight_amount' => $totalFreightWithLocation,
+                                        'discount_ted' => [],
+                                        'expense_ted' => [],
                                         'document_type' => $header->document_type,
+                                        'book_id' => $header->book_Id,
+                                        'book_code' => $header->book->book_code,
+                                        'customer' => $header->customer,
+                                        'document_number' => $header->document_Number,
+                                        'document_date' => $header->document_Date,
                                         'customer_id' => $header->customer_id,
+                                        'payment_term_id' => $header->customer->payment_terms->id ?? null,
+                                        'currency_id' => $header->customer->currency->id ?? null,
                                         'customer_code' => $header->customer_code,
                                         'consignee_name' => $header->consignee_name,
                                         'customer_phone_no' => $header->customer_phone_no,
@@ -2456,21 +2499,42 @@ class ErpSaleInvoiceController extends Controller
                                         'billing_address_details' => $header->billing_address_details,
                                         'shipping_address_details' => $header->shipping_address_details,
                                         'vehicle_no' => $header->vehicle_no,
-                                        'customer_currency' => $header->customer_currency,
-                                        'customer_payment_terms' => $header->customer_payment_terms,
+                                        'currency_code' => $header->currency_code,
+                                        'payment_term_code' => $header->payment_term_code,
 
-                                        'items' => collect($header->items ?? [])->map(function ($item) {
+                                       'items' => collect($header->items ?? [])->map(function ($item ) use($totalFreightWithLocation) {
                                             return [
-                                                'id' => $item->id,
-                                                'item_name' => $item->item_name,
-                                                'item_code' => $item->item_code,
-                                                'discount_ted' => $item->discount_ted,
-                                                'item_attributes_array' => $item->item_attributes_array,
-                                                'balance_qty' => $item->balance_qty,
-                                                'stock_qty' => $item->stock_qty,
-                                                'item_discount_amount' => $item->item_discount_amount,
+                                              'discount_ted' => [],
+                                              'balance_qty' => 1,
+                                              'stock_qty' => 1,
+                                              'header_discount_amount' => 0,
+                                              'header_expense_amount' => 0,
+                                              'rate' => $totalFreightWithLocation,
+                                                // 'item' => [
+                                                //     'id' => $item->id,
+                                                //     'item_name' => $item->item_name,
+                                                //     'item_code' => $item->item_code,
+                                                //     'discount_ted' => $item->discount_ted,
+                                                //     'item_attributes_array' => $item->item_attributes_array(),
+                                                    
+                                                //     'item_discount_amount' => $item->item_discount_amount,
+                                                //     'uom' => [ 
+                                                //         'id' => optional($item->uom)->id,
+                                                //         'name' => optional($item->uom)->name,
+                                                //     ],
+                                                //     'hsn' => [ 
+                                                //         'id' => optional($item->hsn)->id,
+                                                //         'hsn_code' => optional($item->hsn)->code,
+                                                //     ],
+                                                //     'alternate_uoms' => [],
+                                                // ],
+                                                'item'=> $item,
+                                                'item_id' => $item->id,
+                                                'item_attributes_array' => $item->item_attributes_array(),
+                                                'item_discount_amount' => 0,
                                             ];
                                         }),
+
                                     ];
                                 });
 

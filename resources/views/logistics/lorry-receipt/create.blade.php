@@ -264,7 +264,7 @@
                                                                 data-type="consignor"
                                                                 placeholder="Start typing customer..." />
 
-                                                            <input type="hidden" name="customer_id" class="customer-id" data-type="consignor" id="customer_id"/>
+                                                            <input type="hidden" name="customer_id" class="customer-id" data-type="consignor" id="customer_id" data-id=""/>
                                                         </div>
                                                     </div>
 
@@ -1086,23 +1086,30 @@ $(document).on('focus', '.customer-autocomplete', function () {
             },
             select: function (event, ui) {
                 if (ui.item.value === '') {
-                    event.preventDefault(); // prevent setting input if "No results found"
+                    event.preventDefault(); 
                     return false;
                 }
 
+               event.preventDefault(); 
                 const type = $input.data('type');
+                $input.val('');
                 $input.val(ui.item.label);
                 $(`.customer-id[data-type="${type}"]`).val(ui.item.id);
+                
                 return false;
+            },
+            close: function () {
+                $(this).trigger('change'); 
             }
         }).focus(function () {
             $(this).autocomplete('search', '');
         });
+        
     }
 });
 
     //drivers autocomplete
-const driverList = [
+ const driverList = [
     @if($drivers->isNotEmpty())
     @foreach($drivers as $driver)
         {
@@ -1138,7 +1145,7 @@ $(document).on('focus', '.driver-autocomplete', function () {
             },
             select: function (event, ui) {
                 if (ui.item.label === "No results found") {
-                    event.preventDefault(); // Prevent selection
+                    event.preventDefault(); 
                     return false;
                 }
 
@@ -1238,21 +1245,24 @@ $('.vehicle-number-autocomplete').each(function () {
             }
         });
     }
-$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]').on('blur', function () {
-    const sourceId = $('input[name="source_id"]').val();
-    const destId = $('input[name="destination_id"]').val();
-    const vehicleId = $('input[name="vehicle_number_id"]').val();
-    const custId = $('input[name="customer_id"]').val();
+$('input[name="source_name"], input[name="destination_name"], input[name="vehicle_number"], input[name="customer_name"]')
+    .on('autocompleteselect autocompletechange', function () {
+       
+        const sourceId = $('input[name="source_id"]').val();
+        const destId = $('input[name="destination_id"]').val();
+        const vehicleId = $('input[name="vehicle_number_id"]').val();
+        const custId = $('input[name="customer_id"]').val();
 
-    console.log('sourceId:', sourceId);
-    console.log('destId:', destId);
-    console.log('vehicleId:', vehicleId);
-    console.log('custId:', custId);
+        console.log('sourceId:', sourceId);
+        console.log('destId:', destId);
+        console.log('vehicleId:', vehicleId);
+        console.log('custId:', custId);
 
-    if (sourceId && destId && vehicleId && custId) {
-        fetchFreightCharge();
-    }
-});
+        if (sourceId && destId && vehicleId && custId) {
+            fetchFreightCharge();
+        }
+    });
+
 
 
 
@@ -1266,8 +1276,8 @@ $('input[name="source_name"], input[name="destination_name"], input[name="vehicl
 <script>
 $(document).ready(function () {
     function loadCostCenters(locationId) {
-        // Reset and hide initially
-        $('#cost_center_id').html('<option value="">Select Cost Center</option>');
+        // Clear previous options and hide wrapper
+        $('#cost_center_id').empty();
         $('#cost_center_wrapper').hide();
         $('#cost_center_id').prop('required', false);
 
@@ -1282,6 +1292,9 @@ $(document).ready(function () {
                                 `<option value="${center.id}">${center.name}</option>`
                             );
                         });
+
+                        // Automatically select first cost center
+                        $('#cost_center_id').val(response.data[0].id);
 
                         $('#cost_center_wrapper').show();
                         $('#cost_center_id').prop('required', true);
@@ -1301,16 +1314,17 @@ $(document).ready(function () {
         loadCostCenters(locationId);
     });
 
-    // On page load: check if any location is already selected
+    // On page load
     const initialLocationId = $('#locationId').val();
     if (initialLocationId) {
         loadCostCenters(initialLocationId);
     } else {
         $('#cost_center_wrapper').hide();
         $('#cost_center_id').prop('required', false);
-         $('#cost_center_error').hide();
+        $('#cost_center_error').hide();
     }
 });
+
 
 
 
@@ -1323,7 +1337,7 @@ let globalSourceId = $('#sourceIdInput').val();
 
 let pricingCache = {}
 
-  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null, isEditLoad = false) {
+  function checkFreePoint(locationId = null, sourceId = null, vehicleId = null, customerId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
     $.ajax({
@@ -1333,6 +1347,8 @@ let pricingCache = {}
             _token: $('meta[name="csrf-token"]').attr('content'),
             location_id: locationId,
             source_id: sourceId,
+            vehicle_id: vehicleId,
+            customer_id: customerId,
         },
         success: function (res) {
             $('#fixedAmountDisplay').empty();
@@ -1446,9 +1462,13 @@ function handleLocationUpdate($input) {
     const $row = $input.closest('tr');
     const locationId = $row.find('input[name*="[location_id]"]').val();
     const sourceId = $('#sourceIdInput').val();
+    const vehicleId = $('#vehicle_number_id').val();
+    const customerId = $('#customer_id').val();
 
-    if (locationId && sourceId) {
-        checkFreePoint(locationId, sourceId, $row); 
+
+
+    if (locationId && sourceId && vehicleId && customerId) {
+        checkFreePoint(locationId, sourceId, vehicleId, customerId, $row); 
     }
 }
 
@@ -1708,6 +1728,9 @@ document.addEventListener('click', function (e) {
             toggleLocationFields();
         }, 500);
     });
+
+
+
 </script>
 
 

@@ -62,6 +62,7 @@ class JobOrderService
         $joProduct->so_id = $poItem['so_id'] ?? null;
         $joProduct->jo_id = $jobOrderId;
         $joProduct->item_id = $poItem['item_id'];
+        $joProduct->service_item_id = $poItem['service_item_id'];
         $joProduct->item_code = $poItem['item_code'];
         $joProduct->hsn_id = $poItem['hsn_id'];
         $joProduct->hsn_code = $poItem['hsn_code'];

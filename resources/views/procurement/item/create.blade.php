@@ -727,24 +727,41 @@
                                                                 </div>
                                                             </div>
 
-                                                            <!-- Maintenance Schedule -->
+                                                          <!-- Maintenance Schedule -->
                                                             <div class="row align-items-center mb-1">
                                                                 <div class="col-md-2">
                                                                     <label for="maintenance_schedule" class="form-label">Maint.Schedule<span class="text-danger">*</span></label>
                                                                 </div>
                                                                 <div class="col-md-3">
                                                                     <select class="form-select mw-100" name="maintenance_schedule" id="maintenance_schedule">
-                                                                        <option value="">Select</option>
                                                                         @php
                                                                             $schedules = ['weekly', 'monthly', 'quarterly', 'semi-annually', 'annually'];
                                                                         @endphp
+                                                                        <option value="">Select</option>
                                                                         @foreach($schedules as $schedule)
-                                                                            <option value="{{ $schedule }}"
-                                                                                {{ (isset($item) && $item->maintenance_schedule == $schedule) ? 'selected' : '' }}>
-                                                                                {{ ucfirst($schedule) }}
-                                                                            </option>
+                                                                            <option value="{{ $schedule }}">{{ ucfirst($schedule) }}</option>
                                                                         @endforeach
                                                                     </select>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Brand Name -->
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-2">
+                                                                    <label for="brand_name" class="form-label">Brand Name<span class="text-danger">*</span></label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" id="brand_name" name="brand_name" value="" class="form-control" maxlength="255">
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Model No. -->
+                                                            <div class="row align-items-center mb-1">
+                                                                <div class="col-md-2">
+                                                                    <label for="model_no" class="form-label">Model No.<span class="text-danger">*</span></label>
+                                                                </div>
+                                                                <div class="col-md-3">
+                                                                    <input type="text" id="model_no" name="model_no" value="" class="form-control" maxlength="255">
                                                                 </div>
                                                             </div>
 
@@ -1685,6 +1702,7 @@
             $('#UOM').removeClass('d-none').css('display', '');
             $('#Details').removeClass('d-none').css('display', '');
             $('#Attributes').removeClass('d-none').css('display', '');
+               
         }
 
         function updateCheckboxStatesForService() {
@@ -1695,11 +1713,13 @@
             $('a[href="#Details"]').addClass('d-none');
             $('a[href="#Attributes"]').addClass('d-none');
             $('a[href="#UOM"]').addClass('d-none');
+            $('a[href="#Assets"]').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Details').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Attributes').addClass('d-none');
-            ['#UOM', '#Details', '#Attributes'].forEach(function (selector) {
+            ('#Assets').addClass('d-none');
+            ['#UOM', '#Details', '#Attributes','#Assets'].forEach(function (selector) {
                 $(selector).addClass('d-none').find('input, select, textarea').each(function () {
                     const $input = $(this);
                     $input.is(':checkbox') || $input.is(':radio') 
@@ -1999,7 +2019,11 @@ $(document).ready(function() {
     $(document).ready(function () {
         function toggleAssetTab() {
             if ($('#assetCheckbox').is(':checked')) {
-                $('#assetTabLink').show();
+                $('#assetTabLink').removeClass('d-none').show();
+                $('.nav-link').removeClass('active'); 
+                $('.tab-pane').removeClass('active show'); 
+                $('#assetTabLink').addClass('active');
+                $('#Assets').addClass('active show').removeClass('d-none').show();
             } else {
                 $('#assetTabLink').removeClass('active');
                 $('#Assets').removeClass('active show');

@@ -1,7 +1,7 @@
 @foreach($mrn->items as $key => $item)
    @php
       $rowCount = $key + 1;
-      $hasInspection = $item->item->hasInspection();
+      $hasInspection = $item->is_inspection;
       $inspectionChecklistData = $hasInspection === 'yes' ? $item->item->loadInspectionChecklists() : [];
    @endphp
    <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
@@ -77,7 +77,7 @@
       </td>
       <td>
          <div class="d-flex">
-            @if($hasInspection === 'yes' && !empty($inspectionChecklistData))
+            @if($hasInspection === 1 && !empty($inspectionChecklistData))
                <input type="hidden" name="components[{{$rowCount}}][inspectionData]" />
                <div class="cursor-pointer ms-50 text-success inspectionChecklistBtn"
                   data-row-count="{{ $rowCount }}"

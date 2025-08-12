@@ -28,7 +28,7 @@
                                 <input type="hidden" name="document_status" value="draft" id="document_status">
                                 <button type="button" onClick="javascript: history.go(-1)" class="btn btn-secondary btn-sm mb-50 mb-sm-0">
                                     <i data-feather="arrow-left-circle"></i> Back
-                                </button> 
+                                </button>
                                 <a href="{{ route('material-receipt.generate-pdf', $mrn->id) }}" target="_blank" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round" class="feather feather-printer">
@@ -52,7 +52,7 @@
                                     <button id="postButton" onclick="onPostVoucherOpen();" type="button" class="btn btn-warning btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Post</button>
                                 @endif
                                 @if($buttons['voucher'])
-                                    <button type="button" onclick="onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>                                
+                                    <button type="button" onclick="onPostVoucherOpen('posted');" class="btn btn-dark btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> Voucher</button>
                                 @endif
                                 @if($buttons['approve'])
                                     <button type="button" class="btn btn-primary btn-sm" id="approved-button" name="action" value="approved"><i data-feather="check-circle"></i> Approve</button>
@@ -93,41 +93,41 @@
                                         <div class="row">
                                             <div class="col-md-8">
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3"> 
-                                                        <label class="form-label">Series <span class="text-danger">*</span></label>  
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Series <span class="text-danger">*</span></label>
                                                     </div>
-                                                    <div class="col-md-5">  
-                                                        <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$mrn->book_id}}" readonly> 
+                                                    <div class="col-md-5">
+                                                        <input type="hidden" name="book_id" class="form-control" id="book_id" value="{{$mrn->book_id}}" readonly>
                                                         <input readonly type="text" class="form-control" value="{{$mrn->book->book_code}}" id="book_code">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3"> 
-                                                        <label class="form-label">Expense No <span class="text-danger">*</span></label>  
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Expense No <span class="text-danger">*</span></label>
                                                     </div>
-                                                    <div class="col-md-5"> 
+                                                    <div class="col-md-5">
                                                         <input type="text" class="form-control" readonly value="{{@$mrn->document_number}}" id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3"> 
-                                                        <label class="form-label">Expense Date <span class="text-danger">*</span></label>  
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Expense Date <span class="text-danger">*</span></label>
                                                     </div>
-                                                    <div class="col-md-5"> 
+                                                    <div class="col-md-5">
                                                         <input type="date" id="document_date" name="document_date" class="form-control" value="{{date('Y-m-d')}}" >
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
-                                                    <div class="col-md-3"> 
-                                                        <label class="form-label">Reference No </label>  
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Reference No </label>
                                                     </div>
-                                                    <div class="col-md-5"> 
+                                                    <div class="col-md-5">
                                                         <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
                                                     </div>
                                                 </div>
                                             </div>
                                             {{-- Approval History Section --}}
-                                            @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])   
+                                            @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
                                         </div>
                                     </div>
                                 </div>
@@ -143,7 +143,7 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                        <label class="form-label">Vendor <span class="text-danger">*</span></label> 
+                                                        <label class="form-label">Vendor <span class="text-danger">*</span></label>
                                                             <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" id="vendor_name" name="vendor_name" {{(count(($mrn->items)) > 0 ? 'readonly' : '')}} value="{{@$mrn->vendor->company_name}}" />
                                                             <input type="hidden" value="{{@$mrn->vendor_id}}" id="vendor_id" name="vendor_id" />
                                                             <input type="hidden" value="{{@$mrn->vendor_code}}" id="vendor_code" name="vendor_code" />
@@ -180,7 +180,7 @@
                                                         <div class="mb-1">
                                                             <label class="form-label">
                                                             Supplier Invoice No.
-                                                            </label> 
+                                                            </label>
                                                             <input type="text" name="supplier_invoice_no" value="{{@$mrn->supplier_invoice_no}}"
                                                                 class="form-control bg-white"
                                                                 placeholder="Enter Supplier Invoice No.">
@@ -189,7 +189,7 @@
                                                     <div class="col-md-2">
                                                         <div class="mb-1">
                                                             <label class="form-label">
-                                                                Supplier Invoice Date 
+                                                                Supplier Invoice Date
                                                                 <!-- <span class="text-danger">*</span> -->
                                                             </label>
                                                             <input type="date" name="supplier_invoice_date" value="{{date('Y-m-d', strtotime($mrn->supplier_invoice_date))}}"
@@ -205,7 +205,7 @@
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <label class="form-label w-100" style="display: {{ count($mrn->items) > 0 ? 'none' : 'block' }};">
-                                                                        Select Shipping Address <span class="text-danger">*</span> 
+                                                                        Select Shipping Address <span class="text-danger">*</span>
                                                                         <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="shipping">
                                                                             <i data-feather='edit-3'></i> Edit
                                                                         </a>
@@ -213,10 +213,10 @@
                                                                     <div class="mrnaddedd-prim shipping_detail">
                                                                         @if($mrn->latestShippingAddress())
                                                                             {{$mrn->latestShippingAddress()->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->latestShippingAddress()->display_address}}"> 
+                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->latestShippingAddress()->display_address}}">
                                                                         @else
                                                                             {{$mrn->shippingAddress?->display_address}}
-                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->shippingAddress?->display_address}}"> 
+                                                                            <input type="hidden" name="shipping_address" id="shipping_address" value="{{$mrn->shippingAddress?->display_address}}">
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -229,7 +229,7 @@
                                                             <div class="bilnbody">
                                                                 <div class="genertedvariables genertedvariablesnone">
                                                                     <label class="form-label w-100" style="display: {{ count($mrn->items) > 0 ? 'none' : 'block' }};">
-                                                                        Select Billing Address <span class="text-danger">*</span> 
+                                                                        Select Billing Address <span class="text-danger">*</span>
                                                                         <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing">
                                                                             <i data-feather='edit-3'></i> Edit
                                                                         </a>
@@ -237,10 +237,10 @@
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
                                                                             {{$mrn->latestBillingAddress()->display_address}}
-                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->latestBillingAddress()->display_address}}"> 
+                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->latestBillingAddress()->display_address}}">
                                                                         @else
                                                                             {{$mrn->billingAddress?->display_address}}
-                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->billingAddress?->display_address}}"> 
+                                                                            <input type="hidden" name="billing_address" id="billing_address" value="{{$mrn->billingAddress?->display_address}}">
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -290,7 +290,7 @@
                                                                 <th class="text-end">Rate</th>
                                                                 <th class="text-end">Value</th>
                                                                 <th>Discount</th>
-                                                                <th class="text-end">Total</th>                                                           
+                                                                <th class="text-end">Total</th>
                                                                 <th>Cost Center</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
@@ -335,7 +335,7 @@
                                                                             <td class="poprod-decpt">
                                                                                 <span class="badge rounded-pill badge-light-primary"><strong>Inv. UOM</strong>: </span>
                                                                                 <span class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:</span>
-                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span> 
+                                                                                <span class="badge rounded-pill badge-light-primary"><strong>Exp. Date</strong>: </span>
                                                                             </td>
                                                                         </tr>
                                                                         <tr>
@@ -442,9 +442,9 @@
                                                         @include('partials.document-preview',['documents' => $mrn->getDocuments(), 'document_status' => $mrn->document_status,'elementKey' => 'main_expense_preview'])
                                                     </div>
                                                     <div class="col-md-12">
-                                                        <div class="mb-1">  
-                                                            <label class="form-label">Final Remarks</label> 
-                                                            <textarea type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $mrn->final_remark !!}</textarea> 
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Final Remarks</label>
+                                                            <textarea type="text" rows="4" name="remarks" class="form-control" placeholder="Enter Remarks here...">{!! $mrn->final_remark !!}</textarea>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -470,7 +470,7 @@
             </div>
         </div>
     </form>
-    
+
     {{-- Attribute popup --}}
     <div class="modal fade" id="attribute" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
         <div class="modal-dialog  modal-dialog-centered">
@@ -494,8 +494,8 @@
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-center">  
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+                <div class="modal-footer justify-content-center">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" data-bs-dismiss="modal" class="btn btn-primary">Select</button>
                 </div>
             </div>
@@ -512,22 +512,22 @@
                 <div class="modal-body px-sm-2 mx-50 pb-2">
                     <h1 class="text-center mb-1" id="shareProjectTitle">Discount</h1>
                     <div class="text-end"></div>
-                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                    <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                         <thead>
                             <tr>
                                 <td>#</td>
                                 <td>
-                                    <label class="form-label">Type<span class="text-danger">*</span></label> 
+                                    <label class="form-label">Type<span class="text-danger">*</span></label>
                                     <input type="text" id="new_item_dis_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                                     <input type = "hidden" id = "new_item_discount_id" />
                                     <input type = "hidden" id = "new_item_dis_name" />
                                 </td>
                                 <td>
-                                    <label class="form-label">Percentage <span class="text-danger">*</span></label> 
+                                    <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                     <input step="any" type="number" id="new_item_dis_perc" class="form-control mw-100" />
                                 </td>
                                 <td>
-                                    <label class="form-label">Value <span class="text-danger">*</span></label> 
+                                    <label class="form-label">Value <span class="text-danger">*</span></label>
                                     <input step="any" type="number" id="new_item_dis_value" class="form-control mw-100" />
                                 </td>
                                 <td>
@@ -539,7 +539,7 @@
                         </thead>
                     </table>
                     <div class="table-responsive-md customernewsection-form">
-                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                        <table id="eachRowDiscountTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                             <thead>
                                 <tr>
                                     <th>S.No</th>
@@ -549,7 +549,7 @@
                                     <th>Action</th>
                                 </tr>
                             </thead>
-                            <tbody>  
+                            <tbody>
                                 <tr id="disItemFooter">
                                     <input type="hidden" name="row_count" id="row_count" value="1">
                                     <td colspan="2"></td>
@@ -561,8 +561,8 @@
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-center">  
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+                <div class="modal-footer justify-content-center">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" class="btn btn-primary itemDiscountSubmit">Submit</button>
                 </div>
             </div>
@@ -578,7 +578,7 @@
                 </div>
                 <div class="modal-body px-sm-2 mx-50 pb-2">
                     <h1 class="text-center mb-1" id="shareProjectTitle">Remarks</h1>
-                    {{-- 
+                    {{--
                     <p class="text-center">Enter the details below.</p>
                     --}}
                     <div class="row mt-2">
@@ -589,14 +589,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer justify-content-center">  
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+                <div class="modal-footer justify-content-center">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                     <button type="button" class="btn btn-primary itemRemarkSubmit">Submit</button>
                 </div>
             </div>
         </div>
     </div>
-    
+
     {{-- Delete component modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="deleteComponentModal" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
         <div class="modal-dialog">
@@ -671,7 +671,7 @@
 
     <!-- Approve/Reject Modal -->
     @include('procurement.expense-advise.partials.approve-modal', ['id' => $mrn->id])
-    
+
     {{-- Taxes --}}
     @include('procurement.expense-advise.partials.tax-detail-modal')
 
@@ -688,7 +688,7 @@
                     <p>Are you sure you want to <strong>Amendment</strong> this <strong>Expense</strong>? After Amendment this action cannot be undone.</p>
                     <button type="button" class="btn btn-secondary me-25" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="amendmentSubmit" class="btn btn-primary">Confirm</button>
-                </div> 
+                </div>
             </div>
         </div>
     </div>
@@ -730,10 +730,10 @@
                         </div>
 						<div class="col-md-12">
 							<div class="table-responsive">
-								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+								<table class="mt-1 table table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
 									<thead>
 										<tr>
-											<th>Type</th>  
+											<th>Type</th>
 											<th>Group</th>
 											<th>Leadger Code</th>
 											<th>Leadger Name</th>
@@ -800,7 +800,7 @@
             @endif
         @endif
 
-        // Change BookId     
+        // Change BookId
         $(document).on('change','#book_id', (e) => {
             let bookId = e.target.value;
             if (bookId) {
@@ -832,7 +832,7 @@
                         const parameters = data.data.parameters;
                         console.log('parameters', parameters);
                         setServiceParameters(parameters);
-                        
+
                         if(parameters?.tax_required.some(val => val.toLowerCase() === 'yes')) {
                             $("#tax_required").val(parameters?.tax_required[0]);
                         } else {
@@ -923,7 +923,7 @@
                 }
             },100);
         }
-        
+
         /*Vendor drop down*/
         function initializeAutocomplete1(selector, type) {
             $(selector).autocomplete({
@@ -1013,7 +1013,7 @@
             });
         }
         initializeAutocomplete1("#vendor_name");
-        
+
         /*Add New Row*/
         // for component item code
         function initializeAutocomplete2(selector, type) {
@@ -1039,7 +1039,7 @@
                                 return {
                                     id: item.id,
                                     label: `${item.item_name} (${item.item_code})`,
-                                    code: item.item_code || '', 
+                                    code: item.item_code || '',
                                     item_id: item.id,
                                     item_name:item.item_name,
                                     uom_name:item.uom?.name,
@@ -1143,12 +1143,12 @@
                 attr_require : true,
                 row_length : lastRow.length
             };
-            
+
             if(lastRow.length == 0) {
                 lastTrObj.attr_require = false;
                 lastTrObj.item_id = "0";
             }
-            
+
             if(lastRow.length > 0) {
                 let item_id = lastRow.find("[name*='item_id']").val();
                 if(lastRow.find("[name*='attr_name']").length) {
@@ -1159,7 +1159,7 @@
                 } else {
                     attr_require = true;
                 }
-                
+
                 lastTrObj = {
                     item_id : item_id,
                     attr_require : attr_require,
@@ -1170,8 +1170,8 @@
                     lastTrObj.attr_require = false;
                 }
             }
-            
-            let actionUrl = '{{route("expense-adv.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj); 
+
+            let actionUrl = '{{route("expense-adv.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1327,7 +1327,7 @@
 
         /*Display item detail*/
         $(document).on('change focus', '#itemTable tr input ', function(e){
-            let currentTr = e.target.closest('tr'); 
+            let currentTr = e.target.closest('tr');
             getItemDetail(currentTr);
         });
 
@@ -1357,17 +1357,17 @@
                 let headerId = $(currentTr).find("[name*='expense_header_id']").val() ?? '';
                 let detailId = $(currentTr).find("[name*='expense_detail_id']").val() ?? '';
 
-                let actionUrl = '{{route("expense-adv.get.itemdetail")}}' + 
+                let actionUrl = '{{route("expense-adv.get.itemdetail")}}' +
                     '?item_id=' + itemId +
-                    '&purchase_order_id=' + poHeaderId + 
-                    '&po_detail_id=' + poDetailId + 
-                    '&sale_order_id=' + soHeaderId + 
-                    '&so_detail_id=' + soDetailId + 
-                    '&selectedAttr=' + JSON.stringify(selectedAttr) + 
-                    '&remark=' + remark + 
-                    '&uom_id=' + uomId + 
-                    '&qty=' + qty + 
-                    '&headerId=' + headerId + 
+                    '&purchase_order_id=' + poHeaderId +
+                    '&po_detail_id=' + poDetailId +
+                    '&sale_order_id=' + soHeaderId +
+                    '&so_detail_id=' + soDetailId +
+                    '&selectedAttr=' + JSON.stringify(selectedAttr) +
+                    '&remark=' + remark +
+                    '&uom_id=' + uomId +
+                    '&qty=' + qty +
+                    '&headerId=' + headerId +
                     '&detailId=' + detailId;
 
                 fetch(actionUrl).then(response => {
@@ -1401,7 +1401,7 @@
                 })
                 .catch(error => console.error('Error fetching address data:', error));
         });
-        
+
         $(document).on('change', "[name='address_id']", (e) => {
             let vendorId = $("#vendor_id").val();
             let addressType = $("#address_type").val();
@@ -1427,7 +1427,7 @@
                 })
                 .catch(error => console.error('Error fetching address data:', error));
         });
-        
+
         function initializeFormComponents(selectedAddress) {
             const countrySelect = $('#country');
             fetch('/countries')
@@ -1444,12 +1444,12 @@
                     }
                 })
                 .catch(error => console.error('Error fetching countries:', error));
-        
+
             countrySelect.on('change', function () {
                 let countryValue = $(this).val();
                 let stateSelect = $('#state_id');
                 stateSelect.empty().append('<option value="">Select State</option>'); // Reset state dropdown
-        
+
                 if (countryValue) {
                     fetch(`/states/${countryValue}`)
                         .then(response => response.json())
@@ -1484,7 +1484,7 @@
             $("#pincode").val(selectedAddress.pincode);
             $("#address").val(selectedAddress.address);
         }
-        
+
         /* Address Submit */
         $(document).on('click', '.submitAddress', function (e) {
             $('.ajax-validation-error-span').remove();
@@ -1532,7 +1532,7 @@
             });
 
         });
-        
+
         /*Remove item level discount*/
         $(document).on("click", ".deleteItemDiscountRow", (e) => {
             let rowCount = e.target.closest('a').getAttribute('data-row-count') || 0;
@@ -1570,7 +1570,7 @@
             let totalAmnt = 0;
             $(".display_discount_row").find("[name*='[item_d_amnt]']").each(function(index,item) {
                 let key = index + 1;
-                let id = $(item).closest('tr').find(`[name*="[item_d_id]"]`).val(); 
+                let id = $(item).closest('tr').find(`[name*="[item_d_id]"]`).val();
                 let name = $(item).closest('tr').find(`[name*="[item_d_name]"]`).val();
                 let perc = $(item).closest('tr').find(`[name*="[item_d_perc]"]`).val();
                 let amnt = $(item).val();
@@ -1611,7 +1611,7 @@
             $('.display_summary_discount_row [name*="[d_perc]"]').each(function(index, item) {
                 let perc = Number($(item).val());
                 if(perc) {
-                    let disAmount = itemValue * Number(perc) / 100;  
+                    let disAmount = itemValue * Number(perc) / 100;
                     $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', true).val(disAmount.toFixed(2));
                 } else {
                     $(item).closest('tr').find("[name*='[d_amnt]']").prop('readonly', false).val('');
@@ -1651,7 +1651,7 @@
             $('.display_summary_exp_row [name*="[e_perc]"]').each(function(index, item) {
                 let perc = Number($(item).val());
                 if(perc) {
-                    let total = itemValue * perc / 100; 
+                    let total = itemValue * perc / 100;
                     $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',true).val(total.toFixed(2));
                 } else {
                     $(item).closest('tr').find('[name*="e_amnt"]').prop('readonly',false).val('');
@@ -1755,8 +1755,8 @@
                         voucherEntries.ledgers[voucher].forEach((voucherDetail, index) => {
                             voucherEntriesHTML += `
                             <tr>
-                            <td>${voucher}</td>   
-                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td> 
+                            <td>${voucher}</td>
+                            <td class="fw-bolder text-dark">${voucherDetail.ledger_group_code ? voucherDetail.ledger_group_code : ''}</td>
                             <td>${voucherDetail.ledger_code ? voucherDetail.ledger_code : ''}</td>
                             <td>${voucherDetail.ledger_name ? voucherDetail.ledger_name : ''}</td>
                             <td class="text-end">${voucherDetail.debit_amount > 0 ? parseFloat(voucherDetail.debit_amount).toFixed(2) : ''}</td>
@@ -1767,8 +1767,8 @@
                     });
                     voucherEntriesHTML+= `
                     <tr>
-                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>   
-                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td> 
+                        <td colspan="4" class="fw-bolder text-dark text-end">Total</td>
+                        <td class="fw-bolder text-dark text-end">${voucherEntries.total_debit.toFixed(2)}</td>
                         <td class="fw-bolder text-dark text-end">${voucherEntries.total_credit.toFixed(2)}</td>
                     </tr>
                     `;
@@ -1785,7 +1785,7 @@
                     $('#postvoucher').modal('show');
                 }
             });
-            
+
         }
 
         function postVoucher(element)
@@ -1820,7 +1820,7 @@
                                 icon: 'error',
                             });
                         }
-                    }, 
+                    },
                     error: function(jqXHR, textStatus, errorThrown) {
                         Swal.fire({
                             title: 'Error!',
@@ -1883,6 +1883,6 @@
                     $(this).autocomplete("search", "");
                 }
             });
-        } 
+        }
     </script>
 @endsection

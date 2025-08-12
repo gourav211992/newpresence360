@@ -35,7 +35,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                   
                   @if($buttons['draft'] || $buttons['amend'] && intval(request('amendment') ?? 0))
                     <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
-                        data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] && intval(request('amendment') ?? 0) }}" 
+                        data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] ? $buttons['amend'] : 0 }}" 
                         {{-- data-url="{{ route('bill.of.material.destroy', $bom->id, $buttons['amend'] && intval(request('amendment') ?? 0)) }}"  --}}
                         data-redirect="{{ url($routeAlias) }}"
                         data-message="Are you sure you want to delete this record?">
@@ -170,7 +170,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3">
                                         <div class="mb-1">
                                             <label class="form-label">Product Code <span class="text-danger">*</span></label> 
-                                            <input type="text" value="{{$bom->item?->item_code}}" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" data-name="{{$bom->item?->item_name ?? ''}}" data-code="{{$bom->item?->item_code ?? ''}}"/> 
+                                            <input type="text" value="{{$bom->item?->item_code}}" placeholder="Select" class="form-control mw-100 ledgerselecct" id="item_code" name="item_code" data-name="{{$bom->item?->item_name ?? ''}}" data-code="{{$bom->item?->item_code ?? ''}}" {{ $bom->document_status != 'draft' ? 'readonly' : ' ' }}/> 
                                         </div>
                                     </div> 
                                     <div class="col-md-3">
@@ -209,7 +209,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3 production_type_div">
                                         <div class="mb-1">
                                             <label class="form-label">Production Type <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="production_type" name="production_type">
+                                            <select class="form-select" id="production_type" name="production_type" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
                                                 @foreach($productionTypes as $productionType)
                                                 <option value="{{$productionType}}" {{$bom->production_type == $productionType ? 'selected' : ''}}>{{ucfirst($productionType)}}</option>
                                                 @endforeach 
@@ -220,7 +220,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     <div class="col-md-3">
                                         <div class="mb-1">
                                             <label class="form-label">Production Route <span class="text-danger">*</span></label>
-                                            <select class="form-select" id="production_route_id" name="production_route_id">
+                                            <select class="form-select" id="production_route_id" name="production_route_id" {{ $bom->document_status != 'draft' ? 'disabled' : ' ' }}>
                                                 @foreach($productionRoutes as $productionRoute)
                                                     @if($bom->production_route_id)
                                                         <option value="{{$productionRoute->id}}" {{$bom->production_route_id == $productionRoute->id ? 'selected' :  ''}} data-perc="{{$productionRoute->safety_buffer_perc}}">{{ucfirst($productionRoute->name)}}</option>
@@ -275,7 +275,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                         </div>
                                     </div>
                                     <div class="col-md-6 text-sm-end">
-                                        @if(($buttons['draft'] || $buttons['submit']) || ($buttons['amend'] && intval(request('amendment') ?? 0)))
+                                        @if(($buttons['draft'] || $buttons['submit']) || ($buttons['amend'] && intval(request('amendment') ?? 0)) || $buttons['approve'])
                                         <a href="javascript:;" class="btn btn-sm btn-outline-danger me-50 tab-action d-none" id="deleteBtn" data-tab="raw-materials">
                                         <i data-feather="x-circle"></i> Delete</a>
                                         <a href="javascript:;" id="addNewItemBtn" class="btn btn-sm btn-outline-primary tab-action d-none" data-tab="raw-materials">
@@ -452,6 +452,9 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <div id="approval-data">
+                            <!-- Clone Approval Modal Form Data Here -->
                         </div>
                     </div>
             </div>
@@ -651,8 +654,8 @@ setTimeout(() => {
     localStorage.removeItem('deletedInstructionItemIds');
 },0);
 
-@if($buttons['amend'] && intval(request('amendment') ?? 0))
-
+@if($buttons['amend'] && intval(request('amendment') ?? 0) || $buttons['approve'])
+    // $('.').prop('readonly', true);
 @else
    @if($bom->document_status != 'draft' && $bom->document_status != 'rejected')
    $(':input').prop('readonly', true);
@@ -808,6 +811,25 @@ $(function(){
          $("#book_id").val('');
          $("#document_number").attr('readonly', false);
       }
+    });
+
+    // Set Approval Modal Data
+    $(document).on('click','#approval-clone-btn',(e) => {
+
+        // Reset approval-data
+        $('#approval-data').empty();
+
+        // Clone into approval-data
+        $('#clone-approval').first().clone(true, true).appendTo('#approval-data');
+
+        // Hide the div
+        $('#approval-data').hide();
+
+        // Hide the modal
+        $('#approveModal').modal('hide');
+
+        // Now submit the form
+        $('#BomEditForm').submit();
     });
 
     function getDocNumberByBookId(bookId) {

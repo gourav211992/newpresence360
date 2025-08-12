@@ -2143,6 +2143,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/sale-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.invoice.edit');
     Route::get('/lease-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.leaseInvoice.edit');
     Route::get('/delivery-note/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNote.edit');
+    Route::get('/transporter-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.transporterInvoice.edit');
     Route::get('/delivery-note-cum-invoice/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNoteCumInvoice.edit');
 
     Route::get('/sale-invoices/orders/get', [ErpSaleInvoiceController::class, 'getOrders'])->name('sale.invoice.orders.get');
@@ -2726,6 +2727,18 @@ Route::middleware(['user.auth'])->group(function () {
 
 
     Route::resource('asset-category', AssetCategoryController::class);
+
+
+    Route::resource('plant/bom', MaintBomController::class)->names([
+        'index' => 'maint-bom.index',
+        'create' => 'maint-bom.create',
+        'store' => 'maint-bom.store',
+        'update' => 'maint-bom.update',
+        'show' => 'maint-bom.show',
+        'edit' => 'maint-bom.edit',
+    ]);
+    Route::get('plant/bom/get-item-attribute', [MaintBomController::class, 'getItemAttribute'])->name('maint-bom.attr');
+    Route::get('plant/search', [MaintBomController::class, 'search'])->name('plant.search');
 
 
     Route::get('cashflow-statement/{page?}', [CashflowReportController::class, 'index'])->name('finance.cashflow');

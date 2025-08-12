@@ -385,6 +385,37 @@ $(document).on('focus', '.uom-autocomplete', function () {
         });
     }
 });
+
+$(document).on('input', 'input[name^="vehicle_type"][name$="[name]"]', function () {
+    let names = {};
+    let duplicateIndexes = [];
+
+    $('input[name^="vehicle_type"][name$="[name]"]').each(function (index) {
+        let val = $(this).val().trim().toLowerCase();
+
+        if (val) {
+            if (names[val] !== undefined) {
+                // Duplicate found
+                duplicateIndexes.push(index);
+                duplicateIndexes.push(names[val]);
+            } else {
+                names[val] = index;
+            }
+        }
+    });
+
+    $('input[name^="vehicle_type"][name$="[name]"]').removeClass('is-invalid');
+    $('.duplicate-error').remove();
+
+    [...new Set(duplicateIndexes)].forEach(function (index) {
+        let $input = $('input[name^="vehicle_type"][name$="[name]"]').eq(index);
+        $input.addClass('is-invalid');
+
+        if ($input.next('.duplicate-error').length === 0) {
+            $input.after('<div class="duplicate-error text-danger">Duplicate vehicle type name not allowed</div>');
+        }
+    });
+});
 </script>
 
 @endsection
