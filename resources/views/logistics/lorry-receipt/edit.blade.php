@@ -129,8 +129,8 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', @$lr->document_status ?? 'draft') }}">
-                                       <select class="form-select disable_on_edit editable-field" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" >
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', @$lr->document_status ?? 'draft') }}" >
+                                       <select class="form-select disable_on_edit " onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" disabled>
                                        @foreach ($series as $currentSeries)
                                        <option value="{{ $currentSeries->id }}" {{ old('book_id', @$lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
@@ -143,7 +143,7 @@
                                        <label class="form-label">Doc No <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="text" class="form-control editable-field" id="document_number" name="document_number" value="{{ old('document_number', @$lr->document_number) }}" >
+                                       <input type="text" class="form-control " id="document_number" name="document_number" value="{{ old('document_number', @$lr->document_number) }}" disabled>
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -288,7 +288,7 @@
                                              data-type="consignor" placeholder="Start typing customer..."
                                              value="{{ old('customer_name', @$lr->consignor->company_name ?? '') }}"  />
                                           <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
-                                             value="{{ old('customer_id', @$lr->consignor_id) }}" />
+                                             value="{{ old('customer_id', @$lr->consignor_id) }}" id="customer_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -298,7 +298,7 @@
                                              data-type="consignee" placeholder="Start typing consignee..."
                                              value="{{ old('consignee_name', @$lr->consignee->company_name ?? '') }}" />
                                           <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
-                                             value="{{ old('consignee_id', @$lr->consignee_id) }}" />
+                                             value="{{ old('consignee_id', @$lr->consignee_id) }}" id="consignee_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -459,14 +459,24 @@
                                  </div>
                               </div>
                               <div class="col-md-6 text-sm-end">
-                                
-                                 <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
-                                    <i data-feather="x-circle"></i> Delete
-                                </button>
+                               @if($lr->document_status === 'submitted' || $lr->document_status === 'approved')
+                                    <button type="button" class="btn btn-sm btn-outline-danger me-50" id="delete">
+                                        <i data-feather="x-circle"></i> Delete
+                                    </button>
 
-                                 <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
-                                 <i data-feather="plus"></i> Add New Item
-                                 </a>
+                                    <a href="#" id="ad" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add New Item
+                                    </a>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
+                                        <i data-feather="x-circle"></i> Delete
+                                    </button>
+
+                                    <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add New Item
+                                    </a>
+                                @endif
+
                                 
                               </div>
                            </div>
@@ -593,8 +603,8 @@
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle</strong>: <span id="routeVehicle">{{ @$lr->vehicleType->name ?? '-' }}</span></span>
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format(@$lr->vehicleType->capacity, 2) }} {{ @$lr->vehicleType->unit->name ?? ''}}</span></span> 
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle Type</strong>: <span id="routeVehicle">{{ @$lr->vehicle->vehicleType->name ?? '-' }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format(@$lr->vehicle->vehicleType->capacity, 2) }}</span></span> 
                                                    </td>
                                                 </tr>
                                              </table>
@@ -987,47 +997,37 @@ document.addEventListener("DOMContentLoaded", function () {
     $('#totalFreightInput').val(total.toFixed(2));
 }
 
+// show location details here
 function updateRouteDetailsUI() {
     const $rows = $('#item-table-body').find('tr');
 
-    // Only update if not already set
-    if (!$('#routeSource').text() || $('#routeSource').text() === 'Not selected') {
-        const source = $('#sourceText').text() || 'Not selected';
-        $('#routeSource').text(source);
-    }
-
-    if (!$('#routeDestination').text() || $('#routeDestination').text() === 'Not selected') {
-        const destination = $('#destinationText').text() || 'Not selected';
-        $('#routeDestination').text(destination);
-    }
+    const source = $('#sourceText').text() || 'Not selected';
+    const destination = $('#destinationText').text() || 'Not selected';
     let totalWeight = 0;
     let totalArticles = 0;
+    let totalPoints = 0;
 
     $rows.each(function () {
         const weight = parseFloat($(this).find('input[name*="[weight]"]').val()) || 0;
         const articles = parseInt($(this).find('input[name*="[no_of_articles]"]').val()) || 0;
         totalWeight += weight;
         totalArticles += articles;
+        totalPoints += 1;
     });
 
+    const $vehicle = $('#vehicle_id option:selected');
+    const vehicleText = $vehicle.length ? $vehicle.text() : $('#routeVehicle').text() || 'Not selected';
+    const vehicleCapacity = $vehicle.length ? $vehicle.data('capacity') : $('#routeCapacity').text() || '--';
+
+    $('#routeSource').text(source);
+    $('#routeDestination').text(destination);
     $('#routeWeight').text(totalWeight);
     $('#routeArticles').text(totalArticles);
-
-    // Set vehicle text only if not already set
-    if (!$('#routeVehicle').text() || $('#routeVehicle').text() === 'Not selected') {
-        const vehicleText = $('#vehicle_id option:selected').text() || 'Not selected';
-        $('#routeVehicle').text(vehicleText);
-    }
-
-    if (!$('#routeCapacity').text() || $('#routeCapacity').text() === '--') {
-        const vehicleCapacity = $('#vehicle_id option:selected').data('capacity') || '--';
-        $('#routeCapacity').text(vehicleCapacity);
-    }
-
-   const activePoints = parseInt($('#activeFreePointGlobal').val() || 0);
-    const existingPoints = parseInt($('#routePoints').text() || 0);
-    $('#routePoints').text(existingPoints + activePoints);
+    $('#routePoints').text(totalPoints);
+    $('#routeVehicle').text(vehicleText);
+    $('#routeCapacity').text(vehicleCapacity);
 }
+
 
 
  let rowIndex = {{ $rowIndex ?? 1 }};
@@ -1106,17 +1106,17 @@ $('#addRowBtn').on('click', function () {
         const currentVal = freightInput.val();
 
         // Only set freight if it's empty or 0
-        if (!currentVal || parseFloat(currentVal) === 0) {
-            if (index < activeFreePoint) {
-                freightInput.val(0);
-            } else {
-                if (fixedAmountGlobal) {
-                    freightInput.val(fixedAmountGlobal);
-                } else {
-                    freightInput.val(freeAmountGlobal);
-                }
-            }
-        }
+        // if (!currentVal || parseFloat(currentVal) === 0) {
+        //     if (index < activeFreePoint) {
+        //         freightInput.val(0);
+        //     } else {
+        //         if (fixedAmountGlobal) {
+        //             freightInput.val(fixedAmountGlobal);
+        //         } else {
+        //             freightInput.val(freeAmountGlobal);
+        //         }
+        //     }
+        // }
 
         // Re-bind on input
         freightInput.off('input').on('input', calculateTotals);
@@ -1164,6 +1164,7 @@ $(document).on('click', '#deleteSelected', function (e) {
             selectedRows.remove();
             applyFreightToRows(selectedRows.length); 
             calculateTotals();
+            updateRouteDetailsUI();
         }
     });
 });
@@ -1243,64 +1244,100 @@ $(document).on('focus', '.route-master-autocomplete', function () {
     const $input = $(this);
 
     if (!$input.data('ui-autocomplete')) {
-      $input.autocomplete({
-    source: routeMasters,
-    minLength: 0,
-    select: function (event, ui) {
-        $input.val(ui.item.label);
+        $input.autocomplete({
+            minLength: 0,
 
-        const type = $input.data('type');
-        if (type === 'source' || type === 'destination') {
-            $(`#${type}IdInput`).val(ui.item.id);
-        }
+            source: function (request, response) {
+                const type = $input.data('type');
+                const searchTerm = request.term.toLowerCase();
+                const sourceId = $('#sourceIdInput').val();
+                const destinationId = $('#destinationIdInput').val();
 
-        if (type === 'location') {
-            const nameAttr = $input.attr('name');
-            const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-            if (match) {
-                const index = match[1];
-                const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                let filtered = $.grep(routeMasters, function (item) {
+                    const match = item.label.toLowerCase().includes(searchTerm);
 
-                $hiddenInput.val(ui.item.id);
-                calculateTotals(); // always fire
-            }
-        }
+                    if (!match) return false;
 
-        return false;
-    },
-    change: function (event, ui) {
-        const type = $input.data('type');
+                    // 🔽 Exclude source & destination only for location field
+                    if (type === 'location') {
+                        if (item.id == sourceId || item.id == destinationId) {
+                            return false;
+                        }
+                    }
 
-        if (ui.item) {
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                    return true;
+                });
 
-                    $hiddenInput.val(ui.item.id);
-                    calculateTotals(); 
+                // 🔄 Optional: show 'No results found' if nothing matches
+                if (filtered.length === 0) {
+                    filtered = [{
+                        label: 'No results found',
+                        value: '',
+                        id: null,
+                        isDummy: true
+                    }];
+                }
+
+                response(filtered);
+            },
+
+            select: function (event, ui) {
+                if (ui.item.isDummy) {
+                    event.preventDefault();
+                    return false;
+                }
+
+                $input.val(ui.item.label);
+
+                const type = $input.data('type');
+                if (type === 'source' || type === 'destination') {
+                    $(`#${type}IdInput`).val(ui.item.id);
+                }
+
+                if (type === 'location') {
+                    const nameAttr = $input.attr('name');
+                    const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                    if (match) {
+                        const index = match[1];
+                        const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                        $hiddenInput.val(ui.item.id);
+                        calculateTotals();
+                    }
+                }
+
+                return false;
+            },
+
+            change: function (event, ui) {
+                const type = $input.data('type');
+
+                if (ui.item && !ui.item.isDummy) {
+                    if (type === 'location') {
+                        const nameAttr = $input.attr('name');
+                        const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                        if (match) {
+                            const index = match[1];
+                            const $hiddenInput = $(`input[name="locations[${index}][location_id]"]`);
+                            $hiddenInput.val(ui.item.id);
+                            calculateTotals();
+                        }
+                    }
+                } else {
+                    $input.val('');
+                    if (type === 'location') {
+                        const nameAttr = $input.attr('name');
+                        const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
+                        if (match) {
+                            const index = match[1];
+                            $(`input[name="locations[${index}][location_id]"]`).val('');
+                            calculateTotals();
+                        }
+                    }
                 }
             }
-        } else {
-            // If user cleared the field
-            $input.val('');
-            if (type === 'location') {
-                const nameAttr = $input.attr('name');
-                const match = nameAttr.match(/locations\[(\d+)\]\[location_name\]/);
-                if (match) {
-                    const index = match[1];
-                    $(`input[name="locations[${index}][location_id]"]`).val('');
-                    calculateTotals(); 
-                }
-            }
-        }
-    }
-    }).focus(function () {
-        $(this).autocomplete('search', '');
-    });
-
+        }).focus(function () {
+            $(this).autocomplete('search', '');
+        });
     }
 });
 
@@ -1322,10 +1359,27 @@ $(document).on('focus', '.customer-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: customerList,
             minLength: 0,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(customerList, request.term);
+
+                if (!results.length) {
+                    results.push({
+                        label: 'No results found',
+                        value: '',
+                        id: ''
+                    });
+                }
+
+                response(results);
+            },
             select: function (event, ui) {
-                const type = $input.data('type'); 
+                if (ui.item.value === '') {
+                    event.preventDefault(); 
+                    return false;
+                }
+
+                const type = $input.data('type');
                 $input.val(ui.item.label);
                 $(`.customer-id[data-type="${type}"]`).val(ui.item.id);
                 return false;
@@ -1352,9 +1406,27 @@ $(document).on('focus', '.driver-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: driverList,
             minLength: 0,
+            source: function (request, response) {
+                const term = $.ui.autocomplete.escapeRegex(request.term);
+                const matcher = new RegExp(term, "i");
+
+                const matches = $.grep(driverList, function (item) {
+                    return matcher.test(item.label);
+                });
+
+                if (matches.length) {
+                    response(matches);
+                } else {
+                    response([{ label: "No results found", value: "", id: "" }]);
+                }
+            },
             select: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault(); 
+                    return false;
+                }
+
                 $input.val(ui.item.label);
                 $input.closest('div').find('.driver-id').val(ui.item.id);
                 return false;
@@ -1364,6 +1436,7 @@ $(document).on('focus', '.driver-autocomplete', function () {
         });
     }
 });
+
 
 </script>   
 
@@ -1385,9 +1458,22 @@ const vehicleNumbers = [
 
 $('.vehicle-number-autocomplete').each(function () {
     $(this).autocomplete({
-        source: vehicleNumbers,
+        source: function (request, response) {
+            const results = $.ui.autocomplete.filter(vehicleNumbers, request.term);
+            if (!results.length) {
+                results.push({
+                    label: 'No results found',
+                    value: '',
+                    id: ''
+                });
+            }
+            response(results);
+        },
         minLength: 0,
         select: function (event, ui) {
+            if (ui.item.value === '') {
+                return false;
+            }
             $(this).val(ui.item.label);
             $(this).closest('div').find('.vehicle-number-id').val(ui.item.id);
             return false;
@@ -1396,6 +1482,8 @@ $('.vehicle-number-autocomplete').each(function () {
         $(this).autocomplete('search', '');
     });
 });
+
+
 
 
 </script>
@@ -1535,10 +1623,12 @@ let fixedAmount = null;
 let sourceRouteId = null;
 let freeAmount = null;
 let globalSourceId = $('#sourceIdInput').val();
+let globalVehicleId = $('#vehicle_number_id').val();
+let globalCustomerId = $('#customer_id').val();
 
 let pricingCache = {}
 
-  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null, isEditLoad = false) {
+  function checkFreePoint(locationId = null, sourceId = null, vehicleId = null, customerId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
     $.ajax({
@@ -1548,6 +1638,8 @@ let pricingCache = {}
             _token: $('meta[name="csrf-token"]').attr('content'),
             location_id: locationId,
             source_id: sourceId,
+            vehicle_id: vehicleId,
+            customer_id: customerId,
         },
         success: function (res) {
             $('#fixedAmountDisplay').empty();
@@ -1663,9 +1755,13 @@ function handleLocationUpdate($input) {
     const $row = $input.closest('tr');
     const locationId = $row.find('input[name*="[location_id]"]').val();
     const sourceId = $('#sourceIdInput').val();
+    const vehicleId = $('#vehicle_number_id').val();
+    const customerId = $('#customer_id').val();
 
-    if (locationId && sourceId) {
-        checkFreePoint(locationId, sourceId, $row); 
+
+
+    if (locationId && sourceId && vehicleId && customerId) {
+        checkFreePoint(locationId, sourceId, vehicleId, customerId, $row); 
     }
 }
 

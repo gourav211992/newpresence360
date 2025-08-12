@@ -99,15 +99,14 @@
                                                             <input name="vehicle_type[{{ $rowIndex }}][description]" class="form-control mw-100" value="{{$type->description ?? ''}}">
                                                         </td>
                                                         <td>
-                                                         @php
-                                                            $statusClass = $type->status === 'active' ? 'bg-success text-white' : 'bg-danger text-white';
-                                                        @endphp
-
                                                         <select name="vehicle_type[{{ $rowIndex }}][status]"
-                                                                class="form-control mw-100 {{ $statusClass }}">
+                                                                class="form-control mw-100 vehicle-status-select"
+                                                                data-initial="{{ $type->status }}">
                                                             <option value="active" {{ $type->status == 'active' ? 'selected' : '' }}>Active</option>
                                                             <option value="inactive" {{ $type->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                                         </select>
+
+
 
 
                                                         </td>
@@ -161,7 +160,33 @@
 @endsection
 
 @section('scripts')
+
 <script>
+    $(document).ready(function () {
+    function updateStatusColor($select) {
+        const value = $select.val();
+        if (value === 'active') {
+            $select.css({ 'background-color': '#28a745', 'color': '#fff' });
+        } else if (value === 'inactive') {
+            $select.css({ 'background-color': '#dc3545', 'color': '#fff' });
+        }
+    }
+
+    // Initial color set
+    $('.vehicle-status-select').each(function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('focus', '.vehicle-status-select', function () {
+        $(this).css({ 'background-color': '', 'color': '' });
+    });
+    $(document).on('change', '.vehicle-status-select', function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('blur', '.vehicle-status-select', function () {
+        updateStatusColor($(this));
+    });
+});
+
 
   $(document).ready(function () {
     function updateSelectColor(select) {
@@ -359,6 +384,37 @@ $(document).on('focus', '.uom-autocomplete', function () {
             $(this).autocomplete('search', '');
         });
     }
+});
+
+$(document).on('input', 'input[name^="vehicle_type"][name$="[name]"]', function () {
+    let names = {};
+    let duplicateIndexes = [];
+
+    $('input[name^="vehicle_type"][name$="[name]"]').each(function (index) {
+        let val = $(this).val().trim().toLowerCase();
+
+        if (val) {
+            if (names[val] !== undefined) {
+                // Duplicate found
+                duplicateIndexes.push(index);
+                duplicateIndexes.push(names[val]);
+            } else {
+                names[val] = index;
+            }
+        }
+    });
+
+    $('input[name^="vehicle_type"][name$="[name]"]').removeClass('is-invalid');
+    $('.duplicate-error').remove();
+
+    [...new Set(duplicateIndexes)].forEach(function (index) {
+        let $input = $('input[name^="vehicle_type"][name$="[name]"]').eq(index);
+        $input.addClass('is-invalid');
+
+        if ($input.next('.duplicate-error').length === 0) {
+            $input.after('<div class="duplicate-error text-danger">Duplicate vehicle type name not allowed</div>');
+        }
+    });
 });
 </script>
 

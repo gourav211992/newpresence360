@@ -39,7 +39,7 @@
                                     </div>
                                     <div class="d-flex gap-1">
                                         <button class="btn btn-secondary" onclick="toggleFilterSidebar()">Filters</button>
-                                        <a href="/inventory-reports/get-stock-ledger-summary-reports" class="btn btn-danger">Clear</a>
+                                        <a href="/inventory-reports/get-stock-ledger-reports" class="btn btn-danger">Clear</a>
                                         <button type="button" onclick="sendMailTo();" class="btn btn-primary">
                                             <i data-feather="mail"></i> E-Mail
                                         </button>
@@ -55,6 +55,10 @@
                                     <div class="mb-2">
                                         <label>Period</label>
                                         <input type="text" name="Period" id="Custom" class="form-control flatpickr-input" readonly />
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Doc No.</label>
+                                        <input type="text" name="doc_no" id="doc_no" placeholder="Document No" class="form-control mw-100" autocomplete="off" value="">
                                     </div>
                                     <div class="mb-2">
                                         <label>Item</label>
@@ -279,7 +283,7 @@
 
                 const fields = [
                     "Period", "item", "store_id", "sub_store_id",
-                    "stock_type", "book_type_id", "type_of_stock_id"
+                    "stock_type", "book_type_id", "type_of_stock_id", "doc_no"
                 ];
 
                 fields.forEach((fieldId) => {
@@ -735,6 +739,7 @@
             handleFilterChange('#sub_store_id', 'sub_store_id');
             handleFilterChange('#type_of_stock_id', 'type_of_stock_id');
             handleFilterChange('#stock_type', 'stock_type');
+            handleFilterChange('#doc_no', 'doc_no');
 
             $('#attribute-button').click(function() {
                 filterData.attributes = $('.custnewpo-detail select, .custnewpo-detail input')
@@ -755,6 +760,7 @@
                     let subStoreIdValue = $("#sub_store_id").val();
                     let stockTypeValue = $("#stock_type").val();
                     let typeOfStockIdIdValue = $("#type_of_stock_id").val();
+                    let docNo = $("#doc_no").val();
 
                     if (itemValue && !filterData.hasOwnProperty('item')) {
                         params.append('item', itemValue);
@@ -770,6 +776,9 @@
                     }
                     if (typeOfStockIdIdValue && !filterData.hasOwnProperty('type_of_stock_id')) {
                         params.append('type_of_stock_id', typeOfStockIdIdValue);
+                    }
+                    if (docNo && !filterData.hasOwnProperty('doc_no')) {
+                        params.append('doc_no', docNo);
                     }
 
                     Object.entries(filterData).forEach(([key, value]) => {

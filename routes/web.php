@@ -2142,6 +2142,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/sale-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.invoice.edit');
     Route::get('/lease-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.leaseInvoice.edit');
     Route::get('/delivery-note/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNote.edit');
+    Route::get('/transporter-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.transporterInvoice.edit');
     Route::get('/delivery-note-cum-invoice/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNoteCumInvoice.edit');
 
     Route::get('/sale-invoices/orders/get', [ErpSaleInvoiceController::class, 'getOrders'])->name('sale.invoice.orders.get');

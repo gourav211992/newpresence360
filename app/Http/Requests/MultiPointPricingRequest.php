@@ -38,60 +38,50 @@ class MultiPointPricingRequest extends FormRequest
             'multi_point.*.customer_id.exists' => 'The selected customer is invalid.',
         ];
     }
-    public function withValidator($validator): void
-    {
-        $validator->after(function (Validator $validator) {
-            $seenSourceOnly = [];
-            $seenSourceWithCustomer = [];
-            $seenDbKeys = [];
+  public function withValidator($validator): void
+{
+    $validator->after(function (Validator $validator) {
+        $seenKeys = []; // Tracks request-level duplicates
+        $checkedDbKeys = []; // Tracks keys already checked in DB
 
-            foreach ($this->multi_point as $index => $entry) {
-                $id = $entry['id'] ?? null;
-                $source = $entry['source_route_id'] ?? null;
-                $customer = $entry['customer_id'] ?? null;
+        foreach ($this->multi_point as $index => $entry) {
+            $id = $entry['id'] ?? null;
+            $source = $entry['source_route_id'] ?? null;
+            $customer = $entry['customer_id'] ?? null;
 
-                if (!$source) {
-                    continue;
-                }
+            if (!$source) {
+                continue;
+            }
 
-                if ($customer === null) {
-                    if (in_array($source, $seenSourceOnly)) {
-                        continue; 
-                    }
-                    $seenSourceOnly[] = $source;
-                } else {
-                    $key = $source . '_' . $customer;
-                    if (in_array($key, $seenSourceWithCustomer)) {
-                        continue;
-                    }
-                    $seenSourceWithCustomer[] = $key;
-                }
+            $key = $source . '-' . ($customer ?? 'null');
+            if (in_array($key, $seenKeys)) {
+                $validator->errors()->add("multi_point.$index.customer_id", 'Duplicate multi-point pricing entry in request.');
+                continue;
+            }
 
-                $dbKey = $source . '-' . ($customer ?? 'null');
-                if (in_array($dbKey, $seenDbKeys)) {
-                    continue;
-                }
-
+            $seenKeys[] = $key;
+            if (!in_array($key, $checkedDbKeys)) {
                 $query = \DB::table('erp_logistics_mp_pricing')
-                    ->where('source_route_id', $source);
+                    ->where('source_route_id', $source)->whereNull('deleted_at');
 
-                if (is_null($customer)) {
-                    $query->whereNull('customer_id');
-                } else {
-                    $query->where('customer_id', $customer);
-                }
+                if ($customer) {
+                  $query->where('customer_id', $customer);
+                } 
 
                 if ($id) {
-                    $query->where('id', '!=', $id); 
+                    $query->where('id', '!=', $id);
                 }
 
                 if ($query->exists()) {
-                    $validator->errors()->add("multi_point.$index.customer_id", 'Duplicate multi-point pricing entry.');
-                    $seenDbKeys[] = $dbKey; 
+                    $validator->errors()->add("multi_point.$index.customer_id", 'Duplicate multi-point pricing entry exists in database.');
                 }
+
+                $checkedDbKeys[] = $key;
             }
-        });
-    }
+        }
+    });
+}
+
 
 
 }

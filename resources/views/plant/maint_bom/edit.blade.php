@@ -341,10 +341,16 @@
 	</div>
 	<!-- END: Content-->
 
+			</div>
+		</div>
+	</div>
+	<!-- END: Content-->
 
 	<div class="sidenav-overlay"></div>
 	<div class="drag-target"></div>
 
+	<div class="sidenav-overlay"></div>
+	<div class="drag-target"></div>
 
 
 	<div class="modal fade text-start" id="overhead" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">

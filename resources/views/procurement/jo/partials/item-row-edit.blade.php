@@ -47,9 +47,10 @@
       </select>
 </td>
 <td><input type="number" class="form-control mw-100 text-end disabled-input" value="{{$po_item->order_qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>
+<td><input type="text" name="components[{{$rowCount}}][sow]" value="{{$po_item->sow ? $po_item->sow->item_name.' ( '.$po_item->sow->item_code.' )'  : ''}}" value="sow" class="form-control mw-100" /><input type="hidden" name="components[{{$rowCount}}][sow_id]" value="{{ $po_item->sow->id??'' }}" class="form-control" /></td> 
 <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$po_item->rate}}" class="form-control mw-100 text-end" /></td> 
 <td><input type="number" readonly value="{{$po_item->order_qty*$po_item->rate}}" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" step="any" /></td>
-<td>
+<td class="d-none">
     <div class="position-relative d-flex align-items-center">
         @foreach($po_item->itemDiscount as $itemDis_key => $itemDiscount)
         <input type="hidden" value="{{$itemDiscount->id}}" name="components[{{$rowCount}}][discounts][{{$itemDis_key+1}}][id]">
@@ -66,7 +67,7 @@
         </div>
     </div>
 </td>
-<td><input type="number" value="{{($po_item->order_qty*$po_item->rate) - $po_item->item_discount_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" step="any" />
+<td class="d-none"><input type="hidden" value="{{($po_item->order_qty*$po_item->rate) - $po_item->item_discount_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" step="any" />
     @foreach($po_item->taxes as $tax_key => $po_item_tax)
     <input type="hidden" value="{{$po_item_tax->id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][id]">
     <input type="hidden" value="{{$po_item_tax->ted_id}}" name="components[{{$rowCount}}][taxes][{{$tax_key + 1}}][t_d_id]">

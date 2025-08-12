@@ -60,6 +60,8 @@ class ItemHistory extends Model
         'asset_category_id',
         'expected_life',
         'maintenance_schedule',
+        'brand_name',
+        'model_no',
         'bom_type',
         'hsn_id',
         'book_id',

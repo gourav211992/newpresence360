@@ -85,8 +85,8 @@
                                                         </div>  
   
                                                         <div class="col-md-4"> 
-                                                             <select name="vehicle_type_id[]" class="form-control mw-100 select2" multiple>
-                                                                <option value="">Select Vehicle Type</option>
+                                                             <select name="vehicle_type_id[]" class="form-control mw-100 select2" multiple placeholder="select vehicle type">
+                                                               
                                                                 @foreach($vehicleTypes as $vehicleType)
                                                                     <option value="{{ optional($vehicleType)->id }}">
                                                                         {{ optional($vehicleType)->name }} ({{ optional($vehicleType)->capacity }} {{ optional(optional($vehicleType)->unit)->name }})
@@ -224,28 +224,45 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: routeMasters,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(routeMasters, request.term);
+                
+                if (!results.length) {
+                    results.push({
+                        label: 'No matching route found',
+                        value: '',
+                        id: null,
+                        isCustom: true
+                    });
+                }
+
+                response(results);
+            },
             minLength: 0,
             select: function (event, ui) {
+                if (ui.item.isCustom) {
+                    event.preventDefault(); // Don't fill anything
+                    return false;
+                }
+
                 $input.val(ui.item.label);
 
-                // Try to find the matching hidden input by data-type
                 let $container = $input.closest('tr').length
-                    ? $input.closest('tr')        // for multi-row (table)
-                    : $input.closest('.row');     // for single-row inputs
+                    ? $input.closest('tr')
+                    : $input.closest('.row');
 
                 $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
 
                 return false;
             },
             change: function (event, ui) {
-                if (!ui.item) {
-                    // If item not selected, clear hidden ID
+                if (!ui.item || ui.item.isCustom) {
                     let $container = $input.closest('tr').length
                         ? $input.closest('tr')
                         : $input.closest('.row');
 
                     $container.find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                    $input.val(''); // Optional: clear input
                 }
             }
         }).focus(function () {
@@ -253,6 +270,7 @@ $(document).on('focus', '.route-master-autocomplete', function () {
         });
     }
 });
+
 
 //add new row
 
@@ -348,22 +366,37 @@ const customerList = [
     @endforeach
 ];
 
- $(document).on('focus', '.customer-autocomplete', function () {
+$(document).on('focus', '.customer-autocomplete', function () {
     const $input = $(this);
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: customerList,
             minLength: 0,
-            select: function (event, ui) {
-                $input.val(ui.item.label);
+            source: function (request, response) {
+                const matcher = new RegExp($.ui.autocomplete.escapeRegex(request.term), 'i');
+                const matches = $.grep(customerList, function (item) {
+                    return matcher.test(item.label);
+                });
 
+                if (matches.length) {
+                    response(matches);
+                } else {
+                    response([{ label: 'No results found', value: '', id: null }]);
+                }
+            },
+            select: function (event, ui) {
+                if (ui.item.id === null) {
+                    event.preventDefault(); // prevent setting "No results found" as input
+                    return false;
+                }
+
+                $input.val(ui.item.label);
                 const $row = $input.closest('tr');
 
                 if ($row.length) {
                     $row.find('.customer-id').val(ui.item.id);
                 } else {
-                    $('.customer-id').val(ui.item.id); 
+                    $('.customer-id').val(ui.item.id);
                 }
 
                 return false;
@@ -373,6 +406,7 @@ const customerList = [
         });
     }
 });
+
 
 </script>
 

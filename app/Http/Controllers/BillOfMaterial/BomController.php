@@ -984,6 +984,8 @@ class BomController extends Controller
     # Bom Update
     public function update(BomRequest $request, $id)
     {
+        // dd($request->all());
+
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
@@ -1094,6 +1096,7 @@ class BomController extends Controller
             $bom->safety_buffer_perc = $request->safety_buffer_perc ?? null;
             $bom->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $bom->remarks = $request->remarks;
+
             # Extra Column
             $bom->save();
             # Store Instruction item
@@ -1350,6 +1353,25 @@ class BomController extends Controller
             $currentLevel = $bom->approval_level;
             $modelName = get_class($bom);
             $totalValue = $bom->total_value ?? 0;
+
+            #Update Approval Related fields
+            if(isset($request->is_approved) && !empty($request->is_approved)) {
+                $approvalAttachment = $request->file('approval_attachment');
+                $actionType = $request->action_type; // Approve or reject
+                $modelName = get_class($bom);
+                $approveDocument = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number ?? 0, $request->approval_remarks, $approvalAttachment, $bom->approval_level, $request->is_approved, $bom->total_value, $modelName);
+                $bom->approval_level = $approveDocument['nextLevel'];
+                $bom->document_status = $approveDocument['approvalStatus'];
+                $bom->save();
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'BOM approved successfully.',
+                    'data' => $bom,
+                ]);   
+            }
+
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
             {
                 //*amendmemnt document log*/

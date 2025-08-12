@@ -2,8 +2,11 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use App\Models\ErpRouteMaster;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Http\FormRequest;
 
 class RouteMasterRequest extends FormRequest
 {
@@ -68,4 +71,58 @@ class RouteMasterRequest extends FormRequest
             'route_master.*.status.in'                 => 'Status must be either Active or Inactive.',
         ];
     }
+public function withValidator(Validator $validator)
+{
+    $validator->after(function ($validator) {
+        $routeMasters = $this->input('route_master', []);
+        $nameMap = [];
+
+        foreach ($routeMasters as $index => $route) {
+            $originalName = $route['name'] ?? '';
+            $normalized = strtolower(trim($originalName));
+
+            if ($normalized === '') {
+                continue;
+            }
+
+            // Group same names together by their normalized value
+            $nameMap[$normalized][] = $index;
+        }
+
+        foreach ($nameMap as $normalizedName => $indexes) {
+            $firstIndex = $indexes[0];
+            $firstRoute = $routeMasters[$firstIndex];
+            $firstName = $firstRoute['name'];
+            $rowId = $firstRoute['id'] ?? null;
+
+            $existsInDb = ErpRouteMaster::whereRaw('LOWER(name) = ?', [$normalizedName])
+                ->whereNull('deleted_at')
+                ->when($rowId, fn($q) => $q->where('id', '!=', $rowId)) // ignore current row when updating
+                ->exists();
+
+            if ($existsInDb) {
+                $validator->errors()->add(
+                    "route_master.{$firstIndex}.name",
+                    "The route master  '{$firstName}' name already exists in the database."
+                );
+            }
+
+            // ✅ Check for duplicate in the same request payload
+            if (count($indexes) > 1) {
+                foreach (array_slice($indexes, 1) as $dupIndex) {
+                    $dupName = $routeMasters[$dupIndex]['name'];
+                    $validator->errors()->add(
+                        "route_master.{$dupIndex}.name",
+                        "The route master  '{$dupName}' name is already exists in the database."
+                    );
+                }
+            }
+        }
+    });
+}
+
+
+
+
+
 }

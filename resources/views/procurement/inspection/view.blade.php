@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('content')
-    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('material-receipt.update', $mrn->id) }}" data-redirect="/material-receipts" enctype="multipart/form-data">
+    <form id="mrnEditForm" class="ajax-input-form" method="POST" action="{{ route('inspection.update', $mrn->id) }}" data-redirect="/material-receipts" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="tax_required" id="tax_required" value="">
         <div class="app-content content ">
@@ -12,7 +12,7 @@
                         <div class="content-header-left col-md-6 mb-2">
                             <div class="row breadcrumbs-top">
                                 <div class="col-12">
-                                    <h2 class="content-header-title float-start mb-0">Material Receipt</h2>
+                                    <h2 class="content-header-title float-start mb-0">Inspection</h2>
                                     <div class="breadcrumb-wrapper">
                                         <ol class="breadcrumb">
                                             <li class="breadcrumb-item">
@@ -98,13 +98,25 @@
                                                 </div>
                                                 <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
-                                                        <label class="form-label">Store <span class="text-danger">*</span></label>
+                                                        <label class="form-label"> Main Store <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <select class="form-select sub_store" id="sub_store_id" name="sub_store_id">
                                                             <option value="{{$mrn->sub_store_id}}">
                                                                     {{ ucfirst($mrn?->erpSubStore->store_name) }}
                                                                 </option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="row align-items-center mb-1">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Rejected Store</label>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <select class="form-select rejected_sub_store_id" id="rejected_sub_store_id" name="rejected_sub_store_id" readonly>
+                                                            <option value="{{$mrn->rejected_sub_store_id}}">
+                                                                {{ ucfirst($mrn?->rejectedSubStore?->name) }}
+                                                            </option>
                                                         </select>
                                                     </div>
                                                 </div>
@@ -116,14 +128,14 @@
                                                         <input type="text" name="reference_number" value="{{@$mrn->reference_number}}" class="form-control">
                                                     </div>
                                                 </div> -->
-                                                <div class="row align-items-center mb-1">
+                                                {{-- <div class="row align-items-center mb-1">
                                                     <div class="col-md-3">
                                                         <label class="form-label">LOT No </label>
                                                     </div>
                                                     <div class="col-md-5">
                                                         <input type="text" name="lot_number" value="{{@$mrn->lot_number}}" class="form-control" readonly>
                                                     </div>
-                                                </div>
+                                                </div> --}}
                                             </div>
                                             {{-- Approval History Section --}}
                                             @include('partials.approval-history', ['document_status' => $mrn->document_status, 'revision_number' => $revision_number])
@@ -185,9 +197,9 @@
                                                                     <label class="form-label w-100">Vendor Address <span class="text-danger">*</span> <a href="javascript:;" class="float-end font-small-2 editAddressBtn d-none" data-type="billing"><i data-feather='edit-3'></i> Edit</a></label>
                                                                     <div class="mrnaddedd-prim billing_detail">
                                                                         @if($mrn->latestBillingAddress())
-                                                                        {{$mrn->latestBillingAddress()->display_address}}
+                                                                            {{$mrn->latestBillingAddress()->display_address}}
                                                                         @else
-                                                                        {{$mrn->bill_address?->display_address}}
+                                                                            {{$mrn->bill_address?->display_address}}
                                                                         @endif
                                                                     </div>
                                                                 </div>
@@ -202,7 +214,7 @@
                                                                     <label class="form-label w-100">Billing Address <span class="text-danger">*</span>
                                                                         {{-- <a href="javascript:;" class="float-end font-small-2 editAddressBtn" data-type="billing"><i data-feather='edit-3'></i> Edit</a> --}}
                                                                     </label>
-                                                                    <div class="mrnaddedd-prim org_address">{{$orgAddress}}</div>
+                                                                    <div class="mrnaddedd-prim org_address">{{$deliveryAddress}}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -358,34 +370,19 @@
                                                                 <th width="240px">Item Name</th>
                                                                 <th>Attributes</th>
                                                                 <th>UOM</th>
-                                                                <th class="text-end">Recpt Qty</th>
+                                                                <th class="text-end">GRN Qty</th>
+                                                                <th class="text-end">Inspected Qty</th>
                                                                 <th class="text-end">Acpt. Qty</th>
                                                                 <th class="text-end">Rej. Qty</th>
-                                                                <th class="text-end">Rate</th>
-                                                                <th class="text-end">Value</th>
-                                                                <th>Discount</th>
-                                                                <th class="text-end">Total</th>
                                                                 <th width="50px">Action</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody class="mrntableselectexcel">
-                                                            @include('procurement.material-receipt.partials.item-row-edit')
+                                                            @include('procurement.inspection.partials.item-row-edit')
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr class="totalsubheadpodetail">
-                                                                <td colspan="9"></td>
-                                                                <td class="text-end" id="totalItemValue">
-                                                                    {{@$mrn->items->sum('basic_value')}}
-                                                                </td>
-                                                                <td class="text-end" id="totalItemDiscount">
-                                                                    {{@$mrn->items->sum('discount_amount')}}
-                                                                </td>
-                                                                <td class="text-end" id="TotalEachRowAmount">
-                                                                    {{@$mrn->items->sum('net_value')}}
-                                                                </td>
-                                                            </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="8">
+                                                                <td rowspan="10" colspan="10">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>
@@ -393,93 +390,7 @@
                                                                                     <h6 class="text-dark mb-0 bg-light-primary py-1 px-50"><strong>Item Details</strong></h6>
                                                                                 </td>
                                                                             </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
-                                                                            <tr>
-                                                                            </tr>
                                                                         </tbody>
-                                                                    </table>
-                                                                </td>
-                                                                <td colspan="6">
-                                                                    <table class="table border mrnsummarynewsty">
-                                                                        <tr>
-                                                                            <td colspan="2" class="p-0">
-                                                                                <h6 class="text-dark mb-0 bg-light-primary py-1 px-50 d-flex justify-content-between">
-                                                                                    <strong>Document Summary</strong>
-                                                                                    <div class="addmendisexpbtn">
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryTaxBtn">{{-- <i data-feather="plus"></i> --}} Tax</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryDisBtn"><i data-feather="plus"></i> Discount</button>
-                                                                                        <button type="button" class="btn p-25 btn-sm btn-outline-secondary summaryExpBtn"><i data-feather="plus"></i> Expenses</button>
-                                                                                    </div>
-                                                                                </h6>
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td width="55%"><strong>Sub Total</strong></td>
-                                                                            <td class="text-end" id="f_sub_total">
-                                                                                <!-- {{ number_format(@$mrn->total_item_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Item Discount</strong></td>
-                                                                            <td class="text-end" id="f_total_discount">
-                                                                                <!-- {{ number_format(@$mrn->item_discount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        @if($mrn->headerDiscount)
-                                                                            <tr id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">
-                                                                                    {{$mrn->headerDiscount()->sum('ted_amount')}}
-                                                                                </td>
-                                                                            </tr>
-                                                                        @else
-                                                                            <tr class="d-none" id="f_header_discount_hidden">
-                                                                                <td><strong>Header Discount</strong></td>
-                                                                                <td class="text-end" id="f_header_discount">0.00</td>
-                                                                            </tr>
-                                                                        @endif
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Taxable Value</strong></td>
-                                                                            <td class="text-end" id="f_taxable_value" amount="">
-                                                                                <!-- {{ number_format(@$mrn->taxable_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Tax</strong></td>
-                                                                            <td class="text-end" id="f_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_taxes, 2) }}         -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr class="totalsubheadpodetail">
-                                                                            <td><strong>Total After Tax</strong></td>
-                                                                            <td class="text-end" id="f_total_after_tax">
-                                                                                <!-- {{ number_format(@$mrn->total_after_tax_amount, 2) }} -->
-                                                                            </td>
-                                                                        </tr>
-                                                                        <tr>
-                                                                            <td><strong>Exp.</strong></td>
-                                                                            <td class="text-end" id="f_exp">
-                                                                                <!-- {{ number_format(@$mrn->expense_amount, 2) }} -->
-                                                                            </td>
-                                                                            <input type="hidden" name="expense_amount" class="text-end" id="expense_amount" value="{{$mrn->expense_amount}}">
-                                                                        </tr>
-                                                                        <tr class="voucher-tab-foot">
-                                                                            <td class="text-primary"><strong>Total After Exp.</strong></td>
-                                                                            <td>
-                                                                                <div class="quottotal-bg justify-content-end">
-                                                                                    <h5 id="f_total_after_exp">
-                                                                                        <!-- {{ number_format(@$mrn->total_amount, 2) }} -->
-                                                                                    </h5>
-                                                                                </div>
-                                                                            </td>
-                                                                        </tr>
                                                                     </table>
                                                                 </td>
                                                             </tr>
@@ -515,9 +426,13 @@
             </div>
         </div>
         {{-- Discount summary modal --}}
-        @include('procurement.material-receipt.partials.summary-disc-modal')
+        @include('procurement.inspection.partials.summary-disc-modal')
+
+        <!-- Inspection CHecklist Modal  -->
+        @include('procurement.inspection.partials.inspection-checklist-modal')
+
         {{-- Add expenses modal--}}
-        @include('procurement.material-receipt.partials.summary-exp-modal')
+        @include('procurement.inspection.partials.summary-exp-modal')
         {{-- Edit Address --}}
         <div class="modal fade" id="edit-address" tabindex="-1" aria-labelledby="shareProjectTitle" aria-hidden="true">
             <div class="modal-dialog  modal-dialog-centered" style="max-width: 700px">
@@ -627,9 +542,6 @@
                 </div>
                 <div class="modal-body px-sm-2 mx-50 pb-2">
                     <h1 class="text-center mb-1" id="shareProjectTitle">Remarks</h1>
-                    {{--
-                    <p class="text-center">Enter the details below.</p>
-                    --}}
                     <div class="row mt-2">
                         <div class="col-md-12 mb-1">
                             <label class="form-label">Remarks</label>
@@ -646,7 +558,7 @@
         </div>
     </div>
     {{-- Item Locations --}}
-    @include('procurement.material-receipt.partials.item-location-modal')
+    @include('procurement.inspection.partials.item-location-modal')
     <!-- Item Locations Modal End -->
 
     {{-- Delete component modal --}}
@@ -722,10 +634,10 @@
     </div>
 
     <!-- Approve/Reject Modal -->
-    @include('procurement.material-receipt.partials.approve-modal', ['id' => $mrn->id])
+    @include('procurement.inspection.partials.approve-modal', ['id' => $mrn->id])
 
     {{-- Taxes --}}
-    @include('procurement.material-receipt.partials.tax-detail-modal')
+    @include('procurement.inspection.partials.tax-detail-modal')
 
     {{-- Amendment Modal --}}
     <div class="modal fade text-start alertbackdropdisabled" id="amendmentconfirm" tabindex="-1" aria-labelledby="myModalLabel1" aria-hidden="true" data-bs-backdrop="false">
@@ -748,9 +660,10 @@
 @endsection
 @section('scripts')
     <script type="text/javascript">
-        var actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
+        var actionUrlTax = '{{route("inspection.tax.calculation")}}';
     </script>
-    <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         @if($mrn->document_status != 'draft')
@@ -837,7 +750,7 @@
         initializeAutocomplete1("#vendor_name");
         function vendorOnChange(vendorId) {
             let store_id = $("[name='header_store_id']").val() || '';
-            let actionUrl = "{{route('material-receipt.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
+            let actionUrl = "{{route('inspection.get.address')}}"+'?id=' + vendorId+'&store_id='+store_id;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if(data.data?.currency_exchange?.status == false) {
@@ -1056,7 +969,7 @@
                 }
             }
 
-            let actionUrl = '{{route("material-receipt.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
+            let actionUrl = '{{route("inspection.item.row")}}'+'?count='+rowsLength+'&component_item='+JSON.stringify(lastTrObj);
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1086,7 +999,7 @@
 
         function taxHidden(queryParams)
         {
-            let actionUrl = '{{route("material-receipt.tax.calculation")}}';
+            let actionUrl = '{{route("inspection.tax.calculation")}}';
             let urlWithParams = `${actionUrl}?${queryParams}`;
             fetch(urlWithParams).then(response => {
                 return response.json().then(data => {
@@ -1193,7 +1106,7 @@
 
         /*For comp attr*/
         function getItemAttribute(itemId, rowCount, selectedAttr, tr){
-            let actionUrl = '{{route("material-receipt.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
+            let actionUrl = '{{route("inspection.item.attr")}}'+'?item_id='+itemId+`&rowCount=${rowCount}&selectedAttr=${selectedAttr}`;
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1241,7 +1154,7 @@
                 let headerId = $(currentTr).find("[name*='mrn_header_id']").val() ?? '';
                 let detailId = $(currentTr).find("[name*='mrn_detail_id']").val() ?? '';
 
-                let actionUrl = '{{route("material-receipt.get.itemdetail")}}' +
+                let actionUrl = '{{route("inspection.get.itemdetail")}}' +
                     '?item_id=' + itemId +
                     '&purchase_order_id=' + poHeaderId +
                     '&po_detail_id=' + poDetailId +
@@ -1257,31 +1170,6 @@
                     return response.json().then(data => {
                         if (data.status == 200) {
                             $("#itemDetailDisplay").html(data.data.html);
-                            var approvedStockLedger = data.data.checkApprovedQuantity;
-                            if ((approvedStockLedger['code'] == 200) && (approvedStockLedger['status'] == 'error')) {
-                                let approved_stock = approvedStockLedger['approvedStock'];
-                                let receipt_qty = $(currentTr).find("[name*='[order_qty]']").val() || '';
-                                let rejQtyElement = $(currentTr).find("[name*='[rejected_qty]']");  // Get the jQuery object, not the value
-                                let rejQty = rejQtyElement.val() || '';  // Get the value of the rejected_qty input
-                                if (qty < approved_stock) {
-                                    if (qtyElement.length > 0) {  // Ensure the element was found
-                                        qtyElement.val(receipt_qty);  // Set the value of qtyElement (jQuery object)
-                                        rejQtyElement.val(0.00);  // Set the value of qtyElement (jQuery object)
-                                    } else {
-                                        Swal.fire({
-                                            title: 'Error!',
-                                            text: "Accepted quantity input not found",
-                                            icon: 'error',
-                                        });
-                                    }
-                                } else {
-                                    Swal.fire({
-                                        title: 'Error!',
-                                        text: "Accepted quantity is higher than the approved stock.",
-                                        icon: 'error',
-                                    });
-                                }
-                            }
                         }
                     });
                 });
@@ -1294,7 +1182,7 @@
             let vendorId = $("#vendor_id").val();
             let onChange = 0;
             let addressId = addressType === 'shipping' ? $("#shipping_id").val() : $("#billing_id").val();
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("inspection.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1323,7 +1211,7 @@
                 return false;
             }
             let onChange = 1;
-            let actionUrl = `{{route("material-receipt.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
+            let actionUrl = `{{route("inspection.edit.address")}}?type=${addressType}&vendor_id=${vendorId}&address_id=${addressId}&onChange=${onChange}`;
             fetch(actionUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -1402,7 +1290,7 @@
                 innerFormData.append($(this).attr('name'), $(this).val());
             });
             var method = "POST" ;
-            var url = '{{route("material-receipt.address.save")}}';
+            var url = '{{route("inspection.address.save")}}';
             fetch(url, {
                 method: method,
                 body: innerFormData,
@@ -1678,7 +1566,7 @@
         /*itemDeliveryScheduleSubmit */
         $(document).on('click', '.itemDeliveryScheduleSubmit', (e) => {
             let rowCount = $('#deliveryScheduleModal .display_delivery_row').find('#row_count').val();
-            console.log(rowCount);
+            // console.log(rowCount);
             let hiddenHtml = '';
             $("#deliveryScheduleTable .display_delivery_row").each(function(index,item){
                 let storeId = $(item).find("[name*='erp_store_id']").val();
@@ -1740,7 +1628,7 @@
         $(document).on('change', '.item_store_code', function() {
             var rowKey = $(this).data('id');
             var store_code_id = $(this).val();
-            console.log('rowKey', rowKey);
+            // console.log('rowKey', rowKey);
             $('#erp_store_id_'+rowKey).val(store_code_id).select2();
 
             var data = {
@@ -1928,7 +1816,7 @@
         });
 
         $(document).on('click', '#amendmentSubmit', (e) => {
-            let actionUrl = "{{ route('material-receipt.amendment.submit', $mrn->id) }}";
+            let actionUrl = "{{ route('inspection.amendment.submit', $mrn->id) }}";
             fetch(actionUrl).then(response => {
                 return response.json().then(data => {
                     if (data.status == 200) {
@@ -1980,5 +1868,11 @@
                 $("#mrnEditForm").submit();
             }
         });
+        setTimeout(() => {
+            $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                let currentIndex = index + 1;
+                setAttributesUIHelper(currentIndex,"#itemTable");
+            });
+        },100);
     </script>
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\ConstantHelper;
 use App\Helpers\Helper;
 use App\Helpers\InventoryHelper;
+use App\Helpers\ItemHelper;
 use App\Helpers\PackingList\Constants as PackingListConstants;
 use App\Helpers\SubStore\Constants as SubStoreConstants;
 use App\Helpers\ServiceParametersHelper;
@@ -71,6 +72,7 @@ use App\Models\Attribute;
 use App\Models\GateEntryHeader;
 use App\Models\VendorAsn;
 use Auth;
+use Carbon\Carbon;
 use DB;
 use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Http\Request;
@@ -619,7 +621,6 @@ class AutocompleteController extends Controller
                             ->orWhereDoesntHave('approvedCustomers'); // Include items not linked to any customers
                         });
                     })
-                    -> whereIn('type', [ConstantHelper::GOODS])
                     -> with(['alternateUOMs.uom', 'specifications'])
                     ->where('status', ConstantHelper::ACTIVE)
                     ->with(['itemAttributes'])
@@ -748,6 +749,11 @@ class AutocompleteController extends Controller
                     ->withCount('itemAttributes')
                     ->limit(10)
                     ->get(['id', 'item_name', 'item_code', 'uom_id','hsn_id']);
+                foreach($results as &$item)
+                {
+                    //getItemCostPrice($itemId, $attributes = [], $uomId, $currencyId, $transactionDate, $vendorId = null, $itemQty = 0)
+                    $item->price = ItemHelper::getItemCostPrice($item->id,[],$item->uom_id ?? null , $item->cost_price_currency_id , Carbon::now(),$request->vendor_id);
+                }
             } elseif ($type === 'goods_item_list') {
                 /*This for the Service Based Items*/
                 $selectedAllItemIds = json_decode($request->input('selectedAllItemIds'), true) ?? [];

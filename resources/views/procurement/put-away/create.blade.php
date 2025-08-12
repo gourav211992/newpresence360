@@ -645,7 +645,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        
+
                         getSubStores(storeId);
                     }
                     if(data.status == 404) {
@@ -1065,7 +1065,7 @@
                 $(".header_store_id").prop('disabled', false);
                 getLocation();
             }
-            
+
         });
 
         /*Check attrubute*/
@@ -1247,7 +1247,7 @@
                 let uomId = $row.find("[name*='[uom_id]']").val() || '';
                 let qty = $row.find("[name*='[accepted_qty]']").val() || '';
                 let headerId = $row.find("[name*='inspection_header_id']").val() ?? '';
-                let detailId = $row.find("[name*='inspection_item_id']").val() ?? '';
+                let detailId = $row.find("[name*='inspection_dtl_id']").val() ?? '';
                 let actionUrl = '{{route("put-away.get.itemdetail")}}'+'?item_id='+itemId+
                     '&mrn_header_id='+mrnHeaderId+
                     '&mrn_detail_id='+mrnDetailId+
@@ -1286,7 +1286,7 @@
                 });
             }
         }
-        
+
         /*Tbl row highlight*/
         $(document).on('click', '.mrntableselectexcel tr', (e) => {
             $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
@@ -1630,7 +1630,7 @@
                         let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedPoIds'));
                         $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
                         $(".header_store_id").prop('disabled', true);
-                        
+
                         let vendor = data?.data?.vendor || '';
                         let finalDiscounts = data?.data?.finalDiscounts;
                         let finalExpenses = data?.data?.finalExpenses;
@@ -1643,13 +1643,13 @@
                             $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
                         }
                         initializeAutocomplete2(".comp_item_code");
-                        
+
                         let currentTr = $("#itemTable .mrntableselectexcel tr[id*='row_']:first");
                         getItemDetail(currentTr);
-                        
+
                         $("#poModal").modal('hide');
                         // $(".poSelect").prop('disabled',true);
-                        
+
                         $('.gate_entry_no').val(mrnHeader.gate_entry_no).prop('disabled', true);
                         $('.gate_entry_date').val(mrnHeader.gate_entry_date).prop('disabled', true);
                         $('.eway_bill_no').val(mrnHeader.eway_bill_no).prop('disabled', true);
@@ -1664,10 +1664,10 @@
                         $(".editAddressBtn").addClass('d-none');
                         let locationId = $("[name='header_store_id']").val();
                         getLocation(locationId);
-                        
-                        
+
+
                         setTimeout(() => {
-                            
+
                         },500);
                     }
                     if(data.status == 422) {

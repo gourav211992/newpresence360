@@ -213,6 +213,42 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $skipRow = true;
                 }
 
+                $isTradedItem = 0;
+                $isAsset = 0;
+
+                if (!empty($subTypeRaw)) {
+                    try {
+                        $subTypes = array_map('trim', explode(',', $subTypeRaw));
+                        $subTypeData = $this->service->getSubTypeId($subTypes);
+                        $isTradedItem = $subTypeData['is_traded_item'] ?? 0;
+                        $isAsset = $subTypeData['is_asset'] ?? 0;
+                    } catch (Exception $e) {
+                        $errorMessages[] = $e->getMessage();
+                        $skipRow = true;
+                    }
+                }
+
+                 // Apply asset validation only when the type is 'G' (Goods)
+                if ($itemType === 'Goods' && $isAsset == 1) {
+                    $assetCategory = $row['assetcategory'] ?? null;
+               
+                    $brandName = $row['brand'] ?? null;
+                    $modelNo = $row['modelno'] ?? null;
+
+                    if (empty($assetCategory)) {
+                        $errorMessages[] = "Asset Category is required when item is marked as an asset.";
+                        $skipRow = true;
+                    }
+                    if (empty($brandName)) {
+                        $errorMessages[] = "Brand Name is required when item is marked as an asset.";
+                        $skipRow = true;
+                    }
+                    if (empty($modelNo)) {
+                        $errorMessages[] = "Model No. is required when item is marked as an asset.";
+                        $skipRow = true;
+                    }
+                }
+
                 if ($itemCodeType === 'Manual') {
                     $itemCode = isset($row['item_code']) && !empty($row['item_code']) ? $row['item_code'] : null;
                 } elseif ($itemCodeType === 'Auto') {
@@ -259,6 +295,9 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $alternateUoms = [];
                 } 
 
+                $subTypeValue = ($itemType === 'Goods') ? ($row['sub_type'] ?? null) : null;
+
+
                 $uploadedItem = UploadItemMaster::create([
                     'item_name' => $row['item_name'] ?? null,
                     'item_code' => $itemCode,
@@ -275,7 +314,12 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'group_id' => $validatedData['group_id'],
                     'company_id' => $validatedData['company_id'],
                     'organization_id' => $validatedData['organization_id'],
-                    'sub_type' => $row['sub_type'] ?? null,
+                     'sub_type' => $subTypeValue,
+                    'is_traded_item' => $isTradedItem,
+                    'is_asset' => $isAsset,
+                    'asset_category' => $row['assetcategory'] ?? null,
+                    'brand_name' => $row['brand'] ?? null,
+                    'model_no' => $row['modelno'] ?? null,
                     'remarks' => "Processing item upload",
                     'batch_no' => $batchNo,
                     'user_id' => $user->id,
@@ -350,6 +394,11 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
             $attributes = [];  
             $specifications = []; 
             $alternateUoms = [];
+            $isAsset = 0;
+            $isAsset = 0;
+            $assetCategoryId = null;
+            $expectedLife = null;
+            $maintenanceSchedule = null;
             if (!empty($uploadedItem->subcategory)) {
                 try {
                     $subCategory = $this->service->getSubCategory($uploadedItem->subcategory);
@@ -385,6 +434,7 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $errors[] = $e->getMessage();
                 }
             } 
+        
             if (!empty($uploadedItem->sub_type)) {
                 try {
                     $subTypes = array_map('trim', explode(',', $uploadedItem->sub_type));
@@ -396,6 +446,27 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     $errors[] = $e->getMessage();
                 }
             }
+
+              if ($isAsset == 1) {
+                try {
+                    $assetDetails = $this->service->getAssetCategoryDetailsByName($uploadedItem->asset_category);
+                    $assetCategoryId = $assetDetails['asset_category_id'];
+                    $expectedLife = $assetDetails['expected_life_years'];
+                    $maintenanceSchedule = $assetDetails['maintenance_schedule'];
+                } catch (Exception $e) {
+                    $errors[] = "Asset Category Error: " . $e->getMessage();
+                }
+            }
+
+            if ($isAsset == 1) {
+                if (empty($uploadedItem->brand_name)) {
+                    $errors[] = "Brand Name is required for assets";
+                }
+                if (empty($uploadedItem->model_no)) {
+                    $errors[] = "Model No. is required for assets";
+                }
+            }
+
             if (!empty($uploadedItem->attributes)) {
                 $attributes = json_decode($uploadedItem->attributes, true);
                 $this->service->validateItemAttributes($attributes, $errors);
@@ -438,6 +509,11 @@ class ItemImport implements ToCollection, WithHeadingRow, WithChunkReading
                     'item_remarks' => $uploadedItem->remarks ?? null,
                     'is_traded_item' => $subTypeData['is_traded_item'] ?? 0,
                     'is_asset'       => $subTypeData['is_asset'] ?? 0,
+                    'asset_category_id' => $assetCategoryId,
+                    'expected_life' => $expectedLife,
+                    'maintenance_schedule' => $maintenanceSchedule,
+                    'brand_name' => $uploadedItem->brand_name,
+                    'model_no' => $uploadedItem->model_no,
                 ]);
 
                 $item->book_id = $bookId;

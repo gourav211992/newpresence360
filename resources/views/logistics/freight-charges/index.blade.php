@@ -67,7 +67,7 @@
                                                             <th width="300px">Customer</th>  
                                                         </tr>
                                                     </thead>
-                                                   <tbody class="mrntableselectexcel">
+                                                   <tbody class="mrntableselectexcel" id="freight-charges-table tbody tr">
                                                       @php $rowIndex = count($freightCharges);  @endphp
                                                         @foreach($freightCharges as  $charges)
                                                             <tr>
@@ -83,7 +83,7 @@
                                                                    <input type="text"
                                                                     name="freight_charges[{{ $rowIndex }}][source_route_name]"
                                                                     class="form-control mw-100 route-master-autocomplete"
-                                                                    placeholder="Start typing locations"
+                                                                    placeholder="Search locations"
                                                                     data-type="source"
                                                                     value="{{ optional($charges->sourceRoute)->name ?? '' }}" />
 
@@ -99,7 +99,7 @@
                                                                     <input type="text"
                                                                         name="freight_charges[{{ $rowIndex }}][destination_route_name]"
                                                                         class="form-control mw-100 route-master-autocomplete"
-                                                                        placeholder="Start typin locations"
+                                                                        placeholder="Search locations"
                                                                         data-type="destination"
                                                                         value="{{ optional($charges->destinationRoute)->name ?? '' }}" />
 
@@ -160,7 +160,7 @@
                                                                     <input type="text"
                                                                         name="freight_charges[0][source_route_name]"
                                                                         class="form-control mw-100 route-master-autocomplete"
-                                                                        placeholder="Start typing  locations..."
+                                                                        placeholder="Search  locations..."
                                                                         data-type="source" />
                                                                     <input type="hidden"
                                                                         name="freight_charges[0][source_route_id]"
@@ -173,7 +173,7 @@
                                                                     <input type="text"
                                                                         name="freight_charges[0][destination_route_name]"
                                                                         class="form-control mw-100 route-master-autocomplete"
-                                                                        placeholder="Start typing locations."
+                                                                        placeholder="Search locations."
                                                                         data-type="destination" />
                                                                     <input type="hidden"
                                                                         name="freight_charges[0][destination_route_id]"
@@ -305,7 +305,7 @@
                 <input type="text"
                     name="freight_charges[${newIndex}][source_route_name]"
                     class="form-control mw-100 route-master-autocomplete"
-                    placeholder="Start typing  locations..."
+                    placeholder="Search  locations..."
                     data-type="source" />
                 <input type="hidden"
                     name="freight_charges[${newIndex}][source_route_id]"
@@ -479,26 +479,38 @@ document.addEventListener('input', function (e) {
     });
 });
 
-    const vehicleTypes = [
-   @if($vehicleTypes->isNotEmpty())
-    @foreach($vehicleTypes as $vt)
-        {
-            label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
-            id: {{ $vt->id }}
-        }@if(!$loop->last),@endif
-    @endforeach
-@else
-    null
-@endif
+ const vehicleTypes = [
+    @if($vehicleTypes->isNotEmpty())
+        @foreach($vehicleTypes as $vt)
+            {
+                label: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
+                value: "{{ $vt->name }} ({{ $vt->capacity }} {{ $vt->unit->name ?? '' }})",
+                id: {{ $vt->id }}
+            }@if(!$loop->last),@endif
+        @endforeach
+    @endif
 ];
 
-   $(document).on('focus', '.vehicle-type-autocomplete', function () {
+$(document).on('focus', '.vehicle-type-autocomplete', function () {
     if (!$(this).data('ui-autocomplete')) {
         $(this).autocomplete({
-            source: vehicleTypes,
+            source: function (request, response) {
+                const results = $.ui.autocomplete.filter(vehicleTypes, request.term);
+                if (results.length === 0) {
+                    results.push({
+                        label: 'No vehicle type found',
+                        value: '',
+                        id: null
+                    });
+                }
+                response(results);
+            },
             minLength: 0,
             select: function (event, ui) {
+                if (ui.item.id === null) {
+                    event.preventDefault(); // Prevent selecting 'No vehicle type found'
+                    return false;
+                }
                 $(this).val(ui.item.label);
                 $(this).closest('tr').find('.vehicle-type-id').val(ui.item.id);
                 return false;
@@ -525,16 +537,38 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
     if (!$input.data('ui-autocomplete')) {
         $input.autocomplete({
-            source: routeMasters,
             minLength: 0,
+            source: function (request, response) {
+                const term = $.ui.autocomplete.escapeRegex(request.term);
+                const matcher = new RegExp(term, "i");
+
+                const matches = $.grep(routeMasters, function (item) {
+                    return matcher.test(item.label);
+                });
+
+                if (matches.length) {
+                    response(matches);
+                } else {
+                    response([{
+                        label: "No matching location found",
+                        value: "",
+                        id: ""
+                    }]);
+                }
+            },
             select: function (event, ui) {
-                $input.val(ui.item.label);
-                $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
+                if (ui.item.id === "") {
+                    event.preventDefault(); // Prevent selection
+                    $input.val('');
+                    $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
+                } else {
+                    $input.val(ui.item.label);
+                    $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val(ui.item.id);
+                }
                 return false;
             },
             change: function (event, ui) {
-                if (!ui.item) {
-                    // Text was typed without selecting — reset ID
+                if (!ui.item || ui.item.id === "") {
                     $input.closest('tr').find('.route-master-id[data-type="' + $input.data('type') + '"]').val('');
                 }
             }
@@ -548,53 +582,113 @@ $(document).on('focus', '.route-master-autocomplete', function () {
 
 <script>
 
-    const customerList = [
-        @foreach($customers as $customer)
-            {
-                label: "{{ addslashes($customer->company_name) }}",
-                value: "{{ addslashes($customer->company_name) }}",
-                id: {{ $customer->id }}
-            },
-        @endforeach
-    ];
+  const customerList = [
+    @foreach($customers as $customer)
+        {
+            label: "{{ addslashes($customer->company_name) }}",
+            value: "{{ addslashes($customer->company_name) }}",
+            id: {{ $customer->id }}
+        },
+    @endforeach
+];
 
-    $(document).ready(function () {
+$(document).ready(function () {
 
-        // Initialize autocomplete on focus
-        $(document).on('focus', '.customer-autocomplete', function () {
-            const $input = $(this);
+    // Initialize autocomplete on focus
+    $(document).on('focus', '.customer-autocomplete', function () {
+        const $input = $(this);
 
-            // Only initialize once
-            if (!$input.data('ui-autocomplete')) {
-                $input.autocomplete({
-                    source: customerList,
-                    minLength: 0,
-                    select: function (event, ui) {
-                        const $row = $input.closest('tr');
-                        $input.val(ui.item.label);
-                        $row.find('.customer-id').val(ui.item.id);
+        // Only initialize once
+        if (!$input.data('ui-autocomplete')) {
+            $input.autocomplete({
+                source: function (request, response) {
+                    const results = $.ui.autocomplete.filter(customerList, request.term);
+
+                    if (!results.length) {
+                        results.push({
+                            label: 'No matching customer found',
+                            value: '',
+                            id: null
+                        });
+                    }
+
+                    response(results);
+                },
+                minLength: 0,
+                select: function (event, ui) {
+                    const $row = $input.closest('tr');
+
+                    if (!ui.item.id) {
+                        // Prevent selection if it's the "Not Found" item
+                        event.preventDefault();
                         return false;
                     }
-                }).focus(function () {
-                    $(this).autocomplete('search', '');
-                });
-            }
-        });
 
-        // Clear customer ID if input is changed manually
-        $(document).on('input', '.customer-autocomplete', function () {
-            const $input = $(this);
-            const $row = $input.closest('tr');
-            const currentVal = $input.val().trim();
-
-            const matchedCustomer = customerList.find(c => c.label === currentVal);
-
-            if (!matchedCustomer) {
-                $row.find('.customer-id').val('');
-            }
-        });
-
+                    $input.val(ui.item.label);
+                    $row.find('.customer-id').val(ui.item.id);
+                    return false;
+                }
+            }).focus(function () {
+                $(this).autocomplete('search', '');
+            });
+        }
     });
+
+    // Clear customer ID if input is changed manually
+    $(document).on('input', '.customer-autocomplete', function () {
+        const $input = $(this);
+        const $row = $input.closest('tr');
+        const currentVal = $input.val().trim();
+
+        const matchedCustomer = customerList.find(c => c.label === currentVal);
+
+        if (!matchedCustomer) {
+            $row.find('.customer-id').val('');
+        }
+    });
+
+});
+
+
+function checkDuplicateFreight() {
+    let rows = [];
+    let hasDuplicate = false;
+
+    $('#freight-charges-table tbody tr').each(function () {
+        let source = $(this).find('.route-master-id[data-type="source"]').val();
+        let destination = $(this).find('.route-master-id[data-type="destination"]').val();
+        let vehicleType = $(this).find('.vehicle-type-id').val();
+        let customerId = $(this).find('.customer-id').val() || null;
+
+        if (!source || !destination || !vehicleType) return;
+
+        let key = `${source}-${destination}-${vehicleType}-${customerId}`;
+
+        if (rows.includes(key)) {
+            $(this).find('.customer-id').addClass('is-invalid');
+            $(this).find('.duplicate-error').remove();
+            $(this).find('.customer-id').after('<span class="text-danger duplicate-error">Duplicate freight charge entry.</span>');
+            hasDuplicate = true;
+        } else {
+            rows.push(key);
+            $(this).find('.customer-id').removeClass('is-invalid');
+            $(this).find('.duplicate-error').remove();
+        }
+    });
+
+    return !hasDuplicate;
+}
+
+// 🔹 Trigger on blur/change (manual typing)
+$(document).on('blur change', '.route-master-id, .vehicle-type-id, .customer-id', checkDuplicateFreight);
+
+// 🔹 Trigger after autocomplete selection
+$(document).on('autocompleteselect', '.route-master-id, .vehicle-type-id, .customer-id', function () {
+    setTimeout(checkDuplicateFreight, 50); // delay ensures value is set
+});
+
+
+
 </script>
 
 @endsection

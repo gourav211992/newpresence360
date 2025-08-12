@@ -31,7 +31,6 @@
                         </a> 
                         @endif
                         <a class="btn btn-dark btn-sm mb-50 mb-sm-0" href="{{ route('transactions.report', ['serviceAlias' => 'rfq']) }}"><i data-feather="bar-chart-2"></i>Report</a>
-
                     </div>
                 </div>
             </div>
@@ -49,7 +48,12 @@
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
-                                                <th>Rev No</th>
+                                                <th>Vendors</th>
+                                                <th>Quotes<br>Received</th>
+                                                <th>Due Date</th>
+                                                <th>Contact Person</th>
+                                                <th>Email</th>
+                                                <th>Phone</th>
                                                 <th>Items</th>
                                                 <th style = 'text-align:center'>Status</th>
 											  </tr>
@@ -129,14 +133,42 @@
                 $(td).addClass('no-wrap');
             }
         },
+        { data: 'vendor', name: 'vendor', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'quoted', name: 'quoted', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap text-end');
+            }
+        },
+        { data: 'due_date', name: 'due_date', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'contact_person', name: 'contact_person', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'email', name: 'email', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        { data: 'phone', name: 'phone', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+                $(td).addClass('no-wrap');
+            }
+        },
+        // { data: 'finalized', name: 'finalized', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
+        //         $(td).addClass('no-wrap');
+        //     }
+        // },
         // { data: 'sub_store', name: 'sub_store', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
         //         $(td).addClass('no-wrap');
         //     }
         // },
-        { data: 'revision_number', name: 'revision_number', render: renderData, orderable: true, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
+        // { data: 'revision_number', name: 'revision_number', render: renderData, orderable: true, createdCell: function(td, cellData, rowData, row, col) {
+        //        $(td).addClass('no-wrap');
+        //     }
+        // },
         { data: 'items_count', name: 'items_count', render: renderData },
         { data: 'document_status', name: 'document_status', render: function(data, type, row) {
             return row.document_status;

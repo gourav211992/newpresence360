@@ -12,6 +12,8 @@ class ErpSubStore extends Model
 {
     use HasFactory, Deletable, SoftDeletes;
 
+    protected $table = 'erp_sub_stores';
+
     protected $fillable = [
         'code',
         'name',

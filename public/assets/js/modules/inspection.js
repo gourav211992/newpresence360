@@ -163,7 +163,7 @@ $(document).on('change', "[name*='order_qty']", async function (e) {
     safeSet('item_id', itemId);
     safeSet('mrn_header_id', getVal("[name*='[mrn_header_id]']"));
     safeSet('mrn_detail_id', getVal("[name*='[mrn_detail_id]']"));
-    safeSet('inspection_item_id', getVal("[name*='[inspection_item_id]']"));
+    safeSet('inspection_dtl_id', getVal("[name*='[inspection_dtl_id]']"));
     safeSet('qty', orderQty.toFixed(2));
     safeSet('type', currentProcessType);
 
@@ -218,6 +218,20 @@ $(document).on('change', "[name*='accepted_qty']", function (e) {
 
 });
 
+/*Open item remark modal*/
+$(document).on('click', '.addRemarkBtn', (e) => {
+    let rowCount = e.target.closest('div').getAttribute('data-row-count');
+    $("#itemRemarkModal #row_count").val(rowCount);
+    let remarkValue = $("#itemTable #row_"+rowCount).find("[name*='remark']");
+
+    if(!remarkValue.length) {
+        $("#itemRemarkModal textarea").val('');
+    } else {
+        $("#itemRemarkModal textarea").val(remarkValue.val());
+    }
+    $("#itemRemarkModal").modal('show');
+});
+
 /*Submit item remark modal*/
 $(document).on('click', '.itemRemarkSubmit', (e) => {
     let rowCount = $("#itemRemarkModal #row_count").val();
@@ -249,7 +263,7 @@ if($("#itemTable .mrntableselectexcel tr").length) {
     setTimeout(()=> {
        $("[name*='component_item_name[1]']").trigger('focus');
        $("[name*='component_item_name[1]']").trigger('blur');
-        
+
     },100);
 }
 
@@ -420,7 +434,7 @@ function hasDuplicateObjects(array,inputEle) {
 $(document).on('change', 'select[name*="[uom_id]"]',(e) => {
     let tr = $(e.target).closest('tr');
     getItemDetail(tr);
-    
+
 });
 
 // 1. Attach change event
@@ -454,7 +468,7 @@ function getSubStores(storeLocationId)
         },
         success: function(data) {
             console.log('data', data);
-            
+
             if((data.status == 200) && data.data.length) {
                 let options = '';
                 data.data.forEach(function(location) {
@@ -490,7 +504,7 @@ function getRejectedSubStores(storeLocationId)
         },
         success: function(data) {
             console.log('data', data);
-            
+
             if((data.status == 200) && data.data.length) {
                 let options = '<option value="">select</option>';
                 data.data.forEach(function(location) {
@@ -633,16 +647,16 @@ $(document).on('click', '.inspectionChecklistBtn', function () {
                 <td>
                     <div class="d-flex justify-content-center gap-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" 
+                            <input class="form-check-input" type="radio"
                                 name="${resultField}" id="${rowId}_pass" value="pass"
-                                ${savedResult === 'pass' ? 'checked' : ''} 
+                                ${savedResult === 'pass' ? 'checked' : ''}
                                 ${detail.mandatory ? 'data-required="1"' : ''}>
                             <label class="form-check-label text-success" for="${rowId}_pass">Pass</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" 
+                            <input class="form-check-input" type="radio"
                                 name="${resultField}" id="${rowId}_fail" value="fail"
-                                ${savedResult === 'fail' ? 'checked' : ''} 
+                                ${savedResult === 'fail' ? 'checked' : ''}
                                 ${detail.mandatory ? 'data-required="1"' : ''}>
                             <label class="form-check-label text-danger" for="${rowId}_fail">Fail</label>
                         </div>

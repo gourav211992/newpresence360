@@ -48,7 +48,7 @@ public function withValidator($validator): void
 {
     $validator->after(function (Validator $validator) {
         $rows = $this->input('freight_charges', []);
-        $seen = [];
+        $seen = []; 
 
         foreach ($rows as $index => $row) {
             $id = $row['id'] ?? null;
@@ -57,23 +57,34 @@ public function withValidator($validator): void
             $vehicleType = $row['vehicle_type_id'] ?? null;
             $customerId = $row['customer_id'] ?? null;
 
-            // 1. Source and destination must be different
             if ($source && $destination && $source == $destination) {
-                $validator->errors()->add("freight_charges.$index.destination_route_id", 'Source and destination must be different.');
+                $validator->errors()->add(
+                    "freight_charges.$index.destination_route_id",
+                    'Source and destination must be different.'
+                );
             }
 
-            // 2. Skip if any required field is missing
+            // Skip incomplete rows
             if (!$source || !$destination || !$vehicleType) {
                 continue;
             }
 
-            // 3. Skip duplicate key check in form itself (as per your instruction)
+            // 2️⃣ Check for duplicates in the **same request**
+            $key = $source . '-' . $destination . '-' . $vehicleType . '-' . ($customerId ?? 'null');
+            if (in_array($key, $seen, true)) {
+                $validator->errors()->add(
+                    "freight_charges.$index.customer_id",
+                    'Duplicate freight charge entry in the form.'
+                );
+                continue; 
+            }
+            $seen[] = $key;
 
-            // 4. Check for duplicate in DB (excluding current record if updating)
             $query = DB::table('erp_freight_charges')
                 ->where('source_route_id', $source)
                 ->where('destination_route_id', $destination)
-                ->where('vehicle_type_id', $vehicleType);
+                ->where('vehicle_type_id', $vehicleType)
+                ->whereNull('deleted_at');
 
             if (is_null($customerId)) {
                 $query->whereNull('customer_id');
@@ -86,7 +97,10 @@ public function withValidator($validator): void
             }
 
             if ($query->exists()) {
-                $validator->errors()->add("freight_charges.$index.customer_id", 'Duplicate freight charge entry.');
+                $validator->errors()->add(
+                    "freight_charges.$index.customer_id",
+                    'Duplicate freight charge entry already exists in the database.'
+                );
             }
         }
     });

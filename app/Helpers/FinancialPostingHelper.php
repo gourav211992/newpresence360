@@ -5161,7 +5161,7 @@ class FinancialPostingHelper
         foreach ($document->items as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $stockLedger = StockLedger::where('book_type', ConstantHelper::SI_SERVICE_ALIAS)->where('document_header_id', $document->id)->where('document_detail_id', $docItem->id)->first();
+            $stockLedger = StockLedger::where('book_type', ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS)->where('document_header_id', $document->id)->where('document_detail_id', $docItem->id)->first();
             if (isset($stockLedger)) {
                 $orgCurrencyCost = StockLedger::where('utilized_id', $stockLedger->id)->get()->sum('org_currency_cost');
                 $itemValue = $orgCurrencyCost / $document->org_currency_exg_rate;

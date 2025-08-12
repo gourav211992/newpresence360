@@ -560,7 +560,7 @@
 <script type="text/javascript">
     let actionUrlTax = '{{route("inspection.tax.calculation")}}';
     var qtyChangeUrl = '{{ route("inspection.get.validate-quantity") }}';
-    </script>    
+    </script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
@@ -608,7 +608,7 @@
                         } else {
                             $("#tax_required").val("");
                         }
-                        
+
                     }
                     if(data.status == 404) {
                         $("#book_code").val('');
@@ -743,7 +743,7 @@
                 }
             });
         }
-        initializeAutocomplete1("#vendor_name");
+        // initializeAutocomplete1("#vendor_name");
 
         function vendorOnChange(vendorId, type=null, typeId=null) {
             let store_id = $("[name='header_store_id']").val() || '';
@@ -1034,11 +1034,11 @@
                 $("select[name='currency_id']").prop('disabled', false);
                 $("select[name='payment_term_id']").prop('disabled', false);
                 $(".editAddressBtn").removeClass('d-none');
-                $("#vendor_name").prop('readonly',false);
+                // $("#vendor_name").prop('readonly',false);
                 $(".header_store_id").prop('disabled', false);
                 getLocation();
             }
-            
+
         });
 
         /*Check attrubute*/
@@ -1074,6 +1074,7 @@
                         $("#attribute table tbody").append(data.data.html);
                         $(tr).find('td:nth-child(2)').find("[name*=attr_name]").remove();
                         $(tr).find('td:nth-child(2)').append(data.data.hiddenHtml);
+                        $(tr).find("td[id*='itemAttribute_']").attr('attribute-array', JSON.stringify(data.data.itemAttributeArray));
                         if (data.data.attr) {
                             $("#attribute").modal('show');
                             $(".select2").select2();
@@ -1233,7 +1234,7 @@
                 });
             });
         }
-        
+
         /*Tbl row highlight*/
         $(document).on('click', '.mrntableselectexcel tr', (e) => {
             $(e.target.closest('tr')).addClass('trselected').siblings().removeClass('trselected');
@@ -1751,7 +1752,7 @@
             $("td.dynamic-summary-colspan").attr("colspan", 10);
         })
 
-        // Clear GRN Process 
+        // Clear GRN Process
         $(document).on('click', '.clearMrnFilter', (e) => {
             $("#item_name_input_qt").val('');
             $("#item_id_qt_val").val('');
@@ -1816,13 +1817,13 @@
                     const order = data.data.mrnHeader;
                     // console.log(vendor?.id, modelType, order.id);
                     $("#reference_type_input").val(modelType);
-                    
+
                     vendorOnChange(vendor?.id, modelType, order.id);
 
                     const getSelectedIdsFn = getSelectedMrnIDS;
                     const hiddenFieldName = 'mrn_item_ids';
                     const localStorageKey = 'selectedMrnIds';
-                    
+
                     const newIds = getSelectedIdsFn().ids;
                     const existingIds = JSON.parse(localStorage.getItem(localStorageKey) || '[]');
                     const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
@@ -1840,7 +1841,7 @@
                     $(".editAddressBtn").addClass('d-none');
 
                     // Supplier details
-                    
+
                     if (mrnHeader) {
                         $("[name='gate_entry_no']").val(mrnHeader.gate_entry_no);
                         $("[name='gate_entry_date']").val(mrnHeader.gate_entry_date);
@@ -1864,11 +1865,11 @@
                                     currentIndex = tableRowCount + 1;
                                 }
                                 let currentIndex = index + 1;
-                                // setAttributesUIHelper(currentIndex,"#itemTable");
+                                setAttributesUIHelper(currentIndex,"#itemTable");
                             });
                         }
                         currentIndex = tableRowCount + 1;
-                        // setAttributesUIHelper(currentIndex,"#itemTable");
+                        setAttributesUIHelper(currentIndex,"#itemTable");
                     }, 500);
                 })
                 .catch(() => {

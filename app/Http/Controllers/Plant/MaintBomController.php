@@ -40,7 +40,6 @@ class MaintBomController extends Controller
         if (count($servicesBooks['services']) == 0) {
             return redirect()->route('/');
         }
-
         $firstService = $servicesBooks['services'][0];
         $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
 

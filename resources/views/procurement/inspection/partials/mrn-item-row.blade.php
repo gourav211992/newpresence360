@@ -2,7 +2,7 @@
     @php
         $rowCount = $key + 1;
         $qty = ($item->order_qty ?? 0.00) - ($item->inspection_qty ?? 0.00);
-        $hasInspection = $item->item->hasInspection();
+        $hasInspection = $item->is_inspection;
         $inspectionChecklistData = $hasInspection === 'yes' ? $item->item->loadInspectionChecklists() : [];
     @endphp
     <tr id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
@@ -17,12 +17,12 @@
         <td>
             <input type="text" name="component_item_name[{{$rowCount}}]" placeholder="Select" class="form-control mw-100 ledgerselecct comp_item_code" value="{{$item->item_code}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{@$item->item_id}}" />
-            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" /> 
+            <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{@$item->item_code}}" />
             <input type="hidden" name="components[{{$rowCount}}][item_name]" value="{{@$item->item->name}}" />
-            <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" /> 
+            <input type="hidden" name="components[{{$rowCount}}][hsn_id]" value="{{@$item->hsn_id}}" />
             <input type="hidden" name="components[{{$rowCount}}][hsn_code]" value="{{$item?->item?->hsn?->code}}" />
             @php
-                $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : []; 
+                $selectedAttr = @$item->attributes ? @$item->attributes()->whereNotNull('attr_value')->pluck('attr_value')->all() : [];
             @endphp
             @foreach(@$item->attributes as $attributeHidden)
                 <input type="hidden" name="components[{{$rowCount}}][attr_group_id][{{$attributeHidden->attr_name}}][attr_id]" value="{{$attributeHidden->id}}">
@@ -42,8 +42,7 @@
         <td>
             <input type="text" name="components[{{$rowCount}}][item_name]" value="{{$item?->item?->item_name}}" class="form-control mw-100 mb-25" readonly/>
         </td>
-        <td class="poprod-decpt"> 
-            <button type="button" class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
+        <td class="poprod-decpt" id="itemAttribute_{{$rowCount}}" data-count="{{$rowCount}}" attribute-array="{{$item->item_attributes_array()}}" {{$item?->purchase_order_item_id ? 'data-disabled="true"' : ''}} >
         </td>
         <td>
             <input type="hidden" name="components[{{$rowCount}}][inventoty_uom_id]" value="{{$item->inventoty_uom_id}}">
@@ -70,7 +69,7 @@
         </td>
         <td>
             <div class="d-flex">
-                @if($hasInspection === 'yes' && !empty($inspectionChecklistData))
+                @if($hasInspection === 1 && !empty($inspectionChecklistData))
                     <input type="hidden" name="components[{{$rowCount}}][inspectionData]" />
                     <div class="cursor-pointer ms-50 text-success inspectionChecklistBtn"
                         data-row-count="{{ $rowCount }}"
@@ -101,7 +100,7 @@
             </div>
         </td>
         <input type="hidden" name="components[{{$rowCount}}][mrn_item_hidden_ids]" value="{{$item->id}}">
-        <input type="hidden" name="components[{{$rowCount}}][mrn_hidden_ids]" value="{{$item->mrnHeader->id}}"> 
+        <input type="hidden" name="components[{{$rowCount}}][mrn_hidden_ids]" value="{{$item->mrnHeader->id}}">
     </tr>
 @endforeach
 

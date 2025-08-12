@@ -495,7 +495,7 @@
                                                                 </td>
                                                             </tr>
                                                             <tr valign="top">
-                                                                <td rowspan="10" colspan="7">
+                                                                <td rowspan="10" colspan="6">
                                                                     <table class="table border">
                                                                         <tbody id="itemDetailDisplay">
                                                                             <tr>

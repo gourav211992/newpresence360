@@ -213,14 +213,14 @@
                                                            
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox">
                                                                 <input type="hidden" name="is_traded_item" value="0">
-                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }}>
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="tradedItemCheckbox" name="is_traded_item"value="1" {{ isset($item) && $item->is_traded_item ? 'checked' : '' }} >
                                                                 <label class="form-check-label" for="tradedItemCheckbox">Traded Item</label>
                                                             </div>
 
                                                             {{-- Asset Checkbox --}}
                                                             <div class="form-check form-check-primary mt-25 custom-checkbox me-0">
                                                                 <input type="hidden" name="is_asset" value="0">
-                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }}{{ $isItemReferenced  ? 'disabled' : '' }}>
+                                                                <input type="checkbox" class="form-check-input subTypeCheckbox" id="assetCheckbox" name="is_asset" value="1" {{ isset($item) && $item->is_asset ? 'checked' : '' }} {{ $isItemReferenced  ? 'disabled' : '' }}>
                                                                 <label class="form-check-label" for="assetCheckbox">Asset</label>
                                                             </div>
                                                     </div>
@@ -1112,6 +1112,28 @@
                                                                         </option>
                                                                     @endforeach
                                                                 </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Brand Name -->
+                                                        <div class="row align-items-center mb-1">
+                                                            <div class="col-md-2">
+                                                                <label for="brand_name" class="form-label">Brand Name<span class="text-danger">*</span></label>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <input type="text" id="brand_name" name="brand_name" class="form-control"
+                                                                    value="{{ $item->brand_name ?? '' }}" maxlength="255">
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Model No. -->
+                                                        <div class="row align-items-center mb-1">
+                                                            <div class="col-md-2">
+                                                                <label for="model_no" class="form-label">Model No.<span class="text-danger">*</span></label>
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                <input type="text" id="model_no" name="model_no" class="form-control"
+                                                                    value="{{ $item->model_no ?? '' }}" maxlength="255">
                                                             </div>
                                                         </div>
 
@@ -2417,24 +2439,22 @@
 
         function updateCheckboxStatesForService() {
             checkboxes.prop('disabled', true); 
+            
             $('input[name="is_traded_item"]').prop('checked', false).prop('disabled', true);
             $('input[name="is_asset"]').prop('checked', false).prop('disabled', true);
             $('a[href="#UOM"]').addClass('d-none');
             $('a[href="#Details"]').addClass('d-none');
+            $('a[href="#Assets"]').addClass('d-none');
             $('a[href="#Attributes"]').addClass('d-none');
             $('#UOM').addClass('d-none');
             $('#Details').addClass('d-none');
             $('#Attributes').addClass('d-none');
-            ['#UOM', '#Details', '#Attributes'].forEach(function (selector) {
+            $('#Assets').addClass('d-none');
+            ['#UOM', '#Details', '#Attributes','#Assets'].forEach(function (selector) {
                 $(selector).addClass('d-none').find('input, select, textarea').each(function () {
                     const $input = $(this);
-                    if ($input.is(':checkbox') || $input.is(':radio')) {
-                        if ($input.is(':checked')) {
-                            $input.prop('checked', false);
-                        }
-                    } else {
-                        $input.val('');
-                    }
+                    $input.is(':checkbox') || $input.is(':radio') 
+                        ? $input.prop('checked', false) : $input.val('');
                 });
             });
             $('#item_code_label').text('Service Code');
@@ -2770,12 +2790,17 @@
    $(document).ready(function () {
        function toggleAssetTab() {
             if ($('#assetCheckbox').is(':checked')) {
-                $('#assetTabLink').show();
+                $('#assetTabLink').removeClass('d-none').show();
+                $('.nav-link').removeClass('active'); 
+                $('.tab-pane').removeClass('active show'); 
+                $('#assetTabLink').addClass('active');
+                $('#Assets').addClass('active show').removeClass('d-none').show();
             } else {
                 $('#asset_category').val('').trigger('change');
                 $('#expected_life').val('');
                 $('select[name="maintenance_schedule"]').val('').trigger('change');
-                
+                $('input[name="brand_name"]').val('');
+                $('input[name="model_no"]').val('');
                 $('#assetTabLink').removeClass('active');
                 $('#Assets').removeClass('active show');
                 $('#assetTabLink').hide();

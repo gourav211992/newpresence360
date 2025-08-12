@@ -80,6 +80,32 @@
             padding: 8px;
         }
 
+        #itemBatchModal .table-responsive {
+            overflow-y: auto;
+            max-height: 300px; /* Set the height of the scrollable body */
+            position: relative;
+        }
+
+        #itemBatchModal .po-order-detail {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #itemBatchModal .po-order-detail thead {
+            position: sticky;
+            top: 0; /* Stick the header to the top of the table container */
+            background-color: white; /* Optional: Make sure header has a background */
+            z-index: 1; /* Ensure the header stays above the body content */
+        }
+        #itemBatchModal .po-order-detail th {
+            background-color: #f8f9fa; /* Optional: Background for the header */
+            text-align: left;
+            padding: 8px;
+        }
+        #itemBatchModal .po-order-detail td {
+            padding: 8px;
+        }
+
     </style>
 @endsection
 @section('content')
@@ -90,7 +116,8 @@
     @endphp
     <form class="ajax-input-form" data-module="mrn" method="POST" action="{{ route('material-receipt.store') }}" data-redirect="/{{$routeRedirect}}" enctype="multipart/form-data">
         <input type="hidden" name="tax_required" id="tax_required" value="">
-        <input type="hidden" name="bill_to_follow" id="bill_to_follow" value="">
+        <input type="hidden" name="bill_to_follow" id="bill_to_follow" class="bill_to_follow" value="">
+        <input type="hidden" name="inspection_required" id="inspection_required" class="inspection_required" value="">
         @csrf
         <div class="app-content content ">
             <div class="content-overlay"></div>
@@ -156,7 +183,7 @@
                                                             @endforeach
                                                         </select>
                                                         <!-- <input type="hidden" name="mrn_no" id="book_code"> -->
-                                                        <input type="hidden" name="book_code" id="book_code">
+                                                        <input type="hidden" class="book_code" name="book_code" id="book_code">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -164,7 +191,7 @@
                                                         <label class="form-label">Document No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" name="document_number" class="form-control" id="document_number">
+                                                        <input type="text" name="document_number" class="form-control document_number" id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -172,7 +199,7 @@
                                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" class="form-control" value="{{date('Y-m-d')}}" name="document_date">
+                                                        <input type="date" class="form-control document_date" value="{{date('Y-m-d')}}" name="document_date">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -759,17 +786,21 @@
     </div>
     {{-- Storage Points --}}
     @include('procurement.material-receipt.partials.storage-point-modal')
+    {{-- Item Batch --}}
+    @include('procurement.material-receipt.partials.item-batch-modal')
+    {{-- Asset Detail Modal --}}
+    @include('procurement.material-receipt.partials.asset-detail-modal')
     {{-- Taxes --}}
     @include('procurement.material-receipt.partials.tax-detail-modal')
 @endsection
 @section('scripts')
-    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
-    <script type="text/javascript">
-        let actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
-        var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
+<script type="text/javascript">
+    let actionUrlTax = '{{route("material-receipt.tax.calculation")}}';
+    var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/mrn.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/import-item.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
@@ -782,6 +813,7 @@
         };
         let currentProcessType = null;
         let tableRowCount = 0;
+        let currentIndex = '';
         selectedCostCenterId = "";
         $(document).on('change','#book_id',(e) => {
             let bookId = e.target.value;
@@ -821,7 +853,8 @@
                         }
                         implementBookDynamicFields(data.data.dynamic_fields_html, data.data.dynamic_fields);
                         setTableCalculation();
-                        $("#bill_to_follow").val(parameters?.bill_to_follow[0]);
+                        $(".bill_to_follow").val(parameters?.bill_to_follow[0]);
+                        $(".inspection_required").val(parameters?.inspection_required[0]);
                         getSubStores(storeId);
                     }
                     if(data.status == 404) {
@@ -1503,6 +1536,7 @@
                 return response.json().then(data => {
                     if(data.status == 200) {
                         const storagePoints = data.storagePoints?.data || [];
+                        let isItemBatch = data.item.is_batch_no;
 
                         // Store in global map (if needed for other logic)
                         itemStorageMap[itemId] = storagePoints;
@@ -1520,12 +1554,20 @@
 
                         // Update the modal or display section
                         $("#itemDetailDisplay").html(data.data.html);
-
+                        applyInspectionState();
                         // ✅ Fill storage_points hidden input
                         const hiddenInput = getVal("input[name*='[storage_points]']");
                         if (hiddenInput.length) {
                             hiddenInput.val(JSON.stringify(storagePoints));
                         }
+
+                        // if(isItemBatch == 1) {
+                        //     $('.addBatchBtn').css('display', 'block');
+                        //     // ✅ Show batch point button
+                        // } else{
+                        //     // ✅ Hide batch point button
+                        //     $('.addBatchBtn').css('display', 'block');
+                        // }
                     }
                 });
             });
@@ -2929,7 +2971,7 @@
                                     {
                                         currentIndex = tableRowCount + 1;
                                     }
-                                    let currentIndex = index + 1;
+                                    currentIndex = index + 1;
                                     setAttributesUIHelper(currentIndex,"#itemTable");
                                 });
                             }
@@ -3364,6 +3406,7 @@
                     $('.asn_process').prop('disabled', true);
                     $(".supplier_invoice_no").prop('readonly', false);
                     $(".supplier_invoice_date").prop('readonly', false);
+                    applyInspectionState();
 
                     switch (moduleProcess) {
                         case 'asn-process':
@@ -3459,11 +3502,11 @@
                         if(idsLength > 1)
                         {
                             $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                currentIndex = index + 1;
                                 if(tableRowCount>0)
                                 {
                                     currentIndex = tableRowCount + 1;
                                 }
-                                let currentIndex = index + 1;
                                 setAttributesUIHelper(currentIndex,"#itemTable");
                             });
                         }
@@ -3495,5 +3538,36 @@
                 icon: 'error'
             });
         }
+
+        // Call once on load, and whenever the inspection_required control changes
+        function applyInspectionState() {
+            const inspectionRequired = $('.inspection_required').val() === 'yes';
+
+            $('tr[id^="row_"]').each(function () {
+                const $row = $(this);
+                const $order   = $row.find('input[name*="[order_qty]"]');
+                const $accepted = $row.find('input.accepted_qty');
+                const $rejected = $row.find('input.rejected_qty');
+
+                const orderQty = parseFloat($order.val()) || 0;
+
+                if (inspectionRequired) {
+                // Required: accepted = 0; lock both fields
+                $accepted.val(0).prop('readonly', true);
+                $rejected.prop('readonly', true);
+                // (Optional) also zero rejected if you want:
+                // $rejected.val(0);
+                } else {
+                // Not required: accepted = order qty; unlock both fields
+                $accepted.val(orderQty).prop('readonly', false);
+                $rejected.prop('readonly', false);
+                }
+            });
+        }
+
+        // When page loads
+        $(document).ready(function () {
+            applyInspectionState();
+        });
     </script>
 @endsection

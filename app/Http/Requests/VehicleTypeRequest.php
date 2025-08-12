@@ -3,6 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
+use App\Models\ErpVehicleType;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Http\FormRequest;
 
 class VehicleTypeRequest extends FormRequest
@@ -17,11 +20,12 @@ class VehicleTypeRequest extends FormRequest
         return [
             'vehicle_type' => 'required|array|min:1',
             'vehicle_type.*.name' => [
-                'required',
-                'string',
-                'max:100',
-                'regex:/^[A-Za-z\s\.\-]+$/'
-            ],
+            'required',
+            'string',
+            'max:100',
+            'regex:/^[A-Za-z\s\.\-]+$/'
+        ],
+
 
            'vehicle_type.*.capacity' => [
                 'required',
@@ -60,4 +64,58 @@ class VehicleTypeRequest extends FormRequest
             'vehicle_type.*.status.in' => 'Status must be either Active or Inactive.',
         ];
     }
+
+   
+public function withValidator(Validator $validator)
+{
+    $validator->after(function ($validator) {
+        $vehicleTypes = $this->input('vehicle_type', []);
+        $nameOccurrences = [];
+
+        foreach ($vehicleTypes as $index => $vehicleType) {
+            $rawName = $vehicleType['name'] ?? '';
+            $name = strtolower(trim($rawName));
+
+            if ($name === '') {
+                continue;
+            }
+
+            // Group name occurrences for duplicate detection in form
+            if (!isset($nameOccurrences[$name])) {
+                $nameOccurrences[$name] = [];
+            }
+
+            $nameOccurrences[$name][] = $index;
+        }
+
+        foreach ($nameOccurrences as $name => $indexes) {
+            if (count($indexes) > 1) {
+                foreach (array_slice($indexes, 1) as $duplicateIndex) {
+                    $validator->errors()->add(
+                        "vehicle_type.{$duplicateIndex}.name",
+                        "The vehicle type name '{$vehicleTypes[$duplicateIndex]['name']}' is already exists in the database."
+                    );
+                }
+            }
+
+            $firstIndex = $indexes[0];
+            $rowId = $vehicleTypes[$firstIndex]['id'] ?? null;
+
+            $existsInDb = ErpVehicleType::whereRaw('LOWER(name) = ?', [$name])
+                ->whereNull('deleted_at')
+                ->when($rowId, fn($q) => $q->where('id', '!=', $rowId)) 
+                ->exists();
+
+            if ($existsInDb) {
+                $validator->errors()->add(
+                    "vehicle_type.{$firstIndex}.name",
+                    "The vehicle type name '{$vehicleTypes[$firstIndex]['name']}' already exists in the database."
+                );
+            }
+        }
+    });
+}
+
+
+
 }

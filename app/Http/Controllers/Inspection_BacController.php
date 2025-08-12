@@ -387,7 +387,7 @@ class Inspection_BacController extends Controller
             $totalExpValue = 0.00;
             $totalItemLevelDiscValue = 0.00;
             $totalTax = 0;
-            
+
             $totalHeaderDiscount = 0;
             if (isset($request->all()['disc_summary']) && count($request->all()['disc_summary']) > 0)
             foreach ($request->all()['disc_summary'] as $DiscountValue) {
@@ -399,7 +399,7 @@ class Inspection_BacController extends Controller
             foreach ($request->all()['exp_summary'] as $expValue) {
                 $totalHeaderExpense += floatval($expValue['e_amnt']) ?? 0.00;
             }
-            
+
             if (isset($request->all()['components'])) {
                 $inspectionItemArr = [];
                 $totalValueAfterDiscount = 0;
@@ -900,7 +900,7 @@ class Inspection_BacController extends Controller
     public function update(EditInspectionRequest $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
-        
+
         $inspection = InspectionHeader::find($id);
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationId = $organization?->id ?? null;
@@ -1155,7 +1155,7 @@ class Inspection_BacController extends Controller
                     $itemHeaderExp = $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
 
                     # Inspection Detail Save
-                    $inspectionDetail = InspectionDetail::find($component['inspection_item_id'] ?? null) ?? new InspectionDetail;
+                    $inspectionDetail = InspectionDetail::find($component['inspection_dtl_id'] ?? null) ?? new InspectionDetail;
 
                     $inspectionDetail->header_id = $inspectionItem['header_id'];
                     $inspectionDetail->mrn_detail_id = $inspectionItem['mrn_detail_id'];
@@ -2085,7 +2085,7 @@ class Inspection_BacController extends Controller
                         ],422);
                     } else{
                         $availableQty = $inspectionDetail->order_qty ?? 0.00;
-                    } 
+                    }
                     // else{
                     //     $actualQtyDifference = ($mrnDiffQty - $inspectionQty);
                     //     if($actualQtyDifference < $inspectionQty){
@@ -2122,7 +2122,7 @@ class Inspection_BacController extends Controller
                         ]);
                     } else{
                         $availableQty = $inspectionDetail->accepted_qty ?? 0.00;
-                    } 
+                    }
                     // else{
                     //     $actualQtyDifference = ($mrnDiffQty - $acceptedQty);
                     //     if($actualQtyDifference < $acceptedQty){
@@ -2136,10 +2136,10 @@ class Inspection_BacController extends Controller
                     //     }
                     // }
                 }
-                
+
             }
             return response()->json(['data' => ['quantity' => number_format($availableQty, 2)], 'status' => 200, 'message' => 'fetched']);
-            
+
         }
     }
 

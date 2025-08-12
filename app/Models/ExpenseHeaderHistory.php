@@ -134,6 +134,12 @@ class ExpenseHeaderHistory extends Model
         return $this->belongsTo(ExpenseHeader::class, 'header_id');
     }
 
+    public function getDisplayStatusAttribute()
+    {
+        $status = str_replace('_', ' ', $this->document_status);
+        return ucwords($status);
+    }
+
     public function vendor()
     {
         return $this->belongsTo(Vendor::class);
@@ -147,6 +153,11 @@ class ExpenseHeaderHistory extends Model
     public function book()
     {
         return $this->belongsTo(Book::class, 'series_id');
+    }
+
+    public function erpStore()
+    {
+        return $this->belongsTo(ErpStore::class, 'store_id');
     }
 
     public function paymentTerms()

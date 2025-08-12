@@ -97,15 +97,13 @@
                                                             value="{{ old("route_master.$rowIndex.city_id", $route->city_id ?? '') }}">
                                                     </td>
                                                     <td>
-                                                          @php
-                                                            $statusClass = $route->status === 'active' ? 'bg-success text-white' : 'bg-danger text-white';
-                                                        @endphp
-
-                                                        <select name="route_master[{{ $rowIndex }}][status]"
-                                                                class="form-control mw-100 {{ $statusClass }}">
+                                                       <select name="route_master[{{ $rowIndex }}][status]"
+                                                                class="form-control mw-100 route-master-status-select"
+                                                                data-initial="{{ $route->status }}">
                                                             <option value="active" {{ $route->status == 'active' ? 'selected' : '' }}>Active</option>
                                                             <option value="inactive" {{ $route->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
                                                         </select>
+
                                                     </td>
                                                 </tr>
                                                 @php $rowIndex++; @endphp
@@ -158,6 +156,32 @@
 
 @section('scripts')
 <script>
+
+
+ $(document).ready(function () {
+    function updateStatusColor($select) {
+        const value = $select.val();
+        if (value === 'active') {
+            $select.css({ 'background-color': '#28a745', 'color': '#fff' });
+        } else if (value === 'inactive') {
+            $select.css({ 'background-color': '#dc3545', 'color': '#fff' });
+        }
+    }
+
+    // Initial color set
+    $('.route-master-status-select').each(function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('focus', '.route-master-status-select', function () {
+        $(this).css({ 'background-color': '', 'color': '' });
+    });
+    $(document).on('change', '.route-master-status-select', function () {
+        updateStatusColor($(this));
+    });
+    $(document).on('blur', '.route-master-status-select', function () {
+        updateStatusColor($(this));
+    });
+});
 document.addEventListener('DOMContentLoaded', function () {
  
     document.getElementById('checkAll').addEventListener('change', function () {
@@ -383,46 +407,144 @@ $(document).ready(function () {
 
     // ——————— STATE ———————
     $(document).on('focus', '.state-autocomplete', function () {
-        const $input = $(this);
-        const $row = $input.closest('tr');
-        const countryId = $row.find('input.country-id').val();
-      
+    const $input = $(this);
+    const $row = $input.closest('tr');
+    const countryId = $row.find('input.country-id').val();
 
-        if (!countryId) {
-            console.warn('Missing country ID for state dropdown.');
-            return;
-        }
+    if (!countryId) {
+        console.warn('Missing country ID for state dropdown.');
+        return;
+    }
 
-        if (stateCache[countryId]) {
-            applyStateAutocomplete(countryId, $input);
-        } else {
-            loadStates(countryId, function () {
-                applyStateAutocomplete(countryId, $input);
-            });
-        }
+    const initAutocomplete = function () {
+        $input.autocomplete({
+            source: function (request, response) {
+                let states = stateCache[countryId] || [];
 
-        $input.autocomplete("search", "");
-    });
+                // Format normalize
+                states = states.map(item => {
+                    if (typeof item === "string") {
+                        return { label: item, value: item };
+                    }
+                    return {
+                        label: item.label || item.name || item.state_name || "",
+                        value: item.value || item.label || item.name || "",
+                        id: item.id || ""
+                    };
+                });
+
+                // Filter search
+                const results = $.grep(states, function (state) {
+                    return state.label.toLowerCase().indexOf(request.term.toLowerCase()) !== -1;
+                });
+
+                if (!results.length) {
+                    results.push({ label: "No results found", value: "" });
+                }
+
+                response(results);
+            },
+            minLength: 0,
+            focus: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault();
+                }
+            },
+            select: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault();
+                    return false;
+                }
+
+                $row.find('.state-id').val(ui.item.id);
+                $row.find('.city-autocomplete').val('');
+                $row.find('input.city-id').val('');
+            }
+        });
+
+        // Always show dropdown on focus
+        $input.autocomplete("search", $input.val());
+    };
+
+    if (stateCache[countryId]) {
+        initAutocomplete();
+    } else {
+        loadStates(countryId, function () {
+            initAutocomplete();
+        });
+    }
+});
 
     // ——————— CITY ———————
 $(document).on('focus', '.city-autocomplete', function () {
     const $input = $(this);
     const $row = $input.closest('tr');
-    const stateId = $row.find('input.state-id').val(); 
+    const stateId = $row.find('input.state-id').val();
 
     if (!stateId) {
         console.warn('Missing state ID for city dropdown.');
         return;
     }
 
+    const initAutocomplete = function () {
+        $input.autocomplete({
+            source: function (request, response) {
+                let cities = cityCache[stateId] || [];
+
+                // Format normalize
+                cities = cities.map(item => {
+                    if (typeof item === "string") {
+                        return { label: item, value: item };
+                    }
+                    return {
+                        label: item.label || item.name || item.city_name || "",
+                        value: item.value || item.label || item.name || "",
+                        id: item.id || ""
+                    };
+                });
+
+                // Filter search results
+                const results = $.grep(cities, function (city) {
+                    return city.label.toLowerCase().indexOf(request.term.toLowerCase()) !== -1;
+                });
+
+                // If no results, show message
+                if (!results.length) {
+                    results.push({ label: "No results found", value: "" });
+                }
+
+                response(results);
+            },
+            minLength: 0,
+            focus: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault();
+                }
+            },
+            select: function (event, ui) {
+                if (ui.item.label === "No results found") {
+                    event.preventDefault();
+                    return false;
+                }
+
+                // Set city ID
+                $row.find('.city-id').val(ui.item.id);
+            }
+        });
+
+        // Always open suggestions on focus
+        $input.autocomplete("search", $input.val());
+    };
+
     if (cityCache[stateId]) {
-        applyCityAutocomplete(stateId, $input);
+        initAutocomplete();
     } else {
         loadCities(stateId, function () {
-            applyCityAutocomplete(stateId, $input);
+            initAutocomplete();
         });
     }
 });
+
 
 
 
@@ -510,6 +632,36 @@ function applyCityAutocomplete(stateId, $input) {
         }
     }).autocomplete('search', ''); 
 }
+$(document).on('input', 'input[name^="route_master"][name$="[name]"]', function () {
+    let names = {};
+    let duplicateIndexes = [];
+
+    $('input[name^="route_master"][name$="[name]"]').each(function (index) {
+        let val = $(this).val().trim().toLowerCase();
+
+        if (val) {
+            if (names[val] !== undefined) {
+                // Duplicate found
+                duplicateIndexes.push(index);
+                duplicateIndexes.push(names[val]);
+            } else {
+                names[val] = index;
+            }
+        }
+    });
+
+    $('input[name^="route_master"][name$="[name]"]').removeClass('is-invalid');
+    $('.duplicate-error').remove();
+
+    [...new Set(duplicateIndexes)].forEach(function (index) {
+        let $input = $('input[name^="route_master"][name$="[name]"]').eq(index);
+        $input.addClass('is-invalid');
+
+        if ($input.next('.duplicate-error').length === 0) {
+            $input.after('<div class="duplicate-error text-danger">Duplicate name not allowed</div>');
+        }
+    });
+});
 
 </script>
 

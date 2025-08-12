@@ -361,7 +361,7 @@ class InspectionController extends Controller
                 ]);
                 $storeLocation->save();
             }
-            
+
             if (isset($request->all()['components'])) {
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
@@ -411,7 +411,6 @@ class InspectionController extends Controller
                     $itemUomId = $item->uom_id ?? null;
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
-                    // dd($component['uom_id'], $itemUomId);
                     if(@$component['uom_id'] == $itemUomId) {
                         $order_inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
                         $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
@@ -584,6 +583,7 @@ class InspectionController extends Controller
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $inspection->uploadDocuments($request->file('attachment'), 'pb', false);
             }
+            $inspection->mrn_header_id = $mrnHeaderId;
             $inspection->save();
             if(in_array($inspection->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED)){
                 $updateMrn = InspectionHelper::updateMrnDetail($inspection);
@@ -665,9 +665,8 @@ class InspectionController extends Controller
         $users = AuthUser::where('organization_id', Helper::getAuthenticatedUser()->organization_id)
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
-        $inspection = InspectionHeader::with(['vendor', 'currency', 'items', 'book'])
+        $inspection = InspectionHeader::with(['vendor', 'currency', 'items', 'book', 'source'])
             ->findOrFail($id);
-        //dd($inspection->toArray());
         $totalItemValue = $inspection->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $inspection->revision_number;
@@ -684,7 +683,7 @@ class InspectionController extends Controller
         if ($request->has('revisionNumber') && $request->revisionNumber != $inspection->revision_number) {
             $inspection = $inspection->source;
             $inspection = InspectionHeaderHistory::where('revision_number', $request->revisionNumber)
-                ->where('header_id', $inspection->header_id)
+                ->where('source_id', $inspection->source_id)
                 ->first();
             $view = 'procurement.inspection.view';
         }
@@ -744,7 +743,7 @@ class InspectionController extends Controller
     public function update(EditInspectionRequest $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
-        
+
         $inspection = InspectionHeader::find($id);
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationId = $organization?->id ?? null;
@@ -869,9 +868,10 @@ class InspectionController extends Controller
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $mrn_detail_id = null;
-                    if (isset($component['inspection_item_id']) && $component['inspection_item_id']) {
-                        $inspectionDetail = InspectionDetail::find($component['inspection_item_id']);
+                    if (isset($component['inspection_dtl_id']) && $component['inspection_dtl_id']) {
+                        $inspectionDetail = InspectionDetail::find($component['inspection_dtl_id']);
                     }
+                    $reference_type = $inspection->reference_type;
                     if ($inspection->mrn_header_id) {
                         $reference_type = 'mrn';
                     }
@@ -917,7 +917,6 @@ class InspectionController extends Controller
                     $itemUomId = $item->uom_id ?? null;
                     $inventory_uom_id = $inventoryUom->id;
                     $inventory_uom_code = $inventoryUom->name;
-                    // dd($component['uom_id'], $itemUomId);
                     if(@$component['uom_id'] == $itemUomId) {
                         $order_inventory_uom_qty = floatval($orderQty) ?? 0.00 ;
                         $accepted_inventory_uom_qty = floatval($acceptedQty) ?? 0.00 ;
@@ -962,7 +961,7 @@ class InspectionController extends Controller
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
                     # Inspection Detail Save
-                    $inspectionDetail = InspectionDetail::find($component['inspection_item_id'] ?? null) ?? new InspectionDetail;
+                    $inspectionDetail = InspectionDetail::find($component['inspection_dtl_id'] ?? null) ?? new InspectionDetail;
 
                     $isNewItem = false;
                     if(isset($inspectionDetail->item_id) && $inspectionDetail->item_id) {
@@ -1132,11 +1131,11 @@ class InspectionController extends Controller
                 'redirect_url' => $redirectUrl
             ]);
         } catch (\Exception $e) {
-            dd($e->getMessage(), $e->getLine());
+            // dd($e->getMessage(), $e->getLine());
             \DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage() . ' on line ' . $e->getLine(),
             ], 500);
         }
     }
@@ -1145,7 +1144,6 @@ class InspectionController extends Controller
     {
         $user = Helper::getAuthenticatedUser();
         $item = json_decode($request->item, true) ?? [];
-        // dd($item);
         $componentItem = json_decode($request->component_item, true) ?? [];
         // $erpStores = ErpStore::where('organization_id', $user->organization_id)
         //     ->orderBy('id', 'ASC')
@@ -1165,13 +1163,11 @@ class InspectionController extends Controller
     // PO Item Rows
     public function mrnItemRows(Request $request)
     {
-        //dd('hii');
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $item_ids = explode(',', $request->item_ids);
         $items = MrnDetail::whereIn('id', $item_ids)
             ->get();
-        //dd($items);
         $costCenters = CostCenter::where('organization_id', $user->organization_id)->get();
         $vendor = Vendor::with(['currency:id,name', 'paymentTerms:id,name'])->find($request->vendor_id);
         $currency = $vendor->currency;
@@ -1257,7 +1253,6 @@ class InspectionController extends Controller
     # get tax calcualte
     public function taxCalculation(Request $request)
     {
-        // dd($request->all());
         $user = Helper::getAuthenticatedUser();
         $location = ErpStore::find($request->location_id ?? null);
         $organization = $user->organization;
@@ -1296,7 +1291,6 @@ class InspectionController extends Controller
             $taxDetails = TaxHelper::calculateTax($hsnId, $price, $fromCountry, $fromState, $upToCountry, $upToState, $transactionType,$document_date);
             $rowCount = intval($request->rowCount) ?? 1;
             $itemPrice = floatval($request->price) ?? 0;
-            // dd($hsnId,$price,$fromCountry,$fromState,$upToCountry,$upToState,$transactionType);
             $html = view('procurement.inspection.partials.item-tax', compact('taxDetails', 'rowCount', 'itemPrice'))->render();
             return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount], 'message' => 'fetched', 'status' => 200]);
         } catch (\Exception $e) {
@@ -1330,9 +1324,9 @@ class InspectionController extends Controller
         };
         $currency = $typeData?->currency;
         $paymentTerm = $typeData?->paymentTerms;
-        
+
         $documentDate = $request?->document_date;
-        
+
         $vendorAddress = match ($type) {
             'mrn' => $typeData?->latestBillingAddress() ?? $typeData?->bill_address,
             default => ErpAddress::where('addressable_id', $moduleTypeId)
@@ -1516,7 +1510,7 @@ class InspectionController extends Controller
         $specifications = $item?->specifications()->whereNotNull('value')->get() ?? [];
         $totalStockData = InventoryHelper::totalInventoryAndStock($itemId, $selectedAttr,  $uomId, $storeId, $subStoreId);
         $detailedStocks = InventoryHelper::fetchStockSummary($itemId, $selectedAttr,  $uomId, $qty, $storeId, $subStoreId);
-        
+
         $html = view(
             'procurement.inspection.partials.comp-item-detail',
             compact(
@@ -1543,7 +1537,7 @@ class InspectionController extends Controller
             'item_id'            => $component['item_id'] ?? null,
             'mrn_header_id'      => $component['mrn_header_id'] ?? null,
             'mrn_detail_id'      => $component['mrn_detail_id'] ?? null,
-            'inspection_item_id' => $component['inspection_item_id'] ?? null,
+            'inspection_dtl_id' => $component['inspection_dtl_id'] ?? null,
             'qty'                => $component['order_qty'] ?? null,
             'type'               => $refType ?? '',
         ];
@@ -1560,7 +1554,7 @@ class InspectionController extends Controller
             'item_id'            => $request->item_id,
             'mrn_header_id'      => $request->mrn_header_id,
             'mrn_detail_id'      => $request->mrn_detail_id,
-            'inspection_item_id'      => $request->inspection_item_id,
+            'inspection_dtl_id'      => $request->inspection_dtl_id,
             'qty'                => $request->qty,
             'type'               => $request->type,
         ];
@@ -1664,14 +1658,14 @@ class InspectionController extends Controller
         DB::beginTransaction();
         try {
             // Header History
-            // dd($id);
             $inspectionHeader = InspectionHeader::find($id);
             if (!$inspectionHeader) {
                 return response()->json(['error' => 'Mrn Header not found'], 404);
             }
             $inspectionHeaderData = $inspectionHeader->toArray();
             unset($inspectionHeaderData['id']); // You might want to remove the primary key, 'id'
-            $inspectionHeaderData['header_id'] = $inspectionHeader->id;
+            // $inspectionHeaderData['header_id'] = $inspectionHeader->id;
+            $inspectionHeaderData['source_id'] = $inspectionHeader->id;
             $headerHistory = InspectionHeaderHistory::create($inspectionHeaderData);
             $headerHistoryId = $headerHistory->id;
 
@@ -1681,8 +1675,9 @@ class InspectionController extends Controller
                 foreach ($inspectionDetails as $key => $detail) {
                     $inspectionDetailData = $detail->toArray();
                     unset($inspectionDetailData['id']); // You might want to remove the primary key, 'id'
-                    $inspectionDetailData['detail_id'] = $detail->id;
-                    $inspectionDetailData['header_history_id'] = $headerHistoryId;
+                    // $inspectionDetailData['detail_id'] = $detail->id;
+                    $inspectionDetailData['source_id'] = $detail->id;
+                    $inspectionDetailData['header_id'] = $headerHistoryId;
                     $detailHistory = InspectionDetailHistory::create($inspectionDetailData);
                     $detailHistoryId = $detailHistory->id;
 
@@ -1695,8 +1690,8 @@ class InspectionController extends Controller
                             $inspectionAttributeData = $attribute->toArray();
                             unset($inspectionAttributeData['id']); // You might want to remove the primary key, 'id'
                             $inspectionAttributeData['attribute_id'] = $attribute->id;
-                            $inspectionAttributeData['header_history_id'] = $headerHistoryId;
-                            $inspectionAttributeData['detail_history_id'] = $detailHistoryId;
+                            $inspectionAttributeData['header_id'] = $headerHistoryId;
+                            $inspectionAttributeData['detail_id'] = $detailHistoryId;
                             $attributeHistory = InspectionItemAttributeHistory::create($inspectionAttributeData);
                             $attributeHistoryId = $attributeHistory->id;
                         }
@@ -1713,8 +1708,8 @@ class InspectionController extends Controller
                             $extraAmountData = $extraAmount->toArray();
                             unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
                             $extraAmountData['pr_ted_id'] = $extraAmount->id;
-                            $extraAmountData['header_history_id'] = $headerHistoryId;
-                            $extraAmountData['detail_history_id'] = $detailHistoryId;
+                            $extraAmountData['header_id'] = $headerHistoryId;
+                            $extraAmountData['detail_id'] = $detailHistoryId;
                             $extraAmountDataHistory = InspectionTedHistory::create($extraAmountData);
                             $extraAmountDataId = $extraAmountDataHistory->id;
                         }
@@ -1732,7 +1727,7 @@ class InspectionController extends Controller
                     $extraAmountData = $extraAmount->toArray();
                     unset($extraAmountData['id']); // You might want to remove the primary key, 'id'
                     $extraAmountData['pr_ted_id'] = $extraAmount->id;
-                    $extraAmountData['header_history_id'] = $headerHistoryId;
+                    $extraAmountData['header_id'] = $headerHistoryId;
                     $extraAmountDataHistory = InspectionTedHistory::create($extraAmountData);
                     $extraAmountDataId = $extraAmountDataHistory->id;
                 }
@@ -1813,7 +1808,7 @@ class InspectionController extends Controller
     }
 
     # This for both bulk and single mrn
-    protected function buildMrnQuery(Request $request) 
+    protected function buildMrnQuery(Request $request)
     {
         $seriesId = $request->series_id ?? null;
         $mrnDocNumber = $request->document_number ?? null;
@@ -1829,7 +1824,7 @@ class InspectionController extends Controller
         $itemSearch = $request->item_search ?? null;
         $detailsIds = $request->details_ids ?? '';
         $headerId = $request->header_id ?? '';
-        
+
         if (is_string($detailsIds)) {
             $detailsIds = array_filter(explode(',', $detailsIds));
         }
@@ -1914,7 +1909,7 @@ class InspectionController extends Controller
         }
         $mrnHeaders = MrnHeader::whereIn('id', $uniqueMrnIds)->get();
         $mrnHeader = MrnHeader::whereIn('id', $uniqueMrnIds)->first();
-        
+
         $vendorId = $mrnHeaders->pluck('vendor_id')->unique();
         if ($vendorId->count() > 1) {
             return response()->json([
@@ -2524,12 +2519,12 @@ class InspectionController extends Controller
     {
         $inspectionJson = $component['inspectionData'] ?? null;
         if (!$inspectionJson) return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
-        
+
         $inspectionItems = json_decode($inspectionJson, true);
         if (!is_array($inspectionItems) || count($inspectionItems) === 0) {
             return self::notFoundResponse('Checklist must be filled for item'. $component['item_name']);
         }
-        
+
         $grouped = collect($inspectionItems)->groupBy('detail_id');
         foreach ($grouped as $detailId => $entries) {
             $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');

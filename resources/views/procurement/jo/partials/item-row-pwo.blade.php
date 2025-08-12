@@ -45,9 +45,10 @@
       </select>
 </td>
 <td><input type="number" class="form-control mw-100 text-end" value="{{$pwoItem?->qty - $pwoItem?->jo_qty}}" name="components[{{$rowCount}}][qty]" step="any"></td>
+<td><input type="text" name="components[{{$rowCount}}][sow]" placeholder="Select" class="form-control mw-100 mb-25 ledgerselecct ser_item_code" /><input type="hidden" name="components[{{$rowCount}}][sow_id]" class="form-control" /></td> 
 <td><input type="number" name="components[{{$rowCount}}][rate]" value="" class="form-control mw-100 text-end" /></td> 
 <td><input type="number" readonly value="" name="components[{{$rowCount}}][item_value]" class="form-control mw-100 text-end" step="any" /></td>
-<td>
+<td class="d-none">
     <div class="position-relative d-flex align-items-center">
         <input type="number" readonly name="components[{{$rowCount}}][discount_amount]" class="form-control mw-100 text-end" style="width: 70px" value="" step="any" />
         <input type="hidden" name="components[{{$rowCount}}][discount_amount_header]" value=""/>
@@ -57,9 +58,9 @@
         </div>
     </div>
 </td>
-<td>
+<td class = "d-none">
     <input type="number" value="" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" step="any" />
-</td>
+</td> 
 <td>
     <input type="date" value="{{ date('Y-m-d') }}" name="components[{{ $rowCount }}][delivery_date]" class="form-control mw-100" />
 </td>

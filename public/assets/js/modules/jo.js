@@ -288,7 +288,7 @@ function setTableCalculation() {
         let itemValue3 = (Number(qty3) * Number(rate3)) || 0;
         let itemDisc3 = Number($(item3).find("[name*='[discount_amount]']").val()) || 0;
         let itemHeaderDisc = Number($(item3).find("[name*='[discount_amount_header]']").val()) || 0;
-        let itemId = $(item3).find('[name*="[item_id]"]').val();
+        let itemId = $(item3).find('[name*="[sow_id]"]').val();
 
         let price = itemValue3 - itemDisc3 - itemHeaderDisc;
         if (price > 0 && itemId) {
@@ -309,6 +309,7 @@ function setTableCalculation() {
                     rowCount: rowCount3,
                     document_date:document_date
                 }).toString();
+                console.log(queryParams,actionUrlTax);
                 let urlWithParams = `${actionUrlTax}?${queryParams}`;
                 let promise = fetch(urlWithParams)
                     .then(response => response.json())
@@ -1905,6 +1906,83 @@ function initAutoForItem(selector, type) {
         }
     });
 }
+// Scope Of Work component
+function initAutoForSow(selector, type) {
+    $(selector).autocomplete({
+        minLength: 0,
+        source: function(request, response) {
+            let selectedAllItemIds = [];
+            $("#itemTable tbody [id*='row_']").each(function(index,item) {
+                if(Number($(item).find('[name*="[sow]"]').val())) {
+                selectedAllItemIds.push(Number($(item).find('[name*="[sow]"]').val()));
+            }
+        });
+            $.ajax({
+            url: '/search',
+            method: 'GET',
+            dataType: 'json',
+            data: {
+                q: request.term,
+                type:'service_item_list',
+                selectedAllItemIds : JSON.stringify(selectedAllItemIds),
+                vendor_id : $("#vendor_id").val()
+            },
+            success: function(data) {
+                response($.map(data, function(item) {
+                    return {
+                        id: item.id,
+                        label: `${item.item_name} (${item.item_code})`,
+                        code: item.item_code || '', 
+                        item_id: item.id,
+                        item_name:item.item_name,
+                        item_price:item.price
+                    };
+                }));
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+        });
+        },
+        select: function(event, ui) {
+        let $input = $(this);
+        let itemCode = ui.item.code;
+        let itemName = ui.item.value;
+        let itemN = ui.item.item_name;
+        let itemId = ui.item.item_id;
+        let itemRate = ui.item.item_price;
+        $input.val(itemCode);
+        $input.closest('tr').find('[name*="[sow_id]"]').val(itemId);
+        $input.closest('tr').find('[name*="[sow]"]').val(itemName);
+        $input.closest('tr').find('[name*="[rate]"]').val(itemRate);
+        
+        
+        setTableCalculation();
+        validateItems($input, true);
+        return false;
+    },
+    change: function(event, ui) {
+        if (!ui.item) {
+            $(this).val("");
+                // $('#itemId').val('');
+            $(this).closest('tr').find('input[name*="[sow_id]"]').val('');
+            $(this).closest('tr').find('input[name*="[sow]"]').val('');
+            $(this).closest('tr').find("input[name*='[rate]']").val('');
+        }
+    }
+    }).focus(function() {
+        if (this.value === "") {
+            $(this).autocomplete("search", "");
+        }
+    }).on("input", function () {
+        if ($(this).val().trim() === "") {
+            $(this).removeData("selected");
+            $(this).closest('tr').find("input[name*='[sow_id]']").val('');
+            $(this).closest('tr').find("input[name*='[sow]']").val('');
+            $(this).closest('tr').find("input[name*='[rate]']").val('');
+        }
+    });
+}
 
 function checkBomJobWork(itemId = null,$input) {
     fetch(checkBomJobUrl+'?item_id='+itemId).then((response) => {
@@ -1993,6 +2071,7 @@ $(document).on('click','#addNewItemBtn', (e) => {
                     $("#itemTable > tbody").html(data.data.html);
                 }
                 initAutoForItem(".comp_item_code");
+                initAutoForSow(".ser_item_code");
                 $("select[name='currency_id']").prop('disabled', true);
                 $("select[name='payment_term_id']").prop('disabled', true);
                 $("#vendor_name").prop('readonly',true);
@@ -2126,6 +2205,7 @@ $(document).on('click', '.prProcess', (e) => {
                     });
                 },100);
                 initAutoForItem(".comp_item_code");
+                initAutoForSow(".ser_item_code");
                 $("#prModal").modal('hide');
                 $("select[name='currency_id']").prop('disabled', true);
                 $("select[name='payment_term_id']").prop('disabled', true);

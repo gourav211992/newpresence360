@@ -214,7 +214,6 @@
                                                 @include('partials.approval-history', ['document_status' => $order->document_status, 'revision_number' => $order->revision_number]) 
                                             @endif
                                         </div> 
-                                    </div>
                                 </div>
                                 <div class="col-md-12 {{(isset($order) && count($order -> dynamic_fields)) > 0 ? '' : 'd-none'}}" id = "dynamic_fields_section">
                                     @if (isset($dynamicFieldsUi))
@@ -242,7 +241,6 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div class="card">
                                 <div class="card-body vendornewsection-form"> 
                                     
@@ -4171,19 +4169,21 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                                 $("#current_pickup_address").text(displayAddress);
                             }
                             let vendorTds = '';
-                            vendors.forEach((vendor) => {
+                            console.log(vendors);
+                            let vendor_data  = item.vendor_data || [];
+                            vendor_data.forEach((vendor) => {
                                 console.log(vendor);
                                 vendorTds += `
-                                    <td class="vendor-cell text-center">
-                                        ${vendor.rate}
+                                    <td class="poprod-decpt vendor-cell text-center">
+                                        ${vendor.vendor.rate}
                                     </td>`;
                             });
                             let itemAttrs = JSON.stringify(item.item?.item_attributes_array || []);
                             let specs = JSON.stringify(item.item?.specifications || []);
                             tbody.innerHTML += `
                             <tr id="item_row_${itemRowIndex}" class="item_header_rows" onclick="onItemClick('${itemRowIndex}');">
-                                <input type="hidden" id="${openPullType}_item_id_${itemRowIndex}" name="${openPullType}_item_ids[]" value="${JSON.stringify(item.item_id)}">
-                                <input type="hidden" id="${openPullType}_id_${itemRowIndex}" name="${openPullType}_ids" value="${JSON.stringify(item.rfq_header_id)}">
+                                <input type="hidden" id="${openPullType}_item_id_${itemRowIndex}" name="${openPullType}_item_ids[]" value="${JSON.stringify(item.id)}">
+                                <input type="hidden" id="${openPullType}_id_${itemRowIndex}" name="${openPullType}_ids" value="${JSON.stringify(item.item_id)}">
                                 <td class="vendornewsection-form">
                                     <div class="form-check form-check-primary custom-checkbox">
                                         <input type="checkbox" class="form-check-input item_row_checks" id="item_checkbox_${itemRowIndex}" del-index="${itemRowIndex}">
@@ -4221,7 +4221,10 @@ initializeAutocompleteSearch('filter_item_name_code','filter_item_name_code_id',
                             setAttributesUI(itemRowIndex);
                             itemRowIndex++;
                         });
-                    }); 
+                    });
+                    $("#vendor_bottom").attr("colspan", vendors.length);
+                    $("#vendor_bottom").removeClass("d-none");
+
                     disableHeader();                           
                 },
                 error: function(xhr) {

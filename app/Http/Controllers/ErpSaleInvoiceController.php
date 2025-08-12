@@ -8,12 +8,15 @@ use App\Jobs\SendEmailJob;
 use App\Models\AttributeGroup;
 use App\Models\AuthUser;
 use App\Models\Book;
+use App\Models\Item;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\ErpInvoiceItemPacket;
+use App\Models\ErpLorryReceipt;
 use App\Models\ErpPlHeader;
 use App\Models\ErpPlItemDetail;
 use App\Models\ErpSubStore;
+use App\Models\OrganizationBookParameter;
 use App\Models\EwayBillMaster;
 use App\Models\PackingListDetail;
 use App\Models\PackingListItem;
@@ -58,13 +61,11 @@ use App\Models\ErpSaleOrder;
 // use App\Models\ErpSoDnMapping;
 use App\Models\ErpSoItem;
 use App\Models\ErpStore;
-use App\Models\Item;
 use App\Models\LandLease;
 use App\Models\LandLeaseScheduler;
 use App\Models\LandParcel;
 use App\Models\NumberPattern;
 use App\Models\Organization;
-use App\Models\OrganizationBookParameter;
 use App\Models\OrganizationMenu;
 use App\Models\Unit;
 use Carbon\Carbon;
@@ -110,6 +111,7 @@ class ErpSaleInvoiceController extends Controller
             $redirectUrl = route('sale.transporterInvoice.index');
             $createRoute = route('sale.transporterInvoice.create');
         }
+        
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($orderType);
         request() -> merge(['type' => $orderType]);
         $autoCompleteFilters = self::getBasicFilters();
@@ -182,7 +184,10 @@ class ErpSaleInvoiceController extends Controller
                 }
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_LEASE_TYPE) {
                     $editRoute = route('sale.leaseInvoice.edit', ['id' => $row->id]);
-                }      
+                }   
+                 if ($orderType == SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE) {
+                    $editRoute = route('sale.transporterInvoice.edit', ['id' => $row->id]);
+                }   
                 return "
                     <div style='text-align:right;'>
                         <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
@@ -368,6 +373,7 @@ class ErpSaleInvoiceController extends Controller
         } else if ($parentUrl === 'transporter-invoices') {
             $locationVisiblity = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+           
         }
         request() -> merge(['type' => $orderType]);
         $user = Helper::getAuthenticatedUser();
@@ -1259,6 +1265,13 @@ class ErpSaleInvoiceController extends Controller
                                         $soItem -> save();
                                     }
                                 }
+                            } else if ($pullType === ConstantHelper::LR_SERVICE_ALIAS) {
+                                $lorryReceipt = ErpLorryReceipt::find($request -> quotation_item_ids[$itemDataKey]);
+                                if (isset($lorryReceipt)) {
+                                    $soItem -> lr_id = $lorryReceipt ?-> id;
+                                    $soItem -> save();
+                                }
+                               
                             } else if ($pullType === ConstantHelper::PL_SERVICE_ALIAS) {
                                 $plItemDetail = ErpPlItemDetail::find($request -> quotation_item_ids[$itemDataKey]);
                                 if ($plItemDetail) {
@@ -1579,6 +1592,9 @@ class ErpSaleInvoiceController extends Controller
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
                 $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> book_id)['data'];
+                if (isset($itemType) && count($itemType) > 0) {
+                    $itemType = $itemType[0];
+                }
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
                     if ($itemType == ConstantHelper::GOODS) {
                         $error = self::maintainStockLedger($saleInvoice);
@@ -1704,7 +1720,13 @@ class ErpSaleInvoiceController extends Controller
             $selectedIds = $request -> selected_ids ?? [];
             $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($request -> header_book_id);
             $query = null;
+            $orgBookParameter = null;    
+            $item = null;
+           
             $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];
+            if (isset($itemType) && count($itemType) > 0) {
+                $itemType = $itemType[0];
+            }
             $checkStock = true;
             if ($itemType != ConstantHelper::GOODS) {
                 $checkStock = false;
@@ -1775,7 +1797,47 @@ class ErpSaleInvoiceController extends Controller
                         $nestedQuery -> where('item_id', $request -> item_id);
                     });
                 }) ->with('sale_order')-> whereColumn('dnote_qty', '<', 'picked_qty');
-            }
+            }else if ($request->doc_type === ConstantHelper::LR_SERVICE_ALIAS) {
+
+                    $orgBookParameter = OrganizationBookParameter::where('book_id', $request->header_book_id)
+                        ->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)
+                        ->first();
+
+                    $itemIds = optional($orgBookParameter)->parameter_value ?? [];
+                    $item = Item::with('uom')->find(collect($itemIds)->first());
+
+                    $query = ErpLorryReceipt::with(['locations', 'source', 'destination', 'consignee', 'consignor'])
+                        ->withDefaultGroupCompanyOrg()
+                        ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
+                        ->whereIn('book_id', $applicableBookIds)
+                        ->when($request->customer_id, fn($q) => $q->where('consignor_id', $request->customer_id))
+                        ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
+                        ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
+
+            
+                    return DataTables::of($query)
+                        ->addColumn('book_code', fn($row) => $row?->book?->book_code ?? '')
+                        ->addColumn('series', fn($row) => $row->document_number)
+                         ->addColumn('doc_no', fn($row) => $row->doc_no)
+                        ->addColumn('doc_date', fn($row) => $row->document_date?->format('d-m-Y') ?? '')
+                        
+                        ->addColumn('customer_name', fn($row) => $row->consignor?->company_name ?? '')
+                        ->addColumn('currency_code', fn($row) => $row->consignor?->currency->name ?? '')
+
+                        ->addColumn('consignee_name', fn($row) => $row->consignee?->name ?? '')
+
+                        ->addColumn('source_name', fn($row) => $row->source?->name ?? '')
+                        ->addColumn('destination_name', fn($row) => $row->destination?->name ?? '')
+
+                        ->addColumn('item_name', fn($row) => $item?->item_name ?? '')
+                        ->addColumn('item_code', fn($row) => $item?->item_code ?? '')
+                        ->addColumn('uom_name', fn($row) => $item?->uom?->name ?? '')
+                        ->addColumn('rate', fn($row) => number_format($item?->rate ?? 0, 2))
+                        ->addColumn('qty', fn($row) => number_format($row->qty ?? 0, 2)) 
+                        ->addColumn('total_amount', fn($row) => number_format(($item?->rate ?? 0) * ($row->qty ?? 0), 2))
+
+                        ->make(true);
+                }
 
             // LAND_LEASE cannot be paginated without get()
             // $order = $order -> values();
@@ -2070,6 +2132,9 @@ class ErpSaleInvoiceController extends Controller
                     // }
                     foreach ($header -> items as $orderItemKey => &$orderItem) {
                         $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $header -> book_id)['data'];
+                        if (isset($itemType) && count($itemType) > 0) {
+                            $itemType = $itemType[0];
+                        }
                         if ($itemType != ConstantHelper::GOODS) {
                             $orderItem -> stock_qty = $orderItem -> order_qty;
                         } else {
@@ -2340,7 +2405,145 @@ class ErpSaleInvoiceController extends Controller
 
                     //     }
                     // }
-                }
+                }else if ($request->doc_type === ConstantHelper::LR_SERVICE_ALIAS) {
+                    $orgBookParameter = OrganizationBookParameter::where('book_id', $request->header_book_id)
+                        ->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)
+                        ->first();
+
+                    $itemIds = optional($orgBookParameter)->parameter_value ?? [];
+                    $singleItem = Item::with('specifications', 'alternateUoms.uom', 'uom', 'hsn')->find(collect($itemIds)->first()); 
+ 
+                    $lrIds = $request->lr_ids;
+                    $headers = ErpLorryReceipt::with(['locations', 'source', 'destination', 'consignor','consignor.currency' ,'vehicle'])
+                        ->whereIn('id', $lrIds)
+                        ->get();
+                        $locationAmountTotal = 0;
+                        $freightCharges = 0;
+                        $totalFreightWithLocation = 0;
+                        $processOrder = collect([]);
+
+
+                            foreach ($headers as $header) {
+                                    $header->document_type = "lr";
+                                    $header->book_Id = $header->book_id;
+                                    $header->book_Code = $header->book_code;
+                                    $header->document_Number = $header->document_number;
+                                    $header->document_Date = Carbon::parse($header->document_date)->format('d-m-Y');
+                                    $locationAmountTotal = $header->locations->sum('amount');
+                                    $freightCharges = $header->freight_charges ?? 0;
+                                    $totalFreightWithLocation = $freightCharges + $locationAmountTotal;
+
+
+                                if ($singleItem) {
+                                        $itemClone = clone $singleItem;
+
+                                        $itemClone->discount_ted = [];
+                                        $itemClone->balance_qty = 0;
+                                        $itemClone->stock_qty = 0;
+                                        $itemClone->item_discount_amount = 0;
+
+                                        $header->items = [$itemClone];
+                                    }
+
+                                    
+                                    $consignor = $header->consignor;
+                                    $consignee = $header->consignee;
+                                    $vehicle = $header->vehicle;
+                                    $billing_address_details = $consignor->addresses()->where('type', 'billing')->first();
+                                    $shipping_address_details = $consignor->addresses()->where('type', 'shipping')->first();
+
+                                    $header->customer = $consignor;
+                                    $header->customer->currency = $consignor->currency;
+                                    $header->customer->payment_terms = $consignor->paymentTerm;
+                                    $header->customer_code = $consignor?->company_name ?? null;
+                                    $header->customer_id = $consignor?->id ?? null;
+                                    $header->consignee_name = $consignee?->company_name ?? null;
+                                    $header->customer_phone_no = $consignor?->phone ?? null;
+                                    $header->customer_email = $consignor?->email ?? null;
+                                    $header->customer_gstin = $consignor->compliances->gstin_no ?? null;
+                                    $header->billing_address_details = $billing_address_details ?? null;
+                                    $header->shipping_address_details = $shipping_address_details ?? null;
+                                    $header->vehicle_no = $vehicle?->lorry_no ?? null;
+                                    $header->freight_charges = $freightCharges ?? 0;
+                                    $header->location_total_amount = $locationAmountTotal ?? 0;
+                                    $header->total_freight_amount = $totalFreightWithLocation ?? 0;
+
+                                    if ($consignor) {
+                                        $header->currency_code = $consignor->currency->short_name ?? null ;
+                                        $header->payment_term_code = $consignor->paymentTerm->name ?? null ;
+                                    }
+                                }
+
+                                $finalHeaders = $headers->map(function ($header ) use($freightCharges, $locationAmountTotal, $totalFreightWithLocation)  {
+                                    return [
+                                        'lr_id' => $header->id,
+                                        'freight_charges' => $freightCharges,
+                                        'location_total_amount' => $locationAmountTotal,
+                                        'total_freight_amount' => $totalFreightWithLocation,
+                                        'discount_ted' => [],
+                                        'expense_ted' => [],
+                                        'document_type' => $header->document_type,
+                                        'book_id' => $header->book_Id,
+                                        'book_code' => $header->book->book_code,
+                                        'customer' => $header->customer,
+                                        'document_number' => $header->document_Number,
+                                        'document_date' => $header->document_Date,
+                                        'customer_id' => $header->customer_id,
+                                        'payment_term_id' => $header->customer->payment_terms->id ?? null,
+                                        'currency_id' => $header->customer->currency->id ?? null,
+                                        'customer_code' => $header->customer_code,
+                                        'consignee_name' => $header->consignee_name,
+                                        'customer_phone_no' => $header->customer_phone_no,
+                                        'customer_email' => $header->customer_email,
+                                        'customer_gstin' => $header->customer_gstin,
+                                        'billing_address_details' => $header->billing_address_details,
+                                        'shipping_address_details' => $header->shipping_address_details,
+                                        'vehicle_no' => $header->vehicle_no,
+                                        'currency_code' => $header->currency_code,
+                                        'payment_term_code' => $header->payment_term_code,
+
+                                       'items' => collect($header->items ?? [])->map(function ($item ) use($totalFreightWithLocation) {
+                                            return [
+                                              'discount_ted' => [],
+                                              'balance_qty' => 1,
+                                              'stock_qty' => 1,
+                                              'header_discount_amount' => 0,
+                                              'header_expense_amount' => 0,
+                                              'rate' => $totalFreightWithLocation,
+                                                // 'item' => [
+                                                //     'id' => $item->id,
+                                                //     'item_name' => $item->item_name,
+                                                //     'item_code' => $item->item_code,
+                                                //     'discount_ted' => $item->discount_ted,
+                                                //     'item_attributes_array' => $item->item_attributes_array(),
+                                                    
+                                                //     'item_discount_amount' => $item->item_discount_amount,
+                                                //     'uom' => [ 
+                                                //         'id' => optional($item->uom)->id,
+                                                //         'name' => optional($item->uom)->name,
+                                                //     ],
+                                                //     'hsn' => [ 
+                                                //         'id' => optional($item->hsn)->id,
+                                                //         'hsn_code' => optional($item->hsn)->code,
+                                                //     ],
+                                                //     'alternate_uoms' => [],
+                                                // ],
+                                                'item'=> $item,
+                                                'item_id' => $item->id,
+                                                'item_attributes_array' => $item->item_attributes_array(),
+                                                'item_discount_amount' => 0,
+                                            ];
+                                        }),
+
+                                    ];
+                                });
+
+                                return response()->json([
+                                    'data' => $finalHeaders,
+                                ]);
+
+                      }
+
             }
             return response() -> json([
                 'message' => 'Data found',
