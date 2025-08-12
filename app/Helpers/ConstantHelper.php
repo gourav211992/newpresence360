@@ -631,6 +631,7 @@ class ConstantHelper
     const FIXED_ASSET_MERGER = 'fixed-asset-merger';
     const FIXED_ASSET_REV_IMP = 'fixed-asset-rev';
     const MAINT_BOM = 'maint-bom';
+    const MAINT_WO = 'maint-wo';
     const STAKEHOLDER_INTERACTION = 'stakeholder-interaction';
     const COMPLAINT_MANAGEMENT = 'complaint';
     const FEEDBACK_PROCESS = 'feedback-process';

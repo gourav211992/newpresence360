@@ -1,5 +1,5 @@
 {
-    "nagit": "laravel/laravel",
+    "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": ["laravel", "framework"],
@@ -22,6 +22,7 @@
         "phpoffice/phppresentation": "^1.1",
         "phpoffice/phpspreadsheet": "^1.29",
         "phpoffice/phpword": "^1.3",
+        "pusher/pusher-php-server": "^7.2",
         "spatie/laravel-medialibrary": "*",
         "swiftmailer/swiftmailer": "^6.3",
         "symfony/console": "^6.0",

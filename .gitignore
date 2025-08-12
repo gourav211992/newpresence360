@@ -23,7 +23,6 @@ config/database.php
 
 
 # Vagrant environment files
-/bootstrap
 /vendor
 /.idea
 /.vagrant
