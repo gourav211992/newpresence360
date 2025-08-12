@@ -360,6 +360,7 @@
                         }
                         $totalTaxPercentage += $taxPercentage;
                         $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
                     }
                     $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
                     $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;

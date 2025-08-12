@@ -7,22 +7,22 @@
             <div class="modal-body px-sm-2 mx-50 pb-2">
                 <h1 class="text-center mb-1" id="shareProjectTitle">Expenses</h1>
                 <div class="text-end"></div>
-                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                <table class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                     <thead>
                         <tr>
                             <td>#</td>
                             <td>
-                                <label class="form-label">Type<span class="text-danger">*</span></label> 
+                                <label class="form-label">Type<span class="text-danger">*</span></label>
                                 <input type="text" id="new_exp_name_select" placeholder="Select" class="form-control mw-100 ledgerselecct ui-autocomplete-input" autocomplete="off" value="">
                                 <input type = "hidden" id = "new_exp_id" />
                                 <input type = "hidden" id = "new_exp_name" />
                             </td>
                             <td>
-                                <label class="form-label">Percentage <span class="text-danger">*</span></label> 
+                                <label class="form-label">Percentage <span class="text-danger">*</span></label>
                                 <input step="any" type="number" id="new_exp_perc" class="form-control mw-100" />
                             </td>
                             <td>
-                                <label class="form-label">Value <span class="text-danger">*</span></label> 
+                                <label class="form-label">Value <span class="text-danger">*</span></label>
                                 <input step="any" type="number" id="new_exp_value" class="form-control mw-100" />
                             </td>
                             <td>
@@ -36,7 +36,7 @@
                     </tbody>
                 </table>
                 <div class="table-responsive-md customernewsection-form">
-                    <table id="summaryExpTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail"> 
+                    <table id="summaryExpTable" class="mt-1 table myrequesttablecbox table-striped po-order-detail custnewpo-detail">
                         <thead>
                             <tr>
                                 <th>S.No</th>
@@ -79,8 +79,8 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer justify-content-center">  
-                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button> 
+            <div class="modal-footer justify-content-center">
+                <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-1">Cancel</button>
                 <button type="button" class="btn btn-primary summaryExpSubmit">Submit</button>
             </div>
         </div>

@@ -21,7 +21,12 @@ use App\Models\MrnDetail;
 use App\Models\MrnAttribute;
 use App\Models\AlternateUOM;
 use App\Models\MrnExtraAmount;
+use App\Models\MrnAssetDetail;
+use App\Models\MrnBatchDetail;
 use App\Models\MrnItemLocation;
+use App\Models\MrnAssetDetailHistory;
+use App\Models\MrnBatchDetailHistory;
+
 
 use App\Models\MrnHeaderHistory;
 use App\Models\MrnDetailHistory;
@@ -308,7 +313,7 @@ class MaterialReceiptController extends Controller
             if ($response['status'] === 200) {
                 $parameters = json_decode(json_encode($response['data']['parameters']), true);
             }
-
+            $inspectionReqired = ($parameters['inspection_required'][0] === 'no') ? 0 : 1;
             $organization = Organization::where('id', $user->organization_id)->first();
             $organizationId = $organization ?-> id ?? null;
             $purchaseOrderId = null;
@@ -349,6 +354,7 @@ class MaterialReceiptController extends Controller
             $mrn->sub_store_id = $request->sub_store_id;
             $mrn->organization_id = $organization->id;
             $mrn->bill_to_follow = $request->bill_to_follow;
+            // $mrn->inspection_required = $request->inspection_required;
             $mrn->is_warehouse_required = $request->is_warehouse_required ?? 0;
             $mrn->group_id = $organization->group_id;
             $mrn->book_code = $request->book_code;
@@ -454,6 +460,7 @@ class MaterialReceiptController extends Controller
                 ]);
                 $storeLocation->save();
             }
+            $lotNumber = date('Y/M/d', strtotime($mrn->document_date)) . '/' . $mrn->book_code . '/' . $mrn->document_number;
 
             $totalItemValue = 0.00;
             $totalTaxValue = 0.00;
@@ -485,10 +492,9 @@ class MaterialReceiptController extends Controller
                     $item = Item::find($component['item_id'] ?? null);
                     $inputQty = 0.00;
                     $so_id = null;
-                    $isInspection = ($component['is_inspection'] == 1) ? 0 : 1;
                     $refType = $request->input('reference_type');
                     $orderQty = floatval($component['order_qty']) ?? 0.00;
-                    $acceptedQty = ($isInspection == 1) ? floatval($component['order_qty']) : 0.00;
+                    $acceptedQty = ($inspectionReqired == 1) ? floatval($component['order_qty']) : 0.00;
                     $rejectedQty = 0.00;
                     $item = Item::find($component['item_id'] ?? null);
 
@@ -563,7 +569,7 @@ class MaterialReceiptController extends Controller
                         'hsn_code' => $component['hsn_code'] ?? null,
                         'uom_id' =>  $component['uom_id'] ?? null,
                         'uom_code' => $uom->name ?? null,
-                        'is_inspection' =>  $component['is_inspection'] ?? 0,
+                        'is_inspection' =>  $inspectionReqired ?? 0,
                         'order_qty' => floatval($component['order_qty']) ?? 0.00,
                         'accepted_qty' => $acceptedQty,
                         'rejected_qty' => $rejectedQty,
@@ -759,6 +765,61 @@ class MaterialReceiptController extends Controller
                     //         \Log::warning("Invalid JSON for storage_points_data: " . print_r($component['storage_packets'], true));
                     //     }
                     // }
+
+                    #Save asset details
+                    if (!empty($component['assetDetailData'])) {
+                        $assetDetails = is_string($component['assetDetailData'])
+                            ? json_decode($component['assetDetailData'], true)
+                            : $component['assetDetailData'];
+
+                        if (is_array($assetDetails)) {
+                            $assetDetail = new MrnAssetDetail();
+                            $assetDetail->header_id = $mrn->id;
+                            $assetDetail->detail_id = $mrnDetail->id;
+                            $assetDetail->item_id = $mrnDetail->item_id;
+                            $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
+                            // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
+                            $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
+                            $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
+                            $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
+                            $assetDetail->model_no = $assetDetails['model_no'] ?? null;
+                            $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
+                            $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                            $assetDetail->save();
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
+                        }
+                    }
+                    #Save batch details
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
+
+                        if (is_array($batchDetails)) {
+                            foreach ($batchDetails as $i => $val) {
+                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                                $batchDetail = new MrnBatchDetail();
+                                $batchDetail->header_id = $mrn->id;
+                                $batchDetail->detail_id = $mrnDetail->id;
+                                $batchDetail->item_id = $mrnDetail->item_id;
+                                $batchDetail->batch_number = $batchNo;
+                                $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
+                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
+                                $batchDetail->quantity = $val['quantity'] ?? null;
+                                $batchDetail->save();
+                                
+                                // Convert to base uom 
+                                $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
+                                $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
+                                $batchDetail->save();
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
+                        }
+                    }
                 }
                 /*Header level save discount*/
                 if(isset($request->all()['disc_summary'])) {
@@ -879,7 +940,7 @@ class MaterialReceiptController extends Controller
             if ($request->hasFile('attachment')) {
                 $mediaFiles = $mrn->uploadDocuments($request->file('attachment'), 'mrn', false);
             }
-            $lotNumber = date('Y/M/d', strtotime($mrn->document_date)) . '/' . $mrn->book_code . '/' . $mrn->document_number;
+            
             $mrn->lot_number = strtoupper(@$lotNumber);
             $mrn->save();
             if($mrn){
@@ -2262,7 +2323,6 @@ class MaterialReceiptController extends Controller
         $headerId = $request->headerId;
         $detailId = $request->detailId;
         $item = Item::find($request->item_id ?? null);
-
         $attributeName = [];
         $attributeValue = [];
         foreach ($item->itemAttributes as $attribute) {
@@ -2362,7 +2422,7 @@ class MaterialReceiptController extends Controller
             )
         )
         ->render();
-        return response()->json(['data' => ['html' => $html, 'totalStockData' => $totalStockData, 'totalCost' => $totalCost], 'status' => 200, 'storagePoints' => $storagePoints, 'message' => 'fetched.']);
+        return response()->json(['data' => ['html' => $html, 'totalStockData' => $totalStockData, 'totalCost' => $totalCost], 'status' => 200, 'storagePoints' => $storagePoints, 'item' => $item, 'message' => 'fetched.']);
     }
 
     public function logs(Request $request, string $id)
@@ -4111,7 +4171,7 @@ class MaterialReceiptController extends Controller
     private static function maintainStockLedger($mrn)
     {
         $user = Helper::getAuthenticatedUser();
-        $detailIds = $mrn->items->pluck('id')->toArray();
+        $detailIds = $mrn->batches->pluck('id')->toArray();
         $data = InventoryHelper::settlementOfInventoryAndStock($mrn->id, $detailIds, ConstantHelper::MRN_SERVICE_ALIAS, $mrn->document_status);
         return $data;
     }

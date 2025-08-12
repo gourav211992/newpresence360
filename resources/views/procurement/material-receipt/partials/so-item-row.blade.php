@@ -2,6 +2,8 @@
     @php
         $rowCount = $tableRowCount + $key + 1;
         $orderQty = 0.00;
+        $hasAssetDetail = $item?->item?->is_asset;
+        $acceptedReadOnly = 'readonly';
         $moduleType = 'w-order';
         if($item->po && ($item->jo->gate_entry_required == 'yes')){
             $moduleType = 'gate-entry';
@@ -74,15 +76,17 @@
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{($item?->item?->is_inspection == 0) ? $orderQty : 0.00}}" step="any" {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            value="" step="any" {{ $acceptedReadOnly }} />
         </td>
         <td>
             <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"
-            {{ ($item?->item?->is_inspection == 1) ? 'readonly' : '' }} />
+            {{ $acceptedReadOnly }} />
         </td>
-        <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" /></td>
         <td>
-            <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->qty - $item->grn_qty)*$item->rate}}"  class="form-control text-end mw-100 basic_value checkNegativeVal" readonly step="any" />
+            <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
+        </td>
+        <td>
+            <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->qty - $item->grn_qty)*$item->rate}}" class="form-control text-end mw-100 basic_value checkNegativeVal" readonly step="any" />
         </td>
         <td>
         </td>
@@ -91,6 +95,47 @@
         </td>
         <td>
             <div class="d-flex">
+                @if($hasAssetDetail === 1)
+                    <input type="hidden" name="components[{{$rowCount}}][assetDetailData]" />
+                    <div class="cursor-pointer ms-50 text-success assetDetailBtn"
+                        data-row-count="{{ $rowCount }}"
+                        data-asset-cat-id="{{ $item?->item?->asset_category_id }}"
+                        data-asset-cat-name="{{ $item?->item?->assetCategory?->name }}"
+                        data-asset-code="{{ $item?->item?->getAssetCode() }}"
+                        data-asset-name="{{ $item?->item?->item_name }}"
+                        data-asset-brand-name="{{ $item?->item?->brand_name }}"
+                        data-asset-model-number="{{ $item?->item?->model_no }}"
+                        data-asset-expected-life="{{ $item?->item?->expected_life }}"
+                        data-asset-salvage-perc="{{ $item?->item?->getSalvagePercentage() }}"
+                        data-asset='@json(["has_asset" => 1])'
+                        data-bs-toggle="modal"
+                        data-bs-target="#assetDetailModal"
+                        title="Asset Detail">
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" class="text-primary"
+                            data-bs-original-title="Asset Detail" aria-label="Asset Detail">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-clipboard-check" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M10.854 6.146a.5.5 0 0 0-.708.708L11.293 8l-1.147 1.146a.5.5 0 0 0 .708.708L12 8.707l1.146 1.147a.5.5 0 0 0 .708-.708L12.707 8l1.147-1.146a.5.5 0 0 0-.708-.708L12 7.293 10.854 6.146z"/>
+                                <path
+                                    d="M10 1.5v1h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h1v-1a1 1 0 1 1 2 0v1h2v-1a1 1 0 1 1 2 0zM5 4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5z"/>
+                            </svg>
+                        </span>
+                    </div>
+                @endif
+                <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
+                <div class="me-50 cursor-pointer addBatchBtn" 
+                data-bs-toggle="modal" 
+                data-row-count="{{$rowCount}}" 
+                data-is-batch-number="{{$item?->item?->is_batch_no}}" 
+                data-bs-target="#item-batch-modal">
+                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
+                        data-bs-original-title="Item Batch" aria-label="Item Batch">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="feather feather-map-pin">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+                </div>
                 <!-- <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
                 <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"

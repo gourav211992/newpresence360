@@ -26,8 +26,10 @@ use App\Models\Employee;
 use App\Models\PaymentTerm;
 use App\Models\SubType;
 use App\Models\UploadItemMaster;
+use App\Models\FixedAssetSetup;
 use App\Models\OrganizationType;
 use App\Helpers\EInvoiceHelper;
+use App\Helpers\ConstantHelper;
 use App\Helpers\GstnHelper;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -762,6 +764,34 @@ class ItemImportExportService
             'pincode'     => $pincodeVal ?? $pincode,
             'errors'      => $errors,
         ];
+    }
+
+
+    public function getAssetCategoryDetailsByName($assetCategoryName)
+    {
+        try {
+            $fixedAssetCategories = FixedAssetSetup::with('assetCategory')
+                ->where('status', ConstantHelper::ACTIVE)
+                ->select('id', 'asset_category_id', 'expected_life_years', 'maintenance_schedule')
+                ->get();
+
+            $matched = $fixedAssetCategories->first(function ($item) use ($assetCategoryName) {
+                return strtolower(trim($item->assetCategory?->name)) === strtolower(trim($assetCategoryName));
+            });
+
+            if ($matched) {
+                return [
+                    'asset_category_id' => $matched->asset_category_id,
+                    'expected_life_years' => $matched->expected_life_years,
+                    'maintenance_schedule' => $matched->maintenance_schedule,
+                ];
+            }
+
+            throw new \Exception("Asset Category '{$assetCategoryName}' not found or inactive.");
+        } catch (\Exception $e) {
+            Log::error("Error in getAssetCategoryDetailsByName: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function validateGstAndAddresses($data)

@@ -62,7 +62,11 @@
                                         else if ($order->document_type == "dnote"){
                                             $options = ['Delivery Note'];
                                         }
-                                        
+                                         else if ($order->document_type == "ti"){
+                                         
+                                            $options = ['Lorry Receipt'];
+                                        }
+                                       
                                     @endphp
                                     @foreach ($options as $key)
                                         <li>
@@ -166,7 +170,7 @@
 
                                                         <input type = "hidden" name = "book_code" id = "book_code_input" value = "{{isset($order) ? $order -> book_code : ''}}"></input>
                                                      </div>
-
+                                                     
                                                     <div class="row align-items-center mb-1">
                                                         <div class="col-md-3">
                                                             <label class="form-label">Document No <span class="text-danger">*</span></label>
@@ -667,7 +671,7 @@
 
                                                                         <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> lease_schedule_id}}" name = "quotation_item_ids[]"/>
                                                                         <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem -> land_lease_id}}" name = "quotation_item_ids_header[]"/>
-
+                         
                                                                         <input type = "hidden" id = "qt_type_id_{{$orderItemIndex}}" value = "land-lease" name = "quotation_item_type[]"/>
 
                                                                         <input type = "hidden" id = "qt_book_id_{{$orderItemIndex}}" value = "{{$orderItem -> lease ?-> book_id}}" />
@@ -684,6 +688,25 @@
                                                                         <input type = "hidden" value = "{{$orderItem -> lease ?-> repayment_period_type}}" id = "land_lease_repayment_period_{{$orderItemIndex}}" />
                                                                         <input type = "hidden" id = "land_lease_land_parcel_{{$orderItemIndex}}" value = "{{$orderItem ?-> lease ?-> plots() -> first() ?-> land ?-> name}}" />
                                                                         <input type = "hidden" id = "land_lease_land_plots_{{$orderItemIndex}}" value = "{{$orderItem ?-> lease ?-> plots_display()}}"/>
+
+                                                                        @endif
+
+                                                                         @if (isset($orderItem -> lr_id))
+
+                                                                        <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids[]"/>
+                                                                        <input type = "hidden" id = "lr_id_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids[]"/>
+                                                                        <input type = "hidden" id = "qt_id_header_{{$orderItemIndex}}" value = "{{$orderItem -> lr_id}}" name = "quotation_item_ids_header[]"/>
+                         
+                                                                        <input type = "hidden" id = "qt_type_id_{{$orderItemIndex}}" value = "lr" name = "quotation_item_type[]"/>
+
+                                                                        <input type = "hidden" id = "qt_book_id_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> book_id}}" />
+                                                                        <input type = "hidden" id = "qt_book_code_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> series ?-> book_code}}" />
+
+                                                                        <input type = "hidden" id = "qt_document_no_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> document_no}}" />
+                                                                        <input type = "hidden" id = "qt_document_date_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> document_date}}" />
+
+                                                                        <input type = "hidden" id = "qt_id_{{$orderItemIndex}}" value = "{{$orderItem -> lorry ?-> document_no}}" />
+
 
                                                                         @endif
 
@@ -3655,6 +3678,7 @@
                         $("#customer_email_input").val(currentOrder.customer_email);
                         $("#customer_gstin_input").val(currentOrder.customer_gstin);
                         //First add options also
+                     
                         $("#currency_dropdown").empty(); // Clear existing options
                         $("#currency_dropdown").append(new Option(
                             currentOrder.customer ? currentOrder.customer.currency?.name || 'Default Currency Name' : 'Default Currency Name',
@@ -3695,6 +3719,7 @@
                             // deleteItemRows();
                             if (true) {
                                 currentOrder.items.forEach((item, itemIndex) => {
+                                    console.log(item);
                                     item.balance_qty = item.actual_qty ? item.actual_qty : item.balance_qty;
                                     var avl_qty = item.balance_qty;
                                     if (docType != "si") {
@@ -3796,6 +3821,7 @@
                                         <input type = "hidden" id = "qt_id_header_${currentOrderIndexVal}" value = "${item?.id == 0 ? currentOrder?.id : ''}" name = "quotation_item_ids_header[]"/>
 
                                         <input type = "hidden" id = "qt_type_id_${currentOrderIndexVal}" value = "${currentOrder.document_type}" name = "quotation_item_type[]"/>
+                                        <input type = "hidden" id = "lr_id_${currentOrderIndexVal}" value = "${currentOrder.lr_id}" name = "lr_id[]"/>
 
                                         <input type = "hidden" id = "qt_book_id_${currentOrderIndexVal}" value = "${currentOrder?.book_id}" />
                                         <input type = "hidden" id = "qt_book_code_${currentOrderIndexVal}" value = "${currentOrder?.book_code}" />
@@ -3980,6 +4006,9 @@
                 let mainDocId = row?.header?.id;
                 if (type === "so") {
                     docId = row?.header?.customer_id;
+                }
+                if (type === "lr") {
+                    docId = row?.id;
                 }
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const lrId = row?.id;
@@ -5367,6 +5396,7 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
             method: 'GET',
             dataType: 'json',
             data: {
+               
                 quantity: document.getElementById('item_qty_' + itemRowId).value,
                 item_id: document.getElementById('items_dropdown_'+ itemRowId + '_value').value,
                 uom_id : document.getElementById('uom_dropdown_' + itemRowId).value,

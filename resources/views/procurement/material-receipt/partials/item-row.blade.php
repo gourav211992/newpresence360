@@ -57,6 +57,19 @@
     </td>
     <td>
         <div class="d-flex">
+            <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
+            <div class="me-50 cursor-pointer addBatchBtn" 
+            data-bs-toggle="modal" 
+            data-row-count="{{$rowCount}}" 
+            data-is-batch-number="" 
+            data-bs-target="#item-batch-modal">
+                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
+                    data-bs-original-title="Item Batch" aria-label="Item Batch">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="feather feather-map-pin">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></span>
+            </div>
             <!-- <input type="hidden" id="components_storage_packets_{{ $rowCount }}" name="components[{{$rowCount}}][storage_packets]" value=""/>
             <div class="me-50 cursor-pointer addStoragePointBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#storage-point-modal">
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"

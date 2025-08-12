@@ -153,17 +153,33 @@ class ErpFreightChargesController extends Controller
         $customerId = $request->customer_id;
 
         $vehicle = ErpVehicle::find($vehicleId);
-        
+        $vehicleTypeId = $vehicle->vehicle_type_id ?? null;
 
-       $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicle, $customerId) {
+        $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicleTypeId, $customerId) {
             $query->where('source_route_id', $sourceId)
                 ->where('destination_route_id', $destinationId)
-                ->where('vehicle_type_id', $vehicle->vehicle_type_id)
+                ->where(function ($q) use ($vehicleTypeId) {
+                    $q->when($vehicleTypeId, function ($q2) use ($vehicleTypeId) {
+                        $q2->where(function ($inner) use ($vehicleTypeId) {
+                            $inner->where('vehicle_type_id', $vehicleTypeId)
+                                    ->orWhereNull('vehicle_type_id');
+                        });
+                    }, function ($q2) {
+                        $q2->whereNull('vehicle_type_id');
+                    });
+                })
                 ->where(function ($q) use ($customerId) {
-                    $q->where('customer_id', $customerId)
-                    ->orWhereNull('customer_id');
+                    $q->when($customerId, function ($q2) use ($customerId) {
+                        $q2->where(function ($inner) use ($customerId) {
+                            $inner->where('customer_id', $customerId)
+                                    ->orWhereNull('customer_id');
+                        });
+                    }, function ($q2) {
+                        $q2->whereNull('customer_id');
+                    });
                 });
         })->first();
+
 
 
         if (!$freightCharge) {

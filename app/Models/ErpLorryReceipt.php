@@ -75,6 +75,11 @@ class ErpLorryReceipt extends Model
         return $this->hasMany(ErpLogisticsLrLocation::class, 'lorry_receipt_id', 'id');
     }
 
+     public function book()
+    {
+        return $this->belongsTo(Book::class,  'book_id');
+    }
+
     public function source()
     {
         return $this->belongsTo(ErpRouteMaster::class, 'origin_id');

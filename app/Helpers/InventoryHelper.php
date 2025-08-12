@@ -39,8 +39,9 @@ use App\Models\ItemAttribute;
 
 use App\Models\MrnHeader;
 use App\Models\MrnDetail;
-use App\Models\MrnItemLocation;
 use App\Models\MrnAttribute;
+use App\Models\MrnBatchDetail;
+use App\Models\MrnItemLocation;
 
 use App\Models\ErpSaleReturn;
 use App\Models\ErpSaleReturnItem;
@@ -619,13 +620,14 @@ class InventoryHelper
             // Receive
             if($bookType == ConstantHelper::MRN_SERVICE_ALIAS){
                 if($transactionType == 'receipt'){
-                    $documentHeader = MrnHeader::find($documentItemLocation->mrn_header_id);
-                    $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->id);
+                    $documentHeader = MrnHeader::find($documentItemLocation->header_id);
+                    $documentDetail = MrnDetail::with(['header', 'attributes'])->find($documentItemLocation->detail_id);
                     $stockLedger->book_id = @$documentHeader->book_id;
-                    if($documentItemLocation->is_inspection == 1){
+                    if($documentDetail->is_inspection == 1){
                         $qty = 0.00;
                         $putawayQty = 0.00;
-                        $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+                        // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+                        $holdQty = $documentItemLocation->inventory_uom_qty;
                         $stockLedger->receipt_qty = $qty;
                         $stockLedger->hold_qty = $holdQty;
                         $stockLedger->putaway_pending_qty = $putawayQty;
@@ -653,17 +655,19 @@ class InventoryHelper
                     $stockLedger->vendor_code = @$documentHeader->vendor_code;
 
                     // Item Location Data
-                    $stockLedger->store_id = $documentItemLocation->store_id ?? null;
-                    $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
-                    $stockLedger->store = @$documentItemLocation->erpStore->store_code;
+                    $stockLedger->store_id = $documentDetail->store_id ?? null;
+                    $stockLedger->sub_store_id = $documentDetail->sub_store_id ?? null;
+                    $stockLedger->store = @$documentDetail->erpStore->store_code;
                     $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
 
-                    $stockLedger->lot_number = $documentItemLocation?->mrnHeader?->lot_number ?? null;
-                    $stockLedger->so_id = $documentItemLocation?->so_id ?? null;
+                    $stockLedger->lot_number = $documentItemLocation?->batch_number ?? null;
+                    $stockLedger->manufacturing_year = $documentItemLocation?->manufacturing_year ?? null;
+                    $stockLedger->expiry_date = $documentItemLocation->expiry_date ? date('Y-m-d', strtotime($documentItemLocation->expiry_date)) : null;
+                    $stockLedger->so_id = $documentDetail?->so_id ?? null;
                 } else{
                     $qty = @$documentItemLocation->inventory_uom_qty;
-                    $documentHeader = MrnHeader::find($documentItemLocation->mrn_header_id);
-                    $detailId = $documentItemLocation->mrn_detail_id;
+                    $documentHeader = MrnHeader::find($documentItemLocation->header_id);
+                    $detailId = $documentItemLocation->detail_id;
                     $documentDetail = MrnDetail::with(['mrnHeader', 'attributes'])->find($detailId);
                     $stockLedger->vendor_id = @$documentHeader->vendor_id;
                     $stockLedger->vendor_code = @$documentHeader->vendor_code;
@@ -678,10 +682,10 @@ class InventoryHelper
                     $stockLedger->wip_station_id=@$documentDetail->wip_station_id;
 
                     // Item Location Data
-                    $stockLedger->store_id = $documentItemLocation->store_id ?? null;
-                    $stockLedger->store = @$documentItemLocation->erpStore->store_code;
-                    $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
-                    $stockLedger->sub_store = @$documentItemLocation->subStore->code;
+                    $stockLedger->store_id = $documentDetail->store_id ?? null;
+                    $stockLedger->store = @$documentDetail->erpStore->store_code;
+                    $stockLedger->sub_store_id = $documentDetail->sub_store_id ?? null;
+                    $stockLedger->sub_store = @$documentDetail->subStore->code;
                 }
             }
 
@@ -2398,10 +2402,12 @@ class InventoryHelper
         $user = Helper::getAuthenticatedUser();
         $invoiceLedger = [];
         $transactionType = 'receipt';
-        $documentItemLocations = MrnDetail::where('mrn_header_id',$documentHeaderId)
-            ->with(['mrnHeader',
-                'item',
-                'attributes',
+        $documentItemLocations = MrnBatchDetail::where('header_id',$documentHeaderId)
+            ->with([
+                'mrnHeader',
+                'mrnDetail',
+                'mrnDetail.item',
+                'mrnDetail.attributes',
             ])
             ->get();
         $stockLedger = StockLedger::withDefaultGroupCompanyOrg()
@@ -2412,7 +2418,7 @@ class InventoryHelper
             // ->where('document_status','draft')
             ->whereNull('utilized_id')
             ->get();
-
+        
         foreach($stockLedger as $val){
             StockLedgerItemAttribute::where('stock_ledger_id', $val->id)->delete();
             $val->delete();
@@ -2426,8 +2432,9 @@ class InventoryHelper
                 ->where('document_status','draft')
                 ->whereNotNull('utilized_id')
                 ->sum('receipt_qty');
-            if($documentItemLocation->is_inspection == 1){
-                $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+            if($documentItemLocation?->mrnDetail?->is_inspection == 1){
+                // $holdQty = ItemHelper::convertToBaseUom($documentItemLocation->item_id, $documentItemLocation->uom_id, $documentItemLocation->order_qty);
+                $holdQty = $documentItemLocation->inventory_uom_qty;
                 if($holdQty > $utilizedQty){
                     $stockLedger = new StockLedger();
                     $invoiceLedger = self::insertStockLedger($stockLedger, $documentItemLocation, $bookType, $documentStatus, $transactionType, $holdQty);

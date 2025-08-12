@@ -129,8 +129,8 @@
                                     </div>
                                     <div class="col-md-5">  
                                       
-                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', @$lr->document_status ?? 'draft') }}">
-                                       <select class="form-select disable_on_edit editable-field" onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" >
+                                       <input type="hidden" name="document_status" id="statusInput" value="{{ old('status', @$lr->document_status ?? 'draft') }}" >
+                                       <select class="form-select disable_on_edit " onchange = "getDocNumberByBookId(this);" name = "book_id" id = "series_id_input" disabled>
                                        @foreach ($series as $currentSeries)
                                        <option value="{{ $currentSeries->id }}" {{ old('book_id', @$lr->book_id) == $currentSeries->id ? 'selected' : '' }}>{{ $currentSeries->book_code }}</option>
                                        @endforeach
@@ -143,7 +143,7 @@
                                        <label class="form-label">Doc No <span class="text-danger">*</span></label>  
                                     </div>
                                     <div class="col-md-5"> 
-                                       <input type="text" class="form-control editable-field" id="document_number" name="document_number" value="{{ old('document_number', @$lr->document_number) }}" >
+                                       <input type="text" class="form-control " id="document_number" name="document_number" value="{{ old('document_number', @$lr->document_number) }}" disabled>
                                     </div>
                                  </div>
                                  <div class="row align-items-center mb-1">
@@ -288,7 +288,7 @@
                                              data-type="consignor" placeholder="Start typing customer..."
                                              value="{{ old('customer_name', @$lr->consignor->company_name ?? '') }}"  />
                                           <input type="hidden" name="customer_id" class="customer-id editable-field" data-type="consignor"
-                                             value="{{ old('customer_id', @$lr->consignor_id) }}" />
+                                             value="{{ old('customer_id', @$lr->consignor_id) }}" id="customer_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -298,7 +298,7 @@
                                              data-type="consignee" placeholder="Start typing consignee..."
                                              value="{{ old('consignee_name', @$lr->consignee->company_name ?? '') }}" />
                                           <input type="hidden" name="consignee_id" class="customer-id editable-field" data-type="consignee"
-                                             value="{{ old('consignee_id', @$lr->consignee_id) }}" />
+                                             value="{{ old('consignee_id', @$lr->consignee_id) }}" id="consignee_id"/>
                                        </div>
                                     </div>
                                     <div class="col-md-3">
@@ -459,14 +459,24 @@
                                  </div>
                               </div>
                               <div class="col-md-6 text-sm-end">
-                                
-                                 <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
-                                    <i data-feather="x-circle"></i> Delete
-                                </button>
+                               @if($lr->document_status === 'submitted' || $lr->document_status === 'approved')
+                                    <button type="button" class="btn btn-sm btn-outline-danger me-50" id="delete">
+                                        <i data-feather="x-circle"></i> Delete
+                                    </button>
 
-                                 <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
-                                 <i data-feather="plus"></i> Add New Item
-                                 </a>
+                                    <a href="#" id="ad" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add New Item
+                                    </a>
+                                @else
+                                    <button type="button" class="btn btn-sm btn-outline-danger me-50" id="deleteSelected">
+                                        <i data-feather="x-circle"></i> Delete
+                                    </button>
+
+                                    <a href="#" id="addRowBtn" class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="plus"></i> Add New Item
+                                    </a>
+                                @endif
+
                                 
                               </div>
                            </div>
@@ -593,8 +603,8 @@
                                                 </tr>
                                                 <tr>
                                                    <td class="poprod-decpt">
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle</strong>: <span id="routeVehicle">{{ @$lr->vehicleType->name ?? '-' }}</span></span>
-                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format(@$lr->vehicleType->capacity, 2) }} {{ @$lr->vehicleType->unit->name ?? ''}}</span></span> 
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Vehicle Type</strong>: <span id="routeVehicle">{{ @$lr->vehicle->vehicleType->name ?? '-' }}</span></span>
+                                                      <span class="badge rounded-pill badge-light-primary"><strong>Capacity</strong>: <span id="routeCapacity">{{ number_format(@$lr->vehicle->vehicleType->capacity, 2) }}</span></span> 
                                                    </td>
                                                 </tr>
                                              </table>
@@ -1613,10 +1623,12 @@ let fixedAmount = null;
 let sourceRouteId = null;
 let freeAmount = null;
 let globalSourceId = $('#sourceIdInput').val();
+let globalVehicleId = $('#vehicle_number_id').val();
+let globalCustomerId = $('#customer_id').val();
 
 let pricingCache = {}
 
-  function checkFreePoint(locationId = null, sourceId = null, $targetRow = null, isEditLoad = false) {
+  function checkFreePoint(locationId = null, sourceId = null, vehicleId = null, customerId = null, $targetRow = null, isEditLoad = false) {
     if (!locationId || !sourceId) return;
 
     $.ajax({
@@ -1626,6 +1638,8 @@ let pricingCache = {}
             _token: $('meta[name="csrf-token"]').attr('content'),
             location_id: locationId,
             source_id: sourceId,
+            vehicle_id: vehicleId,
+            customer_id: customerId,
         },
         success: function (res) {
             $('#fixedAmountDisplay').empty();
@@ -1741,9 +1755,13 @@ function handleLocationUpdate($input) {
     const $row = $input.closest('tr');
     const locationId = $row.find('input[name*="[location_id]"]').val();
     const sourceId = $('#sourceIdInput').val();
+    const vehicleId = $('#vehicle_number_id').val();
+    const customerId = $('#customer_id').val();
 
-    if (locationId && sourceId) {
-        checkFreePoint(locationId, sourceId, $row); 
+
+
+    if (locationId && sourceId && vehicleId && customerId) {
+        checkFreePoint(locationId, sourceId, vehicleId, customerId, $row); 
     }
 }
 

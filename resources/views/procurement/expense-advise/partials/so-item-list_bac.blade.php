@@ -3,7 +3,7 @@
         <td>
             <div class="form-check form-check-inline me-0">
                 <input class="form-check-input po_item_checkbox" type="checkbox" name="po_item_check" value="{{$soItem->id}}">
-            </div> 
+            </div>
         </td>
         <td class="fw-bolder text-dark">
             {{$soItem->so?->customer_code ?? 'NA'}} {{$soItem->so?->type ?? 'NA'}}
@@ -11,7 +11,7 @@
         <td class="fw-bolder text-dark">
             {{$soItem->so?->customer->display_name ?? 'NA'}}
         </td>
-        
+
         <td>
             {{$soItem->so?->book?->book_name ?? 'NA'}}
         </td>

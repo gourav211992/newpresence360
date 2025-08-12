@@ -26,7 +26,7 @@ $headerAttribute = $bom->bomAttributes()->where('attribute_name',$attribute->att
       <div class="mb-1">
       <label class="form-label">{{$attribute->attributeGroup->name}} <span class="text-danger">*</span></label>  
       <input type="hidden" name="attributes[{{ $index + 1 }}][attr_group_id][{{$attribute->attribute_group_id}}][attr_group_id]" value="{{$attribute->attributeGroup->id}}">
-      <select class="form-select" name="attributes[{{ $index + 1 }}][attr_group_id][{{$attribute->attribute_group_id}}][attr_name]">
+      <select class="form-select" name="attributes[{{ $index + 1 }}][attr_group_id][{{$attribute->attribute_group_id}}][attr_name]" disabled>
          <option value="">Select</option>
          @if(isset($oldAttributes[$attribute->id]))
             <option value="{{ $oldAttributes[$attribute->id]['value_id'] }}" selected>

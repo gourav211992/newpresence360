@@ -132,7 +132,7 @@
                                                         <label class="form-label">Document No <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="text" class="form-control" readonly value="{{@$mrn->document_number}}" id="document_number">
+                                                        <input type="text" class="form-control document_number" readonly value="{{@$mrn->document_number}}" id="document_number">
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -140,7 +140,7 @@
                                                         <label class="form-label">Document Date <span class="text-danger">*</span></label>
                                                     </div>
                                                     <div class="col-md-5">
-                                                        <input type="date" id="document_date" name="document_date" class="form-control" value="{{ date('Y-m-d', strtotime($mrn->document_date)) }}" >
+                                                        <input type="date" id="document_date" name="document_date" class="form-control document_date" value="{{ date('Y-m-d', strtotime($mrn->document_date)) }}" >
                                                     </div>
                                                 </div>
                                                 <div class="row align-items-center mb-1">
@@ -970,7 +970,7 @@
         selectedCostCenterId = @json($mrn->cost_center_id);
         let currentProcessType = @json($mrn->reference_type);
         var qtyChangeUrl = '{{ route("material-receipt.get.validate-quantity") }}';
-
+        let currentIndex = '';                                                                
 
         if(currentProcessType == 'jo')
         {
@@ -3326,168 +3326,6 @@
                 module_type: moduleTypes,
             };
             asnProcess(processData, 'jo-process');
-            // ids = JSON.stringify(ids);
-            // moduleTypes = JSON.stringify(moduleTypes);
-            // let type = 'jo'; // Dynamically fetch the `type` from the current route
-            // let actionUrl = '{{ route("material-receipt.process.jo-item") }}'
-            // + '?ids=' + encodeURIComponent(ids)
-            // + '&type=' + type
-            // + '&moduleTypes=' + moduleTypes
-            // + '&tableRowCount=' + tableRowCount
-            // + '&currency_id=' + encodeURIComponent(currencyId)
-            // + '&d_date=' + encodeURIComponent(transactionDate)
-            // // + '&groupItems=' + encodeURIComponent(groupItems);
-
-            // fetch(actionUrl).then(response => {
-            //     return response.json().then(data => {
-            //         if (data.status == 200) {
-            //             let joOrder = data?.data?.jobOrder;
-            //             vendorOnChange(data?.data?.vendor?.id, 'jo', joOrder.id);
-            //             let result = getSelectedJoIDS();
-            //             let newIds = result.ids;
-            //             let existingIds = localStorage.getItem('selectedJoIds');
-            //             if (existingIds) {
-            //                 existingIds = JSON.parse(existingIds);
-            //                 const mergedIds = Array.from(new Set([...existingIds, ...newIds]));
-            //                 localStorage.setItem('selectedJoIds', JSON.stringify(mergedIds));
-            //             } else {
-            //                 localStorage.setItem('selectedJoIds', JSON.stringify(newIds));
-            //             }
-
-            //             let existingIdsUpdate = JSON.parse(localStorage.getItem('selectedJoIds'));
-            //             $("[name='po_item_ids']").val(existingIdsUpdate.join(','));
-
-            //             let vendor = data?.data?.vendor || '';
-            //             let finalDiscounts = data?.data?.finalDiscounts;
-            //             let finalExpenses = data?.data?.finalExpenses;
-
-            //             if ($("#itemTable .mrntableselectexcel").find("tr[id*='row_']").length) {
-            //                 $("#itemTable .mrntableselectexcel tr[id*='row_']:last").after(data.data
-            //                     .pos);
-            //             } else {
-            //                 $("#itemTable .mrntableselectexcel").empty().append(data.data.pos);
-            //             }
-            //             initializeAutocomplete2(".comp_item_code");
-            //             $("#joModal").modal('hide');
-            //             $("select[name='currency_id']").prop('disabled', true);
-            //             $("select[name='payment_term_id']").prop('disabled', true);
-            //             $("#vendor_name").prop('readonly', true);
-            //             $(".editAddressBtn").addClass('d-none');
-            //             $("#vendor_name").prop('readonly', true);
-            //             if(joOrder.type == 'supplier-invoice'){
-            //                 $("[name='supplier_invoice_no']").val(joOrder.document_number);
-            //                 $("[name='supplier_invoice_date']").val(joOrder.document_date);
-            //             } else{
-            //                 $("[name='supplier_invoice_no']").val();
-            //                 $("[name='supplier_invoice_date']").val();
-            //             }
-            //             let locationId = $("[name='header_store_id']").val();
-            //             // getLocation(locationId);
-
-            //             if (finalDiscounts.length) {
-            //                 let rows = '';
-            //                 finalDiscounts.forEach(function(item, index) {
-            //                     index = index + 1;
-            //                     rows += `<tr class="display_summary_discount_row">
-            //                             <td>${index}</td>
-            //                             <td>${item.ted_name}
-            //                                 <input type="hidden" value="${item.ted_id}" name="disc_summary[${index}][ted_d_id]">
-            //                                 <input type="hidden" value="" name="disc_summary[${index}][d_id]">
-            //                                 <input type="hidden" value="${item.ted_name}" name="disc_summary[${index}][d_name]">
-            //                             </td>
-            //                             <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-            //                                 <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="disc_summary[${index}][d_perc]">
-            //                                 <input type="hidden" value="${item.ted_perc}" name="disc_summary[${index}][hidden_d_perc]">
-            //                             </td>
-            //                             <td class="text-end">
-            //                             <input type="hidden" value="" name="disc_summary[${index}][d_amnt]">
-            //                             </td>
-            //                             <td>
-            //                                 <a href="javascript:;" class="text-danger deleteSummaryDiscountRow">
-            //                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            //                                 </a>
-            //                             </td>
-            //                         </tr>`
-            //                 });
-
-            //                 $("#summaryDiscountTable tbody").find('.display_summary_discount_row')
-            //                     .remove();
-            //                 $("#summaryDiscountTable tbody").find('#disSummaryFooter').before(rows);
-            //                 $("#f_header_discount_hidden").removeClass('d-none');
-            //             } else {
-            //                 $("#f_header_discount_hidden").addClass('d-none');
-            //             }
-
-            //             if (finalExpenses.length) {
-            //                 let rows = '';
-            //                 finalExpenses.forEach(function(item, index) {
-            //                     index = index + 1;
-            //                     rows += `<tr class="display_summary_exp_row">
-            //                             <td>${index}</td>
-            //                             <td>${item.ted_name}
-            //                                 <input type="hidden" value="${item.ted_id}" name="exp_summary[${index}][ted_e_id]">
-            //                                 <input type="hidden" value="" name="exp_summary[${index}][e_id]">
-            //                                 <input type="hidden" value="${item.ted_name}" name="exp_summary[${index}][e_name]">
-            //                             </td>
-            //                             <td class="text-end">${typeof item.ted_perc === "number" ? '0' : item.ted_perc}
-            //                                 <input type="hidden" value="${typeof item.ted_perc === "number" ? '0' : item.ted_perc}" name="exp_summary[${index}][e_perc]">
-            //                                 <input type="hidden" value="${item.ted_perc}" name="exp_summary[${index}][hidden_e_perc]">
-            //                             </td>
-            //                             <td class="text-end">
-            //                             <input type="hidden" value="" name="exp_summary[${index}][e_amnt]">
-            //                             </td>
-            //                             <td>
-            //                                 <a href="javascript:;" class="text-danger deleteExpRow">
-            //                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-            //                                 </a>
-            //                             </td>
-            //                         </tr>`;
-
-            //                 });
-            //                 $("#summaryExpTable tbody").find('.display_summary_exp_row').remove();
-            //                 $("#summaryExpTable tbody").find('#expSummaryFooter').before(rows);
-            //             }
-            //             initializeAutocomplete2(".comp_item_code");
-            //             focusAndScrollToLastRowInput();
-            //             setTimeout(() => {
-            //                 setTableCalculation(true);
-            //                 if(idsLength > 1)
-            //                 {
-            //                     $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
-            //                         if(tableRowCount>0)
-            //                         {
-            //                             currentIndex = tableRowCount + 1;
-            //                         }
-            //                         let currentIndex = index + 1;
-            //                         setAttributesUIHelper(currentIndex,"#itemTable");
-            //                     });
-            //                 }
-            //                 currentIndex = tableRowCount + 1;
-            //                 setAttributesUIHelper(currentIndex,"#itemTable");
-            //             }, 500);
-            //         }
-            //         if (data.status == 422) {
-            //             $(".editAddressBtn").removeClass('d-none');
-            //             $("#vendor_name").val('').prop('readonly', false);
-            //             $("#vendor_id").val('');
-            //             $("#vendor_code").val('');
-            //             $("#hidden_state_id").val('');
-            //             $("#hidden_country_id").val('');
-            //             $("select[name='currency_id']").empty().append(
-            //                 '<option value="">Select</option>').prop('readonly', false);
-            //             $("select[name='payment_term_id']").empty().append(
-            //                 '<option value="">Select</option>').prop('readonly', false);
-            //             $(".shipping_detail").text('-');
-            //             $(".billing_detail").text('-');
-            //             Swal.fire({
-            //                 title: 'Error!',
-            //                 text: data.message,
-            //                 icon: 'error',
-            //             });
-            //             return false;
-            //         }
-            //     });
-            // });
         });
 
          /*Open So model*/
@@ -3953,11 +3791,11 @@
                             if(idsLength > 1)
                             {
                                 $("#itemTable .mrntableselectexcel tr").each(function(index, item) {
+                                    currentIndex = index + 1;
                                     if(tableRowCount>0)
                                     {
                                         currentIndex = tableRowCount + 1;
                                     }
-                                    let currentIndex = index + 1;
                                     setAttributesUIHelper(currentIndex,"#itemTable");
                                 });
                             }

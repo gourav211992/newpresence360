@@ -150,7 +150,7 @@
                                                     if (isset($sequence['alias'])) {
                                                         $headersAlias = $sequence['alias'];
                                                     }
-                                                    
+
                                                     if ($headersAlias) {
                                                         $val = $headersAlias;
                                                     } else {
@@ -160,7 +160,7 @@
                                                             $val = $val[0];
                                                         }
                                                     }
-                                                    
+
                                                 @endphp
                                                 <th>{{ $val }}</th>
                                             @else
@@ -180,7 +180,7 @@
                                                                 $val = $val[0];
                                                             }
                                                         }
-                                                        
+
                                                     @endphp
                                                     @if ($sequence['type'] == 'components')
                                                         @if ($templateData->rate == '1')
@@ -228,7 +228,7 @@
                     <tbody>
                         @foreach ($dataList as $row)
                             @php
-                                
+
                                 $data = $row['record'];
                             @endphp
                             <tr>
@@ -259,11 +259,11 @@
                                                     if (isset($r->slipLogs)) {
                                                         foreach ($r->slipLogs as $logs) {
                                                             if ($logs->type_id == $val1) {
-                                                                $val = round($logs->calculate_salary, 2);
-                                                                $rate = round($logs->actual_salary, 2);
-                                                    
-                                                                $arrear = round($logs->arrear_salary, 2);
-                                                    
+                                                                $val = number_format($logs->calculate_salary, 2);
+                                                                $rate = number_format($logs->actual_salary, 2);
+
+                                                                $arrear = number_format($logs->arrear_salary, 2);
+
                                                                 if (isset($componentTotal[$m][$val1])) {
                                                                     $componentTotal[$m][$val1] += $val;
                                                                 } else {
@@ -301,7 +301,7 @@
                                             <th></th>
                                             @else
                                                 @foreach ($monthData as $m)
-                                                        @php 
+                                                        @php
                                                             $val = explode('...', $sequence['value']);
                                                             $val = $val[0];
                                                         @endphp
@@ -322,7 +322,7 @@
                                                         @endif
                                                 @endforeach
                                         @endif
-                                    @endforeach                                     
+                                    @endforeach
                                 </tr>
                             </tfoot> --}}
                     </table>
@@ -686,7 +686,7 @@
                                 //                     ],
                                 //                     margin: 10
                                 //                 }
-                                //             }); 
+                                //             });
                                 //         },
                                 //     },
                                 // {

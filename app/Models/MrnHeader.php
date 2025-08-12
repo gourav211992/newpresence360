@@ -231,6 +231,16 @@ class MrnHeader extends Model
         return $this->hasMany(MrnDetail::class, 'mrn_header_id');
     }
 
+    public function assetDetails()
+    {
+        return $this->hasMany(MrnAssetDetail::class, 'header_id');
+    }
+
+    public function batches()
+    {
+        return $this->hasMany(MrnBatchDetail::class, 'header_id');
+    }
+
     public function itemLocations()
     {
         return $this->hasMany(MrnItemLocation::class, 'mrn_header_id');

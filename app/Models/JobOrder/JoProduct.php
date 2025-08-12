@@ -3,6 +3,7 @@
 namespace App\Models\JobOrder;
 
 use App\Helpers\InventoryHelper;
+use App\Models\ErpItem;
 use App\Models\ErpSaleOrder;
 use App\Models\Hsn;
 use App\Models\Item;
@@ -27,6 +28,7 @@ class JoProduct extends Model
         'pwo_so_mapping_id',
         'so_id',
         'item_id',
+        'service_item_id',
         'item_code',
         'hsn_id',
         'hsn_code',
@@ -52,6 +54,7 @@ class JoProduct extends Model
         'item' => 'item_id',
         'uom' => 'uom_id',
         'hsn' => 'hsn_id',
+        'sow' => 'service_item_id',
         'inventoryUom' => 'inventory_uom_id'
     ];
 
@@ -79,6 +82,10 @@ class JoProduct extends Model
     public function so()
     {
         return $this->belongsTo(ErpSaleOrder::class, 'so_id');
+    }
+    public function sow()
+    {
+        return $this->belongsTo(ErpItem::class,'service_item_id');
     }
 
     public function uom()

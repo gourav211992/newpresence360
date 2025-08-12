@@ -312,6 +312,11 @@ class ErpInvoiceItem extends Model
         return $this -> belongsTo(Hsn::class);
     }
 
+     public function lorry()
+    {
+        return $this -> belongsTo(ErpLorryReceipt::class, 'lr_id');
+    }
+
     public function lease()
     {
         return $this -> belongsTo(LandLease::class, 'land_lease_id');
