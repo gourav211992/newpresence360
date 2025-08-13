@@ -76,6 +76,7 @@ use App\Models\Note;
 use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
 use App\Models\ErpFyMonth;
+use App\Models\MrnAssetDetail;
 use Monolog\Handler\IFTTTHandler;
 
 class Helper
@@ -4040,22 +4041,47 @@ class Helper
 
     }
 
-    public static function mrnAssetRegister($mrn_id, $category_id, $asset_name, $capitalize_date, $life)
+    public static function mrnAssetRegister($mrn_id)
     {
         DB::beginTransaction();
         try {
-            // Input validation
-            if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life)) {
+            $mrn_asset = MrnAssetDetail::where('header_id',$mrn_id)->first();
+            if(empty($mrn_asset)){
                 DB::rollBack();
                 return [
                     'status' => false,
-                    'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life) are required.'
+                    'message' => 'MRN not found'
+                ];
+            }
+            $salvageValueTotal = 0;
+
+            $category_id = $mrn_asset->asset_category_id;
+            $asset_name = $mrn_asset->asset_name;
+            $capitalize_date = $mrn_asset->capitalization_date;
+            $life = $mrn_asset->estimated_life;
+            $detail_id = json_decode($mrn_asset->detail_id);
+
+            // Example: Ensure $detail_id is an array of integers
+            if (!is_array($detail_id) || !array_reduce($detail_id, fn($carry, $id) => $carry && is_int($id), true)) {
+                DB::rollBack();
+                return [
+                    'status' => false,
+                    'message' => 'detail_id must be an array of integers.'
+                ];
+            }
+
+            // Input validation
+            if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life) || empty($detail_id)) {
+                DB::rollBack();
+                return [
+                    'status' => false,
+                    'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life, detail_id) are required.'
                 ];
             }
 
             // Validate capitalize_date format (Y-m-d)
             try {
-                $parsedDate = Carbon::parse($capitalize_date);
+                $capitalize_date = Carbon::parse($capitalize_date)->format('Y-m-d');
             } catch (Exception $e) {
                 DB::rollBack();
                 return [
@@ -4128,8 +4154,10 @@ class Helper
             }
 
             $glPostingBookId = $glPostingBookParam->parameter_value[0];
+            $filteredItems = $mrn->items->whereIn('id', $detail_id);
+            $asset_codes=[];
 
-            foreach ($mrn->items as $mrn_detail) {
+            foreach ($filteredItems as $mrn_detail) {
                 $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
                     ->where('mrn_header_id', $mrn->id)->first();
 
@@ -4223,7 +4251,12 @@ class Helper
                     $asset->current_value,
                     $asset->salvage_value
                 );
+                $asset_codes[] = $asset_code;
+                $salvageValueTotal += $salvageValue;
             }
+            $mrn_asset->salvage_value = $salvageValueTotal;
+            $mrn_asset->asset_code = $asset_codes;
+            $mrn_asset->save();
 
             DB::commit();
 
