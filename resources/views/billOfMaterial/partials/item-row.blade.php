@@ -108,6 +108,16 @@
       <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" name="product_vendor" />
       <input type="hidden" name="components[{{$rowCount}}][vendor_id]">
    </td>
+
+   @if(isset($bacthInheritRequird) && $bacthInheritRequird)
+      <td id="td_bacth_inherit_requird">
+         <div class="form-check form-check-primary custom-checkbox">
+            <input type="checkbox" class="form-check-input is_inherit_batch_item" id="is_inherit_batch_item" name="components[{{$rowCount}}][is_inherit_batch_item]">
+            <label class="form-check-label" for="is_inherit_batch_item"></label>
+         </div>
+      </td>
+   @endif
+
    <td>
       <div class="d-flex align-items-center justify-content-center">
       <input type="hidden" name="components[{{$rowCount}}][remark]" />

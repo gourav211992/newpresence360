@@ -3,6 +3,7 @@
 namespace App\Lib\Services\WHM;
 
 use App\Helpers\CommonHelper;
+use App\Helpers\ConstantHelper;
 use App\Models\MrnDetail;
 use App\Models\WHM\ErpItemUniqueCode;
 use App\Models\WHM\ErpWhmJob;
@@ -24,6 +25,7 @@ class WhmJob
         }
 
         $type = CommonHelper::getJobType($namespace);
+        $trnstype = CommonHelper::getJobTransactionType($namespace);
 
         // Step 2: Get or Create Job (prevents duplicate job on edit)
         $job = ErpWhmJob::firstOrCreate(
@@ -37,6 +39,9 @@ class WhmJob
                 'company_id' => $header->company_id,
                 'status' => 'pending',
                 'type' => $type,
+                'trns_type' => $trnstype,
+                'store_id' => $header->store_id ?? null,
+                'sub_store_id' => isset($header->sub_store_id) ? $header->sub_store_id : null,
             ]
         );
 
@@ -61,12 +66,12 @@ class WhmJob
         // Step 3: Loop through each detail and create unique item codes
         foreach ($details as $detail) {
             $detalNamespace = get_class($detail);
-            $this->generateUniqueQRCodes($header, $job, $detalNamespace, $detail, $type);
+            $this->generateUniqueQRCodes($header, $job, $detalNamespace, $detail, $type, $trnstype);
         }
 
     }
 
-    private function generateUniqueQRCodes($header, $job, $namespace, $detail, $type)
+    private function generateUniqueQRCodes($header, $job, $namespace, $detail, $type, $trnstype)
     {
         $attributes = $this->getAttributes($detail);
         $qty = intval($detail->inventory_uom_qty);
@@ -75,14 +80,14 @@ class WhmJob
         if ($namespace === \App\Models\ErpInvoiceItem::class && isset($detail->pl_item_id) && $detail->pl_item_id) {
             // $qty = intval($detail->order_qty);
             $existingQRCodes = $this->getPickingQr($detail->plItem, $qty);
-            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::ISSUE);
+            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::ISSUE, $trnstype);
             return; // exit after copying
         }
 
         // Check if this is MrnDetail and has gate_entry_detail_id
         if ($namespace === \App\Models\MrnDetail::class && isset($detail->gate_entry_detail_id) && $detail->gate_entry_detail_id) {
             $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
-            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT);
+            $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype);
             return; // exit after copying
         }
 
@@ -91,7 +96,7 @@ class WhmJob
             $mrnDetail = MrnDetail::find($detail->mrn_detail_id);
             if (isset($mrnDetail->gate_entry_detail_id) && $mrnDetail->gate_entry_detail_id) {
                 $existingQRCodes = $this->getUnloadingQr($detail->geItem, $qty);
-                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT);
+                $this->copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, CommonHelper::PENDING, CommonHelper::RECEIPT, $trnstype);
                 return; // exit after copying
             }
         }
@@ -113,6 +118,7 @@ class WhmJob
                     'morphable_type' => $namespace,
                     'morphable_id' => $detail->id,
                     'job_type' => $type,
+                    'trns_type' => $trnstype,
                     'doc_type' => CommonHelper::RECEIPT,
                     'doc_no' => $header->document_number ?? null,
                     'doc_date' => $header->document_date ?? null,
@@ -172,7 +178,7 @@ class WhmJob
         return $existingQRCodes;
     }
 
-    private function copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, $status, $docType = CommonHelper::RECEIPT){
+    private function copyQrCodes($existingQRCodes,$detail, $header, $job, $namespace, $attributes, $type, $status, $docType = CommonHelper::RECEIPT, $trnstype){
         foreach ($existingQRCodes as $code) {
             $newRecord = ErpItemUniqueCode::create([
                 'uid' => $this->generateUniqueUid(),
@@ -183,6 +189,7 @@ class WhmJob
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
                 'job_type' => $type,
+                'trns_type' => $trnstype,
                 'doc_type' => $docType,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
@@ -231,14 +238,14 @@ class WhmJob
         return $uid;
     }
 
-    public function generateQRCodesForPickList($detail, $header, $jobId, $packetIds, $storagePointId, $user, $jobType)
+    public function generateQRCodesForPickList($detail, $header, $jobId, $packetIds, $storagePointId, $user, $jobType, $trnstype)
     {
         $attributes = $detail->attributes;
 
         $packets = ErpItemUniqueCode::whereIn('item_uid', $packetIds)
             ->where('storage_point_id',$storagePointId)
             ->whereNull('utilized_id')
-            ->where('job_type', CommonHelper::PUTAWAY)
+            ->where('trns_type', $trnstype)
             ->where('status', CommonHelper::SCANNED)
             ->get();
 
@@ -254,6 +261,7 @@ class WhmJob
                 'morphable_type' => $namespace,
                 'morphable_id' => $detail->id,
                 'job_type' => $jobType,
+                'trns_type' => ConstantHelper::PL_SERVICE_ALIAS,
                 'doc_type' => CommonHelper::RECEIPT,
                 'doc_no' => $header->document_number ?? null,
                 'doc_date' => $header->document_date ?? null,
@@ -292,7 +300,8 @@ class WhmJob
                 'company_id' => $item->company_id,
                 'morphable_type' => $item->morphable_type,
                 'morphable_id' => $item->morphable_id,
-                'job_type' => $item->job_type,
+                'job_type' => CommonHelper::TRANSFERRED,
+                'trns_type' => $item->trns_type,
                 'doc_type' => $item->doc_type,
                 'doc_no' => $item->doc_no,
                 'doc_date' => $item->doc_date,
@@ -317,7 +326,7 @@ class WhmJob
             ]);
 
             $item->utilized_id = $newRecord->uid;
-            $item->status = CommonHelper::TRANSFERRED;
+            // $item->status = CommonHelper::TRANSFERRED;
             $item->save();
         }
     }

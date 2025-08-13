@@ -143,10 +143,14 @@ class PicklistTaskController extends Controller
         $plItemId = $plItem->id;
 
         if($plItem){
-            $mrnIds = $plItem->stockReservation()
+            $reservedStock = $plItem->stockReservation()
                 ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
-                ->where('issue_header_id',$plItem->pl_header_id)
-                ->pluck('receipt_detail_id')
+                ->where('issue_header_id',$plItem->pl_header_id);
+
+            $transType = $reservedStock->pluck('receipt_book_type')
+                ->toArray();
+
+            $mrnIds = $reservedStock->pluck('receipt_detail_id')
                 ->toArray();
 
             $itemId = $plItem->item_id;
@@ -154,9 +158,9 @@ class PicklistTaskController extends Controller
             // STEP 1: Fetch quantities grouped by storage_point_id
             $storageData = ErpItemUniqueCode::where('item_id', $itemId)
                 ->where('store_id', $storeId)
-                ->where('job_type', CommonHelper::PUTAWAY)
+                ->whereIn('trns_type', $transType)
                 ->where('doc_type', CommonHelper::RECEIPT)
-                // ->whereNull('utilized_id')
+                ->whereNull('utilized_id')
                 ->whereIn('morphable_id',$mrnIds)
                 ->select('storage_point_id', DB::raw('COUNT(*) as quantity'))
                 ->groupBy('storage_point_id')
@@ -243,11 +247,24 @@ class PicklistTaskController extends Controller
             ]);
         }
 
+        $plHeaderId = $job->morphable_id;
+        $reservedStock = $detail->stockReservation()
+            ->where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+            ->where('issue_header_id',$plHeaderId)
+            ->where('issue_detail_id',$request->pl_item_id);
+
+        $transType = $reservedStock->pluck('receipt_book_type')
+            ->toArray();
+
+        $mrnIds = $reservedStock->pluck('receipt_detail_id')
+            ->toArray();
+
         $packets = ErpItemUniqueCode::whereIn('item_uid', $request->packet_ids)
             ->where('storage_point_id',$request->storage_point_id)
             ->where('item_id',$detail->item_id)
             ->whereNull('utilized_id')
-            ->where('job_type', CommonHelper::PUTAWAY)
+            ->whereIn('morphable_id',$mrnIds)
+            ->whereIn('trns_type', $transType)
             ->pluck('item_uid')
             ->toArray();
 
@@ -294,7 +311,7 @@ class PicklistTaskController extends Controller
             }
 
             $header = $job->morphable;
-            (new WhmJob())->generateQRCodesForPickList($detail, $header, $job->id, $request->packet_ids, $request->storage_point_id, $user, CommonHelper::PICKING);
+            (new WhmJob())->generateQRCodesForPickList($detail, $header, $job->id, $request->packet_ids, $request->storage_point_id, $user, CommonHelper::PICKING, $transType);
 
 
             \DB::commit();
@@ -466,17 +483,21 @@ class PicklistTaskController extends Controller
         $plHeaderId = $job->morphable_id;
         $storagePointId = $request->storage_point_id;
 
-        $mrnIds = StockLedgerReservation::where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
+        $reservedStock = StockLedgerReservation::where('issue_book_type',ConstantHelper::PL_SERVICE_ALIAS)
             ->where('issue_header_id',$plHeaderId)
-            ->where('issue_detail_id',$request->pl_item_id)
-            ->pluck('receipt_detail_id')
+            ->where('issue_detail_id',$request->pl_item_id);
+
+        $transType = $reservedStock->pluck('receipt_book_type')
+            ->toArray();
+
+        $mrnIds = $reservedStock->pluck('receipt_detail_id')
             ->toArray();
 
         $pendingTasks = ErpItemUniqueCode::with(['storagePoint' => function($q){
                 $q->select('id', 'storage_number');
             }])
             ->whereIn('morphable_id',$mrnIds)
-            ->where('job_type',CommonHelper::PUTAWAY)
+            ->whereIn('trns_type',$transType)
             ->whereNull('utilized_id')
             ->when($storagePointId,function($q) use($storagePointId){
                 $q->where('storage_point_id',$storagePointId);

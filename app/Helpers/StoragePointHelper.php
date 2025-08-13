@@ -27,7 +27,9 @@ use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
 use App\Models\ErpItem;
+use App\Models\MrnDetail;
 use App\Models\MrnItemLocation;
+use App\Models\WHM\ErpItemUniqueCode;
 use Illuminate\Support\Facades\Log;
 
 
@@ -350,9 +352,8 @@ class StoragePointHelper
     }
 
     // Save Storage Points
-    public static function saveStoragePoints($documentHeader, $documentDetailId=NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
+    public static function saveStoragePoints($documentHeader, $documentDetailId = NULL, $bookType, $documentStatus, $transactionType = NULL, $stockReservation = NULL)
     {
-        $user = Helper::getAuthenticatedUser();
         $data = array();
         try{
             if(empty($documentDetailId)){
@@ -367,7 +368,7 @@ class StoragePointHelper
                 ->where('store_id',$documentHeader->store_id)
                 ->where('sub_store_id',$documentHeader->sub_store_id)
                 ->where('book_type','=',$bookType)
-                ->whereIn('document_status', ['approved','posted','approval_not_required'])
+                ->whereIn('document_status', ConstantHelper::DOCUMENT_STATUS_APPROVED)
                 ->whereNull('utilized_id')
                 ->get();
 
@@ -378,31 +379,23 @@ class StoragePointHelper
             }
 
             foreach($stockLedger as $val){
-                $mrnItemLocations = MrnItemLocation::with(
-                    [
-                        'mrnHeader',
-                        'mrnDetail',
-                    ]
-                )
-                ->where('mrn_header_id', $val->document_header_id)
-                ->where('mrn_detail_id', $val->document_detail_id)
-                ->whereNotNull('storage_number')
-                ->whereNotNull('packet_number')
-                ->get();
+                $mrnDetail = MrnDetail::find($val->document_detail_id);
 
-                foreach($mrnItemLocations as $mrnItemLocation){
-                    $stockLedgerStoragePoint = new StockLedgerStoragePoint();
-                    $stockLedgerStoragePoint->stock_ledger_id = $val->id;
-                    $stockLedgerStoragePoint->item_id = $val->item_id;
-                    $stockLedgerStoragePoint->store_id = $val->store_id;
-                    $stockLedgerStoragePoint->sub_store_id = $val->sub_store_id;
-                    $stockLedgerStoragePoint->wh_detail_id = $mrnItemLocation->wh_detail_id;
-                    $stockLedgerStoragePoint->quantity = $mrnItemLocation->inventory_uom_qty;
-                    $stockLedgerStoragePoint->packet_number = $mrnItemLocation->packet_number;
-                    $stockLedgerStoragePoint->storage_number = $mrnItemLocation->storage_number;
-                    $stockLedgerStoragePoint->status = $documentStatus;
-                    $stockLedgerStoragePoint->save();
-                }
+                $scannedPacketCount = ErpItemUniqueCode::where('morphable_id',$val->document_detail_id)
+                        ->where('trns_type',$bookType)
+                        ->where('status',CommonHelper::SCANNED)
+                        ->whereNull('utilized_id')
+                        ->count();
+
+                $orderQty =  ItemHelper::convertToAltUom($mrnDetail->item_id, $mrnDetail->uom_id, $scannedPacketCount ?? 0);
+                $mrnDetail->inventory_uom_qty = $scannedPacketCount;
+                $mrnDetail->order_qty = $orderQty;
+                $mrnDetail->save();
+
+                $val->receipt_qty = $mrnDetail->inventory_uom_qty;
+                $val->putaway_pending_qty = 0;
+                $val->save();
+                
             }
             
             $message = "Storage points saved successfully.";
@@ -594,6 +587,41 @@ class StoragePointHelper
             foreach ($structureDetails as $level) {
                 if (!empty($level['level-values']) && in_array((string) $storagePointId, $level['level-values'])) {
                     return true; // ✅ Found
+                }
+            }
+        
+
+            // Parent chain matching
+            $parentChain = [];
+            $currentId = $storagePointId;
+
+            while ($currentId) {
+                $storage = \DB::table('erp_wh_details')->find($currentId);
+                if (!$storage) break;
+
+                $parentChain[$storage->wh_level_id] = $currentId;
+                $currentId = $storage->parent_id;
+            }
+
+            foreach ($structureDetails as $level) {
+                $levelId = $level['level-id'] ?? null;
+                $levelValues = $level['level-values'] ?? [];
+
+                if ($levelId && isset($parentChain[$levelId])) {
+                    if (in_array((string) $parentChain[$levelId], $levelValues)) {
+                        return true; // ✅ Mapped via parent
+                    }
+                }
+            }
+
+            // Now: Check if the storagePointId is a **child** of mapped level-values
+            foreach ($structureDetails as $level) {
+                $levelValues = $level['level-values'] ?? [];
+                foreach ($levelValues as $mappedId) {
+                    $childIds = self::findChildStoragePoints($mappedId); // Same function as in getStoragePoints()
+                    if (in_array($storagePointId, $childIds)) {
+                        return true; // ✅ Found in children
+                    }
                 }
             }
         }

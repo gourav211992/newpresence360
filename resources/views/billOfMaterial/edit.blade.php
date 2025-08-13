@@ -36,7 +36,6 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                   @if($buttons['draft'] || $buttons['amend'] && intval(request('amendment') ?? 0))
                     <button type="button" class="btn btn-danger btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light delete-btn"
                         data-url="{{ url('bill-of-material/') }}/{{ $bom->id }}/{{ $buttons['amend'] ? $buttons['amend'] : 0 }}" 
-                        {{-- data-url="{{ route('bill.of.material.destroy', $bom->id, $buttons['amend'] && intval(request('amendment') ?? 0)) }}"  --}}
                         data-redirect="{{ url($routeAlias) }}"
                         data-message="Are you sure you want to delete this record?">
                     <i data-feather="trash-2" class="me-50"></i> Delete
@@ -316,6 +315,7 @@ if($routeAlias == ConstantHelper::BOM_SERVICE_ALIAS)
                                                         <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
                                                         <th style="min-width: 100px;" id="station_required">Station</th>
                                                         <th style="min-width: 100px;">Vendor</th>
+                                                        <th style="min-width: 100px;" id="th_bacth_inherit_requird">Inherit <br/>Batch</th>
                                                         <th style="width: 20px;"></th>
                                                     </tr>
                                                 </thead>
@@ -813,6 +813,14 @@ $(function(){
       }
     });
 
+    $('#itemTable').on('change', '.is_inherit_batch_item', function() {
+        $(this).closest('tbody')
+            .find('.is_inherit_batch_item')
+            .prop('checked', false)
+            .val('0');          // reset all to no
+        $(this).prop('checked', true).val('1'); // set only this one to yes
+    });
+
     // Set Approval Modal Data
     $(document).on('click','#approval-clone-btn',(e) => {
 
@@ -986,6 +994,11 @@ $(function(){
             }
 
        }
+
+       // Handle Batch Inheritance
+        if (parameters.bacth_inherit_requird && parameters.bacth_inherit_requird.includes('no')) {
+            $('#th_bacth_inherit_requird').hide();
+        }
         let reference_from_service = parameters?.reference_from_service;
         if(reference_from_service?.length) {
             let c_bom = '{{ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';

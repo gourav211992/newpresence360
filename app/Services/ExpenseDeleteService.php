@@ -20,30 +20,40 @@ class ExpenseDeleteService
             // GateEntryTed::whereIn('id', $deletedData['deletedHeaderExpTedIds'] ?? [])->delete();
             // GateEntryTed::whereIn('id', $deletedData['deletedHeaderDiscTedIds'] ?? [])->delete();
             // GateEntryTed::whereIn('id', $deletedData['deletedItemDiscTedIds'] ?? [])->delete();
-
             // Delete MRN items
             if (!empty($deletedData['deletedMrnItemIds'])) {
                 $mrnItems = ExpenseDetail::whereIn('id', $deletedData['deletedMrnItemIds'])->get();
 
                 foreach ($mrnItems as $mrnItem) {
-                    $orderQty = $mrnItem->accepted_qty;
+                $orderQty = $mrnItem->accepted_qty;
 
-                    $mrnItem->expenseTed()->delete();
-                    $mrnItem->attributes()->delete();
-                    if ($mrn->purchase_order_id) {
+                $mrnItem->extraAmounts()->delete();
+                $mrnItem->attributes()->delete();
+
+                switch ($mrn->reference_type) {
+                    case ConstantHelper::JO_SERVICE_ALIAS:
+                        if ($joItem = $mrnItem->joItem) {
+                            $joItem->expense_advise_qty -= $orderQty;
+                            $joItem->save();
+                        }
+                        break;
+
+                    case ConstantHelper::PO_SERVICE_ALIAS:
                         if ($poItem = $mrnItem->poItem) {
                             $poItem->expense_advise_qty -= $orderQty;
                             $poItem->save();
                         }
-                    }
-                    $mrnItem->delete();
+                        break;
                 }
+
+                $mrnItem->delete();
+            }
             }
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage(). ' on line ' . $e->getLine(),
             ], 500);
         }
 

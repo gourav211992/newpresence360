@@ -345,6 +345,12 @@ class JoController extends Controller
     {
         DB::beginTransaction();
         try {
+            if ($request->has('tnc') && strlen(strip_tags($request->tnc)) > 250) {
+                return response()->json([
+                    'message' => 'The terms and conditions cannnot be greater than 250 characters.',
+                    'error' => 'tnc exceeds maximum length',
+                ], 422);
+            }
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
             if ($response['status'] === 200) {
@@ -374,6 +380,7 @@ class JoController extends Controller
             $po->book_id = $request->book_id;
             $po->book_code = $request->book_code;
             $document_number = $request->document_number ?? null;
+            $po -> tnc = $request->tnc ?? null;
             $po->gate_entry_required = $parameters['gate_entry_required'][0] ?? 'no';
             $po->partial_delivery = $parameters['partial_delivery_allowed'][0] ?? 'no';
             /**/
@@ -467,6 +474,13 @@ class JoController extends Controller
                 foreach($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
                     $serviceItem = Item::find($component['sow_id'] ?? null);
+                    if(!$serviceItem)
+                    {
+                        return response()->json([
+                            'message' => 'Illegal Service Choice',
+                            'error' => '',
+                        ],422);
+                    }
                     $inventory_uom_id = null;
                     $inventory_uom_code = null;
                     $inventory_uom_qty = 0.00;
@@ -667,6 +681,12 @@ class JoController extends Controller
     # Purchase Order store
     public function update(JoRequest $request, $id)
     {
+        if ($request->has('tnc') && strlen(strip_tags($request->tnc)) > 250) {
+            return response()->json([
+                'message' => 'The terms and conditions cannnot be greater than 250 characters.',
+                'error' => 'terms_data exceeds maximum length',
+            ], 422);
+        }
         $po = JobOrder::find($id);
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
@@ -752,6 +772,7 @@ class JoController extends Controller
             # Bom Header save
             $po->document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $po->remarks = $request->remarks ?? null;
+            $po->tnc = $request->tnc ?? null;
             $po->payment_term_id = $request->payment_term_id;
             $po->payment_term_code = $request->payment_term_code;
             $po->store_id = $request->store_id;

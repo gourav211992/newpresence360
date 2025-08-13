@@ -1,4 +1,4 @@
-@foreach($poItems as $key => $item)
+@foreach($joItems as $key => $item)
     @php
         $rowCount = $tableRowCount + $key + 1;
         $poQty = $item->avail_order_qty ?? 0.00;
@@ -13,8 +13,8 @@
         $headerExpPercentage = $grossItemValue > 0 ? ($headerExpAmount / $grossItemValue) * 100 : 0;
     @endphp
     <tr data-group-item="{{json_encode($item)}}" id="row_{{$rowCount}}" data-index="{{$rowCount}}" @if($rowCount < 2 ) class="trselected" @endif>
-        <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->purchase_order_id}}">
-        <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{$item->id}}">
+        <input type="hidden" name="components[{{$rowCount}}][job_order_id]" value="{{$item->jo_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][jo_detail_id]" value="{{$item->id}}">
         <td class="customernewsection-form">
             <div class="form-check form-check-primary custom-checkbox">
                 <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -66,7 +66,7 @@
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="{{$availableQty}}" step="any" />
+            value="{{$availableQty}}" step="any" {{ $readOnly }} />
         </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
@@ -120,8 +120,9 @@
                 <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>        <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span></div>
             </div>
         </td>
-        <input type="hidden" name="components[{{$rowCount}}][po_item_hidden_ids]" value="{{$item->id}}">
-        <input type="hidden" name="components[{{$rowCount}}][po_hidden_ids]" value="{{$item->purchase_order_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][jo_service_item_id]" value="{{$item->service_item_id}}">
+        <input type="hidden" name="components[{{$rowCount}}][jo_item_hidden_ids]" value="{{$item->id}}">
+        <input type="hidden" name="components[{{$rowCount}}][jo_hidden_ids]" value="{{$item->jo_id}}">
         <input type="hidden" name="components[{{$rowCount}}][expense_advise_qty]" value="{{$item->expense_advise_qty}}">
     </tr>
 @endforeach

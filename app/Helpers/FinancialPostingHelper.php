@@ -264,15 +264,6 @@ class FinancialPostingHelper
         //Call helpers according to service
        
         if ($serviceAlias === ConstantHelper::SI_SERVICE_ALIAS) {
-            $entries = self::invoiceVoucherDetails($documentId, $type);
-            if (!$entries['status']) {
-                return array(
-                    'status' => false,
-                    'message' => $entries['message'],
-                    'data' => []
-                );
-            }
-        } else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
             $entries = self::dnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
@@ -281,8 +272,29 @@ class FinancialPostingHelper
                     'data' => []
                 );
             }
-        } else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+        } 
+        else if ($serviceAlias === ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
             $entries = self::invoiceCumDnVoucherDetails($documentId, $type);
+            if (!$entries['status']) {
+                return array(
+                    'status' => false,
+                    'message' => $entries['message'],
+                    'data' => []
+                );
+            }
+        } 
+        // else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
+        //     $entries = self::dnVoucherDetails($documentId, $type);
+        //     if (!$entries['status']) {
+        //         return array(
+        //             'status' => false,
+        //             'message' => $entries['message'],
+        //             'data' => []
+        //         );
+        //     }
+        // } 
+        else if ($serviceAlias === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
+            $entries = self::dnVoucherDetails($documentId, $type);
             if (!$entries['status']) {
                 return array(
                     'status' => false,
@@ -5140,7 +5152,7 @@ class FinancialPostingHelper
         }
 
         //Invoice to follow
-        $invoiceToFollow = $document->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS ? 0 : 1;
+        $invoiceToFollow = 0;
         $postingArray = array(
             self::CUSTOMER_ACCOUNT => [],
             self::DISCOUNT_ACCOUNT => [],
@@ -5161,7 +5173,7 @@ class FinancialPostingHelper
         foreach ($document->items as $docItemKey => $docItem) {
             $itemValue = 0;
             $orgCurrencyCost = 0;
-            $stockLedger = StockLedger::where('book_type', ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS)->where('document_header_id', $document->id)->where('document_detail_id', $docItem->id)->first();
+            $stockLedger = StockLedger::whereIn('book_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS])->where('document_header_id', $document->id)->where('document_detail_id', $docItem->id)->first();
             if (isset($stockLedger)) {
                 $orgCurrencyCost = StockLedger::where('utilized_id', $stockLedger->id)->get()->sum('org_currency_cost');
                 $itemValue = $orgCurrencyCost / $document->org_currency_exg_rate;

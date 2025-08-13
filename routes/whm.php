@@ -49,9 +49,9 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
         Route::get('/putaway/items', 'items')->name('whm.putaway.items');
         Route::get('/putaway/pending-tasks', 'pendingTasks')->name('whm.putaway.pending-tasks');
         Route::get('/putaway/item-detail', 'itemDetail')->name('whm.putaway.item-detail');
-        // Route::get('/putaway/scanned-packets', 'scannedPackets')->name('whm.putaway.scanned-packets');
         Route::post('/putaway/save-as-draft', 'saveAsDraft')->name('whm.putaway.save-as-draft');
         Route::post('/putaway/update-status', 'updateStatus')->name('whm.putaway.update-status');
+        Route::post('/putaway/close-job', 'closeJob')->name('whm.putaway.close-job');
 
     });
 

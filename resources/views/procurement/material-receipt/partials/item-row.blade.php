@@ -62,6 +62,7 @@
             data-bs-toggle="modal" 
             data-row-count="{{$rowCount}}" 
             data-is-batch-number="" 
+            data-is-expiry="" 
             data-bs-target="#item-batch-modal">
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                     data-bs-original-title="Item Batch" aria-label="Item Batch">

@@ -394,12 +394,21 @@
                             {{$html}}
                             <br>
                         @endif
-                        @if(isset($val->specifications))
-                            @foreach($val->specifications as $data)
-                                @if(isset($data->value))
-                                    {{$data->specification_name}}:{{$data->value}}<br>
-                                @endif
-                            @endforeach
+                        @if(isset($val?->item?->specifications))
+                            @if (@$shufabOrg)
+                                @foreach($val->item->specifications as $data)
+                                    @if(isset($data->value) && in_array($data->specification_name, ['COLORWAY', 'COLOURWAY', 'MRP']))
+                                        {{$data->specification_name}}:{{$data->value}}<br>
+                                    @endif
+                                @endforeach
+                            @else
+                                @foreach($val->item->specifications as $data)
+                                    @if(isset($data->value))
+                                        {{$data->specification_name}}:{{$data->value}}<br>
+                                    @endif
+                                @endforeach
+                            @endif
+                            
                         @endif
                         {{ isset($val->customer_item_code) ? @$val -> customer_item_code : @$val -> item_code }}<br />
                         {{@$val->remarks}}

@@ -121,10 +121,6 @@
                                         @endif
                                     @endif
                                 @endif
-                                @if (@$mrn->deviationJob)
-                                    <button type="button" data-bs-toggle="modal" id="deviation-button" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i>
-                                        Deviation</button>
-                                @endif
                                 @if ($buttons['revoke'])
                                     <button id = "revokeButton" type="button"
                                         class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='rotate-ccw'></i>

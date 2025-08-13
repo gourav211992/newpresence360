@@ -14,6 +14,7 @@ use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InventoryHelperV2;
 use App\Models\ExpenseDetail;
+use App\Models\JobOrder\JoProduct;
 use App\Models\PoItem;
 
 class ExpenseCheckAndUpdateService
@@ -37,21 +38,22 @@ class ExpenseCheckAndUpdateService
 
         // === Case 1: Edit (MRN Detail exists) ===
         if (!empty($inputData['expense_item_id'])) {
-            $inspDetail = ExpenseDetail::find($inputData['expense_item_id']);
-            $poOrderQty = number_format((float) $inspDetail->accepted_qty ?? 0.00, 2);
-            if (!$inspDetail) {
+            $expDetail = ExpenseDetail::find($inputData['expense_item_id']);
+            $poOrderQty = number_format((float) $expDetail->accepted_qty ?? 0.00, 2);
+            if (!$expDetail) {
                 return self::errorResponse("Expense Item not found.", [
                     'accepted_qty' => $poOrderQty
                 ]);
             }
 
             $poDetail = match ($type) {
+                ConstantHelper::JO_SERVICE_ALIAS => JoProduct::find($inputData['jo_detail_id']),
                 default => PoItem::find($inputData['po_detail_id'])
             };
 
             if ($poDetail) {
                 $availableQty = floatval($poDetail->order_qty - $poDetail->expense_advise_qty);
-                $inputDiff = $inputQty - floatval($inspDetail->accepted_qty);
+                $inputDiff = $inputQty - floatval($expDetail->accepted_qty);
                 if ($inputQty > $poDetail->order_qty) {
                     return self::errorResponse("Order qty cannot be greater than Po quantity.", [
                         'accepted_qty' => $poOrderQty
@@ -67,6 +69,7 @@ class ExpenseCheckAndUpdateService
         else {
             // Step 1: Identify MRN detail by reference type
             $expenseDetail = match ($type) {
+                ConstantHelper::JO_SERVICE_ALIAS => JoProduct::find($inputData['jo_detail_id']),
                 ConstantHelper::PO_SERVICE_ALIAS => PoItem::find($inputData['po_detail_id']),
                 default => null
             };

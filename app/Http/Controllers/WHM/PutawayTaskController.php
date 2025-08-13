@@ -435,4 +435,82 @@ class PutawayTaskController extends Controller
     //         throw new ApiGenericException($e->getMessage());
     //     }
     // }
+
+    public function closeJob(Request $request){
+        $validator = Validator::make($request->all(),[
+            'job_id' => ['required'],
+            'deviation' => ['required'],
+        ],[
+            'job_id.required' => 'Job id is required'
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        // custom validation after
+        $job = ErpWhmJob::find($request->job_id);
+        if (!$job) {
+            throw ValidationException::withMessages([
+                'job_id' => ['Job not found.'],
+            ]);
+        }
+
+        // Check if job is already closed with deviation=0 and incoming deviation=0
+        if ($job->job_closed_at !== null ) {
+            if ($job->deviation_qty == $request->deviation) {
+                throw ValidationException::withMessages([
+                    'job_id' => ['Job already closed.'],
+                ]);
+            }
+        }
+        // $alreadyClosed = ErpWhmJob::where('id',$request->job_id)->where('job_closed_at')->first();
+        // if (!empty($alreadyClosed)) {
+        //     throw ValidationException::withMessages([
+        //         'job_id' => ['Job already closed.'],
+        //     ]);
+        // }
+
+
+        \DB::beginTransaction();
+        try {
+
+            $job = ErpWhmJob::find($request->job_id);
+            $job->status = CommonHelper::CLOSED;
+            $job->job_closed_at = now();
+            $job->deviation_qty = $request->deviation;
+            $message = 'Job closed successfully.';
+
+            // Update status based on deviation
+            if($request->deviation > 0){
+                $job->status = CommonHelper::DEVIATION;
+                $message = 'Job closed with deviation '.$request->deviation.'.';
+            }
+
+            $job->save();
+
+            $actionType = $job->status == CommonHelper::DEVIATION ? CommonHelper::DEVIATION : CommonHelper::getJobType($job->morphable_type) .' completed';
+            $header = $job->morphable;
+            $bookId = $header->series_id;
+            $docId = $header->id;
+            $revisionNumber = $header->revision_number ?? 0;
+            $modelName = $job->morphable_type;
+            $remarks = NULL;
+            CommonHelper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName);
+
+            // Update stock ledger qty
+            if($job->status == CommonHelper::CLOSED){
+                $detailIds = $job->itemUniqueCodes()->pluck('morphable_id')->unique()->toArray();
+                StoragePointHelper::saveStoragePoints($header, $detailIds, $job->trns_type, NULL, NULL, NULL);
+            }
+
+            \DB::commit();
+            return [
+                'message' => $message
+            ];
+        } catch (\Exception $e) {
+            \DB::rollback();
+            throw new ApiGenericException($e->getMessage());
+        }
+    }
 }

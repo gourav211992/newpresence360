@@ -21,6 +21,9 @@ class ErpWhmJob extends Model
         'deviation_approved_by',
         'deviation_approved_at',
         'job_closed_at',
+        'store_id',
+        'sub_store_id',
+        'trns_type',
     ];
 
     public function morphable()

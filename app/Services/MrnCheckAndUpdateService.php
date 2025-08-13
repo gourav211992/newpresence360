@@ -15,6 +15,8 @@ use App\Models\GateEntryDetail;
 use App\Models\ErpSoJobWorkItem;
 use App\Models\JobOrder\JoProduct;
 
+use App\Helpers\Helper;
+use App\Helpers\TaxHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
@@ -105,12 +107,12 @@ class MrnCheckAndUpdateService
                 $balanceQty = floatval($geDetail->accepted_qty - ($geDetail->mrn_qty ?? 0.00));
 
                 if ($balanceQty < $inputQty) {
-                    return self::errorResponse("Order qty cannot be greater than Gate Entry qty.", [
-                        'order_qty' => (float) $geDetail->accepted_qty ?? 0.00
-                    ]);
+                    // return self::errorResponse("Order qty cannot be greater than Gate Entry qty.", [
+                    //     'order_qty' => (float) $geDetail->accepted_qty ?? 0.00
+                    // ]);
+                    $geValidated = false;
                 }
 
-                $geValidated = true;
             }
 
             // Step 3: ASN validation (if applicable)

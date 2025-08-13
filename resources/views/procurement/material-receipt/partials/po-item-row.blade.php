@@ -25,7 +25,7 @@
         if($moduleType === 'suppl-inv'){
             $readOnly = 'readonly';
         } elseif($moduleType === 'gate-entry'){
-            $readOnly = 'readonly';
+            $readOnly = ($item->po?->partial_delivery == 'no') ? 'readonly' : '';
         } elseif($moduleType === 'p-order'){
             $readOnly = ($item->po?->partial_delivery == 'no') ? 'readonly' : '';
         } else {

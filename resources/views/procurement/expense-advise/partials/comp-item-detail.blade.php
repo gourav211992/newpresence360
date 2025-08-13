@@ -53,7 +53,8 @@
                 <strong style="font-size:11px; color : #6a6a6a;">
                     {{
                         ($type == 'po') ? 'Purchase' :
-                        (($type == 'so') ? 'Sale' : '')
+                        (($type == 'jo') ? 'Job' :
+                        (($type == 'so') ? 'Sale' : ''))
                     }}
                     Order
                 </strong>

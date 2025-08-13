@@ -15,6 +15,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Http\Request;
 use App\Http\Requests\MaterialReceiptRequest;
 use App\Http\Requests\EditMaterialReceiptRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 use App\Models\MrnHeader;
 use App\Models\MrnDetail;
@@ -90,7 +91,7 @@ use App\Helpers\ServiceParametersHelper;
 use App\Services\MrnService;
 use App\Services\MrnDeleteService;
 use App\Services\MrnCheckAndUpdateService;
-use Illuminate\Http\Exceptions\HttpResponseException;
+use App\Services\TransactionCalculationService;
 
 use App\Jobs\SendEmailJob;
 use App\Services\CommonService;
@@ -494,7 +495,7 @@ class MaterialReceiptController extends Controller
                     $so_id = null;
                     $refType = $request->input('reference_type');
                     $orderQty = floatval($component['order_qty']) ?? 0.00;
-                    $acceptedQty = ($inspectionReqired == 1) ? floatval($component['order_qty']) : 0.00;
+                    $acceptedQty = ($inspectionReqired == 0) ? floatval($component['order_qty']) : 0.00;
                     $rejectedQty = 0.00;
                     $item = Item::find($component['item_id'] ?? null);
 
@@ -791,6 +792,7 @@ class MaterialReceiptController extends Controller
                             return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
                         }
                     }
+
                     #Save batch details
                     if (!empty($component['batch_details'])) {
                         $batchDetails = is_string($component['batch_details'])
@@ -883,7 +885,7 @@ class MaterialReceiptController extends Controller
                 $mrn->save();
 
                 $mrn->reference_type = $request->all()['reference_type'] ?? null;
-                $mrn->is_inspection_completion = $isInspection ?? 0;
+                $mrn->is_inspection_completion = ($inspectionReqired === 1) ? 0 : 1;
                 $mrn->save();
 
             } else {
@@ -1150,6 +1152,7 @@ class MaterialReceiptController extends Controller
                 ->all();
         }
 
+        $itemUniqueCodes = $mrn->itemUniqueCodes();
         $totalItemValue = $mrn->items()->sum('basic_value');
         $vendors = Vendor::where('status', ConstantHelper::ACTIVE)->get();
         $revision_number = $mrn->revision_number;
@@ -1193,6 +1196,7 @@ class MaterialReceiptController extends Controller
             'buttons' => $buttons,
             'vendors' => $vendors,
             'locations'=>$locations,
+            'itemUniqueCodes' => $itemUniqueCodes,
             'docStatusClass' => $docStatusClass,
             'totalItemValue' => $totalItemValue,
             'revision_number' => $revision_number,
@@ -1414,6 +1418,16 @@ class MaterialReceiptController extends Controller
                         $poItem = PoItem::find($component['po_detail_id'] ?? @$mrnDetail->purchase_order_item_id);
                         if(isset($poItem) && $poItem) {
                             if(isset($poItem->id) && $poItem->id) {
+                                $geDetail = $mrn->geItem;
+                                if(isset($geDetail) && $geDetail) {
+                                    // Rrecalc after quantity increase
+                                    $calculateService = new TransactionCalculationService();
+                                    $data = $calculateService->updateGECalculation($geDetail);
+                                    if ($data['status'] === 'error') {
+                                        \DB::rollBack();
+                                        return self::notFoundResponse($data['message']);
+                                    }
+                                }
                                 $orderQty = floatval($order_qty);
                                 $componentQty = floatval($component['order_qty'] ?? $component['accepted_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
@@ -1429,6 +1443,16 @@ class MaterialReceiptController extends Controller
                         $joItem = JoProduct::find($component['jo_detail_id'] ?? @$mrnDetail->job_order_item_id);
                         if(isset($joItem) && $joItem) {
                             if(isset($joItem->id) && $joItem->id) {
+                                $geDetail = $mrn->geItem;
+                                if(isset($geDetail) && $geDetail) {
+                                    // Rrecalc after quantity increase
+                                    $calculateService = new TransactionCalculationService();
+                                    $data = $calculateService->updateGECalculation($geDetail);
+                                    if ($data['status'] === 'error') {
+                                        \DB::rollBack();
+                                        return self::notFoundResponse($data['message']);
+                                    }
+                                }
                                 $orderQty = floatval($order_qty);
                                 $componentQty = floatval($component['order_qty'] ?? $component['accepted_qty']);
                                 $qtyDifference = $componentQty - $orderQty;
@@ -1665,6 +1689,62 @@ class MaterialReceiptController extends Controller
                             $ted->ted_amount = $tax['t_value'] ?? 0.00;
                             $ted->applicability_type = $tax['applicability_type'] ?? 'Collection';
                             $ted->save();
+                        }
+                    }
+
+                    #Save asset details
+                    if (!empty($component['assetDetailData'])) {
+                        $assetDetails = is_string($component['assetDetailData'])
+                            ? json_decode($component['assetDetailData'], true)
+                            : $component['assetDetailData'];
+
+                        if (is_array($assetDetails)) {
+                            $assetDetail = new MrnAssetDetail();
+                            $assetDetail->header_id = $mrn->id;
+                            $assetDetail->detail_id = $mrnDetail->id;
+                            $assetDetail->item_id = $mrnDetail->item_id;
+                            $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
+                            // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
+                            $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
+                            $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
+                            $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
+                            $assetDetail->model_no = $assetDetails['model_no'] ?? null;
+                            $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
+                            $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                            $assetDetail->save();
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
+                        }
+                    }
+                    
+                    #Save batch details
+                    if (!empty($component['batch_details'])) {
+                        $batchDetails = is_string($component['batch_details'])
+                            ? json_decode($component['batch_details'], true)
+                            : $component['batch_details'];
+
+                        if (is_array($batchDetails)) {
+                            foreach ($batchDetails as $i => $val) {
+                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                                $batchDetail = new MrnBatchDetail();
+                                $batchDetail->header_id = $mrn->id;
+                                $batchDetail->detail_id = $mrnDetail->id;
+                                $batchDetail->item_id = $mrnDetail->item_id;
+                                $batchDetail->batch_number = $batchNo;
+                                $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
+                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
+                                $batchDetail->quantity = $val['quantity'] ?? null;
+                                $batchDetail->save();
+                                
+                                // Convert to base uom 
+                                $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
+                                $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
+                                $batchDetail->save();
+                            }
+                        } else {
+                            \DB::rollBack();
+                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
                         }
                     }
 
@@ -5342,24 +5422,40 @@ class MaterialReceiptController extends Controller
         return true;
     }
 
-    # Common Gate Entry Check
+    // -------------------------------
+    // Common Gate Entry Check
+    // -------------------------------
     private static function processWithGateEntry($ge, $model, $item, $inputQty, $type)
     {
-        if (($ge->accepted_qty - $ge->mrn_qty) < $inputQty) {
-            \DB::rollBack();
-            return self::exceedsQtyResponse();
+        $remaining = (float) $ge->accepted_qty - (float) $ge->mrn_qty;
+
+        if ($inputQty > $remaining) {
+            // Your original overwrite behavior when exceeding remaining
+            $ge->mrn_qty      = (float)$inputQty;
+            $ge->accepted_qty = (float)$inputQty;
+            $ge->save();
+
+            // Rrecalc after quantity increase
+            $calculateService = new TransactionCalculationService();
+            $data = $calculateService->updateGECalculation($ge);
+            if ($data['status'] === 'error') {
+                \DB::rollBack();
+                return self::notFoundResponse($data['message']);
+            }
+        } else {
+            $ge->mrn_qty = (float)$ge->mrn_qty + (float)$inputQty;
+            $ge->save();
         }
 
-        $ge->mrn_qty += $inputQty;
-        $ge->save();
-
+        // Update PO/JO quantities etc.
         return self::updatePoQty($item, $model, $inputQty, $type);
     }
 
     # Common ASN Check
     private static function processWithASN($asn, $model, $item, $inputQty, $type)
     {
-        if (($asn->supplied_qty - $asn->grn_qty) < $inputQty) {
+        $remaining = (float) $asn->supplied_qty - (float) $asn->grn_qty;
+        if ($inputQty > $remaining) {
             \DB::rollBack();
             return self::exceedsQtyResponse();
         }
