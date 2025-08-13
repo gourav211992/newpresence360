@@ -27,13 +27,16 @@
 							<a href="{{ route('maint-bom.index') }}"> <button class="btn btn-secondary btn-sm"><i
 										data-feather="arrow-left-circle"></i> Back</button>
 							</a>
-							<button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
-								<i data-feather="save"></i> Save as Draft
-							</button>
+							@if ($bom->document_status == 'draft' || ($buttons['amend'] && request('amendment') == 1))
+								<button class="btn btn-outline-primary btn-sm mb-50 mb-sm-0" type="button" id="save-draft-btn">
+									<i data-feather="save"></i> Save as Draft
+								</button>
+								<button type="submit" form="maint-bom-form" class="btn btn-primary btn-sm" id="submit-btn">
+									<i data-feather="check-circle"></i> Submit
+								</button>
+							@endif
 
-							<button type="submit" form="maint-bom-form" class="btn btn-primary btn-sm" id="submit-btn">
-								<i data-feather="check-circle"></i> Submit
-							</button>
+
 						</div>
 					</div>
 				</div>
@@ -62,13 +65,14 @@
 												</div>
 											</div>
 										</div>
+										@include('fixed-asset.partials.amendement-submit-modal')
 
 										<div class="row">
 											{{-- Hidden Inputs --}}
 											<input type="hidden" name="book_code" id="book_code_input"
 												value="{{ old('book_code', $bom->book_code) }}">
 											<input type="hidden" name="spare_parts" id="spare_parts"
-											value="{{ old('spare_parts', $bom->spare_parts) }}">
+												value="{{ old('spare_parts', $bom->spare_parts) }}">
 											<input type="hidden" name="doc_number_type" id="doc_number_type"
 												value="{{ old('doc_number_type', $bom->doc_number_type) }}">
 											<input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern"
@@ -90,7 +94,8 @@
 																class="text-danger">*</span></label>
 													</div>
 													<div class="col-md-5">
-														<select class="form-select" id="book_id" name="book_id" required>
+														<select class="form-select" id="book_id" name="book_id" disabled
+															required>
 															@foreach ($series as $book)
 																<option value="{{ $book->id }}" {{ old('book_id', $bom->book_id) == $book->id ? 'selected' : '' }}>
 																	{{ $book->book_code }}
@@ -107,7 +112,7 @@
 													</div>
 													<div class="col-md-5">
 														<input type="text" class="form-control" id="document_number"
-															name="document_number"
+															disabled name="document_number"
 															value="{{ old('document_number', $bom->document_number) }}"
 															required>
 													</div>
@@ -119,7 +124,7 @@
 																class="text-danger">*</span></label>
 													</div>
 													<div class="col-md-5">
-														<input type="date" class="form-control" id="document_date"
+														<input type="date" class="form-control" id="document_date" disabled
 															name="document_date"
 															value="{{ old('document_date', $bom->document_date) }}"
 															required>
@@ -156,7 +161,7 @@
 													</div>
 												</div>
 												<div class="col-md-6 text-sm-end">
-													<a href="#" class="btn btn-sm btn-outline-danger me-50">
+													<a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
 														<i data-feather="x-circle"></i> Delete</a>
 													<a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
 														<i data-feather="plus"></i> Add New Item</a>
@@ -166,25 +171,49 @@
 
 										<div class="table-responsive pomrnheadtffotsticky">
 											<table id="itemTable"
-											class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-											<thead>
-												<tr>
-													<th width="62" class="customernewsection-form">
-														<div class="form-check form-check-primary custom-checkbox">
-															<input type="checkbox" class="form-check-input" id="checkAll">
-															<label class="form-check-label" for="Email"></label>
-														</div>
-													</th>
-													<th width="285">Item Code</th>
-													<th width="208">Item Name</th>
-													<th>Attributes</th>
-													<th>UOM</th>
-													<th>Qty</th>
-												</tr>
-											</thead>
-											<tbody class="mrntableselectexcel">
-													@foreach(json_decode($bom->spare_parts) as $part)
-														<tr>
+												class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+												<thead>
+													<tr>
+														<th width="62" class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input"
+																	id="checkAll">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</th>
+														<th width="285">Item Code</th>
+														<th width="208">Item Name</th>
+														<th>Attributes</th>
+														<th>UOM</th>
+														<th>Qty</th>
+													</tr>
+												</thead>
+												<tbody class="mrntableselectexcel">
+													@foreach(json_decode($bom->spare_parts) as $index => $part)
+
+														@php
+															$itemId = $part->item_id;
+															if (isset($itemId)) {
+																$itemAttributes = App\Models\ItemAttribute::where('item_id', $itemId)->get();
+															} else {
+																$itemAttributes = [];
+															}
+															$processedData = [];
+															foreach ($itemAttributes as $key => $attribute) {
+																$attributesArray = array();
+																$attribute_group_id = $attribute->attribute_group_id;
+																$attribute->group_name = $attribute->group?->name;
+
+																$attributeValueData = App\Models\ErpAttribute::whereIn('id', $attribute->attribute_id)->select('id', 'value')->where('status', 'active')->get();
+
+																$attribute->values_data = $attributeValueData;
+																$attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
+
+																array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributeValueData, 'attribute_group_id' => $attribute['attribute_group_id']]);
+															}
+															$processedData = collect($processedData);
+														@endphp
+														<tr @if($index == 0) class="trselected" @endif>
 															<td>
 																<div class="form-check form-check-primary custom-checkbox">
 																	<input type="checkbox" class="form-check-input row-check">
@@ -194,6 +223,10 @@
 																<input type="hidden" name="item_id[]" class="item_id"
 																	value="{{ $part->item_id }}">
 																<input type="text" name="item[]" value="{{ $part->item_code }}"
+																	data-id="{{$part->item_id}}"
+																	data-code="{{$part->item_code}}"
+																	data-name="{{$part->item_name}}"
+																	data-attr="{{ $processedData }}"
 																	class="item_code form-control mw-100 ledgerselecct mb-25"
 																	required />
 															</td>
@@ -204,10 +237,10 @@
 															</td>
 															<td>
 																<input type="hidden" class="attribute"
-																	value="{{ json_encode($part->attribute) }}">
-																<button data-bs-toggle="modal" data-bs-target="#attribute"
+																	value="{{ $part->attribute}}">
+																<a data-bs-toggle="modal" data-bs-target="#attribute"
 																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</button>
+																	style="font-size: 10px">Attributes</a>
 															</td>
 															<td>
 																<select class="uom form-select mw-100" name="uom[]" required>
@@ -222,6 +255,55 @@
 														</tr>
 													@endforeach
 												</tbody>
+												<tfoot>
+
+
+													<tr valign="top">
+														<td colspan="6" rowspan="10">
+															<table class="table border">
+																<tr>
+																	<td class="p-0">
+																		<h6
+																			class="text-dark mb-0 bg-light-primary py-1 px-50">
+																			<strong>Part Details</strong>
+																		</h6>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="poitemtxt mw-100"><strong>Name</strong>:<span
+																				id="part_name"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt" id="attributes_badges">
+
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Inv.
+																				UOM</strong>: <span id="uom"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
+																			<span id="qty"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	{{-- <td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>:
+																			<span id="remarks"></span></span>
+																	</td> --}}
+																</tr>
+															</table>
+														</td>
+
+													</tr>
+
+												</tfoot>
 											</table>
 										</div>
 
@@ -259,10 +341,16 @@
 	</div>
 	<!-- END: Content-->
 
+			</div>
+		</div>
+	</div>
+	<!-- END: Content-->
 
 	<div class="sidenav-overlay"></div>
 	<div class="drag-target"></div>
 
+	<div class="sidenav-overlay"></div>
+	<div class="drag-target"></div>
 
 
 	<div class="modal fade text-start" id="overhead" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
@@ -447,8 +535,12 @@
 
 @section('scripts')
 	<script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
+	<script src="{{asset('assets/js/fileshandler.js')}}"></script>
+
 
 	<script>
+
+
 		const itemsData = @json($items);
 		let rowCount = 1;
 		$(window).on('load', function () {
@@ -459,33 +551,6 @@
 				});
 			}
 		})
-
-
-
-		// $(function () {
-		// 	$(".ledgerselecct").autocomplete({
-		// 		source: [
-		// 			"Indian Oil Corporation Ltd.",
-		// 			"Airports Authority of India",
-		// 			"Bharat Heavy Electricals Ltd.",
-		// 			"Bharat Petroleum Corpn. Ltd.",
-		// 			"NTPC Ltd.",
-		// 			"Gail (India) Ltd.",
-		// 			"Hindustan Petroleum Corpn. Ltd.",
-		// 			"Steel Authority of India Ltd.",
-		// 			"Indian Railway Stations Devpt. Corporation Ltd.",
-		// 			"Oil & Natural Gas Corporation Ltd.",
-		// 			"Oil & Natural Gas Corporation Ltd.",
-		// 			"Hindustan Aeronautics Ltd.",
-		// 		],
-		// 		minLength: 0
-		// 	}).focus(function () {
-		// 		if (this.value == "") {
-		// 			$(this).autocomplete("search");
-		// 		}
-		// 	});
-		// });
-
 		$(".mrntableselectexcel tr").click(function () {
 			$(this).addClass('trselected').siblings().removeClass('trselected');
 			value = $(this).find('td:first').html();
@@ -505,49 +570,93 @@
 			$('html, body').scrollTop($(this).offset().top - 200);
 			updateFooterFromSelected();
 		});
+		updateFooterFromSelected();
 		function updateFooterFromSelected() {
 			let $selected = $('.trselected');
 			if ($selected.length) {
 				console.log("qty " + $selected.find('.qty').val());
 				$('#part_name').text($selected.find('.item_name').val());
-				$('#uom').text($selected.find('.uom').val());
+				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
+				let $selectElement = $selected.find('.item_code');
+				let $badgesContainer = $('#attributes_badges'); // container for badges
+
+				if ($selectElement.val() !== "") {
+					let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+					let $hiddenInput = $selected.find('.attribute');
+					let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+						? JSON.parse($hiddenInput.val())
+						: [];
+
+					if (!attributesJSON.length) {
+						$badgesContainer.html('<span>No attributes available</span>');
+						return;
+					}
+
+					let badgesHtml = '';
+
+					$.each(attributesJSON, function (index, element) {
+						// Find selected value from existingAttributes
+						let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
+						let selectedVal = selectedValObj ? selectedValObj.value_id : '';
+
+						// Find text for selected value
+						let selectedText = '';
+						if (selectedVal) {
+							let valObj = element.values_data.find(v => v.id === selectedVal);
+							selectedText = valObj ? valObj.value : '';
+						}
+
+						badgesHtml += `
+						<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+							<strong>${element.group_name}</strong>: <span>${selectedText}</span>
+						</span>
+					`;
+					});
+
+					$badgesContainer.html(badgesHtml);
+
+				} else {
+					$badgesContainer.html('');
+				}
+
 			}
 		}
+
 		$('#addNewRowBtn').on('click', function () {
 			rowCount++;
 			let newRow = `<tr>
-															<td class="customernewsection-form">
-																<div class="form-check form-check-primary custom-checkbox">
-																	<input type="checkbox" class="form-check-input row-check"
-																		id="Email">
-																	<label class="form-check-label" for="Email"></label>
-																</div>
-															</td>
-															<td class="poprod-decpt">
-																<input type="hidden" class="item_id">
-																<input required type="text" placeholder="Select" name="item[]"
-																	class="item_code form-control mw-100 ledgerselecct mb-25" />
-															</td>
-															<td required class="poprod-decpt">
-																<input type="text" placeholder="Select"
-																	class="item_name form-control mw-100 ledgerselecct mb-25" />
-															</td>
+																			<td class="customernewsection-form">
+																				<div class="form-check form-check-primary custom-checkbox">
+																					<input type="checkbox" class="form-check-input row-check"
+																						id="Email">
+																					<label class="form-check-label" for="Email"></label>
+																				</div>
+																			</td>
+																			<td class="poprod-decpt">
+																				<input type="hidden" class="item_id">
+																				<input required type="text" placeholder="Select" name="item[]"
+																					class="item_code form-control mw-100 ledgerselecct mb-25" />
+																			</td>
+																			<td required class="poprod-decpt">
+																				<input type="text" placeholder="Select"
+																					class="item_name form-control mw-100 ledgerselecct mb-25" />
+																			</td>
 
-															<td class="poprod-decpt">
-																<input type="hidden" class="attribute">
-																<button data-bs-toggle="modal" data-bs-target="#attribute"
-																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-																	style="font-size: 10px">Attributes</button>
-															</td>
-															<td>
-																<select class="uom form-select mw-100" name="uom[]" required>
+																			<td class="poprod-decpt">
+																				<input type="hidden" class="attribute">
+																				<a data-bs-toggle="modal" data-bs-target="#attribute"
+																					class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+																					style="font-size: 10px">Attributes</a>
+																			</td>
+																			<td>
+																				<select class="uom form-select mw-100" name="uom[]" required>
 
-																</select>
-															</td>
-															<td><input type="number" class="qty form-control mw-100"  name="qty[]"
-																	required /></td>
-														</tr>																  `;
+																				</select>
+																			</td>
+																			<td><input type="number" class="qty form-control mw-100"  name="qty[]"
+																					required /></td>
+																		</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
 
@@ -670,48 +779,59 @@
 			});
 		});
 
-		$('#book_id').trigger('change');
-		initAutoForItem('.item_code');
+		//$('#book_id').trigger('change');
+
 		function updateJsonData() {
-    const allRows = [];
+			const allRows = [];
 
-    $('.mrntableselectexcel tbody tr').each(function () {
-        const row = $(this);
-        const itemId = row.find('.item_id').val();
+			$('.mrntableselectexcel tr').each(function () {
+				const row = $(this);
+				const itemId = row.find('.item_id').val();
 
-        if (itemId) { // skip empty rows
-            const rowData = {
-                item_id: itemId,
-                item_code: row.find('.item_code').val() || '',
-                item_name: row.find('.item_name').val() || '',
-                attribute: row.find('.attribute').val() || '',
-                qty: row.find('.qty').val() || 0,
-                uom_id: row.find('.uom').val() || '',
-                uom_name: row.find('.uom option:selected').text() || '',
-            };
-            allRows.push(rowData);
-        }
-    });
+				if (itemId) { // skip empty rows
+					const rowData = {
+						item_id: itemId,
+						item_code: row.find('.item_code').val() || '',
+						item_name: row.find('.item_name').val() || '',
+						attribute: row.find('.attribute').val() || '',
+						qty: row.find('.qty').val() || 0,
+						uom_id: row.find('.uom').val() || '',
+						uom_name: row.find('.uom option:selected').text() || '',
+					};
+					allRows.push(rowData);
+				}
+			});
 
-    $('#spare_parts').val(JSON.stringify(allRows));
-}
+			$('#spare_parts').val(JSON.stringify(allRows));
+		}
 
 
 		document.getElementById('save-draft-btn').addEventListener('click', function () {
-			$('.preloader').show();
 			document.getElementById('document_status').value = 'draft';
 			updateJsonData();
-			document.getElementById('maint-bom-form').submit();
+			if ($('#action_type').val() === "amendment") {
+				$("#amendmentModal").modal('show');
+			}
+			else {
+				$('.preloader').show();
+				document.getElementById('maint-bom-form').submit();
+			}
 
 		});
 
 
-		$('#maint-bom-form').on('submit', function (e) {
-			$('.preloader').show();
+		document.getElementById('submit-btn').addEventListener('click', function (e) {
 			document.getElementById('document_status').value = 'submitted';
 			e.preventDefault(); // Always prevent default first
 			updateJsonData();
-			this.submit();
+			if ($('#action_type').val() === "amendment")
+				{
+					$("#amendmentModal").modal('show');
+				}
+			else {
+				$('.preloader').show();
+				this.submit();
+			}
 
 		});
 
@@ -756,6 +876,118 @@
 		$(document).on('click', '.submitAttributeBtn', (e) => {
 			$("#attribute").modal('hide');
 		});
+		initAutoForItem('.item_code');
+
+		function changeAttributeVal($row) {
+			let hiddenInput = $row.find('.attribute');
+
+
+			if (!hiddenInput) return;
+
+			// Find the attributes table and tbody
+			const attributesTable = document.getElementById("attributes_table_modal");
+			const tbody = attributesTable.querySelector("tbody");
+
+			let selectedAttributes = [];
+
+			Array.from(tbody.rows).forEach(row => {
+				const hiddenInputAttr = row.querySelector('input[type="hidden"][name="id"]');
+				const selectElement = row.querySelector("select");
+
+				if (hiddenInputAttr && selectElement) {
+					const attributeId = parseInt(hiddenInputAttr.value, 10);
+					const selectedVal = parseInt(selectElement.value, 10);
+
+					if (!isNaN(attributeId) && !isNaN(selectedVal) && selectedVal > 0) {
+						selectedAttributes.push({
+							item_attribute_id: attributeId,
+							value_id: selectedVal
+						});
+					}
+				}
+			});
+
+			// Update hidden input with JSON
+			hiddenInput.val(JSON.stringify(selectedAttributes));
+			console.log(selectedAttributes);
+		}
+
+
+		$(document).on('click', '.attributeBtn', function (e) {
+			let $tr = $(this).closest('tr');
+			let $selectElement = $tr.find('.item_code');
+			let $attributesTable = $('#attribute_table'); // modal table
+			$attributesTable.data('currentRow', $tr);
+
+			if ($selectElement.val() !== "") {
+				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+				let $hiddenInput = $tr.find('.attribute');
+				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+					? JSON.parse($hiddenInput.val())
+					: [];
+
+				if (!attributesJSON.length) {
+					$attributesTable.html(`
+							<tr>
+								<td colspan="2" class="text-center">No attributes available</td>
+							</tr>
+						`);
+					return;
+				}
+
+				let innerHtml = ``;
+
+				$.each(attributesJSON, function (index, element) {
+					let optionsHtml = ``;
+
+					$.each(element.values_data, function (i, value) {
+						let isSelected = existingAttributes.some(attr =>
+							attr.item_attribute_id === element.id && attr.value_id === value.id
+						);
+
+						optionsHtml += `
+								<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
+							`;
+					});
+
+					innerHtml += `
+							<tr>
+								<td>
+									${element.group_name}
+									<input type="hidden" name="id" value="${element.id}">
+								</td>
+								<td>
+									<select class="form-select select2" style="max-width:100% !important;">
+										<option value="">Select</option>
+										${optionsHtml}
+									</select>
+								</td>
+							</tr>
+						`;
+				});
+
+				$attributesTable.html(innerHtml);
+
+				// Initialize select2
+
+				//Bind change event
+				$attributesTable.find('select').off('change').on('change', function () {
+					changeAttributeVal($tr);
+				});
+				$attributesTable.find('select').select2();
+
+
+			} else {
+				$attributesTable.html(`
+						<tr>
+							<td colspan="2" class="text-center">No attributes available</td>
+						</tr>
+					`);
+			}
+		});
+		function closeModal(id) {
+			$('#' + id).modal('hide');
+		}
 		function initAutoForItem(selector, type) {
 			$(selector).autocomplete({
 				minLength: 0,
@@ -860,118 +1092,23 @@
 			};
 		}
 
-		function changeAttributeVal(selectElem) {
-			// Get the row containing this select
-			const row = selectElem.closest('tr');
-
-			// Find the hidden input with class "attribute" in the same parent container (e.g. the parent row or modal)
-			// Adjust the selector as per actual DOM structure
-			const hiddenInput = document.querySelector('.attribute');
-
-			if (!hiddenInput) return;
-
-			// Find the attributes table and tbody
-			const attributesTable = document.getElementById("attributes_table_modal");
-			const tbody = attributesTable.querySelector("tbody");
-
-			let selectedAttributes = [];
-
-			Array.from(tbody.rows).forEach(row => {
-				const hiddenInputAttr = row.querySelector('input[type="hidden"][name="id"]');
-				const selectElement = row.querySelector("select");
-
-				if (hiddenInputAttr && selectElement) {
-					const attributeId = parseInt(hiddenInputAttr.value, 10);
-					const selectedVal = parseInt(selectElement.value, 10);
-
-					if (!isNaN(attributeId) && !isNaN(selectedVal) && selectedVal > 0) {
-						selectedAttributes.push({
-							item_attribute_id: attributeId,
-							value_id: selectedVal
-						});
-					}
-				}
-			});
-
-			// Update hidden input with JSON
-			hiddenInput.value = JSON.stringify(selectedAttributes);
-		}
-
-
-		$(document).on('click', '.attributeBtn', function (e) {
-			let $tr = $(this).closest('tr');
-			let $selectElement = $tr.find('.item_code');
-			let $attributesTable = $('#attribute_table');
-
-			if ($selectElement.val() !== "") {
-				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
-
-				// Find hidden input inside this row
-				let $hiddenInput = $tr.find('.attribute');
-
-				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
-					? JSON.parse($hiddenInput.val())
-					: [];
-
-				if (!attributesJSON || attributesJSON.length === 0) {
-					$attributesTable.html(`
-								<tr>
-									<td colspan="2" class="text-center">No attributes available</td>
-								</tr>
-							`);
-					// Possibly disable button here if you want
-					return;
-				}
-
-				let innerHtml = ``;
-
-				$.each(attributesJSON, function (index, element) {
-					let optionsHtml = ``;
-
-					$.each(element.values_data, function (i, value) {
-						let isSelected = existingAttributes.some(attr =>
-							attr.item_attribute_id === element.id && attr.value_id === value.id
-						);
-
-						optionsHtml += `
-									<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
-								`;
-					});
-
-					innerHtml += `
-								<tr>
-									<td>
-										${element.group_name}
-										<input type="hidden" name="id" value="${element.id}">
-									</td>
-									<td>
-										<select class="form-select select2" id="attribute_val_${index}" style="max-width:100% !important;">
-											<option value="">Select</option>
-											${optionsHtml}
-										</select>
-									</td>
-								</tr>
-							`;
-				});
-
-				$attributesTable.html(innerHtml);
-
-				// Bind change event on the new selects here instead of inline onchange
-				$attributesTable.find('select').off('change').on('change', function () {
-					changeAttributeVal(this);
-				});
-
+		$(document).on('click', '#amendmentBtnSubmit', (e) => {
+			updateJsonData();
+			let remark = $("#amendmentModal").find('[name="amend_remarks"]').val();
+			if (!remark) {
+				e.preventDefault();
+				$("#amendRemarkError").removeClass("d-none");
+				return false;
 			} else {
-				$attributesTable.html(`
-							<tr>
-								<td colspan="2" class="text-center">No attributes available</td>
-							</tr>
-						`);
+				$("#amendmentModal").modal('hide');
+				$("#amendRemarkError").addClass("d-none");
+				e.preventDefault();
+				$('.preloader').show();
+				
+				$("#maint-bom-form").submit();
 			}
 		});
-		function closeModal(id) {
-			$('#' + id).modal('hide');
-		}
+
 
 
 

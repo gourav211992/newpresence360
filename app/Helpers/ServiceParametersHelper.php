@@ -60,6 +60,8 @@ class ServiceParametersHelper
     const BOM_SUB_SECTION_REQUIRED_VALUES = ['yes', 'no'];
     const BOM_COMPONENT_OVERHEAD_REQUIRED = 'component_overhead_required';
     const BOM_COMPONENT_OVERHEAD_REQUIRED_VALUES = ['yes', 'no'];
+    const BOM_BATCH_INHERIT_REQUIRED = 'bacth_inherit_requird';
+    const BOM_BATCH_INHERIT_REQUIRED_VALUES = ['yes', 'no'];
     const PR_QTY_TYPE_PARAM = 'pr_qty_type';
     const PR_QTY_TYPE_VALUES = ['rejected', 'accepted', 'all'];
     const ISSUE_TYPE_PARAM = "issue_type";
@@ -162,6 +164,8 @@ class ServiceParametersHelper
         self::REQUESTER_TYPE_PARAM => 'Requester Type',
         self::SO_TRACKING_REQUIRED => 'SO Tracking Required?',
         self::PROCUREMENT_TYPE_PARAM => 'Procurement Type',
+        self::BOM_BATCH_INHERIT_REQUIRED => 'Batch Inheritance Required',
+
     ];
     const SERVICE_PARAMETERS_VALUES = [
         self::REFERENCE_FROM_SERVICE_PARAM => [], //Applied
@@ -183,6 +187,7 @@ class ServiceParametersHelper
         self::BOM_SECTION_REQUIRED => self::BOM_SECTION_REQUIRED_VALUES,
         self::BOM_SUB_SECTION_REQUIRED => self::BOM_SUB_SECTION_REQUIRED_VALUES,
         self::BOM_COMPONENT_OVERHEAD_REQUIRED => self::BOM_COMPONENT_OVERHEAD_REQUIRED_VALUES,
+        self::BOM_BATCH_INHERIT_REQUIRED => self::BOM_BATCH_INHERIT_REQUIRED_VALUES,
         self::PR_QTY_TYPE_PARAM => self::PR_QTY_TYPE_VALUES,
         self::ISSUE_TYPE_PARAM => self::ISSUE_TYPE_VALUES,
         self::ITEM_CODE_TYPE_PARAM => self::ITEM_CODE_TYPE_PARAM_VALUES,
@@ -194,7 +199,8 @@ class ServiceParametersHelper
         self::SO_TRACKING_REQUIRED => self::SO_TRACKING_REQUIRED_VALUES,
         self::PROCUREMENT_TYPE_PARAM => self::PROCUREMENT_TYPE_VALUES,
         self::GATE_ENTRY_REQUIRED => self::GATE_ENTRY_REQUIRED_VALUES,
-        self::PARTIAL_DELIVERY_ALLOWED => self::PARTIAL_DELIVERY_ALLOWED_VALUES
+        self::PARTIAL_DELIVERY_ALLOWED => self::PARTIAL_DELIVERY_ALLOWED_VALUES,
+        self::BOM_BATCH_INHERIT_REQUIRED => self::BOM_BATCH_INHERIT_REQUIRED_VALUES
     ];
     const SO_SERVICE_PARAMETERS = [
         [
@@ -251,11 +257,11 @@ class ServiceParametersHelper
             'service_level_visibility' => true, // Whether or not to show this parameter in UI
         ],
           [
-            "name" => self::SERVICE_ITEM_PARAM, 
+            "name" => self::SERVICE_ITEM_PARAM,
             "applicable_values" => [],
             "default_value" => [],
-            'is_multiple' => false, 
-            'service_level_visibility' => false, 
+            'is_multiple' => false,
+            'service_level_visibility' => false,
         ],
         [
             "name" => self::REFERENCE_FROM_SERIES_PARAM,
@@ -755,6 +761,74 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
+        // [
+        //     "name" => self::GL_POSTING_REQUIRED_PARAM,
+        //     "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
+        //     "default_value" => ['no'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true,
+        //     'type' => self::GL_PARAMETERS
+        // ],
+        // [
+        //     "name" => self::GL_POSTING_SERIES_PARAM,
+        //     "applicable_values" => [],
+        //     "default_value" => [],
+        //     'is_multiple' => true,
+        //     'service_level_visibility' => false,
+        //     'type' => self::GL_PARAMETERS
+        // ],
+        // [
+        //     "name" => self::POST_ON_ARROVE_PARAM,
+        //     "applicable_values" => self::POST_ON_ARROVE_PARAM_VALUES,
+        //     "default_value" => ['no'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true,
+        //     'type' => self::GL_PARAMETERS
+        // ],
+        // // [
+        // //     "name" => self::TAX_REQUIRED_PARAM,
+        // //     "applicable_values" => self::TAX_REQUIRED_PARAM_VALUES,
+        // //     "default_value" => ['yes'],
+        // //     'is_multiple' => false,
+        // //     'service_level_visibility' => true
+        // // ]
+    ];
+    const SINV_SERVICE_PARAMETERS = [
+        [
+            "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
+            "applicable_values" => ["0", ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //Default selected value(s)
+            'is_multiple' => true, // Whether or not to allow multiple selection
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::REFERENCE_FROM_SERIES_PARAM,
+            "applicable_values" => [],
+            "default_value" => [],
+            'is_multiple' => true,
+            'service_level_visibility' => false
+        ],
+        [
+            "name" => self::BACK_DATE_ALLOW_PARAM,
+            "applicable_values" => self::BACK_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        [
+            "name" => self::FUTURE_DATE_ALLOW_PARAM,
+            "applicable_values" => self::FUTURE_DATE_ALLOW_PARAM_VALUES,
+            "default_value" => ['yes'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
+        // [
+        //     "name" => self::GOODS_SERVICES_PARAM,
+        //     "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+        //     "default_value" => ['Goods'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ],
         [
             "name" => self::GL_POSTING_REQUIRED_PARAM,
             "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
@@ -787,11 +861,11 @@ class ServiceParametersHelper
         //     'service_level_visibility' => true
         // ]
     ];
-    const SINV_SERVICE_PARAMETERS = [
+    const SERVICE_INV_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //All possible values
-            "default_value" => ["0", ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS], //Default selected value(s)
+            "applicable_values" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //All possible values
+            "default_value" => ["0", ConstantHelper::SO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
         ],
@@ -816,13 +890,13 @@ class ServiceParametersHelper
             'is_multiple' => false,
             'service_level_visibility' => true
         ],
-        [
-            "name" => self::GOODS_SERVICES_PARAM,
-            "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
-            "default_value" => ['Goods'],
-            'is_multiple' => false,
-            'service_level_visibility' => true
-        ],
+        // [
+        //     "name" => self::GOODS_SERVICES_PARAM,
+        //     "applicable_values" => self::GOODS_SERVICES_PARAM_VALUES,
+        //     "default_value" => ['Goods'],
+        //     'is_multiple' => false,
+        //     'service_level_visibility' => true
+        // ],
         [
             "name" => self::GL_POSTING_REQUIRED_PARAM,
             "applicable_values" => self::GL_POSTING_REQUIRED_PARAM_VALUES,
@@ -1235,7 +1309,14 @@ class ServiceParametersHelper
             "default_value" => ['manual'],
             'is_multiple' => false,
             'service_level_visibility' => true
-        ]
+        ],
+        [
+            "name" => self::BOM_BATCH_INHERIT_REQUIRED,
+            "applicable_values" => self::BOM_BATCH_INHERIT_REQUIRED_VALUES,
+            "default_value" => ['manual'],
+            'is_multiple' => false,
+            'service_level_visibility' => true
+        ],
     ];
     const MO_SERVICE_PARAMETERS = [
         [
@@ -1892,7 +1973,7 @@ class ServiceParametersHelper
     const EXPENSE_ADVISE_SERVICE_PARAMETERS = [
         [
             "name" => self::REFERENCE_FROM_SERVICE_PARAM, //Name of the parameter
-            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //All possible values
+            "applicable_values" => ["0", ConstantHelper::PO_SERVICE_ALIAS, ConstantHelper::JO_SERVICE_ALIAS], //All possible values
             "default_value" => ["0", ConstantHelper::PO_SERVICE_ALIAS], //Default selected value(s)
             'is_multiple' => true, // Whether or not to allow multiple selection
             'service_level_visibility' => true
@@ -2510,6 +2591,7 @@ class ServiceParametersHelper
 
         ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS => self::DN_SERVICE_PARAMETERS,
         ConstantHelper::SI_SERVICE_ALIAS => self::SINV_SERVICE_PARAMETERS,
+        ConstantHelper::SERVICE_INV_SERVICE_ALIAS => self::SERVICE_INV_SERVICE_PARAMETERS,
         ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS => self::LEASE_INV_SERVICE_PARAMETERS,
         ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => self::DN_CUM_INVOICE_SERVICE_PARAMETERS,
         ConstantHelper::PI_SERVICE_ALIAS => self::PI_SERVICE_PARAMETERS,
@@ -2949,12 +3031,12 @@ class ServiceParametersHelper
     /*Return the series/ book available for pulling -> Only those series which have not been referenced in any book parameter will come*/
     public static function getAvailableReferenceSeries(int $sourceServiceId, array $serviceIds, int $editBookId = 0, bool $pluck = false) : EloquentCollection|array
     {
-      
+
         //Get all bookIds according to service
         $bookIds =  Book::withDefaultGroupCompanyOrg() -> whereHas('org_service', function ($serviceQuery) use($serviceIds) {
             $serviceQuery -> whereIn('service_id', $serviceIds);
         }) -> get() -> pluck('id') -> toArray();
-         
+
         $sourceService = Service::find($sourceServiceId);
         $nonReferencedBookIds = [];
         $invoiceServices = [

@@ -1569,6 +1569,7 @@ class ErpSaleOrderController extends Controller
             $detailId = $request -> detail_id ?? null;
             $serviceAlias = $request -> service_alias ?? null;
             $lotNoDetails = [];
+            $lrDetails = [];
             if (isset($headerId) && isset($detailId)) {
                 $lotNoDetails = InventoryHelper::getIssueTransactionLotNumbers($serviceAlias, $headerId, $detailId, $selectedUom);
             }

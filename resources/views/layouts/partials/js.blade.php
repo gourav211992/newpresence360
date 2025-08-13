@@ -142,7 +142,7 @@
 
     <script>
         $('#summernote').summernote({
-            placeholder: 'Hello stand alone ui',
+            placeholder: 'Type your text here...',
             tabsize: 2,
             height: 300,
             width: '100%',

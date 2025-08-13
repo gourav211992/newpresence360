@@ -185,6 +185,24 @@ class CommonHelper
         return $type;
     }
 
+    public static function getJobTransactionType($morphableType){
+        if($morphableType == 'App\Models\GateEntryHeader'){
+            $type = ConstantHelper::GATE_ENTRY_SERVICE_ALIAS;
+        }elseif($morphableType == 'App\Models\MrnHeader'){
+            $type = ConstantHelper::MRN_SERVICE_ALIAS;
+        }elseif($morphableType == 'App\Models\ErpPlHeader'){
+            $type = ConstantHelper::PL_SERVICE_ALIAS;
+        }elseif($morphableType == 'App\Models\InspectionHeader'){
+            $type = ConstantHelper::INSPECTION_SERVICE_ALIAS;
+        }elseif($morphableType == 'App\Models\ErpSaleInvoice'){
+            $type = ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS;
+        }else{
+            $type = '';
+        }
+    
+        return $type;
+    }
+
     public static function approveDocument($bookId, $docId, $revisionNumber, $remarks, $actionType, $modelName = null)
     {
         $user = Helper::getAuthenticatedUser();

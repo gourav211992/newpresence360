@@ -52,22 +52,22 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
-                                <div class="card-body customernewsection-form"> 
+                                <div class="card-body customernewsection-form">
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <div class="newheader  border-bottom mb-2 pb-25"> 
+                                            <div class="newheader  border-bottom mb-2 pb-25">
                                                 <h4 class="card-title text-theme">Basic Information</h4>
-                                                <p class="card-text">Fill the details</p> 
+                                                <p class="card-text">Fill the details</p>
                                             </div>
-                                        </div> 
-                                        <div class="col-md-9"> 
-                                            <div class="row align-items-center mb-1"> 
-                                                <div class="col-md-3"> 
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
                                                     <label class="form-label">
                                                         Location  <span class="text-danger">*</span>
-                                                    </label>  
-                                                </div> 
-                                                <div class="col-md-5">  
+                                                    </label>
+                                                </div>
+                                                <div class="col-md-5">
                                                     <div class="position-relative">
                                                         <select class="form-select select2" name="store_id" onchange="getSubStores(this.value)">
                                                             <option value="">Select Location</option>
@@ -80,13 +80,13 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="row align-items-center mb-1"> 
-                                                <div class="col-md-3"> 
+                                            <div class="row align-items-center mb-1">
+                                                <div class="col-md-3">
                                                     <label class="form-label">
                                                         Warehouse  <span class="text-danger">*</span>
-                                                    </label>  
-                                                </div> 
-                                                <div class="col-md-5">  
+                                                    </label>
+                                                </div>
+                                                <div class="col-md-5">
                                                     <div class="position-relative">
                                                         <select class="form-select select2 sub_store_id sub_store" name="sub_store_id" onchange="getDetails(this.value)">
                                                             <option value="">Select Warehouse</option>
@@ -97,10 +97,10 @@
                                         </div>
                                         <div class="col-md-3 border-start">
                                             <div class="row align-items-center mb-2">
-                                                <div class="col-md-12"> 
+                                                <div class="col-md-12">
                                                     <label class="form-label text-primary">
                                                         <strong>Status</strong>
-                                                    </label>   
+                                                    </label>
                                                     <div class="demo-inline-spacing">
                                                         @foreach ($status as $statusOption)
                                                             <div class="form-check form-check-primary mt-25">
@@ -117,19 +117,19 @@
                                                                 </label>
                                                             </div>
                                                         @endforeach
-                                                    </div> 
-                                                </div> 
-                                            </div>  
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>        
+                                </div>
                             </div>
                             <div class="card">
-								<div class="card-body customernewsection-form"> 
+								<div class="card-body customernewsection-form">
                                     <div class="border-bottom mb-2 pb-25">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <div class="newheader "> 
+                                                <div class="newheader ">
                                                     <h4 class="card-title text-theme">Structure Item Mapping Detail</h4>
                                                     <p class="card-text">Fill the details</p>
                                                 </div>
@@ -143,12 +143,12 @@
                                                 </a>
                                                 <input type="hidden" name="module_type" value="create">
                                             </div>
-                                        </div> 
+                                        </div>
                                     </div>
-                                    <div class="row"> 
+                                    <div class="row">
                                         <div class="col-md-12">
                                             <div class="table-responsive pomrnheadtffotsticky">
-                                                <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad"> 
+                                                <table class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
                                                     <thead>
                                                         <tr>
                                                             <th width="50px" class="customernewsection-form">
@@ -160,9 +160,9 @@
                                                             <th class="text-center">
                                                                 <b>Category</b>
                                                             </th>
-                                                            <th class="text-center">
+                                                            {{-- <th class="text-center">
                                                                 <b>Sub Category</b>
-                                                            </th>
+                                                            </th> --}}
                                                             <th class="text-center">
                                                                 <b>Item</b>
                                                             </th>
@@ -174,9 +174,9 @@
                                                     <tbody class="mrntableselectexcel">
                                                     </tbody>
                                                 </table>
-                                            </div> 
-                                        </div> 
-                                    </div> 
+                                            </div>
+                                        </div>
+                                    </div>
 								</div>
                             </div>
                         </div>

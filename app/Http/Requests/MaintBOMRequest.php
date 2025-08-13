@@ -23,35 +23,22 @@ class MaintBOMRequest extends FormRequest
      * @return array
      */
     public function rules()
-    {   if ($this->input('document_status') != "draft") {
-                return [
-                    'book_code' => 'required|string',
-                    'doc_number_type' => 'required|string',
-                    'doc_prefix' => 'nullable|string',
-                    'doc_suffix' => 'nullable|string',
-                    'doc_no' => 'required|integer',
-                    'document_status' => 'required|string',
-                    'book_id' => 'required|integer',
-                    'document_number' => 'required|string',
-                    'document_date' => 'required|date',
-                    'bom_name' => 'nullable|string',
-                   
-                ];
-            } else {
-                return [
-                    'book_code' => 'required|string',
-                    'doc_number_type' => 'required|string',
-                    'doc_prefix' => 'nullable|string',
-                    'doc_suffix' => 'nullable|string',
-                    'doc_no' => 'required|integer',
-                    'document_status' => 'required|string',
-                    'book_id' => 'required|integer',
-                    'document_number' => 'required|string',
-                    'document_date' => 'required|date',
-                    'bom_name' => 'required|string',
-                ];
-            }
-        
+    {
+        $isEdit = in_array($this->method(), ['PUT', 'PATCH']);
+
+        return [
+            'book_code' => $isEdit ? 'nullable|string' : 'required|string',
+            'doc_number_type' => $isEdit ? 'nullable|string' : 'required|string',
+            'doc_prefix' => 'nullable|string',
+            'doc_suffix' => 'nullable|string',
+            'doc_no' => $isEdit ? 'nullable|integer' : 'required|integer',
+            'document_status' => 'required|string',
+            'book_id' => $isEdit ? 'nullable|integer' : 'required|integer',
+            'document_number' => $isEdit ? 'nullable|string' : 'required|string',
+            'document_date' => $isEdit ? 'nullable|date' : 'required|date',
+            'bom_name' => 'required|string',
+        ];
+
     }
 
     /**
@@ -72,7 +59,7 @@ class MaintBOMRequest extends FormRequest
             'document_number' => 'Document Number',
             'document_date' => 'Document Date',
             'bom_name' => 'Bom Name',
-            ];
+        ];
     }
 
     /**
@@ -101,6 +88,6 @@ class MaintBOMRequest extends FormRequest
             'document_date.date' => 'The Document Date must be a valid date.',
             'bom_name.string' => 'The Asset Name must be a valid string.',
             'bom_name.unique' => 'The Asset Name has already been taken.',
-            ];
+        ];
     }
 }

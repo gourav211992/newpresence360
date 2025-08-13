@@ -40,34 +40,34 @@
 			</div>
 			<div class="content-body">
 				<form id="maint-bom-form" method="POST" action="{{ route('maint-bom.store') }}"
-											enctype="multipart/form-data">
+					enctype="multipart/form-data">
 
-											@csrf
-											
-				<section id="basic-datatable">
-					<div class="row">
-						<div class="col-12">
+					@csrf
 
-							<div class="card">
-								<div class="card-body customernewsection-form">
+					<section id="basic-datatable">
+						<div class="row">
+							<div class="col-12">
 
-									<div class="border-bottom mb-2 pb-25">
-										<div class="row">
-											<div class="col-md-6">
-												<div class="newheader ">
-													<h4 class="card-title text-theme">Basic Information</h4>
-													<p class="card-text">Fill the details</p>
+								<div class="card">
+									<div class="card-body customernewsection-form">
+
+										<div class="border-bottom mb-2 pb-25">
+											<div class="row">
+												<div class="col-md-6">
+													<div class="newheader ">
+														<h4 class="card-title text-theme">Basic Information</h4>
+														<p class="card-text">Fill the details</p>
+													</div>
 												</div>
+
 											</div>
-											
 										</div>
-									</div>
 
 
 
 
-									<div class="row">
-										<input type ="hidden" name="book_code" id ="book_code_input">
+										<div class="row">
+											<input type="hidden" name="book_code" id="book_code_input">
 											<input type="hidden" name="spare_parts" id="spare_parts">
 											<input type="hidden" name="doc_number_type" id="doc_number_type">
 											<input type="hidden" name="doc_reset_pattern" id="doc_reset_pattern">
@@ -141,174 +141,172 @@
 												</div>
 
 											</div>
-										
+
+
+										</div>
+
 
 									</div>
-
-
 								</div>
-							</div>
-							<div class="card">
-								<div class="card-body customernewsection-form">
+								<div class="card">
+									<div class="card-body customernewsection-form">
 
-									<div class="border-bottom mb-2 pb-25">
-										<div class="row">
-											<div class="col-md-6">
-												<div class="newheader ">
-													<h4 class="card-title text-theme">Spare Parts Detail</h4>
-													<p class="card-text">Fill the details</p>
+										<div class="border-bottom mb-2 pb-25">
+											<div class="row">
+												<div class="col-md-6">
+													<div class="newheader ">
+														<h4 class="card-title text-theme">Spare Parts Detail</h4>
+														<p class="card-text">Fill the details</p>
+													</div>
+												</div>
+												<div class="col-md-6 text-sm-end">
+													<a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
+														<i data-feather="x-circle"></i> Delete</a>
+													<a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
+														<i data-feather="plus"></i> Add New Item</a>
 												</div>
 											</div>
-											<div class="col-md-6 text-sm-end">
-												<a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
-													<i data-feather="x-circle"></i> Delete</a>
-												<a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
-													<i data-feather="plus"></i> Add New Item</a>
-											</div>
-										</div>
-									</div>
-
-
-									<div class="table-responsive pomrnheadtffotsticky">
-										<table id="itemTable"
-											class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
-											<thead>
-												<tr>
-													<th width="62" class="customernewsection-form">
-														<div class="form-check form-check-primary custom-checkbox">
-															<input type="checkbox" class="form-check-input" id="checkAll">
-															<label class="form-check-label" for="Email"></label>
-														</div>
-													</th>
-													<th width="285">Item Code</th>
-													<th width="208">Item Name</th>
-													<th>Attributes</th>
-													<th>UOM</th>
-													<th>Qty</th>
-												</tr>
-											</thead>
-											<tbody class="mrntableselectexcel">
-												<tr class="trselected">
-													<td class="customernewsection-form">
-														<div class="form-check form-check-primary custom-checkbox">
-															<input type="checkbox" class="form-check-input row-check"
-																id="Email">
-															<label class="form-check-label" for="Email"></label>
-														</div>
-													</td>
-													<td class="poprod-decpt">
-														<input type="hidden" class="item_id">
-														<input required type="text" placeholder="Select" name="item[]"
-															class="item_code form-control mw-100 ledgerselecct mb-25" />
-													</td>
-													<td required class="poprod-decpt">
-														<input type="text" placeholder="Select"
-															class="item_name form-control mw-100 ledgerselecct mb-25" />
-													</td>
-
-													<td class="poprod-decpt">
-														<input type="hidden" class="attribute">
-														<button data-bs-toggle="modal" data-bs-target="#attribute"
-															class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-															style="font-size: 10px">Attributes</button>
-													</td>
-													<td>
-														<select class="uom form-select mw-100" name="uom[]" required>
-														
-														</select>
-													</td>
-													<td><input type="number" class="qty form-control mw-100"  name="qty[]"
-															required /></td>
-												</tr>
-											</tbody>
-											<tfoot>
-
-
-												<tr valign="top">
-													<td colspan="6" rowspan="10">
-														<table class="table border">
-															<tr>
-																<td class="p-0">
-																	<h6 class="text-dark mb-0 bg-light-primary py-1 px-50">
-																		<strong>Part Details</strong>
-																	</h6>
-																</td>
-															</tr>
-															<tr>
-																<td class="poprod-decpt">
-																	<span class="poitemtxt mw-100"><strong>Name</strong>:<span id="part_name"></span></span>
-																</td>
-															</tr>
-															<tr>
-																<td class="poprod-decpt">
-																	<span
-																		class="badge rounded-pill badge-light-primary"><strong>HSN</strong>:
-																		<span id="hsn"></span></span>
-																	<span
-																		class="badge rounded-pill badge-light-primary"><strong>Color</strong>:
-																		<span id="color"></span></span>
-																	<span
-																		class="badge rounded-pill badge-light-primary"><strong>Size</strong>:
-																		<span id="size"></span></span>
-																</td>
-															</tr>
-															<tr>
-																<td class="poprod-decpt">
-																	<span
-																		class="badge rounded-pill badge-light-primary"><strong>Inv.
-																			UOM</strong>: <span id="uom"></span></span>
-																	<span
-																		class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
-																		<span id="qty"></span></span>
-																</td>
-															</tr>
-															<tr>
-																{{-- <td class="poprod-decpt">
-																	<span
-																		class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>:
-																		<span id="remarks"></span></span>
-																</td> --}}
-															</tr>
-														</table>
-													</td>
-
-												</tr>
-
-											</tfoot>
-										</table>
-									</div>
-
-
-									<div class="row mt-2">
-										<div class="col-md-4">
-											<div class="mb-1">
-												<label class="form-label">Upload Document</label>
-												<input type="file" name="document" class="form-control">
-											</div>
 										</div>
 
-										<div class="col-md-12">
-											<div class="mb-1">
-												<label class="form-label">Final Remarks</label>
-												<textarea type="text" name="remarks" rows="4" class="form-control"
-													placeholder="Enter Remarks here..."></textarea>
 
-											</div>
+										<div class="table-responsive pomrnheadtffotsticky">
+											<table id="itemTable"
+												class="table myrequesttablecbox table-striped po-order-detail custnewpo-detail border newdesignerptable newdesignpomrnpad">
+												<thead>
+													<tr>
+														<th width="62" class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input"
+																	id="checkAll">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</th>
+														<th width="285">Item Code</th>
+														<th width="208">Item Name</th>
+														<th>Attributes</th>
+														<th>UOM</th>
+														<th>Qty</th>
+													</tr>
+												</thead>
+												<tbody class="mrntableselectexcel">
+													<tr class="trselected">
+														<td class="customernewsection-form">
+															<div class="form-check form-check-primary custom-checkbox">
+																<input type="checkbox" class="form-check-input row-check"
+																	id="Email">
+																<label class="form-check-label" for="Email"></label>
+															</div>
+														</td>
+														<td class="poprod-decpt">
+															<input type="hidden" class="item_id">
+															<input required type="text" placeholder="Select" name="item[]"
+																class="item_code form-control mw-100 ledgerselecct mb-25" />
+														</td>
+														<td required class="poprod-decpt">
+															<input type="text" placeholder="Select"
+																class="item_name form-control mw-100 ledgerselecct mb-25" />
+														</td>
+
+														<td class="poprod-decpt">
+															<input type="hidden" class="attribute">
+															<button data-bs-toggle="modal" data-bs-target="#attribute"
+																class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+																style="font-size: 10px">Attributes</button>
+														</td>
+														<td>
+															<select class="uom form-select mw-100" name="uom[]" required>
+
+															</select>
+														</td>
+														<td><input type="number" class="qty form-control mw-100"
+																name="qty[]" required /></td>
+													</tr>
+												</tbody>
+												<tfoot>
+
+
+													<tr valign="top">
+														<td colspan="6" rowspan="10">
+															<table class="table border">
+																<tr>
+																	<td class="p-0">
+																		<h6
+																			class="text-dark mb-0 bg-light-primary py-1 px-50">
+																			<strong>Part Details</strong>
+																		</h6>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="poitemtxt mw-100"><strong>Name</strong>:<span
+																				id="part_name"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt" id="attributes_badges">
+																		
+																	</td>
+																</tr>
+																<tr>
+																	<td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Inv.
+																				UOM</strong>: <span id="uom"></span></span>
+																		<span
+																			class="badge rounded-pill badge-light-primary"><strong>Qty.</strong>:
+																			<span id="qty"></span></span>
+																	</td>
+																</tr>
+																<tr>
+																	{{-- <td class="poprod-decpt">
+																		<span
+																			class="badge rounded-pill badge-light-secondary"><strong>Remarks</strong>:
+																			<span id="remarks"></span></span>
+																	</td> --}}
+																</tr>
+															</table>
+														</td>
+
+													</tr>
+
+												</tfoot>
+											</table>
 										</div>
 
+
+										<div class="row mt-2">
+											<div class="col-md-4">
+												<div class="mb-1">
+													<label class="form-label">Upload Document</label>
+													<input type="file" name="document" class="form-control">
+												</div>
+											</div>
+
+											<div class="col-md-12">
+												<div class="mb-1">
+													<label class="form-label">Final Remarks</label>
+													<textarea type="text" name="remarks" rows="4" class="form-control"
+														placeholder="Enter Remarks here..."></textarea>
+
+												</div>
+											</div>
+
+										</div>
+
+
 									</div>
-
-
 								</div>
-							</div>
 
+							</div>
 						</div>
-					</div>
-					<!-- Modal to add new record -->
+						<!-- Modal to add new record -->
+
+					</section>
+				</form>
 
 				</section>
 			</form>
-
 
 			</div>
 		</div>
@@ -319,6 +317,14 @@
 	<div class="sidenav-overlay"></div>
 	<div class="drag-target"></div>
 
+			</div>
+		</div>
+	</div>
+	<!-- END: Content-->
+
+
+	<div class="sidenav-overlay"></div>
+	<div class="drag-target"></div>
 
 
 	<div class="modal fade text-start" id="overhead" tabindex="-1" aria-labelledby="myModalLabel17" aria-hidden="true">
@@ -464,7 +470,6 @@
 
 							</tbody>
 
-
 						</table>
 					</div>
 				</div>
@@ -566,44 +571,86 @@
 			if ($selected.length) {
 				console.log("qty " + $selected.find('.qty').val());
 				$('#part_name').text($selected.find('.item_name').val());
-				$('#uom').text($selected.find('.uom').val());
+				$('#uom').text($selected.find('.uom option:selected').text());
 				$('#qty').text($selected.find('.qty').val());
+				let $selectElement = $selected.find('.item_code');
+				let $badgesContainer = $('#attributes_badges'); // container for badges
+
+				if ($selectElement.val() !== "") {
+					let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
+					let $hiddenInput = $selected.find('.attribute');
+					let existingAttributes = $hiddenInput.length && $hiddenInput.val()
+						? JSON.parse($hiddenInput.val())
+						: [];
+
+					if (!attributesJSON.length) {
+						$badgesContainer.html('<span>No attributes available</span>');
+						return;
+					}
+
+					let badgesHtml = '';
+
+					$.each(attributesJSON, function (index, element) {
+						// Find selected value from existingAttributes
+						let selectedValObj = existingAttributes.find(attr => attr.item_attribute_id === element.id);
+						let selectedVal = selectedValObj ? selectedValObj.value_id : '';
+
+						// Find text for selected value
+						let selectedText = '';
+						if (selectedVal) {
+							let valObj = element.values_data.find(v => v.id === selectedVal);
+							selectedText = valObj ? valObj.value : '';
+						}
+
+						badgesHtml += `
+					<span class="badge rounded-pill badge-light-primary" style="margin-right:5px;">
+						<strong>${element.group_name}</strong>: <span>${selectedText}</span>
+					</span>
+				`;
+					});
+
+					$badgesContainer.html(badgesHtml);
+
+				} else {
+					$badgesContainer.html('');
+				}
+
 			}
 		}
 		$('#addNewRowBtn').on('click', function () {
 			rowCount++;
 			let newRow = `<tr>
-													<td class="customernewsection-form">
-														<div class="form-check form-check-primary custom-checkbox">
-															<input type="checkbox" class="form-check-input row-check"
-																id="Email">
-															<label class="form-check-label" for="Email"></label>
-														</div>
-													</td>
-													<td class="poprod-decpt">
-														<input type="hidden" class="item_id">
-														<input required type="text" placeholder="Select" name="item[]"
-															class="item_code form-control mw-100 ledgerselecct mb-25" />
-													</td>
-													<td required class="poprod-decpt">
-														<input type="text" placeholder="Select"
-															class="item_name form-control mw-100 ledgerselecct mb-25" />
-													</td>
+															<td class="customernewsection-form">
+																<div class="form-check form-check-primary custom-checkbox">
+																	<input type="checkbox" class="form-check-input row-check"
+																		id="Email">
+																	<label class="form-check-label" for="Email"></label>
+																</div>
+															</td>
+															<td class="poprod-decpt">
+																<input type="hidden" class="item_id">
+																<input required type="text" placeholder="Select" name="item[]"
+																	class="item_code form-control mw-100 ledgerselecct mb-25" />
+															</td>
+															<td required class="poprod-decpt">
+																<input type="text" placeholder="Select"
+																	class="item_name form-control mw-100 ledgerselecct mb-25" />
+															</td>
 
-													<td class="poprod-decpt">
-														<input type="hidden" class="attribute">
-														<button data-bs-toggle="modal" data-bs-target="#attribute"
-															class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
-															style="font-size: 10px">Attributes</button>
-													</td>
-													<td>
-														<select class="uom form-select mw-100" name="uom[]" required>
-														
-														</select>
-													</td>
-													<td><input type="number" class="qty form-control mw-100"  name="qty[]"
-															required /></td>
-												</tr>																  `;
+															<td class="poprod-decpt">
+																<input type="hidden" class="attribute">
+																<button data-bs-toggle="modal" data-bs-target="#attribute"
+																	class="btn p-25 btn-sm btn-outline-secondary attributeBtn"
+																	style="font-size: 10px">Attributes</button>
+															</td>
+															<td>
+																<select class="uom form-select mw-100" name="uom[]" required>
+
+																</select>
+															</td>
+															<td><input type="number" class="qty form-control mw-100"  name="qty[]"
+																	required /></td>
+														</tr>																  `;
 			$('.mrntableselectexcel').append(newRow);
 			initAutoForItem('.item_code');
 
@@ -729,28 +776,28 @@
 		$('#book_id').trigger('change');
 		initAutoForItem('.item_code');
 		function updateJsonData() {
-    const allRows = [];
+			const allRows = [];
 
-    $('.mrntableselectexcel tbody tr').each(function () {
-        const row = $(this);
-        const itemId = row.find('.item_id').val();
+			$('.mrntableselectexcel tr').each(function () {
+				const row = $(this);
+				const itemId = row.find('.item_id').val();
 
-        if (itemId) { // skip empty rows
-            const rowData = {
-                item_id: itemId,
-                item_code: row.find('.item_code').val() || '',
-                item_name: row.find('.item_name').val() || '',
-                attribute: row.find('.attribute').val() || '',
-                qty: row.find('.qty').val() || 0,
-                uom_id: row.find('.uom').val() || '',
-                uom_name: row.find('.uom option:selected').text() || '',
-            };
-            allRows.push(rowData);
-        }
-    });
+				if (itemId) { // skip empty rows
+					const rowData = {
+						item_id: itemId,
+						item_code: row.find('.item_code').val() || '',
+						item_name: row.find('.item_name').val() || '',
+						attribute: row.find('.attribute').val() || '',
+						qty: row.find('.qty').val() || 0,
+						uom_id: row.find('.uom').val() || '',
+						uom_name: row.find('.uom option:selected').text() || '',
+					};
+					allRows.push(rowData);
+				}
+			});
 
-    $('#spare_parts').val(JSON.stringify(allRows));
-}
+			$('#spare_parts').val(JSON.stringify(allRows));
+		}
 
 
 		document.getElementById('save-draft-btn').addEventListener('click', function () {
@@ -916,13 +963,9 @@
 			};
 		}
 
-		function changeAttributeVal(selectElem) {
-			// Get the row containing this select
-			const row = selectElem.closest('tr');
+		function changeAttributeVal($row) {
+			let hiddenInput = $row.find('.attribute');
 
-			// Find the hidden input with class "attribute" in the same parent container (e.g. the parent row or modal)
-			// Adjust the selector as per actual DOM structure
-			const hiddenInput = document.querySelector('.attribute');
 
 			if (!hiddenInput) return;
 
@@ -950,32 +993,30 @@
 			});
 
 			// Update hidden input with JSON
-			hiddenInput.value = JSON.stringify(selectedAttributes);
+			hiddenInput.val(JSON.stringify(selectedAttributes));
+			console.log(selectedAttributes);
 		}
 
 
 		$(document).on('click', '.attributeBtn', function (e) {
 			let $tr = $(this).closest('tr');
 			let $selectElement = $tr.find('.item_code');
-			let $attributesTable = $('#attribute_table');
+			let $attributesTable = $('#attribute_table'); // modal table
+			$attributesTable.data('currentRow', $tr);
 
 			if ($selectElement.val() !== "") {
 				let attributesJSON = JSON.parse($selectElement.attr('data-attr') || '[]');
-
-				// Find hidden input inside this row
 				let $hiddenInput = $tr.find('.attribute');
-
 				let existingAttributes = $hiddenInput.length && $hiddenInput.val()
 					? JSON.parse($hiddenInput.val())
 					: [];
 
-				if (!attributesJSON || attributesJSON.length === 0) {
+				if (!attributesJSON.length) {
 					$attributesTable.html(`
-						<tr>
-							<td colspan="2" class="text-center">No attributes available</td>
-						</tr>
-					`);
-					// Possibly disable button here if you want
+							<tr>
+								<td colspan="2" class="text-center">No attributes available</td>
+							</tr>
+						`);
 					return;
 				}
 
@@ -990,39 +1031,43 @@
 						);
 
 						optionsHtml += `
-							<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
-						`;
+								<option value='${value.id}' ${isSelected ? 'selected' : ''}>${value.value}</option>
+							`;
 					});
 
 					innerHtml += `
-						<tr>
-							<td>
-								${element.group_name}
-								<input type="hidden" name="id" value="${element.id}">
-							</td>
-							<td>
-								<select class="form-select select2" id="attribute_val_${index}" style="max-width:100% !important;">
-									<option value="">Select</option>
-									${optionsHtml}
-								</select>
-							</td>
-						</tr>
-					`;
+							<tr>
+								<td>
+									${element.group_name}
+									<input type="hidden" name="id" value="${element.id}">
+								</td>
+								<td>
+									<select class="form-select select2" style="max-width:100% !important;">
+										<option value="">Select</option>
+										${optionsHtml}
+									</select>
+								</td>
+							</tr>
+						`;
 				});
 
 				$attributesTable.html(innerHtml);
 
-				// Bind change event on the new selects here instead of inline onchange
+				// Initialize select2
+
+				//Bind change event
 				$attributesTable.find('select').off('change').on('change', function () {
-					changeAttributeVal(this);
+					changeAttributeVal($tr);
 				});
+				$attributesTable.find('select').select2();
+
 
 			} else {
 				$attributesTable.html(`
-					<tr>
-						<td colspan="2" class="text-center">No attributes available</td>
-					</tr>
-				`);
+						<tr>
+							<td colspan="2" class="text-center">No attributes available</td>
+						</tr>
+					`);
 			}
 		});
 		function closeModal(id) {

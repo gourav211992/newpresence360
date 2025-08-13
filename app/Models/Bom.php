@@ -46,7 +46,7 @@ class Bom extends Model
         'type',
         'bom_type',
         'customizable',
-        'safety_buffer_perc'
+        'safety_buffer_perc',
     ];
 
     public $referencingRelationships = [

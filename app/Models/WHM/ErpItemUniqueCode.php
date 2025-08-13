@@ -44,6 +44,7 @@ class ErpItemUniqueCode extends Model
         'action_by',
         'action_at',
         'job_type',
+        'trns_type',
     ];
 
     // protected  $casts = [

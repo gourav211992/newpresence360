@@ -52,6 +52,7 @@ class JobOrder extends Model
         'document_status',
         'approval_level',
         'remarks',
+        'tnc',
         'payment_term_id',
         'payment_term_code',
         'total_item_value',

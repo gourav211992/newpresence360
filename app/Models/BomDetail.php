@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class BomDetail extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'erp_bom_details';
 
     protected $fillable = [
@@ -35,13 +35,14 @@ class BomDetail extends Model
         'remark',
         'vendor_id',
         'sequence_no',
+        'is_inherit_batch_item',
     ];
 
     public $referencingRelationships = [
         'item' => 'item_id',
         'uom' => 'uom_id',
-        'section' => 'section_id', 
-        'subSection' => 'sub_section_id', 
+        'section' => 'section_id',
+        'subSection' => 'sub_section_id',
         'station' => 'station_id'
     ];
 
@@ -50,7 +51,7 @@ class BomDetail extends Model
         $formattedQty = sprintf("%.6f", (float) $this->attributes['qty']);
         return $formattedQty;
     }
-    
+
     public function getSuperceededCostAttribute()
     {
         $formattedQty = sprintf("%.6f", (float) $this->attributes['superceeded_cost']);
@@ -170,7 +171,7 @@ class BomDetail extends Model
     public function subSection()
     {
         return $this->belongsTo(ProductSectionDetail::class, 'sub_section_id');
-    } 
+    }
 
     public function station()
     {
@@ -180,7 +181,7 @@ class BomDetail extends Model
     public function section()
     {
         return $this->belongsTo(ProductSection::class, 'section_id');
-    } 
+    }
 
     /*Bom header item*/
     public function bomHeader()
@@ -196,6 +197,6 @@ class BomDetail extends Model
     public function norm()
     {
         return $this->hasOne(BomNormsCalculation::class,'bom_detail_id');
-    } 
+    }
 
 }

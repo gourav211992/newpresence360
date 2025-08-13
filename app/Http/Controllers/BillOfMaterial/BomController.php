@@ -38,6 +38,7 @@ use App\Models\ProductionRoute;
 use App\Models\Station;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Str;
+
 class BomController extends Controller
 {
     # Bill of material list
@@ -47,19 +48,19 @@ class BomController extends Controller
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
         if (request()->ajax()) {
             $search = $request->get('search')['value'] ?? '';
             $type = $request->type == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-            $boms = Bom::where('type',$type)
-                    ->where('bom_type',ConstantHelper::FIXED)
-                    ->withDraftListingLogic()
-                    ->latest();
+            $boms = Bom::where('type', $type)
+                ->where('bom_type', ConstantHelper::FIXED)
+                ->withDraftListingLogic()
+                ->latest();
             return DataTables::of($boms)
                 ->addIndexColumn()
                 ->editColumn('document_status', function ($row) use ($type) {
@@ -97,17 +98,17 @@ class BomController extends Controller
                     return $row->item ? $row->item?->item_name : 'N/A';
                 })
                 ->addColumn('attributes', function ($row) {
-                   $attributes = $row->bomAttributes;
-                   $html = '';
-                   foreach($attributes as $attribute) {
-                   $attr = AttributeGroup::where('id', intval($attribute->attribute_name))->first();
-                   $attrValue = Attribute::where('id', intval($attribute->attribute_value))->first();
-                       if ($attr && $attrValue) { 
+                    $attributes = $row->bomAttributes;
+                    $html = '';
+                    foreach ($attributes as $attribute) {
+                        $attr = AttributeGroup::where('id', intval($attribute->attribute_name))->first();
+                        $attrValue = Attribute::where('id', intval($attribute->attribute_value))->first();
+                        if ($attr && $attrValue) {
                             $html .= "<span class='badge rounded-pill badge-light-primary'><strong>{$attr->name}</strong>: {$attrValue->value}</span>";
-                       } else {
+                        } else {
                             // $html .= "<span class='badge rounded-pill badge-light-secondary'><strong>Attribute not found</strong></span>";
-                       }
-                   }
+                        }
+                    }
                     return $html;
                 })
                 ->addColumn('uom_name', function ($row) {
@@ -116,21 +117,21 @@ class BomController extends Controller
                 ->addColumn('components', function ($row) {
                     return $row->bomItems->count();
                 })
-                ->editColumn('total_item_value', function ($row) use($canView) {
-                    if($canView) {
-                        return number_format($row->total_item_value,2);
+                ->editColumn('total_item_value', function ($row) use ($canView) {
+                    if ($canView) {
+                        return number_format($row->total_item_value, 2);
                     }
                     return "";
                 })
-                ->addColumn('overhead', function ($row) use($canView) {
-                    if($canView) {
-                        return number_format(($row->item_overhead_amount + $row->header_overhead_amount),2);
+                ->addColumn('overhead', function ($row) use ($canView) {
+                    if ($canView) {
+                        return number_format(($row->item_overhead_amount + $row->header_overhead_amount), 2);
                     }
                     return "";
                 })
-                ->addColumn('total_cost', function ($row) use($canView) {
-                    if($canView) {
-                        return number_format(($row->total_item_value + $row->item_overhead_amount + $row->header_overhead_amount),2);
+                ->addColumn('total_cost', function ($row) use ($canView) {
+                    if ($canView) {
+                        return number_format(($row->total_item_value + $row->item_overhead_amount + $row->header_overhead_amount), 2);
                     }
                     return "";
                 })
@@ -139,9 +140,9 @@ class BomController extends Controller
                     if ($search = $request->get('search')['value']) {
                         $query->where(function ($q) use ($search) {
                             $q->where('book_code', 'like', "%{$search}%")
-                              ->orWhere('item_code', 'like', "%{$search}%")
-                              ->orWhere('item_name', 'like', "%{$search}%")
-                              ->orWhere('document_number', 'like', "%{$search}%");
+                                ->orWhere('item_code', 'like', "%{$search}%")
+                                ->orWhere('item_name', 'like', "%{$search}%")
+                                ->orWhere('document_number', 'like', "%{$search}%");
                         });
                     }
                 })
@@ -155,23 +156,35 @@ class BomController extends Controller
     public function create(Request $request)
     {
         $canView = true;
+
         $parentUrl = request()->segments()[0];
+
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
+
         if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
         } 
+
         if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
+
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
+
         if (count($servicesBooks['services']) == 0) {
             return redirect()->back();
         }
+
         $productionTypes = ['In-house','Job Work'];
+
+        $productionTypes = ['In-house', 'Job Work'];
+
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
-        $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
-                                ->get();
+
+        $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)->get();
+
         $customizables = ['yes','no'];
+
         return view('billOfMaterial.create', [
             'books' => $books,
             'productionTypes' => $productionTypes,
@@ -181,39 +194,40 @@ class BomController extends Controller
             'customizables' => $customizables,
             'canView' => $canView
         ]);
+
     }
 
-    #Bill of material store
     public function store(BomRequest $request)
     {
+        // dd($request->components);
         # check validation
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-        if($request->document_status == ConstantHelper::SUBMITTED) {
+        if ($request->document_status == ConstantHelper::SUBMITTED) {
             $allStations = [];
             foreach ($request->input('components', []) as $index => $component) {
                 $stationId = isset($component['station_id']) ? $component['station_id'] : null;
-                if($stationId) {
+                if ($stationId) {
                     $allStations[] = intval($stationId);
-                } 
+                }
             }
             $allStations = array_unique($allStations);
             $productionStationIds = [];
             $productionRouteId = $request->production_route_id;
             $productionRoute = ProductionRoute::find($productionRouteId);
-            if($productionRoute) {
-                $productionStationIds = $productionRoute->details()->where('consumption','yes')->pluck('station_id')->toArray(); 
+            if ($productionRoute) {
+                $productionStationIds = $productionRoute->details()->where('consumption', 'yes')->pluck('station_id')->toArray();
             }
-            if($allStations !== $productionStationIds) {
+            if ($allStations !== $productionStationIds) {
                 $arrayDiff = array_diff($productionStationIds, $allStations);
-                if(count($arrayDiff)) {
+                if (count($arrayDiff)) {
                     $arrayDiff = array_values($arrayDiff);
                     $station = Station::whereIn('id', $arrayDiff)->pluck('name')->implode(',');
                     $message = "Consumption not defined for {$station}.";
@@ -228,10 +242,10 @@ class BomController extends Controller
         try {
             # Bom Header save
             $user = Helper::getAuthenticatedUser();
-            $organization = Organization::where('id', $user->organization_id)->first(); 
+            $organization = Organization::where('id', $user->organization_id)->first();
             $bom = new Bom;
             $bom->bom_type =  ConstantHelper::FIXED;
-            $bom->type = $request->type ?? ConstantHelper::BOM_SERVICE_ALIAS; 
+            $bom->type = $request->type ?? ConstantHelper::BOM_SERVICE_ALIAS;
             $bom->organization_id = $organization->id;
             $bom->group_id = $organization->group_id;
             $bom->company_id = $organization->company_id;
@@ -248,7 +262,7 @@ class BomController extends Controller
             // $bom->status = $request->status;
             $bom->remarks = $request->remarks;
             # Extra Column
-            $document_number = $request->document_number ?? null;   
+            $document_number = $request->document_number ?? null;
             /**/
             $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
             if (!isset($numberPatternData)) {
@@ -258,15 +272,15 @@ class BomController extends Controller
                 ], 422);
             }
             $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $document_number;
-            $regeneratedDocExist = Bom::where('book_id',$request->book_id)
-                ->where('document_number',$document_number)->first();
-                //Again check regenerated doc no
-                if (isset($regeneratedDocExist)) {
-                    return response()->json([
-                        'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
-                        'error' => "",
-                    ], 422);
-                }
+            $regeneratedDocExist = Bom::where('book_id', $request->book_id)
+                ->where('document_number', $document_number)->first();
+            //Again check regenerated doc no
+            if (isset($regeneratedDocExist)) {
+                return response()->json([
+                    'message' => ConstantHelper::DUPLICATE_DOCUMENT_NUMBER,
+                    'error' => "",
+                ], 422);
+            }
 
             $bom->doc_number_type = $numberPatternData['type'];
             $bom->doc_reset_pattern = $numberPatternData['reset_pattern'];
@@ -281,7 +295,7 @@ class BomController extends Controller
             $bom->save();
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
-                foreach($request->all()['instructions'] as $index => $instruction) {
+                foreach ($request->all()['instructions'] as $index => $instruction) {
                     $bomInstruction = new BomInstruction;
                     $bomInstruction->bom_id = $bom->id;
                     $bomInstruction->station_id = $instruction['station_id'];
@@ -303,7 +317,7 @@ class BomController extends Controller
                                 $newMedia = $media->replicate();
                                 $newMedia->uuid = (string) Str::uuid();
                                 $newMedia->model_id = $bomInstruction->id;
-                                if (!empty($media->file_path) && Storage::exists($media->file_path)){
+                                if (!empty($media->file_path) && Storage::exists($media->file_path)) {
                                     $filename = pathinfo($media->file_path, PATHINFO_BASENAME);
                                     $extension = pathinfo($filename, PATHINFO_EXTENSION);
                                     $newPath = 'bom_instruction/' . uniqid() . '.' . $extension;
@@ -317,17 +331,17 @@ class BomController extends Controller
                 }
             }
 
-            if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
+            if ($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $quote_bom_id = $request->quote_bom_id;
                 $quoteBom = Bom::find($quote_bom_id);
-                if($quoteBom) {
+                if ($quoteBom) {
                     $quoteBom->production_bom_id = $bom->id;
                     $quoteBom->save();
                 }
             }
 
             # Save header attribute
-            foreach($bom->item->itemAttributes as  $key => $itemAttribute) {
+            foreach ($bom->item->itemAttributes as  $key => $itemAttribute) {
                 $key = $key + 1;
                 $headerAttr = @$request->all()['attributes'][$key];
                 if (isset($headerAttr['attr_group_id'][$itemAttribute->attribute_group_id])) {
@@ -346,7 +360,7 @@ class BomController extends Controller
             if (isset($request->all()['components'])) {
                 $consumptionMethod = $request->consumption_method;
                 $_index = 1;
-                foreach($request->all()['components'] as $component) {
+                foreach ($request->all()['components'] as $component) {
                     # Bom Detail Save
                     $bomDetail = new BomDetail;
                     $bomDetail->bom_id = $bom->id;
@@ -361,6 +375,7 @@ class BomController extends Controller
                     $bomDetail->item_value = $component['item_value'] ?? 0.00;
                     $bomDetail->overhead_amount = $component['overhead_amount'] ?? 0.00;
                     $bomDetail->total_amount = $component['item_total_cost'] ?? 0.00;
+                    $bomDetail->is_inherit_batch_item = $component['is_inherit_batch_item'] ?? 0;
                     $bomDetail->sub_section_id = $component['sub_section_id'] ?? null;
                     $bomDetail->section_id = $component['section_id'] ?? null;
                     $bomDetail->section_name = $component['section_name'] ?? null;
@@ -371,7 +386,7 @@ class BomController extends Controller
                     $bomDetail->save();
 
                     # Store Norms
-                    if($consumptionMethod != 'manual') {
+                    if ($consumptionMethod != 'manual') {
                         # Norms
                         $normData = [
                             'bom_id' => $bom->id,
@@ -384,7 +399,7 @@ class BomController extends Controller
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                        if($updateData['qty_per_unit'] && $updateData['total_qty'] && $updateData['std_qty']){
+                        if ($updateData['qty_per_unit'] && $updateData['total_qty'] && $updateData['std_qty']) {
                             BomNormsCalculation::updateOrCreate($normData, $updateData);
                         }
                     }
@@ -392,7 +407,7 @@ class BomController extends Controller
                     //     # Manual
                     // }
                     #Save component Attr
-                    foreach($bomDetail->item->itemAttributes as $itemAttribute) {
+                    foreach ($bomDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             $bomAttr = new BomAttribute;
                             $bomAttr->bom_id = $bom->id;
@@ -409,8 +424,8 @@ class BomController extends Controller
 
                     #Save item overhead
                     if (isset($component['overhead'])) {
-                        foreach($component['overhead'] as $overhead) {
-                            if(isset($overhead['amnt']) && $overhead['amnt'] && $overhead['overhead_id']) {
+                        foreach ($component['overhead'] as $overhead) {
+                            if (isset($overhead['amnt']) && $overhead['amnt'] && $overhead['overhead_id']) {
                                 $bomOverhead = new BomOverhead;
                                 $bomOverhead->level = 1;
                                 $bomOverhead->bom_id = $bom->id;
@@ -432,9 +447,9 @@ class BomController extends Controller
             } else {
                 DB::rollBack();
                 return response()->json([
-                        'message' => 'Please add atleast one row in component table.',
-                        'error' => "",
-                    ], 422);
+                    'message' => 'Please add atleast one row in component table.',
+                    'error' => "",
+                ], 422);
             }
 
             // #Save summary overhead
@@ -484,21 +499,21 @@ class BomController extends Controller
             /*Update Bom header*/
             $bom->total_item_value = $bom->bomItems()->sum('item_value') ?? 0.00;
             $bom->item_overhead_amount = $bom->bomComponentOverheadItems()->sum('overhead_amount') ?? 0.00;
-            $bom->header_overhead_amount = $bom->bomOverheadItems()->where('type','H')->sum('overhead_amount') ?? 0.00;
+            $bom->header_overhead_amount = $bom->bomOverheadItems()->where('type', 'H')->sum('overhead_amount') ?? 0.00;
             $bom->save();
 
             /*Create document submit log*/
             $modelName = get_class($bom);
             $totalValue = $bom->total_value ?? 0;
             if ($request->document_status == ConstantHelper::SUBMITTED) {
-                $bookId = $bom->book_id; 
+                $bookId = $bom->book_id;
                 $docId = $bom->id;
                 $remarks = $bom->remarks;
                 $attachments = $request->file('attachment');
                 $currentLevel = $bom->approval_level ?? 1;
                 $revisionNumber = $bom->revision_number ?? 0;
                 $actionType = 'submit'; // Approve // reject // submit
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
             }
 
             if ($request->document_status == 'submitted') {
@@ -514,13 +529,13 @@ class BomController extends Controller
                 $mediaFiles = $bom->uploadDocuments($request->file('attachment'), 'bom', false);
             } else {
                 $oldBom = Bom::find($request->copy_bom_id ?? null);
-                if($oldBom) {
+                if ($oldBom) {
                     $oldAttachments = $oldBom->media;
                     foreach ($oldAttachments as $media) {
                         $newMedia = $media->replicate();
                         $newMedia->uuid = (string) Str::uuid();
                         $newMedia->model_id = $bom->id;
-                        if (!empty($media->file_path) && Storage::exists($media->file_path)){
+                        if (!empty($media->file_path) && Storage::exists($media->file_path)) {
                             $filename = pathinfo($media->file_path, PATHINFO_BASENAME);
                             $extension = pathinfo($filename, PATHINFO_EXTENSION);
                             $newPath = 'bom/' . uniqid() . '.' . $extension;
@@ -531,16 +546,16 @@ class BomController extends Controller
                     }
                 }
             }
-             //Dynamic Fields
-            $status = DynamicFieldHelper::saveDynamicFields(ErpBomDynamicField::class, $bom -> id, $request -> dynamic_field ?? []);
-            if ($status && !$status['status'] ) {
+            //Dynamic Fields
+            $status = DynamicFieldHelper::saveDynamicFields(ErpBomDynamicField::class, $bom->id, $request->dynamic_field ?? []);
+            if ($status && !$status['status']) {
                 DB::rollBack();
-                return response() -> json([
+                return response()->json([
                     'message' => $status['message'],
                     'error' => ''
                 ], 422);
             }
-            
+
             $bom->save();
 
             DB::commit();
@@ -548,7 +563,7 @@ class BomController extends Controller
             return response()->json([
                 'message' => 'Record created successfully',
                 'data' => $bom,
-            ]);   
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -567,8 +582,8 @@ class BomController extends Controller
         $moduleType = $request->type ?? 'bom';
         $customerId = $request->customer_id ?? null;
         $bomExists = Bom::where('item_id', $item?->id)
-            ->where('type',$moduleType)
-            ->where(function ($query) use ($customerId,$moduleType) {
+            ->where('type', $moduleType)
+            ->where(function ($query) use ($customerId, $moduleType) {
                 if ($moduleType == 'qbom') {
                     $query->where('customer_id', $customerId);
                 }
@@ -579,11 +594,11 @@ class BomController extends Controller
         if ($bomExists) {
             return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => "Bom already exists for this item."]);
         }
-        if($item) {
+        if ($item) {
             $item->uom;
             $specifications = $item->specifications()->whereNotNull('value')->get();
         }
-        $html = view('billOfMaterial.partials.header-attribute',compact('item','attributeGroups','specifications'))->render();
+        $html = view('billOfMaterial.partials.header-attribute', compact('item', 'attributeGroups', 'specifications'))->render();
         return response()->json(['data' => ['html' => $html, 'item' => $item], 'status' => 200, 'message' => 'fetched.']);
     }
 
@@ -593,21 +608,21 @@ class BomController extends Controller
 
         $rowCount = intval($request->rowCount) ?? 1;
         $currentTab = $request->current_tab ?? '';
-        $item = Item::with('itemAttributes.attributeGroup','approvedVendors')->find($request->item_id ?? null);
-        $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr,true) : [];
+        $item = Item::with('itemAttributes.attributeGroup', 'approvedVendors')->find($request->item_id ?? null);
+        $selectedAttr = $request->selectedAttr ? json_decode($request->selectedAttr, true) : [];
 
         $detailItemId = $request->bom_detail_id ?? null;
         $itemAttIds = [];
-        if($detailItemId) {
+        if ($detailItemId) {
             $detail = BomDetail::find($detailItemId);
-            if($detail) {
+            if ($detail) {
                 $itemAttIds = $detail->attributes()->pluck('item_attribute_id')->toArray();
             }
         }
         $itemAttributes = collect();
-        if(count($itemAttIds)) {
-            $itemAttributes = $item?->itemAttributes()->whereIn('id',$itemAttIds)->get();
-            if(count($itemAttributes) < 1) {
+        if (count($itemAttIds)) {
+            $itemAttributes = $item?->itemAttributes()->whereIn('id', $itemAttIds)->get();
+            if (count($itemAttributes) < 1) {
                 $itemAttributes = $item?->itemAttributes;
             }
         } else {
@@ -632,30 +647,30 @@ class BomController extends Controller
             }
         }
 
-        $html = view('billOfMaterial.partials.comp-attribute',compact('item','rowCount','selectedAttr','itemAttributes','oldAttributes'))->render();
+        $html = view('billOfMaterial.partials.comp-attribute', compact('item', 'rowCount', 'selectedAttr', 'itemAttributes', 'oldAttributes'))->render();
         $hiddenHtml = '';
         foreach ($itemAttributes as $attribute) {
-                $selected = '';
-                foreach ($attribute->attributes() as $value){
-                    if (in_array($value->id, $selectedAttr)){
-                        $selected = $value->id;
-                    }
+            $selected = '';
+            foreach ($attribute->attributes() as $value) {
+                if (in_array($value->id, $selectedAttr)) {
+                    $selected = $value->id;
                 }
-            if($currentTab == 'production-items') {
+            }
+            if ($currentTab == 'production-items') {
                 $hiddenHtml .= "<input type='hidden' name='productions[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
             } else {
                 $hiddenHtml .= "<input type='hidden' name='components[$rowCount][attr_group_id][$attribute->attribute_group_id][attr_name]' value=$selected>";
             }
         }
         $vendorItem = $item?->approvedVendors?->first() ?? null;
-        $vendorName = ""; 
-        $vendorId = ""; 
-        if($vendorItem) {
-            $vendorName = $vendorItem->vendor ? $vendorItem->vendor->company_name : '';  
-            $vendorId = $vendorItem->vendor ? $vendorItem->vendor->id : '';  
+        $vendorName = "";
+        $vendorId = "";
+        if ($vendorItem) {
+            $vendorName = $vendorItem->vendor ? $vendorItem->vendor->company_name : '';
+            $vendorId = $vendorItem->vendor ? $vendorItem->vendor->id : '';
         }
 
-        return response()->json(['data' => ['vendor_id' => $vendorId, 'vendor_name' => $vendorName, 'attr' => $item->itemAttributes->count(),'html' => $html, 'hiddenHtml' => $hiddenHtml,], 'status' => 200, 'message' => 'fetched.']);
+        return response()->json(['data' => ['vendor_id' => $vendorId, 'vendor_name' => $vendorName, 'attr' => $item->itemAttributes->count(), 'html' => $html, 'hiddenHtml' => $hiddenHtml,], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Add item row
@@ -664,14 +679,14 @@ class BomController extends Controller
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-        $item = json_decode($request->item,true) ?? [];
-        $componentItem = json_decode($request->component_item,true) ?? [];
+        $item = json_decode($request->item, true) ?? [];
+        $componentItem = json_decode($request->component_item, true) ?? [];
         $moduleType = $request->type ?? null;
         $customerId = $request->customer_id ?? null;
         /*Check header mandatory*/
@@ -691,28 +706,28 @@ class BomController extends Controller
         }
 
         /*Check last tr in table mandatory*/
-        if(isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
+        if (isset($componentItem['attr_require']) && isset($componentItem['item_id']) && $componentItem['row_length']) {
             if (($componentItem['attr_require'] == true || !$componentItem['item_id']) && $componentItem['row_length'] != 0) {
                 return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => 'Please fill all component details before adding new row more!']);
             }
         }
 
-        $compSelectedAttr = json_decode($request->comp_attr,true) ?? []; 
+        $compSelectedAttr = json_decode($request->comp_attr, true) ?? [];
         $attributes = [];
-        if(count($compSelectedAttr)) {
-               foreach($compSelectedAttr as $compAttr) {
-                $itemAttr = ItemAttribute::where("item_id",$componentItem['item_id'])
-                                ->where("attribute_group_id",$compAttr['attr_name'])
-                                ->first();
+        if (count($compSelectedAttr)) {
+            foreach ($compSelectedAttr as $compAttr) {
+                $itemAttr = ItemAttribute::where("item_id", $componentItem['item_id'])
+                    ->where("attribute_group_id", $compAttr['attr_name'])
+                    ->first();
                 $attributes[] = ['attribute_id' => $itemAttr?->id, 'attribute_value' => $compAttr['attr_value']];
-               }
+            }
         }
 
 
         $bomExists = ItemHelper::checkItemBomExists($componentItem['item_id'], $attributes);
         $itemType = $bomExists['sub_type'];
 
-        if(in_array($itemType ,['Finished Goods', 'WIP/Semi Finished'])) {
+        if (in_array($itemType, ['Finished Goods', 'WIP/Semi Finished'])) {
             if (!$bomExists['bom_id']) {
                 $compItem = Item::find($componentItem['item_id']);
                 $name = $compItem?->item_name;
@@ -730,12 +745,14 @@ class BomController extends Controller
         $supercedeCostRequired = false;
         $componentWasteRequired = false;
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
+        $bacthInheritRequird = isset($parameters['bacth_inherit_requird']) && is_array($parameters['bacth_inherit_requird']) && in_array('yes', array_map('strtolower', $parameters['bacth_inherit_requird']));
 
         $html = view('billOfMaterial.partials.item-row', [
             'rowCount' => $rowCount,
             'sectionRequired' => $sectionRequired,
-            'subSectionRequired' => $subSectionRequired,
             'stationRequired' => $stationRequired,
+            'subSectionRequired' => $subSectionRequired,
+            'bacthInheritRequird' => $bacthInheritRequird,
             'supercedeCostRequired' => $supercedeCostRequired,
             'componentWasteRequired' => $componentWasteRequired,
             'componentOverheadRequired' => $componentOverheadRequired,
@@ -793,20 +810,20 @@ class BomController extends Controller
                 }
             }
         }
-        $html = view('billOfMaterial.partials.comp-item-detail',compact('oldAttributes','item','selectedAttr','specifications','sectionName','subSectionName','stationName','remark','qty_per_unit','total_qty','std_qty','output'))->render();
+        $html = view('billOfMaterial.partials.comp-item-detail', compact('oldAttributes', 'item', 'selectedAttr', 'specifications', 'sectionName', 'subSectionName', 'stationName', 'remark', 'qty_per_unit', 'total_qty', 'std_qty', 'output'))->render();
         return response()->json(['data' => ['html' => $html], 'status' => 200, 'message' => 'fetched.']);
     }
 
     # Bom edit
     public function edit(Request $request, $id)
     {
-        $parentUrl = request() -> segments()[0];
+        $parentUrl = request()->segments()[0];
         $canView = true;
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -814,16 +831,16 @@ class BomController extends Controller
             return redirect()->back();
         }
         $bom = Bom::findOrFail($id);
-        $createdBy = $bom->created_by; 
+        $createdBy = $bom->created_by;
         $revision_number = $bom->revision_number;
-        $books = Helper::getBookSeriesNew($servicesAliasParam,$parentUrl, true)->get();
-        $headerAttributes = $bom->bomAttributes()->where('type','H')->get();
+        $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
+        $headerAttributes = $bom->bomAttributes()->where('type', 'H')->get();
         $selectedAttributes = $headerAttributes->pluck('attribute_value')->all();
         $totalValue = ($bom->total_item_value + $bom->item_overhead_amount + $bom->header_overhead_amount);
         $creatorType = Helper::userCheck()['type'];
-        $buttons = Helper::actionButtonDisplay($bom->book_id,$bom->document_status , $bom->id, $totalValue, $bom->approval_level, $bom->created_by ?? 0, $creatorType, $revision_number);
+        $buttons = Helper::actionButtonDisplay($bom->book_id, $bom->document_status, $bom->id, $totalValue, $bom->approval_level, $bom->created_by ?? 0, $creatorType, $revision_number);
         $revNo = $bom->revision_number;
-        if($request->has('revisionNumber')) {
+        if ($request->has('revisionNumber')) {
             $revNo = intval($request->revisionNumber);
         } else {
             $revNo = $bom->revision_number;
@@ -832,14 +849,14 @@ class BomController extends Controller
         $approvalHistory = Helper::getApprovalHistory($bom->book_id, $bom->id, $revNo, $docValue, $createdBy);
         $docStatusClass = ConstantHelper::DOCUMENT_STATUS_CSS[$bom->document_status] ?? '';
         $specifications = collect();
-        if(isset($bom->item) && $bom->item) {
+        if (isset($bom->item) && $bom->item) {
             $specifications = $bom->item->specifications()->whereNotNull('value')->get();
         }
-        $productionTypes = ['In-house','Job Work'];
+        $productionTypes = ['In-house', 'Job Work'];
 
         $view = 'billOfMaterial.edit';
 
-        if($request->has('revisionNumber') && $request->revisionNumber != $bom->revision_number) {
+        if ($request->has('revisionNumber') && $request->revisionNumber != $bom->revision_number) {
             $bom = $bom->source()->where('revision_number', $request->revisionNumber)->first();
             $view = 'billOfMaterial.view';
         }
@@ -852,16 +869,18 @@ class BomController extends Controller
         $supercedeCostRequired = false;
         $componentWasteRequired = false;
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
+        $bacthInheritRequird = isset($parameters['bacth_inherit_requird']) && is_array($parameters['bacth_inherit_requird']) && in_array('yes', array_map('strtolower', $parameters['bacth_inherit_requird']));
+
         $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
         $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
-                                ->get();
-        $customizables = ['yes','no'];
+            ->get();
+        $customizables = ['yes', 'no'];
         $isEdit = $buttons['submit'];
-        if(!$isEdit) {
-            $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true: false;
+        if (!$isEdit) {
+            $isEdit = $buttons['amend'] && intval(request('amendment') ?? 0) ? true : false;
         }
-        $headerOverheads = $bom->bomOverheadItems()->where('type','H')->orderBy('level')->get();
-        $dynamicFieldsUI = $bom -> dynamicfieldsUi();
+        $headerOverheads = $bom->bomOverheadItems()->where('type', 'H')->orderBy('level')->get();
+        $dynamicFieldsUI = $bom->dynamicfieldsUi();
 
         $oldAttributes = [];
 
@@ -907,26 +926,27 @@ class BomController extends Controller
             'componentWasteRequired' => $componentWasteRequired,
             'componentOverheadRequired' => $componentOverheadRequired,
             'productionRoutes' => $productionRoutes,
+            'bacthInheritRequird' => $bacthInheritRequird,
             'customizables' => $customizables,
             'headerOverheads' => $headerOverheads,
             'canView' => $canView,
             'dynamicFieldsUi' => $dynamicFieldsUI,
             'consumption_method' => $consumption_method,
             'isCopy' => false
-        ]); 
+        ]);
     }
 
     public function copy(Request $request, $id)
     {
         $parentUrl = request()->segments()[0];
-        $servicesAliasParam = $parentUrl == 'quotation-bom' 
-            ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS 
+        $servicesAliasParam = $parentUrl == 'quotation-bom'
+            ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS
             : ConstantHelper::BOM_SERVICE_ALIAS;
         $canView = true;
-        if($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam === ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
         }
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentUrl, $servicesAliasParam);
@@ -942,9 +962,9 @@ class BomController extends Controller
         $books = Helper::getBookSeriesNew($servicesAliasParam, $parentUrl, true)->get();
         $productionTypes = ['In-house', 'Job Work'];
         $productionRoutes = ProductionRoute::where('status', ConstantHelper::ACTIVE)
-                                ->get();
+            ->get();
 
-        $customizables = ['yes','no'];
+        $customizables = ['yes', 'no'];
         $headerAttributes = $originalBom->bomAttributes()->where('type', 'H')->get();
         $selectedAttributes = $headerAttributes->pluck('attribute_value')->all();
         $specifications = $originalBom->item?->specifications()->whereNotNull('value')->get() ?? collect();
@@ -989,30 +1009,30 @@ class BomController extends Controller
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-        if($request->document_status == ConstantHelper::SUBMITTED) {
+        if ($request->document_status == ConstantHelper::SUBMITTED) {
             $allStations = [];
             foreach ($request->input('components', []) as $index => $component) {
                 $stationId = isset($component['station_id']) ? $component['station_id'] : null;
-                if($stationId) {
+                if ($stationId) {
                     $allStations[] = intval($stationId);
-                } 
+                }
             }
             $allStations = array_unique($allStations);
             $productionStationIds = [];
             $productionRouteId = $request->production_route_id;
             $productionRoute = ProductionRoute::findOrFail($productionRouteId);
-            if($productionRoute) {
-                $productionStationIds = $productionRoute->details()->where('consumption','yes')->pluck('station_id')->toArray(); 
+            if ($productionRoute) {
+                $productionStationIds = $productionRoute->details()->where('consumption', 'yes')->pluck('station_id')->toArray();
             }
-            if($allStations !== $productionStationIds) {
+            if ($allStations !== $productionStationIds) {
                 $arrayDiff = array_diff($productionStationIds, $allStations);
-                if(count($arrayDiff)) {
+                if (count($arrayDiff)) {
                     $arrayDiff = array_values($arrayDiff);
                     $station = Station::whereIn('id', $arrayDiff)->pluck('name')->implode(',');
                     $message = "Consumption not defined for {$station}.";
@@ -1024,15 +1044,14 @@ class BomController extends Controller
             }
         }
 
-       DB::beginTransaction();
+        DB::beginTransaction();
         try {
             $bom = Bom::findOrFail($id);
             $currentStatus = $bom->document_status;
             $actionType = $request->action_type;
             $bom->bom_type = ConstantHelper::FIXED;
             $bom->customizable = $request->customizable ?? 'no';
-            if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
-            {
+            if ($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment') {
                 // $revisionData = [
                 //     ['model_type' => 'header', 'model_name' => 'Bom', 'relation_column' => ''],
                 //     ['model_type' => 'detail', 'model_name' => 'BomDetail', 'relation_column' => 'bom_id'],
@@ -1050,17 +1069,17 @@ class BomController extends Controller
                 $deletedData[$key] = json_decode($request->input($key, '[]'), true);
             }
             if (count($deletedData['deletedHeaderOverheadIds'])) {
-                BomOverhead::whereIn('id',$deletedData['deletedHeaderOverheadIds'])->delete();
+                BomOverhead::whereIn('id', $deletedData['deletedHeaderOverheadIds'])->delete();
             }
 
             if (count($deletedData['deletedItemOverheadIds'])) {
-                BomOverhead::whereIn('id',$deletedData['deletedItemOverheadIds'])->delete();
+                BomOverhead::whereIn('id', $deletedData['deletedItemOverheadIds'])->delete();
             }
 
             if (count($deletedData['deletedAttachmentIds'])) {
-                $medias = BomMedia::whereIn('id',$deletedData['deletedAttachmentIds'])
-                        // ->where('model_type', get_class($bom))    
-                        ->get();
+                $medias = BomMedia::whereIn('id', $deletedData['deletedAttachmentIds'])
+                    // ->where('model_type', get_class($bom))
+                    ->get();
                 foreach ($medias as $media) {
                     if ($request->document_status == ConstantHelper::DRAFT) {
                         Storage::delete($media->file_name);
@@ -1070,8 +1089,8 @@ class BomController extends Controller
             }
 
             if (count($deletedData['deletedBomItemIds'])) {
-                $bomItems = BomDetail::whereIn('id',$deletedData['deletedBomItemIds'])->get();
-                foreach($bomItems as $bomItem) {
+                $bomItems = BomDetail::whereIn('id', $deletedData['deletedBomItemIds'])->get();
+                foreach ($bomItems as $bomItem) {
                     $bomItem->overheads()->delete();
                     $bomItem->attributes()->delete();
                     $bomItem->delete();
@@ -1079,7 +1098,7 @@ class BomController extends Controller
             }
 
             if (count($deletedData['deletedInstructionItemIds'])) {
-                BomInstruction::whereIn('id',$deletedData['deletedInstructionItemIds'])->delete();
+                BomInstruction::whereIn('id', $deletedData['deletedInstructionItemIds'])->delete();
             }
 
             $isNewHeaderItem = false;
@@ -1101,7 +1120,7 @@ class BomController extends Controller
             $bom->save();
             # Store Instruction item
             if (isset($request->all()['instructions'])) {
-                foreach($request->all()['instructions'] as $index => $instruction) {
+                foreach ($request->all()['instructions'] as $index => $instruction) {
                     $bomInstruction = BomInstruction::find($instruction['id'] ?? null) ?? new BomInstruction;
                     $bomInstruction->bom_id = $bom->id;
                     $bomInstruction->station_id = $instruction['station_id'];
@@ -1119,23 +1138,23 @@ class BomController extends Controller
                 }
             }
 
-            if($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
+            if ($bom->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $quote_bom_id = $request->quote_bom_id;
                 $quoteBom = Bom::find($quote_bom_id);
-                if($quoteBom) {
+                if ($quoteBom) {
                     Bom::where('production_bom_id', $bom->id)->update(['production_bom_id' => null]);
                     $quoteBom->production_bom_id = $bom->id;
                     $quoteBom->save();
                 }
             }
 
-            if($isNewHeaderItem) {
+            if ($isNewHeaderItem) {
                 BomAttribute::where('bom_id', $bom->id)
-                            ->where('type', 'H')
-                            ->delete();
+                    ->where('type', 'H')
+                    ->delete();
             }
             # Save header attribute
-            foreach($bom->item->itemAttributes as  $key => $itemAttribute) {
+            foreach ($bom->item->itemAttributes as  $key => $itemAttribute) {
                 $key = $key + 1;
                 $headerAttr = @$request->all()['attributes'][$key];
                 if (isset($headerAttr['attr_group_id'][$itemAttribute->attribute_group_id])) {
@@ -1163,11 +1182,11 @@ class BomController extends Controller
             if (isset($request->all()['components'])) {
                 $consumptionMethod = $request->consumption_method;
                 $_index = 1;
-                foreach($request->all()['components'] as  $component) {
+                foreach ($request->all()['components'] as  $component) {
                     # Bom Detail Save
                     $bomDetail = BomDetail::find(@$component['bom_detail_id']) ?? new BomDetail;
                     $isNewItem = false;
-                    if(isset($bomDetail->item_id) && $bomDetail->item_id) {
+                    if (isset($bomDetail->item_id) && $bomDetail->item_id) {
                         $isNewItem = $bomDetail->item_id != ($component['item_id'] ?? null);
                     }
                     $bomDetail->bom_id = $bom->id;
@@ -1181,6 +1200,7 @@ class BomController extends Controller
                     $bomDetail->item_cost = $component['item_cost'] ?? 0.00;
                     $bomDetail->item_value = $component['item_value'] ?? 0.00;
                     $bomDetail->overhead_amount = $component['overhead_amount'] ?? 0.00;
+                    $bomDetail->is_inherit_batch_item = $component['is_inherit_batch_item'] ?? 0;
                     $bomDetail->total_amount = $component['item_total_cost'] ?? 0.00;
                     $bomDetail->sub_section_id = $component['sub_section_id'] ?? null;
                     $bomDetail->section_name = $component['section_name'] ?? null;
@@ -1192,7 +1212,7 @@ class BomController extends Controller
                     $bomDetail->save();
 
                     # Norms Save
-                    if($consumptionMethod != 'manual') {
+                    if ($consumptionMethod != 'manual') {
                         # Norms
                         $normData = [
                             'bom_id' => $bom->id,
@@ -1205,7 +1225,7 @@ class BomController extends Controller
                             'created_at' => now(),
                             'updated_at' => now(),
                         ];
-                        if($updateData['qty_per_unit'] && $updateData['total_qty'] && $updateData['std_qty']){
+                        if ($updateData['qty_per_unit'] && $updateData['total_qty'] && $updateData['std_qty']) {
                             BomNormsCalculation::updateOrCreate($normData, $updateData);
                         }
                     }
@@ -1220,7 +1240,7 @@ class BomController extends Controller
                             ->delete();
                     }
                     #Save component Attr
-                    foreach($bomDetail->item->itemAttributes as $itemAttribute) {
+                    foreach ($bomDetail->item->itemAttributes as $itemAttribute) {
                         if (isset($component['attr_group_id'][$itemAttribute->attribute_group_id])) {
                             // $bomAttrId = @$component['attr_group_id'][$itemAttribute->attribute_group_id]['attr_id'];
                             $bomAttr = BomAttribute::firstOrNew([
@@ -1244,8 +1264,8 @@ class BomController extends Controller
 
                     #Save item overhead
                     if (isset($component['overhead'])) {
-                        foreach($component['overhead'] as $overhead) {
-                            if(isset($overhead['amnt']) && $overhead['amnt'] && $overhead['overhead_id']) {
+                        foreach ($component['overhead'] as $overhead) {
+                            if (isset($overhead['amnt']) && $overhead['amnt'] && $overhead['overhead_id']) {
                                 $bomOverheadId = @$overhead['id'];
                                 $bomOverhead = BomOverhead::find($bomOverheadId) ?? new BomOverhead;
                                 $bomOverhead->level = 1;
@@ -1285,9 +1305,9 @@ class BomController extends Controller
             } else {
                 DB::rollBack();
                 return response()->json([
-                        'message' => 'Please add atleast one row in component table.',
-                        'error' => "",
-                    ], 422);
+                    'message' => 'Please add atleast one row in component table.',
+                    'error' => "",
+                ], 422);
             }
 
             #Save summary overhead
@@ -1305,10 +1325,10 @@ class BomController extends Controller
             //         }
             //     }
             // }
-            
+
             $overheadLevelCount = intval($request->orverhead_level_count) ?? 1;
             $normalizedLevel = 1;
-            for($i = 1; $i <= $overheadLevelCount; $i++) {
+            for ($i = 1; $i <= $overheadLevelCount; $i++) {
                 $headerOverheads = $request->input("header.$i.overhead", []);
                 $validOverheads = array_filter($headerOverheads, function ($row) {
                     return isset($row['overhead_id']) && floatval($row['amnt'] ?? 0) > 0;
@@ -1344,7 +1364,7 @@ class BomController extends Controller
             $bom->save();
 
             /*Create document submit log*/
-            $bookId = $bom->book_id; 
+            $bookId = $bom->book_id;
             $docId = $bom->id;
             $amendRemarks = $request->amend_remarks ?? null;
             $remarks = $bom->remarks;
@@ -1369,7 +1389,7 @@ class BomController extends Controller
                 return response()->json([
                     'message' => 'BOM approved successfully.',
                     'data' => $bom,
-                ]);   
+                ]);
             }
 
             if($currentStatus == ConstantHelper::APPROVED && $actionType == 'amendment')
@@ -1377,7 +1397,7 @@ class BomController extends Controller
                 //*amendmemnt document log*/
                 $revisionNumber = $bom->revision_number + 1;
                 $actionType = 'amendment';
-                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
+                $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $bom->revision_number = $revisionNumber;
                 $bom->approval_level = 1;
                 $bom->revision_date = now();
@@ -1397,7 +1417,7 @@ class BomController extends Controller
                 if ($request->document_status == ConstantHelper::SUBMITTED) {
                     $revisionNumber = $bom->revision_number ?? 0;
                     $actionType = 'submit'; // Approve // reject // submit
-                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
+                    $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
                 }
                 if ($request->document_status == 'submitted') {
                     // $totalValue = $bom->total_value ?? 0;
@@ -1414,38 +1434,38 @@ class BomController extends Controller
             return response()->json([
                 'message' => 'Record updated successfully',
                 'data' => $bom,
-            ]);   
+            ]);
         } catch (Exception $e) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
                 'error' => $e->getMessage(),
             ], 500);
-        } 
+        }
     }
 
     # Get Bom item cost
     public function getItemCost(Request $request)
     {
-        $selectedAttributes = json_decode($request->itemAttributes,true);
+        $selectedAttributes = json_decode($request->itemAttributes, true);
         $itemId = $request->item_id;
         $result = ItemHelper::getChildBomItemCost($itemId, $selectedAttributes);
         $itemCost = $result['cost'];
-        if(!floatval($itemCost)) {
+        if (!floatval($itemCost)) {
             $uomId = $request->uom_id ?? null;
             $currency =  CurrencyHelper::getOrganizationCurrency();
-            $currencyId = $currency->id ?? null; 
+            $currencyId = $currency->id ?? null;
             $transactionDate = $request->transaction_date ?? date('Y-m-d');
-            if($request->type == ConstantHelper::BOM_SERVICE_ALIAS) {
+            if ($request->type == ConstantHelper::BOM_SERVICE_ALIAS) {
                 $itemCost = ItemHelper::getItemCostPrice($itemId, $selectedAttributes, $uomId, $currencyId, $transactionDate);
             } else {
                 $itemCost = ItemHelper::getItemSalePrice($itemId, $selectedAttributes, $uomId, $currencyId, $transactionDate);
             }
         }
-        return response()->json(['data' => ['cost' => $itemCost,'route' => $result['route'] ?? null], 'status' => 200, 'message' => 'fetched bom header item cost']);
+        return response()->json(['data' => ['cost' => $itemCost, 'route' => $result['route'] ?? null], 'status' => 200, 'message' => 'fetched bom header item cost']);
     }
 
-        // genrate pdf
+    // genrate pdf
     public function generatePdf(Request $request, $id)
     {
         $user = Helper::getAuthenticatedUser();
@@ -1458,22 +1478,22 @@ class BomController extends Controller
 
         $canView = true;
 
-        $parentUrl = request() -> segments()[0];
+        $parentUrl = request()->segments()[0];
         $canView = true;
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
 
         $title = 'Production Bom';
-        if($bom->type != ConstantHelper::BOM_SERVICE_ALIAS) {
-            $title = 'Quotation Bom'; 
+        if ($bom->type != ConstantHelper::BOM_SERVICE_ALIAS) {
+            $title = 'Quotation Bom';
         }
         $specifications = collect();
-        if(isset($bom->item) && $bom->item) {
+        if (isset($bom->item) && $bom->item) {
             $specifications = $bom->item->specifications()->whereNotNull('value')->get();
         }
 
@@ -1490,12 +1510,12 @@ class BomController extends Controller
         $pdf = PDF::loadView(
             'pdf.bom',
             [
-                'bom'=> $bom,
-                'title'=> $title,
+                'bom' => $bom,
+                'title' => $title,
                 'organization' => $organization,
                 'organizationAddress' => $organizationAddress,
-                'totalAmount'=>$totalAmount,
-                'amountInWords'=>$amountInWords,
+                'totalAmount' => $totalAmount,
+                'amountInWords' => $amountInWords,
                 'imagePath' => $imagePath,
                 'specifications' => $specifications,
                 'docStatusClass' => $docStatusClass,
@@ -1508,7 +1528,7 @@ class BomController extends Controller
         );
 
         $pdf->setOption('isHtml5ParserEnabled', true);
-        return $pdf->stream(str_replace(' ', '', $title) .'-'. date('Y-m-d') . '.pdf');
+        return $pdf->stream(str_replace(' ', '', $title) . '-' . date('Y-m-d') . '.pdf');
     }
 
     public function revokeDocument(Request $request)
@@ -1520,7 +1540,7 @@ class BomController extends Controller
                 $revoke = Helper::approveDocument($bom->book_id, $bom->id, $bom->revision_number, '', [], 0, ConstantHelper::REVOKE, $bom->total_value, get_class($bom));
                 if ($revoke['message']) {
                     DB::rollBack();
-                    return response() -> json([
+                    return response()->json([
                         'status' => 'error',
                         'message' => $revoke['message'],
                     ]);
@@ -1528,7 +1548,7 @@ class BomController extends Controller
                     $bom->document_status = $revoke['approvalStatus'];
                     $bom->save();
                     DB::commit();
-                    return response() -> json([
+                    return response()->json([
                         'status' => 'success',
                         'message' => 'Revoked succesfully',
                     ]);
@@ -1537,9 +1557,9 @@ class BomController extends Controller
                 DB::rollBack();
                 throw new ApiGenericException("No Document found");
             }
-        } catch(Exception $ex) {
+        } catch (Exception $ex) {
             DB::rollBack();
-            throw new ApiGenericException($ex -> getMessage());
+            throw new ApiGenericException($ex->getMessage());
         }
     }
 
@@ -1549,10 +1569,10 @@ class BomController extends Controller
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
         $seriesId = $request->series_id ?? null;
@@ -1562,32 +1582,32 @@ class BomController extends Controller
         $departmentId = $request->department_id ?? null;
         $customerId = $request->customer_id ?? null;
         $applicableBookIds = ServiceParametersHelper::getBookCodesForReferenceFromParam($headerBookId);
-        $piItems = Bom::where(function($query) use ($seriesId,$applicableBookIds,$docNumber,$itemId,$departmentId, $customerId) {
-                        $query->whereHas('item');
-                        $query->whereNull('production_bom_id');
-                        $query->where('type',ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS);
-                        $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
-                        if($seriesId) {
-                            $query->where('book_id',$seriesId);
-                        } else {
-                            if(count($applicableBookIds)) {
-                                $query->whereIn('book_id',$applicableBookIds);
-                            }
-                        }
-                        if($docNumber) {
-                            $query->where('document_number', 'LIKE', "%$docNumber%");
-                        }
-                        if($departmentId) {
-                            $query->where('department_id', $departmentId);
-                        }
-                        if ($itemId) {
-                            $query->where('item_id', $itemId);
-                        }
-                        if($customerId) {
-                            $query->where('customer_id', $customerId);
-                        }
-                })
-                ->get();
+        $piItems = Bom::where(function ($query) use ($seriesId, $applicableBookIds, $docNumber, $itemId, $departmentId, $customerId) {
+            $query->whereHas('item');
+            $query->whereNull('production_bom_id');
+            $query->where('type', ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS);
+            $query->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
+            if ($seriesId) {
+                $query->where('book_id', $seriesId);
+            } else {
+                if (count($applicableBookIds)) {
+                    $query->whereIn('book_id', $applicableBookIds);
+                }
+            }
+            if ($docNumber) {
+                $query->where('document_number', 'LIKE', "%$docNumber%");
+            }
+            if ($departmentId) {
+                $query->where('department_id', $departmentId);
+            }
+            if ($itemId) {
+                $query->where('item_id', $itemId);
+            }
+            if ($customerId) {
+                $query->where('customer_id', $customerId);
+            }
+        })
+            ->get();
         $html = view('billOfMaterial.partials.q-bom-list', ['piItems' => $piItems, 'canView' => $canView])->render();
         return response()->json(['data' => ['pis' => $html], 'status' => 200, 'message' => "fetched!"]);
     }
@@ -1598,16 +1618,16 @@ class BomController extends Controller
         $canView = true;
         $parentUrl = request()->segments()[0];
         $servicesAliasParam = $parentUrl == 'quotation-bom' ? ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS : ConstantHelper::BOM_SERVICE_ALIAS;
-        if($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
+        if ($servicesAliasParam == ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('quotation_bom.item_cost_view') ?? true;
-        } 
-        if($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
+        }
+        if ($servicesAliasParam === ConstantHelper::BOM_SERVICE_ALIAS) {
             $canView = request()->user()?->hasPermission('production_bom.item_cost_view') ?? true;
         }
-        $ids = json_decode($request->ids,true) ?? [];
+        $ids = json_decode($request->ids, true) ?? [];
         $bom = Bom::with('uom:id,name')
-                ->whereIn('id', $ids)
-                ->first();
+            ->whereIn('id', $ids)
+            ->first();
 
         $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->d_date);
         $parameters = json_decode(json_encode($response['data']['parameters']), true) ?? [];
@@ -1618,6 +1638,7 @@ class BomController extends Controller
         $componentWasteRequired = false;
         $componentOverheadRequired = isset($parameters['component_overhead_required']) && is_array($parameters['component_overhead_required']) && in_array('yes', array_map('strtolower', $parameters['component_overhead_required']));
         $consumption_method = isset($parameters['consumption_method']) && $parameters['consumption_method'][0] == 'manual' ? false : true;
+        $bacthInheritRequird = isset($parameters['bacth_inherit_requird']) && is_array($parameters['bacth_inherit_requird']) && in_array('yes', array_map('strtolower', $parameters['bacth_inherit_requird']));
         
         $html = view('billOfMaterial.partials.item-row-edit', [
             'bom' => $bom,
@@ -1625,19 +1646,20 @@ class BomController extends Controller
             'sectionRequired' => $sectionRequired,
             'subSectionRequired' => $subSectionRequired,
             'stationRequired' => $stationRequired,
+            'bacthInheritRequird' => $bacthInheritRequird,
             'supercedeCostRequired' => $supercedeCostRequired,
             'componentWasteRequired' => $componentWasteRequired,
             'componentOverheadRequired' => $componentOverheadRequired,
             'consumption_method' => $consumption_method,
             'canView' => $canView
-            ])->render();
+        ])->render();
 
         $specifications = collect();
-        if(isset($bom->item) && $bom->item) {
+        if (isset($bom->item) && $bom->item) {
             $specifications = $bom->item->specifications()->whereNotNull('value')->get();
         }
 
-        $headerAttributes = $bom->bomAttributes()->where('type','H')->get();
+        $headerAttributes = $bom->bomAttributes()->where('type', 'H')->get();
         $selectedAttributes = $headerAttributes->pluck('attribute_value')->all();
 
         $headerAttrHtml = view('billOfMaterial.partials.header-attribute-edit', [
@@ -1645,23 +1667,23 @@ class BomController extends Controller
             'item' => $bom->item,
             'bom' => $bom,
             'selectedAttributes' => $selectedAttributes
-            ])->render();
-        $headerOverheads = $bom->bomOverheadItems()->where('type','H')->orderBy('level')->get();
+        ])->render();
+        $headerOverheads = $bom->bomOverheadItems()->where('type', 'H')->orderBy('level')->get();
         $headerOverhead = view('billOfMaterial.partials.overhead.add-comp-level', ['headerOverheads' => $headerOverheads])->render();
-        $instructionHtml = view('billOfMaterial.partials.instruction-row-edit', ['bom' => $bom,'sectionRequired' => $sectionRequired, 'subSectionRequired' => $subSectionRequired])->render();
+        $instructionHtml = view('billOfMaterial.partials.instruction-row-edit', ['bom' => $bom, 'sectionRequired' => $sectionRequired, 'subSectionRequired' => $subSectionRequired])->render();
         return response()->json(['data' => ['bom' => $bom, 'pos' => $html, 'headerAttrHtml' => $headerAttrHtml, 'instructionHtml' => $instructionHtml, 'headerOverhead' => $headerOverhead], 'status' => 200, 'message' => "fetched!"]);
     }
 
     # Add Overhead Level
     public function addOverheadLevel(Request $request)
     {
-        $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
-                        $overheadQuery->whereNotIn('id', $selectedIds);
-                    })
-                    -> where('status', ConstantHelper::ACTIVE)
-                    ->count();
-        if($results == 0) {
+        $selectedIds = json_decode($request->ids, true) ?? [];
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use ($selectedIds) {
+            $overheadQuery->whereNotIn('id', $selectedIds);
+        })
+            ->where('status', ConstantHelper::ACTIVE)
+            ->count();
+        if ($results == 0) {
             return response()->json(['data' => ['html' => '', 'levelCount' => 0, 'rowCount' => 0], 'status' => 422, 'message' => 'No overhead available added already all.']);
         }
         $levelCount = intval($request->levelCount) ? intval($request->levelCount) + 1 : 1;
@@ -1673,13 +1695,13 @@ class BomController extends Controller
     # Add Overhead Row header level
     public function addOverheadRow(Request $request)
     {
-        $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
-                        $overheadQuery->whereNotIn('id', $selectedIds);
-                    })
-                    -> where('status', ConstantHelper::ACTIVE)
-                    ->count();
-        if($results == 0) {
+        $selectedIds = json_decode($request->ids, true) ?? [];
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use ($selectedIds) {
+            $overheadQuery->whereNotIn('id', $selectedIds);
+        })
+            ->where('status', ConstantHelper::ACTIVE)
+            ->count();
+        if ($results == 0) {
             return response()->json(['data' => ['html' => '', 'levelCount' => 0, 'rowCount' => 0], 'status' => 422, 'message' => 'No overhead available added already all.']);
         }
         $levelCount = intval($request->levelCount) ?? 1;
@@ -1691,13 +1713,13 @@ class BomController extends Controller
     # Add Overhead Row item level
     public function addOverheadItemRow(Request $request)
     {
-        $selectedIds = json_decode($request->ids,true) ?? [];
-        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use($selectedIds) {
-                        $overheadQuery->whereNotIn('id', $selectedIds);
-                    })
-                    -> where('status', ConstantHelper::ACTIVE)
-                    ->count();
-        if($results == 0) {
+        $selectedIds = json_decode($request->ids, true) ?? [];
+        $results = Overhead::when(count($selectedIds), function ($overheadQuery) use ($selectedIds) {
+            $overheadQuery->whereNotIn('id', $selectedIds);
+        })
+            ->where('status', ConstantHelper::ACTIVE)
+            ->count();
+        if ($results == 0) {
             return response()->json(['data' => ['html' => '', 'levelCount' => 0, 'rowCount' => 0], 'status' => 422, 'message' => 'No overhead available added already all.']);
         }
         $rowCount = intval($request->rowCount) ?? 1;
@@ -1705,12 +1727,12 @@ class BomController extends Controller
         $html = view('billOfMaterial.partials.overheadItemLevel.add-row', ['rowCount' => $rowCount, 'indexCount' => $indexCount])->render();
         return response()->json(['data' => ['html' => $html, 'rowCount' => $rowCount, 'indexCount' => $indexCount], 'status' => 200, 'message' => 'Overhead level row added successfully.']);
     }
-    
+
     public function checkBomExist(Request $request)
     {
         $itemId = $request->item_id ?? null;
         $item = Item::find($itemId);
-        if($item) {
+        if ($item) {
             $bomExists = ItemHelper::checkItemBomExists($item->id, []);
             if (!$bomExists['bom_id']) {
                 return response()->json(['data' => ['html' => ''], 'status' => 422, 'message' => $bomExists['message']]);
@@ -1749,67 +1771,67 @@ class BomController extends Controller
                 $query->when($request->book_id, function ($q) use ($request) {
                     $q->where('book_id', $request->book_id);
                 })
-                ->when($request->document_number, function ($q) use ($request) {
-                    $q->where('document_number', 'LIKE', '%' . $request->document_number . '%');
-                })
-                ->when($request->location_id, function ($q) use ($request) {
-                    $q->where('store_id', $request->location_id);
-                })
-                ->when($request->company_id, function ($q) use ($request) {
-                    $q->where('store_id', $request->company_id);
-                })
-                ->when($request->organization_id, function ($q) use ($request) {
-                    $q->where('organization_id', $request->organization_id);
-                })
-                ->when($request->doc_status, function ($q) use ($request) {
-                    $searchDocStatus = [];
-                    if ($request->doc_status === ConstantHelper::DRAFT) {
-                        $searchDocStatus = [ConstantHelper::DRAFT];
-                    } else if ($request->doc_status === ConstantHelper::SUBMITTED) {
-                        $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
-                    } else {
-                        $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
-                    }
-                    $q->whereIn('document_status', $searchDocStatus);
-                })
+                    ->when($request->document_number, function ($q) use ($request) {
+                        $q->where('document_number', 'LIKE', '%' . $request->document_number . '%');
+                    })
+                    ->when($request->location_id, function ($q) use ($request) {
+                        $q->where('store_id', $request->location_id);
+                    })
+                    ->when($request->company_id, function ($q) use ($request) {
+                        $q->where('store_id', $request->company_id);
+                    })
+                    ->when($request->organization_id, function ($q) use ($request) {
+                        $q->where('organization_id', $request->organization_id);
+                    })
+                    ->when($request->doc_status, function ($q) use ($request) {
+                        $searchDocStatus = [];
+                        if ($request->doc_status === ConstantHelper::DRAFT) {
+                            $searchDocStatus = [ConstantHelper::DRAFT];
+                        } else if ($request->doc_status === ConstantHelper::SUBMITTED) {
+                            $searchDocStatus = [ConstantHelper::SUBMITTED, ConstantHelper::PARTIALLY_APPROVED];
+                        } else {
+                            $searchDocStatus = [ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::APPROVED];
+                        }
+                        $q->whereIn('document_status', $searchDocStatus);
+                    })
 
-                // date filter
-                ->when($request->date_range ?? null, function ($q) use ($request) {
-                    $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
-                    $dateRanges = explode('to', $dateRange);
-                    if (count($dateRanges) == 2) {
-                        $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
-                        $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
-                        $q->whereDate('document_date', '>=', $fromDate)
-                        ->whereDate('document_date', '<=', $toDate);
-                    } else {
-                        $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
-                        $q->whereDate('document_date', $fromDate);
-                    }
-                })
+                    // date filter
+                    ->when($request->date_range ?? null, function ($q) use ($request) {
+                        $dateRange = $request->date_range ?? Carbon::now()->startOfMonth()->format('Y-m-d') . " to " . Carbon::now()->endOfMonth()->format('Y-m-d');
+                        $dateRanges = explode('to', $dateRange);
+                        if (count($dateRanges) == 2) {
+                            $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                            $toDate = Carbon::parse(trim($dateRanges[1]))->format('Y-m-d');
+                            $q->whereDate('document_date', '>=', $fromDate)
+                                ->whereDate('document_date', '<=', $toDate);
+                        } else {
+                            $fromDate = Carbon::parse(trim($dateRanges[0]))->format('Y-m-d');
+                            $q->whereDate('document_date', $fromDate);
+                        }
+                    })
 
-                // product_id filter (note: this likely belongs outside too, unless bom table has it)
-                ->when($request->product_id, function ($q) use ($request) {
-                    $q->where('item_id', $request->product_id)
-                        ->when($request->item_category_id, function ($catQ) use ($request) {
-                            $catQ->whereHas('item', function ($itemQuery) use ($request) {
-                                $itemQuery->where('category_id', $request->item_category_id)
-                                    ->when($request->item_sub_category_id, function ($subQ) use ($request) {
-                                        $subQ->where('subcategory_id', $request->item_sub_category_id);
-                                    });
+                    // product_id filter (note: this likely belongs outside too, unless bom table has it)
+                    ->when($request->product_id, function ($q) use ($request) {
+                        $q->where('item_id', $request->product_id)
+                            ->when($request->item_category_id, function ($catQ) use ($request) {
+                                $catQ->whereHas('item', function ($itemQuery) use ($request) {
+                                    $itemQuery->where('category_id', $request->item_category_id)
+                                        ->when($request->item_sub_category_id, function ($subQ) use ($request) {
+                                            $subQ->where('subcategory_id', $request->item_sub_category_id);
+                                        });
+                                });
                             });
-                        });
-                });
+                    });
             })
             ->orderByDesc('id');
-            $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::BOM_SERVICE_ALIAS);
-            $datatables = DataTables::of($bomItems) ->addIndexColumn()
-            ->editColumn('status', function ($row) use($orderType) {
-                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->bom->document_status ?? ConstantHelper::DRAFT];    
-                $displayStatus = ucfirst($row -> bom -> document_status);   
+        $dynamicFields = DynamicFieldHelper::getServiceDynamicFields(ConstantHelper::BOM_SERVICE_ALIAS);
+        $datatables = DataTables::of($bomItems)->addIndexColumn()
+            ->editColumn('status', function ($row) use ($orderType) {
+                $statusClasss = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$row->bom->document_status ?? ConstantHelper::DRAFT];
+                $displayStatus = ucfirst($row->bom->document_status);
                 $editRoute = null;
                 $editRoute = route('bill.of.material.edit', ['id' => $row->bom->id]);
-                     
+
                 return "
                 <div style='text-align:right;'>
                     <span class='badge rounded-pill $statusClasss badgeborder-radius'>$displayStatus</span>
@@ -1820,88 +1842,88 @@ class BomController extends Controller
             ";
             })
             ->addColumn('book_code', function ($row) {
-                return $row -> bom -> book_code;
+                return $row->bom->book_code;
             })
             ->addColumn('document_number', function ($row) {
-                return $row ?-> bom -> document_number;
+                return $row?->bom->document_number;
             })
             ->addColumn('document_date', function ($row) {
-                return $row ?-> bom -> getFormattedDate('document_date');
+                return $row?->bom->getFormattedDate('document_date');
             })
             ->addColumn('product_code', function ($row) {
-                return $row ?-> bom ?-> item ?-> item_code;
+                return $row?->bom?->item?->item_code;
             })
             ->addColumn('product_name', function ($row) {
-                return $row ?-> bom ?-> item ?-> item_name;
+                return $row?->bom?->item?->item_name;
             })
             ->addColumn('product_attributes', function ($row) {
-                return $row?-> bom -> bomAttributes ?->map(function ($attribute) {
-                    return "<span class='badge rounded-pill badge-light-primary'>{$attribute-> headerAttribute ?-> name} : {$attribute-> headerAttributeValue ?-> value}</span>";
+                return $row?->bom->bomAttributes?->map(function ($attribute) {
+                    return "<span class='badge rounded-pill badge-light-primary'>{$attribute->headerAttribute?->name} : {$attribute->headerAttributeValue?->value}</span>";
                 })->implode(' ') ?? '';
             })
             ->addColumn('product_uom', function ($row) {
-                return $row ?-> bom ?-> uom ?-> name;
+                return $row?->bom?->uom?->name;
             })
             ->addColumn('production_type', function ($row) {
-                return $row ?-> bom -> production_type;
+                return $row?->bom->production_type;
             })
             ->addColumn('production_route', function ($row) {
-                return $row ?-> bom ?-> productionRoute ?-> name;
+                return $row?->bom?->productionRoute?->name;
             })
             ->addColumn('product_cost', function ($row) {
-                return $row ?-> bom ?-> total_item_value;
+                return $row?->bom?->total_item_value;
             })
             ->addColumn('overhead_amount', function ($row) {
-                return $row ?-> bom ?-> header_overhead_amount;
+                return $row?->bom?->header_overhead_amount;
             })
             ->addColumn('total_cost', function ($row) {
-                return ($row ?-> bom ?-> total_item_value + $row ?-> bom ?-> header_overhead_amount + $row ?-> bom ?-> header_waste_amount + $row ?-> bom ?-> item_waste_amount + $row ?-> bom ?-> item_overhead_amount) ?? 0.00;
+                return ($row?->bom?->total_item_value + $row?->bom?->header_overhead_amount + $row?->bom?->header_waste_amount + $row?->bom?->item_waste_amount + $row?->bom?->item_overhead_amount) ?? 0.00;
             })
             ->addColumn('customizable', function ($row) {
-                return $row ?-> bom ?-> customizable;
+                return $row?->bom?->customizable;
             })
             ->addColumn('safety_buffer', function ($row) {
-                return $row ?-> bom ?-> safety_buffer_perc;
+                return $row?->bom?->safety_buffer_perc;
             })
             ->addColumn('item_code', function ($row) {
-                return $row -> item ?-> item_code;
+                return $row->item?->item_code;
             })
             ->addColumn('item_name', function ($row) {
-                return $row -> item ?-> item_name;
+                return $row->item?->item_name;
             })
             ->addColumn('item_uom', function ($row) {
-                return $row -> item -> uom ?-> name;
+                return $row->item->uom?->name;
             })
             ->addColumn('item_qty', function ($row) {
-                return $row -> qty;
+                return $row->qty;
             })
             ->addColumn('item_cost', function ($row) {
-                return $row -> item_cost;
+                return $row->item_cost;
             })
             ->addColumn('item_overhead', function ($row) {
-                return $row -> overhead_amount;
+                return $row->overhead_amount;
             })
             ->addColumn('item_value', function ($row) {
-                return $row -> total_amount;
+                return $row->total_amount;
             })
             ->addColumn('item_station', function ($row) {
-                return $row ?-> station ?-> name;
+                return $row?->station?->name;
             })
             ->addColumn('item_section', function ($row) {
-                return $row ?-> section ?-> name;
+                return $row?->section?->name;
             })
             ->addColumn('item_sub_section', function ($row) {
-                return $row ?-> subSection ?-> name;
+                return $row?->subSection?->name;
             })
             ->addColumn('item_vendor', function ($row) {
-                return $row ?-> vendor ?-> company_name;
+                return $row?->vendor?->company_name;
             })
             ->addColumn('item_attributes', function ($row) {
                 $attributesUi = '';
-                if (count($row -> attributes) > 0) {
-                    foreach ($row -> attributes as $soAttribute) {
-                        $attrName = $soAttribute -> headerAttribute ?-> name;
-                        $attrValue = $soAttribute -> headerAttributeValue ?-> value;
+                if (count($row->attributes) > 0) {
+                    foreach ($row->attributes as $soAttribute) {
+                        $attrName = $soAttribute->headerAttribute?->name;
+                        $attrValue = $soAttribute->headerAttributeValue?->value;
                         $attributesUi .= "<span class='badge rounded-pill badge-light-primary' > $attrName : $attrValue </span>";
                     }
                 } else {
@@ -1909,22 +1931,22 @@ class BomController extends Controller
                 }
                 return $attributesUi;
             });
-            foreach ($dynamicFields as $field) {
-                $datatables = $datatables->addColumn($field ?-> name, function ($row) use ($field) {
-                    $value = "";
-                    $actualDynamicFields = $row ?-> bom ?-> dynamic_fields;
-                    foreach ($actualDynamicFields as $actualDynamicField) {
-                        if ($field ?-> name == $actualDynamicField ?-> name) {
-                            $value = $actualDynamicField -> value;
-                        }
+        foreach ($dynamicFields as $field) {
+            $datatables = $datatables->addColumn($field?->name, function ($row) use ($field) {
+                $value = "";
+                $actualDynamicFields = $row?->bom?->dynamic_fields;
+                foreach ($actualDynamicFields as $actualDynamicField) {
+                    if ($field?->name == $actualDynamicField?->name) {
+                        $value = $actualDynamicField->value;
                     }
-                    return $value;
-                });
-            }
-            $datatables = $datatables
-            ->rawColumns(['item_attributes','product_attributes','delivery_schedule','status'])
+                }
+                return $value;
+            });
+        }
+        $datatables = $datatables
+            ->rawColumns(['item_attributes', 'product_attributes', 'delivery_schedule', 'status'])
             ->make(true);
-            return $datatables;
+        return $datatables;
     }
 
     public function export(Request $request, $id)
@@ -1935,7 +1957,7 @@ class BomController extends Controller
         $title = $label . now()->format('Ymd_His') . '.xlsx';
         return Excel::download(new DynamicExport($exportData1), $title);
     }
-    
+
     public function destroy($id, $isAmedment = false)
     {
         DB::beginTransaction();
@@ -1974,7 +1996,7 @@ class BomController extends Controller
 
             // Clear documents for the BOM itself
             $bom->clearExistingDocuments('bom');
-            
+
 
             // Delete related data
             $bom->bomOverheadAllItems()->delete();
@@ -1992,7 +2014,6 @@ class BomController extends Controller
                 'status' => true,
                 'message' => 'Record deleted successfully.',
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([

@@ -151,34 +151,62 @@ class ErpFreightChargesController extends Controller
         $destinationId = $request->destination_id;
         $vehicleId = $request->vehicle_id;
         $customerId = $request->customer_id;
+        $freightCharge = null;
 
         $vehicle = ErpVehicle::find($vehicleId);
         $vehicleTypeId = $vehicle->vehicle_type_id ?? null;
 
-        $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicleTypeId, $customerId) {
-            $query->where('source_route_id', $sourceId)
+     $query = ErpFreightCharge::withDefaultGroupCompanyOrg();
+
+        $freightCharge = (clone $query)
+            ->where('source_route_id', $sourceId)
+            ->where('destination_route_id', $destinationId)
+            ->where('vehicle_type_id', $vehicleTypeId)
+            ->where('customer_id', $customerId)
+            ->first();
+
+        if (!$freightCharge) {
+            $freightCharge = (clone $query)
+                ->where('source_route_id', $sourceId)
                 ->where('destination_route_id', $destinationId)
-                ->where(function ($q) use ($vehicleTypeId) {
-                    $q->when($vehicleTypeId, function ($q2) use ($vehicleTypeId) {
-                        $q2->where(function ($inner) use ($vehicleTypeId) {
-                            $inner->where('vehicle_type_id', $vehicleTypeId)
-                                    ->orWhereNull('vehicle_type_id');
-                        });
-                    }, function ($q2) {
-                        $q2->whereNull('vehicle_type_id');
-                    });
-                })
-                ->where(function ($q) use ($customerId) {
-                    $q->when($customerId, function ($q2) use ($customerId) {
-                        $q2->where(function ($inner) use ($customerId) {
-                            $inner->where('customer_id', $customerId)
-                                    ->orWhereNull('customer_id');
-                        });
-                    }, function ($q2) {
-                        $q2->whereNull('customer_id');
-                    });
-                });
-        })->first();
+                ->where('vehicle_type_id', $vehicleTypeId)
+               ->where(function ($q) {
+                    $q->whereNull('customer_id')
+                    ->orWhere('customer_id', '');
+                })->first();
+        }
+        if (!$freightCharge) {
+            $freightCharge = (clone $query)
+                ->where('source_route_id', $sourceId)
+                ->where('destination_route_id', $destinationId)
+                ->where('customer_id', $customerId)
+                ->first();
+        }
+
+        // $freightCharge = ErpFreightCharge::where(function ($query) use ($sourceId, $destinationId, $vehicleTypeId, $customerId) {
+        //     $query->where('source_route_id', $sourceId)
+        //         ->where('destination_route_id', $destinationId)
+        //         ->where(function ($q) use ($vehicleTypeId) {
+        //             $q->when($vehicleTypeId, function ($q2) use ($vehicleTypeId) {
+        //                 $q2->where(function ($inner) use ($vehicleTypeId) {
+        //                     $inner->where('vehicle_type_id', $vehicleTypeId)
+        //                             ->orWhereNull('vehicle_type_id');
+        //                 });
+        //             }, function ($q2) {
+        //                 $q2->whereNull('vehicle_type_id');
+        //             });
+        //         })
+        //         ->where(function ($q) use ($customerId) {
+        //             $q->when($customerId, function ($q2) use ($customerId) {
+        //                 $q2->where(function ($inner) use ($customerId) {
+        //                     $inner->where('customer_id', $customerId)
+        //                             ->orWhereNull('customer_id');
+        //                 });
+        //             }, function ($q2) {
+        //                 $q2->whereNull('customer_id');
+        //             });
+        //         });
+        // })->first();
 
 
 

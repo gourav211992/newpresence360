@@ -1,21 +1,27 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use App\Models\User;
-use App\Helpers\Helper;
 use App\Models\Address;
 use App\Models\Customer;
 use App\Models\InvoiceBook;
 use App\Models\Organization;
-use App\Helpers\ConstantHelper;
+
 use App\Models\JobOrder\JobOrder;
+use App\Models\WHM\ErpWhmJob;
+use App\Models\WHM\ErpItemUniqueCode;
+
+use App\Helpers\Helper;
+use App\Helpers\ConstantHelper;
+
 use App\Traits\DateFormatTrait;
 use App\Traits\FileUploadTrait;
 use App\Traits\DefaultGroupCompanyOrg;
 use App\Traits\DynamicFieldsTrait;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MrnHeader extends Model
 {
@@ -376,6 +382,69 @@ class MrnHeader extends Model
     public function dynamic_fields()
     {
         return $this -> hasMany(ErpMrnDynamicField::class, 'header_id');
+    }
+
+    // Item Unique Codes
+    public function itemUniqueCodes()
+    {
+        $job = $this->deviationJob;
+
+        if (!$job) {
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
+        }
+
+        $itemIds = MrnDetail::where('mrn_header_id', $this->id)->pluck('id')->toArray();
+
+        if (empty($itemIds)) {
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
+        }
+
+        $baseQuery = ErpItemUniqueCode::where('job_id', $job->id)
+            ->where('morphable_type', MrnDetail::class)
+            ->whereIn('morphable_id', $itemIds);
+
+        $total = $baseQuery->count();
+
+        if ($total === 0) {
+            return [
+                'total_unique_codes' => 0,
+                'scanned_unique_codes' => 0,
+                'pending_unique_codes' => 0,
+            ];
+        }
+
+        $scanned = (clone $baseQuery)->where('status', 'scanned')->count();
+
+        return [
+            'total_unique_codes' => $total,
+            'scanned_unique_codes' => $scanned,
+            'pending_unique_codes' => $total - $scanned,
+        ];
+    }
+
+    public function deviationJob()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable')
+                    ->where('status', 'deviation');
+    }
+
+    public function closedJob()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable')
+                    ->where('status', 'closed');
+    }
+
+    public function job()
+    {
+        return $this->morphOne(ErpWhmJob::class, 'morphable');
     }
 
 }

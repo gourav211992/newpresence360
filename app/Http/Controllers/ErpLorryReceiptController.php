@@ -617,35 +617,79 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
     $customerId = $request->customer_id;
     $vehicle = ErpVehicle::find($vehicleId);
     $vehicleTypeIds = is_array($vehicle->vehicle_type_id) ? $vehicle->vehicle_type_id : [$vehicle->vehicle_type_id];
-
+    $multiPoint = null;
     $amount = null;
+    $pricing = null;
 
-    $pricing = ErpLogisticsMultiFixedPricing::where(function ($query) use ($sourceId, $vehicleTypeIds, $customerId) {
-            $query->where('source_route_id', $sourceId)
-              ->where(function ($q) use ($vehicleTypeIds) {
-                    if (!empty($vehicleTypeIds)) {
-                        $q->where(function ($inner) use ($vehicleTypeIds) {
-                            foreach ($vehicleTypeIds as $id) {
-                                $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
-                            }
-                            $inner->orWhereNull('vehicle_type_id');
-                        });
-                    } else {
-                        $q->whereNull('vehicle_type_id');
+ 
+    $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+        ->where(function ($q) use ($vehicleTypeIds) {
+            if (!empty($vehicleTypeIds)) {
+                $q->where(function ($inner) use ($vehicleTypeIds) {
+                    foreach ($vehicleTypeIds as $id) {
+                        $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
                     }
-                })
-
-                ->where(function ($q) use ($customerId) {
-                    $q->when($customerId, function ($q2) use ($customerId) {
-                        $q2->where(function ($inner) use ($customerId) {
-                            $inner->where('customer_id', $customerId)
-                                    ->orWhereNull('customer_id');
-                        });
-                    }, function ($q2) {
-                        $q2->whereNull('customer_id');
-                    });
                 });
-        })->first();
+            }
+        })
+        ->where('customer_id', $customerId)
+        ->first();
+
+    if (!$pricing) {
+        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+            ->where(function ($q) use ($vehicleTypeIds) {
+                if (!empty($vehicleTypeIds)) {
+                    $q->where(function ($inner) use ($vehicleTypeIds) {
+                        foreach ($vehicleTypeIds as $id) {
+                            $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
+                        }
+                    });
+                }
+            })
+            ->where(function ($q) {
+                $q->whereNull('customer_id')
+                ->orWhere('customer_id', '');
+            })
+            ->first();
+    }
+
+    if (!$pricing) {
+        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+            ->where('customer_id', $customerId)
+            ->first();
+    }
+
+    if (!$pricing) {
+        $pricing = ErpLogisticsMultiFixedPricing::where('source_route_id', $sourceId)
+            ->first();
+      }
+
+    // $pricing = ErpLogisticsMultiFixedPricing::where(function ($query) use ($sourceId, $vehicleTypeIds, $customerId) {
+    //         $query->where('source_route_id', $sourceId)
+    //           ->where(function ($q) use ($vehicleTypeIds) {
+    //                 if (!empty($vehicleTypeIds)) {
+    //                     $q->where(function ($inner) use ($vehicleTypeIds) {
+    //                         foreach ($vehicleTypeIds as $id) {
+    //                             $inner->orWhereJsonContains('vehicle_type_id', (string) $id);
+    //                         }
+    //                         $inner->orWhereNull('vehicle_type_id');
+    //                     });
+    //                 } else {
+    //                     $q->whereNull('vehicle_type_id');
+    //                 }
+    //             })
+
+    //             ->where(function ($q) use ($customerId) {
+    //                 $q->when($customerId, function ($q2) use ($customerId) {
+    //                     $q2->where(function ($inner) use ($customerId) {
+    //                         $inner->where('customer_id', $customerId)
+    //                                 ->orWhereNull('customer_id');
+    //                     });
+    //                 }, function ($q2) {
+    //                     $q2->whereNull('customer_id');
+    //                 });
+    //             });
+    //     })->first();
 
     if ($pricing) {
         $matchedLocation = ErpLogisticsMultiFixedLocation::where('location_route_id', $locationId)
@@ -657,25 +701,47 @@ protected function handleLorryMediaUploads(Request $request, ErpLorryReceipt $lr
         }
     }
 
-     $multiPoint = ErpLogisticsMultiPointPricing::where(function ($query) use ($sourceId, $customerId) {
-            $query->where('source_route_id', $sourceId)
-                 ->where(function ($q) use ($customerId) {
-                    $q->when($customerId, function ($q2) use ($customerId) {
-                        $q2->where(function ($inner) use ($customerId) {
-                            $inner->where('customer_id', $customerId)
-                                    ->orWhereNull('customer_id');
-                        });
-                    }, function ($q2) {
-                        $q2->whereNull('customer_id');
-                    });
-                });
-        })->withDefaultGroupCompanyOrg()->first();
-        if(!$multiPoint){
 
-            $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
-                ->where('source_route_id', $sourceId)
-                ->first();
-        }
+    $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+        ->where('source_route_id', $sourceId)
+        ->where('customer_id', $customerId)
+        ->first();
+
+  if (!$multiPoint) {
+        $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+            ->where('source_route_id', $sourceId)
+            ->where(function ($q) {
+                $q->whereNull('customer_id')
+                ->orWhere('customer_id', '');
+            })
+            ->first();
+    }
+
+    if (!$multiPoint) {
+        $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+            ->where('source_route_id', $sourceId)
+            ->first();
+    }
+
+    //  $multiPoint = ErpLogisticsMultiPointPricing::where(function ($query) use ($sourceId, $customerId) {
+    //         $query->where('source_route_id', $sourceId)
+    //              ->where(function ($q) use ($customerId) {
+    //                 $q->when($customerId, function ($q2) use ($customerId) {
+    //                     $q2->where(function ($inner) use ($customerId) {
+    //                         $inner->where('customer_id', $customerId)
+    //                                 ->orWhereNull('customer_id');
+    //                     });
+    //                 }, function ($q2) {
+    //                     $q2->whereNull('customer_id');
+    //                 });
+    //             });
+    //     })->withDefaultGroupCompanyOrg()->first();
+    //     if(!$multiPoint){
+
+    //         $multiPoint = ErpLogisticsMultiPointPricing::withDefaultGroupCompanyOrg()
+    //             ->where('source_route_id', $sourceId)
+    //             ->first();
+    //     }
    
 
     if ($pricing && $multiPoint) {

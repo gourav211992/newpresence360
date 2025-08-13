@@ -22,6 +22,14 @@ $(document).on("click", "#reject-button", (e) => {
     $("#approveModal").modal("show");
 });
 
+/*Deviation modal*/
+$(document).on("click", "#deviation-button", (e) => {
+    let actionType = "deviation-closed";
+    $("#deviateModal").find("#action_type").val(actionType);
+    $("#deviateModal #popupTitle").text("Putaway Deviation");
+    $("#deviateModal").modal("show");
+});
+
 function getTaxSummary() {
     let taxSummary = {};
     $("#itemTable [id*='row_']").each(function (index, row) {
@@ -1603,6 +1611,7 @@ $(document).on("keyup", "#new_dis_value", (e) => {
 /*Add New Summary Discount*/
 $(document).on("click", "#add_new_head_exp", (e) => {
     e.preventDefault();
+    console.log("dfsdfdfsfsfdfsdfsdfsfds");
     const new_exp_name = $("#new_exp_name").val() || "";
     const new_exp_id = $("#new_exp_id").val() || "";
     const new_exp_perc = (Number($("#new_exp_perc").val()) || 0).toFixed(2);
@@ -1614,6 +1623,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
     });
 
     let totalCost = parseFloat($("#f_total_after_tax").attr("amount")) || 0;
+    console.log("Total Cost: ", totalCost);
     let _total_head_exp_all = _total_head_exp + Number(new_exp_value);
     if (_total_head_exp_all > totalCost) {
         Swal.fire({
@@ -1639,7 +1649,7 @@ $(document).on("click", "#add_new_head_exp", (e) => {
             <input type="hidden" value="${new_exp_perc}" name="exp_summary[${tbl_row_count}][e_perc]" />
         </td>
         <td class="text-end">${new_exp_value}
-        <input type="hidden" value="${new_exp_value}" name="exp_summary[${tbl_row_count}][e_amnt]" />
+            <input type="hidden" value="${new_exp_value}" name="exp_summary[${tbl_row_count}][e_amnt]" />
         </td>
         <td>
             <a href="javascript:;" class="text-danger deleteExpRow">

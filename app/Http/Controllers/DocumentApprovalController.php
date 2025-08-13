@@ -19,6 +19,7 @@ use App\Models\Item;
 use App\Models\Customer;
 use DB;
 use App\Helpers\Helper;
+use App\Helpers\ItemHelper;
 use App\Helpers\InventoryHelper;
 use App\Helpers\InspectionHelper;
 use App\Lib\Services\WHM\WhmJob;
@@ -539,15 +540,26 @@ class DocumentApprovalController extends Controller
             $bookId = $mrn->series_id;
             $docId = $mrn->id;
             $docValue = $mrn->total_amount;
-            $remarks = $request->remarks;
-            $attachments = $request->file('attachment');
+            if($request->action_type == 'deviation-closed')
+            {
+                $remarks = $request->closing_remarks;
+                $attachments = [];
+            }
+            else
+            {
+                $remarks = $request->remarks;
+                $attachments = $request->file('attachment');
+            }
             $currentLevel = $mrn->approval_level;
             $revisionNumber = $mrn->revision_number ?? 0;
             $actionType = $request->action_type; // Approve or reject
             $modelName = get_class($mrn);
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
             $mrn->approval_level = $approveDocument['nextLevel'];
-            $mrn->document_status = $approveDocument['approvalStatus'];
+            if($request->action_type != 'deviation-closed')
+            {
+                $mrn->document_status = $approveDocument['approvalStatus'];
+            }
             $mrn->save();
 
             // Get login user detail
@@ -562,6 +574,67 @@ class DocumentApprovalController extends Controller
             if(in_array($mrn->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $mrn->is_warehouse_required && $config && strtolower($config->config_value) === 'yes'){
                 (new WhmJob)->createJob($mrn->id,'App\Models\MrnHeader');
             }
+
+            if ($request->action_type === 'deviation-closed') {
+                $mrnItemIds = $mrn->items->pluck('id')->toArray();
+            
+                if (!empty($mrnItemIds)) {
+                    $mrnItems = MrnDetail::whereIn('id', $mrnItemIds)->get();
+                    $jobData = ErpWhmJob::find($request->closing_job_id);
+            
+                    if ($jobData) {
+                        foreach ($mrnItems as $item) {
+                            $pendingCodes = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->get();
+            
+                            $pendingQty = $pendingCodes->sum('qty');
+            
+                            // If no pending codes for this item, skip to next
+                            if ($pendingCodes->isEmpty()) {
+                                continue;
+                            }
+            
+                            // Delete all pending codes for this job
+                            $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->delete();
+            
+                            // Check if any pending still exists for this job in this item
+                            $hasPending = $item->uniqueCodes()
+                                ->where('status', 'pending')
+                                ->where('job_id', $jobData->id)
+                                ->exists();
+            
+                            if (!$hasPending) {
+                                // Adjust accepted qty only once per item
+                                $orderQty =  ItemHelper::convertToAltUom($item->item_id, $item->uom_id, $pendingQty ?? 0);
+                                $item->decrement('inventory_uom_qty', $pendingQty);
+                                $item->decrement('accepted_qty', $orderQty);
+                                if($mrn->reference_type == 'po'){
+                                    $item->po_item->decrement('ge_qty', $orderQty);
+                                }
+                                if($mrn->reference_type == 'jo'){
+                                    $item->jo_item->decrement('ge_qty', $orderQty);
+                                }
+                                if($mrn->reference_type == 'so'){
+                                    $item->soItem->decrement('ge_qty', $orderQty);
+                                }
+                            }
+                        }
+            
+                        // Final check for pending status across all items
+                        $jobHasPending = ErpItemUniqueCode::where('job_id', $jobData->id)
+                            ->where('status', 'pending')
+                            ->exists();
+                        
+                        $jobData->status = $jobHasPending ? 'deviation' : 'closed';
+                        $jobData->save();
+                    }
+                }
+            } 
 
             DB::commit();
             return response()->json([
@@ -586,7 +659,6 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
-
             // Get login user detail
             $user = Helper::getAuthenticatedUser();
 

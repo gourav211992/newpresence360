@@ -548,6 +548,14 @@ class AutocompleteController extends Controller
                 $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];
                 if (isset($itemType) && isset($itemType[0])) {
                     $itemType = $itemType[0];
+                } else {
+                    $book = Book::find($request -> header_book_id);
+                    $bookAlias = $book -> master_service -> alias;
+                    if (in_array($bookAlias, [ConstantHelper::SERVICE_INV_SERVICE_ALIAS, ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS])) {
+                        $itemType = ConstantHelper::SERVICE;
+                    } else {
+                        $itemType = ConstantHelper::GOODS;
+                    }
                 }
                 $results = Item::searchByKeywords($term)
                     -> when($request -> customer_id, function ($custQuery) use($request) {

@@ -85,7 +85,16 @@
                                     <button type="button" class="btn btn-primary btn-sm" id="amendmentBtn"><i data-feather="check-circle"></i> Submit</button>
                                 @else
                                     @if($buttons['amend'])
-                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" class="btn btn-primary btn-sm mb-50 mb-sm-0"><i data-feather='edit'></i> Amendment</button>
+                                        <button type="button" data-bs-toggle="modal" data-bs-target="#amendmentconfirm" 
+                                        class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                            <i data-feather='edit'></i> Amendment
+                                        </button>
+                                        @if (@$mrn->deviationJob)
+                                            <button type="button" data-bs-toggle="modal" id="deviation-button" 
+                                            class="btn btn-primary btn-sm mb-50 mb-sm-0">
+                                                <i data-feather='edit'></i> Deviation
+                                            </button>
+                                        @endif
                                     @endif
                                 @endif
                                 @if($buttons['revoke'])
@@ -955,6 +964,72 @@
     @include('procurement.material-receipt.partials.outstanding-jo-modal')
     {{-- Add Outstanding JO modal --}}
     @include('procurement.material-receipt.partials.outstanding-so-modal')
+    <!-- Close Deviation Modal -->
+    <div class="modal fade" id="deviateModal" tabindex="-1" aria-labelledby="deviateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <form class="ajax-input-form"
+                    method="POST"
+                    action="{{ route('document.approval.material-receipt') }}"
+                    data-redirect="{{ route('material-receipt.index') }}"
+                    enctype="multipart/form-data">
+
+                    @csrf
+                    <input type="hidden" name="action_type" id="action_type">
+                    <input type="hidden" name="closing_job_id" id="closing_job_id" value="{{ $mrn->deviationJob?->id ?? '' }}">
+                    <input type="hidden" name="id" value="{{ $mrn->id ?? '' }}">
+
+                    <!-- Modal Header -->
+                    <div class="modal-header bg-light">
+                        <h5 class="modal-title fw-bold" id="deviateModalLabel">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Putaway Deviation
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="modal-body px-4 py-3">
+                        <div class="row text-center mb-4">
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Total Packets</h6>
+                                    <h5 class="mb-0 fw-bold text-dark">{{ $itemUniqueCodes['total_unique_codes'] }}</h5>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Scanned Packets</h6>
+                                    <h5 class="mb-0 fw-bold text-dark">{{ $itemUniqueCodes['scanned_unique_codes'] }}</h5>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="bg-light rounded p-1 border">
+                                    <h6 class="mb-1 text-secondary">Deviation</h6>
+                                    <h5 class="mb-0 fw-bold {{ ($itemUniqueCodes['pending_unique_codes'] > 0) ? 'text-danger' : 'text-dark' }}">{{ $itemUniqueCodes['pending_unique_codes'] }}</h5>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="remarks" class="form-label fw-semibold text-dark">Remarks</label>
+                            <textarea maxlength="250" name="closing_remarks" id="remarks" class="form-control" rows="4"
+                                    placeholder="Enter your remarks here..."></textarea>
+                            <!-- <div class="form-text text-muted">Max 250 characters</div> -->
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer border-0 justify-content-center pb-4">
+                        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary px-5">
+                            Close Deviation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 @section('scripts')
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
@@ -1959,6 +2034,10 @@
         /*Amendment modal open*/
         $(document).on('click', '.amendmentBtn', (e) => {
             $("#amendmentconfirm").modal('show');
+        });
+
+        $(document).on('click', '.deviation-button', (e) => {
+            $("#deviateModal").modal('show');
         });
 
         $(document).on('click', '#amendmentSubmit', (e) => {

@@ -76,6 +76,7 @@ use App\Models\Note;
 use App\Models\Compliance;
 use App\Http\Controllers\VoucherController;
 use App\Models\ErpFyMonth;
+use App\Models\MrnAssetDetail;
 use Monolog\Handler\IFTTTHandler;
 
 class Helper
@@ -184,7 +185,7 @@ class Helper
         $financialYear = ErpFinancialYear::where('start_date', '<=', $startDate)
             ->where('end_date', '>=', $endDate)
             ->first();
-        if ($financialYear!=null) {
+        if ($financialYear != null) {
 
             $startYear = \Carbon\Carbon::parse($financialYear->start_date)->format('Y');
             $endYearShort = \Carbon\Carbon::parse($financialYear->end_date)->format('y'); // e
@@ -213,7 +214,16 @@ class Helper
                 'authorized' => $authorized,
             ];
         } else {
-             abort(redirect()->route('/')->with('error', 'Financial year not found'));
+            return [
+                'alias' => '',
+                'id' => '',
+                'start_date' => '',
+                'end_date' => '',
+                'lock_fy' => '',
+                'fy_close' => '',
+                'range' => '',
+                'authorized' => '',
+            ];
         }
     }
 
@@ -418,7 +428,6 @@ class Helper
                             ->whereBetween('document_date', [$financialMonth['start_date'], $financialMonth['end_date']])
                             ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
                     }
-
                 }
 
                 $currentDocNo = ($currentDocNo ? $currentDocNo : 0) + 1;
@@ -643,7 +652,7 @@ class Helper
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     });
             })->where('status', 1)->pluck('id')->toArray();
@@ -666,7 +675,6 @@ class Helper
                     $query->when(!empty($location), function ($query) use ($location) {
                         $query->where('location', (int) $location);
                     });
-
                 })
                 ->get(); // Fetch results before summing
 
@@ -713,7 +721,6 @@ class Helper
                     $opening = $opening + $profitLoss['closingFinal'];
                 else if ($profitLoss['closing_type'] == "Cr")
                     $opening = $opening - $profitLoss['closingFinal'];
-
             }
             $opening_type = $opening < 0 ? 'Cr' : 'Dr';
             $open = $openingData->total_debit - $openingData->total_credit;
@@ -756,7 +763,7 @@ class Helper
                 $query->whereIn('ledger_group_id', $allChildIds)
                     ->orWhere(function ($subQuery) use ($allChildIds) {
                         foreach ($allChildIds as $child) {
-                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                            $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                         }
                     });
             })->where('status', 1)->pluck('id')->toArray();
@@ -906,8 +913,7 @@ class Helper
                 // $query->where('cost_center_id', $cost)
                 return is_array($cost)
                     ? $query->whereIn('cost_center_id', $cost)
-                    : $query->where('cost_center_id', $cost);
-                ;
+                    : $query->where('cost_center_id', $cost);;
             })
             ->where('ledger_parent_id', $ledger_parent)
             ->whereHas('voucher', function ($query) use ($organization_id, $startDate, $endDate, $location) {
@@ -918,7 +924,6 @@ class Helper
                 $query->when(!empty($location), function ($query) use ($location) {
                     $query->where('location', (int) $location);
                 });
-
             })->pluck('voucher_id')
             ->toArray();
 
@@ -989,7 +994,7 @@ class Helper
             $query->whereIn('ledger_group_id', $childrens)
                 ->orWhere(function ($subQuery) use ($childrens) {
                     foreach ($childrens as $child) {
-                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                        $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                     }
                 });
         })->where('status', 1)
@@ -1015,7 +1020,6 @@ class Helper
                             $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                             $query->whereBetween('document_date', [$startDate, $endDate]);
                             $query->orderBy('document_date', 'asc');
-
                         });
                 }
             ], "debit_amt_{$currency}")
@@ -1039,7 +1043,6 @@ class Helper
                             $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                             $query->whereBetween('document_date', [$startDate, $endDate]);
                             $query->orderBy('document_date', 'asc');
-
                         });
                 }
             ], "credit_amt_{$currency}")
@@ -1063,7 +1066,6 @@ class Helper
                             $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                             $query->whereBetween('document_date', [$startDate, $endDate]);
                             $query->orderBy('document_date', 'asc');
-
                         });
                 }
             ])
@@ -1512,7 +1514,6 @@ class Helper
 
             $view = true;
             $email = false;
-
         }
         if ($docStatus == ConstantHelper::ASSIGNED) {
             $approvalWorkflow = BookLevel::where('book_id', $book->id)
@@ -1911,7 +1912,6 @@ class Helper
                 } else {
                     $approvalStatus = ConstantHelper::SUBMITTED;
                 }
-
             }
         }
 
@@ -2056,7 +2056,6 @@ class Helper
         $history = $history->orderByDesc('id')->get();
         $mergedCollection = $data->merge($history);
         return $mergedCollection;
-
     }
 
     public static function checkApprovedHistory($bookTypeServiceAlias, $docId, $revisionNumber, $userId = [])
@@ -2130,35 +2129,33 @@ class Helper
                                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                                 $query->orderBy('document_date', 'asc');
                                 $query->whereBetween('document_date', [$startDate, $endDate]);
-
                             });
                     }
                 ])->withSum([
-                        'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
-                            $query->where('ledger_parent_id', $group_id)
-                                ->when(!empty($cost), function ($query) use ($cost) {
-                                    // dd($cost);
-                                    // $query->where('cost_center_id', $cost);
-                                    return is_array($cost)
-                                        ? $query->whereIn('cost_center_id', $cost)
-                                        : $query->where('cost_center_id', $cost);
-                                })
-                                ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
+                    'details as details_sum_debit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
+                        $query->where('ledger_parent_id', $group_id)
+                            ->when(!empty($cost), function ($query) use ($cost) {
+                                // dd($cost);
+                                // $query->where('cost_center_id', $cost);
+                                return is_array($cost)
+                                    ? $query->whereIn('cost_center_id', $cost)
+                                    : $query->where('cost_center_id', $cost);
+                            })
+                            ->withwhereHas('voucher', function ($query) use ($startDate, $endDate, $organizations, $location) {
 
-                                    $query->when(!empty($organizations), function ($query) use ($organizations) {
-                                        $query->whereIn('organization_id', $organizations);
-                                    });
-                                    $query->when(!empty($location), function ($query) use ($location) {
-                                        $query->where('location', $location);
-                                    });
-
-                                    $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
-                                    $query->orderBy('document_date', 'asc');
-                                    $query->whereBetween('document_date', [$startDate, $endDate]);
-
+                                $query->when(!empty($organizations), function ($query) use ($organizations) {
+                                    $query->whereIn('organization_id', $organizations);
                                 });
-                        }
-                    ], "debit_amt_{$currency}")
+                                $query->when(!empty($location), function ($query) use ($location) {
+                                    $query->where('location', $location);
+                                });
+
+                                $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
+                                $query->orderBy('document_date', 'asc');
+                                $query->whereBetween('document_date', [$startDate, $endDate]);
+                            });
+                    }
+                ], "debit_amt_{$currency}")
                 ->withSum([
                     'details as details_sum_credit_amt' => function ($query) use ($startDate, $endDate, $group_id, $cost, $organizations, $location) {
                         $query->where('ledger_parent_id', $group_id)
@@ -2179,7 +2176,6 @@ class Helper
                                 $query->whereIn('approvalStatus', ConstantHelper::DOCUMENT_STATUS_APPROVED);
                                 $query->orderBy('document_date', 'asc');
                                 $query->whereBetween('document_date', [$startDate, $endDate]);
-
                             });
                     }
                 ], "credit_amt_{$currency}")
@@ -2234,13 +2230,11 @@ class Helper
                     $ledger->closing_type = $closing < 0 ? "Cr" : "Dr";
                     $ledger->opening_type = $opening_type;
                     $ledger->group_id = $group_id; // Default type if no details exist
-    
+
                     unset($ledger->details);
 
                     return $ledger;
                 });
-
-
         }
 
         return ['type' => $type, 'data' => $data, 'date0' => $startDate, 'date1' => $endDate];
@@ -2296,7 +2290,7 @@ class Helper
                     $query->whereIn('ledger_group_id', $allChildIds)
                         ->orWhere(function ($subQuery) use ($allChildIds) {
                             foreach ($allChildIds as $child) {
-                                $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id',$child);
+                                $subQuery->orWhereJsonContains('ledger_group_id', (string) $child)->orWhereJsonContains('ledger_group_id', $child);
                             }
                         });
                 })->where('status', 1)->pluck('id')->toArray();
@@ -2325,7 +2319,6 @@ class Helper
                             $query->where('location', $location);
                         });
                         $query->whereBetween('document_date', [$startDate, $endDate]);
-
                     })->get();
 
 
@@ -2532,14 +2525,13 @@ class Helper
         // Auth::guard('web')->login(User::find(2));
         // auth() -> user() -> authenticable_type = $authUser->authenticable_type;
         // auth() -> user() -> auth_user_id = $authUser->id;
-        return request() -> user();
+        return request()->user();
         if (Auth::guard('web')->check()) {
             return Auth::guard('web')->user();
         } elseif (Auth::guard('web2')->check()) {
             return Auth::guard('web2')->user();
         } else {
-        return request() -> user();
-
+            return request()->user();
         }
     }
     public static function getOrgWiseUserAndEmployees($organizationId)
@@ -2688,7 +2680,6 @@ class Helper
         } else {
             return null;
         }
-
     }
     public static function getRouteNameFromServiceAlias($alias, $id)
     {
@@ -2906,7 +2897,6 @@ class Helper
                 }
             }
             return $arr;
-
         } catch (Exception $e) {
             $error = $e->getMessage();
             Log::error("documentAmendment Error: $error");
@@ -3013,10 +3003,10 @@ class Helper
                         <td>' . $n++ . '</td>
                         <td>
                             ' . ucwords(str_replace(
-                            ['loan', 'Doc', 'Fee'],
-                            ['Loan', 'Document', 'Fee'],
-                            preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
-                        )) . '
+                        ['loan', 'Doc', 'Fee'],
+                        ['Loan', 'Document', 'Fee'],
+                        preg_replace('/(?<!^)([A-Z])/', ' $1', $column)
+                    )) . '
                         </td>
                         <td>
                             <a target="_blank" href="' . asset('storage/' . $data->$column->doc) . '">
@@ -3654,7 +3644,6 @@ class Helper
             ->first();
 
         return $financialYear ?? null;
-
     }
 
     public static function getActiveCostCenters($id = null)
@@ -3699,10 +3688,10 @@ class Helper
     }
 
 
-    public static function createPartyLedger($type, $name, $code,$group_id)
+    public static function createPartyLedger($type, $name, $code, $group_id)
     {
         try {
-            return DB::transaction(function () use ($type, $name, $code,$group_id) {
+            return DB::transaction(function () use ($type, $name, $code, $group_id) {
                 $itemCodeType = "Manual";
                 $parentUrl = ConstantHelper::LEDGERS_SERVICE_ALIAS;
                 $book = null;
@@ -3722,15 +3711,13 @@ class Helper
                                 $itemCodeType = $parameters->ledger_code_type[0] ?? null;
                             }
                         }
-                    }
-                    else
+                    } else
                         return [
-                        'success' => false,
-                        'message' => 'Book not found for ledgers.',
-                        'data' => []
-                    ];
-                }
-                else
+                            'success' => false,
+                            'message' => 'Book not found for ledgers.',
+                            'data' => []
+                        ];
+                } else
                     return [
                         'success' => false,
                         'message' => 'Service not found for ledgers.',
@@ -3749,29 +3736,29 @@ class Helper
                 $groupParts = array_map('trim', explode(',', $group));
                 $partyGroups = self::getGroupsQuery()
                     ->whereIn('name', $groupParts)->latest()->first();
-                
+
 
                 if (empty($partyGroups)) {
-                        return [
-                            'success' => false,
-                            'message' => $group." not found",
-                            'data' => []
-                        ];
-                    }
+                    return [
+                        'success' => false,
+                        'message' => $group . " not found",
+                        'data' => []
+                    ];
+                }
 
-               
 
-                
+
+
                 $existingGroups = $partyGroups->getAllChildIds();
                 $existingGroups[] = $partyGroups->id;
 
-                
-                if(!in_array((int)$group_id,$existingGroups))
+
+                if (!in_array((int)$group_id, $existingGroups))
                     return [
-                            'success' => false,
-                            'message' => 'Group ID not mapped with '.$group,
-                            'data' => []
-                        ];
+                        'success' => false,
+                        'message' => 'Group ID not mapped with ' . $group,
+                        'data' => []
+                    ];
 
 
                 if ($itemCodeType == "Auto") {
@@ -3811,7 +3798,7 @@ class Helper
                 $validatedData['ledger_group_id'] = json_encode([(string)$group_id]);
                 $validatedData['status'] = 1;
                 $validatedData['document_status'] = ConstantHelper::APPROVAL_NOT_REQUIRED;
-                
+
 
                 $ledger = Ledger::create($validatedData);
 
@@ -3842,7 +3829,7 @@ class Helper
                         'ledger_id' => $ledger->id,
                         'ledger_code' => $code,
                         'ledger_name' => $name,
-                        'ledger_group_id'=>$group_id,
+                        'ledger_group_id' => $group_id,
                     ]
                 ];
             });
@@ -3859,7 +3846,7 @@ class Helper
             ];
         }
     }
-    public static function generateContraDocNumber(int $book_id, string $document_date,$organization_id)
+    public static function generateContraDocNumber(int $book_id, string $document_date, $organization_id)
     {
 
         $book = Book::find($book_id);
@@ -3875,7 +3862,7 @@ class Helper
         if ($data && $modelName) {
 
             $model = resolve('App\\Models\\' . $modelName);
-          
+
 
             if ($data->series_numbering === ConstantHelper::DOC_NO_TYPE_AUTO) {
                 $startFrom = $data->starting_no;
@@ -3886,8 +3873,8 @@ class Helper
                     $prefix = $data->prefix;
                     $suffix = $data->suffix;
                     $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                    ->where('organization_id',$organization_id)
-                    ->where('book_id', $book_id)
+                        ->where('organization_id', $organization_id)
+                        ->where('book_id', $book_id)
                         ->whereNotNull('doc_no')
                         // ->orderBy('doc_no', 'DESC')
                         ->orderByRaw('CAST(doc_no AS UNSIGNED) DESC')
@@ -3908,7 +3895,7 @@ class Helper
                     $prefix = $financialYear['alias'];
                     $suffix = $data->suffix;
                     $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                    ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                        ->where('organization_id', $organization_id)->where('book_id', $book_id)
                         ->whereNotNull('doc_no')
                         ->whereBetween('document_date', [$financialYear['start_date'], $financialYear['end_date']])
                         ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
@@ -3928,7 +3915,7 @@ class Helper
                     $prefix = $financialYear['alias'] . "-" . $financialQuarter['alias'];
                     $suffix = $data->suffix;
                     $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                    ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                        ->where('organization_id', $organization_id)->where('book_id', $book_id)
                         ->whereNotNull('doc_no')
                         ->whereBetween('document_date', [$financialQuarter['start_date'], $financialQuarter['end_date']])
                         ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
@@ -3937,12 +3924,11 @@ class Helper
                         $prefix = $financialYear['alias'] . "-" . $financialMonth['alias'];
                         $suffix = $data->suffix;
                         $currentDocNo = $model->withoutGlobalScope(DefaultGroupCompanyOrgScope::class)
-                            ->where('organization_id',$organization_id)->where('book_id', $book_id)
+                            ->where('organization_id', $organization_id)->where('book_id', $book_id)
                             ->whereNotNull('doc_no')
                             ->whereBetween('document_date', [$financialMonth['start_date'], $financialMonth['end_date']])
                             ->orderBy('doc_no', 'DESC')->pluck('doc_no')->first() ?? $startFrom;
                     }
-
                 }
 
                 $currentDocNo = ($currentDocNo ? $currentDocNo : 0) + 1;
@@ -4014,13 +4000,13 @@ class Helper
     }
     public static function getContraBooks()
     {
-        $service = Service::where('alias',ConstantHelper::CONTRA_VOUCHER)->first();
-        if(empty($service))
+        $service = Service::where('alias', ConstantHelper::CONTRA_VOUCHER)->first();
+        if (empty($service))
             return [];
-        $books = Book::where('service_id',$service->id)
-        ->where('manual_entry',1)
-        ->where('status','active')->get();
-        return $books?? [];
+        $books = Book::where('service_id', $service->id)
+            ->where('manual_entry', 1)
+            ->where('status', 'active')->get();
+        return $books ?? [];
     }
     public static function generateAssetCode($category_id)
     {
@@ -4031,32 +4017,56 @@ class Helper
 
         while (
             FixedAssetRegistration::where('asset_code', $finalItemCode)
-                ->exists()
+            ->exists()
         ) {
             $nextSuffix = str_pad(intval($nextSuffix) + 1, 3, '0', STR_PAD_LEFT);
             $finalItemCode = $baseCode . $nextSuffix;
         }
 
         return $finalItemCode;
-
     }
 
-    public static function mrnAssetRegister($mrn_id, $category_id, $asset_name, $capitalize_date, $life)
+    public static function mrnAssetRegister($mrn_id)
     {
         DB::beginTransaction();
         try {
-            // Input validation
-            if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life)) {
+            $mrn_asset = MrnAssetDetail::where('header_id',$mrn_id)->first();
+            if(empty($mrn_asset)){
                 DB::rollBack();
                 return [
                     'status' => false,
-                    'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life) are required.'
+                    'message' => 'MRN not found'
+                ];
+            }
+            $salvageValueTotal = 0;
+
+            $category_id = $mrn_asset->asset_category_id;
+            $asset_name = $mrn_asset->asset_name;
+            $capitalize_date = $mrn_asset->capitalization_date;
+            $life = $mrn_asset->estimated_life;
+            $detail_id = json_decode($mrn_asset->detail_id);
+
+            // Example: Ensure $detail_id is an array of integers
+            if (!is_array($detail_id) || !array_reduce($detail_id, fn($carry, $id) => $carry && is_int($id), true)) {
+                DB::rollBack();
+                return [
+                    'status' => false,
+                    'message' => 'detail_id must be an array of integers.'
+                ];
+            }
+
+            // Input validation
+            if (empty($mrn_id) || empty($category_id) || empty($asset_name) || empty($capitalize_date) || empty($life) || empty($detail_id)) {
+                DB::rollBack();
+                return [
+                    'status' => false,
+                    'message' => 'All parameters (mrn_id, category_id, asset_name, capitalize_date, life, detail_id) are required.'
                 ];
             }
 
             // Validate capitalize_date format (Y-m-d)
             try {
-                $parsedDate = Carbon::parse($capitalize_date);
+                $capitalize_date = Carbon::parse($capitalize_date)->format('Y-m-d');
             } catch (Exception $e) {
                 DB::rollBack();
                 return [
@@ -4129,15 +4139,17 @@ class Helper
             }
 
             $glPostingBookId = $glPostingBookParam->parameter_value[0];
+            $filteredItems = $mrn->items->whereIn('id', $detail_id);
+            $asset_codes=[];
 
-            foreach ($mrn->items as $mrn_detail) {
+            foreach ($filteredItems as $mrn_detail) {
                 $exitingReg = FixedAssetRegistration::where('mrn_detail_id', $mrn_detail->id)
                     ->where('mrn_header_id', $mrn->id)->first();
 
                 if (!empty($exitingReg)) {
                     DB::rollBack();
                     return [
-                        'message' => 'MRN already registered with asset code '.$exitingReg->asset_code,
+                        'message' => 'MRN already registered with asset code ' . $exitingReg->asset_code,
                         'status' => false
                     ];
                 }
@@ -4194,11 +4206,11 @@ class Helper
                     'tax' => $mrn_detail->tax_value,
                     'purchase_amount' => $currentValue + $mrn_detail->tax_value,
                     'supplier_invoice_date' => $mrn->supplier_invoice_date,
-                    'book_date'=>$mrn_detail->created_at??null,
+                    'book_date' => $mrn_detail->created_at ?? null,
                     'supplier_invoice_no' => $mrn->supplier_invoice_no,
-                    'location_id' =>  $mrn->sub_store_id??null,
-                    'cost_center_id' => $mrn->cost_center_id??null,
-                    'maintenance_schedule' => $setup->maintenance_schedule??null,
+                    'location_id' =>  $mrn->sub_store_id ?? null,
+                    'cost_center_id' => $mrn->cost_center_id ?? null,
+                    'maintenance_schedule' => $setup->maintenance_schedule ?? null,
                     'depreciation_method' => $method,
                     'useful_life' => $life,
                     'salvage_value' => $salvageValue,
@@ -4224,7 +4236,12 @@ class Helper
                     $asset->current_value,
                     $asset->salvage_value
                 );
+                $asset_codes[] = $asset_code;
+                $salvageValueTotal += $salvageValue;
             }
+            $mrn_asset->salvage_value = $salvageValueTotal;
+            $mrn_asset->asset_code = $asset_codes;
+            $mrn_asset->save();
 
             DB::commit();
 
@@ -4233,7 +4250,6 @@ class Helper
                 'message' => "Registration Added",
                 'data' => []
             ];
-
         } catch (Exception $e) {
             DB::rollBack();
             Log::error('MRN Asset Register Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -4245,6 +4261,4 @@ class Helper
             ];
         }
     }
-    
-
 }

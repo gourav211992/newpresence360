@@ -34,7 +34,7 @@
       <input type="hidden" name="components[{{$rowCount}}][item_id]" value="{{$bomDetail->item?->id}}" />
       <input type="hidden" name="components[{{$rowCount}}][item_code]" value="{{$bomDetail->item?->item_code}}" />
       @php
-      $selectedAttr = $bomDetail->attributes ? $bomDetail->attributes()->pluck('attribute_value')->all() : []; 
+      $selectedAttr = $bomDetail->attributes ? $bomDetail->attributes()->pluck('attribute_value')->all() : [];
       @endphp
       @if(empty($isCopy) || !$isCopy)
          @foreach($bomDetail->attributes as $attributeHidden)
@@ -52,7 +52,7 @@
    <td>
       <input type="text" name="components[{{$rowCount}}][item_name]" class="form-control mw-100 mb-25" readonly value="{{$bomDetail?->item?->item_name}}" />
   </td>
-   <td class="poprod-decpt"> 
+   <td class="poprod-decpt">
       <button type="button" {{-- data-bs-toggle="modal" data-bs-target="#attribute" --}} class="btn p-25 btn-sm btn-outline-secondary attributeBtn" data-row-count="{{$rowCount}}" style="font-size: 10px">Attributes</button>
    </td>
    <td>
@@ -132,7 +132,7 @@
       </div>
    </td>
    @endif
-   <td class="{{$canView ? '' : 'd-none'}}">  
+   <td class="{{$canView ? '' : 'd-none'}}">
       @if($canView)
          <input type="text" value="{{$bomDetail->total_amount}}" name="components[{{$rowCount}}][item_total_cost]" readonly class="form-control mw-100 text-end" />
       @else
@@ -153,6 +153,20 @@
       <input type="text" placeholder="Select" class="form-control mw-100 ledgerselecct" value="{{$bomDetail?->vendor?->company_name}}" name="product_vendor" />
       <input type="hidden" name="components[{{$rowCount}}][vendor_id]" value="{{$bomDetail?->vendor_id}}">
    </td>
+
+   @if(isset($bacthInheritRequird) && $bacthInheritRequird)
+      <td id="td_bacth_inherit_requird">
+         <div class="form-check form-check-primary custom-checkbox">
+            @if (isset($buttons))
+               <input type="checkbox" class="form-check-input is_inherit_batch_item" id="is_inherit_batch_item" name="components[{{$rowCount}}][is_inherit_batch_item]" {{ $bomDetail->is_inherit_batch_item ? 'checked' : '' }} {{ $buttons['approve'] || request('amendment') || $buttons['draft'] ? '' :'disabled' }}>
+            @else
+               <input type="checkbox" class="form-check-input is_inherit_batch_item" id="is_inherit_batch_item" name="components[{{$rowCount}}][is_inherit_batch_item]" {{ @$bomDetail->is_inherit_batch_item ? 'checked' : '' }}>
+            @endif
+            <label class="form-check-label" for="is_inherit_batch_item"></label>
+         </div>
+      </td>
+   @endif
+   
    <td>
       <input type="hidden" name="components[{{$rowCount}}][remark]" value="{{$bomDetail->remark}}" />
       <div class="d-flex align-items-center justify-content-center">

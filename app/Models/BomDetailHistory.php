@@ -31,7 +31,8 @@ class BomDetailHistory extends Model
         'station_id',
         'station_name',
         'remark',
-        'vendor_id'
+        'vendor_id',
+        'is_inherit_batch_item',
     ];
 
     public $referencingRelationships = [

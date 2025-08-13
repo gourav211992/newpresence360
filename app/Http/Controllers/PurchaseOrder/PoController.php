@@ -3077,7 +3077,7 @@ class PoController extends Controller
             $poPaymentTerm->po_header_id = $poId;
             $poPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
             $poPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
-            $poPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? $creditDays : 0;
+            $poPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0;
             $poPaymentTerm->percent = $paymentTermDetail->percent;
             $poPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
             $poPaymentTerm->save();
