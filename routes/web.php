@@ -5,6 +5,7 @@ use App\Helpers\ConstantHelper;
 use App\Http\Controllers\ErpPqcController;
 use App\Http\Controllers\ErpPqController;
 use App\Http\Controllers\ErpRFQController;
+use App\Http\Controllers\TransporterInvoiceController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HsnController;
@@ -2128,21 +2129,21 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/lease-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.leaseInvoice.index');
     Route::get('/delivery-note', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNote.index');
     Route::get('/delivery-note-cum-invoice', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNoteCumInvoice.index');
-    Route::get('/transporter-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.transporterInvoice.index');
+    Route::get('/transporter-invoices', [TransporterInvoiceController::class, 'index'])->name('sale.transporterInvoice.index');
 
 
     Route::get('/sale-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.invoice.create');
     Route::get('/lease-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.leaseInvoice.create');
     Route::get('/delivery-note/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNote.create');
     Route::get('/delivery-note-cum-invoice/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.deliveryNoteCumInvoice.create');
-    Route::get('/transporter-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.transporterInvoice.create');
+    Route::get('/transporter-invoices/create', [TransporterInvoiceController::class, 'create'])->name('sale.transporterInvoice.create');
 
     Route::post('/sale-invoices/store', [ErpSaleInvoiceController::class, 'store'])->name('sale.invoice.store');
 
     Route::get('/sale-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.invoice.edit');
     Route::get('/lease-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.leaseInvoice.edit');
     Route::get('/delivery-note/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNote.edit');
-    Route::get('/transporter-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.transporterInvoice.edit');
+    Route::get('/transporter-invoices/edit/{id}', [TransporterInvoiceController::class, 'edit'])->name('sale.transporterInvoice.edit');
     Route::get('/delivery-note-cum-invoice/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNoteCumInvoice.edit');
 
     Route::get('/sale-invoices/orders/get', [ErpSaleInvoiceController::class, 'getOrders'])->name('sale.invoice.orders.get');
