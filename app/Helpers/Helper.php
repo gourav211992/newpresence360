@@ -347,6 +347,7 @@ class Helper
         $data = NumberPattern::where('book_id', $book_id)->orderBy('id', 'DESC')->first();
         $serviceAlias = $data?->book?->org_service?->alias;
         $modelName = isset(ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias]) ? ConstantHelper::SERVICE_ALIAS_MODELS[$serviceAlias] : '';
+        
         $financialYear = self::getFinancialYear($document_date);
         $financialQuarter = self::getFinancialYearQuarter($document_date);
         $financialMonth = self::getFinancialMonth($document_date);

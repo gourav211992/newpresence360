@@ -3008,11 +3008,13 @@ Route::resource('plant/bom', MaintBomController::class)->names([
     'create' => 'maint-bom.create',
     'show' => 'maint-bom.show',
     'edit' => 'maint-bom.edit',
+    'store' => 'maint-bom.store',
 ]);
 
 Route::resource('plant/wo', MaintWoController::class)->names([
     'index' => 'maint-wo.index',
     'create' => 'maint-wo.create',
+    'store' => 'maint-wo.store',
     'show' => 'maint-wo.show',
     'edit' => 'maint-wo.edit',
 ]);

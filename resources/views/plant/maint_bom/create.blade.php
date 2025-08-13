@@ -160,7 +160,7 @@
 												</div>
 											</div>
 											<div class="col-md-6 text-sm-end">
-												<a href="#" class="btn btn-sm btn-outline-danger me-50">
+												<a href="#" class="btn btn-sm btn-outline-danger me-50" id="delete">
 													<i data-feather="x-circle"></i> Delete</a>
 												<a href="#" class="btn btn-sm btn-outline-primary" id="addNewRowBtn">
 													<i data-feather="plus"></i> Add New Item</a>

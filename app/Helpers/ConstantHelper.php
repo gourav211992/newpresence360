@@ -774,6 +774,7 @@ class ConstantHelper
         self::FIXED_ASSET_MERGER => 'FixedAssetMerger',
         self::FIXED_ASSET_REV_IMP => 'FixedAssetRevImp',
         self::MAINT_BOM=>'PlantMaintBom',
+        self::MAINT_WO=>'PlantMaintWo',
 
 
         self::ITEM_SERVICE_ALIAS => 'Item',
