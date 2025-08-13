@@ -361,8 +361,10 @@ function setTableCalculation(edit = null) {
                 }
                 itemDiscount += eachDiscAmount;
                 $(`[name="components[${rowCount}][discounts][${index + 1}][dis_amount]"]`).val(eachDiscAmount.toFixed(2));
+                // $(`[name="components[${rowCount}][discounts][${index + 1}][dis_amount]"]`).val(eachDiscAmount);
             });
             $(item).find("[name*='[discount_amount]']").val(itemDiscount.toFixed(2));
+            // $(item).find("[name*='[discount_amount]']").val(itemDiscount);
         } else if (!itemValue) {
             $(item).find("[name*='[discount_amount]']").val("0.00");
         }

@@ -872,8 +872,8 @@ function implementBookParameters(paramData)
     var invoiceToFollowParam = paramData?.invoice_to_follow;
     var issueTypeParameters = paramData?.issue_type;
     var itemTypeParam = paramData?.goods_or_services;
-    const generalInfoTab = document.getElementById('general_information_tab');
-    const subStoreCodeInput = document.getElementById('sub_store_code_header');
+    // const generalInfoTab = document.getElementById('general_information_tab');
+    // const subStoreCodeInput = document.getElementById('sub_store_code_header');
 
    
     // Reference From
@@ -1065,18 +1065,18 @@ function implementBookParameters(paramData)
         });
     }
 
-    if (itemTypeParam && itemTypeParam.length > 0) {
-        if (generalInfoTab && subStoreCodeInput) {
-            if (itemTypeParam[0] == "Service") {
-                generalInfoTab.classList.add('d-none');
-                subStoreCodeInput.classList.add('d-none');
-            } else {
-                generalInfoTab.classList.remove('d-none');
-                subStoreCodeInput.classList.remove('d-none');
+    // if (itemTypeParam && itemTypeParam.length > 0) {
+    //     if (generalInfoTab && subStoreCodeInput) {
+    //         if (itemTypeParam[0] == "Service") {
+    //             generalInfoTab.classList.add('d-none');
+    //             subStoreCodeInput.classList.add('d-none');
+    //         } else {
+    //             generalInfoTab.classList.remove('d-none');
+    //             subStoreCodeInput.classList.remove('d-none');
 
-            }
-        }
-    }
+    //         }
+    //     }
+    // }
 
     //Issue Type
     if (issueTypeParameters && issueTypeParameters.length > 0) {
@@ -1599,7 +1599,7 @@ function onItemClick(itemRowId)
         });
     });
     }
-    const lrId = document.getElementById('lr_id_' + itemRowId).value || '';
+    const lrId = document.getElementById('lr_id_' + itemRowId)?.value || '';
     const itemId = document.getElementById('items_dropdown_'+ itemRowId + '_value').value;
     const uomId = document.getElementById('uom_dropdown_'+ itemRowId ).value;
     const qtyrow = document.getElementById('item_picked_qty_' + itemRowId) ?? document.getElementById('item_qty_' + itemRowId);
@@ -2109,7 +2109,7 @@ function itemOnChange(selectedElementId, index, routeUrl) // Retrieve element an
             // if (typeof getAndSetItemRate === 'function') {
             //     getAndSetItemRate(index);
             // }
-            if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice') {
+            if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice' || menuAlias == 'sinv') {
                 getAndSetItemRate(index, 'selling');
             }
             if (menuAlias == 'material-issue') {
@@ -2179,7 +2179,7 @@ function changeAttributeVal(selectedElement, elementId, index)
         }
     });
     elementId.setAttribute('attribute-array', JSON.stringify(attributesJSON));
-    if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice') {
+    if (menuAlias == 'delivery-note' || menuAlias == 'sale-invoices' || menuAlias == 'delivery-note-cum-invoice' || menuAlias == 'sinv') {
         getAndSetItemRate(index, 'selling');
     }
     if (menuAlias == 'material-issue') {

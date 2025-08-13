@@ -1572,6 +1572,8 @@ Route::middleware(['user.auth'])->group(function () {
             Route::get('/amendment-submit/{id}', 'amendmentSubmit')->name('amendment.submit');
             Route::get('/get-purchase-orders', 'getPo')->name('get.po');
             Route::get('/process-po-item', 'processPoItem')->name('process.po-item');
+            Route::get('/get-job-orders', 'getJo')->name('get.jo');
+            Route::get('/process-jo-item', 'processJoItem')->name('process.jo-item');
             Route::get('/get-sales-orders', 'getSo')->name('get.so');
             Route::get('/process-so-item', 'processSoItem')->name('process.so-item');
             Route::get('/posting/get', 'getPostingDetails')->name('posting.get');
@@ -2145,6 +2147,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/delivery-note/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNote.edit');
     Route::get('/transporter-invoices/edit/{id}', [TransporterInvoiceController::class, 'edit'])->name('sale.transporterInvoice.edit');
     Route::get('/delivery-note-cum-invoice/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.deliveryNoteCumInvoice.edit');
+    Route::get('/service-invoices/edit/{id}', [ErpSaleInvoiceController::class, 'edit'])->name('sale.serviceInvoice.edit');
 
     Route::get('/sale-invoices/orders/get', [ErpSaleInvoiceController::class, 'getOrders'])->name('sale.invoice.orders.get');
     Route::get('/sale-invoices/challans/get', [ErpSaleInvoiceController::class, 'getDeliveryChallans'])->name('sale.invoice.challans.get');
@@ -2909,9 +2912,9 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/get-item', 'getPiItemForPulling')->name('get.items');
         Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::get('/report', 'report')->name('report');
-        
+
     });
-    
+
     Route::prefix('purchase-quotation')->controller(ErpPqController::class)->name('pq.')->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/create', 'create')->name('create');
@@ -2924,7 +2927,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
         Route::get('/serach-items', 'serachItems')->name('search.items');
         Route::get('/vendors/address/{id}', 'getVendorAddresses')->name('vendor.addresses');
-        
+
     });
     Route::prefix('purchase-quotation-comparison')->controller(ErpPqcController::class)->name('pqc.')->group(function () {
         Route::get('/', 'index')->name('index');
@@ -2935,7 +2938,7 @@ Route::middleware(['user.auth'])->group(function () {
         Route::post('/mail', 'mail')->name('mail');
         Route::get('/process-item', 'processItems')->name('process.items');
         Route::post('/get-item', 'getRfqItemForPulling')->name('get.items');
-        
+
     });
 
     Route::prefix('sales-order/import')->controller(SaleOrderImportController::class)->name('salesOrder.')->group(function () {

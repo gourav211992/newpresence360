@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Helpers\ConstantHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\ServiceParametersHelper;
+use App\Models\Book;
 use App\Models\ErpItemAttribute;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,7 +27,7 @@ class ErpSaleInvoiceRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'sale_invoice_id' => 'numeric|integer',
             'book_id' => 'required|numeric|integer|exists:erp_books,id',
             'document_no' => ['required'],
@@ -52,6 +53,25 @@ class ErpSaleInvoiceRequest extends FormRequest
             'customer_email' => 'nullable|email',
             // 'customer_gstin' => 'nullable|string|size:15|regex:/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/'
         ];
+
+        $book = Book::find($this->book_id);
+        $type = $book->master_service->alias;
+
+        if (in_array($type, [
+            ConstantHelper::SI_SERVICE_ALIAS,
+            ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS,
+            ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS
+        ])) {
+            $rules['transporter_name'] = 'required|max:255';
+            $rules['vehicle_no'] = [
+                'required',
+                'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
+            ];
+            $rules['transporter_mode'] = 'required|integer';
+        }
+
+        return $rules;
+
     }
 
     protected function withValidator($validator)
@@ -69,18 +89,6 @@ class ErpSaleInvoiceRequest extends FormRequest
             if ((count($itemIds) !== count($itemsQty)) || (count($itemIds) !== count($itemRate)))
             {
                 $validator->errors()->add("custom_error", "Please specify all details for each item");
-            }
-            $bookId = $this -> book_id;
-            $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $bookId)['data'];
-            if ($itemType == ConstantHelper::GOODS) {
-                $validator->addRules([
-                    'transporter_name' => 'required|max:255',
-                    'vehicle_no' => [
-                        'required',
-                        'regex:/^[A-Z]{2}[0-9]{2}[A-Z]{0,3}[0-9]{4}$/'
-                    ],
-                    'transporter_mode' => 'required|integer',
-                ]);
             }
             foreach ($itemIds as $itemKey => $itemId) {
                 if (!isset($this -> sale_invoice_id)) { //Only for creation

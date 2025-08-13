@@ -25,7 +25,7 @@ class WarehouseMappingController extends Controller
         $user = Helper::getAuthenticatedUser();
         if ($request->ajax()) {
             $records = WhDetail::whereHas('store')->with('whLevel')
-                ->groupBy('sub_store_id', 'wh_leveal_id');
+                ->groupBy('sub_store_id', 'wh_level_id');
 
             // Log the query for debugging
             DB::enableQueryLog();

@@ -469,6 +469,7 @@ class ConstantHelper
         self::LR_SERVICE_ALIAS => "Lorry Receipt",
         self::SO_SERVICE_ALIAS => "Sales Order",
         self::SI_SERVICE_ALIAS => "Tax Invoice",
+        self::SERVICE_INV_SERVICE_ALIAS => "Service Invoice",
         self::SQ_SERVICE_ALIAS => "Sales Quotation",
         self::SR_SERVICE_ALIAS => "Sales Return",
         self::DELIVERY_CHALLAN_SERVICE_ALIAS => "Delivery Note",
@@ -540,6 +541,7 @@ class ConstantHelper
     const TI_SERVICE_ALIAS = 'ti';
     const SQ_SERVICE_ALIAS = 'sq';
     const SI_SERVICE_ALIAS = 'si';
+    const SERVICE_INV_SERVICE_ALIAS = 'sinv';
     const SR_SERVICE_ALIAS = 'sr';
     const PWO_SERVICE_ALIAS = 'pwo';
     const TR_SERVICE_ALIAS = 'tr';
@@ -676,6 +678,7 @@ class ConstantHelper
         self::LOAN_SETTLEMENT => self::LOAN_SETTLEMENT,
         self::LOAN_DISBURSEMENT => self::LOAN_DISBURSEMENT,
         self::SI_SERVICE_ALIAS => self::SALES_VOUCHER,
+        self::SERVICE_INV_SERVICE_ALIAS => self::SALES_VOUCHER,
         self::DELIVERY_CHALLAN_SERVICE_ALIAS => self::SALES_VOUCHER,
         self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => self::SALES_VOUCHER,
         self::MRN_SERVICE_ALIAS => self::PURCHASE_VOUCHER,
@@ -728,6 +731,7 @@ class ConstantHelper
         self::SO_SERVICE_ALIAS => 'ErpSaleOrder',
         self::SQ_SERVICE_ALIAS => 'ErpSaleOrder',
         self::SI_SERVICE_ALIAS => 'ErpSaleInvoice',
+        self::SERVICE_INV_SERVICE_ALIAS => 'ErpSaleInvoice',
         self::SR_SERVICE_ALIAS => 'ErpSaleReturn',
         self::PWO_SERVICE_ALIAS => 'ErpProductionWorkOrder',
         self::TR_SERVICE_ALIAS => 'ErpTransporterRequest',
@@ -859,6 +863,7 @@ class ConstantHelper
         self::DELIVERY_CHALLAN_SERVICE_ALIAS => 'sale.invoice.edit',
         self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS => 'sale.invoice.edit',
         self::SI_SERVICE_ALIAS => 'sale.invoice.edit',
+        self::SERVICE_INV_SERVICE_ALIAS => 'sale.serviceInvoice.edit',
         self::SR_SERVICE_ALIAS => 'sale.return.edit',
         self::RC_SERVICE_ALIAS => 'rate.contract.edit',
         self::PSV_SERVICE_ALIAS => 'psv.edit',
@@ -876,9 +881,9 @@ class ConstantHelper
         self::VOUCHERS => 'vouchers.edit',
     ];
     const PWO_DOC_TYPES = [self::PWO_SERVICE_ALIAS];
-    const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
+    const SALE_INVOICE_DOC_TYPES = [self::SI_SERVICE_ALIAS, self::LEASE_INVOICE_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS, self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS, self::SERVICE_INV_SERVICE_ALIAS];
     const SALE_RETURN_DOC_TYPES = [self::SR_SERVICE_ALIAS,self::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS, self::DELIVERY_CHALLAN_SERVICE_ALIAS];
-    const SALE_INVOICE_DOC_TYPES_FOR_DB = [self::SI_SERVICE_ALIAS, 'dn', 'sidn'];
+    const SALE_INVOICE_DOC_TYPES_FOR_DB = [self::SI_SERVICE_ALIAS, 'dn', 'sidn', self::SERVICE_INV_SERVICE_ALIAS];
     const SALE_RETURN_DOC_TYPES_FOR_DB = [self::SR_SERVICE_ALIAS, 'dn', 'srdn'];
     const DOC_NO_TYPE_AUTO = "Auto";
     const DOC_NO_TYPE_MANUAL = "Manually";

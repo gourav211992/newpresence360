@@ -2,7 +2,7 @@
 $(document).on('click', '.summaryTaxBtn', (e) => {
     getTaxSummary();
 });
-
+selectedCostCenterId = null;
 /*Approve modal*/
 $(document).on('click', '#approved-button', (e) => {
     let actionType = 'approve';
@@ -207,10 +207,13 @@ $(document).on('change', "[name*='accepted_qty']", async function (e) {
     const safeSet = (key, val) => { if (val) data[key] = val; };
 
     safeSet('item_id', itemId);
-    safeSet('po_header_id', getVal("[name*='[purchase_order_id]']"));
+    safeSet('purchase_order_id', getVal("[name*='[purchase_order_id]']"));
     safeSet('po_detail_id', getVal("[name*='[po_detail_id]']"));
+    safeSet('job_order_id', getVal("[name*='[job_order_id]']"));
+    safeSet('jo_detail_id', getVal("[name*='[jo_detail_id]']"));
     safeSet('detail_id', getVal("[name*='[detail_id]']"));
     safeSet('qty', acceptedQty.toFixed(2));
+    safeSet('type', currentProcessType);
 
     try {
         const response = await fetch(qtyChangeUrl + '?' + new URLSearchParams(data).toString());

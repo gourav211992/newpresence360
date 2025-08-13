@@ -96,24 +96,6 @@
       </td>
       <td>
          <div class="d-flex">
-            <!-- <input type="hidden" id="components_stores_data_{{ $rowCount }}" name="components[{{$rowCount}}][store_data]" value=""/>
-            @foreach($item->gateEntryItemLocations()->get() as $over_key => $overhead)
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][id]" value="{{$overhead->id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_store_id]" value="{{@$overhead->store_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_rack_id]" value="{{@$overhead->rack_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_shelf_id]" value="{{@$overhead->shelf_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][erp_bin_id]" value="{{@$overhead->bin_id}}">
-               <input type="hidden" name="components[{{$rowCount}}][erp_store][{{$over_key+1}}][store_qty]" value="{{@$overhead->quantity}}">
-            @endforeach
-            <div class="me-50 cursor-pointer addDeliveryScheduleBtn" data-bs-toggle="modal" data-row-count="{{$rowCount}}" data-bs-target="#store-modal">
-               <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
-                  data-bs-original-title="Store Location" aria-label="Store Location">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                  class="feather feather-map-pin">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-               </span>
-            </div> -->
             <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>
                <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary" data-bs-original-title="Remarks" aria-label="Remarks">
                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text">

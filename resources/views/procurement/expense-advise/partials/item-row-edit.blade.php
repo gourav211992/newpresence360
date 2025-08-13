@@ -7,6 +7,9 @@
       <input type="hidden" name="components[{{$rowCount}}][detail_id]" value="{{$item->id}}">
       <input type="hidden" name="components[{{$rowCount}}][purchase_order_id]" value="{{$item->expenseHeader->purchase_order_id}}">
       <input type="hidden" name="components[{{$rowCount}}][po_detail_id]" value="{{@$item->purchase_order_item_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][job_order_id]" value="{{$item->expenseHeader->job_order_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][jo_detail_id]" value="{{$item->job_order_item_id}}">
+      <input type="hidden" name="components[{{$rowCount}}][jo_service_item_id]" value="{{$item->jo_service_item_id}}">
       <td class="customernewsection-form">
          <div class="form-check form-check-primary custom-checkbox">
             <input type="checkbox" class="form-check-input" id="Email_{{$rowCount}}" data-id="{{$item->id}}" value="{{$rowCount}}">
@@ -53,7 +56,7 @@
       <td>
          <input type="number" class="form-control mw-100 text-end accepted_qty" name="components[{{$rowCount}}][accepted_qty]" value="{{$item->accepted_qty}}" step="any" />
       </td>
-      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" /></td>
+      <td><input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" class="form-control mw-100 text-end rate checkNegativeVal" readonly /></td>
       <td>
          <input type="number" name="components[{{$rowCount}}][basic_value]" value="{{($item->accepted_qty*$item->rate)}}" class="form-control text-end mw-100 basic_value" step="any" readonly />
       </td>

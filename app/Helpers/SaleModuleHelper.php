@@ -88,7 +88,9 @@ class SaleModuleHelper
             return "Invoice cum DN";
         } else if ($type === self::SALES_INVOICE_LEASE_TYPE) {
             return "Lease Invoice";
-        }else if ($type === self::SALES_INVOICE_TRANSPORTER_TYPE) {
+        } else if ($type === ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
+            return "Service Invoice";
+        } else if ($type === self::SALES_INVOICE_TRANSPORTER_TYPE) {
             return "Transporter Invoice";
         } else {
             return "";

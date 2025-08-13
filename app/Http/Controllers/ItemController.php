@@ -24,7 +24,7 @@ use App\Models\CustomerItem;
 use App\Models\VendorItem;
 use App\Models\ItemAttribute;
 use App\Models\AlternateItem;
-use App\Helpers\Helper; 
+use App\Helpers\Helper;
 use App\Imports\ItemImport;
 use App\Services\CommonService;
 use Maatwebsite\Excel\Facades\Excel;
@@ -56,29 +56,29 @@ class ItemController extends Controller
     {
         $this->commonService = $commonService;
         $this->itemImportExportService = $itemImportExportService;
-        
+
     }
-  
+
     public function index()
     {
         $user = Helper::getAuthenticatedUser();
-        $organization = Organization::where('id', $user->organization_id)->first(); 
+        $organization = Organization::where('id', $user->organization_id)->first();
         $organizationId = $organization?->id ?? null;
         $companyId = $organization?->company_id ?? null;
         if (request()->ajax()) {
             $query = Item::with(['uom', 'hsn','subCategory', 'subTypes','auth_user','group'])
                 ->orderBy('id', 'desc');
             $search = request('search_value');
-          
+
 
             if ($status = request(key: 'status')) {
                 $query->where('status', $status);
             }
-    
+
             if ($hsnId = request(key: 'hsn_id')) {
                 $query->where('hsn_id', $hsnId);
             }
-      
+
            if ($subtypeId = request('sub_type_id')) {
                 if ($subtypeId === 'traded_item') {
                     $query->where('is_traded_item', 1);
@@ -95,12 +95,12 @@ class ItemController extends Controller
             if ($categoryId = request('subcategory_id')) {
                 $query->where('subcategory_id', $categoryId);
             }
-    
+
             if ($type = request('type')) {
                 $query->where('type', $type);
             }
 
-           return DataTables::of($query) 
+           return DataTables::of($query)
                 ->addIndexColumn()
                 ->addColumn('subtypes', function($row) {
                     $subTypes = '';
@@ -132,20 +132,20 @@ class ItemController extends Controller
                 ->editColumn('created_at', function ($row) {
                     return $row->created_at ? Carbon::parse($row->created_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
-                
+
                 ->editColumn('created_by', function ($row) {
-                    $createdBy = optional($row->auth_user)->name ?? 'N/A'; 
+                    $createdBy = optional($row->auth_user)->name ?? 'N/A';
                     return $createdBy;
                 })
-                
+
                 ->editColumn('updated_at', function ($row) {
                     return $row->updated_at ? Carbon::parse($row->updated_at)->setTimezone('Asia/Kolkata')->format('d-m-Y H:i:s') : 'N/A';
                 })
 
               ->editColumn('status', function ($row) {
-                $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT); 
+                $statusKey = strtolower($row->getRawOriginal('status') ?? ConstantHelper::DRAFT);
                 $statusClass = ConstantHelper::DOCUMENT_STATUS_CSS_LIST[$statusKey] ?? 'badge-light-secondary';
-                
+
                 $statusLabel = ucfirst(str_replace('_', ' ', $row->getRawOriginal('status') ?? 'N/A'));
                 $editRoute = route('item.edit', ['id' => $row->id]);
 
@@ -178,7 +178,7 @@ class ItemController extends Controller
                             ->orWhereHas('subTypes', function ($subQ) use ($search) {
                                 $subQ->whereHas('subType', fn($q) => $q->where('name', 'LIKE', "%{$search}%"));
                             });
-                            
+
                         $searchLower = strtolower($search);
                         if (str_contains($searchLower, 'traded')) {
                             $q->orWhere('is_traded_item', 1);
@@ -195,14 +195,14 @@ class ItemController extends Controller
         $subtypes = SubType::where('status', 'active')->get();
         $hsns = Hsn::where('status', ConstantHelper::ACTIVE)
             ->get();
-    
+
         $categories = Category::where('type', 'Product')
             ->doesntHave('subCategories')
             ->where('status', ConstantHelper::ACTIVE)
             ->get();
-    
+
         $types = ConstantHelper::ITEM_TYPES;
-    
+
         return view('procurement.item.index', compact('hsns', 'categories', 'types','subtypes'));
     }
 
@@ -280,7 +280,7 @@ class ItemController extends Controller
 
         return $this->exportDataTable($request, $query, new Item(), $exportType, $title);
     }
-    
+
 
     public function create()
     {
@@ -315,7 +315,7 @@ class ItemController extends Controller
             if (isset($services['current_book'])) {
                 $book=$services['current_book'];
                 if ($book) {
-                    $parameters = new stdClass(); 
+                    $parameters = new stdClass();
                     foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                         $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                         $parameters->{$paramName} = $param;
@@ -330,7 +330,7 @@ class ItemController extends Controller
         if (count($services['services']) == 0) {
             return redirect() -> route('/');
         }
-        
+
         return view('procurement.item.create', [
             'hsns' => $hsns,
             'units' => $units,
@@ -349,7 +349,7 @@ class ItemController extends Controller
             'allItems'=>$allItems,
             'specificationGroups'=>$specificationGroups,
             'itemCodeType' => $itemCodeType,
-            'currencies'=>$currencies, 
+            'currencies'=>$currencies,
             'fixedAssetCategories'=>$fixedAssetCategories,
         ]);
     }
@@ -361,7 +361,7 @@ class ItemController extends Controller
         $subType = $request->input('sub_type');
         $subCategoryInitials = $request->input('cat_initials');
         $itemInitials = $request->input('item_initials');
-        $prefix = $request->input('prefix', ''); 
+        $prefix = $request->input('prefix', '');
         $baseCode =  $prefix .$subType . $subCategoryInitials . $itemInitials;
 
         $authUser = Helper::getAuthenticatedUser();
@@ -378,21 +378,21 @@ class ItemController extends Controller
         }
         $lastSimilarItem = Item::where('item_code', 'like', "{$baseCode}%")
             ->orderBy('item_code', 'desc')->first();
-    
+
         $nextSuffix = '001';
         if ($lastSimilarItem) {
             $lastSuffix = intval(substr($lastSimilarItem->item_code, -3));
             $nextSuffix = str_pad($lastSuffix + 1, 3, '0', STR_PAD_LEFT);
         }
         $finalItemCode = $baseCode . $nextSuffix;
-    
+
         return response()->json(['item_code' => $finalItemCode]);
     }
-    
+
 
     public function store(ItemRequest $request)
     {
-       
+
       DB::beginTransaction();
      try {
         $user = Helper::getAuthenticatedUser();
@@ -407,9 +407,9 @@ class ItemController extends Controller
         $validatedData['is_asset']         = $request->input('is_asset') === '1' ? 1 : 0;
 
         if ($validatedData['uom_id'] == $validatedData['storage_uom_id']) {
-            $validatedData['storage_uom_conversion'] = 1; 
+            $validatedData['storage_uom_conversion'] = 1;
         }
-        $validatedData['created_by'] = $user->auth_user_id; 
+        $validatedData['created_by'] = $user->auth_user_id;
 
         $orgGroup = OrganizationGroup::find($organization->group_id);
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
@@ -429,7 +429,7 @@ class ItemController extends Controller
                 $validatedData['organization_id'] = null;
             }
             // Insert Book ID (if current_book exists)
-            if (isset($services['current_book'])) { 
+            if (isset($services['current_book'])) {
                 $book = $services['current_book'];
                 if ($book) {
                     $validatedData['book_id'] = $book->id;
@@ -450,14 +450,14 @@ class ItemController extends Controller
         if ($request->document_status === ConstantHelper::SUBMITTED) {
             $bookId = $item->book_id;
             $docId = $item->id;
-            $remarks = $request->remarks; 
+            $remarks = $request->remarks;
             $attachments = $request->file('attachment');
             $currentLevel = $item->approval_level ?? 1;
             $revisionNumber = $item->revision_number ?? 0;
             $actionType = 'submit';
             $modelName = get_class($item);
             $totalValue = 0;
-        
+
             $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $totalValue, $modelName);
             $document_status = $approveDocument['approvalStatus'];
             $item->document_status = $document_status;
@@ -469,15 +469,15 @@ class ItemController extends Controller
             } else {
                 $item->status = $document_status;
             }
-            
+
         } else {
             $document_status = $request->document_status ?? ConstantHelper::DRAFT;
             $item->document_status = $document_status;
             $item->status = $document_status;
         }
-        
+
          $item->save();
-    
+
         if ($request->has('sub_types')) {
             // $item->subTypes()->attach($request->input('sub_types'));
             // $item->subTypesData()->attach($request->input('sub_types'));
@@ -503,17 +503,17 @@ class ItemController extends Controller
                 }
             }
         }
-        
+
         if ($request->has('approved_customer')) {
-           
+
             foreach ($request->input('approved_customer') as $approvedCustomerData) {
-        
+
                 if (isset($approvedCustomerData['customer_id']) && !empty($approvedCustomerData['customer_id'])) {
                     $item->approvedCustomers()->create([
                         'customer_id' => $approvedCustomerData['customer_id'],
                         'customer_code' => $approvedCustomerData['customer_code'] ?? null,
-                        'item_code' => $approvedCustomerData['item_code'] ?? null, 
-                        'item_name' => $approvedCustomerData['item_name'] ?? null, 
+                        'item_code' => $approvedCustomerData['item_code'] ?? null,
+                        'item_name' => $approvedCustomerData['item_name'] ?? null,
                         'item_details' => $approvedCustomerData['item_details'] ?? null,
                         'sell_price' => $approvedCustomerData['sell_price']?? null,
                         'uom_id' => $approvedCustomerData['uom_id']?? null,
@@ -524,15 +524,15 @@ class ItemController extends Controller
                 }
             }
         }
-        
+
         if ($request->has('approved_vendor')) {
             $item->approvedVendors()->delete();
             foreach ($request->input('approved_vendor') as $approvedVendorData) {
                 if (isset($approvedVendorData['vendor_id']) && !empty($approvedVendorData['vendor_id'])) {
                     $item->approvedVendors()->create([
                         'vendor_id' => $approvedVendorData['vendor_id'],
-                        'vendor_code' => $approvedVendorData['vendor_code'] ?? null, 
-                        'cost_price' => $approvedVendorData['cost_price'] ?? null, 
+                        'vendor_code' => $approvedVendorData['vendor_code'] ?? null,
+                        'cost_price' => $approvedVendorData['cost_price'] ?? null,
                         'uom_id' => $approvedVendorData['uom_id']?? null,
                         'organization_id' => $validatedData['organization_id']?? null,
                         'group_id' => $validatedData['group_id']?? null,
@@ -552,8 +552,8 @@ class ItemController extends Controller
                     $item->itemAttributes()->create([
                         'attribute_group_id' => $attributeGroupId,
                         'attribute_id' => $attributeIds,
-                        'required_bom' => $requiredBom, 
-                        'all_checked' => $allChecked 
+                        'required_bom' => $requiredBom,
+                        'all_checked' => $allChecked
                     ]);
                 }
             }
@@ -625,7 +625,7 @@ class ItemController extends Controller
     public function import(Request $request)
     {
         $user = Helper::getAuthenticatedUser();
-    
+
         try {
             $request->validate([
                 'file' => 'required|mimes:xlsx,xls|max:30720',
@@ -636,7 +636,7 @@ class ItemController extends Controller
                     'message' => 'No file uploaded.',
                 ], 400);
             }
-    
+
             $file = $request->file('file');
             try {
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(filename: $file);
@@ -646,10 +646,10 @@ class ItemController extends Controller
                     'message' => 'The uploaded file format is incorrect or corrupted. Please upload a valid Excel file.',
                 ], 400);
             }
-    
+
             $sheet = $spreadsheet->getActiveSheet();
             $rowCount = $sheet->getHighestRow() - 1;
-          
+
             if ($rowCount > 10000) {
                 return response()->json([
                     'status' => false,
@@ -664,18 +664,18 @@ class ItemController extends Controller
             }
             $deleteQuery = UploadItemMaster::where('user_id', $user->id);
             $deleteQuery->delete();
-    
+
             $import = new ItemImport($this->itemImportExportService);
             Excel::import($import, $request->file('file'));
-            
+
             $successfulItems = $import->getSuccessfulItems();
             $failedItems = $import->getFailedItems();
             $mailData = [
                 'modelName' => 'Item',
                 'successful_items' => $successfulItems,
                 'failed_items' => $failedItems,
-                'export_successful_url' => route('items.export.successful'), 
-                'export_failed_url' => route('items.export.failed'), 
+                'export_successful_url' => route('items.export.successful'),
+                'export_failed_url' => route('items.export.failed'),
             ];
             if (count($failedItems) > 0) {
                 $message = 'Items import failed.';
@@ -686,7 +686,7 @@ class ItemController extends Controller
             }
             if ($user->email) {
                 try {
-                    Mail::to($user->email)->send(new ImportComplete( $mailData)); 
+                    Mail::to($user->email)->send(new ImportComplete( $mailData));
                 } catch (Exception $e) {
                     $message .= " However, there was an error sending the email notification.";
                 }
@@ -697,7 +697,7 @@ class ItemController extends Controller
                 'successful_items' => $successfulItems,
                 'failed_items' => $failedItems,
             ], 200);
-    
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
@@ -710,7 +710,7 @@ class ItemController extends Controller
             ], 500);
         }
     }
-    
+
     public function exportSuccessfulItems()
     {
         $user = Helper::getAuthenticatedUser();
@@ -718,7 +718,7 @@ class ItemController extends Controller
         $items = Item::with(['category', 'subTypes', 'subcategory', 'hsn', 'uom', 'itemAttributes', 'specifications', 'alternateUOMs'])->whereIn('item_code', $uploadItems->pluck('item_code'))->get();
         return Excel::download(new ItemsExport($items, $this->itemImportExportService), "successful-items.xlsx");
     }
-    
+
 
     public function exportFailedItems()
     {
@@ -749,10 +749,10 @@ class ItemController extends Controller
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
         $currencies = Currency::where('status', operator: ConstantHelper::ACTIVE)->get();
-        $subTypes = $item->subTypes; 
+        $subTypes = $item->subTypes;
         $subtypeNames = $subTypes->map(function ($itemSubType) {
             return optional($itemSubType->subType)->name;
-        })->filter()->toArray(); 
+        })->filter()->toArray();
 
         $defaultItemTables = [ "erp_bom_details", "erp_rate_contract_items", "erp_pi_items", "erp_po_items", "erp_mo_items", "erp_pwo_items"];
         $itemTablesForFinishedAndSemiFinished = [ "erp_boms", "erp_bom_production_items", "erp_so_items", "erp_mo_production_items", "erp_mo_products"];
@@ -776,7 +776,7 @@ class ItemController extends Controller
         } else {
             $attributeTablesToCheck = $defaultAttributeTables;
         }
-        
+
         $hsns = Hsn::where('status', ConstantHelper::ACTIVE)->get();
         $units = Unit::where('status', ConstantHelper::ACTIVE)->get();
         $categories = Category::where('status', ConstantHelper::ACTIVE)->whereNull('parent_id')  ->get();
@@ -802,7 +802,7 @@ class ItemController extends Controller
             if (isset($services['current_book'])) {
                 $book=$services['current_book'];
                 if ($book) {
-                    $parameters = new stdClass(); 
+                    $parameters = new stdClass();
                     foreach (ServiceParametersHelper::SERVICE_PARAMETERS as $paramName => $paramNameVal) {
                         $param = ServiceParametersHelper::getBookLevelParameterValue($paramName, $book->id)['data'];
                         $parameters->{$paramName} = $param;
@@ -843,7 +843,7 @@ class ItemController extends Controller
             'allItems'=>$allItems,
             'service'=>$service,
             'specificationGroups'=>$specificationGroups,
-            'itemCodeType' => $itemCodeType, 
+            'itemCodeType' => $itemCodeType,
             'isItemReferenced' => $isItemReferenced,
             'tablesToCheck'=>$attributeTablesToCheck,
             'currencies'=>$currencies,
@@ -882,7 +882,7 @@ class ItemController extends Controller
         $parentUrl = ConstantHelper::ITEM_SERVICE_ALIAS;
 
         $orgGroup = OrganizationGroup::find($organization->group_id);
-        
+
         $services= Helper::getAccessibleServicesFromMenuAlias($parentUrl);
         if ($services && isset($services['services']) && $services['services']->isNotEmpty()) {
             $firstService = $services['services']->first();
@@ -898,7 +898,7 @@ class ItemController extends Controller
                 $validatedData['company_id'] = $organization->company_id;
                 $validatedData['organization_id'] = null;
             }
-            if (isset($services['current_book'])) { 
+            if (isset($services['current_book'])) {
                 $book = $services['current_book'];
                  if ($book) {
                      $validatedData['book_id'] = $book->id;
@@ -915,12 +915,12 @@ class ItemController extends Controller
         }
 
         $currentStatus = $item->document_status;
-        $actionType = $request->action_type ?? 'submit'; 
+        $actionType = $request->action_type ?? 'submit';
         $amendRemarks = $request->amend_remarks ?? null;
-      
+
         if (($item->document_status == ConstantHelper::APPROVED || $item->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED)
             && $actionType == 'amendment') {
-                
+
             $revisionData = [
                 ['model_type' => 'header', 'model_name' => 'Item', 'relation_column' => ''],
                 ['model_type' => 'detail', 'model_name' => 'ItemSubType', 'relation_column' => 'item_id'],
@@ -930,7 +930,7 @@ class ItemController extends Controller
                 ['model_type' => 'detail', 'model_name' => 'ItemSpecification', 'relation_column' => 'item_id'],
                 ['model_type' => 'detail', 'model_name' => 'VendorItem', 'relation_column' => 'item_id'],
                 ['model_type' => 'detail', 'model_name' => 'CustomerItem', 'relation_column' => 'item_id'],
-             
+
             ];
 
             Helper::documentAmendment($revisionData, $item->id);
@@ -947,19 +947,19 @@ class ItemController extends Controller
             $currentLevel = $item->approval_level ?? 1;
             $modelName = get_class($item);
             $submittedStatus = $request->input('status');
-    
+
             if (($currentStatus == ConstantHelper::APPROVED || $currentStatus == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
                 $revisionNumber = $item->revision_number + 1;
-                $totalValue = 0; 
+                $totalValue = 0;
                 $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $amendRemarks, $amendAttachments, $currentLevel, $actionType, $totalValue, $modelName);
                 $item->revision_number = $revisionNumber;
                 $item->approval_level = 1;
                 $item->revision_date = now();
-        
+
                 $statusAfterApproval = $approveDocument['approvalStatus'] ?? $item->document_status;
 
                 $item->document_status = $statusAfterApproval;
-            
+
                 if (in_array($statusAfterApproval, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])) {
                     if ($submittedStatus === ConstantHelper::INACTIVE) {
                         $item->status = ConstantHelper::INACTIVE;
@@ -983,15 +983,15 @@ class ItemController extends Controller
                     $item->status = $document_status;
                 }
             }
-        
+
         } else {
             $document_status = $request->current_status ?? ConstantHelper::DRAFT;
             $item->document_status = $document_status;
             $item->status = $document_status;
         }
-        
-        $item->save(); 
-    
+
+        $item->save();
+
         if ($request->type === 'Goods') {
             $previousSubTypes = $item -> subTypes -> pluck('sub_type_id') -> toArray();
             $requestSubTypes = $request->sub_types ? $request->sub_types : [];
@@ -1013,12 +1013,12 @@ class ItemController extends Controller
          else {
             ItemSubType::where('item_id', $item -> id) -> delete();
         }
-    
+
         if ($request->has('alternate_uoms')) {
             $existingUOMs = $item->alternateUOMs()->pluck('id')->toArray();
             $newUOMs = [];
             foreach ($request->input('alternate_uoms') as $uomData) {
-                if (isset($uomData['uom_id']) && !empty($uomData['uom_id']) && 
+                if (isset($uomData['uom_id']) && !empty($uomData['uom_id']) &&
                 isset($uomData['conversion_to_inventory']) && !empty($uomData['conversion_to_inventory'])) {
                 if (isset($uomData['id']) && in_array($uomData['id'], $existingUOMs)) {
                     $item->alternateUOMs()->where('id', $uomData['id'])->update([
@@ -1039,7 +1039,7 @@ class ItemController extends Controller
                         'is_selling' => isset($uomData['is_selling']) && $uomData['is_selling'] == '1',
                         'is_purchasing' => isset($uomData['is_purchasing']) && $uomData['is_purchasing'] == '1',
                     ]);
-                  
+
                     $newUOMs[] = $newUOM->id;
                 }
               }
@@ -1066,7 +1066,7 @@ class ItemController extends Controller
                         'organization_id' => $validatedData['organization_id']?? null,
                         'group_id' => $validatedData['group_id']?? null,
                         'company_id' => $validatedData['company_id']?? null,
-                        
+
                     ]);
                     $newCustomers[] = $customerData['id'];
                 } else {
@@ -1086,16 +1086,16 @@ class ItemController extends Controller
                 }
              }
             }
-    
+
             $item->approvedCustomers()->whereNotIn('id', $newCustomers)->delete();
         }else {
             $item->approvedCustomers()->delete();
         }
-    
+
         if ($request->has('approved_vendor')) {
             $existingVendors = $item->approvedVendors()->pluck('id')->toArray();
             $newVendors = [];
-    
+
             foreach ($request->input('approved_vendor') as $vendorData) {
                 if (isset($vendorData['vendor_id']) && !empty($vendorData['vendor_id'])) {
                 if (isset($vendorData['id']) && in_array($vendorData['id'], $existingVendors)) {
@@ -1107,7 +1107,7 @@ class ItemController extends Controller
                         'organization_id' => $validatedData['organization_id']?? null,
                         'group_id' => $validatedData['group_id']?? null,
                         'company_id' => $validatedData['company_id']?? null,
-                        
+
                     ]);
                     $newVendors[] = $vendorData['id'];
                 } else {
@@ -1128,7 +1128,7 @@ class ItemController extends Controller
         }else {
             $item->approvedVendors()->delete();
         }
-    
+
         if ($request->has('attributes')) {
             $existingAttributes = $item->itemAttributes()->pluck('id')->toArray();
             $newAttributes = [];
@@ -1163,14 +1163,14 @@ class ItemController extends Controller
                         return response()->json(['error' => 'Missing attribute_id or attribute_group_id for new attribute.'], 400);
                     }
                 }
-                
+
              }
             }
             $item->itemAttributes()->whereNotIn('id', $newAttributes)->delete();
         }else {
             $item->itemAttributes()->delete();
         }
-    
+
        if ($request->has('alternateItems')) {
             $existingAlternateItems = $item->alternateItems()->pluck('id')->toArray();
             $newAlternateItemIds = [];
@@ -1222,9 +1222,9 @@ class ItemController extends Controller
             foreach ($toBeDeleted as $alt) {
                 $altItem = Item::find($alt->alt_item_id);
                 if ($altItem) {
-                    $altItem->alternateItems()->where('alt_item_id', $item->id)->delete(); 
+                    $altItem->alternateItems()->where('alt_item_id', $item->id)->delete();
                 }
-                $alt->delete(); 
+                $alt->delete();
             }
 
         } else {
@@ -1242,19 +1242,19 @@ class ItemController extends Controller
             if (!is_array($specifications)) {
                 $specifications = [];
             } elseif (isset($specifications['specification_name'])) {
-                $specifications = [$specifications]; 
+                $specifications = [$specifications];
             }
-        
+
             $existingIds = [];
-        
+
             foreach ($specifications as $specificationData) {
                 if (!is_array($specificationData)) {
                     continue;
                 }
-        
+
                 if (!empty($specificationData['id'])) {
                     $spec = $item->specifications()->where('id', $specificationData['id'])->first();
-        
+
                     if ($spec) {
                         $spec->update([
                             'group_id' => $specificationData['group_id'] ?? null,
@@ -1266,7 +1266,7 @@ class ItemController extends Controller
                         continue;
                     }
                 }
-        
+
                 if (!empty($specificationData['specification_name'])) {
                     $newSpec = $item->specifications()->create([
                         'group_id' => $specificationData['group_id'] ?? null,
@@ -1281,7 +1281,7 @@ class ItemController extends Controller
         } else {
             $item->specifications()->delete();
         }
-      
+
         DB::commit();
         return response()->json(['message' => 'Record updated successfully']);
         } catch (Exception $e) {
@@ -1350,7 +1350,7 @@ class ItemController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
-    
+
 
     public function deleteApprovedCustomer($id)
     {
@@ -1372,7 +1372,7 @@ class ItemController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
-    
+
     public function deleteApprovedVendor($id)
     {
         DB::beginTransaction();
@@ -1393,7 +1393,7 @@ class ItemController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
-    
+
     public function deleteAttribute($id)
     {
         DB::beginTransaction();
@@ -1414,7 +1414,7 @@ class ItemController extends Controller
             return response()->json(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()], 500);
         }
     }
-    
+
     public function deleteAlternateItem($id)
         {
             DB::beginTransaction();
@@ -1498,8 +1498,8 @@ class ItemController extends Controller
 
     public function getItem(Request $request)
     {
-        $searchTerm = $request->input('term', ''); 
-        $excludeId = $request->input('exclude_id'); 
+        $searchTerm = $request->input('term', '');
+        $excludeId = $request->input('exclude_id');
 
         $query = Item::where('status', ConstantHelper::ACTIVE);
 
@@ -1532,10 +1532,10 @@ class ItemController extends Controller
 
         return response()->json($formattedItems);
     }
-    
+
     public function getUOM(Request $request)
     {
-      
+
         $selectedUOMIds = $request->input('selectedUOMIds');
         $selectedUOMTypes = $request->input('selectedUOMTypes');
         return response()->json([
@@ -1565,7 +1565,7 @@ class ItemController extends Controller
             ->where('id', $categoryId)
             ->select('expected_life_years', 'maintenance_schedule')
             ->first();
-    
+
         if ($data) {
             return response()->json([
                 'expected_life_years' => $data->expected_life_years,

@@ -488,21 +488,26 @@
                             {{-- Remark Section --}}
                             <div class="card">
                                 <div class="card-body customernewsection-form">
-                                    <div class="col-md-6 mt-2">
-                                        <div class="mb-1">
-                                            <label class="form-label">Terms & Conditions</label>
-                                            <select class="form-select select2" name="term_id[]" multiple>
-                                                @foreach($termsAndConditions as $termsAndCondition)
-                                                @if(in_array($termsAndCondition->id, $po->TermsConditions->pluck('term_id')->toArray()))
-                                                <option value="{{$termsAndCondition->id}}" selected>{{$termsAndCondition->term_name}}</option>
-                                                @else
-                                                <option value="{{$termsAndCondition->id}}">{{$termsAndCondition->term_name}}</option>
-                                                @endif
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
                                     <div class="row">
+                                        <div class="col-md-6 mt-2">
+                                            <div class="mb-1">
+                                                <label class="form-label">Terms & Conditions</label>
+                                                <select class="form-select select2" name="term_id[]" multiple>
+                                                    @foreach($termsAndConditions as $termsAndCondition)
+                                                    <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option> 
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-12">
+                                            <textarea name="terms_data" id="summernote" class="form-control " {{ $po->document_status !=\App\Helpers\ConstantHelper::DRAFT ? "disabled" : ''}} placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ $po->tnc ?? "" }}</textarea>
+                                            <small class="text-muted d-block text-end">
+                                                <span id="termsCharCount">0</span>/250 characters
+                                            </small>
+                                            <input type="hidden" name="tnc" id="tnc" value="{{ $po->tnc ?? "" }}">
+                                            <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
+                                        </div>
                                         <div class="col-md-12">
                                             <div class="row">
                                                 <div class="col-md-4">
@@ -914,6 +919,33 @@
 <script type="text/javascript" src="{{asset('assets/js/modules/jo.js')}}"></script>
 <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
 <script>
+@if($po->document_status != \App\Helpers\ConstantHelper::DRAFT)
+$('#summernote').summernote('disable');
+// Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
+$(document).on('change', 'select[name="term_id[]"]', function () {
+    let selectedText = $(this).find('option:selected').data('detail') || '';
+    $('#summernote').summernote('code', selectedText);
+    updateSummernoteData();
+});
+
+// Function to update char count & hidden input
+function updateSummernoteData() {
+    let content = $('#summernote').summernote('code');
+    let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
+    $('#termsCharCount').text(plainText.length);
+    $('#tnc').val(content); // store HTML content in hidden input
+}
+
+// Bind Summernote change events
+$('#summernote').on('summernote.change', function (we, contents, $editable) {
+    updateSummernoteData();
+});
+
+// Initialize Summernote (example)
+$('#summernote').summernote({
+    height: 200
+});
+@endif
 setTimeout(() => {
     localStorage.removeItem('selectedPiIds');
     localStorage.removeItem('deletedItemDiscTedIds');

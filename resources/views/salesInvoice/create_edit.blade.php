@@ -38,6 +38,11 @@
                                         <i data-feather="check-circle"></i> Generate Eway Bill
                                     </a>
                                 @endif
+                                @if(isset($order) && $order -> document_type == App\Helpers\ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS && $order -> document_status != App\Helpers\ConstantHelper::DRAFT && $order -> document_status != App\Helpers\ConstantHelper::SUBMITTED)
+                                    <a type="button" class="btn btn-primary btn-sm" id="eWayBillBtn" href="#" onclick = "generateEwayBill();">
+                                        <i data-feather="check-circle"></i> Generate Eway Bill
+                                    </a>
+                                @endif
                                 @if($order->document_status != App\Helpers\ConstantHelper::DRAFT)
 
                                 <button type = "button" data-target = "#sendMail" onclick = "sendMailTo();" data-toggle = "modal" class="btn btn-primary btn-sm mb-50 mb-sm-0 waves-effect waves-float waves-light"><i data-feather="mail"></i> E-Mail</button>
@@ -61,6 +66,8 @@
                                         }
                                         else if ($order->document_type == "dnote"){
                                             $options = ['Delivery Note'];
+                                        } else if ($order -> document_type == 'sinv') {
+                                            $options = ['Tax Invoice'];
                                         }
                                          else if ($order->document_type == "ti"){
                                          
@@ -205,8 +212,7 @@
                                                         </div>
                                                     </div>
 
-                                                    @if ((isset($order) && in_array($order -> document_type, ['dnote', 'si-dnote']) || (in_array($type, ['dnote', 'si-dnote']))))
-                                                    <div class="row align-items-center mb-1 lease-hidden">
+                                                    <div class="row align-items-center mb-1 {{ $showSubLocation ? '' : 'd-none' }}">
                                                         <div class="col-md-3"> 
                                                             <label class="form-label">Store<span class="text-danger">*</span></label>  
                                                         </div>  
@@ -218,9 +224,7 @@
                                                                 @endif
                                                             </select>
                                                         </div>
-                                                    </div>
-                                                    @endif
-                                                    
+                                                    </div>                                                    
                                                     
                                                     
 
@@ -518,7 +522,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-12" id = "general_information_tab">
+                                    <div class="col-md-12 {{$showGeneralInfo ? '' : 'd-none'}}" id = "general_information_tab">
 									<div class="card quation-card">
 										<div class="card-header newheader">
 											<div>
@@ -965,12 +969,17 @@
 
                                                         </table>
                                                     </div>
-
-
-
-
-
                                                      <div class="row mt-2">
+                                                        <div class="col-md-6 mt-2">
+                                                            <div class="mb-1">
+                                                                <label class="form-label">Terms & Conditions</label>
+                                                                <input type="text" id = "terms" placeholder="Select" class="form-control mw-100 ledgerselecct terms ui-autocomplete-input" autocomplete="off" value = "{{ (isset($order) && $order -> customerTermDetails) ? $order -> customerTermDetails ?-> term_name : '' }}">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-12">
+                                                            <textarea name="terms" id="summernote1" class="form-control" placeholder="Enter Terms" >{{ isset($order->customer_terms) ? $order->customer_terms : '' }}</textarea>
+                                                            <input type = "hidden" id = "customer_terms_id" value = "{{ (isset($order) && $order -> customerTermDetails) ? $order -> customerTermDetails ?-> id : '' }}" name = "terms_id" />
+                                                        </div>
                                                      <div class="col-md-12">
                                                             <div class = "row">
                                                              <div class="col-md-4">
@@ -2597,7 +2606,16 @@
                     height: 14
                 });
             }
+            
         })
+
+        $(document).ready(function() {
+            $('#summernote1').summernote({
+                placeholder: 'Select or enter terms and conditions here',
+                height: 200
+            });
+        });
+
         function addItemRow()
         {
             var docType = $("#service_id_input").val();
@@ -3402,7 +3420,60 @@
                 }
             });
     }
+    function initializeAutocompleteTerms() {
+            $("#terms").autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: '/search',
+                        method: 'GET',
+                        dataType: 'json',
+                        data: {
+                            q: request.term,
+                            type:'terms_and_conditions',
+                        },
+                        success: function(data) {
+                            response($.map(data, function(item) {
+                                return {
+                                    id: item.id,
+                                    label: `${item.name}`,
+                                    detail : item.term_detail
+                                };
+                            }));
+                        },
+                        error: function(xhr) {
+                            console.error('Error fetching customer data:', xhr.responseText);
+                        }
+                    });
+                },
+                minLength: 0,
+                select: function(event, ui) {
+                    var $input = $(this);
+                    var itemName = ui.item.label;
+                    var itemId = ui.item.id;
+                    $input.val(itemName);
+
+                    $('#summernote1').summernote('code', ui.item.detail);
+                    $('#customer_terms_id').val(itemId);
+
+                    return false;
+                },
+                change: function(event, ui) {
+                    if (!ui.item) {
+                        $(this).val("");
+                        $('#summernote1').summernote('code', '');
+                        $('#customer_terms_id').val('');
+                    }
+                }
+            }).focus(function() {
+                if (this.value === "") {
+                    $(this).autocomplete("search", "");
+                }
+            });
+    }
+
     initializeAutocomplete1("items_dropdown_0", 0);
+    initializeAutocompleteTerms();
+
 
 
     function initializeAutocompleteCustomer(selector) {
@@ -3699,6 +3770,15 @@
                         $("#current_billing_country_id").val(currentOrder.billing_address_details?.country_id);
                         $("#current_shipping_state_id").val(currentOrder.shipping_address_details?.state_id);
                         $("#current_billing_state_id").val(currentOrder.billing_address_details?.state_id);
+                        if (currentOrder?.customer_terms) {
+                            $('#summernote1').summernote('code', currentOrder?.customer_terms);
+                        }
+                        if (currentOrder?.customer_terms_id) {
+                            $("#customer_terms_id").val(currentOrder?.customer_terms_id);
+                        }
+                        if (currentOrder?.customer_terms_name) {
+                            $("#terms").val(currentOrder?.customer_terms_name);
+                        }
                         //General Detail
                         // $("#transporter_name_input").val(currentOrder?.transporter_name);
                         // $("#transporter_mode_input").val(currentOrder?.transportation_mode);
@@ -4013,7 +4093,7 @@
                 const soItemId = JSON.stringify(row?.sale_order?.so_item_ids);
                 const lrId = row?.id;
                 const itemId = row?.id;
-                const isEnabled = row?.stock_qty > 0 || ['land-lease', 'plist', 'lr'].includes(type);
+                const isEnabled = row?.stock_qty > 0 && row?.check_stock == "yes" || ['land-lease', 'plist', 'lr'].includes(type);
                 return `<div class="form-check form-check-inline me-0">
                     <input class="form-check-input pull_checkbox po_checkbox" type="checkbox"
                         ${isEnabled ? '' : 'disabled'}
@@ -5380,6 +5460,10 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
 
     function checkStockData(itemRowId)
     {
+        let currentdocType = $("#service_id_input").val();
+        if (currentdocType == "si" || currentDocType == 'sinv') {
+            return;
+        }
         let itemAttributes = JSON.parse(document.getElementById(`items_dropdown_${itemRowId}`).getAttribute('attribute-array'));
                 let selectedItemAttr = [];
                 if (itemAttributes && itemAttributes.length > 0) {
@@ -5505,6 +5589,57 @@ function initializeAutocompleteTed(selector, idSelector, type, percentageVal) {
     document.addEventListener('DOMContentLoaded', function() {
         onHeaderLocationChange(document.getElementById('store_id_input'));
     });    
+
+    function getAndSetItemRate(itemIndex, type)
+    {
+        let rateInput = document.getElementById('item_rate_' + itemIndex);
+        let itemElement = document.getElementById('items_dropdown_' + itemIndex);
+        if (!itemElement) {
+            return;
+        }
+        let payloadAttributes = [];
+        let attributes = JSON.parse(itemElement.getAttribute('attribute-array'));
+        attributes.forEach(element => {
+            element.values_data.forEach(val => {
+                if (val.selected) {
+                    payloadAttributes.push({
+                        attr_name : element.attribute_group_id,
+                        attr_value : val.id
+                    });
+                }
+            });
+        });
+        let payloadUomId = document.getElementById('uom_dropdown_' + itemIndex).value;
+        let itemId = document.getElementById('items_dropdown_' + itemIndex + '_value').value;
+
+        $.ajax({
+            url: "{{route('current.item.getItemSalePrice')}}",
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                quantity: document.getElementById('item_qty_' + itemIndex).value,
+                item_id: itemId,
+                uom_id : payloadUomId,
+                attributes_data : payloadAttributes,
+                customer_id: $("#customer_id_input").val(),
+                currency_id: $("#currency_dropdown").val(),
+                item_qty : $("#item_qty_" + itemIndex).val(),
+                document_date : $("#order_date_input").val(),
+                price_type : type
+            },
+            success: function(data) {
+                    if (data && data.status == "success") {
+                        rateInput.value = data.data;
+                        itemRowCalculation(itemIndex);
+
+                    }
+            },
+            error: function(xhr) {
+                console.error('Error fetching customer data:', xhr.responseText);
+            }
+        });
+
+    }
 
 </script>
 @endsection

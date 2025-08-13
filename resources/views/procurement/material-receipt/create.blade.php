@@ -1561,13 +1561,7 @@
                             hiddenInput.val(JSON.stringify(storagePoints));
                         }
 
-                        // if(isItemBatch == 1) {
-                        //     $('.addBatchBtn').css('display', 'block');
-                        //     // ✅ Show batch point button
-                        // } else{
-                        //     // ✅ Hide batch point button
-                        //     $('.addBatchBtn').css('display', 'block');
-                        // }
+                        $('.addBatchBtn').css('display', 'block');
                     }
                 });
             });

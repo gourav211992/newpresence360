@@ -187,6 +187,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                     </div>
                                 </div>
                                 @endif
+                                
                             </div>
                         </div>
                     </div>                                    
@@ -254,6 +255,7 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                                                     <th class="{{$canView ? '' : 'd-none'}}">Total Cost</th>
                                                     <th style="min-width: 100px;" id="station_required">Station</th>
                                                     <th style="min-width: 100px;">Vendor</th>
+                                                    <th style="min-width: 100px;" id="th_bacth_inherit_requird">Inherit <br/>Batch</th>
                                                     <th style="width: 20px;"></th>
                                                 </tr>
                                             </thead>
@@ -358,38 +360,34 @@ if($routeAlias == App\Helpers\ConstantHelper::BOM_SERVICE_ALIAS)
                     </div>
                     <div class="card">
                         <div class="card-body customernewsection-form">
-                            <div class="border-bottom mb-2 pb-25" id="componentSection">
+                            
                             <div class="row">
-                                <div class="col-md-6">
-                                    <div class="newheader ">
-                                        <h4 class="card-title text-theme">Remarks</h4>
-                                        {{-- <p class="card-text">Fill the details</p> --}}
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                            <div class="row mt-2">
                                 <div class="col-md-12">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="mb-1">
-                                                <label class="form-label">Upload Document</label>
-                                                <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
-                                                <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
-                                                </div>
+                                    <div class="row">
+                                       
+                                        <div class="col-md-4">
+                                            <div class="mb-1">
+                                            <label class="form-label">
+                                                <strong>Upload Document</strong>
+                                            </label>
+                                            <input type="file" name="attachment[]" class="form-control" onchange = "addFiles(this,'main_bom_file_preview')" multiple>
+                                            <span class = "text-primary small">{{__("message.attachment_caption")}}</span>
                                             </div>
-                                            <div class = "col-md-6" style = "margin-top:19px;">
-                                                    <div class = "row" id = "main_bom_file_preview">
-                                                    </div>
-                                            </div>  
                                         </div>
-                                </div>
-                                <div class="col-md-12">
-                                    <div class="mb-1">  
-                                        <label class="form-label">Final Remarks</label> 
-                                        <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                        <div class = "col-md-6" style = "margin-top:19px;">
+                                            <div class = "row" id = "main_bom_file_preview">
+                                            </div>
+                                        </div>  
                                     </div>
-                                </div>
+                                   
+                                    <div class="col-md-12">
+                                        <div class="mb-1">  
+                                            <label class="form-label">
+                                                <strong>Final Remarks</strong>
+                                            </label> 
+                                            <textarea maxlength="250" name="remarks" type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -594,6 +592,15 @@ $(function(){
     initializeAutocomplete1("#item_code");
     initializeAutocompleteCustomer("#customer");
 
+
+    $('#itemTable').on('change', '.is_inherit_batch_item', function() {
+        $(this).closest('tbody')
+            .find('.is_inherit_batch_item')
+            .prop('checked', false)
+            .val('0');          // reset all to no
+        $(this).prop('checked', true).val('1'); // set only this one to yes
+    });
+
     $(document).on('change','#book_id',(e) => {
       let bookId = e.target.value;
       if (bookId) {
@@ -749,8 +756,12 @@ $(function(){
                     td2.attr("colspan", newColspanValue);
                 }
             }
-
        }
+        // Handle Batch Inheritance
+       if (parameters.bacth_inherit_requird && parameters.bacth_inherit_requird.includes('no')) {
+            $('#th_bacth_inherit_requird').hide();
+       }
+       
        let reference_from_service = parameters?.reference_from_service;
         if(reference_from_service?.length) {
             let c_bom = '{{\App\Helpers\ConstantHelper::COMMERCIAL_BOM_SERVICE_ALIAS}}';

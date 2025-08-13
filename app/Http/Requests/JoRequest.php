@@ -103,6 +103,7 @@ class JoRequest extends FormRequest
         }
         $rules['component_item_name.*'] = 'required';
         $rules['components.*.qty'] = 'required|numeric|min:0.000001';
+        $rules['components.*.sow'] = 'required';        
         $rules['components.*.rate'] = 'required|numeric|min:0.01';        
         $rules['components.*.attr_group_id.*.attr_name'] = 'required';
         $rules['components.*.uom_id'] = 'required';

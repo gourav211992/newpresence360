@@ -3,6 +3,7 @@ namespace App\Services;
 
 use Illuminate\Http\Request;
 
+use App\Models\GateEntryTed;
 use App\Models\GateEntryHeader;
 use App\Models\GateEntryDetail;
 use App\Models\GateEntryExtraAmount;
@@ -14,6 +15,8 @@ use App\Models\VendorAsnItem;
 use App\Models\ErpSoJobWorkItem;
 use App\Models\JobOrder\JoProduct;
 
+use App\Helpers\Helper;
+use App\Helpers\TaxHelper;
 use App\Helpers\ItemHelper;
 use App\Helpers\ConstantHelper;
 use App\Helpers\InventoryHelper;
@@ -153,6 +156,144 @@ class GeCheckAndUpdateService
         }
 
         // === All Good ===
+        return self::successResponse("Quantity Validated", [
+            'order_qty' => $inputQty
+        ]);
+    }
+
+    # Handle GE calculation update from mrn
+    public static function updateCalculation($ge) 
+    {
+        $mrn = GateEntryHeader::with(['items.itemDiscount', 'expenses', 'shippingAddress'])->find($ge->header_id);
+        if (!$mrn) return;
+
+        $user = Helper::getAuthenticatedUser();
+        $organization = $user->organization;
+        $companyAddress = $organization->addresses->first();
+
+        $companyCountryId = $companyAddress->country_id;
+        $companyStateId = $companyAddress->state_id;
+        $vendorCountryId = $mrn->billingAddress->country_id ?? null;
+        $vendorStateId = $mrn->billingAddress->state_id ?? null;
+        
+        $totalItemAmount = 0;
+        $totalTaxAmount = 0;
+
+        // 1. Calculate item-level discount and amount
+        foreach ($mrn->items as $item) {
+            $itemTotal = $item->rate * $item->accepted_qty;
+            $totalItemAmount += $itemTotal;
+
+            $itemDiscount = $item->itemDiscount->sum('ted_amount');
+            $item->discount_amount = $itemDiscount;
+            $item->save();
+        }
+
+        $totalItemDiscount = $mrn->items->sum('discount_amount');
+        $itemValueAfterItemDiscount = $totalItemAmount - $totalItemDiscount;
+        $headerDiscount = $mrn->total_header_disc_amount;
+
+        // 2. Calculate header discount, tax, and save per item
+        foreach ($mrn->items as $item) {
+            $itemPrice = $item->rate * $item->accepted_qty;
+            $itemAfterItemDisc = $itemPrice - $item->discount_amount;
+
+            $headerDisc = ($itemValueAfterItemDiscount > 0 && $headerDiscount > 0)
+                ? ($itemAfterItemDisc / $itemValueAfterItemDiscount) * $headerDiscount
+                : 0;
+
+            $item->header_discount_amount = $headerDisc;
+            $priceAfterDiscounts = $itemAfterItemDisc - $headerDisc;
+
+            $taxDetails = TaxHelper::calculateTax(
+                $item->hsn_id,
+                $priceAfterDiscounts,
+                $companyCountryId,
+                $companyStateId,
+                $vendorCountryId,
+                $vendorStateId,
+                'sale'
+            );
+
+            // Remove old tax TEDs if changed
+            $currentTaxIds = array_map('strval', array_column($taxDetails, 'id'));
+            $existingTaxIds = GateEntryTed::where('detail_id', $item->id)
+                ->where('ted_type', 'Tax')
+                ->pluck('ted_id')
+                ->map('strval')
+                ->toArray();
+
+            sort($currentTaxIds);
+            sort($existingTaxIds);
+
+            if ($currentTaxIds !== $existingTaxIds) {
+                GateEntryTed::where('detail_id', $item->id)
+                    ->where('ted_type', 'Tax')
+                    ->delete();
+            }
+
+            $itemTax = 0;
+            foreach ($taxDetails as $tax) {
+                $taxAmount = ((float) $tax['tax_percentage'] / 100) * $priceAfterDiscounts;
+                $itemTax += $taxAmount;
+
+                GateEntryTed::updateOrCreate(
+                    [
+                        'detail_id' => $item->id,
+                        'ted_id' => $tax['id'],
+                        'ted_type' => 'Tax',
+                    ],
+                    [
+                        'header_id' => $mrn->id,
+                        'ted_level' => 'D',
+                        'ted_name' => $tax['tax_type'] ?? null,
+                        'assesment_amount' => $item->assessment_amount_total,
+                        'ted_percentage' => $tax['tax_percentage'] ?? 0,
+                        'ted_amount' => $taxAmount,
+                        'applicability_type' => $tax['applicability_type'] ?? 'Collection',
+                    ]
+                );
+            }
+
+            if ($itemTax > 0) {
+                $item->tax_value = $itemTax;
+                $totalTaxAmount += $itemTax;
+            }
+
+            $item->save();
+        }
+
+        // 3. Header level expenses
+        $totalAfterTaxBeforeExp = $itemValueAfterItemDiscount + $totalTaxAmount - $headerDiscount;
+        $headerExpenses = $mrn->expenses->sum('ted_amount');
+
+        foreach ($mrn->items as $item) {
+            $baseAmount = ($item->rate * $item->accepted_qty) 
+                        - ($item->discount_amount + $item->header_discount_amount) 
+                        + ($item->tax_value ?? 0);
+
+            $expenseValue = ($headerExpenses && $totalAfterTaxBeforeExp)
+                ? ($baseAmount / $totalAfterTaxBeforeExp) * $headerExpenses
+                : 0;
+
+            $item->header_exp_amount = $expenseValue;
+            $item->save();
+        }
+
+        // 4. Final MRN header update
+        $totalDiscount = $mrn->items->sum('discount_amount') + $mrn->items->sum('header_discount_amount');
+        $totalExpenses = $mrn->items->sum('header_exp_amount');
+        $taxableAmount = $totalItemAmount - $totalDiscount;
+
+        $mrn->update([
+            'total_item_amount' => $totalItemAmount,
+            'total_discount' => $totalDiscount,
+            'taxable_amount' => $taxableAmount,
+            'total_taxes' => $totalTaxAmount,
+            'total_after_tax_amount' => $taxableAmount + $totalTaxAmount,
+            'expense_amount' => $totalExpenses,
+            'total_amount' => $taxableAmount + $totalTaxAmount + $totalExpenses,
+        ]);
         return self::successResponse("Quantity Validated", [
             'order_qty' => $inputQty
         ]);

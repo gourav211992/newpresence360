@@ -47,7 +47,7 @@ class BomHistory extends Model
         'customer_id',
         'bom_type',
         'customizable',
-        'safety_buffer_perc'
+        'safety_buffer_perc',
     ];
 
     public static function boot()

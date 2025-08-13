@@ -297,7 +297,7 @@
             @php
                 $totalTaxPercentage = 0.00;
                 if ($val->item && $val->item->hsn) {
-                    $hsnCode = $val->item->hsn->code;
+                    $hsnCode = $val->sow->hsn->code ?? $val->item->hsn->code;
                     $taxPercentage = 0.00;
                     $teds = $val->taxes;
                     foreach ($teds as $ted) {
@@ -625,25 +625,25 @@
             </tr>
         </table>
         
-        @if($po->termsConditions->isNotEmpty())
-        <div style="page-break-before:always"></div>
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
-            cellpadding="0">
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    TERMS AND CONDITIONS FOR "PURCHASE ORDER-GOODS"</td>
-            </tr>
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    @foreach($po->termsConditions as $poTerm)
-                        {{$loop->iteration}} > {!! $poTerm->termAndCondition?->term_detail !!}
-                    @endforeach
-                </td>
-            </tr>
-        </table>
-        @endif
+    <!-- @if($po->termsConditions->isNotEmpty())
+    <div style="page-break-before:always"></div>
+    <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
+        cellpadding="0">
+        <tr>
+            <td colspan="2"
+                style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
+                TERMS AND CONDITIONS FOR "PURCHASE ORDER-GOODS"</td>
+        </tr>
+        <tr>
+            <td colspan="2"
+                style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
+                @foreach($po->termsConditions as $poTerm)
+                    {{$loop->iteration}} > {!! $poTerm->termAndCondition?->term_detail !!}
+                @endforeach
+            </td>
+        </tr>
+    </table>
+    @endif -->
 
         @if($po->joItems->isNotEmpty())
         <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="0">

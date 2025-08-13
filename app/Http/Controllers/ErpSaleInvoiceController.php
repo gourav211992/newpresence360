@@ -18,6 +18,7 @@ use App\Models\ErpPlItemDetail;
 use App\Models\ErpSubStore;
 use App\Models\OrganizationBookParameter;
 use App\Models\EwayBillMaster;
+use App\Models\OrganizationGroup;
 use App\Models\PackingListDetail;
 use App\Models\PackingListItem;
 use App\Models\TermsAndCondition;
@@ -106,7 +107,11 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $createRoute = route('sale.leaseInvoice.create');
-        }else if ($pathUrl === 'transporter-invoices') {
+        } else if ($pathUrl === 'service-invoices') {
+            $orderType = ConstantHelper::SERVICE_INV_SERVICE_ALIAS;
+            $redirectUrl = route('sale.serviceInvoice.index');
+            $createRoute = route('sale.serviceInvoice.create');
+        } else if ($pathUrl === 'transporter-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
             $redirectUrl = route('sale.transporterInvoice.index');
             $createRoute = route('sale.transporterInvoice.create');
@@ -182,10 +187,13 @@ class ErpSaleInvoiceController extends Controller
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE) {
                     $editRoute = route('sale.deliveryNoteCumInvoice.edit', ['id' => $row->id]);
                 }
+                if ($orderType == ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
+                    $editRoute = route('sale.serviceInvoice.edit', ['id' => $row->id]);
+                }
                 if ($orderType == SaleModuleHelper::SALES_INVOICE_LEASE_TYPE) {
                     $editRoute = route('sale.leaseInvoice.edit', ['id' => $row->id]);
                 }   
-                 if ($orderType == SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE) {
+                if ($orderType == SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE) {
                     $editRoute = route('sale.transporterInvoice.edit', ['id' => $row->id]);
                 }   
                 return "
@@ -296,6 +304,8 @@ class ErpSaleInvoiceController extends Controller
         }
         $redirectUrl = route('sale.invoice.index');
         $locationVisiblity = true;
+        $showGeneralInfo = true;
+        $subLocationVisibility = true;
         if ($parentURL === 'sale-invoices') {
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
             $redirectUrl = route('sale.invoice.index');
@@ -308,7 +318,15 @@ class ErpSaleInvoiceController extends Controller
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
             $redirectUrl = route('sale.deliveryNoteCumInvoice.index');
             $locationVisiblity = true;
+        } else if ($parentURL === 'service-invoices') {
+            $showGeneralInfo = false;
+            $subLocationVisibility = false;
+            $orderType = ConstantHelper::SERVICE_INV_SERVICE_ALIAS;
+            $redirectUrl = route('sale.serviceInvoice.index');
+            $locationVisiblity = true;
         } else if ($parentURL === 'lease-invoices') {
+            $showGeneralInfo = false;
+            $subLocationVisibility = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
             $redirectUrl = route('sale.leaseInvoice.index');
             $locationVisiblity = false;
@@ -349,7 +367,9 @@ class ErpSaleInvoiceController extends Controller
             'current_financial_year' => $selectedfyYear,
             'transportationModes' => $transportationModes,
             'termsAndConditions' => $termsAndConditions,
-            'einvoice' => null
+            'einvoice' => null,
+            'showGeneralInfo' => $showGeneralInfo,
+            'showSubLocation' => $subLocationVisibility
         ];
         return view('salesInvoice.create_edit', $data);
     }
@@ -358,6 +378,8 @@ class ErpSaleInvoiceController extends Controller
         $parentUrl = request() -> segments()[0];
         $redirect_url = route('sale.invoice.index');
         $locationVisiblity = true;
+        $showGeneralInfo = true;
+        $subLocationVisibility = true;
         if ($parentUrl === 'sale-invoices') {
             $locationVisiblity = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_DEFAULT_TYPE;
@@ -368,12 +390,18 @@ class ErpSaleInvoiceController extends Controller
             $locationVisiblity = true;
             $orderType = SaleModuleHelper::SALES_INVOICE_DN_CUM_INV_TYPE;
         } else if ($parentUrl === 'lease-invoices') {
+            $showGeneralInfo = false;
             $locationVisiblity = false;
+            $subLocationVisibility = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_LEASE_TYPE;
+        } else if ($parentUrl === 'service-invoices') {
+            $locationVisiblity = false;
+            $showGeneralInfo = false;
+            $subLocationVisibility = false;
+            $orderType = ConstantHelper::SERVICE_INV_SERVICE_ALIAS;
         } else if ($parentUrl === 'transporter-invoices') {
             $locationVisiblity = false;
             $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
-           
         }
         request() -> merge(['type' => $orderType]);
         $user = Helper::getAuthenticatedUser();
@@ -470,7 +498,9 @@ class ErpSaleInvoiceController extends Controller
                 $typeName = "Invoice cum DN";
             } else if ($type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
                 $typeName = "Lease Invoice";
-            }else if ($type == ConstantHelper::TI_SERVICE_ALIAS) {
+            } else if ($type == ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
+                $typeName = "Service Invoice";
+            } else if ($type == ConstantHelper::TI_SERVICE_ALIAS) {
                 $typeName = "Transporter Invoice";
             }
             $editBundle = !in_array($order -> document_status, [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED]);
@@ -518,7 +548,9 @@ class ErpSaleInvoiceController extends Controller
                 'transportationModes' => $transportationModes,
                 'current_financial_year' => $selectedfyYear,
                 'editTransporterFields' => $editTransporterFields,
-                'termsAndConditions' => $termsAndConditions
+                'termsAndConditions' => $termsAndConditions,
+                'showGeneralInfo' => $showGeneralInfo,
+                'showSubLocation' => $subLocationVisibility
             ];
             return view('salesInvoice.create_edit', $data);
     }
@@ -1591,21 +1623,14 @@ class ErpSaleInvoiceController extends Controller
                 //     $actionType = 'submit'; // Approve // reject // submit
                 //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
                 // }
-                $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> book_id)['data'];
-                if (isset($itemType) && count($itemType) > 0) {
-                    $itemType = $itemType[0];
-                }
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                    if ($itemType == ConstantHelper::GOODS) {
-                        $error = self::maintainStockLedger($saleInvoice);
-                        if ($error) {     
-                            DB::rollBack();
-                            return response() -> json([
-                                'message' => $error
-                            ], 422);
-                        }
-                    }
-                    
+                    $error = self::maintainStockLedger($saleInvoice);
+                    if ($error) {     
+                        DB::rollBack();
+                        return response() -> json([
+                            'message' => $error
+                        ], 422);
+                    }                    
                 }
                 $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice -> customer_id, $saleInvoice ?->shipping_address_details  ?-> country_id, $saleInvoice -> location_address_details ?-> country_id);
                 if ($saleInvoice -> document_status === ConstantHelper::POSTED){
@@ -1635,7 +1660,7 @@ class ErpSaleInvoiceController extends Controller
 
                 // Create job
                 if ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                    if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes' && $itemType == ConstantHelper::GOODS){
+                    if(in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes'){
                         (new WhmJob)->createJob($saleInvoice->id,'App\Models\ErpSaleInvoice');
                     }
                 }
@@ -1646,11 +1671,14 @@ class ErpSaleInvoiceController extends Controller
                     $module = "Delivery Note";
                     $redirect_url = route("sale.deliveryNote.index");
                 } elseif ($saleInvoice -> document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                    $module = "Invoice";
+                    $module = "Invoice Cum DN";
                     $redirect_url = route("sale.deliveryNoteCumInvoice.index");
-                }elseif ($saleInvoice -> document_type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
+                } elseif ($saleInvoice -> document_type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
                     $module = "Lease Invoice";
                     $redirect_url = route('sale.leaseInvoice.index');
+                } elseif ($saleInvoice -> document_type == ConstantHelper::SERVICE_INV_SERVICE_ALIAS) {
+                    $module = "Service Invoice";
+                    $redirect_url = route('sale.serviceInvoice.index');
                 }
                 return response() -> json([
                     'message' => $module .  " created successfully",
@@ -1722,13 +1750,10 @@ class ErpSaleInvoiceController extends Controller
             $query = null;
             $orgBookParameter = null;    
             $item = null;
-           
-            $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request -> header_book_id)['data'];
-            if (isset($itemType) && count($itemType) > 0) {
-                $itemType = $itemType[0];
-            }
+
             $checkStock = true;
-            if ($itemType != ConstantHelper::GOODS) {
+            $headerBook = Book::find($request -> header_book_id);
+            if ($headerBook && $headerBook -> master_service -> alias == ConstantHelper::SERVICE_INV_SERVICE_ALIAS){
                 $checkStock = false;
             }
 
@@ -2561,6 +2586,15 @@ class ErpSaleInvoiceController extends Controller
     public function generatePdf(Request $request, $id,$pattern,$download = false,$returnRaw = false)
     {
         $user = Helper::getAuthenticatedUser();
+        $organization = Organization::find($user -> organization_id);
+        $shufabOrg = false;
+        $userGroup = OrganizationGroup::find($organization ?-> group_id);
+        if ($userGroup) {
+            $groupName = strtolower($userGroup -> name);
+            if (str_contains($groupName, 'shufab')) {
+                $shufabOrg = true;
+            }
+        }
 
         $organization = Organization::where('id', $user->organization_id)->first();
         $organizationAddress = Address::with(['city', 'state', 'country'])
@@ -2747,7 +2781,8 @@ class ErpSaleInvoiceController extends Controller
                 'qrCodeBase64' => $qrCodeBase64,
                 'allAttributeValues' => $allAttributeValues,
                 'billingAddress' => $billingAddress,
-                'eInvoice' => $eInvoice
+                'eInvoice' => $eInvoice,
+                'shufabOrg' => $shufabOrg
             ]
         )->render();
 
