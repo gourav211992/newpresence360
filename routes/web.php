@@ -2131,7 +2131,7 @@ Route::middleware(['user.auth'])->group(function () {
     Route::get('/lease-invoices', [ErpSaleInvoiceController::class, 'index'])->name('sale.leaseInvoice.index');
     Route::get('/delivery-note', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNote.index');
     Route::get('/delivery-note-cum-invoice', [ErpSaleInvoiceController::class, 'index'])->name('sale.deliveryNoteCumInvoice.index');
-    Route::get('/transporter-invoices', [TransporterInvoiceController::class, 'index'])->name('sale.transporterInvoice.index');
+    
 
 
     Route::get('/sale-invoices/create', [ErpSaleInvoiceController::class, 'create'])->name('sale.invoice.create');
@@ -2212,6 +2212,13 @@ Route::middleware(['user.auth'])->group(function () {
     Route::post('/rate-contract/revoke', [ErpRCController::class, 'revoke'])->name('rate.contract.revoke');
     Route::get('/rate-contract/check', [ErpRCController::class, 'checkExistingRateContract'])->name('rate.contract.check');
 
+    //Transport invoice
+    Route::get('/transporter-invoices', [TransporterInvoiceController::class, 'index'])->name('sale.transporterInvoice.index');
+    Route::get('/transporter-invoices/revoke', [TransporterInvoiceController::class, 'index'])->name('sale.transporterInvoice.revoke');
+    Route::get('/transporter-invoices/pull/items', [TransporterInvoiceController::class, 'getSalesItemsForPulling'])->name('sale.transporterInvoice.pull.items');
+    Route::get('/transporter-invoices/process/items', [TransporterInvoiceController::class, 'processPulledItems'])->name('sale.transporterInvoice.process.items');
+    Route::get('ti/details', [TransporterInvoiceController::class, 'getItemDetails'])->name('sale.transporterInvoice.details');
+    Route::post('/transporter-invoices/store', [TransporterInvoiceController::class, 'store'])->name('sale.transporterInvoice.store');
 
 
     # Production Work Order Route

@@ -704,7 +704,7 @@ class ConstantHelper
 
     //Service Alias Models Mapping
     const SERVICE_ALIAS_MODELS = [
-        self::TI_SERVICE_ALIAS => 'ErpSaleInvoice',
+        self::TI_SERVICE_ALIAS => 'ErpTransportInvoice',
         self::LR_SERVICE_ALIAS => 'ErpLorryReceipt',
         self::MO_SERVICE_ALIAS => 'MfgOrder',
         self::BOM_SERVICE_ALIAS => 'Bom',

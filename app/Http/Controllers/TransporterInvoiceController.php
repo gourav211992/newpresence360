@@ -45,7 +45,7 @@ use App\Helpers\NumberHelper;
 use App\Helpers\SaleModuleHelper;
 use App\Helpers\ServiceParametersHelper;
 use App\Helpers\TaxHelper;
-use App\Http\Requests\ErpSaleInvoiceRequest;
+use App\Http\Requests\ErpTransportInvoiceRequest;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Country;
 use App\Models\Address;
@@ -53,15 +53,13 @@ use App\Models\DiscountMaster;
 use App\Models\EmployeeBookMapping;
 use App\Models\ErpAddress;
 use App\Models\ErpAttribute;
-use App\Models\ErpInvoiceItem;
-use App\Models\ErpInvoiceItemAttribute;
-use App\Models\ErpInvoiceItemLocation;
+use App\Models\ErpTIInvoiceItem;
 use App\Models\ErpItemAttribute;
 use App\Models\ErpPslipItem;
 use App\Models\ErpPslipItemDetail;
-use App\Models\ErpSaleInvoice;
-use App\Models\ErpSaleInvoiceHistory;
-use App\Models\ErpSaleInvoiceTed;
+use App\Models\ErpTransportInvoice;
+use App\Models\ErpTransportInvoiceHistory;
+use App\Models\ErpTransportInvoiceTed;
 use App\Models\ErpSaleOrder;
 // use App\Models\ErpSoDnMapping;
 use App\Models\ErpSoItem;
@@ -94,7 +92,7 @@ class TransporterInvoiceController extends Controller
     {
         $pathUrl = request()->segments()[0];
         $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
-        $orderType = SaleModuleHelper::SALES_INVOICE_TRANSPORTER_TYPE;
+        $orderType = "ti";
         $redirectUrl = route('sale.transporterInvoice.index');
         $createRoute = route('sale.transporterInvoice.create');
 
@@ -108,7 +106,8 @@ class TransporterInvoiceController extends Controller
                 $selectedfyYear = Helper::getFinancialYear(Carbon::now()->format('Y-m-d'));
                 //Date Filters
                 $dateRange = $request->date_range ?? null;
-                $invoices = ErpSaleInvoice::withDefaultGroupCompanyOrg()->where('document_type', $orderType)->withDraftListingLogic()->bookViewAccess($pathUrl)->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])->whereIn('store_id', $accessible_locations)->when($request->customer_id, function ($custQuery) use ($request) {
+                $invoices = ErpTransportInvoice::withDefaultGroupCompanyOrg()
+                ->withDraftListingLogic()->bookViewAccess($pathUrl)->whereBetween('document_date', [$selectedfyYear['start_date'], $selectedfyYear['end_date']])->whereIn('store_id', $accessible_locations)->when($request->customer_id, function ($custQuery) use ($request) {
                     $custQuery->where('customer_id', $request->customer_id);
                 })->when($request->book_id, function ($bookQuery) use ($request) {
                     $bookQuery->where('book_id', $request->book_id);
@@ -283,7 +282,7 @@ class TransporterInvoiceController extends Controller
         $users = AuthUser::where('organization_id', $user->organization_id)->where('status', ConstantHelper::ACTIVE)->get();
         $request->merge(['type' => $type]);
         $typeName = SaleModuleHelper::getAndReturnInvoiceTypeName($type);
-        $books = [];
+        $books = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
         $countries = Country::select('id AS value', 'name AS label')->where('status', ConstantHelper::ACTIVE)->get();
         $stores = InventoryHelper::getAccessibleLocations(ConstantHelper::STOCKK);
         $transportationModes=[];
@@ -310,7 +309,7 @@ class TransporterInvoiceController extends Controller
             'termsAndConditions' => $termsAndConditions,
             'einvoice' => null
         ];
-        return view('transport-invoice.create_edit', $data);
+        return view('transport-invoice.create', $data);
     }
     public function edit(Request $request, string $id)
     {
@@ -325,7 +324,7 @@ class TransporterInvoiceController extends Controller
         $users = AuthUser::where('organization_id', $user->organization_id)->where('status', ConstantHelper::ACTIVE)->get();
         $servicesBooks = [];
         if (isset($request->revisionNumber)) {
-            $order = ErpSaleInvoiceHistory::with(['customer', 'media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
+            $order = ErpTransportInvoiceHistory::with(['customer', 'media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
                 $query->with('discount_ted', 'tax_ted', 'item_locations', 'bundles')->with([
                     'item' => function ($itemQuery) {
                         $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
@@ -333,7 +332,7 @@ class TransporterInvoiceController extends Controller
                 ]);
             })->where('source_id', $id)->firstOrFail();
         } else {
-            $order = ErpSaleInvoice::with(['customer', 'media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
+            $order = ErpTransportInvoice::with(['customer', 'media_files', 'discount_ted', 'expense_ted', 'billing_address_details', 'shipping_address_details', 'location_address_details'])->with('items', function ($query) {
                 $query->with('discount_ted', 'tax_ted', 'item_locations', 'bundles')->with([
                     'item' => function ($itemQuery) {
                         $itemQuery->with(['specifications', 'alternateUoms.uom', 'uom']);
@@ -430,20 +429,9 @@ class TransporterInvoiceController extends Controller
             DB::beginTransaction();
             $user = Helper::getAuthenticatedUser();
             $book = Book::find($request->book_id);
-            $type = $book->master_service->alias;
-            $request->merge(['type' => $type]);
             $invoiceRequired = false;
             $store = ErpStore::find($request->store_id);
             $subStore = null;
-            if (
-                in_array($type, [
-                    ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS,
-                    ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS
-                ])
-            ) {
-                $subStore = ErpSubStore::find($request->sub_store_id);
-            }
-            //Auth credentials
             $organization = Organization::find($user->organization_id);
             $organizationId = $organization?->id ?? null;
             $groupId = $organization?->group_id ?? null;
@@ -453,22 +441,25 @@ class TransporterInvoiceController extends Controller
             $companyCountryId = null;
             $companyStateId = null;
             if ($firstAddress) {
-                $companyCountryId = $store->address->country->id;
-                $companyStateId = $store->address->state->id;
+                $companyCountryId = $store?->address?->country?->id;
+                $companyStateId = $store?->address?->state?->id;
             } else {
                 return response()->json([
                     'message' => 'Please create an organization first'
                 ], 422);
             }
+            $currency =$request->currency_id;
+            if(!empty($currency)){
             $currencyExchangeData = CurrencyHelper::getCurrencyExchangeRates($request->currency_id, $request->document_date);
             if ($currencyExchangeData['status'] == false) {
                 return response()->json([
                     'message' => $currencyExchangeData['message']
                 ], 422);
             }
+        }
             $itemTaxIds = [];
             $itemAttributeIds = [];
-            if (!$request->sale_invoice_id) {
+            if (!$request->transport_invoice_id) {
                 $numberPatternData = Helper::generateDocumentNumberNew($request->book_id, $request->document_date);
                 if (!isset($numberPatternData)) {
                     return response()->json([
@@ -477,7 +468,7 @@ class TransporterInvoiceController extends Controller
                     ], 422);
                 }
                 $document_number = $numberPatternData['document_number'] ? $numberPatternData['document_number'] : $request->document_no;
-                $regeneratedDocExist = ErpSaleInvoice::withDefaultGroupCompanyOrg()->where('book_id', $request->book_id)
+                $regeneratedDocExist = ErpTransportInvoice::withDefaultGroupCompanyOrg()->where('book_id', $request->book_id)
                     ->where('document_number', $document_number)->first();
                 //Again check regenerated doc no
                 if (isset($regeneratedDocExist)) {
@@ -551,10 +542,12 @@ class TransporterInvoiceController extends Controller
                     }
                 }
             }
-            $transportationMode = EwayBillMaster::find($request->transporter_mode);
+            //$transportationMode = EwayBillMaster::find($request->transporter_mode);
 
-            if ($request->sale_invoice_id) { //Update
-                $saleInvoice = ErpSaleInvoice::find($request->sale_invoice_id);
+            $transportationMode = [];
+
+            if ($request->transport_invoice_id) { //Update
+                $saleInvoice = ErpTransportInvoice::find($request->transport_invoice_id);
                 $saleInvoice->document_date = $request->document_date;
                 $saleInvoice->reference_number = $request->reference_no;
                 //Store and department keys
@@ -565,8 +558,8 @@ class TransporterInvoiceController extends Controller
                 $saleInvoice->vehicle_no = $request->vehicle_no;
                 $saleInvoice->lr_number = $request->lr_number ?? null;
                 $saleInvoice->transporter_name = $request->transporter_name;
-                $saleInvoice->transportation_mode = $transportationMode?->description;
-                $saleInvoice->eway_bill_master_id = $transportationMode?->id;
+                $saleInvoice->transportation_mode = "";
+                $saleInvoice->eway_bill_master_id = "";
                 // $saleInvoice -> eway_bill_no = $request -> eway_bill_no;
                 $saleInvoice->remarks = $request->final_remarks;
                 $saleInvoice->customer_terms = $request->terms;
@@ -575,11 +568,9 @@ class TransporterInvoiceController extends Controller
                 //Amend backup
                 if (($saleInvoice->document_status == ConstantHelper::APPROVED || $saleInvoice->document_status == ConstantHelper::APPROVAL_NOT_REQUIRED) && $actionType == 'amendment') {
                     $revisionData = [
-                        ['model_type' => 'header', 'model_name' => 'ErpSaleInvoice', 'relation_column' => ''],
-                        ['model_type' => 'detail', 'model_name' => 'ErpInvoiceItem', 'relation_column' => 'sale_invoice_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpInvoiceItemAttribute', 'relation_column' => 'invoice_item_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpInvoiceItemLocation', 'relation_column' => 'invoice_item_id'],
-                        ['model_type' => 'sub_detail', 'model_name' => 'ErpSaleInvoiceTed', 'relation_column' => 'invoice_item_id'],
+                        ['model_type' => 'header', 'model_name' => 'ErpTransportInvoice', 'relation_column' => ''],
+                        ['model_type' => 'detail', 'model_name' => 'ErpTIInvoiceItem', 'relation_column' => 'ti_invoice_id'],
+                        ['model_type' => 'sub_detail', 'model_name' => 'ErpTransportInvoiceTed', 'relation_column' => 'invoice_item_id'],
                     ];
                     $a = Helper::documentAmendment($revisionData, $saleInvoice->id);
 
@@ -592,62 +583,26 @@ class TransporterInvoiceController extends Controller
                 }
 
                 if (count($deletedData['deletedHeaderExpTedIds'])) {
-                    ErpSaleInvoiceTed::whereIn('id', $deletedData['deletedHeaderExpTedIds'])->delete();
+                    ErpTransportInvoiceTed::whereIn('id', $deletedData['deletedHeaderExpTedIds'])->delete();
                 }
 
                 if (count($deletedData['deletedHeaderDiscTedIds'])) {
-                    ErpSaleInvoiceTed::whereIn('id', $deletedData['deletedHeaderDiscTedIds'])->delete();
+                    ErpTransportInvoiceTed::whereIn('id', $deletedData['deletedHeaderDiscTedIds'])->delete();
                 }
 
                 if (count($deletedData['deletedItemDiscTedIds'])) {
-                    ErpSaleInvoiceTed::whereIn('id', $deletedData['deletedItemDiscTedIds'])->delete();
+                    ErpTransportInvoiceTed::whereIn('id', $deletedData['deletedItemDiscTedIds'])->delete();
                 }
-                if (count($deletedData['deletedSiItemIds'])) {
-                    $siItems = ErpInvoiceItem::whereIn('id', $deletedData['deletedSiItemIds'])->get();
-                    # all ted remove item level
-                    foreach ($siItems as $siItem) {
-                        if ($saleInvoice->dcoument_type != ConstantHelper::SI_SERVICE_ALIAS) {
-                            InventoryHelper::deleteIssueStock($saleInvoice->id, $siItem->id, ConstantHelper::SI_SERVICE_ALIAS);
-                        }
-
-                        if ($siItem->so_item_id) {
-                            $soItem = ErpSoItem::find($siItem->so_item_id);
-                            if (isset($soItem)) {
-                                $soItem->dnote_qty -= $siItem->order_qty;
-                                if ($siItem->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                    $soItem->invoice_qty -= $siItem->order_qty;
-                                }
-                                $soItem->save();
-                            }
-                        }
-                        if ($siItem->dnote_item_id) {
-                            $refSiItem = ErpInvoiceItem::find($siItem->dnote_item_id);
-                            if (isset($refSiItem)) {
-                                $refSiItem->invoice_qty -= $siItem->order_qty;
-                                $refSiItem->save();
-                            }
-                        }
-                        //Free up all the bundles
-                        ErpPslipItemDetail::where('dn_item_id', $siItem->id)->update([
-                            'dn_item_id' => null
-                        ]);
-                        $siItem->teds()->delete();
-                        #delivery remove
-                        // $siItem->item_deliveries()->delete();
-                        # all attr remove
-                        $siItem->attributes()->delete();
-                        $siItem->delete();
-                    }
-                }
+                
             } else { //Create
-                $saleInvoice = ErpSaleInvoice::create([
+                $saleInvoice = ErpTransportInvoice::create([
                     'organization_id' => $organizationId,
                     'group_id' => $groupId,
                     'company_id' => $companyId,
                     'book_id' => $request->book_id,
                     'invoice_required' => $invoiceRequired,
                     'book_code' => $request->book_code,
-                    'document_type' => $type,
+                    'document_type' => 'lr',
                     'document_number' => $document_number,
                     'doc_number_type' => $numberPatternData['type'],
                     'doc_reset_pattern' => $numberPatternData['reset_pattern'],
@@ -672,8 +627,8 @@ class TransporterInvoiceController extends Controller
                     'vehicle_no' => $request->vehicle_no,
                     'lr_number' => $request->lr_number ?? null,
                     'transporter_name' => $request->transporter_name,
-                    'transportation_mode' => $transportationMode?->description,
-                    'eway_bill_master_id' => $transportationMode?->id,
+                    'transportation_mode' => "",
+                    'eway_bill_master_id' => "",
                     // 'eway_bill_no' => $request -> eway_bill_no,
                     'billing_address' => null,
                     'shipping_address' => null,
@@ -850,9 +805,10 @@ class TransporterInvoiceController extends Controller
                         }
                         $customersItemDetails = ItemHelper::getCustomerItemDetails($item->id, $saleInvoice->customer_id);
                         array_push($itemsData, [
-                            'sale_invoice_id' => $saleInvoice->id,
+                            'ti_invoice_id' => $saleInvoice->id,
                             'item_id' => $item->id,
                             'item_code' => $item->item_code,
+                            'lr_id'=>$request->lr_id[$itemKey],
                             'store_id' => isset($store) ? $store->id : null,
                             'sub_store_id' => isset($subStore) ? $subStore->id : null,
                             'item_name' => $item->item_name,
@@ -913,8 +869,9 @@ class TransporterInvoiceController extends Controller
                     }
                     //Update or create
                     $itemRowData = [
-                        'sale_invoice_id' => $saleInvoice->id,
+                        'ti_invoice_id' => $saleInvoice->id,
                         'item_id' => $itemDataValue['item_id'],
+                        'lr_id' => $itemDataValue['lr_id'],
                         'item_code' => $itemDataValue['item_code'],
                         'store_id' => $itemDataValue['store_id'],
                         'sub_store_id' => $itemDataValue['sub_store_id'],
@@ -945,130 +902,28 @@ class TransporterInvoiceController extends Controller
                         'remarks' => $itemDataValue['remarks'],
                     ];
                     if (isset($request->so_item_id[$itemDataKey])) {
-                        $oldSoItem = ErpInvoiceItem::find($request->so_item_id[$itemDataKey]);
-                        $soItem = ErpInvoiceItem::updateOrCreate(['id' => $request->so_item_id[$itemDataKey]], $itemRowData);
+                        $oldSoItem = ErpTIInvoiceItem::find($request->so_item_id[$itemDataKey]);
+                        $soItem = ErpTIInvoiceItem::updateOrCreate(
+                            ['id' => $request->so_item_id[$itemDataKey]], 
+                            $itemRowData);
                     } else {
-                        $soItem = ErpInvoiceItem::create($itemRowData);
+                        $soItem = ErpTIInvoiceItem::create($itemRowData);
                     }
                     //Bundle Conditions
-                    if (isset($request->bundle_ids[$itemDataKey])) {
-                        $bundleIds = json_decode($request->bundle_ids[$itemDataKey], true);
-                        if (isset($bundleIds) && $bundleIds) {
-                            foreach ($bundleIds as $bundleIdData) {
-                                if ($bundleIdData['checked']) {
-                                    ErpPslipItemDetail::where('id', $bundleIdData['bundle_id'])->update([
-                                        'dn_item_id' => $soItem->id
-                                    ]);
-                                } else {
-                                    ErpPslipItemDetail::where('id', $bundleIdData['bundle_id'])->update([
-                                        'dn_item_id' => null
-                                    ]);
-                                }
-                            }
-                        }
-                    }
+                    
                     //Order Pulling condition
                     if (isset($request->quotation_item_type[$itemDataKey])) {
-                        $pullType = $request->quotation_item_type[$itemDataKey];
-                        if ($pullType === ConstantHelper::SO_SERVICE_ALIAS) {
-                            $qtItem = ErpSoItem::find($request->quotation_item_ids[$itemDataKey]);
-                            if (isset($qtItem)) {
-                                //If Order is pulled inside DN
-                                if ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                    $qtItem->dnote_qty = ($qtItem->dnote_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                    $soItem->dnote_qty = ($soItem->dnote_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                }
-                                if ($saleInvoice->document_type === ConstantHelper::SI_SERVICE_ALIAS || $saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                    $qtItem->invoice_qty = ($qtItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                    $soItem->invoice_qty = ($soItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                }
-                                $qtItem->save();
-                                $soItem->sale_order_id = $qtItem->header?->id;
-                                $soItem->so_item_id = $qtItem?->id;
-                                $soItem->save();
-                            }
-
-                        } else if ($pullType === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                            $qtItem = ErpInvoiceItem::find($request->quotation_item_ids[$itemDataKey]);
-                            if (isset($qtItem)) {
-                                $qtItem->invoice_qty = ($qtItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                $soItem->invoice_qty = ($soItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                //Check if sales order exists
-                                if ($qtItem->so_item_id) {
-                                    $saleOrderItem = ErpSoItem::find($qtItem->so_item_id);
-                                    if ($saleOrderItem) {
-                                        $saleOrderItem->invoice_qty = ($saleOrderItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                        $saleOrderItem->save();
-                                    }
-                                }
-                                $soItem->dnote_id = $qtItem->header?->id;
-                                $soItem->dnote_item_id = $qtItem?->id;
-                                if (isset($qtItem->so_item_id)) {
-                                    $soItem->so_item_id = $qtItem?->so_item_id;
-                                    $soItem->sale_order_id = $qtItem->sale_order_id;
-                                }
-                                $qtItem->save();
-                                $soItem->save();
-                            }
-                        } else if ($pullType === ConstantHelper::LAND_LEASE) {
-                            $leaseSchedule = LandLeaseScheduler::find($request->quotation_item_ids[$itemDataKey]);
-                            if (isset($leaseSchedule)) {
-                                $leaseSchedule->invoice_amount = ($leaseSchedule->invoice_amount - (isset($oldSoItem) ? $oldSoItem->rate : 0)) + $itemDataValue['rate'];
-                                $leaseSchedule->save();
-                                $soItem->lease_schedule_id = $leaseSchedule->id;
-                                $soItem->land_lease_id = $leaseSchedule->header?->id;
-                                $soItem->lease_item_type = ConstantHelper::LEASE_SERVICE_TYPE_NAME;
-                                $soItem->save();
-                            }
-                            if (!($request->quotation_item_ids[$itemDataKey]) && isset($request->quotation_item_ids_header[$itemDataKey])) {
-                                $landLease = LandLease::find($request->quotation_item_ids_header[$itemDataKey]);
-                                if (isset($landLease)) {
-                                    $landLease->invoice_security_deposit = ($landLease->invoice_security_deposit - (isset($oldSoItem) ? $oldSoItem->rate : 0)) + $itemDataValue['rate'];
-                                    $landLease->save();
-                                    $soItem->land_lease_id = $landLease?->id;
-                                    $soItem->lease_item_type = "security";
-                                    $soItem->save();
-                                }
-                            }
-                        } else if ($pullType === ConstantHelper::LR_SERVICE_ALIAS) {
-                            $lorryReceipt = ErpLorryReceipt::find($request->quotation_item_ids[$itemDataKey]);
+                         $lorryReceipt = ErpLorryReceipt::find($request->quotation_item_ids[$itemDataKey]);
                             if (isset($lorryReceipt)) {
                                 $soItem->lr_id = $lorryReceipt?->id;
                                 $soItem->save();
                             }
-
-                        } else if ($pullType === ConstantHelper::PL_SERVICE_ALIAS) {
-                            $plItemDetail = ErpPlItemDetail::find($request->quotation_item_ids[$itemDataKey]);
-                            if ($plItemDetail) {
-                                $soItem->pl_item_id = $plItemDetail->pl_item_id;
-                                $soItem->pl_item_detail_id = $plItemDetail->id;
-                                $soItem->save();
-
-                                $plItemDetail->dnote_qty = ($plItemDetail->dnote_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                $plItemDetail->save();
-
-                                //Back update in SO
-                                if ($plItemDetail->order_item_id) {
-                                    $saleOrderItem = ErpSoItem::find($plItemDetail->order_item_id);
-                                    if (isset($saleOrderItem)) {
-                                        if ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                            $saleOrderItem->dnote_qty = ($saleOrderItem->dnote_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                        }
-                                        if ($saleInvoice->document_type === ConstantHelper::SI_SERVICE_ALIAS || $saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                                            $saleOrderItem->invoice_qty = ($saleOrderItem->invoice_qty - (isset($oldSoItem) ? $oldSoItem->order_qty : 0)) + $itemDataValue['order_qty'];
-                                        }
-                                        $saleOrderItem->save();
-                                    }
-                                }
-                            }
-                        }
-
                     }
                     //TED Data (DISCOUNT)
                     if (isset($request->item_discount_value[$itemDataKey])) {
                         foreach ($request->item_discount_value[$itemDataKey] as $itemDiscountKey => $itemDiscountTed) {
                             $itemDiscountRowData = [
-                                'sale_invoice_id' => $saleInvoice->id,
+                                'transport_invoice_id' => $saleInvoice->id,
                                 'invoice_item_id' => $soItem->id,
                                 'ted_type' => 'Discount',
                                 'ted_level' => 'D',
@@ -1080,43 +935,15 @@ class TransporterInvoiceController extends Controller
                                 'applicable_type' => 'Deduction',
                             ];
                             if (isset($request->item_discount_id[$itemDataKey][$itemDiscountKey])) {
-                                $soItemTedForDiscount = ErpSaleInvoiceTed::updateOrCreate(['id' => $request->item_discount_id[$itemDataKey][$itemDiscountKey]], $itemDiscountRowData);
+                                $soItemTedForDiscount = ErpTransportInvoiceTed::updateOrCreate(['id' => $request->item_discount_id[$itemDataKey][$itemDiscountKey]], $itemDiscountRowData);
                             } else {
-                                $soItemTedForDiscount = ErpSaleInvoiceTed::create($itemDiscountRowData);
+                                $soItemTedForDiscount = ErpTransportInvoiceTed::create($itemDiscountRowData);
                             }
-                            // $soItemTedForDiscount = ErpSaleInvoiceTed::create([
-                            //     'sale_invoice_id' => $saleInvoice -> id,
-                            //     'invoice_item_id' => $soItem -> id,
-                            //     'ted_type' => 'Discount',
-                            //     'ted_level' => 'D',
-                            //     'ted_id' => null,
-                            //     'ted_name' => isset($request -> item_discount_name[$itemDataKey][$itemDiscountKey]) ? $request -> item_discount_name[$itemDataKey][$itemDiscountKey] : null,
-                            //     'assessment_amount' => $itemDataValue['rate'] * $itemDataValue['order_qty'],
-                            //     'ted_percentage' => $itemDiscountTed / ($itemDataValue['rate'] * $itemDataValue['order_qty']) * 100,
-                            //     'ted_amount' => $itemDiscountTed,
-                            //     'applicable_type' => 'Deduction',
-                            // ]);
-                        }
-                    }
-                    //TED Data (TAX)
-                    if (isset($taxDetails) && count($taxDetails) > 0) {
+                        if (isset($taxDetails) && count($taxDetails) > 0) {
                         foreach ($taxDetails as $taxDetail) {
-                            // $soItemTedForDiscount = ErpSaleInvoiceTed::create([
-                            //     'sale_invoice_id' => $saleInvoice -> id,
-                            //     'invoice_item_id' => $soItem -> id,
-                            //     'ted_type' => 'Tax',
-                            //     'ted_level' => 'D',
-                            //     'ted_id' => $taxDetail['tax_id'],
-                            //     'ted_group_code' => $taxDetail['tax_group'],
-                            //     'ted_name' => $taxDetail['tax_type'],
-                            //     'assessment_amount' => $valueAfterHeaderDiscount,
-                            //     'ted_percentage' => (double)$taxDetail['tax_percentage'],
-                            //     'ted_amount' => ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount),
-                            //     'applicable_type' => 'Collection',
-                            // ]);
-                            $soItemTedForDiscount = ErpSaleInvoiceTed::updateOrCreate(
+                            $soItemTedForDiscount = ErpTransportInvoiceTed::updateOrCreate(
                                 [
-                                    'sale_invoice_id' => $saleInvoice->id,
+                                    'transport_invoice_id' => $saleInvoice->id,
                                     'invoice_item_id' => $soItem->id,
                                     'ted_type' => 'Tax',
                                     'ted_level' => 'D',
@@ -1136,43 +963,9 @@ class TransporterInvoiceController extends Controller
 
                         }
                     }
-                    //Item Attributes
-                    if (isset($request->item_attributes[$itemDataKey])) {
-                        $attributesArray = json_decode($request->item_attributes[$itemDataKey], true);
-                        if (json_last_error() === JSON_ERROR_NONE && is_array($attributesArray)) {
-                            foreach ($attributesArray as $attributeKey => $attribute) {
-                                $attributeVal = "";
-                                $attributeValId = null;
-                                foreach ($attribute['values_data'] as $valData) {
-                                    if ($valData['selected']) {
-                                        $attributeVal = $valData['value'];
-                                        $attributeValId = $valData['id'];
-                                        break;
-                                    }
-                                }
-                                $itemAttribute = ErpInvoiceItemAttribute::updateOrCreate(
-                                    [
-                                        'sale_invoice_id' => $saleInvoice->id,
-                                        'invoice_item_id' => $soItem->id,
-                                        'item_attribute_id' => $attribute['id'],
-                                    ],
-                                    [
-                                        'item_code' => $soItem->item_code,
-                                        'attribute_name' => $attribute['group_name'],
-                                        'attr_name' => $attribute['attribute_group_id'],
-                                        'attribute_value' => $attributeVal,
-                                        'attr_value' => $attributeValId,
-                                    ]
-                                );
-                                array_push($itemAttributeIds, $itemAttribute->id);
-                            }
-                        } else {
-                            return response()->json([
-                                'message' => 'Item No. ' . ($itemDataKey + 1) . ' has invalid attributes',
-                                'error' => ''
-                            ], 422);
-                        }
-                    }
+                }
+            }
+                    
                 }
             } else {
                 DB::rollBack();
@@ -1181,21 +974,16 @@ class TransporterInvoiceController extends Controller
                     'error' => "",
                 ], 422);
             }
-            ErpSaleInvoiceTed::where([
-                'sale_invoice_id' => $saleInvoice->id,
+            ErpTransportInvoiceTed::where([
+                'transport_invoice_id' => $saleInvoice->id,
                 'invoice_item_id' => $soItem->id,
                 'ted_type' => 'Tax',
                 'ted_level' => 'D',
             ])->whereNotIn('id', $itemTaxIds)->delete();
-            ErpInvoiceItemAttribute::where([
-                'sale_invoice_id' => $saleInvoice->id,
-                'invoice_item_id' => $soItem->id,
-            ])->whereNotIn('id', $itemAttributeIds)->delete();
-            //Header TED (Discount)
             if (isset($request->order_discount_value) && count($request->order_discount_value) > 0) {
                 foreach ($request->order_discount_value as $orderDiscountKey => $orderDiscountVal) {
                     $headerDiscountRowData = [
-                        'sale_invoice_id' => $saleInvoice->id,
+                        'transport_invoice_id' => $saleInvoice->id,
                         'invoice_item_id' => null,
                         'ted_type' => 'Discount',
                         'ted_level' => 'H',
@@ -1207,12 +995,12 @@ class TransporterInvoiceController extends Controller
                         'applicable_type' => 'Deduction',
                     ];
                     if (isset($request->order_discount_id[$orderDiscountKey])) {
-                        ErpSaleInvoiceTed::updateOrCreate(['id' => $request->order_discount_id[$orderDiscountKey]], $headerDiscountRowData);
+                        ErpTransportInvoiceTed::updateOrCreate(['id' => $request->order_discount_id[$orderDiscountKey]], $headerDiscountRowData);
                     } else {
-                        ErpSaleInvoiceTed::create($headerDiscountRowData);
+                        ErpTransportInvoiceTed::create($headerDiscountRowData);
                     }
-                    // ErpSaleInvoiceTed::create([
-                    //     'sale_invoice_id' => $saleInvoice -> id,
+                    // ErpTransportInvoiceTed::create([
+                    //     'transport_invoice_id' => $saleInvoice -> id,
                     //     'invoice_item_id' => null,
                     //     'ted_type' => 'Discount',
                     //     'ted_level' => 'H',
@@ -1231,7 +1019,7 @@ class TransporterInvoiceController extends Controller
             if (isset($request->order_expense_value) && count($request->order_expense_value) > 0) {
                 foreach ($request->order_expense_value as $orderExpenseKey => $orderExpenseVal) {
                     $headerExpenseRowData = [
-                        'sale_invoice_id' => $saleInvoice->id,
+                        'transport_invoice_id' => $saleInvoice->id,
                         'invoice_item_id' => null,
                         'ted_type' => 'Expense',
                         'ted_level' => 'H',
@@ -1244,13 +1032,13 @@ class TransporterInvoiceController extends Controller
                     ];
 
                     if (isset($request->order_expense_id[$orderExpenseKey])) {
-                        ErpSaleInvoiceTed::updateOrCreate(['id' => $request->order_expense_id[$orderExpenseKey]], $headerExpenseRowData);
+                        ErpTransportInvoiceTed::updateOrCreate(['id' => $request->order_expense_id[$orderExpenseKey]], $headerExpenseRowData);
                     } else {
-                        ErpSaleInvoiceTed::create($headerExpenseRowData);
+                        ErpTransportInvoiceTed::create($headerExpenseRowData);
                     }
 
-                    // ErpSaleInvoiceTed::create([
-                    //     'sale_invoice_id' => $saleInvoice -> id,
+                    // ErpTransportInvoiceTed::create([
+                    //     'transport_invoice_id' => $saleInvoice -> id,
                     //     'invoice_item_id' => null,
                     //     'ted_type' => 'Expense',
                     //     'ted_level' => 'H',
@@ -1278,7 +1066,7 @@ class TransporterInvoiceController extends Controller
             $saleInvoice->total_expense_value = $totalExpenseAmount;
             $saleInvoice->total_amount = ($itemTotalValue - ($totalHeaderDiscount + $itemTotalDiscount)) + $totalTax + $totalExpenseAmount;
             //Approval check
-            if ($request->sale_invoice_id) { //Update condition
+            if ($request->transport_invoice_id) { //Update condition
                 $bookId = $saleInvoice->book_id;
                 $docId = $saleInvoice->id;
                 $amendRemarks = $request->amend_remarks ?? null;
@@ -1342,32 +1130,9 @@ class TransporterInvoiceController extends Controller
                     $mediaFiles = $saleInvoice->uploadDocuments($singleFile, 'sale_order', false);
                 }
             }
-            //Logs
-            // if ($request->document_status == ConstantHelper::SUBMITTED) {
-            //     $bookId = $saleInvoice->book_id;
-            //     $docId = $saleInvoice->id;
-            //     $remarks = $saleInvoice->remarks;
-            //     $attachments = null;
-            //     $currentLevel = $saleInvoice->approval_level;
-            //     $revisionNumber = $saleInvoice->revision_number ?? 0;
-            //     $actionType = 'submit'; // Approve // reject // submit
-            //     $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber , $remarks, $attachments, $currentLevel, $actionType);
-            // }
             $itemType = ServiceParametersHelper::getBookLevelParameterValue(ServiceParametersHelper::GOODS_SERVICES_PARAM, $request->book_id)['data'];
             if (isset($itemType) && count($itemType) > 0) {
                 $itemType = $itemType[0];
-            }
-            if ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice->document_type == ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                if ($itemType == ConstantHelper::GOODS) {
-                    $error = self::maintainStockLedger($saleInvoice);
-                    if ($error) {
-                        DB::rollBack();
-                        return response()->json([
-                            'message' => $error
-                        ], 422);
-                    }
-                }
-
             }
             $gstInvoiceType = EInvoiceHelper::getGstInvoiceType($saleInvoice->customer_id, $saleInvoice?->shipping_address_details?->country_id, $saleInvoice->location_address_details?->country_id);
             if ($saleInvoice->document_status === ConstantHelper::POSTED) {
@@ -1389,41 +1154,19 @@ class TransporterInvoiceController extends Controller
             $saleInvoice->save();
             SaleModuleHelper::cashCustomerMasterData($saleInvoice);
 
-            // Get configuration detail
-            $config = Configuration::where('type', 'organization')
-                ->where('type_id', $user->organization_id)
-                ->where('config_key', CommonHelper::ENFORCE_UIC_SCANNING)
-                ->first();
-
-            // Create job
-            if ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS || $saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                if (in_array($saleInvoice->document_status, ConstantHelper::DOCUMENT_STATUS_APPROVED) && $config && strtolower($config->config_value) === 'yes' && $itemType == ConstantHelper::GOODS) {
-                    (new WhmJob)->createJob($saleInvoice->id, 'App\Models\ErpSaleInvoice');
-                }
-            }
             DB::commit();
-            $module = "Invoice";
-            $redirect_url = route('sale.invoice.index');
-            if ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                $module = "Delivery Note";
-                $redirect_url = route("sale.deliveryNote.index");
-            } elseif ($saleInvoice->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS) {
-                $module = "Invoice";
-                $redirect_url = route("sale.deliveryNoteCumInvoice.index");
-            } elseif ($saleInvoice->document_type == ConstantHelper::LEASE_INVOICE_SERVICE_ALIAS) {
-                $module = "Lease Invoice";
-                $redirect_url = route('sale.leaseInvoice.index');
-            }
             return response()->json([
-                'message' => $module . " created successfully",
-                'redirect_url' => $redirect_url
+                'message' => "Transport Invoice created successfully",
+                'redirect_url' => route('sale.transporterInvoice.index')
             ]);
+        
 
         } catch (Exception $ex) {
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
                 'error' => $ex->getMessage() . ' at ' . $ex->getLine() . ' in ' . $ex->getFile(),
+                'trace'=>$ex->getTraceAsString(),
             ], 500);
         }
     }
@@ -1433,17 +1176,15 @@ class TransporterInvoiceController extends Controller
         DB::beginTransaction();
         try {
 
-            $saleInvoice = ErpSaleInvoice::where('id', $id)->first();
+            $saleInvoice = ErpTransportInvoice::where('id', $id)->first();
             if (!$saleInvoice) {
                 return response()->json(['data' => [], 'message' => "Sale Invoice not found.", 'status' => 404]);
             }
 
             $revisionData = [
-                ['model_type' => 'header', 'model_name' => 'ErpSaleInvoice', 'relation_column' => ''],
-                ['model_type' => 'detail', 'model_name' => 'ErpInvoiceItem', 'relation_column' => 'sale_invoice_id'],
-                ['model_type' => 'sub_detail', 'model_name' => 'ErpInvoiceItemAttribute', 'relation_column' => 'invoice_item_id'],
-                ['model_type' => 'sub_detail', 'model_name' => 'ErpInvoiceItemLocation', 'relation_column' => 'invoice_item_id'],
-                ['model_type' => 'sub_detail', 'model_name' => 'ErpSaleInvoiceTed', 'relation_column' => 'invoice_item_id'],
+                ['model_type' => 'header', 'model_name' => 'ErpTransportInvoice', 'relation_column' => ''],
+                ['model_type' => 'detail', 'model_name' => 'ErpTIInvoiceItem', 'relation_column' => 'transport_invoice_id'],
+                ['model_type' => 'sub_detail', 'model_name' => 'ErpTransportInvoiceTed', 'relation_column' => 'invoice_item_id'],
             ];
 
             $a = Helper::documentAmendment($revisionData, $id);
@@ -1494,72 +1235,7 @@ class TransporterInvoiceController extends Controller
                 $checkStock = false;
             }
 
-            if ($request->doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
-                $referedHeaderId = ErpSoItem::whereIn('id', $selectedIds)->first()?->header?->id;
-
-                $query = ErpSoItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
-                    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds, $referedHeaderId) {
-                        $subQuery->withDefaultGroupCompanyOrg()
-                            ->when($referedHeaderId, fn($q) => $q->where('id', $referedHeaderId))
-                            ->where('document_type', ConstantHelper::SO_SERVICE_ALIAS)
-                            // ->where('store_id', $request->store_id)
-                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])
-                            ->whereIn('book_id', $applicableBookIds)
-                            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id))
-                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
-                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
-                    })
-                    ->whereRaw('((order_qty - short_close_qty - GREATEST(picked_qty, plist_qty, dnote_qty)) + srn_qty) > 0')
-                    ->when(count($selectedIds) > 0, fn($q) => $q->whereNotIn('id', $selectedIds));
-
-            } elseif (in_array($request->doc_type, [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])) {
-                $query = ErpInvoiceItem::with(['attributes', 'uom', 'header.customer', 'header.shipping_address_details'])
-                    ->whereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
-                        $subQuery->withDefaultGroupCompanyOrg()
-                            ->whereIn('document_type', [ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS])
-                            ->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED, ConstantHelper::POSTED])
-                            ->whereIn('book_id', $applicableBookIds)
-                            ->when($request->customer_id, fn($q) => $q->where('customer_id', $request->customer_id)->where('store_id', $request->store_id))
-                            ->when($request->book_id, fn($q) => $q->where('book_id', $request->book_id))
-                            ->when($request->document_id, fn($q) => $q->where('id', $request->document_id));
-                    })
-                    ->whereColumn('invoice_qty', '<', 'order_qty');
-
-            } elseif ($request->doc_type === PackingListConstants::SERVICE_ALIAS) {
-                $query = PackingListDetail::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
-                    $subQuery->withDefaultGroupCompanyOrg()->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])->whereIn('book_id', $applicableBookIds)
-                        ->when($request->book_id, function ($bookQuery) use ($request) {
-                            $bookQuery->where('book_id', $request->book_id);
-                        })->when($request->document_id, function ($docQuery) use ($request) {
-                            $docQuery->where('id', $request->document_id);
-                        });
-                })->when($request->customer_id, function ($docQuery) use ($request) {
-                    $docQuery->whereHas('sale_order', function ($nestedQuery) use ($request) {
-                        $nestedQuery->where('customer_id', $request->customer_id);
-                    });
-                })->when($request->item_id, function ($custQuery) use ($request) {
-                    $custQuery->whereHas('items', function ($nestedQuery) use ($request) {
-                        $nestedQuery->where('item_id', $request->item_id);
-                    });
-                })->with('sale_order')->whereNull('dn_item_id');
-            } else if ($request->doc_type === ConstantHelper::PL_SERVICE_ALIAS) {
-                $query = ErpPlItemDetail::withWhereHas('header', function ($subQuery) use ($request, $applicableBookIds) {
-                    $subQuery->withDefaultGroupCompanyOrg()->whereIn('document_status', [ConstantHelper::APPROVED, ConstantHelper::APPROVAL_NOT_REQUIRED])->where('staging_sub_store_id', $request->sub_store_id)->whereIn('book_id', $applicableBookIds)
-                        ->when($request->book_id, function ($bookQuery) use ($request) {
-                            $bookQuery->where('book_id', $request->book_id);
-                        })->when($request->document_id, function ($docQuery) use ($request) {
-                            $docQuery->where('id', $request->document_id);
-                        });
-                })->when($request->customer_id, function ($docQuery) use ($request) {
-                    $docQuery->whereHas('sale_order', function ($nestedQuery) use ($request) {
-                        $nestedQuery->where('customer_id', $request->customer_id);
-                    });
-                })->when($request->item_id, function ($custQuery) use ($request) {
-                    $custQuery->whereHas('items', function ($nestedQuery) use ($request) {
-                        $nestedQuery->where('item_id', $request->item_id);
-                    });
-                })->with('sale_order')->whereColumn('dnote_qty', '<', 'picked_qty');
-            } else if ($request->doc_type === ConstantHelper::LR_SERVICE_ALIAS) {
+            if ($request->doc_type === ConstantHelper::LR_SERVICE_ALIAS) {
 
                 $orgBookParameter = OrganizationBookParameter::where('book_id', $request->header_book_id)
                     ->where('parameter_name', ServiceParametersHelper::SERVICE_ITEM_PARAM)
@@ -1795,7 +1471,7 @@ class TransporterInvoiceController extends Controller
             if ($request->doc_type === ConstantHelper::SO_SERVICE_ALIAS) {
                 $modelName = resolve("App\\Models\\ErpSaleOrder");
             } elseif ($request->doc_type === ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
-                $modelName = resolve("App\\Models\\ErpSaleInvoice");
+                $modelName = resolve("App\\Models\\ErpTransportInvoice");
             } else {
                 $modelName = null;
             }
@@ -1834,7 +1510,7 @@ class TransporterInvoiceController extends Controller
                     if ($request->doc_type == ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS) {
                         $header->customer_terms_name = $header?->customerTermDetails?->term_name;
                     }
-                    // if ($modelName::class == "App\\Models\\ErpSaleInvoice") {
+                    // if ($modelName::class == "App\\Models\\ErpTransportInvoice") {
                     //     $saleOrderItems = $header -> sale_order_items();
                     //     // foreach ($saleOrderItems as &$saleOrderItem) {
                     //     //     $saleOrderItem -> actual_qty = $saleOrderItem -> order_qty;
@@ -2194,6 +1870,11 @@ class TransporterInvoiceController extends Controller
                     $finalHeaders = $headers->map(function ($header) use ($freightCharges, $locationAmountTotal, $totalFreightWithLocation) {
                         return [
                             'lr_id' => $header->id,
+                            'source'=>$header->source,
+                            'destination'=>$header->destination,
+                            'points'=>$header->locations->count(),
+                            'articles'=>$header->locations->sum('no_of_articles'),
+                            'weight'=>$header->locations->sum('weight'), 
                             'freight_charges' => $freightCharges,
                             'location_total_amount' => $locationAmountTotal,
                             'total_freight_amount' => $totalFreightWithLocation,
@@ -2285,7 +1966,7 @@ class TransporterInvoiceController extends Controller
             ->where('addressable_type', Organization::class)
             ->first();
 
-        $order = ErpSaleInvoice::with(
+        $order = ErpTransportInvoice::with(
             [
                 'customer',
                 'currency',
@@ -2318,76 +1999,7 @@ class TransporterInvoiceController extends Controller
         $maxAttributeCount = 0;
         $allAttributeValues = [];
         $orderItems = $order->items;
-        if (
-            $order->document_type === ConstantHelper::SI_SERVICE_ALIAS ||
-            ($order->document_type === ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS)
-        ) {
-            $pdfFile = $request->type == 'grouped' ? "pdf.sales-invoice-attribute-grouped" : "pdf.sales-invoice-pdf";
-            $maxAttributeCount = 0;
-            $allAttributeValues = [];
-            $siItemAttributes = ErpInvoiceItemAttribute::where('sale_invoice_id', $order->id)
-                ->select('attribute_name')->distinct()->get()->pluck('attribute_name')->toArray();
-
-            $orderItems = ErpInvoiceItem::where('sale_invoice_id', $order->id)
-                ->select(
-                    'item_id',
-                    'item_code',
-                    'item_name',
-                    'hsn_id',
-                    'hsn_code',
-                    'uom_id',
-                    'rate',
-                    DB::raw('SUM(order_qty) AS order_qty'),
-                    DB::raw('SUM(item_discount_amount) AS item_discount_amount'),
-                    DB::raw('SUM(header_discount_amount) AS header_discount_amount'),
-                    DB::raw('SUM(tax_amount) AS tax_amount'),
-                    DB::raw('COUNT(id) AS attribute_count')
-                )
-                ->groupBy('item_id', 'item_code', 'item_name', 'hsn_id', 'hsn_code', 'uom_id', 'rate')
-                ->get();
-
-            if (count($siItemAttributes) == 1 && $request->type == 'grouped' && count($order->items) > count($orderItems)) {
-                $pdfFile = "pdf.sales-invoice-attribute-grouped";
-
-                foreach ($orderItems as $orderItem) {
-                    if ($orderItem->attribute_count > $maxAttributeCount) {
-                        $maxAttributeCount = $orderItem->attribute_count;
-                    }
-                    $siItems = ErpInvoiceItem::where('sale_invoice_id', $order->id)
-                        ->where('item_id', $orderItem->item_id)->where('uom_id', $orderItem->uom_id)
-                        ->where('rate', $orderItem->rate)->with('tax_ted')->get();
-                    foreach ($siItems as $siItem) {
-                        $itemAttributeVal = implode(" ", $siItem->attributes->pluck('attribute_value')->toArray());
-                        if (!in_array($itemAttributeVal, $allAttributeValues)) {
-                            array_push($allAttributeValues, $itemAttributeVal);
-                        }
-                        $quantity = $siItem->order_qty;
-                        if (isset($orderItem->attribute_wise_qty)) {
-                            $previousArray = $orderItem->attribute_wise_qty;
-                            array_push($previousArray, [
-                                'attribute_value' => $itemAttributeVal,
-                                'qty' => $quantity
-                            ]);
-                            $orderItem->attribute_wise_qty = $previousArray;
-                            $previousTaxTed = $orderItem->tax_ted;
-                            $previousTaxTed = $previousTaxTed->concat($siItem->tax_ted);
-                            $orderItem->tax_ted = $previousTaxTed;
-                        } else {
-                            $orderItem->attribute_wise_qty = [
-                                [
-                                    'attribute_value' => $itemAttributeVal,
-                                    'qty' => $quantity
-                                ]
-                            ];
-                            $orderItem->tax_ted = $siItem->tax_ted;
-                        }
-                    }
-                }
-            } else {
-                $pdfFile = "pdf.sales-invoice-pdf";
-                $orderItems = $order->items;
-            }
-        }
+        
 
         $shippingAddress = $order->shipping_address_details;
         $billingAddress = $order->billing_address_details;
@@ -2521,7 +2133,7 @@ class TransporterInvoiceController extends Controller
     {
         try {
             DB::beginTransaction();
-            $saleInvoice = ErpSaleInvoice::find($request->document_id);
+            $saleInvoice = ErpTransportInvoice::find($request->document_id);
             $enableEinvoice = $saleInvoice->gst_invoice_type === EInvoiceHelper::B2B_INVOICE_TYPE ? true : false;
             $eInvoice = $saleInvoice?->irnDetail()->first();
             // if (!$eInvoice && $enableEinvoice) {
@@ -2558,7 +2170,7 @@ class TransporterInvoiceController extends Controller
     {
         DB::beginTransaction();
         try {
-            $saleDocument = ErpSaleInvoice::find($request->id);
+            $saleDocument = ErpTransportInvoice::find($request->id);
             if (isset($saleDocument)) {
                 $revoke = Helper::approveDocument($saleDocument->book_id, $saleDocument->id, $saleDocument->revision_number, '', [], 0, ConstantHelper::REVOKE, $saleDocument->total_amount, get_class($saleDocument));
                 if ($revoke['message']) {
@@ -2586,40 +2198,7 @@ class TransporterInvoiceController extends Controller
         }
     }
 
-    private static function maintainStockLedger($saleInvoice)
-    {
-        $user = Helper::getAuthenticatedUser();
-        $detailIds = $saleInvoice->items->pluck('id')->toArray();
-        $issueRecords = InventoryHelper::settlementOfInventoryAndStock($saleInvoice->id, $detailIds, $saleInvoice->document_type, $saleInvoice->document_status, 'issue');
-        if ($issueRecords['status'] == 'error') {
-            return $issueRecords['message'];
-        }
-        ErpInvoiceItemLocation::where('sale_invoice_id', $saleInvoice->id)
-            ->whereIn('invoice_item_id', $detailIds)
-            ->delete();
-
-        foreach ($issueRecords['data'] as $val) {
-            $invoiceItem = ErpInvoiceItem::where('id', @$val->issuedBy->document_detail_id)->first();
-
-            ErpInvoiceItemLocation::create([
-                'sale_invoice_id' => $saleInvoice->id,
-                'invoice_item_id' => @$val->issuedBy->document_detail_id,
-                'item_id' => $val->issuedBy->item_id,
-                'item_code' => $val->issuedBy->item_code,
-                'store_id' => $val->issuedBy->store_id,
-                'store_code' => $val->issuedBy->store,
-                'rack_id' => $val->issuedBy->rack_id,
-                'rack_code' => $val->issuedBy->rack,
-                'shelf_id' => $val->issuedBy->shelf_id,
-                'shelf_code' => $val->issuedBy->shelf,
-                'bin_id' => $val->issuedBy->bin_id,
-                'bin_code' => $val->issuedBy->bin,
-                'quantity' => ItemHelper::convertToAltUom($val->issuedBy->item_id, $invoiceItem?->uom_id ?? $val->issuedBy?->inventory_uom_id, $val->issuedBy->issue_qty),
-                'inventory_uom_qty' => $val->issuedBy->issue_qty
-            ]);
-        }
-        return null;
-    }
+    
 
     public function getBundlesForPulledSo(Request $request)
     {
@@ -2704,9 +2283,9 @@ class TransporterInvoiceController extends Controller
         }
         $id = $request->id;
         try {
-            $documentHeader = ErpSaleInvoice::find($id);
+            $documentHeader = ErpTransportInvoice::find($id);
             $documentHeader = SaleModuleHelper::updateEInvoiceDataFromHelper($documentHeader);
-            $documentDetails = ErpInvoiceItem::where('sale_invoice_id', $id)->get();
+            $documentDetails = ErpTIInvoiceItem::where('ti_invoice_id', $id)->get();
             // $generateInvoice = EInvoiceHelper::generateInvoice($documentHeader, $documentDetails);
 
             $shippingAddress = $documentHeader->billing_address_details;
@@ -2754,7 +2333,7 @@ class TransporterInvoiceController extends Controller
     }
     public function EInvoiceMail(Request $request)
     {
-        $invoice = ErpSaleInvoice::with(['customer'])->find($request->id);
+        $invoice = ErpTransportInvoice::with(['customer'])->find($request->id);
         $customer = $invoice->customer;
 
         $sendTo = $request->email_to ?? $customer->email;
@@ -2906,7 +2485,7 @@ class TransporterInvoiceController extends Controller
         // ]);
         DB::beginTransaction();
         try {
-            $saleInvoice = ErpSaleInvoice::find($request->id);
+            $saleInvoice = ErpTransportInvoice::find($request->id);
             $bookId = $saleInvoice->book_id;
             $docId = $saleInvoice->id;
             $docValue = $saleInvoice->total_amount;
@@ -2966,7 +2545,7 @@ class TransporterInvoiceController extends Controller
             ], 422);
         }
         try {
-            $documentHeader = ErpSaleInvoice::find($request->id);
+            $documentHeader = ErpTransportInvoice::find($request->id);
             $transportationMode = EwayBillMaster::find($request->transporter_mode);
             $documentHeader->transporter_name = $request->transporter_name;
             $documentHeader->transportation_mode = $transportationMode?->description ?? null;
@@ -3029,7 +2608,7 @@ class TransporterInvoiceController extends Controller
     {
         $pathUrl = route('sale.invoice.index');
         $orderType = [ConstantHelper::SI_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_SERVICE_ALIAS, ConstantHelper::DELIVERY_CHALLAN_CUM_SI_SERVICE_ALIAS];
-        $salesOrders = ErpSaleInvoice::with('items')->whereIn('document_type', $orderType)->withDefaultGroupCompanyOrg()->withDraftListingLogic()->orderByDesc('id');
+        $salesOrders = ErpTransportInvoice::with('items')->whereIn('document_type', $orderType)->withDefaultGroupCompanyOrg()->withDraftListingLogic()->orderByDesc('id');
         //Customer Filter
         $salesOrders = $salesOrders->when($request->customer_id, function ($custQuery) use ($request) {
             $custQuery->where('customer_id', $request->customer_id);
@@ -3186,6 +2765,83 @@ class TransporterInvoiceController extends Controller
             })
             ->rawColumns(['item_attributes', 'delivery_schedule', 'status'])
             ->make(true);
+    }
+    public function getItemDetails(Request $request)
+    {
+        try {
+            $item = Item::with(['alternateUoms.uom', 'category', 'subCategory','hsn'])->find($request->item_id);
+            $customerItemDetails = ItemHelper::getCustomerItemDetails((int)$request -> item_id, (int) $request->customer_id);
+            $selectedUom = $request->uom_id ?? null;
+            $totalStockData = InventoryHelper::totalInventoryAndStock($request->item_id, $request->selectedAttr ?? [], 
+            $selectedUom, $request->store_id ?? null, $request -> sub_store_id ?? null, $request -> so_item_id ?? null, 
+            $request -> station_id ?? null, $request -> stock_type ?? InventoryHelper::STOCK_TYPE_REGULAR,
+            $request -> wip_station_id ?? null);
+            if (isset($item)) {
+                $inventoryUomQty = $request->quantity ?? 0;
+                $requestUomId = $selectedUom;
+                if ($requestUomId != $item->uom_id) {
+                    $alUom = $item->alternateUOMs()->where('uom_id', $requestUomId)->first();
+                    if ($alUom) {
+                        $inventoryUomQty = intval(isset($request->quantity) ? $request->quantity : 0) * $alUom->conversion_to_inventory;
+                    }
+                }
+            }
+            $headerId = $request -> header_id ?? null;
+            $detailId = $request -> detail_id ?? null;
+            $serviceAlias = $request -> service_alias ?? null;
+            $lotNoDetails = [];
+            $lrDetails = [];
+            if (isset($headerId) && isset($detailId)) {
+                $lotNoDetails = InventoryHelper::getIssueTransactionLotNumbers($serviceAlias, $headerId, $detailId, $selectedUom);
+            }
+           if ($request->type === ConstantHelper::LR_SERVICE_ALIAS) {
+                $lorryReceiptDetails = ErpLorryReceipt::with([
+                    'locations', 
+                    'source', 
+                    'destination', 
+                    'vehicle'
+                ])
+                    ->whereIn('id', (array) $request->lrId)
+                    ->get();
+
+                      $lrDetails = $lorryReceiptDetails->map(function ($lr) {
+                        $totalArticles = $lr->locations->sum('no_of_articles');
+                        $totalWeight = $lr->locations->sum('weight');
+                        $totalPointCharges = $lr->locations->sum('amount');
+                        $totalPoints = $lr->locations->count();
+
+                        return [
+                            'lr_no' => $lr->document_number ?? '',
+                            'book_code' => $lr->book->book_code,
+                            'document_date' =>Carbon::parse($lr->document_date)->format('d-m-Y') ?? '',
+                            'source' => $lr->source->name ?? '',
+                            'destination' => $lr->destination->name ?? '',
+                            'no_of_article' => $totalArticles,
+                            'total_weight' => $totalWeight,
+                            'points' => $totalPoints,
+                            'freight_charges' => $lr->freight_charges ?? 0,
+                            'points_charges' => $totalPointCharges ?? 0,
+                            'total_charges' => ($lr->freight_charges ?? 0) + ($totalPointCharges ?? 0),
+                        ];
+                    });
+               }
+
+            return response()->json([
+                'message' => 'Item details found',
+                'item' => $item,
+                'inv_qty' => $item->type === ConstantHelper::SERVICE ? 0 : $inventoryUomQty ?? 0,
+                'inv_uom' => $item->type === ConstantHelper::SERVICE ? null : $item->uom?->alias,
+                'customer_item_details' => $customerItemDetails,
+                'lot_details' => $lotNoDetails,
+                'stocks' => $totalStockData,
+                'lrDetails' => $lrDetails
+            ]);
+        } catch (Exception $ex) { 
+            return response()->json([
+                'message' => 'Some internal error occured',
+                'error' => $ex->getMessage()
+            ], 500);
+        }
     }
 
 }

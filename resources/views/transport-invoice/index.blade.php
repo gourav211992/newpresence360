@@ -54,7 +54,6 @@
                                                 <th>Series</th>
                                                 <th>Doc No.</th>
                                                 <th>Location</th>
-                                                <th>Department</th>
                                                 <th>Rev No</th>
                                                 <th>Ref No</th>
                                                 <th>Customer</th>
@@ -63,7 +62,6 @@
                                                 <th class = "numeric-alignment">Item Value</th>
                                                 <th class = "numeric-alignment">Discount</th>
                                                 <th class = "numeric-alignment">Tax</th>
-                                                <th class = "numeric-alignment">Expenses</th>
                                                 <th class = "numeric-alignment">Total Amt</th>
                                                 <th>Invoice Type</th>
                                                 <th>E Invoice</th>
@@ -147,10 +145,6 @@
                $(td).addClass('no-wrap');
             }
         },
-        { data: 'department_code', name: 'department_code', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('no-wrap');
-            }
-        },
         { data: 'revision_number', name: 'revision_number', render: renderData, orderable: true, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('no-wrap');
             }
@@ -171,10 +165,6 @@
             }
          },
         { data: 'total_tax_value', name: 'total_tax_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
-               $(td).addClass('text-end');
-            } 
-         },
-        { data: 'total_expense_value', name: 'total_expense_value', render: renderData, createdCell: function(td, cellData, rowData, row, col) {
                $(td).addClass('text-end');
             } 
          },

@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\WHM\ErpItemUniqueCode;
 
-class ErpInvoiceItem extends Model
+class ErpTIInvoiceItem extends Model
 {
     use HasFactory, SoftDeletes;
 protected $table = 'erp_ti_invoice_items';
-     protected $guarded = ['id'];
+ protected $guarded = ['id'];
     protected $appends = [
         'return_balance_qty',
         'balance_qty',
@@ -117,9 +117,9 @@ protected $table = 'erp_ti_invoice_items';
     {
         return $this -> hasMany(ErpInvoiceItemLocation::class, 'invoice_item_id', 'id');
     }
-    public function sale_order()
+    public function ti_order()
     {
-        return $this -> belongsTo(ErpSaleOrder::class, 'sale_order_id');
+        return $this -> belongsTo(ErpSaleOrder::class, 'ti_order_id');
     }
     public function invoice()
     {
@@ -131,13 +131,13 @@ protected $table = 'erp_ti_invoice_items';
     }
     public function header()
     {
-        return $this -> belongsTo(ErpSaleInvoice::class, 'sale_invoice_id');
+        return $this -> belongsTo(ErpSaleInvoice::class, 'ti_invoice_id');
     }
 
     public function getCgstValueAttribute()
     {
         $tedRecords = ErpSaleInvoiceTed::where('invoice_item_id', $this->id)
-            ->where('sale_invoice_id', $this->sale_invoice_id)
+            ->where('ti_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
@@ -145,7 +145,7 @@ protected $table = 'erp_ti_invoice_items';
 
         $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('sale_invoice_id', $this->sale_invoice_id)
+            ->where('ti_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CGST')
@@ -168,7 +168,7 @@ protected $table = 'erp_ti_invoice_items';
         
             $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('sale_invoice_id', $this->sale_invoice_id)
+            ->where('ti_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'SGST')
@@ -191,7 +191,7 @@ protected $table = 'erp_ti_invoice_items';
         
             $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('sale_invoice_id', $this->sale_invoice_id)
+            ->where('ti_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'IGST')
@@ -214,7 +214,7 @@ protected $table = 'erp_ti_invoice_items';
         
             $tedRecord = ErpSaleInvoiceTed::with(['taxDetail'])
             ->where('invoice_item_id', $this->id)
-            ->where('sale_invoice_id', $this->sale_invoice_id)
+            ->where('ti_invoice_id', $this->ti_invoice_id)
             ->where('ted_type', '=', 'Tax')
             ->where('ted_level', '=', 'D')
             ->where('ted_name', '=', 'CESS')
@@ -290,7 +290,7 @@ protected $table = 'erp_ti_invoice_items';
         return $this -> belongsTo(LandLeaseScheduler::class, 'lease_schedule_id');
     }
 
-    public function sale_order_item()
+    public function ti_order_item()
     {
         $saleOrderItem = ErpSoItem::find($this -> getAttribute('so_item_id'));
         return $saleOrderItem;
@@ -298,7 +298,7 @@ protected $table = 'erp_ti_invoice_items';
     
     // public function mapped_so_item_ids()
     // {
-    //     return ErpSoDnMapping::where('delivery_note_id', $this -> getAttribute('sale_invoice_id')) -> where('dn_item_id', $this -> getAttribute('id')) -> get() -> pluck('so_item_id') -> toArray();
+    //     return ErpSoDnMapping::where('delivery_note_id', $this -> getAttribute('ti_invoice_id')) -> where('dn_item_id', $this -> getAttribute('id')) -> get() -> pluck('so_item_id') -> toArray();
     // }
     // public function mapped_so_items()
     // {
