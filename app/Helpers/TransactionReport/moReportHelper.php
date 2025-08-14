@@ -1,0 +1,251 @@
+<?php
+
+namespace App\Helpers\TransactionReport;
+use App\Models\Legal;
+
+class moReportHelper
+{    
+    const MO_TABLE_HEADERS = [
+        [
+            'name' => 'S. No',
+            'field' => 'DT_RowIndex',
+            'header_class' => '',
+            'column_class' => '',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Series',
+            'field' => 'book_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Doc No',
+            'field' => 'document_number',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Date',
+            'field' => 'document_date',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Location',
+            'field' => 'store_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Store',
+            'field' => 'sub_store_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Product Name',
+            'field' => 'product_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Product Code',
+            'field' => 'product_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Product Uom',
+            'field' => 'product_uom_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Product Qty',
+            'field' => 'product_qty',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Product Attributes',
+            'field' => 'product_attributes',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Name',
+            'field' => 'item_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Code',
+            'field' => 'item_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Attributes',
+            'field' => 'item_attributes',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Uom',
+            'field' => 'item_uom_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Qty',
+            'field' => 'item_qty',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Consumed Qty',
+            'field' => 'item_consumed_qty',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Status',
+            'field' => 'status',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => 'text-align:center',
+            'column_style' => '',
+        ],
+    ];
+    const MO_FILTERS = [
+        [
+            'colSpan' => 'auto',
+            'label' => 'Series',
+            'id' => 'book_filter',
+            'requestName' => 'book_id',
+            'term' => 'report_so_book',
+            'value_key' => 'id',
+            'label_key' => 'book_code',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Doc No',
+            'id' => 'doc_number_filter',
+            'requestName' => 'document_number',
+            'term' => 'report_so_documents',
+            'value_key' => 'id',
+            'label_key' => 'document_number',
+            'type' => 'input_text'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Item Category',
+            'id' => 'item_cat_filter',
+            'requestName' => 'item_category_id',
+            'term' => 'category',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['item_sub_cat_filter', 'item_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Item Sub Category',
+            'id' => 'item_sub_cat_filter',
+            'requestName' => 'item_sub_category_id',
+            'term' => 'subcategory',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['item_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Items',
+            'id' => 'item_filter',
+            'requestName' => 'item_id',
+            'term' => 'report_items',
+            'value_key' => 'id',
+            'label_key' => 'item_name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Status',
+            'id' => 'doc_status_filter',
+            'requestName' => 'doc_status',
+            'term' => 'document_statuses',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Company',
+            'id' => 'company_filter',
+            'requestName' => 'company_id',
+            'term' => 'companies',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['organization_filter']
+
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Organization',
+            'id' => 'organization_filter',
+            'requestName' => 'organization_id',
+            'term' => 'organizations',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['location_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Location',
+            'id' => 'location_filter',
+            'requestName' => 'location_id',
+            'term' => 'location',
+            'value_key' => 'id',
+            'label_key' => 'store_name',
+            'type' => 'auto_complete'
+        ],
+    ];
+}

@@ -1,0 +1,1 @@
+<input type="number" name="components[{{$rowCount}}][rate]" class="form-control text-end" value="{{floatval($itemCost)}}">

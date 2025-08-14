@@ -1,0 +1,51 @@
+
+CREATE TABLE `erp_purchase_return_accounts` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `group_id` BIGINT UNSIGNED DEFAULT NULL,
+    `company_id` BIGINT UNSIGNED DEFAULT NULL,
+    `organization_id` BIGINT UNSIGNED DEFAULT NULL,
+    `category_id` BIGINT UNSIGNED NULL,
+    `sub_category_id` BIGINT UNSIGNED NULL,
+    `item_id` JSON NULL,
+    `book_id` JSON NULL,
+    `ledger_id` BIGINT UNSIGNED NULL,
+    `ledger_group_id` BIGINT UNSIGNED NULL,
+    'status' ENUM('active', 'inactive') DEFAULT 'active',
+    `deleted_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`ledger_id`) REFERENCES `erp_ledgers`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`ledger_group_id`) REFERENCES `erp_groups`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`category_id`) REFERENCES `erp_categories`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`sub_category_id`) REFERENCES `erp_categories`(`id`) ON DELETE CASCADE,
+    INDEX (`category_id`),
+    INDEX (`sub_category_id`),
+    INDEX (`ledger_id`),
+    INDEX (`ledger_group_id`)
+);
+
+CREATE TABLE `erp_price_variance_accounts` (
+    `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `group_id` BIGINT UNSIGNED DEFAULT NULL,
+    `company_id` BIGINT UNSIGNED DEFAULT NULL,
+    `organization_id` BIGINT UNSIGNED DEFAULT NULL,
+    `category_id` BIGINT UNSIGNED NULL,
+    `sub_category_id` BIGINT UNSIGNED NULL,
+    `item_id` JSON NULL,
+    `book_id` JSON NULL,
+    `ledger_id` BIGINT UNSIGNED NULL,
+    `ledger_group_id` BIGINT UNSIGNED NULL,
+     `status` ENUM('active', 'inactive') DEFAULT 'active',
+    `deleted_at` TIMESTAMP NULL,
+    `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`ledger_id`) REFERENCES `erp_ledgers`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`ledger_group_id`) REFERENCES `erp_groups`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`category_id`) REFERENCES `erp_categories`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`sub_category_id`) REFERENCES `erp_categories`(`id`) ON DELETE CASCADE,
+    INDEX (`category_id`),
+    INDEX (`sub_category_id`),
+    INDEX (`ledger_id`),
+    INDEX (`ledger_group_id`)
+);
+

@@ -1,0 +1,2 @@
+<input type="hidden" name="components[{{$rowCount}}][user_id]" value="{{$row?->pi?->user_id}}">
+<input type="text" style="min-width: 100px" readonly class="form-control" name="components[{{$rowCount}}][requester_name]" value="{{ucfirst($row->pi?->requester?->name ?? '')}}">

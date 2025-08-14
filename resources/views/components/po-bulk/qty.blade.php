@@ -1,0 +1,1 @@
+<input type="number" class="form-control text-end" name="components[{{$rowCount}}][qty]" step="any" value="{{floatval($row?->indent_qty)}}">

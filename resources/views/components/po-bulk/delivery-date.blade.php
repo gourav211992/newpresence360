@@ -1,0 +1,1 @@
+<input type="date" style="min-width: 100px" name="components[{{$rowCount}}][delivery_date]" class="form-control" value="{{now()->format('Y-m-d')}}">

@@ -1,0 +1,315 @@
+@extends('layouts.app')
+
+@section('content')
+<!-- BEGIN: Content-->
+<div class="app-content content ">
+    <div class="content-overlay"></div>
+    <div class="header-navbar-shadow"></div>
+    <div class="content-wrapper container-xxl p-0">
+        <div class="content-header row">
+            <div class="content-header-left col-md-5 mb-2">
+                <div class="row breadcrumbs-top">
+                    <div class="col-12">
+                        <h2 class="content-header-title float-start mb-0">Voucher Entry</h2>
+                        <div class="breadcrumb-wrapper">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ route('/') }}">Home</a></li>
+                                <li class="breadcrumb-item active">Voucher List</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content-header-right text-end col-md-7 mb-2 mb-sm-0">
+                <div class="form-group breadcrumb-right">
+                    <button class="btn btn-warning btn-sm mb-50 mb-sm-0" data-bs-target="#filter"
+                        data-bs-toggle="modal"><i data-feather="filter"></i> Filter</button>
+                    <a class="btn btn-primary btn-sm" href="{{ route('vouchers.create') }}"><i
+                            data-feather="plus-circle"></i> Add New</a>
+                </div>
+            </div>
+        </div>
+        <div class="content-body">
+
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            <section id="basic-datatable">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+
+
+                            <div class="table-responsive">
+                                <table class="datatables-basic table myrequesttablecbox ">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Date</th>
+                                            <th>Document Type</th>
+                                            <th>Series</th>
+                                            <th>Voucher Name</th>
+                                            <th>Voucher No.</th>
+                                            <th>Document</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($data as $item)
+                                            <tr>
+                                                <td>{{ $item->id }}</td>
+                                                <td class="fw-bolder text-dark">{{ date('d/m/Y', strtotime($item->date)) }}
+                                                </td>
+                                                <td>{{ $item->documents->name }}</td>
+                                                <td>{{ $item->series->book_code }}</td>
+                                                <td>{{ $item->voucher_name }}</td>
+                                                <td>{{ $item->voucher_no }}</td>
+                                                <td>
+                                                    @if($item->document)
+                                                        <a href="{{ asset('storage') . '/' . $item->document }}" target="_blank">View Doc</a>
+                                                    @endif
+                                                </td>
+                                                <td class="tableactionnew">
+                                                    <div class="dropdown">
+                                                        <button type="button"
+                                                            class="btn btn-sm dropdown-toggle hide-arrow py-0"
+                                                            data-bs-toggle="dropdown">
+                                                            <i data-feather="more-vertical"></i>
+                                                        </button>
+                                                        <div class="dropdown-menu dropdown-menu-end">
+
+                                                            <a class="dropdown-item"
+                                                                href="{{ route('vouchers.edit', ['voucher' => $item->id]) }}">
+                                                                <i data-feather="edit-3" class="me-50 fa fa-pencil"></i>
+                                                                <span>Edit</span>
+                                                            </a>
+                                                            @if (!$item['isApprove'])
+                                                                <a class="dropdown-item"
+                                                                    href="{{ route('approval.approve', ['voucher_id' => $item->id]) }}"
+                                                                    onclick="event.preventDefault(); document.getElementById('approve-form-{{ $item->id }}').submit();">
+                                                                    <i data-feather="tick" class="me-50"></i>
+                                                                    <span>Approve</span>
+                                                                </a>
+                                                                <form id="approve-form-{{ $item->id }}"
+                                                                    action="{{ route('approval.approve') }}" method="POST"
+                                                                    style="display: none;">
+                                                                    @csrf
+                                                                    <input type="hidden" name="voucher_id"
+                                                                        value="{{ $item->id }}">
+                                                                </form>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+
+
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- Modal to filter -->
+                <div class="modal modal-slide-in fade filterpopuplabel" id="filter">
+                    <div class="modal-dialog sidebar-sm">
+                        <form class="add-new-record modal-content pt-0">
+                            <div class="modal-header mb-1">
+                                <h5 class="modal-title" id="exampleModalLabel">Apply Filter</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close">×</button>
+                            </div>
+                            <div class="modal-body flex-grow-1">
+                                <div class="mb-1">
+                                    <label class="form-label" for="fp-range">Select Date</label>
+                                    <input type="text" id="fp-range" class="form-control flatpickr-range bg-white"
+                                        placeholder="YYYY-MM-DD to YYYY-MM-DD" />
+                                </div>
+                                <div class="mb-1">
+                                    <label class="form-label">Document Type</label>
+                                    <select class="form-select" id="book_type">
+                                        <option value="">Select</option>
+                                        @foreach ($bookTypes as $bookType)
+                                            <option>{{ $bookType->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                {{-- <div class="mb-1">
+                                    <label class="form-label">Group</label>
+                                    <select class="form-select">
+                                        <option>Select</option>
+                                    </select>
+                                </div>
+                                --}}
+
+                                <div class="mb-1">
+                                    <label class="form-label">Voucher Name</label>
+                                    <input class="form-control" type="text" name="name" id="name" />
+                                </div>
+
+                                <div class="mb-1">
+                                    <label class="form-label">Voucher No.</label>
+                                    <input class="form-control" type="text" name="number" id="number" />
+                                </div>
+
+                            </div>
+                            <div class="modal-footer justify-content-start">
+                                <button type="button"
+                                    class="btn btn-primary data-submit mr-1 apply-filter">Apply</button>
+                                <button type="reset" class="btn btn-outline-secondary"
+                                    data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+
+
+            </section>
+
+
+        </div>
+    </div>
+</div>
+<!-- END: Content-->
+@endsection
+
+@section('scripts')
+<script>
+	$(function () {
+		var dt_basic_table = $('.datatables-basic'),
+			dt_date_table = $('.dt-date'),
+			dt_complex_header_table = $('.dt-complex-header'),
+			dt_row_grouping_table = $('.dt-row-grouping'),
+			dt_multilingual_table = $('.dt-multilingual'),
+			assetPath = '../../../app-assets/';
+		if ($('body').attr('data-framework') === 'laravel') {
+			assetPath = $('body').attr('data-asset-path');
+		}
+
+		// DataTable with buttons
+		// --------------------------------------------------------------------
+
+		var keyword='';
+		if (dt_basic_table.length) {
+			var dt_basic = dt_basic_table.DataTable({
+				processing: true,
+                serverSide: true,
+				ajax: {
+					url: "{{ route('vouchers.index') }}",
+					data: function (d) {
+						d.date = $("#fp-range").val(),
+						d.group = $("#filter-group").val(),
+						d.ledger = $("#filter-ledger-name").val(),
+						d.status = $("#filter-status").val(),
+						d.keyword = keyword
+					}
+				},
+                columns: [
+                    { data: 'id', name: 'id' },
+                    { data: 'date', name: 'date' },
+                    { data: 'document_name', name: 'document_name' },
+                    { data: 'book_code', name: 'book_code' },
+                    { data: 'voucher_name', name: 'voucher_name' },
+                    { data: 'voucher_no', name: 'voucher_no' },
+                    { data: 'document', name: 'document' },
+                    { data: 'action', name: 'action', orderable: false, searchable: false }
+                ],
+                dom: 'Bfrtip',
+				order: [[0, 'desc']],
+				dom:
+					'<"d-flex justify-content-between align-items-center mx-2 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-3 withoutheadbuttin dt-action-buttons text-end"B><"col-sm-12 col-md-3"f>>t<"d-flex justify-content-between mx-2 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+				displayLength: 7,
+				lengthMenu: [7, 10, 25, 50, 75, 100],
+				buttons: [
+					{
+						extend: 'collection',
+						className: 'btn btn-outline-secondary dropdown-toggle',
+						text: feather.icons['share'].toSvg({ class: 'font-small-4 mr-50' }) + 'Export',
+						buttons: [
+							{
+								extend: 'print',
+								text: feather.icons['printer'].toSvg({ class: 'font-small-4 mr-50' }) + 'Print',
+								className: 'dropdown-item',
+								exportOptions: { columns: [3, 4, 5, 6, 7] }
+							},
+							{
+								extend: 'csv',
+								text: feather.icons['file-text'].toSvg({ class: 'font-small-4 mr-50' }) + 'Csv',
+								className: 'dropdown-item',
+								exportOptions: { columns: [3, 4, 5, 6, 7] }
+							},
+							{
+								extend: 'excel',
+								text: feather.icons['file'].toSvg({ class: 'font-small-4 mr-50' }) + 'Excel',
+								className: 'dropdown-item',
+								exportOptions: { columns: [3, 4, 5, 6, 7] }
+							},
+							{
+								extend: 'pdf',
+								text: feather.icons['clipboard'].toSvg({ class: 'font-small-4 mr-50' }) + 'Pdf',
+								className: 'dropdown-item',
+								exportOptions: { columns: [3, 4, 5, 6, 7] }
+							},
+							{
+								extend: 'copy',
+								text: feather.icons['copy'].toSvg({ class: 'font-small-4 mr-50' }) + 'Copy',
+								className: 'dropdown-item',
+								exportOptions: { columns: [3, 4, 5, 6, 7] }
+							}
+						],
+						init: function (api, node, config) {
+							$(node).removeClass('btn-secondary');
+							$(node).parent().removeClass('btn-group');
+							setTimeout(function () {
+								$(node).closest('.dt-buttons').removeClass('btn-group').addClass('d-inline-flex');
+							}, 50);
+						}
+					},
+
+				],
+				language: {
+					paginate: {
+						// remove previous & next text from pagination
+						previous: '&nbsp;',
+						next: '&nbsp;'
+					}
+				}
+			});
+			$('div.head-label').html('<h6 class="mb-0">Event List</h6>');
+		}
+
+		// Flat Date picker
+		if (dt_date_table.length) {
+			dt_date_table.flatpickr({
+				monthSelectorType: 'static',
+				dateFormat: 'm/d/Y'
+			});
+		}
+
+		// Filter record
+		$(".apply-filter").on("click", function () {
+			// Redraw the table
+			dt_basic.draw();
+
+			// Remove the custom filter function to avoid stacking filters
+			// $.fn.dataTable.ext.search.pop();
+
+			// Hide the modal
+			$(".modal").modal("hide");
+		})
+
+		// Delete Record
+		$('.datatables-basic tbody').on('click', '.delete-record', function () {
+			dt_basic.row($(this).parents('tr')).remove().draw();
+		});
+	});
+</script>
+@endsection

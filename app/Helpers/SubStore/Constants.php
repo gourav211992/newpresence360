@@ -1,0 +1,35 @@
+<?php
+namespace App\Helpers\SubStore;
+
+class Constants
+{
+    CONST MAIN_STORE_VALUE = "main";
+    CONST MAIN_STORE_LABEL = "Main";
+    CONST RECEIVING_STORE_VALUE = "receiving";
+    CONST RECEIVING_STORE_LABEL = "Receiving";
+    CONST REJECTED_ITEM_STORE_VALUE = "rejected";
+    CONST REJECTED_ITEM_STORE_LABEL = "Rejected";
+    CONST SCRAP_STORE_VALUE = "scrap";
+    CONST SCRAP_STORE_LABEL = "Scrap";
+    CONST DISPATCH_STORE_VALUE = "dispatch";
+    CONST DISPATCH_STORE_LABEL = "Dispatch";
+    CONST PACKING_STORE_VALUE = "packing";
+    CONST PACKING_STORE_LABEL = "Picked Staging";
+
+    CONST STOCK_STORE_TYPES = [
+        self::RECEIVING_STORE_VALUE => self::RECEIVING_STORE_LABEL,
+        self::MAIN_STORE_VALUE => self::MAIN_STORE_LABEL,
+        self::PACKING_STORE_VALUE => self::PACKING_STORE_LABEL,
+        self::DISPATCH_STORE_VALUE => self::DISPATCH_STORE_LABEL,
+        self::SCRAP_STORE_VALUE => self::SCRAP_STORE_LABEL,
+        self::REJECTED_ITEM_STORE_VALUE => self::REJECTED_ITEM_STORE_LABEL
+    ];
+    CONST STOCK_STORE_TYPES_VALUES = [
+        self::RECEIVING_STORE_VALUE,
+        self::MAIN_STORE_VALUE,
+        self::PACKING_STORE_VALUE,
+        self::DISPATCH_STORE_VALUE,
+        self::SCRAP_STORE_VALUE,
+        self::REJECTED_ITEM_STORE_VALUE
+    ];
+}

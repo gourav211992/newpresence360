@@ -1,0 +1,231 @@
+<?php
+
+namespace App\Helpers\TransactionReport;
+use App\Models\Legal;
+
+class plReportHelper
+{
+    const PL_TABLE_HEADERS = [
+        [
+            'name' => 'S. No',
+            'field' => 'DT_RowIndex',
+            'header_class' => '',
+            'column_class' => '',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Series',
+            'field' => 'book_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Pick List No',
+            'field' => 'document_number',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Pick List Date',
+            'field' => 'document_date',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'So NO',
+            'field' => 'so_no',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'So Date',
+            'field' => 'so_date',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Location',
+            'field' => 'store_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        // [
+        //     'name' => 'Store',
+        //     'field' => 'sub_store_name',
+        //     'header_class' => '',
+        //     'column_class' => 'no-wrap',
+        //     'header_style' => '',
+        //     'column_style' => '',
+        // ],
+        // [
+        //     'name' => 'Item type',
+        //     'field' => 'item_type',
+        //     'header_class' => '',
+        //     'column_class' => 'no-wrap',
+        //     'header_style' => '',
+        //     'column_style' => '',
+        // ],
+        [
+            'name' => 'Item',
+            'field' => 'item_name',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Code',
+            'field' => 'item_code',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Attributes',
+            'field' => 'item_attributes',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Order Qty',
+            'field' => 'order_qty',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Picked Qty',
+            'field' => 'picked_qty',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Rate',
+            'field' => 'rate',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Item Amount',
+            'field' => 'total_amount',
+            'header_class' => 'numeric-alignment',
+            'column_class' => 'text-end',
+            'header_style' => '',
+            'column_style' => '',
+        ],
+        [
+            'name' => 'Status',
+            'field' => 'status',
+            'header_class' => '',
+            'column_class' => 'no-wrap',
+            'header_style' => 'text-align:center',
+            'column_style' => '',
+        ],
+    ];
+    const PL_FILTERS = [
+        [
+            'colSpan' => 'auto',
+            'label' => 'Pl No',
+            'id' => 'doc_number_filter',
+            'requestName' => 'document_number',
+            'term' => 'report_pl_documents',
+            'value_key' => 'id',
+            'label_key' => 'document_number',
+            'type' => 'input_text'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'So No',
+            'id' => 'doc_number_filter',
+            'requestName' => 'so_document_number',
+            'term' => 'report_so_documents',
+            'value_key' => 'id',
+            'label_key' => 'document_number',
+            'type' => 'input_text'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Item',
+            'id' => 'item_filter',
+            'requestName' => 'item_id',
+            'term' => 'report_items',
+            'value_key' => 'id',
+            'label_key' => 'item_name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Status',
+            'id' => 'status',
+            'requestName' => 'status',
+            'term' => 'document_statuses',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete'
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Company',
+            'id' => 'company_filter',
+            'requestName' => 'company_id',
+            'term' => 'companies',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['organization_filter']
+
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Organization',
+            'id' => 'organization_filter',
+            'requestName' => 'organization_id',
+            'term' => 'organizations',
+            'value_key' => 'id',
+            'label_key' => 'name',
+            'type' => 'auto_complete',
+            'dependent' => ['location_filter']
+        ],
+        [
+            'colSpan' => 'auto',
+            'label' => 'Location',
+            'id' => 'store_name',
+            'requestName' => 'location_id',
+            'term' => 'location',
+            'value_key' => 'id',
+            'label_key' => 'store_name',
+            'type' => 'auto_complete'
+        ],
+        // [
+        //     'colSpan' => 'auto',
+        //     'label' => 'Store',
+        //     'id' => 'name',
+        //     'requestName' => 'store_id',
+        //     'term' => 'sub_store',
+        //     'value_key' => 'id',
+        //     'label_key' => 'name',
+        //     'type' => 'auto_complete',
+        // ],
+    ];
+}

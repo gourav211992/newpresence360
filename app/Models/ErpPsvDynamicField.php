@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class ErpPsvDynamicField extends Model
+{
+    use HasFactory;
+    protected $fillable = [
+        'header_id',
+        'dynamic_field_id',
+        'dynamic_field_detail_id',
+        'name',
+        'value'
+    ];
+
+    public function psv()
+    {
+        return $this -> belongsTo(ErpPsvHeader::class, 'header_id');
+    }
+}

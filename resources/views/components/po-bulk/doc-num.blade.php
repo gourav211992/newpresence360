@@ -1,0 +1,1 @@
+<input type="text" style="min-width: 100px" name="components[{{$rowCount}}][doc_number]" value="{{($row?->pi?->book_code ?? '') . ' - ' . ($row?->pi?->document_number ?? '')}}" class="form-control" readonly>
