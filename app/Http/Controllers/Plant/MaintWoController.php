@@ -2,9 +2,17 @@
 
 namespace App\Http\Controllers\Plant;
 
+use App\Helpers\ConstantHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Item;   
+use App\Models\ItemAttribute;
+use App\Models\ErpAttribute;
 use App\Helpers\Helper;
+use App\Helpers\InventoryHelper;
+use App\Models\PlantMaintWo;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class MaintWoController extends Controller
 {
@@ -24,16 +32,59 @@ class MaintWoController extends Controller
         $parentURL = "plant_maint-wo";
         $series = [];
         $servicesBooks = Helper::getAccessibleServicesFromMenuAlias($parentURL);
+        if (count($servicesBooks['services']) == 0) {
+            return redirect()->route('/');
+        }
+        $firstService = $servicesBooks['services'][0];
+        $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
+
+        $items = Item::where("type", "goods")
+        ->with(["uom", "category", "itemAttributes"])
+        ->get();
+            foreach ($items as $item) {
+                $itemId = $item->id;
+
+                if (isset($itemId)) {
+                    $itemAttributes = ItemAttribute::where('item_id', $itemId)->get();
+                } else {
+                    $itemAttributes = [];
+                }
+                $processedData = [];
+                foreach ($itemAttributes as $key => $attribute) {
+                    $attributesArray = array();
+                    $attribute_group_id = $attribute->attribute_group_id;
+                    $attribute->group_name = $attribute->group?->name;
+
+                    $attributeValueData = ErpAttribute::whereIn('id', $attribute->attribute_id)->select('id', 'value')->where('status', 'active')->get();
+
+                    $attribute->values_data = $attributeValueData;
+                    $attribute = $attribute->only(['id', 'group_name', 'values_data', 'attribute_group_id']);
+
+                    array_push($processedData, ['id' => $attribute['id'], 'group_name' => $attribute['group_name'], 'values_data' => $attributeValueData, 'attribute_group_id' => $attribute['attribute_group_id']]);
+                }
+                $processedData = collect($processedData);
+
+                $item->attributes = $processedData;
+            }
+            $items = $items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'item_code' => $item->item_code,
+                    'item_name' => $item->item_name,
+                    'uom_name' => optional($item->uom)->name,
+                    'uom_id' => optional($item->uom)->id,
+                    'item_attributes' => $item->attributes,
+                ];
+            });
+
+            $locations = InventoryHelper::getAccessibleLocations();
+          
         
         if (count($servicesBooks['services']) > 0) {
             $firstService = $servicesBooks['services'][0];
             $series = Helper::getBookSeriesNew($firstService->alias, $parentURL)->get();
-        }
-        
-        // Get locations for the dropdown
-        $locations = [];
-        
-        return view('plant.maint_wo.create', compact('series', 'locations'));
+        }  
+        return view('plant.maint_wo.create', compact('series', 'locations','items'));
     }
 
     /**
@@ -41,57 +92,70 @@ class MaintWoController extends Controller
      */
     public function store(Request $request)
     {
-        // Validate the request
-        $validated = $request->validate([
-            'book_id' => 'required|exists:books,id',
-            'document_number' => 'required|string|max:100|unique:erp_plant_maint_wo,document_number',
+        $request->validate([
+            'book_id' => 'required',
+            'document_number' => 'required|string|max:100',
             'document_date' => 'required|date',
-            'doc_prefix' => 'nullable|string',
-            'doc_suffix' => 'nullable|string',
-            'doc_no' => 'nullable|integer',
-            'document_status' => 'required|string|in:Draft,Submitted,Approved,Rejected,Completed',
-            
-            // Location and Equipment
-            'location_id' => 'required|exists:locations,id',
-            'equipment_id' => 'required|exists:equipments,id',
-            'defect_notification_id' => 'nullable|exists:defect_notifications,id',
-            
-            // Maintenance Details
-            'maintenance_type' => 'required|in:Preventive,Corrective,Predictive,Breakdown',
-            'priority' => 'required|in:Low,Medium,High,Critical',
-            'detailed_observations' => 'nullable|string',
-            'work_description' => 'nullable|string',
-            'scheduled_date' => 'required|date|after_or_equal:today',
-            'completion_date' => 'nullable|date|after_or_equal:document_date',
-            'doc_number_type' => 'required|string',
-            'doc_reset_pattern' => 'nullable|string',
-            'doc_prefix' => 'nullable|string',
-            'doc_suffix' => 'nullable|string',
-            'doc_no' => 'nullable|integer',
             'document_status' => 'required|string',
         ]);
 
-        try {
-            // Set the organization, group, and company from the authenticated user
-            $user = auth()->user();
-            $validated['organization_id'] = $user->organization_id;
-            $validated['group_id'] = $user->group_id;
-            $validated['company_id'] = $user->company_id;
-            $validated['created_by'] = $user->id;
-            $validated['document_status'] = $request->document_status ?? 'Draft';
-            $validated['approval_level'] = 1; // Initial approval level
-            $validated['revision_number'] = 0; // Initial revision
-
-           
-            $workOrder = \App\Models\PlantMaintWo::create($validated);
+        $documentNumber = $request->document_number;
+        $existingWo = PlantMaintWo::where('document_number', $documentNumber)->first();
+        if ($existingWo) {
             return redirect()
-                ->route('maint-wo.show', $workOrder->id)
-                ->with('success', 'Maintenance work order created successfully!');
-
-        } catch (\Exception $e) {
-            return back()
+                ->route('maint-wo.create')
                 ->withInput()
-                ->withErrors(['error' => 'Failed to create maintenance work order. ' . $e->getMessage()]);
+                ->withErrors("Work Order Number '{$documentNumber}' already exists.");
+        }
+
+        $user = Helper::getAuthenticatedUser();
+        $additionalData = [
+            'created_by' => $user->auth_user_id,
+            'type' => get_class($user),
+            'organization_id' => $user->organization->id,
+            'group_id' => $user->organization->group_id,
+            'company_id' => $user->organization->company_id,
+            'approval_level' => 1,
+            'revision_number' => 0,
+        ];
+
+        $data = array_merge($request->all(), $additionalData);
+
+        try {
+            DB::transaction(function () use ($data, $request) {
+                $workOrder = PlantMaintWo::create($data);
+
+                // Handle file upload
+                if ($request->hasFile('upload_file')) {
+                    $mediaFiles = $workOrder->uploadDocuments($request->file('upload_file'), 'maint_wo', false);
+                }
+
+                if ($workOrder->document_status != ConstantHelper::DRAFT) {
+                    $doc = Helper::approveDocument(
+                        $workOrder->book_id,
+                        $workOrder->id,
+                        $workOrder->revision_number,
+                        "",
+                        null,
+                        1,
+                        'submit',
+                        0,
+                        get_class($workOrder)
+                    );
+
+                    $workOrder->document_status = $doc['approvalStatus'] ?? $workOrder->document_status;
+                    $workOrder->save();
+                }
+            });
+
+            return redirect()
+                ->route("maint-wo.index")
+                ->with('success', 'Maintenance Work Order created!');
+        } catch (\Throwable $e) {
+            return redirect()
+                ->route("maint-wo.create")
+                ->withInput()
+                ->with('error', $e->getMessage());
         }
     }
 
