@@ -59,8 +59,4 @@ class PlantMaintWo extends Model
         return $this->belongsTo(Book::class, 'book_id');
     }
 
-    public function media()
-    {
-        return $this->morphMany(Media::class, 'model');
-    }
 }

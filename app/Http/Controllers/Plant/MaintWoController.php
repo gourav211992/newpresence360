@@ -92,12 +92,25 @@ class MaintWoController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        // Base validation rules
+        $rules = [
             'book_id' => 'required',
             'document_number' => 'required|string|max:100',
             'document_date' => 'required|date',
             'document_status' => 'required|string',
-        ]);
+        ];
+
+        // Add reference type validation only if not saving as draft
+        if ($request->document_status !== 'draft') {
+            $rules['reference_type'] = 'required|string';
+        }
+
+        // Add file validation if file is uploaded
+        if ($request->hasFile('upload_file')) {
+            $rules['upload_file'] = 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240'; // 10MB max
+        }
+
+        $request->validate($rules);
 
         $documentNumber = $request->document_number;
         $existingWo = PlantMaintWo::where('document_number', $documentNumber)->first();
@@ -119,6 +132,7 @@ class MaintWoController extends Controller
             'revision_number' => 0,
         ];
 
+
         $data = array_merge($request->all(), $additionalData);
 
         try {
@@ -127,7 +141,13 @@ class MaintWoController extends Controller
 
                 // Handle file upload
                 if ($request->hasFile('upload_file')) {
-                    $mediaFiles = $workOrder->uploadDocuments($request->file('upload_file'), 'maint_wo', false);
+                    $file = $request->file('upload_file');
+                    $originalName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = 'maint_wo_' . $workOrder->id . '_' . time() . '.' . $extension;
+                    $path = $file->storeAs('maint_wo_documents', $fileName, 'public');
+                    $workOrder->upload_file = $path;
+                    $workOrder->save();
                 }
 
                 if ($workOrder->document_status != ConstantHelper::DRAFT) {

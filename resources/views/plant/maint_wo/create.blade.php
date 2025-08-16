@@ -593,7 +593,7 @@
 														 <div class="col-md-4">
 															<div class="mb-1">
 																<label class="form-label">Upload Document</label>
-																<input type="file" class="form-control">
+																<input type="file" name="upload_file" class="form-control">
 															</div>
 														</div> 
 												 </div>
@@ -603,7 +603,7 @@
 													<div class="col-md-12">
 														<div class="mb-1">  
 															<label class="form-label">Final Remarks</label> 
-															<textarea type="text" rows="4" class="form-control" placeholder="Enter Remarks here..."></textarea> 
+															<textarea type="text" rows="4" class="form-control" name="final_remark" placeholder="Enter Remarks here..."></textarea> 
 
 														</div>
 													</div>
@@ -1470,14 +1470,7 @@
 
 
 		document.getElementById('save-draft-btn').addEventListener('click', function () {
-			// Validate reference type selection
-			let referenceType = $('#reference_type').val();
-			if (!referenceType) {
-				showToast('error', 'Please select a reference type (Equipment or Defect Notification)');
-				$('#reference_type_error').show();
-				return false;
-			}
-			
+			// No validation required for draft - save as is
 			$('.preloader').show();
 			document.getElementById('document_status').value = 'draft';
 			updateJsonData();
