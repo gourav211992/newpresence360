@@ -366,10 +366,19 @@ class InspectionController extends Controller
                 $inspectionItemArr = [];
                 foreach ($request->all()['components'] as $c_key => $component) {
                     $item = Item::find($component['item_id'] ?? null);
-                    $checklistValidation = self::validateInspectionCheckList($component);
-                    if ($checklistValidation) {
-                        \DB::rollBack();
-                        return $checklistValidation; // ❗ Stop further processing
+                    // Check Inspection
+                    $inspectionData = is_string($component['inspectionData'])
+                            ? json_decode($component['inspectionData'], true)
+                            : $component['inspectionData'];
+                    if($item && count($item->loadInspectionChecklists())) {
+                        $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
                     }
                     $so_id = null;
                     $inputQty = 0.00;
@@ -876,11 +885,19 @@ class InspectionController extends Controller
                         $reference_type = 'mrn';
                     }
 
-                    // Validate Inspection CheckList
-                    $checklistValidation = self::validateInspectionCheckList($component);
-                    if ($checklistValidation) {
-                        \DB::rollBack();
-                        return $checklistValidation; // ❗ Stop further processing
+                    // Check Inspection
+                    $inspectionData = is_string($component['inspectionData'])
+                            ? json_decode($component['inspectionData'], true)
+                            : $component['inspectionData'];
+                    if($item && count($item->loadInspectionChecklists())) {
+                        $inspectionValidator = InspectionHelper::validateInspectionCheckList($inspectionData, $item);
+                        if(!$inspectionValidator['status']) {
+                            DB::rollBack();
+                            return response() -> json([
+                                'message' => $inspectionValidator['message'],
+                                'error' => 'Inspection001'
+                            ], 422);
+                        }
                     }
 
                     // Validate Quantity Backend

@@ -17,71 +17,7 @@ class ErpTransportInvoice extends Model
 {
     use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait, DynamicFieldsTrait;
 
-    protected $fillable = [
-        'organization_id',
-        'group_id',
-        'company_id',
-        'book_id',
-        'invoice_required',
-        'book_code',
-        'document_type',
-        'document_number',
-        'document_date',
-        'revision_number',
-        'prefix',
-        'suffix',
-        'doc_no',
-        'revision_date',
-        'reference_number',
-        'gst_invoice_type',
-        'gst_status',
-        'store_id',
-        'store_code',
-        'sub_store_id',
-        'department_id',
-        'department_code',
-        'customer_id',
-        'customer_email',
-        'customer_phone_no',
-        'customer_gstin',
-        'customer_code',
-        'consignee_name',
-        'consignment_no',
-        'eway_bill_master_id',
-        'eway_bill_no',
-        'transportation_mode',
-        'transporter_name',
-        'vehicle_no',
-        'lr_number',
-        'billing_address',
-        'shipping_address',
-        'currency_id',
-        'currency_code',
-        'payment_term_id',
-        'payment_term_code',
-        'document_status',
-        'approval_level',
-        'remarks',
-        'org_currency_id',
-        'org_currency_code',
-        'org_currency_exg_rate',
-        'comp_currency_id',
-        'comp_currency_code',
-        'comp_currency_exg_rate',
-        'group_currency_id',
-        'group_currency_code',
-        'group_currency_exg_rate',
-        'total_item_value',
-        'total_discount_value',
-        'total_tax_value',
-        'total_expense_value',
-        'total_amount',
-        'book_terms',
-        'book_terms_id',
-        'customer_terms',
-        'customer_terms_id',
-    ];
-
+ protected $guarded = ['id'];
     protected $appends = [
         'taxable_amount',
         'expense_amount'
@@ -128,16 +64,16 @@ class ErpTransportInvoice extends Model
 
     public function items()
     {
-        return $this -> hasMany(ErpInvoiceItem::class, 'sale_invoice_id');
+        return $this -> hasMany(ErpTIInvoiceItem::class, 'ti_invoice_id');
     }
 
     public function expense_ted()
     {
-        return $this -> hasMany(ErpSaleInvoiceTed::class, 'sale_invoice_id') -> where('ted_level', 'H') -> where('ted_type', 'Expense');
+        return $this -> hasMany(ErpTransportInvoiceTed::class, 'transport_invoice_id') -> where('ted_level', 'H') -> where('ted_type', 'Expense');
     }
     public function discount_ted()
     {
-        return $this -> hasMany(ErpSaleInvoiceTed::class, 'sale_invoice_id') -> where('ted_level', 'H') -> where('ted_type', 'Discount');
+        return $this -> hasMany(ErpTransportInvoiceTed::class, 'transport_invoice_id') -> where('ted_level', 'H') -> where('ted_type', 'Discount');
     }
     public function billing_address_details()
     {
@@ -157,30 +93,6 @@ class ErpTransportInvoice extends Model
             return ConstantHelper::APPROVED;
         }
         return $this->attributes['document_status'];
-    }
-    public function item_locations()
-    {
-        return $this -> hasMany(ErpInvoiceItemLocation::class, 'sale_invoice_id');
-    }
-
-    // public function sale_order_id()
-    // {
-    //     $item = $this -> items() -> first();
-    //     $saleOrderId = $item -> sale_order_id;
-    //     return $saleOrderId;
-    // }
-
-    public function sale_order_items()
-    {
-        $item = $this -> items() -> first();
-        $saleOrderId = $item -> sale_order_id;
-        $saleOrderItems = collect([]);
-        if ($saleOrderId) {
-            $saleOrderItems = ErpSoItem::where('sale_order_id', $saleOrderId) -> with(['discount_ted', 'tax_ted']) -> with(['item' => function ($itemQuery) {
-                $itemQuery -> with(['specifications', 'alternateUoms.uom', 'uom', 'hsn']);
-            }]) -> get();
-        }
-        return $saleOrderItems;
     }
 
     public function getDisplayStatusAttribute()

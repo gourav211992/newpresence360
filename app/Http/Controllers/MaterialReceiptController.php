@@ -108,6 +108,7 @@ use App\Helpers\CommonHelper;
 use App\Lib\Services\WHM\WhmJob;
 use App\Models\Configuration;
 use App\Models\ErpMiItem;
+use App\Models\ErpMrnPaymentTerm;
 use App\Models\ErpSoItem;
 use App\Models\ErpSoJobWorkItem;
 use App\Models\ErpSubStoreParent;
@@ -117,6 +118,7 @@ use App\Models\JobOrder\JobOrderTed;
 use App\Models\JobOrder\JoItem;
 use App\Models\JobOrder\JoProduct;
 use App\Models\MrnJoItem;
+use App\Models\PaymentTermDetail;
 use App\Models\VendorLocation;
 use App\Models\PurchaseOrderTed;
 use P360\ClientConfig\Services\ClientConfigService;
@@ -388,6 +390,8 @@ class MaterialReceiptController extends Controller
             $mrn->ship_to = $request->shipping_id;
             $mrn->billing_address = $request->billing_address;
             $mrn->shipping_address = $request->shipping_address;
+            // $mrn->payment_term_id = $request->payment_term_id ?? null;
+            // $mrn->credit_days = $request->credit_days ?? null;
             $mrn->revision_number = 0;
             $document_number = $request->document_number ?? null;
             $numberPatternData = Helper::generateDocumentNumberNew($request -> book_id, $request -> document_date);
@@ -658,12 +662,26 @@ class MaterialReceiptController extends Controller
                         $billingAddress = $mrn->billingAddress;
 
                         $partyCountryId = isset($billingAddress) ? $billingAddress -> country_id : null;
-                        $partyStateId = isset($billingAddress) ? $billingAddress -> state_id : null;
-                        if($request->all()['reference_type'] !== ConstantHelper::SO_SERVICE_ALIAS)
-                        {
-                            $taxDetails = TaxHelper::calculateTax($mrnItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> hidden_country_id, $partyStateId ?? $request -> hidden_state_id, 'collection');
+                        $partyStateId = isset($billingAddress) ? $billingAddress->state_id : null;
+                        if ($request->get('reference_type') !== ConstantHelper::SO_SERVICE_ALIAS) {
+                            $hsnId = $mrnItem['hsn_id'];
+                            if ($request->get('reference_type') === ConstantHelper::JO_SERVICE_ALIAS) {
+                                $serviceItemId = JoProduct::where('id', $mrnItem['job_order_item_id'])->value('service_item_id');
+                                if ($serviceItemId) {
+                                    $hsnId = Item::where('id', $serviceItemId)->value('hsn_id') ?? $hsnId;
+                                }
+                            }
+                            // Calculate tax using the determined HSN ID
+                            $taxDetails = TaxHelper::calculateTax(
+                                $hsnId,
+                                $itemPrice,
+                                $companyCountryId,
+                                $companyStateId,
+                                $partyCountryId ?? $request->hidden_country_id,
+                                $partyStateId ?? $request->hidden_state_id,
+                                'collection'
+                            );
                         }
-
                         if (isset($taxDetails) && count($taxDetails) > 0) {
                             foreach ($taxDetails as $taxDetail) {
                                 $itemTax += ((double)$taxDetail['tax_percentage'] / 100 * $valueAfterHeaderDiscount);
@@ -1016,6 +1034,15 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
+            // if($mrn->reference_type)
+            // {
+            //     $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+            //     foreach ($mrnData as $detail) {
+            //         $refId = $detail->po_id ?? $detail->jo_id ?? null;
+            //         // Save MRN Payment Terms
+            //         self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $request->credit_days, $refId, $mrn->reference_type);
+            //     }
+            // }
 
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
@@ -1049,7 +1076,7 @@ class MaterialReceiptController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => 'Error occurred while creating the record.',
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage() . ' on line '. $e->getLine(),
             ], 500);
         }
     }
@@ -1355,6 +1382,8 @@ class MaterialReceiptController extends Controller
             $mrn->final_remarks = $request->remarks ?? '';
             $mrn->cost_center_id = $request->cost_center_id ?? '';
             $mrn->document_status = $request->document_status ?? ConstantHelper::DRAFT;
+            // $mrn->payment_term_id = $request->payment_term_id ?? null;
+            // $mrn->credit_days = $request->credit_days ?? null;
             $mrn->manual_entry_no = $request->manual_entry_no ?? '';
             if(@$request->reference_type)
             {
@@ -1470,20 +1499,20 @@ class MaterialReceiptController extends Controller
                     }
 
                     // Validate Batch
-                    $batchValidation = self::validateItemBatch($component);
-                    if ($batchValidation) {
-                        \DB::rollBack();
-                        return $batchValidation; // ❗ Stop further processing
-                    }
+                    // $batchValidation = self::validateItemBatch($component);
+                    // if ($batchValidation) {
+                    //     \DB::rollBack();
+                    //     return $batchValidation; // ❗ Stop further processing
+                    // }
 
-                    if(isset($item->is_asset) && ($item->is_asset == 1)){
-                        // Asset Validation
-                        $assetValidation = self::validateItemAsset($component);
-                        if ($assetValidation) {
-                            \DB::rollBack();
-                            return $assetValidation; // ❗ Stop further processing
-                        }
-                    }
+                    // if(isset($item->is_asset) && ($item->is_asset == 1)){
+                    //     // Asset Validation
+                    //     $assetValidation = self::validateItemAsset($component);
+                    //     if ($assetValidation) {
+                    //         \DB::rollBack();
+                    //         return $assetValidation; // ❗ Stop further processing
+                    //     }
+                    // }
 
                     $validateQty = self::validateQuantityBackend($component, $mrn->reference_type);
                     if ($validateQty['status'] === 'error') {
@@ -1652,9 +1681,24 @@ class MaterialReceiptController extends Controller
 
                         $partyCountryId = isset($billingAddress) ? $billingAddress -> country_id : null;
                         $partyStateId = isset($billingAddress) ? $billingAddress -> state_id : null;
-                        if(@$request->all()['reference_type'] !== ConstantHelper::SO_SERVICE_ALIAS)
-                        {
-                            $taxDetails = TaxHelper::calculateTax($mrnItem['hsn_id'], $itemPrice, $companyCountryId, $companyStateId, $partyCountryId ?? $request -> hidden_country_id, $partyStateId ?? $request -> hidden_state_id, 'collection');
+                        if (@$request->get('reference_type') !== ConstantHelper::SO_SERVICE_ALIAS) {
+                            $hsnId = $mrnItem['hsn_id'];
+                            if ($request->get('reference_type') === ConstantHelper::JO_SERVICE_ALIAS) {
+                                $serviceItemId = JoProduct::where('id', $mrnItem['job_order_item_id'])->value('service_item_id');
+                                if ($serviceItemId) {
+                                    $hsnId = Item::where('id', $serviceItemId)->value('hsn_id') ?? $hsnId;
+                                }
+                            }
+                            // Calculate tax using the determined HSN ID
+                            $taxDetails = TaxHelper::calculateTax(
+                                $hsnId,
+                                $itemPrice,
+                                $companyCountryId,
+                                $companyStateId,
+                                $partyCountryId ?? $request->hidden_country_id,
+                                $partyStateId ?? $request->hidden_state_id,
+                                'collection'
+                            );
                         }
 
                         if (isset($taxDetails) && count($taxDetails) > 0) {
@@ -1667,7 +1711,7 @@ class MaterialReceiptController extends Controller
                     }
                 }
                 unset($mrnItem);
-
+                $result = [];
                 foreach($mrnItemArr as $_key => $mrnItem) {
                     $_key = $_key + 1;
                     $component = $request->all()['components'][$_key] ?? [];
@@ -1675,9 +1719,22 @@ class MaterialReceiptController extends Controller
                     // $totalAfterTax =   $itemTotalValue - $itemTotalDiscount - $itemTotalHeaderDiscount + $totalTax;
                     // $itemHeaderExp =  $itemPriceAterBothDis / $totalAfterTax * $totalHeaderExpense;
                     $itemHeaderExp = floatval($mrnItem['expense_amount']);
+                    $existingMrnDetail = null;
+                    $isAllowed = true;
+
+                    if (!empty($component['mrn_detail_id'])) {
+                        $existingMrnDetail = MrnDetail::find($component['mrn_detail_id']);
+
+                        if ($existingMrnDetail && $component['order_qty'] == $existingMrnDetail->order_qty) {
+                            $isAllowed = false;
+                        }
+                    }
+
+                    $mrnDetail = $existingMrnDetail ?? new MrnDetail;
 
                     # Mrn Detail Save
-                    $mrnDetail = MrnDetail::find(@$component['mrn_detail_id'] ?? null) ?? new MrnDetail;
+                    // $mrnDetail = MrnDetail::find(@$component['mrn_detail_id'] ?? null) ?? new MrnDetail;
+                    if($mrnDetail)
 
                     $isNewItem = false;
                     if(isset($mrnDetail->item_id) && $mrnDetail->item_id) {
@@ -1724,6 +1781,11 @@ class MaterialReceiptController extends Controller
                     $mrnDetail->exchange_rate_to_group_currency = $mrnItem['group_currency_exchange_rate'];
                     $mrnDetail->remark = $mrnItem['remark'];
                     $mrnDetail->save();
+
+                    $result[] = [
+                        'id' => $mrnDetail->id,
+                        'is_allowed' => $isAllowed
+                    ];
 
                     #Save component Attr
                     if ($isNewItem && $mrnDetail->id) {
@@ -1791,60 +1853,60 @@ class MaterialReceiptController extends Controller
                     }
 
                     #Save asset details
-                    if (!empty($component['assetDetailData'])) {
-                        $assetDetails = is_string($component['assetDetailData'])
-                            ? json_decode($component['assetDetailData'], true)
-                            : $component['assetDetailData'];
+                    // if (!empty($component['assetDetailData'])) {
+                    //     $assetDetails = is_string($component['assetDetailData'])
+                    //         ? json_decode($component['assetDetailData'], true)
+                    //         : $component['assetDetailData'];
 
-                        if (is_array($assetDetails)) {
-                            $assetDetail = new MrnAssetDetail();
-                            $assetDetail->header_id = $mrn->id;
-                            $assetDetail->detail_id = $mrnDetail->id;
-                            $assetDetail->item_id = $mrnDetail->item_id;
-                            $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
-                            // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
-                            $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
-                            $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
-                            $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
-                            $assetDetail->model_no = $assetDetails['model_no'] ?? null;
-                            $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
-                            $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
-                            $assetDetail->save();
-                        } else {
-                            \DB::rollBack();
-                            return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
-                        }
-                    }
+                    //     if (is_array($assetDetails)) {
+                    //         $assetDetail = new MrnAssetDetail();
+                    //         $assetDetail->header_id = $mrn->id;
+                    //         $assetDetail->detail_id = $mrnDetail->id;
+                    //         $assetDetail->item_id = $mrnDetail->item_id;
+                    //         $assetDetail->asset_category_id = $assetDetails['asset_category_id'] ?? null;
+                    //         // $assetDetail->asset_code = $assetDetails['asset_code'] ?? null;
+                    //         $assetDetail->asset_name = $assetDetails['asset_name'] ?? null;
+                    //         $assetDetail->capitalization_date = $assetDetails['capitalization_date'] ? date('Y-m-d', strtotime($assetDetails['capitalization_date'])) : '';
+                    //         $assetDetail->brand_name = $assetDetails['brand_name'] ?? null;
+                    //         $assetDetail->model_no = $assetDetails['model_no'] ?? null;
+                    //         $assetDetail->estimated_life = $assetDetails['estimated_life'] ?? null;
+                    //         $assetDetail->salvage_value = $assetDetails['salvage_value'] ?? null;
+                    //         $assetDetail->save();
+                    //     } else {
+                    //         \DB::rollBack();
+                    //         return response()->json(['message' => 'Invalid JSON for asset details.'], 422);
+                    //     }
+                    // }
 
-                    #Save batch details
-                    if (!empty($component['batch_details'])) {
-                        $batchDetails = is_string($component['batch_details'])
-                            ? json_decode($component['batch_details'], true)
-                            : $component['batch_details'];
+                    // #Save batch details
+                    // if (!empty($component['batch_details'])) {
+                    //     $batchDetails = is_string($component['batch_details'])
+                    //         ? json_decode($component['batch_details'], true)
+                    //         : $component['batch_details'];
 
-                        if (is_array($batchDetails)) {
-                            foreach ($batchDetails as $i => $val) {
-                                $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
-                                $batchDetail = new MrnBatchDetail();
-                                $batchDetail->header_id = $mrn->id;
-                                $batchDetail->detail_id = $mrnDetail->id;
-                                $batchDetail->item_id = $mrnDetail->item_id;
-                                $batchDetail->batch_number = $batchNo;
-                                $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
-                                $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
-                                $batchDetail->quantity = $val['quantity'] ?? null;
-                                $batchDetail->save();
+                    //     if (is_array($batchDetails)) {
+                    //         foreach ($batchDetails as $i => $val) {
+                    //             $batchNo = ($item->is_batch_no == 1) ? $val['batch_number'] : strtoupper(@$lotNumber);
+                    //             $batchDetail = new MrnBatchDetail();
+                    //             $batchDetail->header_id = $mrn->id;
+                    //             $batchDetail->detail_id = $mrnDetail->id;
+                    //             $batchDetail->item_id = $mrnDetail->item_id;
+                    //             $batchDetail->batch_number = $batchNo;
+                    //             $batchDetail->manufacturing_year = $val['manufacturing_year'] ?? null;
+                    //             $batchDetail->expiry_date = $val['expiry_date'] ? date('Y-m-d', strtotime($val['expiry_date'])) : '';
+                    //             $batchDetail->quantity = $val['quantity'] ?? null;
+                    //             $batchDetail->save();
 
-                                // Convert to base uom
-                                $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
-                                $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
-                                $batchDetail->save();
-                            }
-                        } else {
-                            \DB::rollBack();
-                            return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
-                        }
-                    }
+                    //             // Convert to base uom
+                    //             $inventoryUomQuantity = ItemHelper::convertToBaseUom($mrnDetail->item_id, $mrnDetail->uom_id, $batchDetail->quantity);
+                    //             $batchDetail->inventory_uom_qty = $inventoryUomQuantity ?? null;
+                    //             $batchDetail->save();
+                    //         }
+                    //     } else {
+                    //         \DB::rollBack();
+                    //         return response()->json(['message' => 'Invalid JSON for batch details.'], 422);
+                    //     }
+                    // }
 
                     // #Save item packets
                     // $inventoryUomQuantity = 0.00;
@@ -2030,15 +2092,21 @@ class MaterialReceiptController extends Controller
             $mrn->save();
             if($mrn && $mrn->items->count() > 0) {
                 $invoiceLedger = self::maintainStockLedger($mrn);
-                if($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS)
-                {
-                    $errorStatus = self::checkRawMaterial($mrn);
-                    if ($errorStatus) {
-                        DB::rollBack();
-                        return response() -> json([
-                            'message' => $errorStatus,
-                            'error' => 'ERR05'
-                        ], 422);
+                if($mrn->reference_type == ConstantHelper::JO_SERVICE_ALIAS) {
+                    $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+                    foreach ($mrnData as $detail) {
+                        $match = collect($result)->firstWhere('id', $detail->id);
+                        if ($match && !$match['is_allowed']) {
+                            continue;
+                        }
+                        $errorStatus = self::checkRawMaterial($mrn);
+                        if ($errorStatus) {
+                            DB::rollBack();
+                            return response()->json([
+                                'message' => $errorStatus,
+                                'error' => 'ERR05'
+                            ], 422);
+                        }
                     }
                 }
                 if($invoiceLedger['status'] == 'error') {
@@ -2055,6 +2123,16 @@ class MaterialReceiptController extends Controller
                 $parentUrl = request() -> segments()[0];
                 $redirectUrl = url($parentUrl. '/' . $mrn->id . '/pdf');
             }
+            // if($mrn->reference_type)
+            // {
+            //     $mrnData = MrnDetail::where('mrn_header_id', $mrn->id)->get();
+            //     foreach ($mrnData as $detail) {
+            //         $refId = $detail->po_id ?? $detail->jo_id ?? null;
+            //         // Save MRN Payment Terms
+            //         self::saveMRNPaymentTerm($request->payment_term_id, $mrn->id, $request->credit_days, $refId, $mrn->reference_type);
+            //     }
+            // }
+
             TransactionUploadItem::where('created_by', $user->id)->forceDelete();
 
             $status = DynamicFieldHelper::saveDynamicFields(ErpMrnDynamicField::class, $mrn -> id, $request -> dynamic_field ?? []);
@@ -2669,7 +2747,7 @@ class MaterialReceiptController extends Controller
             ->where('addressable_id', $user->organization_id)
             ->where('addressable_type', Organization::class)
             ->first();
-        $mrn = MrnHeader::with(['vendor', 'currency', 'items', 'book', 'expenses'])
+        $mrn = MrnHeader::with(['vendor', 'currency', 'items', 'book', 'expenses', 'items.vendorAsn'])
             ->findOrFail($id);
 
 
@@ -2695,7 +2773,6 @@ class MaterialReceiptController extends Controller
         $sellerShippingAddress = $mrn->latestShippingAddress();
         $sellerBillingAddress = $mrn->latestBillingAddress();
         $buyerAddress = $mrn?->erpStore?->address;
-
         $pdf = PDF::loadView(
             'pdf.mrn',
             [
@@ -5321,8 +5398,9 @@ class MaterialReceiptController extends Controller
                     break;
                 }
 
-                $storeData = ErpSubStoreParent::where('sub_store_id', $subStore)->first();
-                $storeId = $storeData->store_id ?? null;
+                // $storeData = ErpSubStoreParent::where('sub_store_id', $subStore)->first();
+                // $storeId = $storeData->store_id ?? null;
+                $storeId = $vendorLocation->location_id ?? null;
 
                 if (!$storeId) {
                     $errorMessage = 'Main store not found for sub store.';
@@ -5815,5 +5893,34 @@ class MaterialReceiptController extends Controller
         ], 422);
     }
 
+    // payment function
+    // private function saveMrnPaymentTerm($paymentTermId, $mrnId, $creditDays, $refId, $refType){
+    //     $paymentTermDetails = PaymentTermDetail::where('payment_term_id',$paymentTermId)->get();
+
+    //     if ($paymentTermDetails->isEmpty()) {
+    //         return;
+    //     }
+
+    //     foreach($paymentTermDetails as $paymentTermDetail){
+    //         $mrnPaymentTerm = ErpMrnPaymentTerm::firstOrNew([
+    //             'mrn_header_id' => $mrnId,
+    //             'reference_id' => $refId,
+    //             'reference_type' => $refType,
+    //             'payment_term_id' => $paymentTermDetail->payment_term_id,
+    //             'payment_term_detail_id' => $paymentTermDetail->id,
+    //             'trigger_type' => $paymentTermDetail->trigger_type,
+    //         ]);
+
+    //         $mrnPaymentTerm->mrn_header_id = $mrnId;
+    //         $mrnPaymentTerm->reference_id = $refId;
+    //         $mrnPaymentTerm->reference_type = $refType;
+    //         $mrnPaymentTerm->payment_term_id = $paymentTermDetail->payment_term_id;
+    //         $mrnPaymentTerm->payment_term_detail_id = $paymentTermDetail->id;
+    //         $mrnPaymentTerm->credit_days = $paymentTermDetail->trigger_type == ConstantHelper::POST_DELIVERY ? ($creditDays ? $creditDays : 0) : 0;
+    //         $mrnPaymentTerm->percent = $paymentTermDetail->percent;
+    //         $mrnPaymentTerm->trigger_type = $paymentTermDetail->trigger_type;
+    //         $mrnPaymentTerm->save();
+    //     }
+    // }
 
 }

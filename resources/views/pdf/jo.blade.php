@@ -247,6 +247,11 @@
         </table>
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
+                <th colspan="9" style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">
+                    Product
+                </th>
+            </tr>
+            <tr>
                 <td
                     style="padding: 2px; border: 1px solid #000; border-top: none; background: #80808070; text-align: center; font-weight: bold;">
                     #
@@ -421,12 +426,12 @@
                                 }
                             }
                         }
-                                    $totalCGSTValue += $val->cgst_value['value'];
-                                    $totalSGSTValue += $val->sgst_value['value'];
-                                    $totalIGSTValue += $val->igst_value['value'];
-                                    $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
+                        $totalCGSTValue += $val->cgst_value['value'];
+                        $totalSGSTValue += $val->sgst_value['value'];
+                        $totalIGSTValue += $val->igst_value['value'];
+                        $totalTaxValue = $totalCGSTValue + $totalIGSTValue + $totalSGSTValue;
 
-                                @endphp
+                    @endphp
                     <td
                         style="vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none; border-left: none;  text-align: center; text-align: right;word-break: break-word;">
                         {{ number_format($val->cgst_value['value'] + $val->sgst_value['value'] + $val->igst_value['value'], 2) }}
@@ -438,6 +443,63 @@
                 </tr>
             @endforeach
         </table>
+        @if($po->joItems->isNotEmpty())
+        <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="0">
+            <thead>
+                <tr>
+                    <th colspan="6" style="padding: 6px; border: 1px solid #000; background: #80808070; text-align: center; font-weight: bold">
+                        Raw Materials
+                    </th>
+                </tr>
+                <tr style="background: #80808070;">
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">#</th>
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Item Code</th>
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Item Name</th>
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Attributes</th>
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">UOM</th>
+                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">QTY</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($po->joItems as $key => $val)
+                <tr>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
+                        {{ $key + 1 }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        {{ $val?->item?->item_code ?? '-' }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        {{ $val?->item?->item_name ?? '-' }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
+                        @if($val?->attributes->count())
+                            @php
+                                $html = '';
+                                foreach($val->attributes as $attribute) {
+                                    $attr = \App\Models\AttributeGroup::find($attribute->attribute_name);
+                                    $attrValue = \App\Models\Attribute::find($attribute->attribute_value);
+                                    if ($attr && $attrValue) {
+                                        $html .= ($html ? ', ' : '') . "$attr->name : $attrValue->value";
+                                    }
+                                }
+                            @endphp
+                            {{ $html }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
+                        {{ ucfirst($val?->uom?->name ?? '-') }}
+                    </td>
+                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
+                        {{ ucfirst($val?->qty ?? '-') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        @endif
         <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
             <tr>
                 <td style="padding: 3px; border: 1px solid #000; width: 60%; border-top: none; vertical-align: top;">
@@ -645,63 +707,6 @@
     </table>
     @endif -->
 
-        @if($po->joItems->isNotEmpty())
-        <table style="width: 100%; margin-bottom: 0px; border-collapse: collapse;" cellspacing="0" cellpadding="0">
-            <thead>
-                <tr>
-                    <th colspan="6" style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px 0 10px;">
-                        Raw Materials
-                    </th>
-                </tr>
-                <tr style="background: #80808070;">
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">#</th>
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Item Code</th>
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Item Name</th>
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">Attributes</th>
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">UOM</th>
-                    <th style="padding: 5px; border: 1px solid #000; text-align: center;">QTY</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($po->joItems as $key => $val)
-                <tr>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
-                        {{ $key + 1 }}
-                    </td>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
-                        {{ $val?->item?->item_code ?? '-' }}
-                    </td>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
-                        {{ $val?->item?->item_name ?? '-' }}
-                    </td>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000;">
-                        @if($val?->attributes->count())
-                            @php
-                                $html = '';
-                                foreach($val->attributes as $attribute) {
-                                    $attr = \App\Models\AttributeGroup::find($attribute->attribute_name);
-                                    $attrValue = \App\Models\Attribute::find($attribute->attribute_value);
-                                    if ($attr && $attrValue) {
-                                        $html .= ($html ? ', ' : '') . "$attr->name : $attrValue->value";
-                                    }
-                                }
-                            @endphp
-                            {{ $html }}
-                        @else
-                            -
-                        @endif
-                    </td>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
-                        {{ ucfirst($val?->uom?->name ?? '-') }}
-                    </td>
-                    <td style="vertical-align: top; padding: 5px; border: 1px solid #000; text-align: center;">
-                        {{ ucfirst($val?->qty ?? '-') }}
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-        @endif
     </div>
 </body>
 </html>

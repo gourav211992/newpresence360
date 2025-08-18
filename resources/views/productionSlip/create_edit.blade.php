@@ -40,6 +40,7 @@
     <!-- BEGIN: Content-->
     <form method="POST" data-module="pslip" data-completionFunction = "disableHeader" class="ajax-input-form sales_module_form production_slip" action = "{{route('production.slip.store')}}" data-redirect="{{ $redirect_url }}" id = "sale_invoice_form" enctype='multipart/form-data'>
     <input type="hidden" name="station_wise_consumption" value="" id="station_wise_consumption">
+    <input type="hidden" name="inspection_required_key" value="" id="inspection_required_key">
     @if(isset($slip))
         <input type="hidden" name="id" value="{{ $slip->id ?? '' }}">
     @endif
@@ -329,7 +330,7 @@
                                                     <label class="form-label">Type </label>
                                                     <input type="text" @if(isset($slip)) value="{{$slip->is_last_station == true ? 'Final' : 'WIP'}}" @endif id="mo_type_name" placeholder="Select" class="form-control mw-100 ledgerselecct disabled-input" name="mo_type_name" />
                                                 </div>
-                                            </div> 
+                                            </div>
                                             <div class="col {{ isset($slip) && optional($slip?->mo?->station)->name ? '' : 'd-none' }}">
                                                 <div class="mb-1">
                                                     <label class="form-label">Station </label>
@@ -1219,6 +1220,8 @@
                     height: 14
                 });
             }
+            // Hide Inspection
+            $('.inspectionChecklistBtn').hide();
         })
 
         $('#issues').on('change', function() {
@@ -1317,7 +1320,7 @@
             }
 
             if (dataKeysForApi.length !== secondDropdowns.length) {
-                console.log("Dropdown function error");
+                // console.log("Dropdown function error");
                 return;
             }
 
@@ -1445,7 +1448,7 @@
                 document.getElementById('current_shipping_address').textContent = "";
                 document.getElementById('customer_id_input').value = "";
                 document.getElementById('customer_code_input').value = "";
-                console.log("Error : ", error);
+                // console.log("Error : ", error);
                 return;
             })
         }
@@ -1545,7 +1548,7 @@
         function updateQty(element, index) {
             const totalProduced = parseFloat($("#item_qty_" + index).val()) || 0;
             // console.log(element, totalProduced);
-            
+
             $("#consumption_qty_" + index).val(totalProduced);
 
             let acceptedQty = parseFloat($("#item_accepted_qty_" + index).val()) || 0;
@@ -2045,7 +2048,7 @@
                         });
                         return Promise.all(shelfPromises);
                     }).then(() => {
-                        console.log("All AJAX calls completed. Now executing final task.");
+                        // console.log("All AJAX calls completed. Now executing final task.");
                         document.getElementById('data_stores_to_' + itemIndex)?.setAttribute('data-stores', encodeURIComponent(JSON.stringify(itemLocationsTo)))
                     }).catch(error => {
                         console.error("An error occurred:", error);
@@ -2200,6 +2203,9 @@
         var selectedRefFromServiceOption = paramData.reference_from_service;
         var selectedBackDateOption = paramData.back_date_allowed;
         var selectedFutureDateOption = paramData.future_date_allowed;
+        const inspectionRequired	 = paramData.inspection_required;
+        $('#inspection_required_key').val(inspectionRequired);
+
         var invoiceToFollowParam = paramData?.invoice_to_follow;
         var issueTypeParameters = paramData?.issue_type;
         if (selectedRefFromServiceOption) {
@@ -2237,6 +2243,11 @@
                     backDateAllow = false;
                 }
             }
+        }
+
+        // Handle Inspection Show/Hide
+        if (inspectionRequired.includes("yes") || inspectionRequired =='yes') {
+            $('.inspectionChecklistBtn').show();
         }
 
         //Future Date Allow
@@ -2471,7 +2482,7 @@ $(document).on('change', '#revisionNumber', (e) => {
     let actionUrl = location.pathname + '?type=' + "{{request() -> type ?? 'si'}}" + '&revisionNumber=' + e.target.value;
     $("#revisionNumber").val(currentRevNo);
     window.open(actionUrl, '_blank'); // Opens in a new tab
-    console.log(actionUrl);
+    // console.log(actionUrl);
 });
 
 $(document).on('submit', '.ajax-submit-2', function (e) {
@@ -2550,7 +2561,7 @@ function viewModeScript(disable = true)
     const currentOrder = @json(isset($slip) ? $slip : null);
     const editOrder = "{{( isset($buttons) && ($buttons['draft'] || $buttons['submit'])) ? false : true}}";
     const revNoQuery = "{{ isset(request() -> revisionNumber) ? true : false }}";
-    
+
     if ((editOrder || revNoQuery) && currentOrder) {
         document.querySelectorAll('input, textarea, select').forEach(element => {
             if (element.id !== 'revisionNumber' && element.type !== 'hidden' && !element.classList.contains('cannot_disable')) {
@@ -3091,7 +3102,7 @@ document.addEventListener('input', function (e) {
         renderIcons();
     }
 
-    function getTotalQty(itemIndex) 
+    function getTotalQty(itemIndex)
     {
         let a = Number(document.getElementById('item_accepted_qty_' + itemIndex)?.value) || 0;
         let b = Number(document.getElementById('item_sub_prime_qty_' + itemIndex)?.value) || 0;
@@ -3458,6 +3469,14 @@ function openHeaderPullModal(type = null)
 
     function processOrder()
     {
+        // Handle Inspection Show/Hide
+        let inspectionRequired = $('#inspection_required_key').val();
+        // console.log('inspectionRequired2', inspectionRequired);
+
+        if (inspectionRequired.includes("yes") || inspectionRequired =='yes') {
+            $('.inspectionChecklistBtn').show();
+        }
+
         const stationWise = getStationWiseConsBySubStoreId();
         const allCheckBoxes = document.getElementsByClassName('po_checkbox');
         const docType = $("#service_id_input").val();
@@ -3480,7 +3499,8 @@ function openHeaderPullModal(type = null)
                     station_wise_consumption : stationWise,
                     docIds: JSON.stringify(docId),
                     doc_type: 'mo',
-                    store_id : $("#store_id_input").val()
+                    store_id : $("#store_id_input").val(),
+                    inspection_required : inspectionRequired,
                 },
                 success: function(data) {
                     // Mo detail fill
@@ -3566,7 +3586,7 @@ function openHeaderPullModal(type = null)
                         $('#station_name').closest('.mb-1').closest('.col').addClass('d-none');
 
                     }
-                    console.error('Error fetching customer data:', xhr.responseText);
+                    // console.error('Error fetching customer data:', xhr.responseText);
                 }
             });
         } else {
@@ -3866,7 +3886,7 @@ $(document).on("click", "#raw-materials .item_header_rows", (e) => {
 $(document).on("keyup",
  "#production-items input[name*='item_accepted_qty'] , #production-items input[name*='item_sub_prime_qty']",
   (e) => {
-    console.log(e.target.name);
+    // console.log(e.target.name);
     let qty = Number(e.target.value) || 0;
     let $tr = $(e.target).closest('tr');
     let trId = $tr.attr('id') || '';

@@ -798,9 +798,13 @@ function setTableCalculation(edit = null) {
                     let eachExpTypePrice = 0;
                     if (expDiscPerc) {
                         eachExpTypePrice = (baseAmount * expDiscPerc) / 100;
-                    }
-                    else {
-                        eachExpTypePrice = Number($(`[name="exp_summary[${index + 1}][e_amnt]"]`).val()) || 0;
+                    } else {
+                        eachExpTypePrice =
+                            Number(
+                                $(
+                                    `[name="exp_summary[${index + 1}][e_amnt]"]`
+                                ).val()
+                            ) || 0;
                     }
 
                     expAmounts[idx] = eachExpTypePrice; // store individually for later accumulation
@@ -1929,6 +1933,12 @@ if (selectedStoreId && selectedSubStoreId && isSubStoreRequired) {
 // 4. Get Sub Stores
 function getSubStores(storeLocationId, selectedSubStoreId = null) {
     const storeId = storeLocationId;
+    let inspectionRequired = $(".inspection_required").val();
+    let sub_type = "main";
+
+    if (inspectionRequired && inspectionRequired == "yes") {
+        sub_type = "receiving";
+    }
 
     $.ajax({
         url: "/sub-stores/store-wise",
@@ -1936,7 +1946,7 @@ function getSubStores(storeLocationId, selectedSubStoreId = null) {
         dataType: "json",
         data: {
             store_id: storeId,
-            sub_type: "main",
+            sub_type: sub_type,
         },
         success: function (response) {
             if (

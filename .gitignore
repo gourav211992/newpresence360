@@ -32,6 +32,7 @@ Homestead.yaml
 
 # Composer dependencies
 composer.lock
+composer.json
 auth.json
 
 # npm/Yarn error files
@@ -71,3 +72,12 @@ Thumbs.db
 
 # Ignore Laravel Telescope entries (if you use it)
 /telescope
+.env
+
+# Do not track Composer files
+composer.json
+composer.lock
+
+# Ignore Composer files
+composer.json
+composer.lock

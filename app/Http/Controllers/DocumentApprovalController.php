@@ -17,7 +17,6 @@ use App\Models\PackingList;
 use App\Models\Vendor;
 use App\Models\Item;
 use App\Models\Customer;
-use App\Services\MaterialIssue\MaterialIssue;
 use DB;
 use App\Helpers\Helper;
 use App\Helpers\ItemHelper;
@@ -34,6 +33,7 @@ use App\Models\ExpenseHeader;
 use App\Models\ErpSaleReturn;
 use App\Models\ErpInvoiceItem;
 use App\Models\ErpSoItem;
+use App\Models\ErpTransportInvoice;
 use App\Models\GateEntryHeader;
 use App\Models\MrnHeader;
 use App\Models\PbHeader;
@@ -284,6 +284,49 @@ class DocumentApprovalController extends Controller
             DB::rollBack();
             return response()->json([
                 'message' => "Error occurred while $actionType Sale Order document.",
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function transportInvoice(Request $request)
+    {
+        $request->validate([
+            'remarks' => 'nullable|string|max:255',
+            'attachment' => 'nullable'
+        ]);
+        DB::beginTransaction();
+        try {
+            $transportInvoice = ErpTransportInvoice::find($request->id);
+            $bookId = $transportInvoice->book_id;
+            $docId = $transportInvoice->id;
+            $docValue = $transportInvoice->total_amount;
+            $remarks = $request->remarks;
+            $attachments = $request->file('attachments');
+            $currentLevel = $transportInvoice->approval_level;
+            $revisionNumber = $transportInvoice->revision_number ?? 0;
+            $actionType = $request->action_type; // Approve or reject
+            $modelName = get_class($transportInvoice);
+            $approveDocument = Helper::approveDocument($bookId, $docId, $revisionNumber, $remarks, $attachments, $currentLevel, $actionType, $docValue, $modelName);
+            if ($approveDocument['message']) {
+                DB::rollBack();
+                return response()->json([
+                    'message' => $approveDocument['message'],
+                    $approveDocument['message'],
+                ], 500);
+            }
+            $transportInvoice->approval_level = $approveDocument['nextLevel'];
+            $transportInvoice->document_status = $approveDocument['approvalStatus'];
+            $transportInvoice->save();
+
+            DB::commit();
+            return response()->json([
+                'message' => "Transport Invoice $actionType successfully!",
+                'data' => $transportInvoice,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => "Error occurred while $actionType Transport Invoice document.",
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -861,7 +904,6 @@ class DocumentApprovalController extends Controller
         ]);
         DB::beginTransaction();
         try {
-            $authUser = helper::getAuthenticatedUser();
             $doc = ErpMaterialIssueHeader::find($request->id);
             $bookId = $doc->book_id;
             $docId = $doc->id;
@@ -883,8 +925,6 @@ class DocumentApprovalController extends Controller
             $doc->approval_level = $approveDocument['nextLevel'];
             $doc->document_status = $approveDocument['approvalStatus'];
             $doc->save();
-            $miService = new MaterialIssue();
-            $miService -> createWhmJob($doc, $authUser);
 
             DB::commit();
             return response()->json([

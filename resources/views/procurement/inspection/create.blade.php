@@ -564,11 +564,18 @@
     <script type="text/javascript" src="{{asset('assets/js/modules/common-datatable.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/common-attr-ui.js')}}"></script>
     <script type="text/javascript" src="{{asset('assets/js/modules/inspection.js')}}"></script>
+    <script type="text/javascript" src="{{asset('assets/js/modules/inspection-checklist.js')}}"></script>
     <script type="text/javascript" src="{{asset('app-assets/js/file-uploader.js')}}"></script>
     <script>
         window.onload = function () {
             localStorage.removeItem('selectedMrnIds');
             currentProcessType = null;
+            if (feather) {
+                feather.replace({
+                    width: 14,
+                    height: 14
+                });
+            }
         };
         let currentProcessType = null;
         let tableRowCount = 0;
@@ -1839,6 +1846,13 @@
                     $("select[name='currency_id'], select[name='payment_term_id']").prop('disabled', true);
                     $("#vendor_name").prop('readonly', true);
                     $(".editAddressBtn").addClass('d-none');
+
+                    if (feather) {
+                        feather.replace({
+                            width: 14,
+                            height: 14
+                        });
+                    }
 
                     // Supplier details
 

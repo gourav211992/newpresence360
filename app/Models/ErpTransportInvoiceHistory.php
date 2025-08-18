@@ -10,9 +10,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+use App\Traits\DynamicFieldsTrait;
+use App\Traits\UserStampTrait;
+
+
 class ErpTransportInvoiceHistory extends Model
 {
-    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait;
+    use HasFactory, SoftDeletes, DefaultGroupCompanyOrg, FileUploadTrait, DateFormatTrait, UserStampTrait, DynamicFieldsTrait;
+
 
     protected $table = 'erp_transport_invoices_history';
 
@@ -38,9 +43,16 @@ class ErpTransportInvoiceHistory extends Model
 
     public function items()
     {
-        return $this -> hasMany(ErpInvoiceItemHistory::class, 'transport_invoice_id');
+        return $this -> hasMany(ErpTIInvoiceItemHistory::class, 'ti_invoice_id');
     }
-
+     public function location_address_details()
+    {
+        return $this->morphOne(ErpAddress::class, 'addressable', 'addressable_type', 'addressable_id') -> where('type',  'location');
+    }
+public function irnDetail()
+    {
+        return $this->morphOne(ErpEinvoice::class, 'morphable', 'morphable_type', 'morphable_id');
+    }
     public function expense_ted()
     {
         return $this -> hasMany(ErpTransportInvoiceTedHistory::class, 'transport_invoice_id') -> where('ted_level', 'H') -> where('ted_type', 'Expense');
@@ -102,5 +114,9 @@ class ErpTransportInvoiceHistory extends Model
     {
         $status = str_replace('_', ' ', $this->document_status);
         return ucwords($status);
+    }
+    public function dynamic_fields()
+    {
+        return $this -> hasMany(ErpSiDynamicField::class, 'header_id');
     }
 }

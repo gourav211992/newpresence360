@@ -381,6 +381,12 @@ class PoController extends Controller
     {
         DB::beginTransaction();
         try {
+            if ($request->has('tnc') && strlen(strip_tags($request->tnc)) > 250) {
+                return response()->json([
+                    'message' => 'The terms and conditions cannnot be greater than 250 characters.',
+                    'error' => 'tnc exceeds maximum length',
+                ], 422);
+            }
             $type = $this->type;
             $parameters = [];
             $response = BookHelper::fetchBookDocNoAndParameters($request->book_id, $request->document_date);
@@ -413,6 +419,7 @@ class PoController extends Controller
             $po->book_code = $request->book_code;
             $po->procurement_type = $request->procurement_type;
             $document_number = $request->document_number ?? null;
+            $po -> tnc = $request->tnc ?? null;
             $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';
             $po->po_type = $poTypeParam;
 
@@ -970,6 +977,12 @@ class PoController extends Controller
     # Purchase Order store
     public function update(PoRequest $request, $type, $id)
     {
+        if ($request->has('tnc') && strlen(strip_tags($request->tnc)) > 250) {
+            return response()->json([
+                'message' => 'The terms and conditions cannnot be greater than 250 characters.',
+                'error' => 'terms_data exceeds maximum length',
+            ], 422);
+        }
         $po = PurchaseOrder::find($id);
         $user = Helper::getAuthenticatedUser();
         $organization = Organization::where('id', $user->organization_id)->first();
@@ -1090,6 +1103,7 @@ class PoController extends Controller
             $po->department_id = $request->department_id;
             $po->procurement_type = $request->procurement_type;
             $po->store_id = $request->store_id;
+            $po->tnc = $request->tnc ?? null;
             $po->document_date = $request->document_date ?? $po->document_date;
             $po->credit_days = $request->credit_days;
             $poTypeParam = $parameters['goods_or_services'][0] ?? 'Goods';

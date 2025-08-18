@@ -655,9 +655,9 @@ class InventoryHelper
                     $stockLedger->vendor_code = @$documentHeader->vendor_code;
 
                     // Item Location Data
-                    $stockLedger->store_id = $documentDetail->store_id ?? null;
-                    $stockLedger->sub_store_id = $documentDetail->sub_store_id ?? null;
-                    $stockLedger->store = @$documentDetail->erpStore->store_code;
+                    $stockLedger->store_id = $documentHeader->store_id ?? null;
+                    $stockLedger->sub_store_id = $documentHeader->sub_store_id ?? null;
+                    $stockLedger->store = @$documentHeader->erpStore->store_code;
                     $stockLedger->original_receipt_date = Carbon::parse($documentHeader->document_date . ' ' . now()->format('H:i:s'));
 
                     $stockLedger->lot_number = $documentItemLocation?->batch_number ?? null;
@@ -679,13 +679,13 @@ class InventoryHelper
                     // $costPerUnit = $totalItemCost/$qty;
 
                     // $stockLedger->stock_type=@$documentDetail->stock_type;
-                    $stockLedger->wip_station_id=@$documentDetail->wip_station_id;
+                    $stockLedger->wip_station_id=null;
 
                     // Item Location Data
-                    $stockLedger->store_id = $documentDetail->store_id ?? null;
-                    $stockLedger->store = @$documentDetail->erpStore->store_code;
-                    $stockLedger->sub_store_id = $documentDetail->sub_store_id ?? null;
-                    $stockLedger->sub_store = @$documentDetail->subStore->code;
+                    $stockLedger->store_id = $documentItemLocation->store_id ?? null;
+                    $stockLedger->store = @$documentItemLocation->erpStore->store_code;
+                    $stockLedger->sub_store_id = $documentItemLocation->sub_store_id ?? null;
+                    $stockLedger->sub_store = @$documentItemLocation->subStore->code;
                 }
             }
 

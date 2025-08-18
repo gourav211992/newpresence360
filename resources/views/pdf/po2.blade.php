@@ -302,10 +302,56 @@
                 $totalIGSTValue = 0.00;
             @endphp
             @foreach($po->po_items as $key => $val)
+                @php
+                    $totalTaxPercentage = 0.00;
+                    if ($val->item && $val->item->hsn) {
+                        $hsnCode = $val->item->hsn->code;
+                        $taxPercentage = 0.00;
+                        $teds = $val->taxes;
+                        foreach ($teds as $ted) {
+                            $taxPercentage += $ted->ted_perc;
+                            $taxType = $ted->ted_name;
+                            $taxableValue = $ted -> assessment_amount;
+                            $taxTypeAmount = ($taxableValue * $ted->ted_perc) / 100;
+
+                            if (!isset($hsnGroups[$hsnCode])) {
+                                $hsnGroups[$hsnCode] = [
+                                    'hsn_code' => $hsnCode,
+                                    'taxable_rate' => $taxPercentage,
+                                    'taxable_value' => 0.00,
+                                    'tax_amount' => 0.00,
+                                    'tax_group' => $ted->ted_group_code,
+                                ];
+                            }
+
+                            // Initialize tax type amount if not set
+                            if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
+                                $hsnGroups[$hsnCode][$taxType   . '_amount'] = 0.00;
+                            }
+                            $totalTaxPercentage += $taxPercentage;
+                            $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                            $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                        }
+                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                        $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;
+
+                    }
+
+                    // Now, calculate total tax_amount for each HSN group
+                    foreach ($hsnGroups as &$group) {
+                        $taxAmount = 0.00;
+                        foreach ($group as $ke => $value) {
+                            if (str_ends_with($ke, '_amount') && $ke !== 'tax_amount') {
+                                $taxAmount += (float)$value;
+                            }
+                        }
+                        $group['tax_amount'] = $taxAmount;
+                    }
+                @endphp
                 <tr>
                     <td
                         style=" vertical-align: top; padding:10px 3px; border: 1px solid #000; border-top: none;  text-align: center;">
-                        {{ $key + 1 }}</td>
+                        {{ (int)$key + 1 }}</td>
                     <td style="vertical-align: top; padding:10px 3px; text-align:left; border: 1px solid #000; border-top: none; border-left: none; word-break: break-word;">
                         <b> {{ @$val?->item?->item_name }}</b><br/>
 
@@ -526,10 +572,8 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
-                        </tr>
-                        <tr>
                             <td>
-                                <div style="min-height: 80px;">
+                                <div style="min-height: 8px;">
                                     {{$po->remarks}}
                                 </div>
                             </td>
@@ -537,6 +581,53 @@
                     </table>
                 </td>
             </tr>
+
+            <tr>
+                <td colspan="2"
+                    style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;"> <b>HSN / SAC</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Tax Rate</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Taxable Amount</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>CGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>SGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
+                        </tr>
+                        @foreach($hsnGroups as $hsnCode => $hsnData)
+                            <tr>
+                                <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format($hsnData['taxable_rate'], 2) }} %</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['taxable_value'], 2) }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['tax_amount'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </td>
+            </tr>
+            @if($po?->tnc)
+            <tr>
+                <td colspan="2"
+                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; font-size: 13px;"> <b>Terms and Conditions :</b></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="min-height: 80px;">
+                                    {!! $po?->tnc !!}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            @endif
             <tr>
                 <td
                     style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; border-right: none; vertical-align: top;">
@@ -572,24 +663,7 @@
                 </td>
             </tr>
         </table>
-        <div style="page-break-before:always"></div>
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
-            cellpadding="0">
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    TERMS AND CONDITIONS FOR "PURCHASE ORDER-GOODS"</td>
-            </tr>
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    @foreach($po->termsConditions as $poTerm)
-                       {{$loop->iteration}} > {!! $poTerm->termAndCondition?->term_detail !!}
-                    @endforeach
-                </td>
-            </tr>
-        </table>
-
+        
     </div>
 </body>
 

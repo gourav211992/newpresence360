@@ -4,6 +4,7 @@ namespace App\Models\WHM;
 
 use App\Models\Attribute;
 use App\Models\Employee;
+use App\Models\ErpSubStore;
 use App\Models\ErpVendor;
 use App\Models\Item;
 use App\Models\User;
@@ -80,6 +81,11 @@ class ErpItemUniqueCode extends Model
     public function storagePoint()
     {
         return $this->belongsTo(ErpWhDetail::class, 'storage_point_id');
+    }
+
+    public function subStore()
+    {
+        return $this->belongsTo(ErpSubStore::class, 'sub_store_id');
     }
 
     public function getItemAttributesAttribute($value)

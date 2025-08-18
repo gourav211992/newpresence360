@@ -175,7 +175,7 @@ class ErpPSVController extends Controller
                     return strval($row->revision_number);
                 })
                 ->addColumn('items_count', function ($row) {
-                    return $row->items->count();
+                    return $row?->items?->count() ?? '0';
                 })
                 ->rawColumns(['document_status'])
                 ->make(true);
@@ -489,11 +489,15 @@ class ErpPSVController extends Controller
                 $data = [];
             }
             if (empty($data)) {
-                DB::rollBack();
-                return response()->json([
-                    'message' => 'Please select Items',
-                    'error' => "",
-                ], 422);
+                if (!$request -> generated == "1")
+                {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Please select Items',
+                        'error' => "",
+                    ], 422);
+
+                }
             }
             foreach ($data as $itemKey => $items) {
                 $uom = Unit::find($items['uom_id'] ?? ($request->uom_id[$itemKey] ?? null));

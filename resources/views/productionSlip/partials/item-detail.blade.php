@@ -6,7 +6,7 @@
 {{-- <tr>
     <td class="poprod-decpt">
         <span class="poitemtxt mw-100"><strong>Name</strong>: {{$item?->item_name ?? 'NA'}}</span>
-    </td> 
+    </td>
 </tr> --}}
 <tr>
     <td class="poprod-decpt">
@@ -15,7 +15,7 @@
         <span class="badge rounded-pill badge-light-primary"><strong>HSN</strong>: {{$item?->hsn?->code}}</span>
     </td>
 </tr>
-@if($specifications?->count())
+@if(is_array($specifications))
 <tr class="item_detail_row">
     <td class="poprod-decpt item_detail_attributes">
         <span class="poitemtxt mw-100">
@@ -29,18 +29,18 @@
 @endif
 @if(isset($item->itemAttributes))
     @if($item?->itemAttributes->count() > 0)
-    <tr> 
+    <tr>
         <td class="poprod-decpt">
             <span class="poitemtxt mw-100"><strong>Attributes:</strong></span>
             @foreach($item->itemAttributes as $index => $attribute)
-            <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute?->attributeGroup?->id}}">{{$attribute?->attributeGroup?->name}}</strong>: @foreach ($attribute?->attributes()  as $value) 
+            <span class="badge rounded-pill badge-light-primary"><strong data-group-id="{{$attribute?->attributeGroup?->id}}">{{$attribute?->attributeGroup?->name}}</strong>: @foreach ($attribute?->attributes()  as $value)
                     @if(in_array($value->id ?? 0, $selectedAttr))
                         {{ $value->value }}
                     @endif
                  @endforeach</span>
             @endforeach
-        </td> 
-    </tr> 
+        </td>
+    </tr>
     @endif
 @endif
 <tr>

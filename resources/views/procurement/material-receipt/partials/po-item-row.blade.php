@@ -106,11 +106,10 @@
         </td>
         <td>
             <input type="number" class="form-control mw-100 accepted_qty text-end checkNegativeVal" name="components[{{$rowCount}}][accepted_qty]"
-            value="" step="any" {{ $acceptedReadOnly }} />
+            value="" step="any" readonly/>
         </td>
         <td>
-            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"
-            {{ $acceptedReadOnly }} />
+            <input type="number" class="form-control mw-100 text-end rejected_qty" name="components[{{$rowCount}}][rejected_qty]" readonly step="any"/>
         </td>
         <td>
             <input type="number" name="components[{{$rowCount}}][rate]" value="{{$item->rate}}" readonly class="form-control mw-100 text-end rate" />
@@ -214,11 +213,11 @@
                     </div>
                 @endif
                 <input type="hidden" id="components_batches_{{ $rowCount }}" name="components[{{$rowCount}}][batch_details]" value=""/>
-                <div class="me-50 cursor-pointer addBatchBtn" 
-                data-bs-toggle="modal" 
-                data-row-count="{{$rowCount}}" 
+                <div class="me-50 cursor-pointer addBatchBtn"
+                data-bs-toggle="modal"
+                data-row-count="{{$rowCount}}"
                 data-is-batch-number="{{$item?->item?->is_batch_no}}"
-                data-is-expiry="{{$item?->item?->is_expiry}}" 
+                data-is-expiry="{{$item?->item?->is_expiry}}"
                 data-bs-target="#item-batch-modal">
                     <span data-bs-toggle="tooltip" data-bs-placement="top" title="" class="text-primary"
                         data-bs-original-title="Item Batch" aria-label="Item Batch">

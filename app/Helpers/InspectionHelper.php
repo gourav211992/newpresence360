@@ -46,7 +46,7 @@ class InspectionHelper
                     continue;
                 }
                 $mrnHeaderId = $mrnItem->mrn_header_id;
-                
+
                 // Update quantities
                 $mrnItem->accepted_qty += $item->accepted_qty;
                 $mrnItem->rejected_qty += $item->rejected_qty;
@@ -85,7 +85,7 @@ class InspectionHelper
 
 
     # Handle Mrn calculation update from inspection
-    private static function updateMrnCalculation($mrnId) 
+    private static function updateMrnCalculation($mrnId)
     {
         $mrn = MrnHeader::with(['items.itemDiscount', 'expenses', 'shippingAddress'])->find($mrnId);
         if (!$mrn) return;
@@ -98,7 +98,7 @@ class InspectionHelper
         $companyStateId = $companyAddress->state_id;
         $vendorCountryId = $mrn->billingAddress->country_id ?? null;
         $vendorStateId = $mrn->billingAddress->state_id ?? null;
-        
+
         $totalItemAmount = 0;
         $totalTaxAmount = 0;
 
@@ -191,8 +191,8 @@ class InspectionHelper
         $headerExpenses = $mrn->expenses->sum('ted_amount');
 
         foreach ($mrn->items as $item) {
-            $baseAmount = ($item->rate * $item->accepted_qty) 
-                        - ($item->discount_amount + $item->header_discount_amount) 
+            $baseAmount = ($item->rate * $item->accepted_qty)
+                        - ($item->discount_amount + $item->header_discount_amount)
                         + ($item->tax_value ?? 0);
 
             $expenseValue = ($headerExpenses && $totalAfterTaxBeforeExp)
@@ -234,7 +234,7 @@ class InspectionHelper
     }
 
     // Error Response
-    private static function successResponse($response,$data)
+    private static function successResponse($response, $data)
     {
         return [
             "status" => "success",
@@ -242,6 +242,49 @@ class InspectionHelper
             "message" => $response,
             "data" => $data
         ];
+    }
+
+    // Validate Inspection Checklist
+    public static function validateInspectionCheckList(array $inspectionData, object $item)
+    {
+        if (!$inspectionData) return [
+            'message' => 'Checklist must be filled for item: '. $item->item_name,
+            'status' => false
+        ];
+
+        if (!is_array($inspectionData) || count($inspectionData) === 0) {
+            dd('dhasdjkhas asdhaskj');
+            return [
+                'message' => 'Checklist must be filled for item: '. $item->item_name,
+                'status' => false
+            ];
+        }
+
+        $grouped = collect($inspectionData)->groupBy('detail_id');
+        foreach ($grouped as $detailId => $entries) {
+            $param = collect($entries)->firstWhere('type', 'parameter_name') ?? $entries->firstWhere('parameter_name');
+            $result = collect($entries)->firstWhere('type', 'result') ?? $entries->firstWhere('result');
+            if (empty($param['parameter_name'])) {
+                return [
+                    'message' => 'Parameter name missing in checklist for item: '. $item->item_name,
+                    'status' => false
+                ];
+            }
+
+            if (!isset($result['result']) || !in_array($result['result'], ['pass', 'fail'], true)) {
+                return [
+                    'message' => 'Pass/Fail (result) missing in checklist for item: '. $item->item_name,
+                    'status' => false
+                ];
+            }
+        }
+
+        // ✅ No issues found
+        return [
+            'message' => 'Success: '. $item->item_name,
+            'status' => true
+        ];
+
     }
 
 }

@@ -311,6 +311,52 @@
                 $totalIGSTValue = 0.00;
             @endphp
             @foreach($po->po_items as $key => $val)
+            @php
+                $totalTaxPercentage = 0.00;
+                if ($val->item && $val->item->hsn) {
+                    $hsnCode = $val->item->hsn->code;
+                    $taxPercentage = 0.00;
+                    $teds = $val->taxes;
+                    foreach ($teds as $ted) {
+                        $taxPercentage += $ted->ted_perc;
+                        $taxType = $ted->ted_name;
+                        $taxableValue = $ted -> assessment_amount;
+                        $taxTypeAmount = ($taxableValue * $ted->ted_perc) / 100;
+
+                        if (!isset($hsnGroups[$hsnCode])) {
+                            $hsnGroups[$hsnCode] = [
+                                'hsn_code' => $hsnCode,
+                                'taxable_rate' => $taxPercentage,
+                                'taxable_value' => 0.00,
+                                'tax_amount' => 0.00,
+                                'tax_group' => $ted->ted_group_code,
+                            ];
+                        }
+
+                        // Initialize tax type amount if not set
+                        if (!isset($hsnGroups[$hsnCode][$taxType . '_amount'])) {
+                            $hsnGroups[$hsnCode][$taxType   . '_amount'] = 0.00;
+                        }
+                        $totalTaxPercentage += $taxPercentage;
+                        $hsnGroups[$hsnCode][$taxType . '_amount'] += $taxTypeAmount;
+                        $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                    }
+                    $hsnGroups[$hsnCode]['taxable_value'] += $taxableValue;
+                    $hsnGroups[$hsnCode]['taxable_rate'] = $taxPercentage;
+
+                }
+
+                // Now, calculate total tax_amount for each HSN group
+                foreach ($hsnGroups as &$group) {
+                    $taxAmount = 0.00;
+                    foreach ($group as $key => $value) {
+                        if (str_ends_with($key, '_amount') && $key !== 'tax_amount') {
+                            $taxAmount += (float)$value;
+                        }
+                    }
+                    $group['tax_amount'] = $taxAmount;
+                }
+            @endphp
                 <tr>
 
                     <td
@@ -532,10 +578,8 @@
                     <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
                         <tr>
                             <td style="font-weight: bold; font-size: 13px;"> <b>Remark :</b></td>
-                        </tr>
-                        <tr>
                             <td>
-                                <div style="min-height: 80px;">
+                                <div style="min-height: 8px;">
                                     {{$po->remarks}}
                                 </div>
                             </td>
@@ -543,6 +587,54 @@
                     </table>
                 </td>
             </tr>
+
+            <tr>
+                <td colspan="2"
+                    style="border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; padding: 4px; background: #80808070; text-align: center;"> <b>HSN / SAC</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Tax Rate</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Taxable Amount</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>CGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>SGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>IGST Amt</b></td>
+                            <td style="font-weight: bold; padding: 4px; border-left: 1px solid #000; background: #80808070; text-align: center;"> <b>Total Tax</b></td>
+                        </tr>
+                        @foreach($hsnGroups as $hsnCode => $hsnData)
+                            <tr>
+                                <td style="padding: 4px; text-align: center;">{{ $hsnCode }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: center;">{{ number_format($hsnData['taxable_rate'], 2) }} %</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['taxable_value'], 2) }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['CGST_amount']) ? number_format($hsnData['CGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['SGST_amount']) ? number_format($hsnData['SGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ isset($hsnData['IGST_amount']) ? number_format($hsnData['IGST_amount'], 2) : "" }}</td>
+                                <td style="padding: 4px; border-left: 1px solid #000; text-align: right;">{{ number_format($hsnData['tax_amount'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </table>
+                </td>
+            </tr>
+            @if($po?->tnc)
+            <tr>
+                <td colspan="2"
+                    style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
+                    <table style="width: 100%; margin-bottom: 0px;" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="font-weight: bold; font-size: 13px;"> <b>Terms and Conditions :</b></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div style="min-height: 80px;">
+                                    {!! $po?->tnc !!}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            @endif
+            
             {{-- <tr>
             <td colspan="2"
                 style="padding: 3px; border: 1px solid #000; width: 50%; border-top: none; vertical-align: top;">
@@ -674,199 +766,6 @@
 
         </table>
 
-        <div style="page-break-before:always"></div>
-
-
-        <!-- Third page Forth page -->
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 10px; font-size: 13px;" cellspacing="0"
-            cellpadding="0">
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    TERMS AND CONDITIONS FOR "PURCHASE ORDER-GOODS"</td>
-            </tr>
-            <tr>
-                <td colspan="2"
-                    style="text-align: center; font-weight: bold; text-decoration: underline; font-size: 14px; padding: 5px; padding-bottom: 10px;">
-                    @foreach($po->termsConditions as $poTerm)
-                        {!! $poTerm->termAndCondition?->term_detail !!}
-                    @endforeach
-                </td>
-            </tr>
-        </table>
-
-        <div style="page-break-before:always"></div>
-        <!-- Fifth page -->
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0"
-            cellpadding="0">
-            <tr>
-                <td colspan="2" style="padding: 8px 5px;">Date:</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 5px; padding-top: 40px;">To</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 0px 5px; line-height: 18px;">SHEELA FOAM LTD UNIT-VI (GNA) <br>
-                    PLOT NO 51-A, UDYOG VIHAR , GREATER NOIDA, G.B NAGAR
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 2px 5px; padding-top: 20px;">UTTAR PRADESH</td>
-            </tr>
-            <tr>
-                <td style="width: 45px; padding: 2px 5px;">Phone : </td>
-                <td style="padding: 2px 5px;">0120-2569291-93</td>
-            </tr>
-            <tr>
-                <td style="width: 45px; padding: 2px 5px;">E-Mail :</td>
-                <td style="padding: 2px 5px;"></td>
-            </tr>
-
-            <tr>
-                <td colspan="2"
-                    style="padding: 8px 5px; padding-top: 50px; font-weight: bold; font-size: 15px; text-decoration: underline;">
-                    Sub.: Quality Assurance Certificate. </td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; line-height: 25px;">
-                    We hereby certify that the goods manufactured / supplied by us against purchase order No. 13
-                    dated : 05-04-2024 do conform to specifications / standard mention in the purchase order.
-                    of M/s. Sheela Foam Ltd and our Invoice No. <span
-                        style="display: inline-block; min-width: 150px; border-bottom: 1px dotted #000;"> </span>
-
-                    dated : <span style="display: inline-block; min-width: 100px; border-bottom: 1px dotted #000;">
-                    </span>, do conform to specifications / standard mention in the purchase order.
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 8px 5px;">We assure for the quality of goods supplied as above.</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; padding-top: 30px;">For JPS PLASTICS PVT LTD</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 8px 5px; padding-top: 30px;">AUTHORISED SIGNATORY</td>
-            </tr>
-        </table>
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td style="padding: 8px 5px; width: 182px; font-weight: bold; font-size: 13px; vertical-align: top;">IMPORTANT INSTRUCTION-: </td>
-                <td style="padding: 8px 5px; font-weight: bold; font-size: 13px;" >Please esnure that latest PDIR format with latest revision number is being filled
-                    at your end and sent along with each invoice sent to The Company. For any query
-                    regarding same, contact Purchase department.</td>
-            </tr>
-        </table>
-
-        <div style="page-break-before:always"></div>
-        <!-- Six page -->
-
-        <table style="width: 100%; margin-bottom: 0px; margin-top: 15px; font-size: 13px;" cellspacing="0" cellpadding="0">
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; font-weight: bold; text-decoration: underline; font-size: 16px; text-align: center;">SAFETY INSTRUCTIONS</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 15px;">Following po_items are strictly prohibited to be brought / used in our factory premises:</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">1).</td>
-                <td style="padding: 5px 0px;">BIDDI, Cigarette. </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">2).</td>
-                <td style="padding: 5px 0px;">Tobacco or any other intoxicant in any form. </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">3).</td>
-                <td style="padding: 5px 0px;">Gutka, Pan Masala.</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">4).</td>
-                <td style="padding: 5px 0px;">Match Sticks or Match Box (Filled or Empty).</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">5).</td>
-                <td style="padding: 5px 0px;">Lighters.</td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">6).</td>
-                <td style="padding: 5px 0px;">Alcohal in any form.</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px;">Upon not following above instructions, The Company shall be at liberty to impose the penalties which may please be noted as under:
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">A).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) shall be imposed if a pack / bundle or a part of
-                    BIDDI or Cigarette is found. This penalty shall multiply with additional packs / bundle.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">B).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) per pouch (Open or Sealed) shall be imposed if a
-                    Chewing Tobacco or any other intoxicant in any form is found.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">C).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 250/- (Rupees Two Hundred and Fifty Only) per pouch (Open or Sealed) of Gutka, Pan
-                    Masala shall be imposed.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">D).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 1500/- (Rupees One Thousand Five Hundred Only) shall be imposed if a Match Box (Empty or
-                    ttract a penalty of Rs. 1500/- (Rupees One Thousand Five Hundred Only).
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">E).</td>
-                <td style="padding: 5px 0px;">
-                    Penalty of Rs. 1000/- (Rupees One Thousand Only) shall be imposed on bringing Alcohal inside our factory.
-
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">F).</td>
-                <td style="padding: 5px 0px;">
-                    Damage caused to any property inside The Company shall be fully recoverable and the cost of damage shall
-                    be acertained by The Company.
-                </td>
-            </tr>
-            <tr>
-                <td style="padding: 5px 0px; padding-left: 20px; width: 25px;">G).</td>
-                <td style="padding: 5px 0px;">Any other instructions which are given by our Security at entry has to be followed to avoid penalty which is
-                    not specifically mentioned above.</td>
-            </tr>
-
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;"> Repeat offenders shall be considered for black-listing.</td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;">
-                    It shall be your responsibility to instruct and make sure that the driver / representative of your vehicle deposit
-                    above po_items if he / she is carrying at our Security. These po_items shall be returned on vehicle exit from our
-                    premises. We shall directly hold you responsible for any lapse on transporters' end on account of above Safety
-                    Instructions.
-                </td>
-            </tr>
-            <tr>
-                <td colspan="2" style="padding: 5px 0px; padding-top: 20px;">We request your co-operation in the matter.</td>
-            </tr>
-
-        </table>
-
-    </div>
 </body>
 
 </html>

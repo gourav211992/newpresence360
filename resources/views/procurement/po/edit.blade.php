@@ -582,17 +582,20 @@
                                                     <div class="mb-1">
                                                         <label class="form-label">Terms & Conditions</label>
                                                         <select class="form-select select2" name="term_id[]" multiple>
-                                                            @foreach ($termsAndConditions as $termsAndCondition)
-                                                                @if (in_array($termsAndCondition->id, $po->TermsConditions->pluck('term_id')->toArray()))
-                                                                    <option value="{{ $termsAndCondition->id }}" selected>
-                                                                        {{ $termsAndCondition->term_name }}</option>
-                                                                @else
-                                                                    <option value="{{ $termsAndCondition->id }}">
-                                                                        {{ $termsAndCondition->term_name }}</option>
-                                                                @endif
+                                                            @foreach($termsAndConditions as $termsAndCondition)
+                                                            <option value="{{$termsAndCondition->id}}" {{in_array($termsAndCondition->id,$po->terms->pluck('id')->toArray()) ? "selected" : ""}} data-detail="{{ $termsAndCondition->term_detail }}">{{$termsAndCondition->term_name}}</option> 
                                                             @endforeach
                                                         </select>
                                                     </div>
+                                                </div>
+
+                                                <div class="col-md-12">
+                                                    <textarea name="terms_data" id="summernote" class="form-control " {{ $po->document_status !=\App\Helpers\ConstantHelper::DRAFT ? "disabled" : ''}} placeholder="Enter Terms" maxlength="250" oninput="if(this.value.length > 250) this.value = this.value.slice(0, 250);">{{ isset($po->tnc) ? $po->tnc : "" }}</textarea>
+                                                    <small class="text-muted d-block text-end">
+                                                        <span id="termsCharCount">0</span>/250 characters
+                                                    </small>
+                                                    <input type="hidden" name="tnc" id="tnc" value="{{ isset($po->tnc) ? $po->tnc : "" }}">
+                                                    <input type="hidden" id="customer_terms_id" value="" name="terms_id" />
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-12">
@@ -1047,6 +1050,33 @@
     <script type="text/javascript" src="{{ asset('assets/js/modules/po.js') }}"></script>
     <script type="text/javascript" src="{{ asset('app-assets/js/file-uploader.js') }}"></script>
     <script>
+        @if($po->document_status != \App\Helpers\ConstantHelper::DRAFT)
+        $('#summernote').summernote('disable');
+        // Reflect selected option text from select2[name="term_id[]"] to #summernote1 textarea
+        $(document).on('change', 'select[name="term_id[]"]', function () {
+            let selectedText = $(this).find('option:selected').data('detail') || '';
+            $('#summernote').summernote('code', selectedText);
+            updateSummernoteData();
+        });
+
+        // Function to update char count & hidden input
+        function updateSummernoteData() {
+            let content = $('#summernote').summernote('code');
+            let plainText = $('<div>').html(content).text(); // remove HTML tags for char count
+            $('#termsCharCount').text(plainText.length);
+            $('#tnc').val(content); // store HTML content in hidden input
+        }
+
+        // Bind Summernote change events
+        $('#summernote').on('summernote.change', function (we, contents, $editable) {
+            updateSummernoteData();
+        });
+
+        // Initialize Summernote (example)
+        $('#summernote').summernote({
+            height: 200
+        });
+        @endif
         /*Clear local storage*/
         @if ($pi_item_ids)
             let pi_item_ids = "{{ $pi_item_ids }}";
@@ -1294,7 +1324,6 @@
             if (poProcurementType === 'All') {
                 $procurementTypeSelect.empty();
                 PO_PROCUREMENT_TYPE_VALUES.forEach(function(value) {
-                    console.log(true);
 
                     $procurementTypeSelect.append(
                         $('<option>', {
@@ -1311,7 +1340,6 @@
                         value: poProcurementType,
                         text: poProcurementType,
                         selected: true,
-                        disabled: true
                     }));
 
             }

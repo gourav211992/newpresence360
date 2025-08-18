@@ -78,7 +78,7 @@ class PslipRequest extends FormRequest
         if($productionBom) {
             $machines = $productionBom?->machines()
             ->where('status', ConstantHelper::ACTIVE)
-            ->get(); 
+            ->get();
         }
         if($machines->isNotEmpty()) {
             $rules['machine_id.*'] = 'required|array|min:1';
@@ -91,7 +91,7 @@ class PslipRequest extends FormRequest
     {
         $id = $this->input('id');
         $validator->after(function ($validator) use ($id) {
-            
+
             foreach ($this->input('cons', []) as $index => $component) {
                 $selectedAttributeIds = [];
                 $moBomMappingId = $component['mo_bom_cons_id'] ?? null;
@@ -109,6 +109,7 @@ class PslipRequest extends FormRequest
                 }
 
                 $requiredQty = floatval($component['item_qty']);
+                $consumptionQty = floatval($component['consumption_qty']);
                 $itemAttributes = $moBomMapping->attributes ?? [];
                 foreach ($itemAttributes as $itemAttr) {
                     $selectedAttributeIds[] = $itemAttr['attribute_value'];
@@ -127,15 +128,15 @@ class PslipRequest extends FormRequest
                     $rm_type,
                     $itemWipStationId
                 );
-             
+
                 $stockBalanceQty = floatval($stocks['confirmedStocks'] ?? 0);
-                if ($requiredQty > $stockBalanceQty) {
+                if ($consumptionQty > $stockBalanceQty) {
                     $validator->errors()->add("cons.$index.item_qty", "Stock not available.");
                 }
             }
         });
     }
-    
+
 
     public function messages(): array
     {
@@ -154,7 +155,7 @@ class PslipRequest extends FormRequest
             'item_accepted_qty.*.numeric'  => 'Accepted quantity must be a number.',
             'item_accepted_qty.*.min'      => 'Accepted quantity must be at least 1.',
         ];
- 
+
     }
 
     protected function failedValidation(Validator $validator)

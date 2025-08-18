@@ -2327,7 +2327,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -2750,7 +2750,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }

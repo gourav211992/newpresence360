@@ -77,8 +77,9 @@
                         data-bs-toggle="modal"
                         data-bs-target="#inspectionChecklistModal"
                         title="Inspection Checklist">
-                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Inspection" class="text-success"><i data-feather="check-circle"></i></span>
-
+                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Inspection" class="text-success">
+                            <i data-feather="check-circle"></i>
+                        </span>
                     </div>
                 @endif
                 <div class="me-50 cursor-pointer addRemarkBtn" data-row-count="{{$rowCount}}" {{-- data-bs-toggle="modal" data-bs-target="#Remarks" --}}>

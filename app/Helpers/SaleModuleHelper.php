@@ -24,6 +24,7 @@ use App\Models\ErpSoItemAttribute;
 use App\Models\ErpSoItemBom;
 use App\Models\ErpSoItemDelivery;
 use App\Models\ErpStore;
+use App\Models\ErpTransportInvoice;
 use App\Models\Item;
 use App\Models\ItemAttribute;
 use App\Models\Organization;
@@ -392,7 +393,7 @@ class SaleModuleHelper
         return $document;
     }
 
-    public static function cashCustomerMasterData(ErpSaleOrder|ErpSaleInvoice $saleOrder)
+    public static function cashCustomerMasterData(ErpSaleOrder|ErpSaleInvoice|ErpTransportInvoice $saleOrder)
     {
         $customer = Customer::find($saleOrder -> customer_id);
         if (!isset($customer) || (isset($customer) && $customer -> customer_type !== ConstantHelper::CASH)) {

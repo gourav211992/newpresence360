@@ -504,6 +504,7 @@ class ConstantHelper
         self::RFQ_SERVICE_ALIAS => "Request For Quotation",
         self::PQ_SERVICE_ALIAS => "Purchase Quotation",
         self::PQC_SERVICE_ALIAS => "Purchase Quotation Comparison",
+        self::PDS_SERVICE_ALIAS => "Pickup Dropoff Schedule",
         PackingListConstants::SERVICE_ALIAS => "Packing List"];
 
     //Service Alias
@@ -514,6 +515,7 @@ class ConstantHelper
     const RFQ_SERVICE_ALIAS = 'rfq';
     const PQ_SERVICE_ALIAS = 'pq';
     const PQC_SERVICE_ALIAS = 'pqc';
+    const PDS_SERVICE_ALIAS = 'pds';
     const SUPPLIER_INVOICE_SERVICE_ALIAS = 'supplier-invoice';
     const PI_SERVICE_ALIAS = 'purchase-indent';
     const MRN_SERVICE_ALIAS = 'mrn';
@@ -704,7 +706,7 @@ class ConstantHelper
 
     //Service Alias Models Mapping
     const SERVICE_ALIAS_MODELS = [
-        self::TI_SERVICE_ALIAS => 'ErpSaleInvoice',
+        self::TI_SERVICE_ALIAS => 'ErpTransportInvoice',
         self::LR_SERVICE_ALIAS => 'ErpLorryReceipt',
         self::MO_SERVICE_ALIAS => 'MfgOrder',
         self::BOM_SERVICE_ALIAS => 'Bom',
@@ -818,6 +820,7 @@ class ConstantHelper
         self::RFQ_SERVICE_ALIAS => 'ErpRfqHeader',
         self::PQ_SERVICE_ALIAS => 'ErpPqHeader',
         self::PQC_SERVICE_ALIAS => 'ErpPqcHeader',
+        self::PDS_SERVICE_ALIAS => 'ErpPickupSchedule',
         PackingListConstants::SERVICE_ALIAS => 'PackingList',
         ASNConstant::SERVICE_ALIAS => 'VendorAsn',
     ];

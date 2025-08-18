@@ -295,9 +295,16 @@
                                                     </div>
                                                     <div class="col-md-3">
                                                         <div class="mb-1">
-                                                            <label class="form-label">Payment Terms <span class="text-danger">*</span></label>
+                                                            <label class="form-label">Payment Terms </label>
                                                             <select class="form-select" name="payment_term_id">
                                                             </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="mb-1">
+                                                            <label class="form-label">Credit Days </label>
+                                                            <input type="text" class="form-control mw-100"
+                                                                id="credit_days" name="credit_days" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1049,6 +1056,13 @@
                         $("#vendor_name").val(data?.data?.vendor?.company_name);
                         $("#vendor_id").val(data?.data?.vendor?.id);
                         $("#vendor_code").val(data?.data?.vendor.vendor_code);
+                        $("#credit_days").val(data?.data?.vendor?.credit_days ?? 0);
+                        // Credit days editable check
+                        if (data?.data?.vendor?.credit_days_editable) {
+                            $("#credit_days").prop("readonly", false);
+                        } else {
+                            $("#credit_days").prop("readonly", true);
+                        }
                         let curOption = `<option value="${data.data.currency.id}">${data.data.currency.name}</option>`;
                         let termOption = `<option value="${data.data.paymentTerm.id}">${data.data.paymentTerm.name}</option>`;
                         $('[name="currency_id"]').empty().append(curOption);
@@ -1256,6 +1270,8 @@
                         $(".poSelect").addClass('d-none');
                         $(".joSelect").addClass('d-none');
                         $(".soSelect").addClass('d-none');
+                        $("select[name='currency_id']").prop('disabled', true);
+                        $("select[name='payment_term_id']").prop('disabled', true);
                         $("#vendor_name").prop('readonly',true);
                         $(".editAddressBtn").addClass('d-none');
                     } else if(data.status == 422) {
@@ -1317,7 +1333,7 @@
                 $("#addNewItemBtn").show();
                 $("#itemTable > thead .form-check-input").prop('checked',false);
                 $("select[name='currency_id']").prop('disabled', false);
-                $("select[name='payment_term_id']").prop('disabled', false);
+                $("select[name='payment_term_id']").prop('disabled', true);
                 $(".editAddressBtn").removeClass('d-none');
                 $("#vendor_name").prop('readonly',false);
                 $(".header_store_id").prop('disabled', false);
@@ -1721,7 +1737,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -2191,7 +2207,7 @@
                                 let label = '';
 
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -2560,7 +2576,7 @@
                                 // };
                                 let label = '';
                                 if ('document_number' in item && 'book_code' in item) {
-                                    label = `${item.book_code}-${item.document_number}`;
+                                    label = `${item.document_number}`;
                                 } else if ('company_name' in item) {
                                     label = item.company_name;
                                 }
@@ -2981,7 +2997,6 @@
                         $("#vendor_code").val('');
                         $("#hidden_state_id").val('');
                         $("#hidden_country_id").val('');
-                        $("select[name='currency_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
                         $("select[name='payment_term_id']").empty().append('<option value="">Select</option>').prop('readonly',false);
                         $(".shipping_detail").text('-');
                         $(".billing_detail").text('-');
@@ -3555,8 +3570,8 @@
                 // $rejected.val(0);
                 } else {
                 // Not required: accepted = order qty; unlock both fields
-                $accepted.val(orderQty).prop('readonly', false);
-                $rejected.prop('readonly', false);
+                $accepted.val(orderQty).prop('readonly', true);
+                $rejected.prop('readonly', true);
                 }
             });
         }

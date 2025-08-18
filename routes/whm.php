@@ -83,7 +83,8 @@ Route::group(['middleware' => ['sso-api', 'apiresponse']], function () {
     Route::controller(StockLookoutController::class)->group(function () {
         Route::get('/stock', 'index')->name('whm.stock.index');
         Route::get('/stock/item', 'item')->name('whm.stock.item');
-        Route::get('/stock/get-filtered-items', 'getFilteredItems')->name('whm.stock.get-filtered-items');
+        // Route::get('/stock/get-filtered-items', 'getFilteredItems')->name('whm.stock.get-filtered-items');
+        Route::post('/stock/apply-filter', 'applyFilter')->name('whm.stock.apply-filter');
     });
     
     

@@ -111,11 +111,20 @@ function initializeDataTable(selector, ajaxUrl, columns, filters = {}, exportTit
                     }
                 }
             ] : [],
+            rowCallback: function(row, data) 
+            {   
+                console.log(filters.selected_ids);
+                console.log(data.id);
+                if (filters.selected_ids && filters.selected_ids.includes(String(data.id))) {
+                    $(row).find('input[type="checkbox"]').prop('checked', true);
+                    $(row).addClass('trselected'); // optional styling
+                }
+            },
             drawCallback: function() {
                 feather.replace(); 
-                $(document).on('click', '.myrequesttablecbox tbody tr', (e) => {
-                    $('tr').removeClass('trselected');
-                    $(e.target).closest('tr').addClass('trselected');
+                $(document).on('click', '.myrequesttablecbox > tbody > tr', function () {
+                    $('.myrequesttablecbox > tbody > tr').removeClass('trselected');
+                    $(this).addClass('trselected');
                 });
 
                 $(document).on('keydown', function(e) { 
